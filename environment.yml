@@ -1,0 +1,7 @@
+name: mtl-sent-rep
+
+dependencies:
+    - python=3.6
+    - pytorch
+    - numpy
+    - nltk
