@@ -1,12 +1,13 @@
 import os
 import pdb
 import sys
+import time
 import argparse
 import logging as log
 from collections import Counter
 import _pickle as pkl
 import nltk
-#import numpy as np
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -16,12 +17,15 @@ PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.utils.encoders import MultiLayerRNNEncoder
 from codebase.models import MultiTaskModel
-from codebase.tasks import Task, Dataset, QuoraTask
+from codebase.tasks import Task, Dataset, QuoraTask, SNLITask
+from codebase.utils.seq_batch import SequenceBatch
+from codebase.utils.token_embedder import TokenEmbedder
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-NAME2TASK = {'quora': QuoraTask}
-NAME2PATH = {'quora': PATH_PREFIX + 'Quora/quora_small.tsv'}
+NAME2TASK = {'quora': QuoraTask, 'snli': SNLITask}
+NAME2PATH = {'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
+             'snli': PATH_PREFIX + 'SNLI/'}
 SPECIALS = ['<pad>', '<unk>', '<s>', '</s>']
 
 def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
@@ -39,7 +43,8 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
     tasks = []
     for name in task_names:
         assert name in NAME2TASK, 'Task not found!'
-        tasks.append(NAME2TASK[name](NAME2PATH[name], input_dim, batch_size))
+        tasks.append(NAME2TASK[name](NAME2PATH[name],
+                                     input_dim, batch_size, cuda))
 
     tok2idx = build_vocabulary(tasks, max_vocab_size)
 
@@ -53,7 +58,7 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
         task.test_data = process_split(task.test_data_text, task.pair_input,
                                        tok2idx, max_seq_len, batch_size, cuda)
 
-    return tasks
+    return tasks, tok2idx
 
 def process_split(split, pair_input, tok2idx, max_seq_len, batch_size, cuda):
     '''
@@ -78,9 +83,15 @@ def process_split(split, pair_input, tok2idx, max_seq_len, batch_size, cuda):
             sent, tok2idx, max_seq_len) for sent in split[1]]))
         if cuda:
             inputs2 = inputs2.cuda()
-        processed_split = Dataset([inputs1, inputs2], targs, batch_size)
+        #processed_split = Dataset([inputs1, inputs2], targs, batch_size,
+        #                          pair_input)
+        processed_split = Dataset([split[0], split[1]], targs, batch_size,
+                                  tok2idx, pair_input)
+
     else:
-        processed_split = Dataset([inputs1], targs, batch_size)
+        #processed_split = Dataset([inputs1], targs, batch_size, pair_input)
+        processed_split = Dataset([split[0]], targs, batch_size, tok2idx,
+                                  pair_input)
     return processed_split
 
 def process_sentence(sentence, tok2idx=None, max_seq_len=None):
@@ -138,10 +149,43 @@ def build_vocabulary(tasks, max_vocab_size):
     # pick top words
     if not max_vocab_size:
         max_vocab_size = len(tok2freq)
+    else:
+        max_vocab_size = max_vocab_size - len(SPECIALS)
     for tok, _ in tok2freq.most_common()[:max_vocab_size]:
         tok2idx[tok] = len(tok2idx)
 
     return tok2idx
+
+def load_embeddings(path, tok2idx, word_dim):
+    '''
+    Load embeddings from GloVe vectors.
+
+    TODO
+        - make this a standard library function.
+
+    Args:
+        - path (str): path to word embedding file
+        - tok2idx (dict): dictionary mapping words to indices
+        - word_dim (int): word vector dimensionality
+
+    Returns
+        - embeddings (np.FloatArray): embeddings
+    '''
+    embeddings = np.random.rand(len(tok2idx), word_dim).astype(float)
+    n_embs = 0
+    with open(path) as fh:
+        for row in fh:
+            row = row.split()
+            word = row[0]
+            if word in tok2idx:
+                assert len(row[1:]) == word_dim
+                embeddings[tok2idx[word]] = np.array([float(v) for \
+                                                     v in row[1:]])
+                n_embs += 1
+
+    embeddings[tok2idx['<pad>']] = 0.
+    log.info("\tLoaded pretrained embeddings for {0} words".format(n_embs))
+    return embeddings
 
 def main(arguments):
     '''
@@ -150,7 +194,7 @@ def main(arguments):
     parser = argparse.ArgumentParser(description='')
 
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
-                        type=int, default=1)
+                        type=int, default=0)
 
     parser.add_argument('--log_file', help='file to log to',
                         type=str, default=0)
@@ -169,12 +213,12 @@ def main(arguments):
     parser.add_argument('--word_dim', help='dimension of word embeddings',
                         type=int, default=300)
     parser.add_argument('--hid_dim', help='hidden dimension size',
-                        type=int, default=300)
+                        type=int, default=4096)
     parser.add_argument('--n_layers', help='number of RNN layers',
                         type=int, default=1)
 
     parser.add_argument('--batch_size', help='batch size',
-                        type=int, default=10)
+                        type=int, default=64)
     parser.add_argument('--optimizer', help='optimizer to use',
                         type=str, default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for',
@@ -190,20 +234,34 @@ def main(arguments):
     log.getLogger().addHandler(file_handler)
     log.info(args)
 
-    tasks = process_tasks(args.tasks.split(','), args.hid_dim,
-                          args.max_vocab_size, args.max_seq_len,
-                          args.batch_size, args.cuda)
-    log.info('Finished loading tasks')
+    if args.cuda >= 0:
+        torch.cuda.set_device(args.cuda)
 
-    token_embedder = nn.Embedding(args.max_vocab_size, args.word_dim,
-                                  padding_idx=0)
+    # TODO(Alex): hid_dim depends on if pair input or not
+    log.info("Loading tasks...")
+    start_time = time.time()
+    tasks, tok2idx = process_tasks(args.tasks.split(','), args.hid_dim * 4,
+                                   args.max_vocab_size, args.max_seq_len,
+                                   args.batch_size, args.cuda)
+    log.info('\tFinished loading tasks in {0}s'.format(
+        time.time() - start_time))
+
+    log.info("Building model...")
+    start_time = time.time()
+    embeddings = load_embeddings(args.word_embs_file, tok2idx,
+                                            args.word_dim)
+    token_embedder = TokenEmbedder(embeddings, tok2idx)
+    #token_embedder = nn.Embedding(args.max_vocab_size, args.word_dim,
+    #                              padding_idx=0)
+
     encoder = MultiLayerRNNEncoder(args.word_dim, args.hid_dim,
                                    args.n_layers, nn.LSTMCell)
-    if args.cuda:
-        token_embedder = token_embedder.cuda()
-        encoder = encoder.cuda()
     model = MultiTaskModel(encoder, token_embedder, tasks)
-    log.info('Finished building model')
+    if args.cuda:
+        model = model.cuda()
+    log.info('\tFinished building model in {0}s'.format(
+        time.time() - start_time))
+
     model.train_model(args.n_epochs, args.optimizer, args.lr)
 
 if __name__ == '__main__':

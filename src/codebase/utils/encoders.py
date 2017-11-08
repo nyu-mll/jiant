@@ -6,7 +6,8 @@ from torch.nn import Parameter
 from torch.autograd import Variable
 from torch.nn import functional as F
 
-from codebase.utils.utils import tile_state
+from codebase.utils.utils import tile_state, gated_update
+from codebase.utils.seq_batch import SequenceBatchElement
 
 # TODO handle masks somehow
 
@@ -62,24 +63,24 @@ class RNNEncoder(Encoder):
     def forward(self, inputs):
         '''
         Ins:
-            inputs: (list[Variable]): each element has shape
-                                      (batch_size, input_dim)
+            inputs: (list[SequenceBatchElement]): each element has shape
+                                                  (batch_size, input_dim)
             TODO(Alex): masks???
 
         Outs:
-            hid_states (list[Variable]): each element has shape
-                                         (batch_size, hid_dim)
+            hid_states (list[SequenceBatchElement]): each element has shape
+                                                     (batch_size, hid_dim)
         '''
 
-        batch_size = inputs[0].size()[0]
+        batch_size = inputs[0].values.size()[0]
         h = tile_state(self.h0, batch_size)
         c = tile_state(self.c0, batch_size)
         hid_states = []
         for t, x in enumerate(inputs):
-            h_t, c_t = self.rnn_cell(x, (h, c))
-            h = h_t #h = gated_update(h, h_t, mask)
-            c = c_t #c = gated_update(h, h_t, mask)
-            hid_states.append(h) # append mask?
+            h_t, c_t = self.rnn_cell(x.values, (h, c))
+            h = gated_update(h, h_t, x.mask)
+            c = gated_update(c, c_t, x.mask)
+            hid_states.append(SequenceBatchElement(h, x.mask))
         return hid_states
 
 
@@ -110,11 +111,11 @@ class BidirectionalRNNEncoder(Encoder):
         Compute bidirectional RNN embeddings
 
         In:
-            inputs (list[Variable])
+            inputs (list[SequenceBatchElement])
 
         Outs:
-            forward_states (list[Variable])
-            backward_states (list[Variable])
+            forward_states (list[SequenceBatchElement])
+            backward_states (list[SequenceBatchElement])
         
         '''
         reverse = lambda seq: list(reversed(seq))
