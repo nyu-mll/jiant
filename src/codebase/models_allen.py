@@ -34,7 +34,8 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.pair_encoder = pair_encoder
 
-    def forward(self, pred_layer=None, pair_input=1, scorer=None,
+    #def forward(self, pred_layer=None, pair_input=1, scorer=None,
+    def forward(self, task=None,
                 input1=None, input2=None, label=None):
         '''
         Predict through model and task-specific prediction layer
@@ -47,6 +48,9 @@ class MultiTaskModel(nn.Module):
         Returns:
             - logits (TODO)
         '''
+        pair_input = task.pair_input
+        pred_layer = task.pred_layer
+        scorer = task.scorer
         if pair_input:
             pair_embs = self.pair_encoder(input1, input2)
             pair_emb, _ = pair_embs.max(1)
@@ -57,8 +61,12 @@ class MultiTaskModel(nn.Module):
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
         if label is not None:
-            loss = F.cross_entropy(logits, label.squeeze(-1))
-            scorer(logits, label.squeeze(-1)) # assumes has this interface
+            if task.loss is not None:
+                loss = task.loss(logits, label.squeeze(-1))
+                scorer(loss.data.cpu()[0])
+            else:
+                loss = F.cross_entropy(logits, label.squeeze(-1))
+                scorer(logits, label.squeeze(-1))
             out['loss'] = loss
         return out
 

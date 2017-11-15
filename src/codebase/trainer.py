@@ -181,10 +181,10 @@ class MultiTaskTrainer:
                     batch_num += 1
                     self._optimizer.zero_grad()
                     # TODO(Alex): pass pair_input
-                    output_dict = self._forward(batch, 
-                            pred_layer=pred_layer,
-                            pair_input=pair_input,
-                            scorer=task.scorer,
+                    output_dict = self._forward(batch, task=task,
+                            #pred_layer=pred_layer,
+                            #pair_input=pair_input,
+                            #scorer=task.scorer,
                             for_training=True)
                     try:
                         loss = output_dict["loss"]
@@ -239,10 +239,10 @@ class MultiTaskTrainer:
                     batch_num += 1
                     pred_layer = task.pred_layer
                     pair_input = task.pair_input
-                    val_output_dict = self._forward(batch, 
-                            pred_layer=pred_layer,
-                            pair_input=pair_input,
-                            scorer=task.scorer,
+                    val_output_dict = self._forward(batch, task=task,
+                            #pred_layer=pred_layer,
+                            #pair_input=pair_input,
+                            #scorer=task.scorer,
                             for_training=False)
                     loss = val_output_dict["loss"]
                     val_losses[task_idx] += loss.data.cpu().numpy()
@@ -300,9 +300,11 @@ class MultiTaskTrainer:
                     self._learning_rate_scheduler.step(epoch)
 
     def _forward(self, batch: dict, for_training: bool,
-                 pred_layer, pair_input=1, scorer=None) -> dict:
+                 #pred_layer, pair_input=1, scorer=None) -> dict:
+                 task=None) -> dict:
         tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
-        return self._model.forward(pred_layer, pair_input, scorer, **tensor_batch)
+        #return self._model.forward(pred_layer, pair_input, scorer, **tensor_batch)
+        return self._model.forward(task, **tensor_batch)
 
     def _description_from_metrics(self, metrics: Dict[str, float]) -> str:
         # pylint: disable=no-self-use

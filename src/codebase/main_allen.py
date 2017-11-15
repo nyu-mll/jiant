@@ -16,7 +16,7 @@ from torch.autograd import Variable
 #from allennlp.commands.evaluate import evaluate
 from allennlp.common.params import Params
 from allennlp.data import Instance, Dataset, Vocabulary
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data.fields import TextField, LabelField, NumericField
 from allennlp.data.iterators import DataIterator, BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
@@ -30,7 +30,8 @@ from allennlp.training import Trainer
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
-from codebase.tasks import Task, MSRPTask, QuoraTask, SNLITask, SSTTask
+from codebase.tasks import Task, MSRPTask, MultiNLITask, QuoraTask, SNLITask, \
+        SSTTask, STSTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
                                     MultiTaskModel
 from codebase.trainer import MultiTaskTrainer
@@ -43,22 +44,26 @@ from codebase.utils.utils import GPUVariable
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
 
-NAME2TASK = {'msrp': MSRPTask,
+NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'snli': SNLITask,
-             'sst': SSTTask,
+             'sst': SSTTask, 'sts': STSTask,
              'small':QuoraTask, 'small2': QuoraTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
+             'mnli': PATH_PREFIX + 'MNLI/',
              'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
+             'sts': PATH_PREFIX + 'STS/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
 # lazy way to map tasks to vocab pickles
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
+             'mnli': PATH_PREFIX + 'MNLI/mnli_task.pkl',
              'quora': PATH_PREFIX + 'Quora/quora_task.pkl',
              'snli': PATH_PREFIX + 'SNLI/snli_task.pkl',
              'sst': PATH_PREFIX + 'SST/sst_task.pkl',
+             'sts': PATH_PREFIX + 'STS/sts_task.pkl',
              'small': PATH_PREFIX + 'Quora/small_task.pkl',
              'small2': PATH_PREFIX + 'Quora/small2_task.pkl'}
 
@@ -82,9 +87,12 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
             log.info('\t\tLoaded existing task %s', tasks[-1].name)
         else:
             task = (NAME2TASK[name](NAME2DATA[name], input_dim,
-                                    max_seq_len, cuda, name))
+                                    max_seq_len, name))
             tasks.append(task)
             pkl.dump(task, open(NAME2SAVE[name], 'wb'))
+    if cuda:
+        for task in tasks:
+            task.pred_layer = task.pred_layer.cuda()
     log.info("\tFinished loading tasks: %s.", ' '.join(
         [task.name for task in tasks]))
 
@@ -92,12 +100,12 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
                      "chars": TokenCharactersIndexer()}
 
     for task in tasks:
-        task.train_data = process_split(task.train_data_text,
-                                        task.pair_input, token_indexer)
-        task.val_data = process_split(task.val_data_text, task.pair_input,
-                                      token_indexer)
-        task.test_data = process_split(task.test_data_text, task.pair_input,
-                                       token_indexer)
+        task.train_data = process_split(task.train_data_text, token_indexer,
+                                        task.pair_input, task.categorical)
+        task.val_data = process_split(task.val_data_text, token_indexer, 
+                                      task.pair_input, task.categorical)
+        task.test_data = process_split(task.test_data_text, token_indexer,
+                                       task.pair_input, task.categorical)
 
     # assuming one task for now
     # build vocabulary
@@ -121,7 +129,7 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
 
     return tasks, vocab
 
-def process_split(split, pair_input, token_indexer):
+def process_split(split, token_indexer, pair_input, categorical):
     '''
     Convert a dataset of sentences into padded sequences of indices.
 
@@ -133,14 +141,16 @@ def process_split(split, pair_input, token_indexer):
     Returns:
     '''
     if pair_input:
-        #inputs1 = [TextField(sent, token_indexers={"words": SingleIdTokenIndexer(), "chars": TokenCharactersIndexer()}) for sent in split[0]]
-        #inputs2 = [TextField(sent, token_indexers={"words": SingleIdTokenIndexer(), "chars": TokenCharactersIndexer()}) for sent in split[1]]
         inputs1 = [TextField(sent, token_indexers=token_indexer) for \
                    sent in split[0]]
         inputs2 = [TextField(sent, token_indexers=token_indexer) for \
                    sent in split[1]]
-        labels = [LabelField(l, label_namespace="labels",
-                             skip_indexing=True) for l in split[-1]]
+        if categorical:
+            labels = [LabelField(l, label_namespace="labels",
+                                 skip_indexing=True) for l in split[-1]]
+        else:
+            labels = [NumericField(l) for l in split[-1]]
+
         instances = [Instance({"input1": input1, "input2": input2, \
                      "label": label}) for (input1, input2, label) in
                      zip(inputs1, inputs2, labels)]
@@ -148,8 +158,12 @@ def process_split(split, pair_input, token_indexer):
     else:
         inputs1 = [TextField(sent, token_indexers=token_indexer) for \
                    sent in split[0]]
-        labels = [LabelField(l, label_namespace="labels",
-                             skip_indexing=True) for l in split[-1]]
+        if categorical:
+            labels = [LabelField(l, label_namespace="labels",
+                                 skip_indexing=True) for l in split[-1]]
+        else:
+            labels = [NumericField(l) for l in split[-1]]
+
         instances = [Instance({"input1": input1, \
                      "label": label}) for (input1, label) in
                      zip(inputs1, labels)]

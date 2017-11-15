@@ -56,8 +56,9 @@ def evaluate(model: Model,
         for batch in generator_tqdm:
             tensor_batch = arrays_to_variables(
                     batch, cuda_device, for_training=False)
-            model.forward(task.pred_layer, task.pair_input,
-                          scorer=task.scorer, **tensor_batch)
+            #model.forward(task.pred_layer, task.pair_input,
+            #              scorer=task.scorer, **tensor_batch)
+            model.forward(task, **tensor_batch)
             task_metrics = task.get_metrics()
             description = ', '.join(["%s_%s: %.2f" % 
                 (task.name, name, value) for name, value in 

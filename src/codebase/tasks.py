@@ -2,6 +2,7 @@ import os
 import pdb
 import math
 import nltk
+import random
 import _pickle as pkl
 from collections import Counter
 from random import shuffle
@@ -11,7 +12,7 @@ import torch
 import torch.nn as nn
 
 # TODO(Alex): maybe metric tracking should belong to something else
-from allennlp.training.metrics import CategoricalAccuracy
+from allennlp.training.metrics import CategoricalAccuracy, Average
 
 from codebase.utils.seq_batch import SequenceBatch
 
@@ -37,7 +38,7 @@ class Task():
     '''
     __metaclass__ = ABCMeta
 
-    def __init__(self, input_dim, n_classes, cuda):
+    def __init__(self, input_dim, n_classes):
         self.name = None
         self.n_classes = n_classes
         self.input_dim = input_dim
@@ -48,9 +49,8 @@ class Task():
         self.test_data = None # TODO(Alex) what if tasks don't have test
         # TODO(Alex): regularization + MLP option
         self.pred_layer = nn.Linear(input_dim, n_classes)
-        if cuda >= 0:
-            self.pred_layer = self.pred_layer.cuda()
         self.pair_input = None
+        self.categorical = 1 # most tasks are
         self.scorer = CategoricalAccuracy()
 
     @abstractmethod
@@ -169,7 +169,7 @@ class QuoraTask(Task):
     Task class for Quora question pairs.
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="quora"):
+    def __init__(self, path, input_dim, max_seq_len, name="quora"):
         '''
         Args:
             - data (TODO)
@@ -178,7 +178,7 @@ class QuoraTask(Task):
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
         # for pair inputs, BiDAF output will be 10x input dim
-        super(QuoraTask, self).__init__(20*input_dim, 2, cuda)
+        super(QuoraTask, self).__init__(20*input_dim, 2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -233,17 +233,13 @@ class QuoraTask(Task):
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
 
-    def get_metrics(self, reset=False):
-        # get accuracy
-        return {'accuracy': self.scorer.get_metric(reset)}
-
 
 class SNLITask(Task):
     '''
     Task class for Stanford Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="snli"):
+    def __init__(self, path, input_dim, max_seq_len, name="snli"):
         '''
         Args:
             - data (TODO)
@@ -251,7 +247,7 @@ class SNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SNLITask, self).__init__(20*input_dim, 3, cuda)
+        super(SNLITask, self).__init__(20*input_dim, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -288,7 +284,7 @@ class MultiNLITask(Task):
     Task class for Multi-Genre Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="mnli"):
+    def __init__(self, path, input_dim, max_seq_len, name="mnli"):
         '''
         Args:
             - data (TODO)
@@ -296,7 +292,7 @@ class MultiNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MutliNLITask, self).__init__(20*input_dim, 3, cuda)
+        super(MultiNLITask, self).__init__(20*input_dim, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -310,23 +306,45 @@ class MultiNLITask(Task):
         Args:
             - path (str): path to data
         '''
-        for split, attr_name in zip(['train', 'dev', 'test'],
-                                    ['train_data_text', 'val_data_text', 'test_data_text']):
+
+        def load_file(path):
             sents1, sents2, targs = [], [], []
-            s1_fh = open(path + 's1.' + split)
-            s2_fh = open(path + 's2.' + split)
-            targ_fh = open(path + 'labels.' + split)
-            for s1, s2, targ in zip(s1_fh, s2_fh, targ_fh):
-                sents1.append(nltk.word_tokenize(s1.strip()[:max_seq_len]))
-                sents2.append(nltk.word_tokenize(s2.strip()[:max_seq_len]))
-                targ = targ.strip()
-                if targ == 'neutral':
-                    targs.append(0)
-                if targ == 'entailment':
-                    targs.append(1)
-                if targ == 'contradiction':
-                    targs.append(2)
-            setattr(self, attr_name, [sents1, sents2, targs])
+            with open(path) as fh:
+                fh.readline()
+                for raw_datum in fh:
+                    raw_datum = raw_datum.split('\t')
+                    sent1 = nltk.word_tokenize(raw_datum[5])
+                    sent2 = nltk.word_tokenize(raw_datum[6])
+                    sents1.append(sent1[:max_seq_len])
+                    sents2.append(sent2[:max_seq_len])
+                    targ = raw_datum[0].strip()
+                    if targ == 'neutral':
+                        targs.append(0)
+                    if targ == 'entailment':
+                        targs.append(1)
+                    if targ == 'contradiction':
+                        targs.append(2)
+            return sents1, sents2, targs
+
+        sort_data = lambda s1, s2, t: \
+            sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+        tr_data = sort_data(*load_file(
+            os.path.join(path, 'multinli_1.0_train.txt')))
+
+        # TODO(Alex): lazily creating a test set
+        sents1, sents2, targs = load_file(
+                os.path.join(path, 'multinli_1.0_dev_matched.txt'))
+        n_exs = len(sents1)
+        split_pt = int(.5 * n_exs)
+        val_data = sort_data(sents1[split_pt:], sents2[split_pt:],
+                             targs[split_pt:])
+        te_data = sort_data(sents1[:split_pt], sents2[:split_pt],
+                            targs[:split_pt])
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
 
 
 
@@ -335,7 +353,7 @@ class MSRPTask(Task):
     Task class for Microsoft Research Paraphase Task.
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="msrp"):
+    def __init__(self, path, input_dim, max_seq_len, name="msrp"):
         '''
         Args:
             - data (TODO)
@@ -343,7 +361,7 @@ class MSRPTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MSRPTask, self).__init__(20*input_dim, 2, cuda)
+        super(MSRPTask, self).__init__(20*input_dim, 2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -406,7 +424,7 @@ class STSTask(Task):
     '''
     Task class for Sentence Textual Similarity.
     '''
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="sts"):
+    def __init__(self, path, input_dim, max_seq_len, name="sts"):
         '''
         Args:
             - data (TODO)
@@ -414,12 +432,15 @@ class STSTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(STSTask, self).__init__(20*input_dim, 5, cuda)
+        super(STSTask, self).__init__(20*input_dim, 1)
         self.name = name
         self.pair_input = 1
+        self.scorer = Average()
+        self.loss = nn.MSELoss()
         self.load_data(path, max_seq_len)
+        self.categorical = 0
 
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Process the dataset located at path.
 
@@ -428,14 +449,71 @@ class STSTask(Task):
         Args:
             - path (str): path to data
         '''
-        raise NotImplementedError
+
+        def load_year(years, path):
+            sents1, sents2, targs = [], [], []
+            for year in years:
+                topics = sts2topics[year]
+                for topic in topics:
+                    topic_sents1, topic_sents2, topic_targs = \
+                            load_file(path + 'STS%d-en-test/' % year, topic)
+                    sents1 += topic_sents1
+                    sents2 += topic_sents2
+                    targs += topic_targs
+            assert len(sents1) == len(sents2) == len(targs)
+            return sents1, sents2, targs
+
+        def load_file(path, topic):
+            sents1, sents2, targs = [], [], []
+            with open(path + 'STS.input.%s.txt' % topic) as fh, \
+                open(path + 'STS.gs.%s.txt' % topic) as gh:
+                for raw_sents, raw_targ in zip(fh, gh):
+                    raw_sents = raw_sents.split('\t')
+                    sent1, sent2 = map(nltk.word_tokenize, raw_sents)
+                    if not sent1 or not sent2:
+                        continue
+                    sents1.append(sent1[:max_seq_len])
+                    sents2.append(sent2[:max_seq_len])
+                    targs.append(float(raw_targ))
+            return sents1, sents2, targs
+
+        sort_data = lambda s1, s2, t: \
+            sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+
+        sts2topics = {
+            12: ['MSRpar', 'MSRvid', 'SMTeuroparl', 'surprise.OnWN', \
+                    'surprise.SMTnews'],
+            13: ['FNWN', 'headlines', 'OnWN'],
+            14: ['deft-forum', 'deft-news', 'headlines', 'images', \
+                    'OnWN', 'tweet-news']
+            }
+
+        sents1, sents2, targs = load_year([12, 13], path)
+        data = [(s1, s2, t) for s1, s2, t in zip(sents1, sents2, targs)]
+        random.shuffle(data)
+        sents1, sents2, targs = unpack(data)
+        split_pt = int(.9 * len(sents1))
+        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:],
+                            targs[split_pt:])
+        val_data = sort_data(sents1[:split_pt], sents2[:split_pt],
+                             targs[:split_pt])
+        te_data = sort_data(*load_year([14], path))
+
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
+
+    def get_metrics(self, reset=False):
+        return {}#'MSE': self.scorer.get_metric(reset)}
+
 
 
 class SSTTask(Task):
     '''
     Task class for Stanford Sentiment Treebank.
     '''
-    def __init__(self, path, input_dim, max_seq_len, cuda, name="sst"):
+    def __init__(self, path, input_dim, max_seq_len, name="sst"):
         '''
         Args:
             - data (TODO)
@@ -443,7 +521,7 @@ class SSTTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SSTTask, self).__init__(4*input_dim, 2, cuda)
+        super(SSTTask, self).__init__(4*input_dim, 2)
         self.name = name
         self.pair_input = 0
         self.load_data(path, max_seq_len)
