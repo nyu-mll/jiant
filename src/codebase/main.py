@@ -20,12 +20,18 @@ from codebase.models import MultiTaskModel
 from codebase.tasks import Task, Dataset, QuoraTask, SNLITask
 from codebase.utils.seq_batch import SequenceBatch
 from codebase.utils.token_embedder import TokenEmbedder
+from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-NAME2TASK = {'quora': QuoraTask, 'snli': SNLITask}
-NAME2PATH = {'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
-             'snli': PATH_PREFIX + 'SNLI/'}
+NAME2TASK = {'quora': QuoraTask, 'snli': SNLITask, 'small':QuoraTask}
+NAME2DATA = {'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
+             'snli': PATH_PREFIX + 'SNLI/',
+             'small': PATH_PREFIX + 'Quora/quora_small.tsv'}
+
+# lazy way to map tasks to vocab pickles
+NAME2VOCAB = {QuoraTask: PATH_PREFIX + 'Quora/quora_vocab.pkl',
+              SNLITask: PATH_PREFIX + 'SNLI/snli_vocab.pkl'}
 SPECIALS = ['<pad>', '<unk>', '<s>', '</s>']
 
 def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
@@ -43,8 +49,8 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
     tasks = []
     for name in task_names:
         assert name in NAME2TASK, 'Task not found!'
-        tasks.append(NAME2TASK[name](NAME2PATH[name],
-                                     input_dim, batch_size, cuda))
+        tasks.append(NAME2TASK[name](NAME2DATA[name], input_dim, max_seq_len,
+                                     cuda))
 
     tok2idx = build_vocabulary(tasks, max_vocab_size)
 
@@ -52,15 +58,15 @@ def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
     for task in tasks:
         task.train_data = process_split(task.train_data_text,
                                         task.pair_input, tok2idx,
-                                        max_seq_len, batch_size, cuda)
+                                        batch_size, cuda)
         task.val_data = process_split(task.val_data_text, task.pair_input,
-                                      tok2idx, max_seq_len, batch_size, cuda)
+                                      tok2idx, batch_size, cuda)
         task.test_data = process_split(task.test_data_text, task.pair_input,
-                                       tok2idx, max_seq_len, batch_size, cuda)
+                                       tok2idx, batch_size, cuda)
 
     return tasks, tok2idx
 
-def process_split(split, pair_input, tok2idx, max_seq_len, batch_size, cuda):
+def process_split(split, pair_input, tok2idx, batch_size, cuda):
     '''
     Convert a dataset of sentences into padded sequences of indices.
 
@@ -72,24 +78,14 @@ def process_split(split, pair_input, tok2idx, max_seq_len, batch_size, cuda):
 
     Returns:
     '''
-    inputs1 = Variable(torch.LongTensor([process_sentence(
-        sent, tok2idx, max_seq_len) for sent in split[0]]))
-    targs = Variable(torch.LongTensor(split[-1]))
-    if cuda:
-        inputs1 = inputs1.cuda()
-        targs = targs.cuda()
+    #inputs1 = Variable(torch.LongTensor([process_sentence(
+    #    sent, tok2idx, max_seq_len) for sent in split[0]]))
+    targs = GPUVariable(torch.LongTensor(split[-1]))
     if pair_input:
-        inputs2 = Variable(torch.LongTensor([process_sentence(
-            sent, tok2idx, max_seq_len) for sent in split[1]]))
-        if cuda:
-            inputs2 = inputs2.cuda()
-        #processed_split = Dataset([inputs1, inputs2], targs, batch_size,
-        #                          pair_input)
         processed_split = Dataset([split[0], split[1]], targs, batch_size,
                                   tok2idx, pair_input)
 
     else:
-        #processed_split = Dataset([inputs1], targs, batch_size, pair_input)
         processed_split = Dataset([split[0]], targs, batch_size, tok2idx,
                                   pair_input)
     return processed_split
@@ -128,6 +124,7 @@ def build_vocabulary(tasks, max_vocab_size):
     '''
 
     # count frequencies
+    '''
     tok2freq = Counter()
     for task in tasks:
         for sent in task.train_data_text[0]:
@@ -140,6 +137,11 @@ def build_vocabulary(tasks, max_vocab_size):
                 toks = process_sentence(sent)
                 for tok in toks:
                     tok2freq[tok] += 1
+    '''
+    tok2freq = Counter()
+    counters = [task.count_words(NAME2VOCAB[task.__class__]) for task in tasks]
+    for counter in counters:
+        tok2freq.update(counter)
 
     # special characters
     tok2idx = {}
@@ -249,7 +251,7 @@ def main(arguments):
     log.info("Building model...")
     start_time = time.time()
     embeddings = load_embeddings(args.word_embs_file, tok2idx,
-                                            args.word_dim)
+                                 args.word_dim)
     token_embedder = TokenEmbedder(embeddings, tok2idx)
     #token_embedder = nn.Embedding(args.max_vocab_size, args.word_dim,
     #                              padding_idx=0)

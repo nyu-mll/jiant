@@ -1,10 +1,17 @@
+import os
 import pdb
 import math
+import nltk
+import _pickle as pkl
+from collections import Counter
 from random import shuffle
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 import torch
 import torch.nn as nn
+
+# TODO(Alex): maybe metric tracking should belong to something else
+from allennlp.training.metrics import CategoricalAccuracy
 
 from codebase.utils.seq_batch import SequenceBatch
 
@@ -30,19 +37,57 @@ class Task():
     '''
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, input_dim, n_classes, cuda):
+        self.name = None
+        self.n_classes = n_classes
+        self.input_dim = input_dim
+        self.train_data_text, self.val_data_text, self.test_data_text = \
+            None, None, None
         self.train_data = None
         self.val_data = None
         self.test_data = None # TODO(Alex) what if tasks don't have test
-        self.pred_layer = None # TODO(Alex): regularization + MLP option
+        # TODO(Alex): regularization + MLP option
+        self.pred_layer = nn.Linear(input_dim, n_classes)
+        if cuda >= 0:
+            self.pred_layer = self.pred_layer.cuda()
         self.pair_input = None
+        self.scorer = CategoricalAccuracy()
 
     @abstractmethod
-    def load_data(self, path): #TODO(Alex) what if tasks are across files
+    def load_data(self, path, max_seq_len):
         '''
         Load data from path and create splits.
         '''
         raise NotImplementedError
+
+    def count_words(self, path=None):
+        '''
+        Count the words in training split of data and return a Counter.
+        If path is not None and the path exists, try to load from path.
+        If path is not None and path doesn't exist, save to path.
+        '''
+        if path is not None and os.path.isfile(path):
+            try:
+                tok2freq = pkl.load(open(path, 'rb'))
+                return tok2freq
+            except Exception as e: # TODO(Alex) catch the specific error
+                print("Unable to load counts from {0}".format(path))
+        tok2freq = Counter()
+        if self.train_data_text is None:
+            raise ValueError('Train data split is not processed yet!')
+        for sent in self.train_data_text[0]:
+            for tok in sent:
+                tok2freq[tok] += 1
+        if self.pair_input:
+            for sent in self.train_data_text[1]:
+                for tok in sent:
+                    tok2freq[tok] += 1
+        if path is not None:
+            pkl.dump(tok2freq, open(path, 'wb'))
+        return tok2freq
+
+    def get_metrics(self, reset=False):
+        return {'accuracy': self.scorer.get_metric(reset)}
 
     def _evaluate(self, model, data):
         '''
@@ -59,9 +104,8 @@ class Task():
         for ins, targs in data:
             outs = model(ins, self.pred_layer, self.pair_input)
             _, preds = outs.max(1)
-            pdb.set_trace()
             score += torch.sum(torch.eq(preds.long(), targs)).data[0]
-        return score / len(data)
+        return 100 * score / len(data)
 
     def validate(self, model):
         '''
@@ -118,30 +162,28 @@ class Dataset():
         else:
             raise StopIteration
 
+
+
 class QuoraTask(Task):
     '''
     Task class for Quora question pairs.
     '''
 
-    def __init__(self, path, input_dim, batch_size, cuda):
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="quora"):
         '''
         Args:
             - data (TODO)
             - input_dim (int)
-            - n_classes (int)
+            - max_seq_len (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(QuoraTask, self).__init__()
+        # for pair inputs, BiDAF output will be 10x input dim
+        super(QuoraTask, self).__init__(20*input_dim, 2, cuda)
+        self.name = name
         self.pair_input = 1
-        self.load_data(path)
-        self.input_dim = input_dim
-        self.n_classes = 2
-        self.pred_layer = nn.Linear(input_dim, self.n_classes)
-        if cuda:
-            self.pred_layer = self.pred_layer.cuda()
-        self.batch_size = batch_size
+        self.load_data(path, max_seq_len)
 
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Process the dataset located at path.
 
@@ -163,23 +205,37 @@ class QuoraTask(Task):
                 _, _, _, sent1, sent2, targ = \
                         raw_datum.split('\t')
             except Exception as e:
-                print("Whoops")
                 continue
+            sent1 = nltk.word_tokenize(sent1)[:max_seq_len]
+            sent2 = nltk.word_tokenize(sent2)[:max_seq_len]
+            if len(sent1) == 0 or len(sent2) == 0:
+                continue # will break preprocessing
             targ = int(targ)
             sents1.append(sent1), sents2.append(sent2), targs.append(targ)
 
         n_exs = len(sents1)
         split_pt1 = int(.8 * n_exs)
         split_pt2 = n_exs - int(.9 * n_exs) + split_pt1
-        self.train_data_text = [sents1[:split_pt1], sents2[:split_pt1],
-                                targs[:split_pt1]]
-        self.val_data_text = [sents1[split_pt1:split_pt2],
-                              sents2[split_pt1:split_pt2],
-                              targs[split_pt1:split_pt2]]
-        self.test_data_text = [sents1[split_pt2:], sents2[split_pt2:],
-                               targs[split_pt2:]]
-        # TODO(Alex): sort sentences by split by length
 
+        sort_data = lambda s1, s2, t: sorted(zip(s1, s2, t),
+                                             key=lambda x: (len(x[0]),
+                                                            len(x[1])))
+        tr_data = sort_data(sents1[:split_pt1], sents2[:split_pt1],
+                            targs[:split_pt1])
+        val_data = sort_data(sents1[split_pt1:split_pt2],
+                             sents2[split_pt1:split_pt2],
+                             targs[split_pt1:split_pt2])
+        te_data = sort_data(sents1[split_pt2:], sents2[split_pt2:],
+                            targs[split_pt2:])
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
+
+    def get_metrics(self, reset=False):
+        # get accuracy
+        return {'accuracy': self.scorer.get_metric(reset)}
 
 
 class SNLITask(Task):
@@ -187,7 +243,7 @@ class SNLITask(Task):
     Task class for Stanford Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, batch_size, cuda):
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="snli"):
         '''
         Args:
             - data (TODO)
@@ -195,17 +251,12 @@ class SNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SNLITask, self).__init__()
+        super(SNLITask, self).__init__(20*input_dim, 3, cuda)
+        self.name = name
         self.pair_input = 1
-        self.load_data(path)
-        self.input_dim = input_dim
-        self.n_classes = 3
-        self.pred_layer = nn.Linear(input_dim, self.n_classes)
-        if cuda:
-            self.pred_layer = self.pred_layer.cuda()
-        self.batch_size = batch_size
+        self.load_data(path, max_seq_len)
 
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Process the dataset located at path.
 
@@ -221,8 +272,8 @@ class SNLITask(Task):
             s2_fh = open(path + 's2.' + split)
             targ_fh = open(path + 'labels.' + split)
             for s1, s2, targ in zip(s1_fh, s2_fh, targ_fh):
-                sents1.append(s1.strip())
-                sents2.append(s2.strip())
+                sents1.append(nltk.word_tokenize(s1.strip()[:max_seq_len]))
+                sents2.append(nltk.word_tokenize(s2.strip()[:max_seq_len]))
                 targ = targ.strip()
                 if targ == 'neutral':
                     targs.append(0)
@@ -237,7 +288,7 @@ class MultiNLITask(Task):
     Task class for Multi-Genre Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, batch_size, cuda):
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="mnli"):
         '''
         Args:
             - data (TODO)
@@ -245,17 +296,12 @@ class MultiNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SNLITask, self).__init__()
+        super(MutliNLITask, self).__init__(20*input_dim, 3, cuda)
+        self.name = name
         self.pair_input = 1
-        self.load_data(path)
-        self.input_dim = input_dim
-        self.n_classes = 3
-        self.pred_layer = nn.Linear(input_dim, self.n_classes)
-        if cuda:
-            self.pred_layer = self.pred_layer.cuda()
-        self.batch_size = batch_size
+        self.load_data(path, max_seq_len)
 
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Process the dataset located at path.
 
@@ -271,8 +317,8 @@ class MultiNLITask(Task):
             s2_fh = open(path + 's2.' + split)
             targ_fh = open(path + 'labels.' + split)
             for s1, s2, targ in zip(s1_fh, s2_fh, targ_fh):
-                sents1.append(s1.strip())
-                sents2.append(s2.strip())
+                sents1.append(nltk.word_tokenize(s1.strip()[:max_seq_len]))
+                sents2.append(nltk.word_tokenize(s2.strip()[:max_seq_len]))
                 targ = targ.strip()
                 if targ == 'neutral':
                     targs.append(0)
@@ -283,12 +329,13 @@ class MultiNLITask(Task):
             setattr(self, attr_name, [sents1, sents2, targs])
 
 
+
 class MSRPTask(Task):
     '''
-    Task class for Quora question pairs.
+    Task class for Microsoft Research Paraphase Task.
     '''
 
-    def __init__(self, path, input_dim, batch_size, cuda):
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="msrp"):
         '''
         Args:
             - data (TODO)
@@ -296,17 +343,12 @@ class MSRPTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MSRPTask, self).__init__()
+        super(MSRPTask, self).__init__(20*input_dim, 2, cuda)
+        self.name = name
         self.pair_input = 1
-        self.load_data(path)
-        self.input_dim = input_dim
-        self.n_classes = 2
-        self.pred_layer = nn.Linear(input_dim, self.n_classes)
-        if cuda:
-            self.pred_layer = self.pred_layer.cuda()
-        self.batch_size = batch_size
+        self.load_data(path, max_seq_len)
 
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Process the dataset located at path.
 
@@ -315,15 +357,56 @@ class MSRPTask(Task):
         Args:
             - path (str): path to data
         '''
-        raise NotImplementedError
+
+        def load_file(path):
+            with open(path) as fh:
+                raw_data = fh.readlines()
+
+            sents1, sents2, targs = [], [], []
+            for raw_datum in raw_data[1:]:
+                try:
+                    targ, _, _, sent1, sent2 = raw_datum.split('\t')
+                except Exception as e:
+                    print("Fucked up - broken example")
+                    continue
+                sent1 = nltk.word_tokenize(sent1)[:max_seq_len]
+                sent2 = nltk.word_tokenize(sent2)[:max_seq_len]
+                if len(sent1) == 0 or len(sent2) == 0:
+                    continue # will break preprocessing
+                targ = int(targ)
+                sents1.append(sent1)
+                sents2.append(sent2)
+                targs.append(targ)
+            return sents1, sents2, targs
+
+        sort_data = lambda s1, s2, t: sorted(zip(s1, s2, t),
+                                             key=lambda x: (len(x[0]),
+                                                            len(x[1])))
+
+        sents1, sents2, targs = load_file(
+                os.path.join(path, 'msr_paraphrase_train.txt'))
+        n_exs = len(sents1)
+        # TODO(Alex): lazily creating a validation set; do x-validation
+        split_pt = int(.9 * n_exs)
+
+        tr_data = sort_data(sents1[:split_pt], sents2[:split_pt],
+                            targs[:split_pt])
+        val_data = sort_data(sents1[split_pt:], sents2[split_pt:],
+                             targs[split_pt:])
+        te_data = sort_data(*load_file(
+            os.path.join(path, 'msr_paraphrase_test.txt')))
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
 
 
 class STSTask(Task):
     '''
-    Task class for Quora question pairs.
+    Task class for Sentence Textual Similarity.
     '''
-
-    def __init__(self, path, input_dim, batch_size, cuda):
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="sts"):
         '''
         Args:
             - data (TODO)
@@ -331,15 +414,10 @@ class STSTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(STSTask, self).__init__()
+        super(STSTask, self).__init__(20*input_dim, 5, cuda)
+        self.name = name
         self.pair_input = 1
-        self.load_data(path)
-        self.input_dim = input_dim
-        self.n_classes = 2
-        self.pred_layer = nn.Linear(input_dim, self.n_classes)
-        if cuda:
-            self.pred_layer = self.pred_layer.cuda()
-        self.batch_size = batch_size
+        self.load_data(path, max_seq_len)
 
     def load_data(self, path):
         '''
@@ -351,3 +429,56 @@ class STSTask(Task):
             - path (str): path to data
         '''
         raise NotImplementedError
+
+
+class SSTTask(Task):
+    '''
+    Task class for Stanford Sentiment Treebank.
+    '''
+    def __init__(self, path, input_dim, max_seq_len, cuda, name="sst"):
+        '''
+        Args:
+            - data (TODO)
+            - input_dim (int)
+            - n_classes (int)
+            - classifier (str): type of classifier to use, log_reg or mlp
+        '''
+        super(SSTTask, self).__init__(4*input_dim, 2, cuda)
+        self.name = name
+        self.pair_input = 0
+        self.load_data(path, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        '''
+        Process the dataset located at path.
+
+        TODO: preprocess and store data so don't have to wait?
+
+        Args:
+            - path (str): path to data
+        '''
+
+        def load_file(path):
+            sents, targs = [], []
+            #with open(path, 'r', encoding='utf-8') as fh:
+            with open(path) as fh:
+                for raw_datum in fh:
+                    datum = raw_datum.strip().split('\t')
+                    sents.append(datum[0].split()[:max_seq_len])
+                    targs.append(int(datum[1]))
+            return sents, targs
+
+        sort_data = lambda s1, t: \
+            sorted(zip(s1, t), key=lambda x: (len(x[0])))
+
+        tr_data = sort_data(*load_file(
+            os.path.join(path, 'sentiment-train')))
+        val_data = sort_data(*load_file(
+            os.path.join(path, 'sentiment-dev')))
+        te_data = sort_data(*load_file(
+            os.path.join(path, 'sentiment-test')))
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)

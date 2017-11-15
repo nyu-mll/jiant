@@ -86,9 +86,10 @@ class MultiTaskModel(nn.Module):
         optimizer = optim.SGD(self.parameters(), lr=lr,
                               weight_decay=weight_decay)
 
+        start_time = time.time()
         for epoch in range(n_epochs):
             log.info("Epoch {0}".format(epoch))
-            start_time = time.time()
+            epoch_time = time.time()
             total_loss = 0.0
             for task in self.tasks: # TODO want time per task
                 for ins, targs in task.train_data:
@@ -104,7 +105,8 @@ class MultiTaskModel(nn.Module):
 
             log.info("\tTraining loss: {0}".format(total_loss))
             val_scores = [str(s) for s in self.evaluate(self.tasks, 'val')]
-            log.info("\tValidation scores: {0}".format(', '.join(val_scores)))
+            log.info("\tValid scores: {0}".format(', '.join(val_scores)))
+            log.info("\t{0}".format(time.time() - epoch_time))
 
         log.info("Training done in {0}s".format(time.time() - start_time))
         self.eval()
