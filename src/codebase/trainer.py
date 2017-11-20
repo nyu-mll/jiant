@@ -168,6 +168,7 @@ class MultiTaskTrainer:
             for task_idx, task in enumerate(tasks):
                 logger.info("\tTraining %s task (%d/%d)",
                             task.name, task_idx, len(tasks))
+                #pdb.set_trace()
                 self._model.train()
                 n_tr_batches = ns_tr_batches[task_idx]
                 pred_layer, pair_input = task.pred_layer, task.pair_input
@@ -217,7 +218,13 @@ class MultiTaskTrainer:
                         train_logs[task_idx].add_scalar("LOSS/loss_train", task_metrics["%s_loss" % task.name], batch_num_total)
                     if self._no_tqdm and time.time() - last_log > self._log_interval:
                         logger.info("Batch %d/%d: %s", batch_num, n_tr_batches, description)
+                        #pdb.set_trace()
+                        for name, param in self._model.named_parameters():
+                            if param.grad is not None:
+                                logger.debug("GRAD MEAN %s: %.7f", name, param.grad.data.mean())
+                                logger.debug("GRAD STD %s: %.7f", name, param.grad.data.std())
                         last_log = time.time()
+
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_tr_metrics["%s_%s" % (task.name, name)] = value
@@ -264,39 +271,45 @@ class MultiTaskTrainer:
                 #logger.info(message_template, name, value, name, all_val_metrics[name])
                 logger.info("Statistic: %s", name)
                 logger.info("\ttraining: %3f", value)
-                logger.info("\tvalidation: %3f",all_val_metrics[name])
+                logger.info("\tvalidation: %3f", all_val_metrics[name])
                 if self._serialization_dir:
                     train_logs[task_idx].add_scalar(name, value, epoch)
-                    val_logs[task_idx].add_scalar(name, all_val_metrics[name], epoch)
+                    val_logs[task_idx].add_scalar(name, all_val_metrics[name],
+                                                  epoch)
 
-                this_epoch_val_metric = all_val_metrics[self._validation_metric]
-                if len(validation_metric_per_epoch) > self._patience:
-                    # Is the worst validation performance in past self._patience
-                    # epochs is better than current value?
-                    if self._validation_metric_decreases:
-                        should_stop = max(validation_metric_per_epoch[-self._patience:]) < this_epoch_val_metric
-                    else:
-                        should_stop = min(validation_metric_per_epoch[-self._patience:]) > this_epoch_val_metric
-                    if should_stop:
-                        logger.info("Ran out of patience.  Stopping training.")
-                        break
-                validation_metric_per_epoch.append(this_epoch_val_metric)
-
+            this_epoch_val_metric = all_val_metrics[self._validation_metric]
+            if len(validation_metric_per_epoch) > self._patience:
+                # Is the worst validation performance in past self._patience
+                # epochs is better than current value?
                 if self._validation_metric_decreases:
-                    is_best_so_far = this_epoch_val_metric == min(validation_metric_per_epoch)
+                    should_stop = max(validation_metric_per_epoch[-self._patience:]) < this_epoch_val_metric
                 else:
-                    is_best_so_far = this_epoch_val_metric == max(validation_metric_per_epoch)
-                if self._serialization_dir:
-                    self._save_checkpoint(epoch, is_best=is_best_so_far)
+                    should_stop = min(validation_metric_per_epoch[-self._patience:]) > this_epoch_val_metric
+                if should_stop:
+                    logger.info("Ran out of patience.  Stopping training.")
+                    return # can't break because of task loop
+            validation_metric_per_epoch.append(this_epoch_val_metric)
 
-                if self._learning_rate_scheduler:
-                    # Grim hack to determine whether the validation metric we are recording
-                    # needs to be passed to the scheduler. This is required because the
-                    # step() function of the different schedulers are (understandably)
-                    # different to ReduceLROnPlateau.
-                    if isinstance(self._learning_rate_scheduler,
-                                  torch.optim.lr_scheduler.ReduceLROnPlateau):
-                        self._learning_rate_scheduler.step(this_epoch_val_metric, epoch)
+            if self._validation_metric_decreases:
+                is_best_so_far = this_epoch_val_metric == \
+                        min(validation_metric_per_epoch)
+            else:
+                is_best_so_far = this_epoch_val_metric == \
+                        max(validation_metric_per_epoch)
+            if self._serialization_dir:
+                self._save_checkpoint(epoch, is_best=is_best_so_far)
+
+            if self._learning_rate_scheduler:
+                # Grim hack to determine whether the validation metric we
+                # are recording needs to be passed to the scheduler.
+                # This is required because the step() function of the
+                # different schedulers are (understandably) different to
+                # ReduceLROnPlateau.
+                if isinstance(self._learning_rate_scheduler,
+                              torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self._learning_rate_scheduler.step(this_epoch_val_metric,
+                                                       epoch)
+                else:
                     self._learning_rate_scheduler.step(epoch)
 
     def _forward(self, batch: dict, for_training: bool,

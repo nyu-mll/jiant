@@ -25,7 +25,7 @@ class MultiTaskModel(nn.Module):
     Playing around designing a class
     '''
 
-    def __init__(self, sent_encoder, pair_encoder):
+    def __init__(self, sent_encoder, pair_encoder, pair_enc_type):
         '''
 
         Args:
@@ -33,6 +33,8 @@ class MultiTaskModel(nn.Module):
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
         self.pair_encoder = pair_encoder
+        assert pair_enc_type in ['bidaf', 'simple']
+        self.pair_enc_type = pair_enc_type
 
     #def forward(self, pred_layer=None, pair_input=1, scorer=None,
     def forward(self, task=None,
@@ -52,16 +54,21 @@ class MultiTaskModel(nn.Module):
         pred_layer = task.pred_layer
         scorer = task.scorer
         if pair_input:
-            pair_embs = self.pair_encoder(input1, input2)
-            pair_emb, _ = pair_embs.max(1)
-            logits = pred_layer(pair_emb)
+            if self.pair_enc_type == 'bidaf':
+                pair_embs = self.pair_encoder(input1, input2)
+                pair_emb, _ = pair_embs.max(1)
+                logits = pred_layer(pair_emb)
+            elif self.pair_enc_type == 'simple':
+                pair_emb = self.pair_encoder(input1, input2)
+                logits = pred_layer(pair_emb)
         else:
             sent_embs = self.sent_encoder(input1)
             sent_emb, _ = sent_embs.max(1)
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
+        #pdb.set_trace()
         if label is not None:
-            if task.loss is not None:
+            if hasattr(task, 'loss') and task.loss is not None:
                 loss = task.loss(logits, label.squeeze(-1))
                 scorer(loss.data.cpu()[0])
             else:
@@ -70,9 +77,78 @@ class MultiTaskModel(nn.Module):
             out['loss'] = loss
         return out
 
-    def get_metrics(self, reset=False):
-        # get accuracy
-        return {'quora_acc': self._quora_accuracy.get_metric(reset)}
+class HeadlessPairEncoder(Model):
+    def __init__(self, vocab: Vocabulary,
+                 text_field_embedder: TextFieldEmbedder,
+                 num_highway_layers: int,
+                 phrase_layer: Seq2SeqEncoder,
+                 dropout: float = 0.2,
+                 mask_lstms: bool = True,
+                 initializer: InitializerApplicator = InitializerApplicator(),
+                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+        super(HeadlessPairEncoder, self).__init__(vocab)#, regularizer)
+
+        self._text_field_embedder = text_field_embedder
+        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(), num_highway_layers))
+        self._phrase_layer = phrase_layer
+
+        encoding_dim = phrase_layer.get_output_dim()
+        self.output_dim = encoding_dim
+
+        if text_field_embedder.get_output_dim() != \
+                phrase_layer.get_input_dim():
+            raise ConfigurationError("The output dimension of the "
+                                     "text_field_embedder "
+                                     "(embedding_dim + char_cnn) "
+                                     "must match the input "
+                                     "dimension of the phrase_encoder. "
+                                     "Found {} and {} "
+                                     "respectively.".format(text_field_embedder.get_output_dim(), phrase_layer.get_input_dim()))
+        if dropout > 0:
+            self._dropout = torch.nn.Dropout(p=dropout)
+        else:
+            self._dropout = lambda x: x
+        self._mask_lstms = mask_lstms
+
+        initializer(self)
+
+    def forward(self, question, passage):
+        # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        question : Dict[str, torch.LongTensor]
+            From a ``TextField``.
+        passage : Dict[str, torch.LongTensor]
+            From a ``TextField``.  The model assumes that this passage contains the answer to the
+            question, and predicts the beginning and ending positions of the answer within the
+            passage.
+
+        Returns
+        -------
+        pair_rep : torch.FloatTensor?
+            Tensor representing the final output of the BiDAF model
+            to be plugged into the next module
+
+        """
+        embedded_question = self._highway_layer(self._text_field_embedder(question))
+        embedded_passage = self._highway_layer(self._text_field_embedder(passage))
+        batch_size = embedded_question.size(0)
+        passage_length = embedded_passage.size(1)
+        question_mask = util.get_text_field_mask(question).float()
+        passage_mask = util.get_text_field_mask(passage).float()
+        question_lstm_mask = question_mask if self._mask_lstms else None
+        passage_lstm_mask = passage_mask if self._mask_lstms else None
+
+        encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
+        encoded_passage = self._dropout(self._phrase_layer(embedded_passage, passage_lstm_mask))
+
+        encoded_question, _ = encoded_question.max(1)
+        encoded_passage, _ = encoded_passage.max(1)
+
+        return torch.cat([encoded_question, encoded_passage,
+                          torch.abs(encoded_question - encoded_passage),
+                          encoded_question * encoded_passage], 1)
 
 
 class HeadlessSentEncoder(Model):
@@ -280,9 +356,7 @@ class HeadlessBiDAF(Model):
         # Shape: (batch_size, encoding_dim)
         question_passage_vector = util.weighted_sum(encoded_passage, question_passage_attention)
         # Shape: (batch_size, passage_length, encoding_dim)
-        tiled_question_passage_vector = question_passage_vector.unsqueeze(1).expand(batch_size,
-                                                                                    passage_length,
-                                                                                    encoding_dim)
+        tiled_question_passage_vector = question_passage_vector.unsqueeze(1).expand(batch_size, passage_length, encoding_dim)
 
         # Shape: (batch_size, passage_length, encoding_dim * 4)
         final_merged_passage = torch.cat([encoded_passage,

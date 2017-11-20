@@ -38,17 +38,19 @@ class Task():
     '''
     __metaclass__ = ABCMeta
 
-    def __init__(self, input_dim, n_classes):
+    #def __init__(self, input_dim, n_classes):
+    def __init__(self, n_classes):
         self.name = None
         self.n_classes = n_classes
-        self.input_dim = input_dim
+        #self.input_dim = input_dim
         self.train_data_text, self.val_data_text, self.test_data_text = \
             None, None, None
         self.train_data = None
         self.val_data = None
         self.test_data = None # TODO(Alex) what if tasks don't have test
         # TODO(Alex): regularization + MLP option
-        self.pred_layer = nn.Linear(input_dim, n_classes)
+        #self.pred_layer = nn.Linear(input_dim, n_classes)
+        self.pred_layer = None
         self.pair_input = None
         self.categorical = 1 # most tasks are
         self.scorer = CategoricalAccuracy()
@@ -178,7 +180,7 @@ class QuoraTask(Task):
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
         # for pair inputs, BiDAF output will be 10x input dim
-        super(QuoraTask, self).__init__(20*input_dim, 2)
+        super(QuoraTask, self).__init__(2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -247,7 +249,7 @@ class SNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SNLITask, self).__init__(20*input_dim, 3)
+        super(SNLITask, self).__init__(3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -292,7 +294,7 @@ class MultiNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MultiNLITask, self).__init__(20*input_dim, 3)
+        super(MultiNLITask, self).__init__(3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -361,7 +363,7 @@ class MSRPTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MSRPTask, self).__init__(20*input_dim, 2)
+        super(MSRPTask, self).__init__(2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -432,7 +434,7 @@ class STSTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(STSTask, self).__init__(20*input_dim, 1)
+        super(STSTask, self).__init__(1)
         self.name = name
         self.pair_input = 1
         self.scorer = Average()
@@ -521,7 +523,7 @@ class SSTTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SSTTask, self).__init__(4*input_dim, 2)
+        super(SSTTask, self).__init__(2)
         self.name = name
         self.pair_input = 0
         self.load_data(path, max_seq_len)
