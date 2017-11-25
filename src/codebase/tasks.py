@@ -1,4 +1,6 @@
 import os
+import xml.etree.ElementTree
+import glob
 import pdb
 import math
 import nltk
@@ -538,7 +540,7 @@ class SSTTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SSTTask, self).__init__(2)
+        super(SSTTask, self).__init__()
         self.name = name
         self.pair_input = 0
         self.load_data(path)
@@ -574,6 +576,115 @@ class SSTTask(Task):
             os.path.join(path, 'sentiment-test')))
 
         unpack = lambda x: [l for l in map(list, zip(*x))]
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
+
+
+
+class RTE8Task(Task):
+    '''
+    Task class for Recognizing Textual Entailment-8
+    '''
+
+    def __init__(self, path, way_type, name="rte"):
+        '''
+        Args:
+            path: path to RTE-8 data directory
+            way_type: using 2way or 3way data
+        '''
+        super(RTE8Task, self).__init__(3)
+        self.name = name
+        self.pair_input = 1
+        self.load_data(path, way_type)
+
+    def load_data(path, way_type):
+        '''
+        Process the datasets located at path.
+        
+        This merges data in the beetle and sciEntsBank subdirectories
+        Also merges different types of test data (unseen answers, questions, and domains)
+        '''
+        def load_files(paths, type):
+            data = {}
+            for k in range(len(paths)):
+                path = paths[k]
+                root = xml.etree.ElementTree.parse(path).getroot()
+                if type == 'beetle':
+                    for i in range(len(root[1])):
+                        pairID = root[1][i].attrib['id']
+                        data[pairID] = []
+                        sent1 = nltk.word_tokenize(root[1][i].text)
+                        data[pairID].append(sent1) # sent1, reference sentence
+                    for i in range(len(root[2])):
+                        try:
+                            matchID = root[2][i].attrib['answerMatch']
+                            if matchID in data:
+                                sent2 = nltk.word_tokenize(root[2][i].text)
+                                data[matchID].append(sent2) 
+                                data[matchID].append(root[2][i].attrib['accuracy'])
+                        except:
+                            '''
+                            pass when there isn't an ID indicating
+                            the reference answer the student answer corresponds to
+                            '''
+                            pass
+                else:
+                    for i in range(len(root[2])):
+                        pairID = root[2][i].attrib['id']
+                        data[pairID] = []
+                        sent1 = nltk.word_tokenize(root[1][0].text)
+                        sent2 = nltk.word_tokenize(root[2][i].text)
+                        data[pairID].append(sent1) # reference sentence
+                        data[pairID].append(sent2) # student sentence
+                        data[pairID].append(root[2][i].attrib['accuracy'])
+            return data
+
+        subdirs = ['beetle', 'sciEntsBank']
+        def get_paths(path, set, way_type, subdir):
+            set_path = os.path.join(path, set, way_type, subdir)
+            if set == 'training':
+                return glob.glob(set_path+ '/*.xml')
+            else:
+                paths = [x[0] for x in  os.walk(set_path)][1:]
+                merged = []
+                for path in paths:
+                    merged += glob.glob(path + '/*.xml')
+                return merged
+
+        train_data = []
+        test_data = []
+        for sub in subdirs:
+            train_data.append(load_files(get_paths(path, 'training', way_type, sub), sub))
+            test_data.append(load_files(get_paths(path, 'test', way_type, sub), sub))
+
+        def reformat(data):
+            sents1, sents2, targs = [], [], []
+            merged = data[0]
+            merged.update(data[1])
+            for k in merged.keys():
+                try:
+                    sents1.append(merged[k][0])
+                    sents2.append(merged[k][1])
+                    targs.append(merged[k][2])
+                except:
+                    pass
+            return sents1, sents2, targs
+
+        sort_data = lambda s1, s2, t: \
+                sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+
+        sents1, sents2, targs = reformat(train_data)
+        n_exs = len(sents1)
+        split_pt = int(.2 * n_exs)
+        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:], targs[split_pt:])
+        val_data = sort_data(sents1[:split_pt], sents2[:split_pt], targs[:split_pt])
+
+        sents1, sents2, targs = reformat(test_data)
+        te_data = sort_data(sents1, sents2, targs)
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
