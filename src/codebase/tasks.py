@@ -593,12 +593,16 @@ class RTE8Task(Task):
             path: path to RTE-8 data directory
             way_type: using 2way or 3way data
         '''
-        super(RTE8Task, self).__init__(3)
+        super(RTE8Task, self).__init__(3) #3?2?1?
         self.name = name
         self.pair_input = 1
-        self.load_data(path, way_type)
+        self.load_data(path)
 
-    def load_data(path, way_type):
+        accept = ['2way', '3way']
+        if way_type not in accept:
+            assert "Needs to be either 2way or 3way"
+
+    def load_data(self, path, way_type):
         '''
         Process the datasets located at path.
         
