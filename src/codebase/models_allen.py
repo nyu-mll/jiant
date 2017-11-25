@@ -35,6 +35,41 @@ class MultiTaskModel(nn.Module):
         self.pair_encoder = pair_encoder
         assert pair_enc_type in ['bidaf', 'simple']
         self.pair_enc_type = pair_enc_type
+        self.pred_layers = {}
+        self.scorers = {}
+        self.losses = {}
+
+    def build_classifier(self, task, classifier_type,
+                         input_dim, hid_dim, dropout):
+        '''
+        Build a task specific prediction layer and register it
+        '''
+        if classifier_type == 'log_reg':
+            layer = nn.Linear(input_dim, task.n_classes)
+        elif classifier_type == 'mlp':
+            layer = nn.Sequential(nn.Dropout(p=dropout),
+                    nn.Linear(input_dim, hid_dim), nn.Tanh(),
+                    nn.Dropout(p=dropout),
+                    nn.Linear(hid_dim, task.n_classes))
+        elif classifier_type == 'fancy_mlp':
+            layer = nn.Sequential(nn.Dropout(p=dropout),
+                    nn.Linear(task.input_dim, hid_dim), nn.Tanh(),
+                    nn.Dropout(p=dropout), nn.Linear(hid_dim, hid_dim),
+                    nn.Tanh(), nn.Dropout(p=dropout),
+                    nn.Linear(hid_dim, task.n_classes))
+        else:
+            raise ValueError("Unrecognized classifier!")
+
+        self.pred_layers[task.name] = layer
+        self.add_module('%s_pred_layer' % task.name, layer)
+        '''
+        if isinstance(task, STSTask):
+            self.scorer[task.name] = Average()
+            self.losses[task.name] = nn.MSELoss()
+        else:
+            self.scorer[task.name] = CategoricalAccuracy()
+            self.losses[task.name] = nn.CrossEntropyLoss()
+        '''
 
     #def forward(self, pred_layer=None, pair_input=1, scorer=None,
     def forward(self, task=None,
@@ -51,7 +86,7 @@ class MultiTaskModel(nn.Module):
             - logits (TODO)
         '''
         pair_input = task.pair_input
-        pred_layer = task.pred_layer
+        pred_layer = self.pred_layers[task.name]
         scorer = task.scorer
         if pair_input:
             if self.pair_enc_type == 'bidaf':
@@ -62,8 +97,9 @@ class MultiTaskModel(nn.Module):
                 pair_emb = self.pair_encoder(input1, input2)
                 logits = pred_layer(pair_emb)
         else:
-            sent_embs = self.sent_encoder(input1)
-            sent_emb, _ = sent_embs.max(1)
+            #sent_embs = self.sent_encoder(input1)
+            #sent_emb, _ = sent_embs.max(1)
+            sent_emb = self.sent_encoder(input1)
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
         #pdb.set_trace()
@@ -143,8 +179,21 @@ class HeadlessPairEncoder(Model):
         encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
         encoded_passage = self._dropout(self._phrase_layer(embedded_passage, passage_lstm_mask))
 
-        encoded_question, _ = encoded_question.max(1)
-        encoded_passage, _ = encoded_passage.max(1)
+        '''
+        Want to kill padding terms by making very negative
+            - pad terms are already 0's
+            - get inverse mask and send 1 -> big negative number
+            - add negative mask
+        ''' 
+        passage_lstm_mask[passage_lstm_mask == 0] = -1e3
+        passage_lstm_mask[passage_lstm_mask == 1] = 0
+        passage_lstm_mask = passage_lstm_mask.unsqueeze(dim=-1)
+        question_lstm_mask[question_lstm_mask == 0] = -1e3
+        question_lstm_mask[question_lstm_mask == 1] = 0
+        question_lstm_mask = question_lstm_mask.unsqueeze(dim=-1)
+
+        encoded_question, _ = (encoded_question + question_lstm_mask).max(1)
+        encoded_passage, _ = (encoded_passage + passage_lstm_mask).max(1)
 
         return torch.cat([encoded_question, encoded_passage,
                           torch.abs(encoded_question - encoded_passage),
@@ -210,7 +259,11 @@ class HeadlessSentEncoder(Model):
         question_lstm_mask = question_mask if self._mask_lstms else None
 
         encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
-        return encoded_question
+        question_lstm_mask[question_lstm_mask == 0] = -1e3
+        question_lstm_mask[question_lstm_mask == 1] = 0
+        question_lstm_mask = question_lstm_mask.unsqueeze(dim=-1)
+
+        return (encoded_question + question_lstm_mask).max(1)[0]
 
 
 

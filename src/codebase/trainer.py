@@ -44,6 +44,8 @@ class MultiTaskTrainer:
                  cuda_device: int = -1,
                  grad_norm: Optional[float] = None,
                  grad_clipping: Optional[float] = None,
+                 lr_decay: Optional[float] = None,
+                 min_lr: Optional[float] = None,
                  learning_rate_scheduler: Optional[PytorchLRScheduler] = None,
                  no_tqdm: bool = False) -> None:
         """
@@ -103,6 +105,8 @@ class MultiTaskTrainer:
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
         self._learning_rate_scheduler = learning_rate_scheduler
+        self._lr_decay = lr_decay
+        self._min_lr = min_lr
 
         increase_or_decrease = validation_metric[0]
         if increase_or_decrease not in ["+", "-"]:
@@ -130,6 +134,7 @@ class MultiTaskTrainer:
 
         epoch_counter = 0
         n_tasks = len(tasks)
+        iterator = self._iterator
 
         # Resume from serialization path if it contains a saved model.
         if self._serialization_dir is not None:
@@ -155,24 +160,37 @@ class MultiTaskTrainer:
 
         logger.info("Beginning training.")
         ns_tr_batches, ns_val_batches = [], []
+        #tr_generators, val_generators = [], []
         for task in tasks:
-            ns_tr_batches.append(self._iterator.get_num_batches(task.train_data))
-            # assume there is always validation
-            ns_val_batches.append(self._iterator.get_num_batches(task.val_data))
+            n_tr_batches = iterator.get_num_batches(task.train_data)
+            #tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None),
+            #                   disable=self._no_tqdm, total=n_tr_batches)
+            ns_tr_batches.append(n_tr_batches)
+            #tr_generators.append(tr_generator)
+
+            n_val_batches = iterator.get_num_batches(task.val_data)
+            #val_generator = tqdm.tqdm(iterator(task.val_data, num_epochs=None),
+            #                   disable=self._no_tqdm, total=n_val_batches)
+            ns_val_batches.append(n_val_batches)
+            #val_generators.append(val_generator)
+
+
         validation_metric_per_epoch: List[float] = []
 
         for epoch in range(epoch_counter, self._num_epochs):
             logger.info("*** Epoch %d/%d ***", epoch + 1, self._num_epochs)
+            logger.info("learning rate: %.5f",
+                        self._optimizer.param_groups[0]['lr'])
             tr_losses = [0.0] * n_tasks
             all_tr_metrics = {}
             for task_idx, task in enumerate(tasks):
                 logger.info("\tTraining %s task (%d/%d)",
-                            task.name, task_idx, len(tasks))
+                            task.name, task_idx + 1, len(tasks))
                 #pdb.set_trace()
                 self._model.train()
                 n_tr_batches = ns_tr_batches[task_idx]
                 pred_layer, pair_input = task.pred_layer, task.pair_input
-                train_generator = self._iterator(task.train_data, num_epochs=1)
+                train_generator = iterator(task.train_data, num_epochs=1)
                 train_generator_tqdm = tqdm.tqdm(train_generator,
                                                  disable=self._no_tqdm,
                                                  total=n_tr_batches)
@@ -181,12 +199,8 @@ class MultiTaskTrainer:
                 for batch in train_generator_tqdm:
                     batch_num += 1
                     self._optimizer.zero_grad()
-                    # TODO(Alex): pass pair_input
                     output_dict = self._forward(batch, task=task,
-                            #pred_layer=pred_layer,
-                            #pair_input=pair_input,
-                            #scorer=task.scorer,
-                            for_training=True)
+                                                for_training=True)
                     try:
                         loss = output_dict["loss"]
                         loss.backward()
@@ -200,35 +214,49 @@ class MultiTaskTrainer:
                                                  + "of model.forward(inputs).")
 
                     if self._grad_norm:
-                        clip_grad_norm(self._model.parameters(), self._grad_norm)
+                        clip_grad_norm(self._model.parameters(),
+                                       self._grad_norm)
                     self._optimizer.step()
                     task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = float(tr_losses[task_idx] / batch_num)
+                    task_metrics["%s_loss" % task.name] = \
+                            float(tr_losses[task_idx] / batch_num)
                     description = self._description_from_metrics(task_metrics)
                     train_generator_tqdm.set_description(description)
 
                     batch_num_total = n_tr_batches * epoch + batch_num
-                    if self._serialization_dir and batch_num_total % self._summary_interval == 0:
+                    if self._serialization_dir and \
+                            batch_num_total % self._summary_interval == 0:
                         for name, param in self._model.named_parameters():
-                            train_logs[task_idx].add_scalar("PARAMETER_MEAN/" + name, param.data.mean(), batch_num_total)
-                            train_logs[task_idx].add_scalar("PARAMETER_STD/" + name, param.data.std(), batch_num_total)
+                            train_logs[task_idx].add_scalar("PARAMETER_MEAN/" +\
+                                    name, param.data.mean(), batch_num_total)
+                            train_logs[task_idx].add_scalar("PARAMETER_STD/" + \
+                                    name, param.data.std(), batch_num_total)
                             if param.grad is not None:
-                                train_logs[task_idx].add_scalar("GRAD_MEAN/" + name, param.grad.data.mean(), batch_num_total)
-                                train_logs[task_idx].add_scalar("GRAD_STD/" + name, param.grad.data.std(), batch_num_total)
-                        train_logs[task_idx].add_scalar("LOSS/loss_train", task_metrics["%s_loss" % task.name], batch_num_total)
+                                train_logs[task_idx].add_scalar("GRAD_MEAN/" + \
+                                        name, param.grad.data.mean(), \
+                                        batch_num_total)
+                                train_logs[task_idx].add_scalar("GRAD_STD/" + \
+                                        name, param.grad.data.std(), \
+                                        batch_num_total)
+                        train_logs[task_idx].add_scalar("LOSS/loss_train", \
+                                task_metrics["%s_loss" % task.name], \
+                                batch_num_total)
                     if self._no_tqdm and time.time() - last_log > self._log_interval:
-                        logger.info("Batch %d/%d: %s", batch_num, n_tr_batches, description)
-                        #pdb.set_trace()
+                        logger.info("Batch %d/%d: %s", batch_num, n_tr_batches,\
+                                    description)
                         for name, param in self._model.named_parameters():
                             if param.grad is not None:
-                                logger.debug("GRAD MEAN %s: %.7f", name, param.grad.data.mean())
-                                logger.debug("GRAD STD %s: %.7f", name, param.grad.data.std())
+                                logger.debug("GRAD MEAN %s: %.7f", name,
+                                             param.grad.data.mean())
+                                logger.debug("GRAD STD %s: %.7f", name, \
+                                             param.grad.data.std())
                         last_log = time.time()
 
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_tr_metrics["%s_%s" % (task.name, name)] = value
-                all_tr_metrics["%s_loss" % task.name] = float(tr_losses[task_idx] / batch_num)
+                all_tr_metrics["%s_loss" % task.name] = \
+                        float(tr_losses[task_idx] / batch_num)
 
             # Validation
             logger.info("Validating...")
@@ -237,7 +265,7 @@ class MultiTaskTrainer:
             for task_idx, task in enumerate(tasks):
                 self._model.eval()
                 n_val_batches = ns_val_batches[task_idx]
-                val_generator = self._iterator(task.val_data, num_epochs=1)
+                val_generator = iterator(task.val_data, num_epochs=1)
                 val_generator_tqdm = tqdm.tqdm(val_generator,
                                                disable=self._no_tqdm,
                                                total=n_val_batches)
@@ -247,28 +275,27 @@ class MultiTaskTrainer:
                     pred_layer = task.pred_layer
                     pair_input = task.pair_input
                     val_output_dict = self._forward(batch, task=task,
-                            #pred_layer=pred_layer,
-                            #pair_input=pair_input,
-                            #scorer=task.scorer,
-                            for_training=False)
+                                                    for_training=False)
                     loss = val_output_dict["loss"]
                     val_losses[task_idx] += loss.data.cpu().numpy()
                     task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = float(val_losses[task_idx] / batch_num)
+                    task_metrics["%s_loss" % task.name] = \
+                            float(val_losses[task_idx] / batch_num)
                     description = self._description_from_metrics(task_metrics)
                     val_generator_tqdm.set_description(description)
-                    if self._no_tqdm and time.time() - last_log > self._log_interval:
-                        logger.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
+                    if self._no_tqdm and \
+                            time.time() - last_log > self._log_interval:
+                        logger.info("Batch %d/%d: %s", batch_num, \
+                                    n_val_batches, description)
                         last_log = time.time()
 
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_val_metrics["%s_%s" % (task.name, name)] = value
-                all_val_metrics["%s_loss" % task.name] = float(val_losses[task_idx] / batch_num)
+                all_val_metrics["%s_loss" % task.name] = \
+                        float(val_losses[task_idx] / batch_num)
 
-            #message_template = "Training %s : %3f    Validation %s : %3f "
             for name, value in all_tr_metrics.items():
-                #logger.info(message_template, name, value, name, all_val_metrics[name])
                 logger.info("Statistic: %s", name)
                 logger.info("\ttraining: %3f", value)
                 logger.info("\tvalidation: %3f", all_val_metrics[name])
@@ -282,9 +309,13 @@ class MultiTaskTrainer:
                 # Is the worst validation performance in past self._patience
                 # epochs is better than current value?
                 if self._validation_metric_decreases:
-                    should_stop = max(validation_metric_per_epoch[-self._patience:]) < this_epoch_val_metric
+                    should_stop = max(
+                            validation_metric_per_epoch[-self._patience:]) < \
+                            this_epoch_val_metric
                 else:
-                    should_stop = min(validation_metric_per_epoch[-self._patience:]) > this_epoch_val_metric
+                    should_stop = min(
+                            validation_metric_per_epoch[-self._patience:]) > \
+                            this_epoch_val_metric
                 if should_stop:
                     logger.info("Ran out of patience.  Stopping training.")
                     return # can't break because of task loop
@@ -312,6 +343,12 @@ class MultiTaskTrainer:
                 else:
                     self._learning_rate_scheduler.step(epoch)
 
+            if not is_best_so_far and self._lr_decay:
+                self._optimizer.param_groups[0]['lr'] *= self._lr_decay
+            if self._optimizer.param_groups[0]['lr'] < self._min_lr:
+                logger.info("Minimum lr hit. Stopping training.")
+                return
+
     def _forward(self, batch: dict, for_training: bool,
                  #pred_layer, pair_input=1, scorer=None) -> dict:
                  task=None) -> dict:
@@ -321,7 +358,7 @@ class MultiTaskTrainer:
 
     def _description_from_metrics(self, metrics: Dict[str, float]) -> str:
         # pylint: disable=no-self-use
-        return ', '.join(["%s: %.2f" % (name, value) for name, value in metrics.items()]) + " ||"
+        return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
     def _save_checkpoint(self,
                          epoch: int,
@@ -394,6 +431,8 @@ class MultiTaskTrainer:
         cuda_device = params.pop("cuda_device", -1)
         grad_norm = params.pop("grad_norm", None)
         grad_clipping = params.pop("grad_clipping", None)
+        lr_decay = params.pop("lr_decay", None)
+        min_lr = params.pop("min_lr", None)
         lr_scheduler_params = params.pop("learning_rate_scheduler", None)
 
         if cuda_device >= 0:
@@ -416,5 +455,7 @@ class MultiTaskTrainer:
                        cuda_device=cuda_device,
                        grad_norm=grad_norm,
                        grad_clipping=grad_clipping,
+                       lr_decay=lr_decay,
+                       min_lr=min_lr,
                        learning_rate_scheduler=scheduler,
                        no_tqdm=no_tqdm)

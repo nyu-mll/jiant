@@ -4,7 +4,7 @@ import sys
 import time
 import argparse
 import logging as log
-from collections import Counter
+from collections import defaultdict
 import _pickle as pkl
 import nltk
 import numpy as np
@@ -60,6 +60,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
 # lazy way to map tasks to vocab pickles
+# these are task independent
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
              'mnli': PATH_PREFIX + 'MNLI/mnli_task.pkl',
              'quora': PATH_PREFIX + 'Quora/quora_task.pkl',
@@ -69,88 +70,168 @@ NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
              'small': PATH_PREFIX + 'Quora/small_task.pkl',
              'small2': PATH_PREFIX + 'Quora/small2_task.pkl'}
 
-def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
-                  pair_enc_type, classifier,
-                  vocab_path, cuda, load_tasks, load_vocab, reindex):
+def load_tasks(task_names, max_seq_len, load):
     '''
-    Process the tasks.
+    Load tasks
+    '''
+    tasks = []
+    for name in task_names:
+        assert name in NAME2TASK, 'Task not found!'
+        if os.path.isfile(NAME2SAVE[name]) and load:
+            task = pkl.load(open(NAME2SAVE[name], 'rb'))
+            log.info('\tLoaded existing task %s', name)
+        else:
+            task = NAME2TASK[name](NAME2DATA[name], max_seq_len, name)
+            pkl.dump(task, open(NAME2SAVE[name], 'wb'))
+        tasks.append(task)
+    log.info("\tFinished loading tasks: %s.", ' '.join(
+        [task.name for task in tasks]))
+    return tasks
+
+def build_classifiers(tasks, model, classifier_type, pair_enc, input_dim,
+                      hid_dim, dropout):
+    '''
+    Build the classifier for each task
+    '''
+    for task in tasks:
+        if task.pair_input:
+            if pair_enc == 'bidaf':
+                task_dim = input_dim * 10
+            else:
+                assert pair_enc == 'simple'
+                task_dim = input_dim * 8
+        else:
+            task_dim = input_dim * 2
+        model.build_classifier(task, classifier_type, task_dim, hid_dim,
+                               dropout)
+    return
+
+def get_words(tasks):
+    '''
+    Get all words for all tasks for all splits for all sentences
+    Return dictionary mapping words to frequencies.
+    '''
+    word2freq = defaultdict(int)
+    for task in tasks:
+        for split in [task.train_data_text, task.val_data_text,
+                      task.test_data_text]:
+            for sentence in split[0]:
+                for word in sentence:
+                    word2freq[word] += 1
+            if task.pair_input:
+                for sentence in split[1]:
+                    for word in sentence:
+                        word2freq[word] += 1
+    return word2freq
+
+def get_word_vecs(path, vocab, word_dim):
+    word_vecs = {}
+    with open(path) as fh:
+        for line in fh:
+            word, vec = line.split(' ', 1)
+            if word in vocab:
+                word_vecs[word] = np.array(list(map(float, vec.split())))
+                assert len(word_vecs[word]) == word_dim, \
+                        'Mismatch in word vector dimension'
+    log.info('Found %d/%d words with word vectors', len(word_vecs),
+             len(vocab))
+    return word_vecs
+
+def prepare_tasks(task_names, word_vecs_path, word_dim,
+                  max_vocab_size, max_seq_len,
+                  vocab_path, exp_dir, load_task, load_vocab, reindex):
+    '''
+    Prepare the tasks by:
+        - Creating or loading the tasks
+        - Building the vocabulary of words with word vectors
+        - Index the tasks
 
     Args:
         - task_names (list[str]): list of task names
+        - max_vocab_size (int): -1 for no max_vocab size
 
     Returns:
         - tasks (list[Task]): list of tasks
     '''
 
-    tasks = []
-    for name in task_names:
-        assert name in NAME2TASK, 'Task not found!'
-        if os.path.isfile(NAME2SAVE[name]) and load_tasks:
-            task = pkl.load(open(NAME2SAVE[name], 'rb'))
-            log.info('\t\tLoaded existing task %s', name)
-        else:
-            task = (NAME2TASK[name](NAME2DATA[name], input_dim,
-                                    max_seq_len, name))
-            pkl.dump(task, open(NAME2SAVE[name], 'wb'))
-        if task.pair_input:
-            if pair_enc_type == 'bidaf':
-                task.input_dim = 10 * input_dim
-            elif pair_enc_type == 'simple':
-                task.input_dim = 8 * input_dim
-        else:
-            task.input_dim = 2 * input_dim
-        if classifier == 'log_reg':
-            task.pred_layer = nn.Linear(task.input_dim, task.n_classes)
-        elif classifier == 'mlp':
-            hid_dim = 512
-            mlp_dropout = .2
-            task.pred_layer = nn.Sequential(nn.Dropout(p=mlp_dropout),
-                    nn.Linear(task.input_dim, hid_dim), nn.Tanh(),
-                    nn.Dropout(p=mlp_dropout),
-                    nn.Linear(hid_dim, task.n_classes))
-        tasks.append(task)
-    if cuda:
-        for task in tasks:
-            task.pred_layer = task.pred_layer.cuda()
-    log.info("\tFinished loading tasks: %s.", ' '.join(
-        [task.name for task in tasks]))
+    tasks = load_tasks(task_names, load_task, max_seq_len)
 
+    # get all words across all tasks, all splits, all sentences
+    word2freq = get_words(tasks)
+
+    # load word vectors for the words and build vocabulary
+    word2vec = get_word_vecs(word_vecs_path, word2freq, word_dim)
+    if load_vocab and os.path.exists(vocab_path + 'non_padded_namespaces.txt'):
+        vocab = Vocabulary.from_files(vocab_path)
+        # want to assert that all words have word vectors
+        log.info('\tLoaded existing vocabulary from %s', vocab_path)
+    else:
+        if max_vocab_size < 0:
+            max_vocab_size = None
+        vocab = Vocabulary(counter=None, max_vocab_size=max_vocab_size)
+        words_by_freq = [(word, freq) for word, freq in word2freq.items() if
+                         word in word2vec]
+        words_by_freq.sort(key=lambda x: x[1], reverse=True)
+        for word, _ in words_by_freq:
+            _ = vocab.add_token_to_namespace(word)
+        if vocab_path:
+            vocab.save_to_files(vocab_path)
+            log.info('\tSaved vocabulary to %s', vocab_path)
+    vocab_size = vocab.get_vocab_size('tokens')
+    log.info("\tFinished building vocab. Using %d words", vocab_size)
+
+    embeddings = np.zeros((vocab_size, word_dim))
+    for idx in range(vocab_size): # kind of hacky
+        word = vocab.get_token_from_index(idx)
+        if word == '@@PADDING@@' or word == '@@UNKNOWN@@':
+            continue
+        try:
+            assert word in word2vec
+        except AssertionError as error:
+            log.debug(error)
+            pdb.set_trace()
+        embeddings[idx] = word2vec[word]
+    embeddings[vocab.get_token_index('@@PADDING@@')] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+
+    # convert text data to AllenNLP text fields
     token_indexer = {"words": SingleIdTokenIndexer(),
                      "chars": TokenCharactersIndexer()}
 
-    for task in tasks:
-        task.train_data = process_split(task.train_data_text, token_indexer,
-                                        task.pair_input, task.categorical)
-        task.val_data = process_split(task.val_data_text, token_indexer,
-                                      task.pair_input, task.categorical)
-        task.test_data = process_split(task.test_data_text, token_indexer,
-                                       task.pair_input, task.categorical)
-
-    # assuming one task for now
-    # build vocabulary
-    if load_vocab and os.path.exists(vocab_path + 'non_padded_namespaces.txt'):
-        vocab = Vocabulary.from_files(vocab_path)
-        log.info('\t\tLoaded existing vocabulary from %s', vocab_path)
-    else:
-        vocab = Vocabulary.from_dataset(tasks[0].train_data,
-                                        max_vocab_size=max_vocab_size)
-        if vocab_path:
-            vocab.save_to_files(vocab_path)
-            log.info('\t\tSaved vocabulary to %s', vocab_path)
-    log.info("\tFinished building vocab.")
-
     # index words and chars using vocab
-    if reindex: # be careful with this...
-        for task in tasks:
-            task.train_data.index_instances(vocab)
-            task.val_data.index_instances(vocab)
-            task.test_data.index_instances(vocab)
-            pkl.dump(task, open(NAME2SAVE[task.name], 'wb'))
-        log.info("\tFinished indexing.")
-    else:
-        log.info("\tReusing old indexing.")
+    for task in tasks:
+        template = exp_dir + '/%s_indexed_data.pkl'
+        #task.train_data.index_instances(vocab)
+        #task.val_data.index_instances(vocab)
+        #task.test_data.index_instances(vocab)
+        if reindex or not os.path.exists(template % task.name):
+            train, val, test = process_task(task, token_indexer, vocab)
+            pkl.dump((train, val, test), open(template % task.name, 'wb'))
+        else:
+            train, val, test = pkl.load(open(template % task.name, 'rb'))
+            log.info("\tReusing old indexing for %s.", task.name)
+        task.train_data = train
+        task.val_data = val
+        task.test_data = test
+    log.info("\tFinished indexing.")
 
-    return tasks, vocab
+    return tasks, vocab, embeddings
+
+def process_task(task, token_indexer, vocab):
+    '''
+    Convert a task's splits into AllenNLP fields then
+    Index the splits using the given vocab (experiment dependent)
+    '''
+    train_data = process_split(task.train_data_text, token_indexer,
+                               task.pair_input, task.categorical)
+    train_data.index_instances(vocab)
+    val_data = process_split(task.val_data_text, token_indexer,
+                             task.pair_input, task.categorical)
+    val_data.index_instances(vocab)
+    test_data = process_split(task.test_data_text, token_indexer,
+                              task.pair_input, task.categorical)
+    test_data.index_instances(vocab)
+    return (train_data, val_data, test_data)
 
 def process_split(split, token_indexer, pair_input, categorical):
     '''
@@ -192,27 +273,6 @@ def process_split(split, token_indexer, pair_input, categorical):
                      zip(inputs1, labels)]
     return Dataset(instances)
 
-def process_sentence(sentence, tok2idx=None, max_seq_len=None):
-    '''
-    Process a single sentence.
-
-    Args:
-        - sentence (str)
-        - all_lower (int): 1 if uncase all words
-        - tok2idx (dict): if given, return the sentence as indices
-
-    Returns:
-        - toks (list[str]): a list of processed tokens or indexes
-    '''
-
-    # use a tokenizer
-    toks = nltk.word_tokenize(sentence)
-    if tok2idx is not None:
-        toks = [tok2idx[t] if t in tok2idx else tok2idx['<unk>'] \
-                for t in toks]
-        toks = [tok2idx['<s>']] + toks[:max_seq_len] + [tok2idx['</s>']] + \
-               [tok2idx['<pad>']] * (max_seq_len - len(toks))
-    return toks
 
 def load_word_embeddings(path, vocab, word_dim):
     '''
@@ -272,9 +332,11 @@ def main(arguments):
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
                         type=int, default=0)
 
+    parser.add_argument('--exp_name', help='experiment name',
+                        type=str, default='')
     parser.add_argument('--log_file', help='path to log to',
                         type=str, default=0)
-    parser.add_argument('--save_dir', help='path to log to',
+    parser.add_argument('--exp_dir', help='path to log to',
                         type=str, default='')
     parser.add_argument('--data_path', help='path to directory containing '
                         ' {train,val,test}.pkl', type=str, default='')
@@ -290,16 +352,20 @@ def main(arguments):
     parser.add_argument('--load_vocab', help='1 if load vocabulary',
                         type=int, default=1)
     parser.add_argument('--reindex', help='1 if reindex datasets',
-                        type=int, default=1)
+                        type=int, default=0)
 
     parser.add_argument('--tasks', help='comma separated list of tasks',
                         type=str, default='')
     parser.add_argument('--max_vocab_size', help='vocabulary size',
                         type=int, default=10000)
     parser.add_argument('--max_seq_len', help='max sequence length',
-                        type=int, default=40)
+                        type=int, default=35)
     parser.add_argument('--classifier', help='type of classifier to use',
                         type=str, default='log_reg')
+    parser.add_argument('--classifier_hid_dim', help='hid dim of classifier',
+                        type=int, default=512)
+    parser.add_argument('--classifier_dropout', help='classifier dropout',
+                        type=float, default=0.0)
 
     parser.add_argument('--max_char_vocab_size', help='char vocabulary size',
                         type=int, default=2000)
@@ -348,22 +414,15 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim
-    tasks, vocab = process_tasks(args.tasks.split(','), dim,
-                                 args.max_vocab_size, args.max_seq_len,
-                                 args.pair_enc, args.classifier,
-                                 args.vocab_path, args.cuda,
-                                 args.load_tasks, args.load_vocab, args.reindex)
+    tasks, vocab, word_embs = \
+            prepare_tasks(args.tasks.split(','), args.word_embs_file,
+                          word_dim, args.max_vocab_size, args.max_seq_len,
+                          args.vocab_path, args.exp_dir,
+                          args.load_tasks, args.load_vocab, args.reindex)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
 
-    start_time = time.time()
-    if args.word_embs_file:
-        word_embs = None
-        word_embs = load_word_embeddings(args.word_embs_file, vocab, word_dim)
-    else:
-        word_embs = None
-        log.info("\tNot using pretrained word embeddings")
-
     ### Build model ###
+    # Probably should create another function
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), word_dim,
                               weight=word_embs, trainable=False,
                               padding_index=vocab.get_token_index('@@PADDING@@'))
@@ -393,40 +452,46 @@ def main(arguments):
         pair_encoder = HeadlessBiDAF(vocab, text_field_embedder,
                                      args.n_highway_layers,
                                      phrase_layer,
-                                     #DotProductSimilarity(),
                                      LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
                                      modeling_layer)
     elif args.pair_enc == 'simple':
         pair_encoder = HeadlessPairEncoder(vocab, text_field_embedder,
                                            args.n_highway_layers,
-                                           phrase_layer)
+                                           phrase_layer,
+                                           dropout=0.0)
     else:
         raise ValueError
     model = MultiTaskModel(sent_encoder, pair_encoder, args.pair_enc)
+    build_classifiers(tasks, model, args.classifier, args.pair_enc, dim,
+                      args.classifier_hid_dim, args.classifier_dropout)
     if args.cuda >= 0:
         model = model.cuda()
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
     # Set up Trainer and train
-    optimizer_params = Params({'type':'sgd', 'lr':args.lr})
+    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr})
     scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
-                               'factor':.2, 'patience':1,
+                               'factor':.2, 'patience':0,
+                               'threshold':1e-2, 'threshold_mode':'abs',
                                'verbose':True})
     iterator = BasicIterator(args.batch_size)
     train_params = Params({'num_epochs':args.n_epochs,
                            'cuda_device':args.cuda,
                            'optimizer':optimizer_params,
+                           'patience':args.n_epochs, # disable patience
+                           'grad_norm':5.,
                            'learning_rate_scheduler':scheduler_params,
-                           #'validation_metric':'-%s_loss' % tasks[0].name,
                            'validation_metric':'+%s_accuracy' % tasks[0].name,
-                           'no_tqdm': True})
-    trainer = MultiTaskTrainer.from_params(model, args.save_dir, iterator,
+                           'lr_decay':.99, 'min_lr':1e-5,
+                           'no_tqdm': False})
+    trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            train_params)
 
-    #trainer.train()
+    # Train
     trainer.train(tasks, args.load_model)
 
     # Evaluate
+    # TODO(Alex): load best model in directory (will f up w/ multiple exps)
     results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
     for name, value in results.items():

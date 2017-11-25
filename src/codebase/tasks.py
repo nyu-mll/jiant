@@ -3,6 +3,7 @@ import pdb
 import math
 import nltk
 import random
+import logging as log
 import _pickle as pkl
 from collections import Counter
 from random import shuffle
@@ -21,6 +22,10 @@ from codebase.utils.seq_batch import SequenceBatch
 # - RTE1-3 tasks
 # - RTE8 task
 # - Twitter humor + irony tasks
+
+# TODO(Alex): put in another library
+def process_sentence(sent, max_seq_len):
+    return ['<s>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['</s>']
 
 class Task():
     '''
@@ -42,21 +47,18 @@ class Task():
     def __init__(self, n_classes):
         self.name = None
         self.n_classes = n_classes
-        #self.input_dim = input_dim
         self.train_data_text, self.val_data_text, self.test_data_text = \
             None, None, None
         self.train_data = None
         self.val_data = None
         self.test_data = None # TODO(Alex) what if tasks don't have test
-        # TODO(Alex): regularization + MLP option
-        #self.pred_layer = nn.Linear(input_dim, n_classes)
         self.pred_layer = None
         self.pair_input = None
         self.categorical = 1 # most tasks are
         self.scorer = CategoricalAccuracy()
 
     @abstractmethod
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Load data from path and create splits.
         '''
@@ -171,12 +173,11 @@ class QuoraTask(Task):
     Task class for Quora question pairs.
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, name="quora"):
+    def __init__(self, path, max_seq_len, name="quora"):
         '''
         Args:
             - data (TODO)
             - input_dim (int)
-            - max_seq_len (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
         # for pair inputs, BiDAF output will be 10x input dim
@@ -202,14 +203,17 @@ class QuoraTask(Task):
         shuffle(raw_data)
 
         sents1, sents2, targs = [], [], []
+        n_truncated = 0
         for raw_datum in raw_data:
             try:
                 _, _, _, sent1, sent2, targ = \
                         raw_datum.split('\t')
             except Exception as e:
                 continue
-            sent1 = nltk.word_tokenize(sent1)[:max_seq_len]
-            sent2 = nltk.word_tokenize(sent2)[:max_seq_len]
+            n_truncated += int(len(sents1) > max_seq_len)
+            n_truncated += int(len(sents2) > max_seq_len)
+            sent1 = process_sentence(sent1, max_seq_len)
+            sent2 = process_sentence(sent2, max_seq_len)
             if len(sent1) == 0 or len(sent2) == 0:
                 continue # will break preprocessing
             targ = int(targ)
@@ -234,6 +238,8 @@ class QuoraTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
+        log.info("\tFinished loading Quora data. %d sentences truncated",
+                 n_truncated)
 
 
 class SNLITask(Task):
@@ -241,7 +247,7 @@ class SNLITask(Task):
     Task class for Stanford Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, name="snli"):
+    def __init__(self, path, name="snli"):
         '''
         Args:
             - data (TODO)
@@ -252,9 +258,9 @@ class SNLITask(Task):
         super(SNLITask, self).__init__(3)
         self.name = name
         self.pair_input = 1
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Process the dataset located at path.
 
@@ -263,15 +269,23 @@ class SNLITask(Task):
         Args:
             - path (str): path to data
         '''
+
+        sort_data = lambda s1, s2, t: \
+            sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        #proc_sent = lambda x: ['<s>'] + nltk.word_tokenize(x) + ['</s>']
+        proc_sent = lambda x: nltk.word_tokenize(x)
+
         for split, attr_name in zip(['train', 'dev', 'test'],
-                                    ['train_data_text', 'val_data_text', 'test_data_text']):
+                                    ['train_data_text', 'val_data_text',
+                                        'test_data_text']):
             sents1, sents2, targs = [], [], []
             s1_fh = open(path + 's1.' + split)
             s2_fh = open(path + 's2.' + split)
             targ_fh = open(path + 'labels.' + split)
             for s1, s2, targ in zip(s1_fh, s2_fh, targ_fh):
-                sents1.append(nltk.word_tokenize(s1.strip()[:max_seq_len]))
-                sents2.append(nltk.word_tokenize(s2.strip()[:max_seq_len]))
+                sents1.append(proc_sent(s1.strip()))
+                sents2.append(proc_sent(s2.strip()))
                 targ = targ.strip()
                 if targ == 'neutral':
                     targs.append(0)
@@ -279,14 +293,15 @@ class SNLITask(Task):
                     targs.append(1)
                 if targ == 'contradiction':
                     targs.append(2)
-            setattr(self, attr_name, [sents1, sents2, targs])
+            sorted_data = sort_data(sents1, sents2, targs)
+            setattr(self, attr_name, unpack(sorted_data))
 
 class MultiNLITask(Task):
     '''
     Task class for Multi-Genre Natural Language Inference
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''
         Args:
             - data (TODO)
@@ -297,9 +312,9 @@ class MultiNLITask(Task):
         super(MultiNLITask, self).__init__(3)
         self.name = name
         self.pair_input = 1
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Process the dataset located at path.
 
@@ -317,8 +332,8 @@ class MultiNLITask(Task):
                     raw_datum = raw_datum.split('\t')
                     sent1 = nltk.word_tokenize(raw_datum[5])
                     sent2 = nltk.word_tokenize(raw_datum[6])
-                    sents1.append(sent1[:max_seq_len])
-                    sents2.append(sent2[:max_seq_len])
+                    sents1.append(sent1)
+                    sents2.append(sent2)
                     targ = raw_datum[0].strip()
                     if targ == 'neutral':
                         targs.append(0)
@@ -355,7 +370,7 @@ class MSRPTask(Task):
     Task class for Microsoft Research Paraphase Task.
     '''
 
-    def __init__(self, path, input_dim, max_seq_len, name="msrp"):
+    def __init__(self, path, name="msrp"):
         '''
         Args:
             - data (TODO)
@@ -366,9 +381,9 @@ class MSRPTask(Task):
         super(MSRPTask, self).__init__(2)
         self.name = name
         self.pair_input = 1
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Process the dataset located at path.
 
@@ -389,8 +404,8 @@ class MSRPTask(Task):
                 except Exception as e:
                     print("Fucked up - broken example")
                     continue
-                sent1 = nltk.word_tokenize(sent1)[:max_seq_len]
-                sent2 = nltk.word_tokenize(sent2)[:max_seq_len]
+                sent1 = nltk.word_tokenize(sent1)
+                sent2 = nltk.word_tokenize(sent2)
                 if len(sent1) == 0 or len(sent2) == 0:
                     continue # will break preprocessing
                 targ = int(targ)
@@ -426,7 +441,7 @@ class STSTask(Task):
     '''
     Task class for Sentence Textual Similarity.
     '''
-    def __init__(self, path, input_dim, max_seq_len, name="sts"):
+    def __init__(self, path, name="sts"):
         '''
         Args:
             - data (TODO)
@@ -437,12 +452,12 @@ class STSTask(Task):
         super(STSTask, self).__init__(1)
         self.name = name
         self.pair_input = 1
+        self.categorical = 0
         self.scorer = Average()
         self.loss = nn.MSELoss()
-        self.load_data(path, max_seq_len)
-        self.categorical = 0
+        self.load_data(path)
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Process the dataset located at path.
 
@@ -474,8 +489,8 @@ class STSTask(Task):
                     sent1, sent2 = map(nltk.word_tokenize, raw_sents)
                     if not sent1 or not sent2:
                         continue
-                    sents1.append(sent1[:max_seq_len])
-                    sents2.append(sent2[:max_seq_len])
+                    sents1.append(sent1)
+                    sents2.append(sent2)
                     targs.append(float(raw_targ))
             return sents1, sents2, targs
 
@@ -515,7 +530,7 @@ class SSTTask(Task):
     '''
     Task class for Stanford Sentiment Treebank.
     '''
-    def __init__(self, path, input_dim, max_seq_len, name="sst"):
+    def __init__(self, path, name="sst"):
         '''
         Args:
             - data (TODO)
@@ -526,9 +541,9 @@ class SSTTask(Task):
         super(SSTTask, self).__init__(2)
         self.name = name
         self.pair_input = 0
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''
         Process the dataset located at path.
 
@@ -544,7 +559,7 @@ class SSTTask(Task):
             with open(path) as fh:
                 for raw_datum in fh:
                     datum = raw_datum.strip().split('\t')
-                    sents.append(datum[0].split()[:max_seq_len])
+                    sents.append(datum[0].split())
                     targs.append(int(datum[1]))
             return sents, targs
 
