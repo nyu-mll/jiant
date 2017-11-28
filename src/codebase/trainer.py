@@ -9,9 +9,10 @@ rather than instantiating a ``MultiTaskTrainer`` yourself.
 
 import logging
 import os
-import pdb
+import pdb # pylint: disable=unused-import
 import shutil
 import time
+import itertools
 from typing import Dict, Optional, List
 
 import torch
@@ -23,7 +24,6 @@ from tensorboard import SummaryWriter
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
-from allennlp.data import Dataset
 from allennlp.data.iterators.data_iterator import DataIterator
 from allennlp.models.model import Model
 from allennlp.nn.util import arrays_to_variables, device_mapping
@@ -85,8 +85,8 @@ class MultiTaskTrainer:
         learning_rate_scheduler : PytorchLRScheduler, optional, (default = None)
             A Pytorch learning rate scheduler. The learning rate will be decayed with respect to
             this schedule at the end of each epoch. If you use
-            :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`, this will use the ``validation_metric``
-            provided to determine if learning has plateaued.
+            :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`,
+            this will use the ``validation_metric`` provided to determine if learning has plateaued.
         no_tqdm : ``bool``, optional (default=False)
             We use ``tqdm`` for logging, which will print a nice progress bar that updates in place
             after every batch.  This is nice if you're running training on a local shell, but can
@@ -122,7 +122,7 @@ class MultiTaskTrainer:
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between logging to tensorboard
 
-    def train(self, tasks, load_model=1) -> None:
+    def train(self, tasks, batch_size, n_passes_per_epoch, load_model=1) -> None:
         '''
         Train on tasks.
 
@@ -134,7 +134,7 @@ class MultiTaskTrainer:
 
         epoch_counter = 0
         n_tasks = len(tasks)
-        iterator = self._iterator
+        iterator = self._iterator(batch_size)
 
         # Resume from serialization path if it contains a saved model.
         if self._serialization_dir is not None:
@@ -145,35 +145,29 @@ class MultiTaskTrainer:
                     self._serialization_dir, task.name, "log", "train")))
                 val_logs.append(SummaryWriter(os.path.join(
                     self._serialization_dir, task.name, "log", "valid")))
-            if load_model and any(["model_state_epoch_" in x
-                    for x in os.listdir(self._serialization_dir)]):
+            if load_model and \
+                    any(["model_state_epoch_" in x
+                         for x in os.listdir(self._serialization_dir)]):
                 logger.info("Loading model from checkpoint.")
                 epoch_counter = self._restore_checkpoint()
 
         if self._grad_clipping is not None:
             # pylint: disable=invalid-unary-operand-type
             clip_function = lambda grad: grad.clamp(
-                        -self._grad_clipping, self._grad_clipping)
+                -self._grad_clipping, self._grad_clipping)
             for parameter in self._model.parameters():
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
         logger.info("Beginning training.")
-        ns_tr_batches, ns_val_batches = [], []
-        #tr_generators, val_generators = [], []
-        for task in tasks:
+        task_infos = [{} for _ in range(n_tasks)]
+        for task_idx, task in enumerate(tasks):
             n_tr_batches = iterator.get_num_batches(task.train_data)
-            #tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None),
-            #                   disable=self._no_tqdm, total=n_tr_batches)
-            ns_tr_batches.append(n_tr_batches)
-            #tr_generators.append(tr_generator)
-
             n_val_batches = iterator.get_num_batches(task.val_data)
-            #val_generator = tqdm.tqdm(iterator(task.val_data, num_epochs=None),
-            #                   disable=self._no_tqdm, total=n_val_batches)
-            ns_val_batches.append(n_val_batches)
-            #val_generators.append(val_generator)
-
+            task_infos[task_idx]['n_tr_batches'] = n_tr_batches
+            task_infos[task_idx]['n_val_batches'] = n_val_batches
+            task_infos[task_idx]['n_batches_per_pass'] = \
+                    int(n_tr_batches / n_passes_per_epoch)
 
         validation_metric_per_epoch: List[float] = []
 
@@ -181,90 +175,131 @@ class MultiTaskTrainer:
             logger.info("*** Epoch %d/%d ***", epoch + 1, self._num_epochs)
             logger.info("learning rate: %.5f",
                         self._optimizer.param_groups[0]['lr'])
-            tr_losses = [0.0] * n_tasks
             all_tr_metrics = {}
+
+            '''
+            for task_info in task_infos:
+                if 'tr_generator' in task_info:
+                    del task_info['tr_generator']
+                if 'val_generator' in task_info:
+                    del task_info['val_generator']
+            '''
+
             for task_idx, task in enumerate(tasks):
-                logger.info("\tTraining %s task (%d/%d)",
-                            task.name, task_idx + 1, len(tasks))
-                #pdb.set_trace()
-                self._model.train()
-                n_tr_batches = ns_tr_batches[task_idx]
-                pred_layer, pair_input = task.pred_layer, task.pair_input
-                train_generator = iterator(task.train_data, num_epochs=1)
-                train_generator_tqdm = tqdm.tqdm(train_generator,
-                                                 disable=self._no_tqdm,
-                                                 total=n_tr_batches)
-                last_log = time.time()
-                batch_num = 0
-                for batch in train_generator_tqdm:
-                    batch_num += 1
-                    self._optimizer.zero_grad()
-                    output_dict = self._forward(batch, task=task,
-                                                for_training=True)
-                    try:
-                        loss = output_dict["loss"]
-                        loss.backward()
-                        # Make sure Variable is on the cpu before
-                        # converting to numpy.
-                        tr_losses[task_idx] += loss.data.cpu().numpy()
-                    except KeyError:
-                        raise ConfigurationError("The model you are trying to"
-                                                 + "optimize does not contain a"
-                                                 + " 'loss' key in the output "
-                                                 + "of model.forward(inputs).")
+                iterator = self._iterator(batch_size)
+                tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=1),
+                                         disable=self._no_tqdm,
+                                         total=task_infos[task_idx]['n_tr_batches'])
+                val_generator = tqdm.tqdm(iterator(task.val_data, num_epochs=1),
+                                          disable=self._no_tqdm,
+                                          total=task_infos[task_idx]['n_val_batches'])
+                task_infos[task_idx]['tr_generator'] = tr_generator
+                task_infos[task_idx]['val_generator'] = val_generator
+                task_infos[task_idx]['loss'] = 0.0
+                task_infos[task_idx]['n_batches_trained'] = 0
 
-                    if self._grad_norm:
-                        clip_grad_norm(self._model.parameters(),
-                                       self._grad_norm)
-                    self._optimizer.step()
-                    task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = \
-                            float(tr_losses[task_idx] / batch_num)
-                    description = self._description_from_metrics(task_metrics)
-                    train_generator_tqdm.set_description(description)
+            self._model.train()
+            for _ in range(n_passes_per_epoch):
+                task_order = range(len(tasks)) # some ordering
+                for task_idx in task_order:
+                    task = tasks[task_idx]
+                    tr_generator = task_infos[task_idx]['tr_generator']
+                    n_tr_batches = task_infos[task_idx]['n_tr_batches']
+                    n_batches_to_train = task_infos[task_idx]['n_batches_per_pass']
+                    n_batches_trained = task_infos[task_idx]['n_batches_trained']
+                    tr_loss = task_infos[task_idx]['loss']
+                    logger.info("\tTraining %s task (%d/%d)",
+                                task.name, task_idx + 1, len(tasks))
+                    last_log = time.time()
+                    for batch in itertools.islice(tr_generator, n_batches_to_train):
+                        n_batches_trained += 1
+                        self._optimizer.zero_grad()
+                        output_dict = self._forward(batch, task=task,
+                                                    for_training=True)
+                        try:
+                            loss = output_dict["loss"]
+                            loss.backward()
+                            tr_loss += loss.data.cpu().numpy()
+                        except KeyError:
+                            raise ConfigurationError("The model you are trying to"
+                                                     + "optimize does not contain a"
+                                                     + " 'loss' key in the output "
+                                                     + "of model.forward(inputs).")
+                        except:
+                            pdb.set_trace()
 
-                    batch_num_total = n_tr_batches * epoch + batch_num
-                    if self._serialization_dir and \
-                            batch_num_total % self._summary_interval == 0:
-                        for name, param in self._model.named_parameters():
-                            train_logs[task_idx].add_scalar("PARAMETER_MEAN/" +\
-                                    name, param.data.mean(), batch_num_total)
-                            train_logs[task_idx].add_scalar("PARAMETER_STD/" + \
-                                    name, param.data.std(), batch_num_total)
-                            if param.grad is not None:
-                                train_logs[task_idx].add_scalar("GRAD_MEAN/" + \
-                                        name, param.grad.data.mean(), \
-                                        batch_num_total)
-                                train_logs[task_idx].add_scalar("GRAD_STD/" + \
-                                        name, param.grad.data.std(), \
-                                        batch_num_total)
-                        train_logs[task_idx].add_scalar("LOSS/loss_train", \
-                                task_metrics["%s_loss" % task.name], \
-                                batch_num_total)
-                    if self._no_tqdm and time.time() - last_log > self._log_interval:
-                        logger.info("Batch %d/%d: %s", batch_num, n_tr_batches,\
-                                    description)
-                        for name, param in self._model.named_parameters():
-                            if param.grad is not None:
+                        # Gradient regularization and application
+                        if self._grad_norm:
+                            clip_grad_norm(self._model.parameters(),
+                                           self._grad_norm)
+                        self._optimizer.step()
+
+                        # Training logging
+                        task_metrics = task.get_metrics()
+                        task_metrics["%s_loss" % task.name] = \
+                                float(tr_loss / n_batches_trained)
+                        description = self._description_from_metrics(task_metrics)
+                        tr_generator.set_description(description)
+
+                        # Tensorboard logging
+                        batch_num_total = n_tr_batches * epoch + n_batches_trained
+                        if self._serialization_dir and \
+                                batch_num_total % self._summary_interval == 0:
+                            for name, param in self._model.named_parameters():
+                                train_logs[task_idx].add_scalar("PARAMETER_MEAN/" +\
+                                        name, param.data.mean(), batch_num_total)
+                                train_logs[task_idx].add_scalar("PARAMETER_STD/" + \
+                                        name, param.data.std(), batch_num_total)
+                                if param.grad is not None:
+                                    train_logs[task_idx].add_scalar("GRAD_MEAN/" + \
+                                            name, param.grad.data.mean(), \
+                                            batch_num_total)
+                                    train_logs[task_idx].add_scalar("GRAD_STD/" + \
+                                            name, param.grad.data.std(), \
+                                            batch_num_total)
+                            train_logs[task_idx].add_scalar("LOSS/loss_train", \
+                                    task_metrics["%s_loss" % task.name], \
+                                    batch_num_total)
+
+                        # More training logging
+                        if self._no_tqdm and time.time() - last_log > self._log_interval:
+                            logger.info("Batch %d/%d: %s", n_batches_trained,
+                                        n_tr_batches, description)
+                            for name, param in self._model.named_parameters():
+                                if param.grad is None:
+                                    continue
                                 logger.debug("GRAD MEAN %s: %.7f", name,
                                              param.grad.data.mean())
                                 logger.debug("GRAD STD %s: %.7f", name, \
                                              param.grad.data.std())
-                        last_log = time.time()
+                            last_log = time.time()
 
-                task_metrics = task.get_metrics(reset=True)
-                for name, value in task_metrics.items():
-                    all_tr_metrics["%s_%s" % (task.name, name)] = value
-                all_tr_metrics["%s_loss" % task.name] = \
-                        float(tr_losses[task_idx] / batch_num)
+                        # Update training progress on that task
+                        task_infos[task_idx]['n_batches_trained'] = n_batches_trained
+                        task_infos[task_idx]['loss'] = tr_loss
+
+            # Overall training logging
+            for task, task_info in zip(tasks, task_infos):
+                try:
+                    task_metrics = task.get_metrics(reset=True)
+                    for name, value in task_metrics.items():
+                        all_tr_metrics["%s_%s" % (task.name, name)] = value
+                        all_tr_metrics["%s_loss" % task.name] = \
+                                float(tr_loss / task_info['n_batches_trained'])
+                except Exception as e:
+                    print(e)
+                    pdb.set_trace()
+
+
+            # TODO(Alex): make sure trained on all batches for each task
 
             # Validation
             logger.info("Validating...")
-            val_losses = [0.0] * n_tasks
+            val_losses = [0.0] * n_tasks # MAYBE A PROBLEM
             all_val_metrics = {}
+            self._model.eval()
             for task_idx, task in enumerate(tasks):
-                self._model.eval()
-                n_val_batches = ns_val_batches[task_idx]
+                n_val_batches = task_infos[task_idx]['n_val_batches']
                 val_generator = iterator(task.val_data, num_epochs=1)
                 val_generator_tqdm = tqdm.tqdm(val_generator,
                                                disable=self._no_tqdm,
@@ -272,8 +307,6 @@ class MultiTaskTrainer:
                 batch_num = 0
                 for batch in val_generator_tqdm:
                     batch_num += 1
-                    pred_layer = task.pred_layer
-                    pair_input = task.pair_input
                     val_output_dict = self._forward(batch, task=task,
                                                     for_training=False)
                     loss = val_output_dict["loss"]
@@ -310,12 +343,12 @@ class MultiTaskTrainer:
                 # epochs is better than current value?
                 if self._validation_metric_decreases:
                     should_stop = max(
-                            validation_metric_per_epoch[-self._patience:]) < \
-                            this_epoch_val_metric
+                        validation_metric_per_epoch[-self._patience:]) < \
+                        this_epoch_val_metric
                 else:
                     should_stop = min(
-                            validation_metric_per_epoch[-self._patience:]) > \
-                            this_epoch_val_metric
+                        validation_metric_per_epoch[-self._patience:]) > \
+                        this_epoch_val_metric
                 if should_stop:
                     logger.info("Ran out of patience.  Stopping training.")
                     return # can't break because of task loop
@@ -405,7 +438,8 @@ class MultiTaskTrainer:
 
         serialization_files = os.listdir(self._serialization_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) for x in model_checkpoints])
+        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
+                             for x in model_checkpoints])
 
         model_path = os.path.join(self._serialization_dir,
                                   "model_state_epoch_{}.th".format(epoch_to_load))
@@ -424,6 +458,9 @@ class MultiTaskTrainer:
                     serialization_dir: str,
                     iterator: DataIterator,
                     params: Params) -> 'MultiTaskTrainer':
+        '''
+        Generator trainer from parameters.
+        '''
 
         patience = params.pop("patience", 2)
         validation_metric = params.pop("validation_metric", "-loss")
@@ -448,14 +485,14 @@ class MultiTaskTrainer:
 
         params.assert_empty(cls.__name__)
         return MultiTaskTrainer(model, optimizer, iterator,
-                       patience=patience,
-                       validation_metric=validation_metric,
-                       num_epochs=num_epochs,
-                       serialization_dir=serialization_dir,
-                       cuda_device=cuda_device,
-                       grad_norm=grad_norm,
-                       grad_clipping=grad_clipping,
-                       lr_decay=lr_decay,
-                       min_lr=min_lr,
-                       learning_rate_scheduler=scheduler,
-                       no_tqdm=no_tqdm)
+                                patience=patience,
+                                validation_metric=validation_metric,
+                                num_epochs=num_epochs,
+                                serialization_dir=serialization_dir,
+                                cuda_device=cuda_device,
+                                grad_norm=grad_norm,
+                                grad_clipping=grad_clipping,
+                                lr_decay=lr_decay,
+                                min_lr=min_lr,
+                                learning_rate_scheduler=scheduler,
+                                no_tqdm=no_tqdm)

@@ -154,7 +154,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
         - tasks (list[Task]): list of tasks
     '''
 
-    tasks = load_tasks(task_names, load_task, max_seq_len)
+    tasks = load_tasks(task_names, max_seq_len, load_task)
 
     # get all words across all tasks, all splits, all sentences
     word2freq = get_words(tasks)
@@ -387,7 +387,6 @@ def main(arguments):
     parser.add_argument('--n_highway_layers', help='num of highway layers',
                         type=int, default=1)
 
-
     parser.add_argument('--batch_size', help='batch size',
                         type=int, default=64)
     parser.add_argument('--optimizer', help='optimizer to use',
@@ -396,6 +395,13 @@ def main(arguments):
                         type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate',
                         type=float, default=1.0)
+
+    parser.add_argument('--n_passes_per_epoch', help='Number of passes through'+
+                        " each task per epoch. Number of batches per pass " +
+                        "is automatically scaled to be even across passes.",
+                        type=int, default=1)
+
+
 
     args = parser.parse_args(arguments)
 
@@ -474,25 +480,30 @@ def main(arguments):
                                'factor':.2, 'patience':0,
                                'threshold':1e-2, 'threshold_mode':'abs',
                                'verbose':True})
-    iterator = BasicIterator(args.batch_size)
+    iterator = BasicIterator#(args.batch_size)
+    if tasks[0].name == 'sts':
+        metric = '-sts_loss'
+    else:
+        metric = '+%s_accuracy' % tasks[0].name
     train_params = Params({'num_epochs':args.n_epochs,
                            'cuda_device':args.cuda,
                            'optimizer':optimizer_params,
                            'patience':args.n_epochs, # disable patience
                            'grad_norm':5.,
                            'learning_rate_scheduler':scheduler_params,
-                           'validation_metric':'+%s_accuracy' % tasks[0].name,
+                           'validation_metric':metric,
                            'lr_decay':.99, 'min_lr':1e-5,
-                           'no_tqdm': False})
+                           'no_tqdm':True})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            train_params)
 
     # Train
-    trainer.train(tasks, args.load_model)
+    trainer.train(tasks, args.batch_size, args.n_passes_per_epoch, args.load_model)
 
     # Evaluate
     # TODO(Alex): load best model in directory (will f up w/ multiple exps)
-    results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
+    results = evaluate(model, tasks, iterator(args.batch_size),
+                       cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
     for name, value in results.items():
         log.info("%s\t%3f", name, value)
