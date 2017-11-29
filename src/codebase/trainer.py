@@ -7,11 +7,12 @@ training parameters and then use :mod:`~allennlp.commands.train`
 rather than instantiating a ``MultiTaskTrainer`` yourself.
 """
 
-import logging
 import os
 import pdb # pylint: disable=unused-import
-import shutil
 import time
+import random
+import shutil
+import logging
 import itertools
 from typing import Dict, Optional, List
 
@@ -29,6 +30,7 @@ from allennlp.models.model import Model
 from allennlp.nn.util import arrays_to_variables, device_mapping
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
+from allennlp.training.metrics import CategoricalAccuracy, Average
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -122,7 +124,8 @@ class MultiTaskTrainer:
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between logging to tensorboard
 
-    def train(self, tasks, batch_size, n_passes_per_epoch, load_model=1) -> None:
+    def train(self, tasks, task_ordering, n_passes_per_epoch,
+              optimizer_params, scheduler_params, load_model=1) -> None:
         '''
         Train on tasks.
 
@@ -134,7 +137,7 @@ class MultiTaskTrainer:
 
         epoch_counter = 0
         n_tasks = len(tasks)
-        iterator = self._iterator(batch_size)
+        iterator = self._iterator
 
         # Resume from serialization path if it contains a saved model.
         if self._serialization_dir is not None:
@@ -161,6 +164,8 @@ class MultiTaskTrainer:
 
         logger.info("Beginning training.")
         task_infos = [{} for _ in range(n_tasks)]
+        # make sure the right things are being trained?
+        parameters = [p for p in self._model.parameters() if p.requires_grad]
         for task_idx, task in enumerate(tasks):
             n_tr_batches = iterator.get_num_batches(task.train_data)
             n_val_batches = iterator.get_num_batches(task.val_data)
@@ -168,6 +173,15 @@ class MultiTaskTrainer:
             task_infos[task_idx]['n_val_batches'] = n_val_batches
             task_infos[task_idx]['n_batches_per_pass'] = \
                     int(n_tr_batches / n_passes_per_epoch)
+            optimizer = None #Optimizer.from_params(parameters, optimizer_params)
+            scheduler = None #LearningRateScheduler.from_params(optimizer, scheduler_params)
+            if task.name == 'STS':
+                scorer = Average()
+            else:
+                scorer = CategoricalAccuracy()
+            task_infos[task_idx]['optimizer'] = optimizer
+            task_infos[task_idx]['scheduler'] = scheduler
+            task_infos[task_idx]['scorer'] = scorer
 
         validation_metric_per_epoch: List[float] = []
 
@@ -186,7 +200,6 @@ class MultiTaskTrainer:
             '''
 
             for task_idx, task in enumerate(tasks):
-                iterator = self._iterator(batch_size)
                 tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=1),
                                          disable=self._no_tqdm,
                                          total=task_infos[task_idx]['n_tr_batches'])
@@ -200,7 +213,15 @@ class MultiTaskTrainer:
 
             self._model.train()
             for _ in range(n_passes_per_epoch):
-                task_order = range(len(tasks)) # some ordering
+                if task_ordering == 'given':
+                    task_order = range(len(tasks)) # some ordering
+                elif task_ordering == 'random':
+                    task_order = [i for i in range(len(tasks))]
+                    random.shuffle(task_order)
+                elif task_ordering == 'small_to_large':
+                    task_sizes = [(task_idx, task_infos[task_idx]['n_tr_batches']) for task_idx in range(len(tasks))]
+                    task_sizes.sort(key=lambda x: x[1])
+                    task_order = [task_idx for task_idx, _ in task_sizes]
                 for task_idx in task_order:
                     task = tasks[task_idx]
                     tr_generator = task_infos[task_idx]['tr_generator']
@@ -280,22 +301,17 @@ class MultiTaskTrainer:
 
             # Overall training logging
             for task, task_info in zip(tasks, task_infos):
-                try:
-                    task_metrics = task.get_metrics(reset=True)
-                    for name, value in task_metrics.items():
-                        all_tr_metrics["%s_%s" % (task.name, name)] = value
-                        all_tr_metrics["%s_loss" % task.name] = \
-                                float(tr_loss / task_info['n_batches_trained'])
-                except Exception as e:
-                    print(e)
-                    pdb.set_trace()
-
+                task_metrics = task.get_metrics(reset=True)
+                for name, value in task_metrics.items():
+                    all_tr_metrics["%s_%s" % (task.name, name)] = value
+                    all_tr_metrics["%s_loss" % task.name] = \
+                            float(tr_loss / task_info['n_batches_trained'])
 
             # TODO(Alex): make sure trained on all batches for each task
 
             # Validation
             logger.info("Validating...")
-            val_losses = [0.0] * n_tasks # MAYBE A PROBLEM
+            val_losses = [0.0] * n_tasks
             all_val_metrics = {}
             self._model.eval()
             for task_idx, task in enumerate(tasks):
@@ -327,6 +343,8 @@ class MultiTaskTrainer:
                     all_val_metrics["%s_%s" % (task.name, name)] = value
                 all_val_metrics["%s_loss" % task.name] = \
                         float(val_losses[task_idx] / batch_num)
+                #all_val_metrics["%s_micro_overall"]
+                #all_val_metrics["%s_macro_overall"]
 
             for name, value in all_tr_metrics.items():
                 logger.info("Statistic: %s", name)

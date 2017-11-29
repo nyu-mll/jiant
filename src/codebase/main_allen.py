@@ -6,34 +6,27 @@ import argparse
 import logging as log
 from collections import defaultdict
 import _pickle as pkl
-import nltk
 import numpy as np
 
 import torch
-import torch.nn as nn
-from torch.autograd import Variable
-from torch.optim import lr_scheduler
 
 #from allennlp.commands.evaluate import evaluate
 from allennlp.common.params import Params
 from allennlp.data import Instance, Dataset, Vocabulary
 from allennlp.data.fields import TextField, LabelField, NumericField
-from allennlp.data.iterators import DataIterator, BasicIterator
+from allennlp.data.iterators import BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.modules.similarity_functions import DotProductSimilarity, LinearSimilarity
+from allennlp.modules.similarity_functions import LinearSimilarity
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, \
                                               CnnEncoder
-from allennlp.modules.seq2seq_encoders import IntraSentenceAttentionEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.training import Trainer
-from allennlp.training.optimizers import Optimizer
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
-from codebase.tasks import Task, MSRPTask, MultiNLITask, QuoraTask, SNLITask, \
-        SSTTask, STSTask
+from codebase.tasks import Task, MSRPTask, MultiNLITask, QuoraTask, \
+        RTETask, RTE8Task, SNLITask, SSTTask, STSTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
                                     MultiTaskModel, HeadlessPairEncoder
 from codebase.trainer import MultiTaskTrainer
@@ -47,23 +40,27 @@ PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
 
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
-             'quora': QuoraTask, 'snli': SNLITask,
+             'quora': QuoraTask, 'rte8': RTE8Task,
+             'rte': RTETask, 'snli': SNLITask,
              'sst': SSTTask, 'sts': STSTask,
              'small':QuoraTask, 'small2': QuoraTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
              'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
+             'rte': PATH_PREFIX + 'rte/',
+             'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
              'sts': PATH_PREFIX + 'STS/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
-# lazy way to map tasks to vocab pickles
-# these are task independent
+# lazy way to map tasks to preprocessed tasks
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
              'mnli': PATH_PREFIX + 'MNLI/mnli_task.pkl',
              'quora': PATH_PREFIX + 'Quora/quora_task.pkl',
+             'rte': PATH_PREFIX + 'rte/rte_task.pkl',
+             'rte8': PATH_PREFIX + 'rte8/rte8_task.pkl',
              'snli': PATH_PREFIX + 'SNLI/snli_task.pkl',
              'sst': PATH_PREFIX + 'SST/sst_task.pkl',
              'sts': PATH_PREFIX + 'STS/sts_task.pkl',
@@ -361,7 +358,7 @@ def main(arguments):
     parser.add_argument('--max_seq_len', help='max sequence length',
                         type=int, default=35)
     parser.add_argument('--classifier', help='type of classifier to use',
-                        type=str, default='log_reg')
+                        type=str, default='log_reg', choices=['log_reg','mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier',
                         type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout',
@@ -400,7 +397,9 @@ def main(arguments):
                         " each task per epoch. Number of batches per pass " +
                         "is automatically scaled to be even across passes.",
                         type=int, default=1)
-
+    parser.add_argument('--task_ordering', help='Method for ordering tasks',
+                        type=str, default='given',
+                        choices=['given', 'random', 'small_to_large'])
 
 
     args = parser.parse_args(arguments)
@@ -480,7 +479,7 @@ def main(arguments):
                                'factor':.2, 'patience':0,
                                'threshold':1e-2, 'threshold_mode':'abs',
                                'verbose':True})
-    iterator = BasicIterator#(args.batch_size)
+    iterator = BasicIterator(args.batch_size)
     if tasks[0].name == 'sts':
         metric = '-sts_loss'
     else:
@@ -498,12 +497,12 @@ def main(arguments):
                                            train_params)
 
     # Train
-    trainer.train(tasks, args.batch_size, args.n_passes_per_epoch, args.load_model)
+    trainer.train(tasks, args.task_ordering, args.n_passes_per_epoch,
+                  optimizer_params, scheduler_params, args.load_model)
 
     # Evaluate
     # TODO(Alex): load best model in directory (will f up w/ multiple exps)
-    results = evaluate(model, tasks, iterator(args.batch_size),
-                       cuda_device=args.cuda)
+    results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
     for name, value in results.items():
         log.info("%s\t%3f", name, value)
