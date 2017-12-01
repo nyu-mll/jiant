@@ -25,8 +25,8 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
-from codebase.tasks import Task, MSRPTask, MultiNLITask, QuoraTask, \
-        RTETask, RTE8Task, SNLITask, SSTTask, STSTask
+from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
+        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
                                     MultiTaskModel, HeadlessPairEncoder
 from codebase.trainer import MultiTaskTrainer
@@ -42,7 +42,7 @@ PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
              'rte': RTETask, 'snli': SNLITask,
-             'sst': SSTTask, 'sts': STSTask,
+             'sst': SSTTask, 'sts14': STS14Task,
              'small':QuoraTask, 'small2': QuoraTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
@@ -51,7 +51,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
-             'sts': PATH_PREFIX + 'STS/',
+             'sts14': PATH_PREFIX + 'STS/STS14-en-test',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
@@ -63,9 +63,10 @@ NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
              'rte8': PATH_PREFIX + 'rte8/rte8_task.pkl',
              'snli': PATH_PREFIX + 'SNLI/snli_task.pkl',
              'sst': PATH_PREFIX + 'SST/sst_task.pkl',
-             'sts': PATH_PREFIX + 'STS/sts_task.pkl',
+             'sts14': PATH_PREFIX + 'STS/sts14_task.pkl',
              'small': PATH_PREFIX + 'Quora/small_task.pkl',
              'small2': PATH_PREFIX + 'Quora/small2_task.pkl'}
+
 
 def load_tasks(task_names, max_seq_len, load):
     '''
@@ -135,8 +136,8 @@ def get_word_vecs(path, vocab, word_dim):
     return word_vecs
 
 def prepare_tasks(task_names, word_vecs_path, word_dim,
-                  max_vocab_size, max_seq_len,
-                  vocab_path, exp_dir, load_task, load_vocab, reindex):
+                  max_vocab_size, max_seq_len, vocab_path, exp_dir,
+                  load_task, load_vocab, load_index):
     '''
     Prepare the tasks by:
         - Creating or loading the tasks
@@ -201,7 +202,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
         #task.train_data.index_instances(vocab)
         #task.val_data.index_instances(vocab)
         #task.test_data.index_instances(vocab)
-        if reindex or not os.path.exists(template % task.name):
+        if not load_index or not os.path.exists(template % task.name):
             train, val, test = process_task(task, token_indexer, vocab)
             pkl.dump((train, val, test), open(template % task.name, 'wb'))
         else:
@@ -348,8 +349,8 @@ def main(arguments):
                         type=int, default=1)
     parser.add_argument('--load_vocab', help='1 if load vocabulary',
                         type=int, default=1)
-    parser.add_argument('--reindex', help='1 if reindex datasets',
-                        type=int, default=0)
+    parser.add_argument('--load_index', help='1 if load indexed datasets',
+                        type=int, default=1)
 
     parser.add_argument('--tasks', help='comma separated list of tasks',
                         type=str, default='')
@@ -358,7 +359,7 @@ def main(arguments):
     parser.add_argument('--max_seq_len', help='max sequence length',
                         type=int, default=35)
     parser.add_argument('--classifier', help='type of classifier to use',
-                        type=str, default='log_reg', choices=['log_reg','mlp'])
+                        type=str, default='log_reg', choices=['log_reg', 'mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier',
                         type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout',
@@ -372,7 +373,7 @@ def main(arguments):
                         ' embedding combiner', type=str, default='2,3,4,5')
 
     parser.add_argument('--pair_enc', help='type of pair encoder to use',
-                        type=str, default='bidaf')
+                        type=str, default='bidaf', choices=['simple', 'bidaf'])
     parser.add_argument('--word_dim', help='dimension of word embeddings',
                         type=int, default=300)
     parser.add_argument('--char_dim', help='dimension of char embeddings',
@@ -392,11 +393,16 @@ def main(arguments):
                         type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate',
                         type=float, default=1.0)
+    parser.add_argument('--scheduler_threshold', help='scheduler threshold',
+                        type=float, default=1e-2)
 
     parser.add_argument('--n_passes_per_epoch', help='Number of passes through'+
                         " each task per epoch. Number of batches per pass " +
                         "is automatically scaled to be even across passes.",
                         type=int, default=1)
+    parser.add_argument('--val_metric', help='Single number for early stopping'+
+                        '. Must be a task name or "micro" or "macro".',
+                        type=str, default='micro')
     parser.add_argument('--task_ordering', help='Method for ordering tasks',
                         type=str, default='given',
                         choices=['given', 'random', 'small_to_large'])
@@ -414,6 +420,7 @@ def main(arguments):
         log.info("Using GPU %d", args.cuda)
         torch.cuda.set_device(args.cuda)
 
+    ### Load tasks ###
     log.info("Loading tasks...")
     start_time = time.time()
     word_dim, char_dim = args.word_dim, args.char_dim
@@ -423,7 +430,7 @@ def main(arguments):
             prepare_tasks(args.tasks.split(','), args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_seq_len,
                           args.vocab_path, args.exp_dir,
-                          args.load_tasks, args.load_vocab, args.reindex)
+                          args.load_tasks, args.load_vocab, args.load_index)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
 
     ### Build model ###
@@ -464,8 +471,6 @@ def main(arguments):
                                            args.n_highway_layers,
                                            phrase_layer,
                                            dropout=0.0)
-    else:
-        raise ValueError
     model = MultiTaskModel(sent_encoder, pair_encoder, args.pair_enc)
     build_classifiers(tasks, model, args.classifier, args.pair_enc, dim,
                       args.classifier_hid_dim, args.classifier_dropout)
@@ -473,35 +478,43 @@ def main(arguments):
         model = model.cuda()
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    # Set up Trainer and train
+    ### Set up trainer ###
     optimizer_params = Params({'type':args.optimizer, 'lr':args.lr})
     scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
                                'factor':.2, 'patience':0,
-                               'threshold':1e-2, 'threshold_mode':'abs',
+                               'threshold':args.scheduler_threshold,
+                               'threshold_mode':'abs',
                                'verbose':True})
     iterator = BasicIterator(args.batch_size)
-    if tasks[0].name == 'sts':
-        metric = '-sts_loss'
+
+    # Get validation metric
+    if args.val_metric in ['micro', 'macro']:
+        metric = "+%s_accuracy" % args.val_metric
     else:
-        metric = '+%s_accuracy' % tasks[0].name
+        assert args.val_metric in [task.name for task in tasks], \
+                "Invalid validation metric"
+        task = [task for task in tasks if task.name == args.val_metric][0]
+        if task.val_metric_decreases:
+            metric = "-"
+        else:
+            metric = "+"
+        metric += task.val_metric
+
     train_params = Params({'num_epochs':args.n_epochs,
                            'cuda_device':args.cuda,
-                           'optimizer':optimizer_params,
-                           'patience':args.n_epochs, # disable patience
+                           'patience':5,
                            'grad_norm':5.,
-                           'learning_rate_scheduler':scheduler_params,
-                           'validation_metric':metric,
+                           'val_metric':metric,
                            'lr_decay':.99, 'min_lr':1e-5,
                            'no_tqdm':True})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            train_params)
 
-    # Train
+    ### Train ###
     trainer.train(tasks, args.task_ordering, args.n_passes_per_epoch,
                   optimizer_params, scheduler_params, args.load_model)
 
     # Evaluate
-    # TODO(Alex): load best model in directory (will f up w/ multiple exps)
     results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
     for name, value in results.items():

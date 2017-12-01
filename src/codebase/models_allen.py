@@ -16,7 +16,9 @@ from allennlp.models.model import Model
 from allennlp.modules import Highway, MatrixAttention
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed, TextFieldEmbedder
 from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
-from allennlp.training.metrics import BooleanAccuracy, CategoricalAccuracy
+from allennlp.training.metrics import BooleanAccuracy, CategoricalAccuracy, Average
+
+from codebase.tasks import STS14Task
 
 logger = log.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -62,18 +64,8 @@ class MultiTaskModel(nn.Module):
 
         self.pred_layers[task.name] = layer
         self.add_module('%s_pred_layer' % task.name, layer)
-        '''
-        if isinstance(task, STSTask):
-            self.scorer[task.name] = Average()
-            self.losses[task.name] = nn.MSELoss()
-        else:
-            self.scorer[task.name] = CategoricalAccuracy()
-            self.losses[task.name] = nn.CrossEntropyLoss()
-        '''
 
-    #def forward(self, pred_layer=None, pair_input=1, scorer=None,
-    def forward(self, task=None,
-                input1=None, input2=None, label=None):
+    def forward(self, task=None, input1=None, input2=None, label=None):
         '''
         Predict through model and task-specific prediction layer
 
@@ -97,15 +89,12 @@ class MultiTaskModel(nn.Module):
                 pair_emb = self.pair_encoder(input1, input2)
                 logits = pred_layer(pair_emb)
         else:
-            #sent_embs = self.sent_encoder(input1)
-            #sent_emb, _ = sent_embs.max(1)
             sent_emb = self.sent_encoder(input1)
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
-        #pdb.set_trace()
         if label is not None:
-            if hasattr(task, 'loss') and task.loss is not None:
-                loss = task.loss(logits, label.squeeze(-1))
+            if isinstance(task, STS14Task):
+                loss = F.mse_loss(logits, label.squeeze(-1))
                 scorer(loss.data.cpu()[0])
             else:
                 loss = F.cross_entropy(logits, label.squeeze(-1))
@@ -184,7 +173,7 @@ class HeadlessPairEncoder(Model):
             - pad terms are already 0's
             - get inverse mask and send 1 -> big negative number
             - add negative mask
-        ''' 
+        '''
         passage_lstm_mask[passage_lstm_mask == 0] = -1e3
         passage_lstm_mask[passage_lstm_mask == 1] = 0
         passage_lstm_mask = passage_lstm_mask.unsqueeze(dim=-1)

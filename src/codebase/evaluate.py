@@ -43,8 +43,10 @@ def evaluate(model: Model,
              split="val") -> Dict[str, Any]:
     model.eval()
 
-    all_metrics = {}
+    all_metrics = {"micro_accuracy":0.0, "macro_accuracy":0.0}
+    n_overall_examples = 0
     for task in tasks:
+        n_examples = 0
         if split == "val":
             dataset = task.val_data
         elif split == "test":
@@ -52,22 +54,27 @@ def evaluate(model: Model,
         generator = iterator(dataset, num_epochs=1)
         logger.info("Iterating over dataset")
         generator_tqdm = tqdm.tqdm(
-                generator, total=iterator.get_num_batches(dataset))
+            generator, total=iterator.get_num_batches(dataset))
         for batch in generator_tqdm:
             tensor_batch = arrays_to_variables(
-                    batch, cuda_device, for_training=False)
-            #model.forward(task.pred_layer, task.pair_input,
-            #              scorer=task.scorer, **tensor_batch)
+                batch, cuda_device, for_training=False)
             model.forward(task, **tensor_batch)
             task_metrics = task.get_metrics()
-            description = ', '.join(["%s_%s: %.2f" % 
-                (task.name, name, value) for name, value in 
+            description = ', '.join(["%s_%s: %.2f" %
+                (task.name, name, value) for name, value in
                 task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
+            n_examples += batch['label'].size()[0]
 
         task_metrics = task.get_metrics()
         for name, value in task_metrics.items():
             all_metrics["%s_%s" % (task.name, name)] = value
+        all_metrics["micro_accuracy"] += all_metrics["%s_accuracy" % task.name] * n_examples
+        all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
+        n_overall_examples += n_examples
+
+    all_metrics["macro_accuracy"] /= len(tasks)
+    all_metrics["micro_accuracy"] /= n_overall_examples
 
     return all_metrics
 

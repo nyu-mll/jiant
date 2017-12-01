@@ -5,22 +5,20 @@ import pdb # pylint disable=unused-import
 import math
 import random
 import logging as log
-import _pickle as pkl
 from collections import Counter
 from random import shuffle
 from abc import ABCMeta, abstractmethod, abstractproperty
 import nltk
+import _pickle as pkl
 
 import torch
 import torch.nn as nn
-
-# TODO(Alex): maybe metric tracking should belong to something else
 from allennlp.training.metrics import CategoricalAccuracy, Average
 
 # TODO(Alex)
 # - RTE1-3 tasks
-# - RTE8 task
-# - Twitter humor + irony tasks
+# - Twitter humor
+# - Twitter irony
 # - DSTC
 
 # TODO(Alex): put in another library
@@ -43,9 +41,8 @@ class Task():
     '''
     __metaclass__ = ABCMeta
 
-    #def __init__(self, input_dim, n_classes):
-    def __init__(self, n_classes):
-        self.name = None
+    def __init__(self, name, n_classes):
+        self.name = name
         self.n_classes = n_classes
         self.train_data_text, self.val_data_text, self.test_data_text = \
             None, None, None
@@ -55,6 +52,8 @@ class Task():
         self.pred_layer = None
         self.pair_input = None
         self.categorical = 1 # most tasks are
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
         self.scorer = CategoricalAccuracy()
 
     @abstractmethod
@@ -93,79 +92,6 @@ class Task():
     def get_metrics(self, reset=False):
         return {'accuracy': self.scorer.get_metric(reset)}
 
-    def _evaluate(self, model, data):
-        '''
-        Score model predictions against targets.
-
-        Args:
-            - model (TODO)
-            - data (Dataset)
-
-        Returns:
-            - score (float): score averaged across examples
-        '''
-        score = 0.0
-        for ins, targs in data:
-            outs = model(ins, self.pred_layer, self.pair_input)
-            _, preds = outs.max(1)
-            score += torch.sum(torch.eq(preds.long(), targs)).data[0]
-        return 100 * score / len(data)
-
-    def validate(self, model):
-        '''
-        Get validation scores for model
-        '''
-        return self._evaluate(model, self.val_data)
-
-    def test(self, model):
-        '''
-        Get test scores for model
-        '''
-        return self._evaluate(model, self.test_data)
-
-class Dataset():
-    '''
-    Data loader class for a single split of a dataset.
-    A Task object will contain 2-3 Datasets.
-    '''
-
-    def __init__(self, inputs, targs, batch_size, tok2idx, pair_input):
-        self.inputs = inputs
-        self.targs = targs
-        self._n_ins = len(targs)
-        self.batch_size = batch_size
-        self.n_batches = int(math.ceil(self._n_ins / self.batch_size))
-        self.batches = []
-        for b_idx in range(self.n_batches):
-            if pair_input:
-                input0_batch = SequenceBatch.from_sequences(
-                    inputs[0][b_idx*batch_size:(b_idx+1)*batch_size], tok2idx)
-                input1_batch = SequenceBatch.from_sequences(
-                    inputs[1][b_idx*batch_size:(b_idx+1)*batch_size], tok2idx)
-                targs_batch = targs[b_idx*batch_size:(b_idx+1)*batch_size]
-                self.batches.append(((input0_batch, input1_batch), targs_batch))
-            else:
-                input_batch = SequenceBatch.from_sequences(
-                    inputs[b_idx*batch_size:(b_idx+1)*batch_size], tok2idx)
-                targs_batch = targs[b_idx*batch_size:(b_idx+1)*batch_size]
-                self.batches.append((input_batch, targs_batch))
-        self._cur_batch = None
-
-    def __len__(self):
-        return self._n_ins
-
-    def __iter__(self):
-        self._cur_batch = 0
-        return self
-
-    def __next__(self):
-        if self._cur_batch < self.n_batches:
-            batch = self.batches[self._cur_batch]
-            self._cur_batch += 1
-            return batch
-        else:
-            raise StopIteration
-
 
 
 class QuoraTask(Task):
@@ -180,7 +106,7 @@ class QuoraTask(Task):
             - input_dim (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(QuoraTask, self).__init__(2)
+        super(QuoraTask, self).__init__(name, 2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -255,7 +181,7 @@ class SNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SNLITask, self).__init__(3)
+        super(SNLITask, self).__init__(name, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -308,7 +234,7 @@ class MultiNLITask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MultiNLITask, self).__init__(3)
+        super(MultiNLITask, self).__init__(name, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -381,7 +307,7 @@ class MSRPTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(MSRPTask, self).__init__(2)
+        super(MSRPTask, self).__init__(name, 2)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -442,24 +368,127 @@ class MSRPTask(Task):
         log.info("\tFinished loading MSRP data.")
 
 
-class STSTask(Task):
+class STS14Task(Task):
     '''
-    Task class for Sentence Textual Similarity.
+    Task class for Sentence Textual Similarity 14.
+    Training data is STS12 and STS13 data, as provided in the dataset.
     '''
-    def __init__(self, path, max_seq_len, name="sts"):
+    def __init__(self, path, max_seq_len, name="sts14"):
         '''
         Args:
-            - data (TODO)
-            - input_dim (int)
-            - n_classes (int)
-            - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(STSTask, self).__init__(1)
+        super(STS14Task, self).__init__(name, 1)
         self.name = name
         self.pair_input = 1
         self.categorical = 0
+        self.val_metric = "%s_pearson" % self.name
+        self.val_metric_decreases = False
         self.scorer = Average()
-        self.loss = nn.MSELoss()
+        self.load_data(path, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        '''
+        Process the dataset located at path.
+
+        TODO: preprocess and store data so don't have to wait?
+
+        Args:
+            - path (str): path to data
+        '''
+
+        def load_year(years, path):
+            sents1, sents2, targs = [], [], []
+            for year in years:
+                topics = sts2topics[year]
+                for topic in topics:
+                    topic_sents1, topic_sents2, topic_targs = \
+                            load_file(path + 'STS%d-en-test/' % year, topic)
+                    sents1 += topic_sents1
+                    sents2 += topic_sents2
+                    targs += topic_targs
+            assert len(sents1) == len(sents2) == len(targs)
+            return sents1, sents2, targs
+
+        def load_year_split(path, year):
+            sents1, sents2, targs = [], [], []
+            topics = sts2topics[year]
+            for topic in topics:
+                topic_sents1, topic_sents2, topic_targs = \
+                        load_file(path, topic)
+                sents1 += topic_sents1
+                sents2 += topic_sents2
+                targs += topic_targs
+            assert len(sents1) == len(sents2) == len(targs)
+            return sents1, sents2, targs
+
+        def load_file(path, topic):
+            sents1, sents2, targs = [], [], []
+            with open(path + 'STS.input.%s.txt' % topic) as fh, \
+                open(path + 'STS.gs.%s.txt' % topic) as gh:
+                for raw_sents, raw_targ in zip(fh, gh):
+                    raw_sents = raw_sents.split('\t')
+                    sent1 = process_sentence(raw_sents[0], max_seq_len)
+                    sent2 = process_sentence(raw_sents[1], max_seq_len)
+                    if not sent1 or not sent2:
+                        continue
+                    sents1.append(sent1)
+                    sents2.append(sent2)
+                    targs.append(float(raw_targ) / 5) # rescale for cosine
+            return sents1, sents2, targs
+
+        sort_data = lambda s1, s2, t: \
+            sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+
+        sts2topics = {
+            12: ['MSRpar', 'MSRvid', 'SMTeuroparl', 'surprise.OnWN', \
+                    'surprise.SMTnews'],
+            13: ['FNWN', 'headlines', 'OnWN'],
+            14: ['deft-forum', 'deft-news', 'headlines', 'images', \
+                    'OnWN', 'tweet-news']
+            }
+
+        sents1, sents2, targs = [], [], []
+        train_dirs = [('STS2012-train', 12), ('STS2012-test', 12), ('STS2013-test', 13)]
+        for train_dir, year in train_dirs:
+            res = load_year_split(path + train_dir, year)
+            sents1 += res[0]
+            sents2 += res[1]
+            targs += res[2]
+        data = [(s1, s2, t) for s1, s2, t in zip(sents1, sents2, targs)]
+        random.shuffle(data)
+        sents1, sents2, targs = unpack(data)
+        split_pt = int(.9 * len(sents1))
+        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:],
+                            targs[split_pt:])
+        val_data = sort_data(sents1[:split_pt], sents2[:split_pt],
+                             targs[:split_pt])
+        te_data = sort_data(*load_year_split(path, 14))
+
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
+
+        log.info("\tFinished loading STS data.")
+
+    def get_metrics(self, reset=False):
+        return {}
+
+class STSBenchmarkTask(Task):
+    '''
+    Task class for Sentence Textual Similarity Benchmark.
+    '''
+    def __init__(self, path, max_seq_len, name="sts_benchmark"):
+        '''
+        Args:
+        '''
+        super(STS14Task, self).__init__(name, 1)
+        self.name = name
+        self.pair_input = 1
+        self.categorical = 0
+        self.val_metric = "%s_mse" % self.name
+        self.val_metric_decreases = True
+        self.scorer = Average()
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
@@ -531,8 +560,7 @@ class STSTask(Task):
         log.info("\tFinished loading STS data.")
 
     def get_metrics(self, reset=False):
-        return {}#'MSE': self.scorer.get_metric(reset)}
-
+        return {}
 
 
 class SSTTask(Task):
@@ -547,7 +575,7 @@ class SSTTask(Task):
             - n_classes (int)
             - classifier (str): type of classifier to use, log_reg or mlp
         '''
-        super(SSTTask, self).__init__(2)
+        super(SSTTask, self).__init__(name, 2)
         self.name = name
         self.pair_input = 0
         self.load_data(path, max_seq_len)
@@ -605,7 +633,7 @@ class RTE8Task(Task):
         way_type = 3
         if way_type not in accept:
             assert "Needs to be either 2way or 3way"
-        super(RTE8Task, self).__init__(way_type)
+        super(RTE8Task, self).__init__(name, way_type)
         self.name = name
         self.pair_input = 1
         self.load_data(path, way_type, max_seq_len)
@@ -708,7 +736,7 @@ class RTE8Task(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished processing RTE8 task.")
+        log.info("\tFinished loading RTE8 task.")
 
 
 class RTETask(Task):
@@ -721,7 +749,7 @@ class RTETask(Task):
         Args:
             path: path to RTE data directory
         '''
-        super(RTETask, self).__init__(3)
+        super(RTETask, self).__init__(name, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
