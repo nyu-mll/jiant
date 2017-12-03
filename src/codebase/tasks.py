@@ -2,18 +2,15 @@ import os
 import xml.etree.ElementTree
 import glob
 import pdb # pylint disable=unused-import
-import math
 import random
 import logging as log
 from collections import Counter
-from random import shuffle
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 import nltk
 import _pickle as pkl
 
-import torch
-import torch.nn as nn
 from allennlp.training.metrics import CategoricalAccuracy, Average
+from scipy.stats import spearmanr, pearsonr
 
 # TODO(Alex)
 # - RTE1-3 tasks
@@ -125,7 +122,7 @@ class QuoraTask(Task):
 
         _ = raw_data[0]
         raw_data = raw_data[1:]
-        shuffle(raw_data)
+        random.shuffle(raw_data)
 
         sents1, sents2, targs = [], [], []
         n_truncated = 0
@@ -381,7 +378,8 @@ class STS14Task(Task):
         self.name = name
         self.pair_input = 1
         self.categorical = 0
-        self.val_metric = "%s_pearson" % self.name
+        self.val_metric = "%s_accuracy" % self.name
+        #self.val_metric = "%s_pearson" % self.name
         self.val_metric_decreases = False
         self.scorer = Average()
         self.load_data(path, max_seq_len)
@@ -396,35 +394,24 @@ class STS14Task(Task):
             - path (str): path to data
         '''
 
-        def load_year(years, path):
+        def load_year_split(path):
             sents1, sents2, targs = [], [], []
-            for year in years:
-                topics = sts2topics[year]
-                for topic in topics:
-                    topic_sents1, topic_sents2, topic_targs = \
-                            load_file(path + 'STS%d-en-test/' % year, topic)
-                    sents1 += topic_sents1
-                    sents2 += topic_sents2
-                    targs += topic_targs
-            assert len(sents1) == len(sents2) == len(targs)
-            return sents1, sents2, targs
-
-        def load_year_split(path, year):
-            sents1, sents2, targs = [], [], []
-            topics = sts2topics[year]
-            for topic in topics:
+            input_files = glob.glob('%s/STS.input.*.txt' % path)
+            targ_files = glob.glob('%s/STS.gs.*.txt' % path)
+            input_files.sort()
+            targ_files.sort()
+            for inp, targ in zip(input_files, targ_files):
                 topic_sents1, topic_sents2, topic_targs = \
-                        load_file(path, topic)
+                        load_file(path, inp, targ)
                 sents1 += topic_sents1
                 sents2 += topic_sents2
                 targs += topic_targs
             assert len(sents1) == len(sents2) == len(targs)
             return sents1, sents2, targs
 
-        def load_file(path, topic):
+        def load_file(path, inp, targ):
             sents1, sents2, targs = [], [], []
-            with open(path + 'STS.input.%s.txt' % topic) as fh, \
-                open(path + 'STS.gs.%s.txt' % topic) as gh:
+            with open(inp) as fh, open(targ) as gh:
                 for raw_sents, raw_targ in zip(fh, gh):
                     raw_sents = raw_sents.split('\t')
                     sent1 = process_sentence(raw_sents[0], max_seq_len)
@@ -449,9 +436,9 @@ class STS14Task(Task):
             }
 
         sents1, sents2, targs = [], [], []
-        train_dirs = [('STS2012-train', 12), ('STS2012-test', 12), ('STS2013-test', 13)]
-        for train_dir, year in train_dirs:
-            res = load_year_split(path + train_dir, year)
+        train_dirs = ['STS2012-train', 'STS2012-test', 'STS2013-test']
+        for train_dir in train_dirs:
+            res = load_year_split(path + train_dir + '/')
             sents1 += res[0]
             sents2 += res[1]
             targs += res[2]
@@ -463,16 +450,16 @@ class STS14Task(Task):
                             targs[split_pt:])
         val_data = sort_data(sents1[:split_pt], sents2[:split_pt],
                              targs[:split_pt])
-        te_data = sort_data(*load_year_split(path, 14))
+        te_data = sort_data(*load_year_split(path))
 
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
 
-        log.info("\tFinished loading STS data.")
+        log.info("\tFinished loading STS14 data.")
 
     def get_metrics(self, reset=False):
-        return {}
+        return {'accuracy': self.scorer.get_metric(reset)}
 
 class STSBenchmarkTask(Task):
     '''
@@ -482,7 +469,7 @@ class STSBenchmarkTask(Task):
         '''
         Args:
         '''
-        super(STS14Task, self).__init__(name, 1)
+        super(STSBenchmarkTask, self).__init__(name, 1)
         self.name = name
         self.pair_input = 1
         self.categorical = 0

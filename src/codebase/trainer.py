@@ -310,6 +310,8 @@ class MultiTaskTrainer:
 
             # make sure all batches were trained on
             for task_info in task_infos:
+                if stop_training[task.name]:
+                    continue
                 assert task_info['n_batches_trained'] == task_info['n_tr_batches']
 
             # Validation

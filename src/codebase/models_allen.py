@@ -19,6 +19,7 @@ from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
 from allennlp.training.metrics import BooleanAccuracy, CategoricalAccuracy, Average
 
 from codebase.tasks import STS14Task
+from scipy.stats import pearsonr
 
 logger = log.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -33,9 +34,8 @@ class MultiTaskModel(nn.Module):
         Args:
         '''
         super(MultiTaskModel, self).__init__()
-        self.sent_encoder = sent_encoder
+        self.sent_encoder = sent_encoder # does this train two different models...?
         self.pair_encoder = pair_encoder
-        assert pair_enc_type in ['bidaf', 'simple']
         self.pair_enc_type = pair_enc_type
         self.pred_layers = {}
         self.scorers = {}
@@ -46,24 +46,27 @@ class MultiTaskModel(nn.Module):
         '''
         Build a task specific prediction layer and register it
         '''
-        if classifier_type == 'log_reg':
+        if isinstance(task, STS14Task):
+            layer = nn.CosineSimilarity()
+        elif classifier_type == 'log_reg':
             layer = nn.Linear(input_dim, task.n_classes)
         elif classifier_type == 'mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout),
-                    nn.Linear(input_dim, hid_dim), nn.Tanh(),
-                    nn.Dropout(p=dropout),
-                    nn.Linear(hid_dim, task.n_classes))
+                                  nn.Linear(input_dim, hid_dim), nn.Tanh(),
+                                  nn.Dropout(p=dropout),
+                                  nn.Linear(hid_dim, task.n_classes))
         elif classifier_type == 'fancy_mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout),
-                    nn.Linear(task.input_dim, hid_dim), nn.Tanh(),
-                    nn.Dropout(p=dropout), nn.Linear(hid_dim, hid_dim),
-                    nn.Tanh(), nn.Dropout(p=dropout),
-                    nn.Linear(hid_dim, task.n_classes))
+                                  nn.Linear(task.input_dim, hid_dim), nn.Tanh(),
+                                  nn.Dropout(p=dropout), nn.Linear(hid_dim, hid_dim),
+                                  nn.Tanh(), nn.Dropout(p=dropout),
+                                  nn.Linear(hid_dim, task.n_classes))
         else:
             raise ValueError("Unrecognized classifier!")
 
-        self.pred_layers[task.name] = layer
-        self.add_module('%s_pred_layer' % task.name, layer)
+        #self.pred_layers[task.name] = layer
+        setattr(self, '%s_pred_layer' % task.name, layer)
+        #self.add_module('%s_pred_layer' % task.name, layer)
 
     def forward(self, task=None, input1=None, input2=None, label=None):
         '''
@@ -78,10 +81,14 @@ class MultiTaskModel(nn.Module):
             - logits (TODO)
         '''
         pair_input = task.pair_input
-        pred_layer = self.pred_layers[task.name]
+        pred_layer = getattr(self, '%s_pred_layer' % task.name) #self.pred_layers[task.name]
         scorer = task.scorer
         if pair_input:
-            if self.pair_enc_type == 'bidaf':
+            if isinstance(task, STS14Task):
+                sent1 = self.sent_encoder(input1)
+                sent2 = self.sent_encoder(input2)
+                logits = pred_layer(sent1, sent2) # not really logits
+            elif self.pair_enc_type == 'bidaf':
                 pair_embs = self.pair_encoder(input1, input2)
                 pair_emb, _ = pair_embs.max(1)
                 logits = pred_layer(pair_emb)
@@ -94,11 +101,15 @@ class MultiTaskModel(nn.Module):
         out = {'logits': logits}
         if label is not None:
             if isinstance(task, STS14Task):
-                loss = F.mse_loss(logits, label.squeeze(-1))
-                scorer(loss.data.cpu()[0])
+                #loss = F.binary_cross_entropy_with_logits(logits, label)
+                loss = -logits.mean() # negative cosine similarity
+                label = label.squeeze(-1).data.cpu().numpy()
+                logits = logits.squeeze(-1).data.cpu().numpy()
+                scorer(pearsonr(logits, label)[0])
             else:
-                loss = F.cross_entropy(logits, label.squeeze(-1))
-                scorer(logits, label.squeeze(-1))
+                label = label.squeeze(-1)
+                loss = F.cross_entropy(logits, label)
+                scorer(logits, label)
             out['loss'] = loss
         return out
 

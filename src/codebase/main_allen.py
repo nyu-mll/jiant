@@ -22,6 +22,7 @@ from allennlp.modules.similarity_functions import LinearSimilarity
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, \
                                               CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
+from allennlp.nn.util import device_mapping
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
@@ -51,7 +52,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
-             'sts14': PATH_PREFIX + 'STS/STS14-en-test',
+             'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
@@ -514,7 +515,19 @@ def main(arguments):
     trainer.train(tasks, args.task_ordering, args.n_passes_per_epoch,
                   optimizer_params, scheduler_params, args.load_model)
 
-    # Evaluate
+    ### Evaluate ###
+    # Load best model
+    # TODO(Alex): runs into issues if reusing exp name
+    serialization_files = os.listdir(args.exp_dir)
+    model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
+    epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
+                         for x in model_checkpoints])
+    model_path = os.path.join(args.exp_dir,
+                              "model_state_epoch_{}.th".format(epoch_to_load))
+    model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+    pdb.set_trace()
+    model.load_state_dict(model_state)
+
     results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
     for name, value in results.items():
