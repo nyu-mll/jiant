@@ -132,7 +132,7 @@ def get_word_vecs(path, vocab, word_dim):
                 word_vecs[word] = np.array(list(map(float, vec.split())))
                 assert len(word_vecs[word]) == word_dim, \
                         'Mismatch in word vector dimension'
-    log.info('Found %d/%d words with word vectors', len(word_vecs),
+    log.info('\tFound %d/%d words with word vectors', len(word_vecs),
              len(vocab))
     return word_vecs
 
@@ -394,20 +394,33 @@ def main(arguments):
                         type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate',
                         type=float, default=1.0)
-    parser.add_argument('--scheduler_threshold', help='scheduler threshold',
-                        type=float, default=1e-2)
+    parser.add_argument('--task_patience', help='patience in decaying per task lr',
+                        type=int, default=0)
 
-    parser.add_argument('--n_passes_per_epoch', help='Number of passes through'+
-                        " each task per epoch. Number of batches per pass " +
-                        "is automatically scaled to be even across passes.",
-                        type=int, default=1)
+    parser.add_argument('--scheduler_threshold', help='scheduler threshold',
+                        type=float, default=1e-3)
+    parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
+                        ' doesn\'t improve', type=float, default=.5)
+
+    parser.add_argument('--val_interval', help='Number of passes between '+
+                        ' validating', type=int, default=10)
+    parser.add_argument('--max_vals', help='Maximum number of validation'+
+                        ' checks', type=int, default=100)
+    parser.add_argument('--bpp_method', help='How to calculate ' +
+                        'the number of batches per pass for each task', type=str,
+                        choices=['fixed', 'percent_tr', 'proportional_rank'],
+                        default='fixed')
+    parser.add_argument('--bpp_base', help='If fixed n batches ' +
+                        'per pass, this is the number. If proportional, this ' +
+                        'is the smallest number', type=int, default=10)
     parser.add_argument('--val_metric', help='Single number for early stopping'+
                         '. Must be a task name or "micro" or "macro".',
                         type=str, default='micro')
+    parser.add_argument('--patience', help='patience in early stopping',
+                        type=int, default=5)
     parser.add_argument('--task_ordering', help='Method for ordering tasks',
                         type=str, default='given',
                         choices=['given', 'random', 'small_to_large'])
-
 
     args = parser.parse_args(arguments)
 
@@ -482,7 +495,8 @@ def main(arguments):
     ### Set up trainer ###
     optimizer_params = Params({'type':args.optimizer, 'lr':args.lr})
     scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
-                               'factor':.2, 'patience':0,
+                               'factor':args.lr_decay_factor,
+                               'patience':args.task_patience,
                                'threshold':args.scheduler_threshold,
                                'threshold_mode':'abs',
                                'verbose':True})
@@ -503,7 +517,7 @@ def main(arguments):
 
     train_params = Params({'num_epochs':args.n_epochs,
                            'cuda_device':args.cuda,
-                           'patience':5,
+                           'patience':args.patience,
                            'grad_norm':5.,
                            'val_metric':metric,
                            'lr_decay':.99, 'min_lr':1e-5,
@@ -512,21 +526,18 @@ def main(arguments):
                                            train_params)
 
     ### Train ###
-    trainer.train(tasks, args.task_ordering, args.n_passes_per_epoch,
+    trainer.train(tasks, args.task_ordering,
+                  args.val_interval, args.max_vals,
+                  args.bpp_method, args.bpp_base,
                   optimizer_params, scheduler_params, args.load_model)
 
     ### Evaluate ###
     # Load best model
-    # TODO(Alex): runs into issues if reusing exp name
-    serialization_files = os.listdir(args.exp_dir)
-    model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-    epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
-                         for x in model_checkpoints])
-    model_path = os.path.join(args.exp_dir,
-                              "model_state_epoch_{}.th".format(epoch_to_load))
+    # NB: runs into issues if reusing exp name
+    model_path = os.path.join(args.exp_dir, "best.th")
     model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-    pdb.set_trace()
     model.load_state_dict(model_state)
+    log.info('Loaded best model from %s', model_path)
 
     results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
     log.info('*** TEST RESULTS ***')
