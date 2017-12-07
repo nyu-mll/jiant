@@ -32,22 +32,26 @@ N_CHAR_FILTERS=100
 CHAR_FILTER_SIZES=5 #2,3,4,5
 CHAR_DIM=100
 WORD_DIM=300
-HID_DIM=512
+HID_DIM=${13:-512}
 
 PAIR_ENC=simple
 N_LAYERS=2
 N_HIGHWAY_LAYERS=2
 
-BATCH_SIZE=64
-N_EPOCHS=10
 OPTIMIZER=sgd
-LR=.1
-SCHED_THRESH=${10:-1e-3}
+LR=1.
+LR_DECAY=.2
+SCHED_THRESH=1e-3
+BATCH_SIZE=64
+BPP_METHOD=${10:-fixed}
+BPP_BASE=${11:-10}
 
-N_PASSES=1
+N_EPOCHS=10
+MAX_VALS=100
+VAL_INTERVAL=${12:-1}
 TASK_ORDERING=small_to_large
 VAL_METRIC=${9:-micro}
 
 CMD="python codebase/main.py --cuda ${GPUID} --log_file ${LOG_PATH}/${EXP_NAME}.log --tasks ${TASKS} --word_embs_file ${WORD_EMBS_FILE} --batch_size ${BATCH_SIZE} --lr ${LR}"
-ALLEN_CMD="python codebase/main_allen.py --cuda ${GPUID} --exp_name ${EXP_NAME} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --tasks ${TASKS} --classifier ${CLASSIFIER} --vocab_path ${VOCAB_DIR} --max_vocab_size ${VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --char_dim ${CHAR_DIM} --word_dim ${WORD_DIM} --hid_dim ${HID_DIM} --n_layers ${N_LAYERS} --pair_enc ${PAIR_ENC} --n_highway_layers ${N_HIGHWAY_LAYERS} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --optimizer ${OPTIMIZER} --lr ${LR} --n_passes_per_epoch ${N_PASSES} --task_ordering ${TASK_ORDERING} --val_metric ${VAL_METRIC} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_vocab ${LOAD_VOCAB} --load_index ${LOAD_INDEX}"
+ALLEN_CMD="python codebase/main_allen.py --cuda ${GPUID} --exp_name ${EXP_NAME} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --tasks ${TASKS} --classifier ${CLASSIFIER} --vocab_path ${VOCAB_DIR} --max_vocab_size ${VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --char_dim ${CHAR_DIM} --word_dim ${WORD_DIM} --hid_dim ${HID_DIM} --n_layers ${N_LAYERS} --pair_enc ${PAIR_ENC} --n_highway_layers ${N_HIGHWAY_LAYERS} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --lr_decay_factor ${LR_DECAY} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --val_metric ${VAL_METRIC} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_vocab ${LOAD_VOCAB} --load_index ${LOAD_INDEX}"
 eval ${ALLEN_CMD}

@@ -119,7 +119,8 @@ class MultiTaskTrainer:
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between logging to tensorboard
 
-    def train(self, tasks, task_ordering, n_passes_per_epoch,
+    def train(self, tasks, task_ordering, validation_interval, max_vals,
+              bpp_method, bpp_base,
               optimizer_params, scheduler_params, load_model=1) -> None:
         '''
         Train on tasks.
@@ -166,311 +167,302 @@ class MultiTaskTrainer:
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
-        # TODO(Alex): better organization
-        #task_infos = {task.name: {} for task in tasks}
-        task_infos = [{} for _ in range(n_tasks)]
+        task_infos = {task.name: {} for task in tasks}
         parameters = [p for p in self._model.parameters() if p.requires_grad]
+        if 'proportional' in bpp_method: # for computing n batches per pass
+            if 'tr' in bpp_method:
+                sizes = [iterator.get_num_batches(task.train_data) for\
+                         task in tasks]
+                min_size = min(sizes)
+                bpps = [size / min_size for size in sizes]
+            else:
+                sizes = [(idx, iterator.get_num_batches(task.train_data)) for \
+                        idx, task in enumerate(tasks)]
+                sizes.sort(key=lambda x: x[1])
+                bpps = [0] * n_tasks
+                for rank, (idx, _) in enumerate(sizes):
+                    bpps[idx] = rank + 1
         for task_idx, task in enumerate(tasks):
+            task_info = task_infos[task.name]
             n_tr_batches = iterator.get_num_batches(task.train_data)
             n_val_batches = iterator.get_num_batches(task.val_data)
-            task_infos[task_idx]['n_tr_batches'] = n_tr_batches
-            task_infos[task_idx]['n_val_batches'] = n_val_batches
-            task_infos[task_idx]['n_batches_per_pass'] = \
-                    int(math.ceil(n_tr_batches / n_passes_per_epoch))
+            task_info['n_tr_batches'] = n_tr_batches
+            tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None),
+                                     disable=self._no_tqdm, total=n_tr_batches)
+            task_info['tr_generator'] = tr_generator
+            task_info['loss'] = 0.0 # Maybe don't need here
+            task_info['total_batches_trained'] = 0
+            task_info['n_batches_since_val'] = 0
+            task_info['loss'] = 0
+            if bpp_method == 'fixed':
+                n_batches_per_pass = bpp_base
+            elif bpp_method == 'percent_tr':
+                n_batches_per_pass = int(math.ceil((1/bpp_base) * n_tr_batches))
+            elif bpp_method == 'proportional_rank':
+                n_batches_per_pass = int(bpp_base * bpps[task_idx])
+            task_info['n_batches_per_pass'] = n_batches_per_pass
+            task_info['n_val_batches'] = n_val_batches
             optimizer = Optimizer.from_params(parameters, copy.deepcopy(optimizer_params))
             scheduler = LearningRateScheduler.from_params(optimizer,
                                                           copy.deepcopy(scheduler_params))
-            task_infos[task_idx]['optimizer'] = optimizer
-            task_infos[task_idx]['scheduler'] = scheduler
-        per_epoch_metrics = {task.name: [] for task in tasks}
-        per_epoch_metrics['all'] = []
+            task_info['optimizer'] = optimizer
+            task_info['scheduler'] = scheduler
+            task_info['last_log'] = time.time()
+            logger.info("Task %s: training %d of %d batches per pass", task.name,
+                        n_batches_per_pass, n_tr_batches)
+            logger.info("\t%d batches, %.3f epochs between validation checks",
+                        n_batches_per_pass * validation_interval,
+                        n_batches_per_pass * validation_interval / n_tr_batches)
+        metric_histories = {task.name: [] for task in tasks}
+        metric_histories['all'] = []
         stop_training = {task.name: False for task in tasks}
 
+        # Get ordering on tasks, maybe should vary per pass
+        if task_ordering == 'given':
+            task_order = range(len(tasks))
+        elif task_ordering == 'random':
+            task_order = [i for i in range(len(tasks))]
+            random.shuffle(task_order)
+        elif task_ordering == 'small_to_large':
+            task_sizes = [(idx, task_infos[task.name]['n_tr_batches']) \
+                          for idx, task in enumerate(tasks)]
+            task_sizes.sort(key=lambda x: x[1])
+            task_order = [task_idx for task_idx, _ in task_sizes]
+
         logger.info("Beginning training.")
-        for epoch in range(epoch_counter, self._num_epochs):
-            logger.info("*** Epoch %d/%d ***", epoch + 1, self._num_epochs)
-            all_tr_metrics = {}
-            # TODO(Alex): keep track of training micro and macro averages
-
-            # Each epoch, log lr, create new generators, and reset metrics
-            for task_idx, task in enumerate(tasks):
-                logger.info("%s learning rate: %.5f", task.name,
-                            task_infos[task_idx]['optimizer'].param_groups[0]['lr'])
-                tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=1),
-                                         disable=self._no_tqdm,
-                                         total=task_infos[task_idx]['n_tr_batches'])
-                val_generator = tqdm.tqdm(iterator(task.val_data, num_epochs=1),
-                                          disable=self._no_tqdm,
-                                          total=task_infos[task_idx]['n_val_batches'])
-                task_infos[task_idx]['tr_generator'] = tr_generator
-                task_infos[task_idx]['val_generator'] = val_generator
-                task_infos[task_idx]['loss'] = 0.0
-                task_infos[task_idx]['n_batches_trained'] = 0
-
+        should_stop = False
+        n_pass = 0
+        all_tr_metrics = {}
+        while not should_stop:
             self._model.train()
-            # Extra pass to make sure we train all batches
-            for n_pass in range(n_passes_per_epoch):
-                logger.info("\t*** Pass %d/%d ***", n_pass+1, n_passes_per_epoch)
+            for train_idx, task_idx in enumerate(task_order):
+                task = tasks[task_idx]
+                if stop_training[task.name]: # maybe stop_training at gradient?
+                    continue
+                task_info = task_infos[task.name]
+                tr_generator = task_info['tr_generator']
+                optimizer = task_info['optimizer']
+                total_batches_trained = task_info['total_batches_trained']
+                n_batches_since_val = task_info['n_batches_since_val']
+                tr_loss = task_info['loss']
+                for batch in itertools.islice(tr_generator, task_info['n_batches_per_pass']):
+                    n_batches_since_val += 1
+                    total_batches_trained += 1
+                    optimizer.zero_grad()
+                    output_dict = self._forward(batch, task=task, for_training=True)
+                    assert "loss" in output_dict, "Model must return a dict " \
+                                                  "containing a 'loss' key"
+                    loss = output_dict["loss"]
+                    loss.backward()
+                    tr_loss += loss.data.cpu().numpy()
 
-                # Get ordering on tasks for this pass
-                if task_ordering == 'given':
-                    task_order = range(len(tasks))
-                elif task_ordering == 'random':
-                    task_order = [i for i in range(len(tasks))]
-                    random.shuffle(task_order)
-                elif task_ordering == 'small_to_large':
-                    task_sizes = [(idx, task_infos[idx]['n_tr_batches']) \
-                                  for idx in range(len(tasks))]
-                    task_sizes.sort(key=lambda x: x[1])
-                    task_order = [task_idx for task_idx, _ in task_sizes]
+                    # Gradient regularization and application
+                    if self._grad_norm:
+                        clip_grad_norm(self._model.parameters(),
+                                       self._grad_norm)
+                    optimizer.step()
 
-                for train_idx, task_idx in enumerate(task_order):
-                    task = tasks[task_idx]
-                    if stop_training[task.name]:
-                        continue
-                    task_info = task_infos[task_idx]
-                    tr_generator = task_info['tr_generator']
-                    n_tr_batches = task_info['n_tr_batches']
-                    n_batches_to_train = task_info['n_batches_per_pass']
-                    n_batches_trained = task_info['n_batches_trained']
-                    optimizer = task_info['optimizer']
-                    tr_loss = task_info['loss']
-                    logger.info("\tTraining %s task (%d/%d)",
-                                task.name, train_idx + 1, len(tasks))
-                    last_log = time.time()
-                    for batch in itertools.islice(tr_generator, n_batches_to_train):
-                        n_batches_trained += 1
-                        optimizer.zero_grad()
-                        output_dict = self._forward(batch, task=task,
-                                                    for_training=True)
-                        assert "loss" in output_dict, "Model must return a dict " \
-                                                      "containing a 'loss' key"
-                        loss = output_dict["loss"]
-                        loss.backward()
-                        tr_loss += loss.data.cpu().numpy()
+                    # Get metrics for all progress so far, update tqdm
+                    task_metrics = task.get_metrics()
+                    task_metrics["%s_loss" % task.name] = \
+                            float(tr_loss / n_batches_since_val)
+                    description = self._description_from_metrics(task_metrics)
+                    tr_generator.set_description(description)
 
-                        # Gradient regularization and application
-                        if self._grad_norm:
-                            clip_grad_norm(self._model.parameters(),
-                                           self._grad_norm)
-                        optimizer.step()
+                    # Training logging
+                    if self._no_tqdm and time.time() - task_info['last_log'] > self._log_interval:
+                        logger.info("Task %d/%d: %s, Batch %d (%d): %s", train_idx + 1, n_tasks,
+                                    task.name, n_batches_since_val, total_batches_trained,
+                                    description)
+                        for name, param in self._model.named_parameters():
+                            if param.grad is None:
+                                continue
+                            logger.debug("GRAD MEAN %s: %.7f", name,
+                                         param.grad.data.mean())
+                            logger.debug("GRAD STD %s: %.7f", name, \
+                                         param.grad.data.std())
+                        task_info['last_log'] = time.time()
 
-                        # Training logging
-                        task_metrics = task.get_metrics()
-                        task_metrics["%s_loss" % task.name] = \
-                                float(tr_loss / n_batches_trained)
-                        description = self._description_from_metrics(task_metrics)
-                        tr_generator.set_description(description)
-                        if self._no_tqdm and time.time() - last_log > self._log_interval:
-                            logger.info("Batch %d/%d: %s", n_batches_trained,
-                                        n_tr_batches, description)
-                            for name, param in self._model.named_parameters():
-                                if param.grad is None:
-                                    continue
-                                logger.debug("GRAD MEAN %s: %.7f", name,
-                                             param.grad.data.mean())
-                                logger.debug("GRAD STD %s: %.7f", name, \
-                                             param.grad.data.std())
-                            last_log = time.time()
+                    # Tensorboard logging
+                    if self._serialization_dir and \
+                            n_batches_since_val % self._summary_interval == 0:
+                        metric = task.val_metric
+                        for name, param in self._model.named_parameters():
+                            train_logs[metric].add_scalar("PARAMETER_MEAN/" + \
+                                    name, param.data.mean(), \
+                                    total_batches_trained)
+                            train_logs[metric].add_scalar("PARAMETER_STD/" + \
+                                    name, param.data.std(), \
+                                    total_batches_trained)
+                            if param.grad is not None:
+                                train_logs[metric].add_scalar("GRAD_MEAN/" + \
+                                        name, param.grad.data.mean(), \
+                                        total_batches_trained)
+                                train_logs[metric].add_scalar("GRAD_STD/" + \
+                                        name, param.grad.data.std(), \
+                                        total_batches_trained)
+                        train_logs[metric].add_scalar("LOSS/loss_train", \
+                                task_metrics["%s_loss" % task.name], \
+                                n_batches_since_val)
 
-                        # Tensorboard logging
-                        batch_num_total = n_tr_batches * epoch + n_batches_trained
-                        if self._serialization_dir and \
-                                batch_num_total % self._summary_interval == 0:
-                            metric = task.val_metric
-                            for name, param in self._model.named_parameters():
-                                train_logs[metric].add_scalar("PARAMETER_MEAN/" +\
-                                        name, param.data.mean(), batch_num_total)
-                                train_logs[metric].add_scalar("PARAMETER_STD/" + \
-                                        name, param.data.std(), batch_num_total)
-                                if param.grad is not None:
-                                    train_logs[metric].add_scalar("GRAD_MEAN/" + \
-                                            name, param.grad.data.mean(), \
-                                            batch_num_total)
-                                    train_logs[metric].add_scalar("GRAD_STD/" + \
-                                            name, param.grad.data.std(), \
-                                            batch_num_total)
-                            train_logs[metric].add_scalar("LOSS/loss_train", \
-                                    task_metrics["%s_loss" % task.name], \
-                                    batch_num_total)
+                    # Update training progress on that task
+                    task_info['n_batches_since_val'] = n_batches_since_val
+                    task_info['total_batches_trained'] = total_batches_trained
+                    task_info['loss'] = tr_loss
 
-                        # Update training progress on that task
-                        task_infos[task_idx]['n_batches_trained'] = n_batches_trained
-                        task_infos[task_idx]['loss'] = tr_loss
-
-            # Overall training logging after all passes through data
-            for task, task_info in zip(tasks, task_infos):
+            # Overall training logging after a pass through data
+            for task in tasks:
                 if stop_training[task.name]:
                     continue
+                task_info = task_infos[task.name]
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_tr_metrics["%s_%s" % (task.name, name)] = value
                     all_tr_metrics["%s_loss" % task.name] = \
-                            float(tr_loss / task_info['n_batches_trained'])
-
-            # make sure all batches were trained on
-            for task_info in task_infos:
-                if stop_training[task.name]:
-                    continue
-                assert task_info['n_batches_trained'] == task_info['n_tr_batches']
+                            float(task_info['loss'] / task_info['n_batches_since_val'])
 
             # Validation
-            logger.info("Validating...")
-            val_losses = [0.0] * n_tasks
-            n_examples_overall = 0.0
-            n_exampless = []
-            all_val_metrics = {"macro_accuracy":0.0, "micro_accuracy":0.0}
-            self._model.eval()
-            for task_idx, task in enumerate(tasks):
-                n_examples = 0.0
-                n_val_batches = task_infos[task_idx]['n_val_batches']
-                scheduler = task_infos[task_idx]['scheduler']
-                val_generator = iterator(task.val_data, num_epochs=1)
-                val_generator_tqdm = tqdm.tqdm(val_generator,
-                                               disable=self._no_tqdm,
-                                               total=n_val_batches)
-                batch_num = 0
-                for batch in val_generator_tqdm:
-                    batch_num += 1
-                    val_output_dict = self._forward(batch, task=task,
-                                                    for_training=False)
-                    loss = val_output_dict["loss"]
-                    val_losses[task_idx] += loss.data.cpu().numpy()
-                    task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = \
+            if n_pass % (validation_interval) == 0:
+                logger.info("Validating...")
+                epoch = int(validation_interval / n_pass) if n_pass else 0
+                val_losses = [0.0] * n_tasks
+                n_examples_overall = 0.0
+                all_val_metrics = {"macro_accuracy":0.0, "micro_accuracy":0.0}
+                self._model.eval()
+                for task_idx, task in enumerate(tasks):
+                    n_examples = 0.0
+                    n_val_batches = task_infos[task.name]['n_val_batches']
+                    scheduler = task_infos[task.name]['scheduler']
+                    val_generator = iterator(task.val_data, num_epochs=1)
+                    val_generator_tqdm = tqdm.tqdm(val_generator,
+                                                   disable=self._no_tqdm,
+                                                   total=n_val_batches)
+                    batch_num = 0
+                    for batch in val_generator_tqdm:
+                        batch_num += 1
+                        val_output_dict = self._forward(batch, task=task,
+                                                        for_training=False)
+                        loss = val_output_dict["loss"]
+                        val_losses[task_idx] += loss.data.cpu().numpy()
+                        task_metrics = task.get_metrics()
+                        task_metrics["%s_loss" % task.name] = \
+                                float(val_losses[task_idx] / batch_num)
+                        description = self._description_from_metrics(task_metrics)
+                        val_generator_tqdm.set_description(description)
+                        if self._no_tqdm and \
+                                time.time() - task_info['last_log'] > self._log_interval:
+                            logger.info("Batch %d/%d: %s", batch_num, \
+                                        n_val_batches, description)
+                            task_info['last_log'] = time.time()
+                        n_examples += batch['label'].size()[0]
+
+                    # Get task validation metrics and store in all_val_metrics
+                    task_metrics = task.get_metrics(reset=True)
+                    for name, value in task_metrics.items():
+                        all_val_metrics["%s_%s" % (task.name, name)] = value
+                    all_val_metrics["%s_loss" % task.name] = \
                             float(val_losses[task_idx] / batch_num)
-                    description = self._description_from_metrics(task_metrics)
-                    val_generator_tqdm.set_description(description)
-                    if self._no_tqdm and \
-                            time.time() - last_log > self._log_interval:
-                        logger.info("Batch %d/%d: %s", batch_num, \
-                                    n_val_batches, description)
-                        last_log = time.time()
-                    n_examples += batch['label'].size()[0]
+                    all_val_metrics["micro_accuracy"] += \
+                            all_val_metrics["%s_accuracy" % (task.name)] * n_examples
+                    all_val_metrics["macro_accuracy"] += \
+                            all_val_metrics["%s_accuracy" % (task.name)]
+                    n_examples_overall += n_examples
 
-                # Get task validation metrics and store in all_val_metrics
-                task_metrics = task.get_metrics(reset=True)
-                for name, value in task_metrics.items():
-                    all_val_metrics["%s_%s" % (task.name, name)] = value
-                all_val_metrics["%s_loss" % task.name] = \
-                        float(val_losses[task_idx] / batch_num)
-                all_val_metrics["micro_accuracy"] += \
-                        all_val_metrics["%s_accuracy" % (task.name)] * n_examples
-                all_val_metrics["macro_accuracy"] += \
-                        all_val_metrics["%s_accuracy" % (task.name)]
-                n_examples_overall += n_examples
-                n_exampless.append(n_examples)
+                    # Check if patience ran out and should stop training
+                    # No patience check because if we stop training for a single
+                    # task, the other tasks will likely cause degredation so we
+                    # would want to continue training anyways
+                    this_epoch_metric = all_val_metrics[task.val_metric]
+                    metric_history = metric_histories[task.name]
+                    metric_history.append(this_epoch_metric)
 
-                # Check if patience ran out and should stop training
-                # No patience check because if we stop training for a single
-                # task, the other tasks will likely cause degredation so we
-                # would want to continue training anyways
-                this_epoch_metric = all_val_metrics[task.val_metric]
-                per_epoch_metric = per_epoch_metrics[task.name]
-                '''
-                if len(per_epoch_metric) > patience:
-                # Is the worst validation performance in past self._patience
-                # epochs is better than current value?
-                    if task.val_metric_decreases:
-                        should_stop = max(per_epoch_metric[-patience:]) <\
-                            this_epoch_metric
-                    else:
-                        should_stop = min(per_epoch_metric[-patience:]) >\
-                            this_epoch_metric
-                    if should_stop:
-                        logger.info("Ran out of patience on %s", task.name)
-                        stop_training[task.name] = True
-                '''
-                per_epoch_metric.append(this_epoch_metric)
-                per_epoch_metrics[task.name] = per_epoch_metric
+                    # Adjust task-specific learning rate
+                    if scheduler is not None:
+                        # Grim hack to determine whether the validation metric we
+                        # are recording needs to be passed to the scheduler.
+                        if isinstance(scheduler,
+                                      torch.optim.lr_scheduler.ReduceLROnPlateau):
+                            scheduler.step(this_epoch_metric, epoch)
+                        else:
+                            scheduler.step(epoch)
 
-                # Adjust task-specific learning rate
-                if scheduler is not None:
-                    # Grim hack to determine whether the validation metric we
-                    # are recording needs to be passed to the scheduler.
-                    # This is required because the step() function of the
-                    # different schedulers are (understandably) different to
-                    # ReduceLROnPlateau.
-                    if isinstance(scheduler,
-                                  torch.optim.lr_scheduler.ReduceLROnPlateau):
-                        scheduler.step(this_epoch_metric, epoch)
-                    else:
-                        scheduler.step(epoch)
-
-                # Task specific learning rate decay
-                # Do we need? Maybe keep this across all tasks
-                '''
-                if not is_best_so_far and self._lr_decay:
-                    self._optimizer.param_groups[0]['lr'] *= self._lr_decay
-                if self._optimizer.param_groups[0]['lr'] < self._min_lr:
-                    logger.info("Minimum lr hit. Stopping training.")
-                    return
-                '''
-
-            # Print all validation metrics
-            # Should divide aggregate scores
-            all_val_metrics['micro_accuracy'] /= n_examples_overall
-            all_val_metrics['macro_accuracy'] /= n_tasks
-            for name, value in all_val_metrics.items():
-                logger.info("Statistic: %s", name)
-                if name in all_tr_metrics:
-                    logger.info("\ttraining: %3f", all_tr_metrics[name])
-                logger.info("\tvalidation: %3f", value)
-                if self._serialization_dir:
+                # Print all validation metrics
+                # Should divide aggregate scores
+                all_val_metrics['micro_accuracy'] /= n_examples_overall
+                all_val_metrics['macro_accuracy'] /= n_tasks
+                logger.info("***** Pass %d / Epoch %d *****", n_pass, epoch)
+                for name, value in all_val_metrics.items():
+                    logger.info("Statistic: %s", name)
                     if name in all_tr_metrics:
-                        train_logs[name].add_scalar(name, all_tr_metrics[name], epoch)
-                    val_logs[name].add_scalar(name, value, epoch)
+                        logger.info("\ttraining: %3f", all_tr_metrics[name])
+                    logger.info("\tvalidation: %3f", value)
+                    if self._serialization_dir:
+                        if name in all_tr_metrics:
+                            train_logs[name].add_scalar(name, all_tr_metrics[name], epoch)
+                        val_logs[name].add_scalar(name, value, epoch)
 
-            # Check if should stop based on chosen validation metric
-            per_epoch_metric = per_epoch_metrics['all']
-            this_epoch_metric = all_val_metrics[self._val_metric]
-            if len(per_epoch_metric) > patience:
-                # Is the worst validation performance in past self._patience
-                # epochs is better than current value?
+                # Check if should stop based on chosen validation metric
+                metric_history = metric_histories['all']
+                this_epoch_metric = all_val_metrics[self._val_metric]
+                if len(metric_history) > patience:
+                    # Is the worst validation performance in past self._patience
+                    # epochs is better than current value?
+                    if self._val_metric_decreases:
+                        should_stop = max(
+                            metric_history[-patience:]) <= this_epoch_metric
+                    else:
+                        should_stop = min(
+                            metric_history[-patience:]) >= this_epoch_metric
+                    if should_stop:
+                        logger.info("Out of patience. Stopping training")
+                metric_history.append(this_epoch_metric)
+
+                # Check if should save based on aggregate score
                 if self._val_metric_decreases:
-                    should_stop = max(
-                        per_epoch_metric[-patience:]) < this_epoch_metric
+                    is_best_so_far = this_epoch_metric == \
+                            min(metric_history)
                 else:
-                    should_stop = min(
-                        per_epoch_metric[-patience:]) > this_epoch_metric
-                if should_stop:
-                    logger.info("Ran out of patience.  Stopping training.")
-                    return # can't break because of task loop
-            per_epoch_metric.append(this_epoch_metric)
-            per_epoch_metrics['all'] = per_epoch_metric
+                    is_best_so_far = this_epoch_metric == \
+                            max(metric_history)
+                if self._serialization_dir:
+                    self._save_checkpoint(epoch, is_best=is_best_so_far)
 
-            # Check if should save based on aggregate score
-            if self._val_metric_decreases:
-                is_best_so_far = this_epoch_metric == \
-                        min(per_epoch_metric)
-            else:
-                is_best_so_far = this_epoch_metric == \
-                        max(per_epoch_metric)
-            if self._serialization_dir:
-                self._save_checkpoint(epoch, is_best=is_best_so_far)
+                # Decay all learning rates based on aggregate score
+                # and check if minimum lr has been hit to stop training
+                all_stopped = True # check if all tasks are stopped
+                for task in tasks:
+                    task_info = task_infos[task.name]
+                    if not is_best_so_far and self._lr_decay:
+                        task_info['optimizer'].param_groups[0]['lr'] *= self._lr_decay
+                    if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
+                        logger.info("Minimum lr hit on %s.", task.name)
+                        stop_training[task.name] = True
+                    all_stopped = all_stopped and stop_training[task.name]
+                if all_stopped:
+                    should_stop = True
+                    logging.info("All tasks hit minimum lr. Stopping training")
 
-            # Decay all learning rates based on aggregate score?
-            '''
-            if self._learning_rate_scheduler:
-                # Grim hack to determine whether the validation metric we
-                # are recording needs to be passed to the scheduler.
-                # This is required because the step() function of the
-                # different schedulers are (understandably) different to
-                # ReduceLROnPlateau.
-                if isinstance(self._learning_rate_scheduler,
-                              torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    self._learning_rate_scheduler.step(this_epoch_val_metric,
-                                                       epoch)
-                else:
-                    self._learning_rate_scheduler.step(epoch)
-            '''
+                # Reset training progress after validating
+                all_tr_metrics = {}
+                for task in tasks:
+                    task_infos[task.name]['n_batches_since_val'] = 0
+                    task_infos[task.name]['loss'] = 0
 
-            for task_info in task_infos:
-                if not is_best_so_far and self._lr_decay:
-                    task_info['optimizer'].param_groups[0]['lr'] *= self._lr_decay
-                if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
-                    logger.info("Minimum lr hit on %s.", task.name)
-                    stop_training[task.name] = True
+                # Check to see if maximum progress hit
+                if epoch >= max_vals:
+                    logging.info("Maximum number of validations hit. Stopping training")
+                    should_stop = True
+
+            n_pass += 1
+
+        # print number of effective epochs trained per task
+        logging.info('Stopped training after %d passes, %d validation checks',
+                     n_pass, n_pass / validation_interval)
+        for task in tasks:
+            task_info = task_infos[task.name]
+            logging.info('Trained %s for %d batches or %.3f epochs',
+                         task.name, task_info['total_batches_trained'],
+                         task_info['total_batches_trained'] / task_info['n_tr_batches'])
 
     def _forward(self, batch: dict, for_training: bool,
                  task=None) -> dict:
