@@ -610,7 +610,7 @@ class RTE8Task(Task):
     Task class for Recognizing Textual Entailment-8
     '''
 
-    def __init__(self, path, max_seq_len, name="rte"):
+    def __init__(self, path, max_seq_len, name="rte8"):
         '''
         Args:
             path: path to RTE-8 data directory
@@ -730,13 +730,13 @@ class RTETask(Task):
     Task class for Recognizing Textual Entailment 1, 2, 3, and 5.
     '''
 
-    def __init__(self, path, way_type, name="rte"):
+    def __init__(self, path, name="rte"):
         '''
         Args:
             path: path to RTE-8 data directory
             way_type: using 2way or 3way data
         '''
-        super(RTE8Task, self).__init__(name) 
+        super(RTETask, self).__init__(name) 
         self.name = name
         self.pair_input = 1
         self.load_data(path)
