@@ -235,6 +235,7 @@ class MultiTaskTrainer:
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
+            random.shuffle(task_order)
             for train_idx, task_idx in enumerate(task_order):
                 task = tasks[task_idx]
                 if stop_training[task.name]: # maybe stop_training at gradient?
