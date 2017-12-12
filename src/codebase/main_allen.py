@@ -39,6 +39,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
+PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,

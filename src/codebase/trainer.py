@@ -235,10 +235,11 @@ class MultiTaskTrainer:
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
-            random.shuffle(task_order)
+            if task_ordering == 'random':
+                random.shuffle(task_order)
             for train_idx, task_idx in enumerate(task_order):
                 task = tasks[task_idx]
-                if stop_training[task.name]: # maybe stop_training at gradient?
+                if stop_training[task.name]:
                     continue
                 task_info = task_infos[task.name]
                 tr_generator = task_info['tr_generator']
@@ -246,6 +247,10 @@ class MultiTaskTrainer:
                 total_batches_trained = task_info['total_batches_trained']
                 n_batches_since_val = task_info['n_batches_since_val']
                 tr_loss = task_info['loss']
+                preds = [0] * 3
+                gold = [0] * 3
+                n_exs = 0
+                pdb.set_trace()
                 for batch in itertools.islice(tr_generator, task_info['n_batches_per_pass']):
                     n_batches_since_val += 1
                     total_batches_trained += 1
@@ -256,6 +261,15 @@ class MultiTaskTrainer:
                     loss = output_dict["loss"]
                     loss.backward()
                     tr_loss += loss.data.cpu().numpy()
+                    preds[0] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 0.))
+                    preds[1] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 1.))
+                    preds[2] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 2.))
+                    gold[0] += torch.sum(torch.eq(batch['label'], 0.))
+                    gold[1] += torch.sum(torch.eq(batch['label'], 1.))
+                    gold[2] += torch.sum(torch.eq(batch['label'], 2.))
+                    n_exs += batch['label'].size()[0]
+                    pdb.set_trace()
+                    assert(sum(gold) == n_exs)
 
                     # Gradient regularization and application
                     if self._grad_norm:
@@ -310,6 +324,9 @@ class MultiTaskTrainer:
                     task_info['n_batches_since_val'] = n_batches_since_val
                     task_info['total_batches_trained'] = total_batches_trained
                     task_info['loss'] = tr_loss
+                logger.info("Predicted %d/%d entailment, %d/%d other, %d/%d not",
+                            preds[0], gold[0], preds[1], gold[1], preds[2], gold[2])
+                logger.info("Number examples: %d", n_exs)
 
             # Overall training logging after a pass through data
             for task in tasks:

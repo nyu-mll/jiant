@@ -1,13 +1,13 @@
 #!/bin/bash
 # 
 #SBATCH -t 2-00:00
-#SBATCH --qos=batch
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:p40:1
 #SBATCH --mail-type=end
 #SBATCH --mail-user=aw3272@nyu.edu
 
 # TODO config files
 SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
+SCRATCH_PREFIX='/beegfs/aw3272/'
 EXP_NAME=${3:-'debug'}
 GPUID=${2:-3}
 
@@ -34,12 +34,12 @@ CHAR_DIM=100
 WORD_DIM=300
 HID_DIM=${13:-512}
 
-PAIR_ENC=simple
+PAIR_ENC=${15:-simple}
 N_LAYERS=2
 N_HIGHWAY_LAYERS=2
 
 OPTIMIZER=sgd
-LR=.01
+LR=${16:-1.}
 LR_DECAY=.2
 SCHED_THRESH=1e-3
 BATCH_SIZE=64
