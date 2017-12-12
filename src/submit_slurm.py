@@ -27,19 +27,29 @@ ARG2IDX = {'tasks':1,
 
 #LOG_PATH="${SCRATCH_PREFIX}/ckpts/$DATE/${EXP_NAME}/info.log"
 DATE = datetime.datetime.now().strftime("%m-%d")
+DATE = "12-06"
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
+<<<<<<< HEAD
 SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
 EXP_PREFIX = 'bidaf'
+=======
+EXP_PREFIX = 'dim'
+>>>>>>> c6c9864bd5be1822892e71f640dc71e28ef512ab
 GPUID = str(0)
-LOAD_MODEL = str(0)
+LOAD_MODEL = str(1)
 LOAD_TASKS = str(1)
 LOAD_VOCAB = str(1)
 LOAD_INDEX = str(0)
 
+<<<<<<< HEAD
 PAIR_TASKS = ['msrp', 'rte8', 'quora', 'snli', 'mnli']
 SINGLE_TASKS = ['sst']
 TASKS = PAIR_TASKS + SINGLE_TASKS
 HID_DIMS = [256, 512, 1024]
+=======
+TASKS = ['msrp', 'rte8', 'sst', 'quora', 'snli', 'mnli']
+HID_DIMS = [2048]
+>>>>>>> c6c9864bd5be1822892e71f640dc71e28ef512ab
 BPP_METHOD = 'percent_tr'
 N_BPPS = [1000, 100, 10, 1]
 BATCHES_BTW_VALIDATION = 100
@@ -47,8 +57,12 @@ LRS = [.01, .03, .3]
 N_RESTARTS = 10
 
 # Varying the validation metric for multi task
+<<<<<<< HEAD
 '''
 for metric in ['micro']: #['micro', 'macro'] + TASKS:
+=======
+for metric in ['micro']: #, 'macro'] + TASKS:
+>>>>>>> c6c9864bd5be1822892e71f640dc71e28ef512ab
     #for n_bpp in N_BPPS:
     for hid_dim in HID_DIMS:
         exp_name = "%s_%d_%s" % (EXP_PREFIX, hid_dim, metric)
