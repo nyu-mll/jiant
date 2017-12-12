@@ -27,9 +27,10 @@ from allennlp.nn.util import device_mapping
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
-        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task
+        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task, \
+        TwitterIronyTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
-                                    MultiTaskModel, HeadlessPairEncoder
+                                    MultiTaskModel, HeadlessPairEncoder, BoWSentEncoder
 from codebase.trainer import MultiTaskTrainer
 from codebase.evaluate import evaluate
 from codebase.utils.encoders import MultiLayerRNNEncoder
@@ -44,7 +45,8 @@ NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
              'rte': RTETask, 'snli': SNLITask,
              'sst': SSTTask, 'sts14': STS14Task,
-             'small':QuoraTask, 'small2': QuoraTask}
+             'small':QuoraTask, 'small2': QuoraTask,
+             'twitter-irony': TwitterIronyTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
              'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
@@ -54,7 +56,9 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'sst': PATH_PREFIX + 'SST/binary/',
              'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
-             'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
+             'small2': PATH_PREFIX + 'Quora/quora_small.tsv',
+             'twitter-irony': PATH_PREFIX + 'twitter-irony/datasets/train/' +
+                              'SemEval2018-T4-train-taskA.txt'}
 
 # lazy way to map tasks to preprocessed tasks
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
@@ -66,7 +70,8 @@ NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
              'sst': PATH_PREFIX + 'SST/sst_task.pkl',
              'sts14': PATH_PREFIX + 'STS/sts14_task.pkl',
              'small': PATH_PREFIX + 'Quora/small_task.pkl',
-             'small2': PATH_PREFIX + 'Quora/small2_task.pkl'}
+             'small2': PATH_PREFIX + 'Quora/small2_task.pkl',
+             'twitter-irony': PATH_PREFIX + 'twitter-irony/twitter_irony_task.pkl'}
 
 
 def load_tasks(task_names, max_seq_len, load):
@@ -96,9 +101,10 @@ def build_classifiers(tasks, model, classifier_type, pair_enc, input_dim,
         if task.pair_input:
             if pair_enc == 'bidaf':
                 task_dim = input_dim * 10
-            else:
-                assert pair_enc == 'simple'
+            elif pair_enc == 'simple':
                 task_dim = input_dim * 8
+            elif pair_enc == 'bow':
+                task_dim = input_dim * 4
         else:
             task_dim = input_dim * 2
         model.build_classifier(task, classifier_type, task_dim, hid_dim,
@@ -360,7 +366,8 @@ def main(arguments):
     parser.add_argument('--max_seq_len', help='max sequence length',
                         type=int, default=35)
     parser.add_argument('--classifier', help='type of classifier to use',
-                        type=str, default='log_reg', choices=['log_reg', 'mlp'])
+                        type=str, default='log_reg',
+                        choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier',
                         type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout',
@@ -374,7 +381,8 @@ def main(arguments):
                         ' embedding combiner', type=str, default='2,3,4,5')
 
     parser.add_argument('--pair_enc', help='type of pair encoder to use',
-                        type=str, default='bidaf', choices=['simple', 'bidaf'])
+                        type=str, default='bidaf',
+                        choices=['simple', 'bidaf', 'bow'])
     parser.add_argument('--word_dim', help='dimension of word embeddings',
                         type=int, default=300)
     parser.add_argument('--char_dim', help='dimension of char embeddings',
@@ -439,7 +447,10 @@ def main(arguments):
     start_time = time.time()
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
-    dim = args.hid_dim
+    if args.pair_enc == 'bow':
+        dim = input_dim
+    else:
+        dim = args.hid_dim
     tasks, vocab, word_embs = \
             prepare_tasks(args.tasks.split(','), args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_seq_len,
@@ -466,9 +477,13 @@ def main(arguments):
         'input_size': input_dim,
         'hidden_size': dim,
         'bidirectional': True}))
-    sent_encoder = HeadlessSentEncoder(vocab, text_field_embedder,
-                                       args.n_highway_layers,
-                                       phrase_layer)
+    if args.pair_enc == 'bow':
+        sent_encoder = BoWSentEncoder(vocab, text_field_embedder)
+        pair_encoder = None
+    else:
+        sent_encoder = HeadlessSentEncoder(vocab, text_field_embedder,
+                                           args.n_highway_layers,
+                                           phrase_layer)
     if args.pair_enc == 'bidaf':
         modeling_layer = s2s_e.by_name('lstm').from_params(Params({
             'input_size': 8 * dim,
@@ -493,7 +508,7 @@ def main(arguments):
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
     ### Set up trainer ###
-    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr})
+    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr}) #, 'weight_decay':.9})
     scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
                                'factor':args.lr_decay_factor,
                                'patience':args.task_patience,

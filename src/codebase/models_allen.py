@@ -34,7 +34,7 @@ class MultiTaskModel(nn.Module):
         Args:
         '''
         super(MultiTaskModel, self).__init__()
-        self.sent_encoder = sent_encoder # does this train two different models...?
+        self.sent_encoder = sent_encoder
         self.pair_encoder = pair_encoder
         self.pair_enc_type = pair_enc_type
         self.pred_layers = {}
@@ -57,7 +57,7 @@ class MultiTaskModel(nn.Module):
                                   nn.Linear(hid_dim, task.n_classes))
         elif classifier_type == 'fancy_mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout),
-                                  nn.Linear(task.input_dim, hid_dim), nn.Tanh(),
+                                  nn.Linear(input_dim, hid_dim), nn.Tanh(),
                                   nn.Dropout(p=dropout), nn.Linear(hid_dim, hid_dim),
                                   nn.Tanh(), nn.Dropout(p=dropout),
                                   nn.Linear(hid_dim, task.n_classes))
@@ -95,6 +95,10 @@ class MultiTaskModel(nn.Module):
             elif self.pair_enc_type == 'simple':
                 pair_emb = self.pair_encoder(input1, input2)
                 logits = pred_layer(pair_emb)
+            elif self.pair_enc_type == 'bow':
+                sent1 = self.sent_encoder(input1)
+                sent2 = self.sent_encoder(input2)
+                logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1))
         else:
             sent_emb = self.sent_encoder(input1)
             logits = pred_layer(sent_emb)
@@ -169,8 +173,8 @@ class HeadlessPairEncoder(Model):
         """
         embedded_question = self._highway_layer(self._text_field_embedder(question))
         embedded_passage = self._highway_layer(self._text_field_embedder(passage))
-        batch_size = embedded_question.size(0)
-        passage_length = embedded_passage.size(1)
+        #batch_size = embedded_question.size(0)
+        #passage_length = embedded_passage.size(1)
         question_mask = util.get_text_field_mask(question).float()
         passage_mask = util.get_text_field_mask(passage).float()
         question_lstm_mask = question_mask if self._mask_lstms else None
@@ -198,6 +202,40 @@ class HeadlessPairEncoder(Model):
         return torch.cat([encoded_question, encoded_passage,
                           torch.abs(encoded_question - encoded_passage),
                           encoded_question * encoded_passage], 1)
+
+class BoWSentEncoder(Model):
+    def __init__(self, vocab: Vocabulary,
+                 text_field_embedder: TextFieldEmbedder,
+                 initializer: InitializerApplicator = InitializerApplicator(),
+                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+        super(BoWSentEncoder, self).__init__(vocab)
+
+        self._text_field_embedder = text_field_embedder
+        self.output_dim = text_field_embedder.get_output_dim()
+        initializer(self)
+
+    def forward(self, question):
+        # pylint: disable=arguments-differ
+        """
+        Parameters
+        ----------
+        question : Dict[str, torch.LongTensor]
+            From a ``TextField``.
+        passage : Dict[str, torch.LongTensor]
+            From a ``TextField``.  The model assumes that this passage contains the answer to the
+            question, and predicts the beginning and ending positions of the answer within the
+            passage.
+
+        Returns
+        -------
+        pair_rep : torch.FloatTensor?
+            Tensor representing the final output of the BiDAF model
+            to be plugged into the next module
+
+        """
+        word_char_embs = self._text_field_embedder(question)
+        question_mask = util.get_text_field_mask(question).float()
+        return word_char_embs.mean(1) # need to get # nonzero elts
 
 
 class HeadlessSentEncoder(Model):

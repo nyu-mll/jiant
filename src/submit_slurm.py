@@ -13,16 +13,17 @@ Make sure to change
 
 #LOG_PATH="${SCRATCH_PREFIX}/ckpts/$DATE/${EXP_NAME}/info.log"
 DATE = datetime.datetime.now().strftime("%m-%d")
+DATE = "12-06"
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
-EXP_PREFIX = 'random'
+EXP_PREFIX = 'dim'
 GPUID = str(0)
-LOAD_MODEL = str(0)
+LOAD_MODEL = str(1)
 LOAD_TASKS = str(1)
 LOAD_VOCAB = str(1)
 LOAD_INDEX = str(1)
 
 TASKS = ['msrp', 'rte8', 'sst', 'quora', 'snli', 'mnli']
-HID_DIMS = [1024]#, 2048]
+HID_DIMS = [2048]
 BPP_METHOD = 'percent_tr'
 N_BPPS = [1000, 100, 10, 1]
 BATCHES_BTW_VALIDATION = 100
@@ -30,10 +31,10 @@ LRS = [1., .1]
 N_RESTARTS = 1
 
 # Varying the validation metric for multi task
-for metric in ['micro', 'macro'] + TASKS:
+for metric in ['micro']: #, 'macro'] + TASKS:
     #for n_bpp in N_BPPS:
     for hid_dim in HID_DIMS:
-        exp_name = "%s_metric_%s" % (EXP_PREFIX, metric)
+        exp_name = "%s_%d_%s" % (EXP_PREFIX, hid_dim, metric)
         dir_name = SCRATCH_PREFIX + exp_name
         out_file = dir_name + '/sbatch.out'
         err_file = dir_name + '/sbatch.err'

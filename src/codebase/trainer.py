@@ -246,6 +246,9 @@ class MultiTaskTrainer:
                 total_batches_trained = task_info['total_batches_trained']
                 n_batches_since_val = task_info['n_batches_since_val']
                 tr_loss = task_info['loss']
+                preds = [0] * 3
+                golds = [0] * 3
+                n_exs = 0
                 for batch in itertools.islice(tr_generator, task_info['n_batches_per_pass']):
                     n_batches_since_val += 1
                     total_batches_trained += 1
@@ -256,6 +259,13 @@ class MultiTaskTrainer:
                     loss = output_dict["loss"]
                     loss.backward()
                     tr_loss += loss.data.cpu().numpy()
+                    preds[0] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 0.)).cpu().data[0]
+                    preds[1] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 1.)).cpu().data[0]
+                    preds[2] += torch.sum(torch.eq(output_dict['logits'].max(1)[1], 2.)).cpu().data[0]
+                    golds[0] += torch.sum(torch.eq(batch['label'], 0.)).cpu().data[0]
+                    golds[1] += torch.sum(torch.eq(batch['label'], 1.)).cpu().data[0]
+                    golds[2] += torch.sum(torch.eq(batch['label'], 2.)).cpu().data[0]
+                    n_exs += batch['label'].size()[0]
 
                     # Gradient regularization and application
                     if self._grad_norm:
@@ -310,6 +320,9 @@ class MultiTaskTrainer:
                     task_info['n_batches_since_val'] = n_batches_since_val
                     task_info['total_batches_trained'] = total_batches_trained
                     task_info['loss'] = tr_loss
+                logger.info("Predicted %d/%d entailment, %d/%d other, %d/%d not",
+                            preds[0], golds[0], preds[1], golds[1], preds[2], golds[2])
+                logger.info("Number examples: %d", n_exs)
 
             # Overall training logging after a pass through data
             for task in tasks:
@@ -325,7 +338,7 @@ class MultiTaskTrainer:
             # Validation
             if n_pass % (validation_interval) == 0:
                 logger.info("Validating...")
-                epoch = int(validation_interval / n_pass) if n_pass else 0
+                epoch = int(n_pass / validation_interval)
                 val_losses = [0.0] * n_tasks
                 n_examples_overall = 0.0
                 all_val_metrics = {"macro_accuracy":0.0, "micro_accuracy":0.0}
