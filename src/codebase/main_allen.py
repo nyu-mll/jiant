@@ -3,6 +3,7 @@ import pdb
 import sys
 import time
 import copy
+import random
 import argparse
 import logging as log
 from collections import defaultdict
@@ -343,6 +344,8 @@ def main(arguments):
 
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
                         type=int, default=0)
+    parser.add_argument('--random_seed', help='random seed to use',
+                        type=int, default=None)
 
     parser.add_argument('--exp_name', help='experiment name',
                         type=str, default='')
@@ -445,9 +448,17 @@ def main(arguments):
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
+    if args.random_seed is None:
+        seed = random.randint(1, 10000)
+    else:
+        seed = args.random_seed
+    log.info("Using random seed %d", seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
     if args.cuda >= 0:
         log.info("Using GPU %d", args.cuda)
         torch.cuda.set_device(args.cuda)
+        torch.cuda.manual_seed_all(seed)
 
     ### Load tasks ###
     log.info("Loading tasks...")
