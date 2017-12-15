@@ -357,6 +357,8 @@ def main(arguments):
     parser.add_argument('--word_embs_file', help='file containing word ' +
                         'embeddings', type=str, default='')
 
+    parser.add_argument('--should_train', help='1 if should train model',
+                        type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint',
                         type=int, default=1)
     parser.add_argument('--load_tasks', help='1 if load tasks',
@@ -428,14 +430,12 @@ def main(arguments):
     parser.add_argument('--bpp_base', help='If fixed n batches ' +
                         'per pass, this is the number. If proportional, this ' +
                         'is the smallest number', type=int, default=10)
-    parser.add_argument('--val_metric', help='Single number for early stopping'+
-                        '. Must be a task name or "micro" or "macro".',
-                        type=str, default='micro')
     parser.add_argument('--patience', help='patience in early stopping',
                         type=int, default=5)
     parser.add_argument('--task_ordering', help='Method for ordering tasks',
                         type=str, default='given',
-                        choices=['given', 'random', 'small_to_large'])
+                        choices=['given', 'random', 'random_per_pass',
+                                 'small_to_large', 'large_to_small'])
 
     args = parser.parse_args(arguments)
 
@@ -455,20 +455,29 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
+    if args.tasks == 'all' or args.tasks == 'none':
+        tasks = ALL_TASKS
+    else:
+        tasks = args.tasks.split(',')
     tasks, vocab, word_embs = \
-            prepare_tasks(args.tasks.split(','), args.word_embs_file,
-            #prepare_tasks(ALL_TASKS, args.word_embs_file,
+            prepare_tasks(ALL_TASKS, args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_seq_len,
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                           args.load_tasks, args.load_vocab, args.load_index)
     train_tasks, eval_tasks = [], []
-    for task in tasks:
-        if task.name in args.tasks:
-            train_tasks.append(task)
-        else:
-            eval_tasks.append(task)
-    eval_tasks = [task for task in tasks if task.name == 'sts']
+    if args.tasks == 'all':
+        train_tasks = tasks
+    elif args.tasks == 'none':
+        eval_tasks = tasks
+    else:
+        for task in tasks:
+            if task.name in args.tasks:
+                train_tasks.append(task)
+            else:
+                eval_tasks.append(task)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
+    log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
+    log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
 
     ### Build model ###
     # Probably should create another function
@@ -528,25 +537,10 @@ def main(arguments):
                                'threshold_mode':'abs',
                                'verbose':True})
     iterator = BasicIterator(args.batch_size)
-
-    # Get validation metric
-    if args.val_metric in ['micro', 'macro']:
-        metric = "+%s_accuracy" % args.val_metric
-    else:
-        assert args.val_metric in [task.name for task in tasks], \
-                "Invalid validation metric"
-        task = [task for task in tasks if task.name == args.val_metric][0]
-        if task.val_metric_decreases:
-            metric = "-"
-        else:
-            metric = "+"
-        metric += task.val_metric
-
     train_params = Params({'num_epochs':args.n_epochs,
                            'cuda_device':args.cuda,
                            'patience':args.patience,
                            'grad_norm':5.,
-                           'val_metric':metric,
                            'lr_decay':.99, 'min_lr':1e-5,
                            'no_tqdm':True})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
@@ -554,14 +548,12 @@ def main(arguments):
 
     ### Train ###
     to_train = [p for p in model.parameters() if p.requires_grad]
-    if train_tasks: # if don't want to train
-        pass
-    else:
+    if train_tasks and args.should_train:
         trainer.train(train_tasks, args.task_ordering,
                       args.val_interval, args.max_vals,
                       args.bpp_method, args.bpp_base,
                       to_train, optimizer_params, scheduler_params, args.load_model)
-    #else:
+    else:
         log.info("No training tasks found. Skipping training.")
 
     ### Evaluate ###
@@ -597,7 +589,7 @@ def main(arguments):
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
-        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test", debug=False)
+        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)

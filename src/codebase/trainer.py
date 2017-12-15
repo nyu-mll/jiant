@@ -38,7 +38,6 @@ class MultiTaskTrainer:
                  model: Model,
                  iterator: DataIterator,
                  patience: int = 2,
-                 val_metric: str = "-loss",
                  num_epochs: int = 20,
                  serialization_dir: Optional[str] = None,
                  cuda_device: int = -1,
@@ -105,19 +104,11 @@ class MultiTaskTrainer:
         self._lr_decay = lr_decay
         self._min_lr = min_lr
 
-        increase_or_decrease = val_metric[0]
-        if increase_or_decrease not in ["+", "-"]:
-            raise ConfigurationError("Validation metrics must specify whether they should increase "
-                                     "or decrease by pre-pending the metric name with a +/-.")
-        self._val_metric = val_metric[1:]
-        self._val_metric_decreases = increase_or_decrease == "-"
         self._no_tqdm = no_tqdm
-
-        if self._cuda_device >= 0:
-            self._model = self._model.cuda(self._cuda_device)
-
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between logging to tensorboard
+        if self._cuda_device >= 0:
+            self._model = self._model.cuda(self._cuda_device)
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
@@ -250,7 +241,7 @@ class MultiTaskTrainer:
         # Get ordering on tasks, maybe should vary per pass
         if task_ordering == 'given':
             task_order = range(len(tasks))
-        elif task_ordering == 'random':
+        elif 'random' in task_ordering:
             task_order = [i for i in range(len(tasks))]
             random.shuffle(task_order)
         elif task_ordering == 'small_to_large':
@@ -258,14 +249,20 @@ class MultiTaskTrainer:
                           for idx, task in enumerate(tasks)]
             task_sizes.sort(key=lambda x: x[1])
             task_order = [task_idx for task_idx, _ in task_sizes]
+        elif task_ordering == 'large_to_small':
+            task_sizes = [(idx, task_infos[task.name]['n_tr_batches']) \
+                          for idx, task in enumerate(tasks)]
+            task_sizes.sort(key=lambda x: x[1], reverse=True)
+            task_order = [task_idx for task_idx, _ in task_sizes]
 
         logger.info("Beginning training.")
+        logger.info("\tTask order: %s", ", ".join([tasks[idx].name for idx in task_order]))
         n_pass = 0
         all_tr_metrics = {}
         should_stop = False
         while not should_stop:
             self._model.train()
-            if task_ordering == 'random':
+            if task_ordering == 'random_per_pass':
                 random.shuffle(task_order)
             for train_idx, task_idx in enumerate(task_order):
                 task = tasks[task_idx]
@@ -572,7 +569,6 @@ class MultiTaskTrainer:
         '''
 
         patience = params.pop("patience", 2)
-        val_metric = params.pop("val_metric", "-loss")
         num_epochs = params.pop("num_epochs", 20)
         cuda_device = params.pop("cuda_device", -1)
         grad_norm = params.pop("grad_norm", None)
@@ -583,10 +579,8 @@ class MultiTaskTrainer:
 
         params.assert_empty(cls.__name__)
         return MultiTaskTrainer(model,
-                                #optimizer,
                                 iterator,
                                 patience=patience,
-                                val_metric=val_metric,
                                 num_epochs=num_epochs,
                                 serialization_dir=serialization_dir,
                                 cuda_device=cuda_device,
@@ -594,5 +588,4 @@ class MultiTaskTrainer:
                                 grad_clipping=grad_clipping,
                                 lr_decay=lr_decay,
                                 min_lr=min_lr,
-                                #learning_rate_scheduler=scheduler,
                                 no_tqdm=no_tqdm)

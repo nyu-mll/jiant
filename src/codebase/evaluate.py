@@ -43,8 +43,7 @@ def evaluate(model: Model,
              tasks,
              iterator: DataIterator,
              cuda_device: int,
-             split="val",
-             debug=False) -> Dict[str, Any]:
+             split="val") -> Dict[str, Any]:
     model.eval()
 
     all_metrics = {"micro_accuracy":0.0, "macro_accuracy":0.0}
