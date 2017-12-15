@@ -3,8 +3,9 @@
 import os
 import pdb
 import time
-import subprocess
+import random
 import datetime
+import subprocess
 
 ARG2IDX = {'tasks':1, # this is old
            'gpuid':2,
@@ -21,14 +22,15 @@ ARG2IDX = {'tasks':1, # this is old
            'HID_DIM':13,
            'LR':14,
            'PAIR_ENC':15,
-           'DATE':16
+           'DATE':16,
+           'RANDOM_SEED':17
           }
 
 DATE = datetime.datetime.now().strftime("%m-%d")
 DATE = "12-15"
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
-SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
-EXP_PREFIX = 'fixed'
+#SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
+EXP_PREFIX = 'order'
 GPUID = str(0)
 SHOULD_TRAIN = str(1)
 LOAD_MODEL = str(0)
@@ -40,30 +42,31 @@ PAIR_TASKS = ['msrp', 'rte8', 'quora', 'snli', 'mnli', 'rte', 'sts-benchmark']
 SINGLE_TASKS = ['sst', 'twitter-irony']
 TASKS = PAIR_TASKS + SINGLE_TASKS
 HID_DIMS = [1024]
-BPP_METHOD = 'fixed'
-N_BPPS = [1]
+BPP_METHOD = 'percent_tr'
+N_BPPS = [100]
 BATS_BTW_VALS = [100, 1000, 5000]
 LRS = [1.]
 N_RUNS = 5
+ORDERS = ['large_to_small', 'random', 'random_per_pass']
 
 # Varying the validation metric for multi task
 for n_bpp in N_BPPS:
-    for bats_btw_val in BATS_BTW_VALS:
+    for run_idx in range(N_RUNS):
         for hid_dim in HID_DIMS:
-            for run_idx in range(N_RUNS):
+            for order in ORDERS:
                 lr = LRS[0]
-                exp_name = "%s_r%d_dim_%d_bbv_%d_lr_%.3f" % (EXP_PREFIX, run_idx, hid_dim, bats_btw_val, lr)
+                exp_name = "%s_%s_r%d_dim_%d" % (EXP_PREFIX, order, run_idx, hid_dim)
                 dir_name = SCRATCH_PREFIX + exp_name
                 out_file = dir_name + '/sbatch.out'
                 err_file = dir_name + '/sbatch.err'
                 if not os.path.exists(dir_name):
                     os.makedirs(dir_name)
-                #bats_btw_val = n_bpp
+                bats_btw_val = n_bpp
                 cmd = ["sbatch", "-J", exp_name, "-e", err_file, "-o", out_file,
                        "--mem=16GB",
                        "run_stuff.sh", ','.join(TASKS), GPUID, exp_name,
                        SHOULD_TRAIN, LOAD_MODEL, LOAD_TASKS, LOAD_VOCAB, LOAD_INDEX,
-                       'small_to_large', BPP_METHOD, str(n_bpp), str(bats_btw_val), str(hid_dim), str(lr),
+                       order, BPP_METHOD, str(n_bpp), str(bats_btw_val), str(hid_dim), str(lr),
                        'simple', DATE]
                 subprocess.call(cmd)
                 print(' '.join(cmd))
