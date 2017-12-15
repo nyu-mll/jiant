@@ -2,6 +2,7 @@ import os
 import pdb
 import sys
 import time
+import copy
 import argparse
 import logging as log
 from collections import defaultdict
@@ -27,7 +28,7 @@ from allennlp.nn.util import device_mapping
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
-        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task, \
+        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task, STSBenchmarkTask, \
         TwitterIronyTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
                                     MultiTaskModel, HeadlessPairEncoder, BoWSentEncoder
@@ -42,10 +43,13 @@ PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
 PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte8', 'snli', 'sst',
+             'sts-benchmark', 'twitter-irony']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
              'rte': RTETask, 'snli': SNLITask,
              'sst': SSTTask, 'sts14': STS14Task,
+             'sts-benchmark':STSBenchmarkTask,
              'small':QuoraTask, 'small2': QuoraTask,
              'twitter-irony': TwitterIronyTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
@@ -56,23 +60,24 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
              'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
+             'sts-benchmark': PATH_PREFIX + 'STS/STSBenchmark/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv',
              'twitter-irony': PATH_PREFIX + 'twitter-irony/datasets/train/' +
                               'SemEval2018-T4-train-taskA.txt'}
-
 # lazy way to map tasks to preprocessed tasks
-NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/msrp_task.pkl',
-             'mnli': PATH_PREFIX + 'MNLI/mnli_task.pkl',
-             'quora': PATH_PREFIX + 'Quora/quora_task.pkl',
-             'rte': PATH_PREFIX + 'rte/rte_task.pkl',
-             'rte8': PATH_PREFIX + 'rte8/rte8_task.pkl',
-             'snli': PATH_PREFIX + 'SNLI/snli_task.pkl',
-             'sst': PATH_PREFIX + 'SST/sst_task.pkl',
-             'sts14': PATH_PREFIX + 'STS/sts14_task.pkl',
-             'small': PATH_PREFIX + 'Quora/small_task.pkl',
-             'small2': PATH_PREFIX + 'Quora/small2_task.pkl',
-             'twitter-irony': PATH_PREFIX + 'twitter-irony/twitter_irony_task.pkl'}
+NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
+             'mnli': PATH_PREFIX + 'MNLI/',
+             'quora': PATH_PREFIX + 'Quora/',
+             'rte': PATH_PREFIX + 'rte/',
+             'rte8': PATH_PREFIX + 'rte8/',
+             'snli': PATH_PREFIX + 'SNLI/',
+             'sst': PATH_PREFIX + 'SST/',
+             'sts14': PATH_PREFIX + 'STS/',
+             'sts-benchmark': PATH_PREFIX + 'STS/',
+             'small': PATH_PREFIX + 'Quora/',
+             'small2': PATH_PREFIX + 'Quora/',
+             'twitter-irony': PATH_PREFIX + 'twitter-irony/'}
 
 
 def load_tasks(task_names, max_seq_len, load):
@@ -82,12 +87,13 @@ def load_tasks(task_names, max_seq_len, load):
     tasks = []
     for name in task_names:
         assert name in NAME2TASK, 'Task not found!'
-        if os.path.isfile(NAME2SAVE[name]) and load:
-            task = pkl.load(open(NAME2SAVE[name], 'rb'))
+        pkl_path = NAME2SAVE[name] + "%s_task.pkl" % name
+        if os.path.isfile(pkl_path) and load:
+            task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             task = NAME2TASK[name](NAME2DATA[name], max_seq_len, name)
-            pkl.dump(task, open(NAME2SAVE[name], 'wb'))
+            pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join(
         [task.name for task in tasks]))
@@ -167,7 +173,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
 
     # load word vectors for the words and build vocabulary
     word2vec = get_word_vecs(word_vecs_path, word2freq, word_dim)
-    if load_vocab and os.path.exists(vocab_path + 'non_padded_namespaces.txt'):
+    if load_vocab and os.path.exists(vocab_path + '/non_padded_namespaces.txt'):
         vocab = Vocabulary.from_files(vocab_path)
         # want to assert that all words have word vectors
         log.info('\tLoaded existing vocabulary from %s', vocab_path)
@@ -178,8 +184,8 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
         words_by_freq = [(word, freq) for word, freq in word2freq.items() if
                          word in word2vec]
         words_by_freq.sort(key=lambda x: x[1], reverse=True)
-        for word, _ in words_by_freq:
-            _ = vocab.add_token_to_namespace(word)
+        for word, _ in words_by_freq[:max_vocab_size]: # might need to reverse
+            vocab.add_token_to_namespace(word)
         if vocab_path:
             vocab.save_to_files(vocab_path)
             log.info('\tSaved vocabulary to %s', vocab_path)
@@ -206,7 +212,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
 
     # index words and chars using vocab
     for task in tasks:
-        template = exp_dir + '/%s_indexed_data.pkl'
+        template = NAME2SAVE[task.name] + '%s_indexed_data.pkl'
         #task.train_data.index_instances(vocab)
         #task.val_data.index_instances(vocab)
         #task.test_data.index_instances(vocab)
@@ -363,7 +369,7 @@ def main(arguments):
     parser.add_argument('--tasks', help='comma separated list of tasks',
                         type=str, default='')
     parser.add_argument('--max_vocab_size', help='vocabulary size',
-                        type=int, default=10000)
+                        type=int, default=50000)
     parser.add_argument('--max_seq_len', help='max sequence length',
                         type=int, default=35)
     parser.add_argument('--classifier', help='type of classifier to use',
@@ -433,12 +439,12 @@ def main(arguments):
 
     args = parser.parse_args(arguments)
 
+    ### Logistics ###
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO,
                     datefmt='%m/%d/%Y %I:%M:%S %p')
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
-
     if args.cuda >= 0:
         log.info("Using GPU %d", args.cuda)
         torch.cuda.set_device(args.cuda)
@@ -448,15 +454,20 @@ def main(arguments):
     start_time = time.time()
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
-    if args.pair_enc == 'bow':
-        dim = input_dim
-    else:
-        dim = args.hid_dim
+    dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
     tasks, vocab, word_embs = \
             prepare_tasks(args.tasks.split(','), args.word_embs_file,
+            #prepare_tasks(ALL_TASKS, args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_seq_len,
-                          args.vocab_path, args.exp_dir,
+                          os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                           args.load_tasks, args.load_vocab, args.load_index)
+    train_tasks, eval_tasks = [], []
+    for task in tasks:
+        if task.name in args.tasks:
+            train_tasks.append(task)
+        else:
+            eval_tasks.append(task)
+    eval_tasks = [task for task in tasks if task.name == 'sts']
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
 
     ### Build model ###
@@ -539,26 +550,58 @@ def main(arguments):
                            'lr_decay':.99, 'min_lr':1e-5,
                            'no_tqdm':True})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
-                                           train_params)
+                                           copy.deepcopy(train_params))
 
     ### Train ###
-    trainer.train(tasks, args.task_ordering,
-                  args.val_interval, args.max_vals,
-                  args.bpp_method, args.bpp_base,
-                  optimizer_params, scheduler_params, args.load_model)
+    to_train = [p for p in model.parameters() if p.requires_grad]
+    if train_tasks: # if don't want to train
+        pass
+    else:
+        trainer.train(train_tasks, args.task_ordering,
+                      args.val_interval, args.max_vals,
+                      args.bpp_method, args.bpp_base,
+                      to_train, optimizer_params, scheduler_params, args.load_model)
+    #else:
+        log.info("No training tasks found. Skipping training.")
 
     ### Evaluate ###
     # Load best model
     # NB: runs into issues if reusing exp name
     model_path = os.path.join(args.exp_dir, "best.th")
-    model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-    model.load_state_dict(model_state)
-    log.info('Loaded best model from %s', model_path)
+    if os.path.exists(model_path):
+        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(model_state)
+        log.info('Loaded best model from %s', model_path)
 
-    results = evaluate(model, tasks, iterator, cuda_device=args.cuda)
+    # train just classifiers for eval tasks
+    for task in eval_tasks:
+        pred_layer = getattr(model, "%s_pred_layer" % task.name)
+        to_train = pred_layer.parameters()
+        trainer = MultiTaskTrainer.from_params(model, args.exp_dir + '/%s/' % task.name,
+                                               iterator,
+                                               copy.deepcopy(train_params))
+        trainer.train([task], args.task_ordering,
+                      args.val_interval, args.max_vals,
+                      'percent_tr', 1,
+                      to_train, optimizer_params, scheduler_params, 1)
+        layer_path = os.path.join(args.exp_dir, task.name, "best.th")
+        layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(layer_state)
+
+    log.info('********************')
     log.info('*** TEST RESULTS ***')
-    for name, value in results.items():
-        log.info("%s\t%3f", name, value)
+    log.info('********************')
+    iterator = BasicIterator(5)
+    # load the different task best models and evaluate them
+    for task in [task.name for task in train_tasks] + ['micro', 'macro']:
+        model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
+        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(model_state)
+        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test", debug=False)
+        log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
+        for name, value in results.items():
+            log.info("%s\t%3f", name, value)
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

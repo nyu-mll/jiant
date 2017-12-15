@@ -22,10 +22,13 @@ and report any metrics calculated by the model.
                             id of GPU to use (if any)
 """
 from typing import Dict, Any
+import pdb
 import argparse
 import logging
 
 import tqdm
+
+import torch.optim as optim
 
 from allennlp.data import Dataset
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
@@ -40,7 +43,8 @@ def evaluate(model: Model,
              tasks,
              iterator: DataIterator,
              cuda_device: int,
-             split="val") -> Dict[str, Any]:
+             split="val",
+             debug=False) -> Dict[str, Any]:
     model.eval()
 
     all_metrics = {"micro_accuracy":0.0, "macro_accuracy":0.0}
@@ -51,10 +55,10 @@ def evaluate(model: Model,
             dataset = task.val_data
         elif split == "test":
             dataset = task.test_data
-        generator = iterator(dataset, num_epochs=1)
-        logger.info("Iterating over dataset")
+        generator = iterator(dataset, num_epochs=1, shuffle=False)
         generator_tqdm = tqdm.tqdm(
-            generator, total=iterator.get_num_batches(dataset))
+            generator, total=iterator.get_num_batches(dataset),
+            disable=True)
         for batch in generator_tqdm:
             tensor_batch = arrays_to_variables(
                 batch, cuda_device, for_training=False)
@@ -66,7 +70,7 @@ def evaluate(model: Model,
             generator_tqdm.set_description(description)
             n_examples += batch['label'].size()[0]
 
-        task_metrics = task.get_metrics()
+        task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
             all_metrics["%s_%s" % (task.name, name)] = value
         all_metrics["micro_accuracy"] += all_metrics["%s_accuracy" % task.name] * n_examples
@@ -77,4 +81,3 @@ def evaluate(model: Model,
     all_metrics["micro_accuracy"] /= n_overall_examples
 
     return all_metrics
-

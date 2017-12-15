@@ -18,7 +18,7 @@ from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
 from allennlp.training.metrics import BooleanAccuracy, CategoricalAccuracy, Average
 
-from codebase.tasks import STS14Task
+from codebase.tasks import STS14Task, STSBenchmarkTask
 from scipy.stats import pearsonr
 
 logger = log.getLogger(__name__)  # pylint: disable=invalid-name
@@ -37,17 +37,15 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.pair_encoder = pair_encoder
         self.pair_enc_type = pair_enc_type
-        self.pred_layers = {}
-        self.scorers = {}
-        self.losses = {}
 
     def build_classifier(self, task, classifier_type,
                          input_dim, hid_dim, dropout):
         '''
         Build a task specific prediction layer and register it
         '''
-        if isinstance(task, STS14Task):
-            layer = nn.CosineSimilarity()
+        if isinstance(task, STS14Task) or isinstance(task, STSBenchmarkTask):
+            layer = nn.Linear(input_dim, task.n_classes)
+            #layer = nn.CosineSimilarity()
         elif classifier_type == 'log_reg':
             layer = nn.Linear(input_dim, task.n_classes)
         elif classifier_type == 'mlp':
@@ -64,9 +62,7 @@ class MultiTaskModel(nn.Module):
         else:
             raise ValueError("Unrecognized classifier!")
 
-        #self.pred_layers[task.name] = layer
         setattr(self, '%s_pred_layer' % task.name, layer)
-        #self.add_module('%s_pred_layer' % task.name, layer)
 
     def forward(self, task=None, input1=None, input2=None, label=None):
         '''
@@ -81,13 +77,14 @@ class MultiTaskModel(nn.Module):
             - logits (TODO)
         '''
         pair_input = task.pair_input
-        pred_layer = getattr(self, '%s_pred_layer' % task.name) #self.pred_layers[task.name]
+        pred_layer = getattr(self, '%s_pred_layer' % task.name)
         scorer = task.scorer
         if pair_input:
-            if isinstance(task, STS14Task):
+            if isinstance(task, STS14Task) or isinstance(task, STSBenchmarkTask):
                 sent1 = self.sent_encoder(input1)
-                sent2 = self.sent_encoder(input2)
-                logits = pred_layer(sent1, sent2) # not really logits
+                sent2 = self.sent_encoder(input2) # causes a bug with BiDAF
+                logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1))
+                #logits = pred_layer(sent1, sent2) # not really logits
             elif self.pair_enc_type == 'bidaf':
                 pair_embs = self.pair_encoder(input1, input2)
                 pair_emb, _ = pair_embs.max(1)
@@ -104,9 +101,9 @@ class MultiTaskModel(nn.Module):
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
         if label is not None:
-            if isinstance(task, STS14Task):
-                #loss = F.binary_cross_entropy_with_logits(logits, label)
-                loss = -logits.mean() # negative cosine similarity
+            if isinstance(task, STS14Task) or isinstance(task, STSBenchmarkTask):
+                loss = F.binary_cross_entropy_with_logits(logits, label)
+                #loss = -logits.mean() # negative cosine similarity
                 label = label.squeeze(-1).data.cpu().numpy()
                 logits = logits.squeeze(-1).data.cpu().numpy()
                 scorer(pearsonr(logits, label)[0])

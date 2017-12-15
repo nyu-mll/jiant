@@ -374,8 +374,8 @@ class STS14Task(Task):
         self.name = name
         self.pair_input = 1
         self.categorical = 0
+        #self.val_metric = "%s_accuracy" % self.name
         self.val_metric = "%s_accuracy" % self.name
-        #self.val_metric = "%s_pearson" % self.name
         self.val_metric_decreases = False
         self.scorer = Average()
         self.load_data(path, max_seq_len)
@@ -441,17 +441,16 @@ class STS14Task(Task):
         data = [(s1, s2, t) for s1, s2, t in zip(sents1, sents2, targs)]
         random.shuffle(data)
         sents1, sents2, targs = unpack(data)
-        split_pt = int(.9 * len(sents1))
-        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:],
-                            targs[split_pt:])
-        val_data = sort_data(sents1[:split_pt], sents2[:split_pt],
-                             targs[:split_pt])
+        split_pt = int(.8 * len(sents1))
+        tr_data = sort_data(sents1[:split_pt], sents2[:split_pt],
+                targs[:split_pt])
+        val_data = sort_data(sents1[split_pt:], sents2[split_pt:],
+                targs[split_pt:])
         te_data = sort_data(*load_year_split(path))
 
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-
         log.info("\tFinished loading STS14 data.")
 
     def get_metrics(self, reset=False):
@@ -469,8 +468,8 @@ class STSBenchmarkTask(Task):
         self.name = name
         self.pair_input = 1
         self.categorical = 0
-        self.val_metric = "%s_mse" % self.name
-        self.val_metric_decreases = True
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases =  False
         self.scorer = Average()
         self.load_data(path, max_seq_len)
 
@@ -484,66 +483,36 @@ class STSBenchmarkTask(Task):
             - path (str): path to data
         '''
 
-        def load_year(years, path):
+        def load_file(path):
             sents1, sents2, targs = [], [], []
-            for year in years:
-                topics = sts2topics[year]
-                for topic in topics:
-                    topic_sents1, topic_sents2, topic_targs = \
-                            load_file(path + 'STS%d-en-test/' % year, topic)
-                    sents1 += topic_sents1
-                    sents2 += topic_sents2
-                    targs += topic_targs
-            assert len(sents1) == len(sents2) == len(targs)
-            return sents1, sents2, targs
-
-        def load_file(path, topic):
-            sents1, sents2, targs = [], [], []
-            with open(path + 'STS.input.%s.txt' % topic) as fh, \
-                open(path + 'STS.gs.%s.txt' % topic) as gh:
-                for raw_sents, raw_targ in zip(fh, gh):
-                    raw_sents = raw_sents.split('\t')
-                    sent1, sent2 = map(nltk.word_tokenize, raw_sents)
-                    #sent1, sent2 = [process_sentence(raw_sent, max_seq_len) for
-                    #                   \ raw_sent in raw_sents]
+            with open(path) as fh:
+                for row in fh:
+                    row = row.split('\t')
+                    score = float(row[-3]) / 5
+                    sent1 = process_sentence(row[-2], max_seq_len)
+                    sent2 = process_sentence(row[-1], max_seq_len)
                     if not sent1 or not sent2:
                         continue
                     sents1.append(sent1)
                     sents2.append(sent2)
-                    targs.append(float(raw_targ))
+                    targs.append(score)
             return sents1, sents2, targs
 
         sort_data = lambda s1, s2, t: \
             sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
         unpack = lambda x: [l for l in map(list, zip(*x))]
 
-        sts2topics = {
-            12: ['MSRpar', 'MSRvid', 'SMTeuroparl', 'surprise.OnWN', \
-                    'surprise.SMTnews'],
-            13: ['FNWN', 'headlines', 'OnWN'],
-            14: ['deft-forum', 'deft-news', 'headlines', 'images', \
-                    'OnWN', 'tweet-news']
-            }
-
-        sents1, sents2, targs = load_year([12, 13], path)
-        data = [(s1, s2, t) for s1, s2, t in zip(sents1, sents2, targs)]
-        random.shuffle(data)
-        sents1, sents2, targs = unpack(data)
-        split_pt = int(.9 * len(sents1))
-        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:],
-                            targs[split_pt:])
-        val_data = sort_data(sents1[:split_pt], sents2[:split_pt],
-                             targs[:split_pt])
-        te_data = sort_data(*load_year([14], path))
+        tr_data = sort_data(*load_file(path + 'sts-train.csv'))
+        val_data = sort_data(*load_file(path + 'sts-dev.csv'))
+        te_data = sort_data(*load_file(path + 'sts-test.csv'))
 
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-
-        log.info("\tFinished loading STS data.")
+        log.info("\tFinished loading STS Benchmark data.")
 
     def get_metrics(self, reset=False):
-        return {}
+        return {'accuracy': self.scorer.get_metric(reset)}
 
 
 class SSTTask(Task):
