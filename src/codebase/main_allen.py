@@ -577,6 +577,7 @@ def main(arguments):
         log.info('Loaded best model from %s', model_path)
 
     # train just classifiers for eval tasks
+    eval_tasks = []
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
         to_train = pred_layer.parameters()
@@ -594,7 +595,11 @@ def main(arguments):
     log.info('********************')
     log.info('*** TEST RESULTS ***')
     log.info('********************')
-    iterator = BasicIterator(5)
+    results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+    for name, value in results.items():
+        log.info("%s\t%3f", name, value)
+
+    '''
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
@@ -604,6 +609,7 @@ def main(arguments):
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)
+    '''
 
 
 if __name__ == '__main__':

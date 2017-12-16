@@ -158,8 +158,7 @@ class QuoraTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading Quora data. %d/%d sentences truncated",
-                 n_truncated, len(sents1) + len(sents2))
+        log.info("\tFinished processing Quora data.")
 
 
 class SNLITask(Task):
@@ -213,7 +212,7 @@ class SNLITask(Task):
                     targs.append(2)
             sorted_data = sort_data(sents1, sents2, targs)
             setattr(self, attr_name, unpack(sorted_data))
-        log.info("\tFinished loading SNLI data.")
+        log.info("\tFinished processing SNLI data.")
 
 class MultiNLITask(Task):
     '''
@@ -285,7 +284,7 @@ class MultiNLITask(Task):
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
 
-        log.info("\tFinished loading MNLI data.")
+        log.info("\tFinished processing MNLI data.")
 
 
 class MSRPTask(Task):
@@ -358,7 +357,7 @@ class MSRPTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading MSRP data.")
+        log.info("\tFinished processing MSRP data.")
 
 
 class STS14Task(Task):
@@ -451,7 +450,7 @@ class STS14Task(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading STS14 data.")
+        log.info("\tFinished processing STS14 data.")
 
     def get_metrics(self, reset=False):
         return {'accuracy': self.scorer.get_metric(reset)}
@@ -509,7 +508,7 @@ class STSBenchmarkTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading STS Benchmark data.")
+        log.info("\tFinished processing STS Benchmark data.")
 
     def get_metrics(self, reset=False):
         return {'accuracy': self.scorer.get_metric(reset)}
@@ -567,7 +566,7 @@ class SSTTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading SST data.")
+        log.info("\tFinished processing SST data.")
 
 
 class RTE8Task(Task):
@@ -688,7 +687,7 @@ class RTE8Task(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished loading RTE8 task.")
+        log.info("\tFinished processing RTE8 task.")
 
 
 
@@ -818,4 +817,4 @@ class TwitterIronyTask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished processing Twitter irony task")
+        log.info("\tFinished processing Twitter irony task.")

@@ -49,6 +49,15 @@ LRS = [1.]
 N_RUNS = 5
 ORDERS = ['large_to_small', 'random', 'random_per_pass']
 
+def build_args(): # TODO
+    '''
+    Build argument list from dictionary
+    '''
+    args = [0] * len(ARGS2IDX)
+    for arg, idx in ARGS2IDX.items():
+        args[idx] = arg
+    return args
+
 # Varying the validation metric for multi task
 for n_bpp in N_BPPS:
     for run_idx in range(N_RUNS):
@@ -62,12 +71,13 @@ for n_bpp in N_BPPS:
                 if not os.path.exists(dir_name):
                     os.makedirs(dir_name)
                 bats_btw_val = n_bpp
+                random_seed = random.randint(1, 10000)
                 cmd = ["sbatch", "-J", exp_name, "-e", err_file, "-o", out_file,
                        "--mem=16GB",
                        "run_stuff.sh", ','.join(TASKS), GPUID, exp_name,
                        SHOULD_TRAIN, LOAD_MODEL, LOAD_TASKS, LOAD_VOCAB, LOAD_INDEX,
                        order, BPP_METHOD, str(n_bpp), str(bats_btw_val), str(hid_dim), str(lr),
-                       'simple', DATE]
+                       'simple', DATE, str(random_seed)]
                 subprocess.call(cmd)
                 print(' '.join(cmd))
                 time.sleep(10)
