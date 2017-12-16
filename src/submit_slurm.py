@@ -27,10 +27,10 @@ ARG2IDX = {'tasks':1, # this is old
           }
 
 DATE = datetime.datetime.now().strftime("%m-%d")
-DATE = "12-15"
+#DATE = "12-15"
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
-#SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
-EXP_PREFIX = 'order'
+SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
+EXP_PREFIX = 'fixed'
 GPUID = str(0)
 SHOULD_TRAIN = str(1)
 LOAD_MODEL = str(0)
@@ -42,12 +42,12 @@ PAIR_TASKS = ['msrp', 'rte8', 'quora', 'snli', 'mnli', 'rte', 'sts-benchmark']
 SINGLE_TASKS = ['sst', 'twitter-irony']
 TASKS = PAIR_TASKS + SINGLE_TASKS
 HID_DIMS = [1024]
-BPP_METHOD = 'percent_tr'
-N_BPPS = [100]
+BPP_METHOD = 'fixed'
+N_BPPS = [1]
 BATS_BTW_VALS = [100, 1000, 5000]
 LRS = [1.]
-N_RUNS = 5
-ORDERS = ['large_to_small', 'random', 'random_per_pass']
+N_RUNS = 3
+ORDERS = ['random'] #['large_to_small', 'random', 'random_per_pass']
 
 def build_args(): # TODO
     '''
@@ -63,24 +63,26 @@ for n_bpp in N_BPPS:
     for run_idx in range(N_RUNS):
         for hid_dim in HID_DIMS:
             for order in ORDERS:
-                lr = LRS[0]
-                exp_name = "%s_%s_r%d_dim_%d" % (EXP_PREFIX, order, run_idx, hid_dim)
-                dir_name = SCRATCH_PREFIX + exp_name
-                out_file = dir_name + '/sbatch.out'
-                err_file = dir_name + '/sbatch.err'
-                if not os.path.exists(dir_name):
-                    os.makedirs(dir_name)
-                bats_btw_val = n_bpp
-                random_seed = random.randint(1, 10000)
-                cmd = ["sbatch", "-J", exp_name, "-e", err_file, "-o", out_file,
-                       "--mem=16GB",
-                       "run_stuff.sh", ','.join(TASKS), GPUID, exp_name,
-                       SHOULD_TRAIN, LOAD_MODEL, LOAD_TASKS, LOAD_VOCAB, LOAD_INDEX,
-                       order, BPP_METHOD, str(n_bpp), str(bats_btw_val), str(hid_dim), str(lr),
-                       'simple', DATE, str(random_seed)]
-                subprocess.call(cmd)
-                print(' '.join(cmd))
-                time.sleep(10)
+                for bats_btw_val in BATS_BTW_VALS:
+                    lr = LRS[0]
+                    exp_name = "%s_r%d_bbv_%d" % (EXP_PREFIX, run_idx, bats_btw_val)
+                    dir_name = SCRATCH_PREFIX + exp_name
+                    out_file = dir_name + '/sbatch.out'
+                    err_file = dir_name + '/sbatch.err'
+                    if not os.path.exists(dir_name):
+                        os.makedirs(dir_name)
+                    #bats_btw_val = n_bpp
+                    random_seed = random.randint(1, 10000)
+                    cmd = ["sbatch", "-J", exp_name, "-e", err_file, "-o", out_file,
+                           "--mem=16GB",
+                           "run_stuff.sh", ','.join(TASKS), GPUID, exp_name,
+                           SHOULD_TRAIN, LOAD_MODEL, LOAD_TASKS, LOAD_VOCAB, LOAD_INDEX,
+                           order, BPP_METHOD, str(n_bpp), str(bats_btw_val), str(hid_dim), str(lr),
+                           'simple', DATE, str(random_seed)]
+                    subprocess.call(cmd)
+                    print(' '.join(cmd))
+                    print("USED RANDOM SEED %d" % random_seed)
+                    time.sleep(10)
 '''
 
 # Single task models

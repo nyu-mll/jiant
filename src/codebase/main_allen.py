@@ -42,7 +42,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte8', 'snli', 'sst',
              'sts-benchmark', 'twitter-irony']
@@ -567,16 +567,7 @@ def main(arguments):
     else:
         log.info("No training tasks found. Skipping training.")
 
-    ### Evaluate ###
-    # Load best model
-    # NB: runs into issues if reusing exp name
-    model_path = os.path.join(args.exp_dir, "best.th")
-    if os.path.exists(model_path):
-        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(model_state)
-        log.info('Loaded best model from %s', model_path)
-
-    # train just classifiers for eval tasks
+    # train just the classifiers for eval tasks
     eval_tasks = []
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
@@ -592,14 +583,11 @@ def main(arguments):
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(layer_state)
 
+    ### Evaluate ###
     log.info('********************')
     log.info('*** TEST RESULTS ***')
     log.info('********************')
-    results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-    for name, value in results.items():
-        log.info("%s\t%3f", name, value)
 
-    '''
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
@@ -609,7 +597,6 @@ def main(arguments):
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)
-    '''
 
 
 if __name__ == '__main__':
