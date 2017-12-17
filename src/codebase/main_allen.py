@@ -42,7 +42,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte8', 'snli', 'sst',
              'sts-benchmark', 'twitter-irony']

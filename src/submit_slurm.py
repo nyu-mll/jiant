@@ -46,7 +46,7 @@ BPP_METHOD = 'percent_tr'
 N_BPPS = [1, 10, 1000]
 BATS_BTW_VALS = [1] #[100, 1000, 5000]
 LRS = [1.]
-N_RUNS = 3
+N_RUNS = 1
 ORDERS = ['random'] #['large_to_small', 'random', 'random_per_pass']
 
 def build_args(): # TODO
