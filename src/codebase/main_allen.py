@@ -564,11 +564,22 @@ def main(arguments):
                       args.val_interval, args.max_vals,
                       args.bpp_method, args.bpp_base,
                       to_train, optimizer_params, scheduler_params, args.load_model)
+
+        # TODO(Alex): ONLY WORKS FOR OLD MODELS
+        model_path = os.path.join(args.exp_dir, "best.th")
+        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(model_state)
     else:
         log.info("No training tasks found. Skipping training.")
 
+        # TODO(Alex): SAME HERE
+        model_path = os.path.join(args.exp_dir, "best.th")
+        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(model_state)
+
+
     # train just the classifiers for eval tasks
-    eval_tasks = []
+    eval_tasks = [task for task in eval_tasks if task.name == 'msrp']
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
         to_train = pred_layer.parameters()
@@ -576,8 +587,7 @@ def main(arguments):
                                                iterator,
                                                copy.deepcopy(train_params))
         trainer.train([task], args.task_ordering,
-                      args.val_interval, args.max_vals,
-                      'percent_tr', 1,
+                      1, args.max_vals, 'percent_tr', 1,
                       to_train, optimizer_params, scheduler_params, 1)
         layer_path = os.path.join(args.exp_dir, task.name, "best.th")
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
@@ -588,6 +598,15 @@ def main(arguments):
     log.info('*** TEST RESULTS ***')
     log.info('********************')
 
+    # DELETE THIS FOR MULTI-TASK STUFF!!
+    for task in [task.name for task in tasks]:
+        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
+        for name, value in results.items():
+            log.info("%s\t%3f", name, value)
+
+
+    '''
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
@@ -597,6 +616,7 @@ def main(arguments):
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)
+    '''
 
 
 if __name__ == '__main__':
