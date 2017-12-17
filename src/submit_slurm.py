@@ -29,8 +29,8 @@ ARG2IDX = {'tasks':1, # this is old
 DATE = datetime.datetime.now().strftime("%m-%d")
 #DATE = "12-15"
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
-SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
-EXP_PREFIX = 'fixed'
+#SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
+EXP_PREFIX = 'per_tr'
 GPUID = str(0)
 SHOULD_TRAIN = str(1)
 LOAD_MODEL = str(0)
@@ -42,11 +42,11 @@ PAIR_TASKS = ['msrp', 'rte8', 'quora', 'snli', 'mnli', 'rte', 'sts-benchmark']
 SINGLE_TASKS = ['sst', 'twitter-irony']
 TASKS = PAIR_TASKS + SINGLE_TASKS
 HID_DIMS = [1024]
-BPP_METHOD = 'fixed'
-N_BPPS = [1]
-BATS_BTW_VALS = [100, 1000, 5000]
+BPP_METHOD = 'percent_tr'
+N_BPPS = [1, 10, 1000]
+BATS_BTW_VALS = [1]
 LRS = [1.]
-N_RUNS = 3
+N_RUNS = 1
 ORDERS = ['random'] #['large_to_small', 'random', 'random_per_pass']
 
 def build_args(): # TODO
@@ -59,19 +59,19 @@ def build_args(): # TODO
     return args
 
 # Varying the validation metric for multi task
-for n_bpp in N_BPPS:
+for bats_btw_val in BATS_BTW_VALS:
     for run_idx in range(N_RUNS):
         for hid_dim in HID_DIMS:
             for order in ORDERS:
-                for bats_btw_val in BATS_BTW_VALS:
+                for n_bpp in N_BPPS:
                     lr = LRS[0]
-                    exp_name = "%s_r%d_bbv_%d" % (EXP_PREFIX, run_idx, bats_btw_val)
+                    exp_name = "%s_%d_r%d" % (EXP_PREFIX, n_bpp, run_idx)
                     dir_name = SCRATCH_PREFIX + exp_name
                     out_file = dir_name + '/sbatch.out'
                     err_file = dir_name + '/sbatch.err'
                     if not os.path.exists(dir_name):
                         os.makedirs(dir_name)
-                    #bats_btw_val = n_bpp
+                    bats_btw_val = n_bpp
                     random_seed = random.randint(1, 10000)
                     cmd = ["sbatch", "-J", exp_name, "-e", err_file, "-o", out_file,
                            "--mem=16GB",
