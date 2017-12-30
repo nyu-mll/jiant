@@ -42,7 +42,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte8', 'snli', 'sst',
              'sts-benchmark', 'twitter-irony']
@@ -466,12 +466,9 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
-    if args.tasks == 'all' or args.tasks == 'none':
-        tasks = ALL_TASKS
-    else:
-        tasks = args.tasks.split(',')
     tasks, vocab, word_embs = \
-            prepare_tasks(ALL_TASKS, args.word_embs_file,
+            prepare_tasks(args.tasks.split(','), args.word_embs_file,
+            #prepare_tasks(ALL_TASKS, args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_seq_len,
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                           args.load_tasks, args.load_vocab, args.load_index)
@@ -502,7 +499,7 @@ def main(arguments):
     char_encoder = CnnEncoder(args.char_dim, num_filters=args.n_char_filters,
                               ngram_filter_sizes=filter_sizes,
                               output_dim=args.char_dim)
-    char_embedder = TokenCharactersEncoder(char_embedder, char_encoder)
+    char_embedder = TokenCharactersEncoder(char_embedder, torch.nn.Dropout(p=.2)(char_encoder))
     token_embedder = {"words": word_embedder, "chars": char_embedder}
     text_field_embedder = BasicTextFieldEmbedder(token_embedder)
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({
@@ -564,18 +561,8 @@ def main(arguments):
                       args.val_interval, args.max_vals,
                       args.bpp_method, args.bpp_base,
                       to_train, optimizer_params, scheduler_params, args.load_model)
-
-        # TODO(Alex): ONLY WORKS FOR OLD MODELS
-        model_path = os.path.join(args.exp_dir, "best.th")
-        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(model_state)
     else:
         log.info("No training tasks found. Skipping training.")
-
-        # TODO(Alex): SAME HERE
-        model_path = os.path.join(args.exp_dir, "best.th")
-        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(model_state)
 
 
     # train just the classifiers for eval tasks
@@ -589,7 +576,7 @@ def main(arguments):
         trainer.train([task], args.task_ordering,
                       1, args.max_vals, 'percent_tr', 1,
                       to_train, optimizer_params, scheduler_params, 1)
-        layer_path = os.path.join(args.exp_dir, task.name, "best.th")
+        layer_path = os.path.join(args.exp_dir, task.name, "%s_best.th" % task.name)
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(layer_state)
 
@@ -598,15 +585,6 @@ def main(arguments):
     log.info('*** TEST RESULTS ***')
     log.info('********************')
 
-    # DELETE THIS FOR MULTI-TASK STUFF!!
-    for task in [task.name for task in tasks]:
-        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-        log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
-        for name, value in results.items():
-            log.info("%s\t%3f", name, value)
-
-
-    '''
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
@@ -616,7 +594,6 @@ def main(arguments):
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)
-    '''
 
 
 if __name__ == '__main__':

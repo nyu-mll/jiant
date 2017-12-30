@@ -22,7 +22,7 @@ import torch
 import torch.optim.lr_scheduler
 from torch.nn.utils.clip_grad import clip_grad_norm
 import tqdm
-from tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
@@ -306,6 +306,10 @@ class MultiTaskTrainer:
                                     task.name, n_batches_since_val, total_batches_trained,
                                     description)
                         for name, param in self._model.named_parameters():
+                            logger.debug("PARAM MEAN %s: %.7f", name,
+                                         param.data.mean())
+                            logger.debug("PARAM STD %s: %.7f", name,
+                                         param.data.std())
                             if param.grad is None:
                                 continue
                             logger.debug("GRAD MEAN %s: %.7f", name,
@@ -353,6 +357,7 @@ class MultiTaskTrainer:
                             float(task_info['loss'] / task_info['n_batches_since_val'])
 
             # Validation
+            # Could probably use a continue and save some indentation
             if n_pass % (validation_interval) == 0:
                 logger.info("Validating...")
                 epoch = int(n_pass / validation_interval)
@@ -461,8 +466,8 @@ class MultiTaskTrainer:
                         stop_training[task.name] = True
                     stop_tr = stop_tr and stop_training[task.name]
                     stop_val = stop_val and metric_stopped[task.val_metric]
-                    task_infos['n_batches_since_val'] = 0
-                    task_infos['loss'] = 0
+                    task_info['n_batches_since_val'] = 0
+                    task_info['loss'] = 0
                 stop_val = stop_val and metric_stopped['micro_accuracy'] and metric_stopped['macro_accuracy']
                 all_tr_metrics = {}
 
