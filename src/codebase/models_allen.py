@@ -409,8 +409,8 @@ class HeadlessBiDAF(Model):
             to be plugged into the next module
 
         """
-        embedded_question = self._highway_layer(self._text_field_embedder(question))
-        embedded_passage = self._highway_layer(self._text_field_embedder(passage))
+        embedded_question = self._highway_layer(self._dropout(self._text_field_embedder(question)))
+        embedded_passage = self._highway_layer(self._dropout(self._text_field_embedder(passage)))
         batch_size = embedded_question.size(0)
         passage_length = embedded_passage.size(1)
 

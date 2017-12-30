@@ -125,17 +125,22 @@ def get_words(tasks):
     Return dictionary mapping words to frequencies.
     '''
     word2freq = defaultdict(int)
+    char2freq = defaultdict(int)
     for task in tasks:
         for split in [task.train_data_text, task.val_data_text,
                       task.test_data_text]:
             for sentence in split[0]:
                 for word in sentence:
                     word2freq[word] += 1
+                    for c in list(word):
+                        char2freq[c] += 1
             if task.pair_input:
                 for sentence in split[1]:
                     for word in sentence:
                         word2freq[word] += 1
-    return word2freq
+                        for c in list(word):
+                            char2freq[c] += 1
+    return word2freq, char2freq
 
 def get_word_vecs(path, vocab, word_dim):
     word_vecs = {}
@@ -151,7 +156,8 @@ def get_word_vecs(path, vocab, word_dim):
     return word_vecs
 
 def prepare_tasks(task_names, word_vecs_path, word_dim,
-                  max_vocab_size, max_seq_len, vocab_path, exp_dir,
+                  max_word_vocab_size, max_char_vocab_size, max_seq_len,
+                  vocab_path, exp_dir,
                   load_task, load_vocab, load_index):
     '''
     Prepare the tasks by:
@@ -170,7 +176,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
     tasks = load_tasks(task_names, max_seq_len, load_task)
 
     # get all words across all tasks, all splits, all sentences
-    word2freq = get_words(tasks)
+    word2freq, char2freq = get_words(tasks)
 
     # load word vectors for the words and build vocabulary
     word2vec = get_word_vecs(word_vecs_path, word2freq, word_dim)
@@ -179,22 +185,29 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
         # want to assert that all words have word vectors
         log.info('\tLoaded existing vocabulary from %s', vocab_path)
     else:
-        if max_vocab_size < 0:
-            max_vocab_size = None
-        vocab = Vocabulary(counter=None, max_vocab_size=max_vocab_size)
+        if max_word_vocab_size < 0:
+            max_word_vocab_size = None
+        vocab = Vocabulary(counter=None, max_vocab_size=max_word_vocab_size)
         words_by_freq = [(word, freq) for word, freq in word2freq.items() if
                          word in word2vec]
         words_by_freq.sort(key=lambda x: x[1], reverse=True)
-        for word, _ in words_by_freq[:max_vocab_size]: # might need to reverse
-            vocab.add_token_to_namespace(word)
+        chars_by_freq = [(c, freq) for c, freq in char2freq.items()]
+        chars_by_freq.sort(key=lambda x: x[1], reverse=True)
+        for word, _ in words_by_freq[:max_word_vocab_size]:
+            vocab.add_token_to_namespace(word, 'tokens')
+        for c, _ in chars_by_freq[:max_char_vocab_size]:
+            vocab.add_token_to_namespace(c, 'chars')
         if vocab_path:
             vocab.save_to_files(vocab_path)
             log.info('\tSaved vocabulary to %s', vocab_path)
-    vocab_size = vocab.get_vocab_size('tokens')
-    log.info("\tFinished building vocab. Using %d words", vocab_size)
+    word_vocab_size = vocab.get_vocab_size('tokens')
+    char_vocab_size = vocab.get_vocab_size('chars')
+    log.info("\tFinished building vocab. Using %d words, %d chars",
+             word_vocab_size, char_vocab_size)
+    pdb.set_trace()
 
-    embeddings = np.zeros((vocab_size, word_dim))
-    for idx in range(vocab_size): # kind of hacky
+    embeddings = np.zeros((word_vocab_size, word_dim))
+    for idx in range(word_vocab_size): # kind of hacky
         word = vocab.get_token_from_index(idx)
         if word == '@@PADDING@@' or word == '@@UNKNOWN@@':
             continue
@@ -214,9 +227,6 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
     # index words and chars using vocab
     for task in tasks:
         template = NAME2SAVE[task.name] + '%s_indexed_data.pkl'
-        #task.train_data.index_instances(vocab)
-        #task.val_data.index_instances(vocab)
-        #task.test_data.index_instances(vocab)
         if not load_index or not os.path.exists(template % task.name):
             train, val, test = process_task(task, token_indexer, vocab)
             pkl.dump((train, val, test), open(template % task.name, 'wb'))
@@ -405,6 +415,8 @@ def main(arguments):
                         type=int, default=1)
     parser.add_argument('--n_highway_layers', help='num of highway layers',
                         type=int, default=1)
+    parser.add_argument('--dropout', help='dropout rate to use in training',
+                        type=float, default=.2)
 
     parser.add_argument('--batch_size', help='batch size',
                         type=int, default=64)
@@ -416,7 +428,6 @@ def main(arguments):
                         type=float, default=1.0)
     parser.add_argument('--task_patience', help='patience in decaying per task lr',
                         type=int, default=0)
-
     parser.add_argument('--scheduler_threshold', help='scheduler threshold',
                         type=float, default=1e-3)
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
@@ -469,10 +480,12 @@ def main(arguments):
     tasks, vocab, word_embs = \
             prepare_tasks(args.tasks.split(','), args.word_embs_file,
             #prepare_tasks(ALL_TASKS, args.word_embs_file,
-                          word_dim, args.max_vocab_size, args.max_seq_len,
+                          word_dim, args.max_vocab_size, args.max_char_vocab_size,
+                          args.max_seq_len,
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                           args.load_tasks, args.load_vocab, args.load_index)
     train_tasks, eval_tasks = [], []
+    pdb.set_trace()
     if args.tasks == 'all':
         train_tasks = tasks
     elif args.tasks == 'none':
@@ -492,14 +505,15 @@ def main(arguments):
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), word_dim,
                               weight=word_embs, trainable=False,
                               padding_index=vocab.get_token_index('@@PADDING@@'))
-    char_embedder = Embedding(vocab.get_vocab_size('token_characters'),
+    char_embedder = Embedding(vocab.get_vocab_size('chars'),
                               char_dim)
     #char_encoder = BagOfEmbeddingsEncoder(char_dim, True)
     filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
     char_encoder = CnnEncoder(args.char_dim, num_filters=args.n_char_filters,
                               ngram_filter_sizes=filter_sizes,
                               output_dim=args.char_dim)
-    char_embedder = TokenCharactersEncoder(char_embedder, torch.nn.Dropout(p=.2)(char_encoder))
+    #char_encoder = torch.nn.Dropout(p=args.dropout)(char_encoder)
+    char_embedder = TokenCharactersEncoder(char_embedder, char_encoder)
     token_embedder = {"words": word_embedder, "chars": char_embedder}
     text_field_embedder = BasicTextFieldEmbedder(token_embedder)
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({
@@ -523,7 +537,8 @@ def main(arguments):
                                      args.n_highway_layers,
                                      phrase_layer,
                                      LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
-                                     modeling_layer)
+                                     modeling_layer,
+                                     dropout=args.dropout)
     elif args.pair_enc == 'simple':
         pair_encoder = HeadlessPairEncoder(vocab, text_field_embedder,
                                            args.n_highway_layers,
