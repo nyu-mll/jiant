@@ -204,7 +204,6 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
     char_vocab_size = vocab.get_vocab_size('chars')
     log.info("\tFinished building vocab. Using %d words, %d chars",
              word_vocab_size, char_vocab_size)
-    pdb.set_trace()
 
     embeddings = np.zeros((word_vocab_size, word_dim))
     for idx in range(word_vocab_size): # kind of hacky
@@ -222,7 +221,7 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
 
     # convert text data to AllenNLP text fields
     token_indexer = {"words": SingleIdTokenIndexer(),
-                     "chars": TokenCharactersIndexer()}
+                     "chars": TokenCharactersIndexer("chars")}
 
     # index words and chars using vocab
     for task in tasks:
@@ -485,7 +484,6 @@ def main(arguments):
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                           args.load_tasks, args.load_vocab, args.load_index)
     train_tasks, eval_tasks = [], []
-    pdb.set_trace()
     if args.tasks == 'all':
         train_tasks = tasks
     elif args.tasks == 'none':
