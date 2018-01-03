@@ -20,7 +20,7 @@ from allennlp.data.iterators import BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.modules.similarity_functions import LinearSimilarity
+from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, \
                                               CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
@@ -32,7 +32,8 @@ from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
         RTETask, RTE8Task, SNLITask, SSTTask, STS14Task, STSBenchmarkTask, \
         TwitterIronyTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
-                                    MultiTaskModel, HeadlessPairEncoder, BoWSentEncoder
+                                  HeadlessPairAttnEncoder, \
+                                  MultiTaskModel, HeadlessPairEncoder, BoWSentEncoder
 from codebase.trainer import MultiTaskTrainer
 from codebase.evaluate import evaluate
 from codebase.utils.encoders import MultiLayerRNNEncoder
@@ -113,6 +114,8 @@ def build_classifiers(tasks, model, classifier_type, pair_enc, input_dim,
                 task_dim = input_dim * 8
             elif pair_enc == 'bow':
                 task_dim = input_dim * 4
+            elif pair_enc == 'attn':
+                task_dim = input_dim * 8
         else:
             task_dim = input_dim * 2
         model.build_classifier(task, classifier_type, task_dim, hid_dim,
@@ -403,7 +406,7 @@ def main(arguments):
 
     parser.add_argument('--pair_enc', help='type of pair encoder to use',
                         type=str, default='bidaf',
-                        choices=['simple', 'bidaf', 'bow'])
+                        choices=['simple', 'bidaf', 'bow', 'attn'])
     parser.add_argument('--word_dim', help='dimension of word embeddings',
                         type=int, default=300)
     parser.add_argument('--char_dim', help='dimension of char embeddings',
@@ -542,6 +545,19 @@ def main(arguments):
                                            args.n_highway_layers,
                                            phrase_layer,
                                            dropout=0.0)
+    elif args.pair_enc == 'attn':
+        modeling_layer = s2s_e.by_name('lstm').from_params(Params({
+            'input_size': 4 * dim,
+            'hidden_size': dim,
+            'num_layers': args.n_layers,
+            'bidirectional': True}))
+        pair_encoder = HeadlessPairAttnEncoder(vocab, text_field_embedder,
+                                     args.n_highway_layers,
+                                     phrase_layer,
+                                     #LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
+                                     DotProductSimilarity(),
+                                     modeling_layer,
+                                     dropout=args.dropout)
     model = MultiTaskModel(sent_encoder, pair_encoder, args.pair_enc)
     build_classifiers(tasks, model, args.classifier, args.pair_enc, dim,
                       args.classifier_hid_dim, args.classifier_dropout)
@@ -563,7 +579,7 @@ def main(arguments):
                            'patience':args.patience,
                            'grad_norm':5.,
                            'lr_decay':.99, 'min_lr':1e-5,
-                           'no_tqdm':True})
+                           'no_tqdm':False})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
 
