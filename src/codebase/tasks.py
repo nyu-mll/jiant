@@ -17,7 +17,11 @@ from allennlp.training.metrics import CategoricalAccuracy, Average
 
 # TODO(Alex): put in another library
 def process_sentence(sent, max_seq_len):
+    '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
     return ['<s>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['</s>']
+
+def shuffle(sent):
+    raise NotImplementedError
 
 class Task():
     '''
@@ -598,91 +602,91 @@ class RTE8Task(Task):
         Also merges different types of test data (unseen answers, questions, and domains)
         '''
 
-        test_splits = ['answers', 'questions']#, 'domains']
+        test_formats = ['questions'] #['answers', 'questions', 'domains']
+        targ_map = {'incorrect':0, 'correct':1, 'contradictory':2}
+        domains = ['beetle', 'sciEntsBank']
+        way_type = '%dway' % way_type
 
-        def load_files(paths, type):
-            data = {}
-            for k in range(len(paths)):
-                path = paths[k]
+        def get_paths(path, split, way_type, subdir):
+            '''Get the xml files for a domain, split, and way split'''
+            split_path = os.path.join(path, split, way_type, subdir)
+            if split == 'training':
+                paths = glob.glob(split_path + '/*.xml')
+            else:
+                filenames = [x[0] for x in os.walk(split_path)][1:]
+                paths = []
+                for filename in filenames:
+                    if not sum([1 for test_format in test_formats if test_format in filename]):
+                        continue
+                    paths += glob.glob(filename + '/*.xml')
+            return paths
+
+        def load_files(paths, domain):
+            sent1s, sent2s, targs = [], [], []
+            missing = 0
+            dbg = []
+            for path in paths:
                 root = xml.etree.ElementTree.parse(path).getroot()
-                if type == 'beetle':
-                    for i in range(len(root[1])):
-                        pairID = root[1][i].attrib['id']
-                        data[pairID] = []
-                        sent1 = process_sentence(root[1][i].text, max_seq_len)
-                        data[pairID].append(sent1) # sent1, reference sentence
-                    for i in range(len(root[2])):
+                id2ref = {}
+                question = root[0].text
+                if domain == 'beetle':
+                    for ref in root[1]: # reference answers
+                        ref_id = ref.attrib['id']
+                        ref_text = process_sentence(ref.text, max_seq_len)
+                        id2ref[ref_id] = ref_text
+                    for ans in root[2]: # student answers
                         try:
-                            matchID = root[2][i].attrib['answerMatch']
-                            if matchID in data:
-                                sent2 = process_sentence(root[2][i].text, max_seq_len)
-                                data[matchID].append(sent2)
-                                data[matchID].append(root[2][i].attrib['accuracy'])
-                        except:
+                            ref_id = ans.attrib['answerMatch']
+                            if ref_id not in id2ref:
+                                continue
+                            ans_text = process_sentence(question + ans.text, max_seq_len)
+                            ref_text = id2ref[ref_id]
+                            targ = targ_map[ans.attrib['accuracy']]
+                            sent1s.append(ans_text)
+                            sent2s.append(ref_text)
+                            targs.append(targ)
+                        except KeyError:
                             '''
                             pass when there isn't an ID indicating
                             the reference answer the student answer corresponds to
                             '''
-                            pass
+                            dbg.append((path, ans))
+                            missing += 1
                 else:
-                    for i in range(len(root[2])):
-                        pairID = root[2][i].attrib['id']
-                        data[pairID] = []
-                        sent1 = nltk.word_tokenize(root[1][0].text)
-                        sent2 = nltk.word_tokenize(root[2][i].text)
-                        data[pairID].append(sent1) # reference sentence
-                        data[pairID].append(sent2) # student sentence
-                        data[pairID].append(root[2][i].attrib['accuracy'])
-            return data
+                    ref_text = process_sentence(root[1][0].text, max_seq_len)
+                    for ans in root[2]:
+                        ans_text = process_sentence(question + ans.text, max_seq_len)
+                        targ = targ_map[ans.attrib['accuracy']]
+                        sent1s.append(ans_text)
+                        sent2s.append(ref_text)
+                        targs.append(targ)
+            print("\t\tSkipped %d examples" % missing)
+            return sent1s, sent2s, targs
 
-        subdirs = ['beetle', 'sciEntsBank']
-        way_type = '%dway' % way_type
-        def get_paths(path, set, way_type, subdir):
-            set_path = os.path.join(path, set, way_type, subdir)
-            if set == 'training':
-                return glob.glob(set_path+ '/*.xml')
-            else:
-                paths = [x[0] for x in os.walk(set_path)][1:]
-                merged = []
-                for p in paths:
-                    if not sum([1 for split in test_splits if split in p]):
-                        continue
-                    merged += glob.glob(p + '/*.xml')
-                return merged
-
-        train_data = []
-        test_data = []
-        for sub in subdirs:
-            train_data.append(load_files(get_paths(path, 'training', way_type, sub), sub))
-            test_data.append(load_files(get_paths(path, 'test', way_type, sub), sub))
-
-        targ_map = {'incorrect':0, 'correct':1, 'contradictory':2}
-        def reformat(data):
-            sents1, sents2, targs = [], [], []
-            merged = data[0]
-            merged.update(data[1])
-            for k in merged.keys():
-                try:
-                    sents1.append(merged[k][0])
-                    sents2.append(merged[k][1])
-                    targs.append(targ_map[merged[k][2]])
-                except:
-                    pass
-            return sents1, sents2, targs
-
+        def do_everything(split, domains):
+            '''For a split, for all domains, gather all the paths and process the files'''
+            sent1s, sent2s, targs = [], [], []
+            for domain in domains:
+                paths = get_paths(path, split, way_type, domain)
+                ret = load_files(paths, domain)
+                sent1s += ret[0]
+                sent2s += ret[1]
+                targs += ret[2]
+            return sent1s, sent2s, targs
         sort_data = lambda s1, s2, t: \
                 sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
-
-        sents1, sents2, targs = reformat(train_data)
-        n_exs = len(sents1)
-        split_pt = int(.2 * n_exs)
-        tr_data = sort_data(sents1[split_pt:], sents2[split_pt:], targs[split_pt:])
-        val_data = sort_data(sents1[:split_pt], sents2[:split_pt], targs[:split_pt])
-
-        sents1, sents2, targs = reformat(test_data)
-        te_data = sort_data(sents1, sents2, targs)
-
         unpack = lambda x: [l for l in map(list, zip(*x))]
+
+        sent1s, sent2s, targs = do_everything('training', domains)
+        tmp = list(zip(sent1s, sent2s, targs))
+        random.shuffle(tmp)
+        sent1s, sent2s, targs = zip(*tmp)
+        n_exs = len(sent1s)
+        split_pt = int(.1 * n_exs)
+        tr_data = sort_data(sent1s[split_pt:], sent2s[split_pt:], targs[split_pt:])
+        val_data = sort_data(sent1s[:split_pt], sent2s[:split_pt], targs[:split_pt])
+        sent1s, sent2s, targs = do_everything('test', domains)
+        te_data = sort_data(sent1s, sent2s, targs)
 
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
@@ -717,10 +721,10 @@ class RTETask(Task):
                 "YES": 0,
                 "ENTAILMENT": 0,
                 "TRUE": 0,
-                "UNKNOWN": 1,
-                "NO": 2,
-                "CONTRADICTION": 2,
-                "FALSE": 2,
+                "NO": 1,
+                "CONTRADICTION": 1,
+                "FALSE": 1,
+                "UNKNOWN": 2,
             }
 
             #data = {}
@@ -778,7 +782,7 @@ class RTE5Task(Task):
         Args:
             path: path to RTE data directory
         '''
-        super(RTETask, self).__init__(name, 3)
+        super(RTE5Task, self).__init__(name, 3)
         self.name = name
         self.pair_input = 1
         self.load_data(path, max_seq_len)
@@ -794,10 +798,10 @@ class RTE5Task(Task):
                 "YES": 0,
                 "ENTAILMENT": 0,
                 "TRUE": 0,
-                "UNKNOWN": 1,
-                "NO": 2,
-                "CONTRADICTION": 2,
-                "FALSE": 2,
+                "NO": 1,
+                "CONTRADICTION": 1,
+                "FALSE": 1,
+                "UNKNOWN": 2,
             }
 
             #data = {}
@@ -845,6 +849,8 @@ class RTE5Task(Task):
         self.test_data_text = unpack(te_data)
         log.info("\tFinished processing RTE5.")
 
+
+
 class TwitterIronyTask(Task):
     '''
     Task class for SemEval2018 Task 3: recognizing irony.
@@ -882,6 +888,9 @@ class TwitterIronyTask(Task):
         unpack = lambda x: [l for l in map(list, zip(*x))]
 
         n_exs = len(sents)
+        tmp = list(zip(sents,targs))
+        random.shuffle(tmp)
+        sents, targs = zip(*tmp)
         split_pt1 = int(.8 * n_exs)
         split_pt2 = int(.9 * n_exs)
         tr_data = sort_data(sents[:split_pt1], targs[:split_pt1])

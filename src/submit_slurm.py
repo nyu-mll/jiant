@@ -28,7 +28,7 @@ ARG2IDX = {'tasks':1, # this is old
 
 DATE = datetime.datetime.now().strftime("%m-%d")
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/' + DATE + '/'
-SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
+#SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/' + DATE + '/'
 EXP_PREFIX = 'attn'
 GPUID = str(0)
 SHOULD_TRAIN = str(1)
@@ -57,8 +57,8 @@ def build_args(): # TODO
     '''
     Build argument list from dictionary
     '''
-    args = [0] * len(ARGS2IDX)
-    for arg, idx in ARGS2IDX.items():
+    args = [0] * len(ARG2IDX)
+    for arg, idx in ARG2IDX.items():
         args[idx] = arg
     return args
 

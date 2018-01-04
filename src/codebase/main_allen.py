@@ -43,7 +43,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte5', 'rte8',
              'snli', 'sst', 'sts-benchmark', 'twitter-irony']
@@ -484,9 +484,12 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
+    if args.tasks == 'all': # handle 'none'?
+        task_names = ALL_TASKS
+    else:
+        task_names = args.tasks.split(',')
     tasks, vocab, word_embs = \
-            prepare_tasks(args.tasks.split(','), args.word_embs_file,
-            #prepare_tasks(ALL_TASKS, args.word_embs_file,
+            prepare_tasks(task_names, args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_char_vocab_size,
                           args.max_seq_len,
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
@@ -502,6 +505,7 @@ def main(arguments):
                 train_tasks.append(task)
             else:
                 eval_tasks.append(task)
+    pdb.set_trace()
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
     log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
