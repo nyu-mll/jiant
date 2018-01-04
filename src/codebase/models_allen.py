@@ -644,8 +644,7 @@ class HeadlessPairAttnEncoder(Model):
         # max below.
 
         masked_similarity = util.replace_masked_values(passage_question_similarity,
-                                                       question_mask.unsqueeze(1),
-                                                       -1e7)
+                                                       question_mask.unsqueeze(1), -1e7)
 
         # From the paper, Q2C attn
         question_passage_similarity = masked_similarity.max(dim=-1)[0].squeeze(-1)

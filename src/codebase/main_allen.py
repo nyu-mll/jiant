@@ -29,11 +29,11 @@ from allennlp.nn.util import device_mapping
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
-        RTETask, RTE8Task, SNLITask, SSTTask, STS14Task, STSBenchmarkTask, \
-        TwitterIronyTask
+        RTETask, RTE5Task, RTE8Task, SNLITask, SSTTask, STS14Task, \
+        STSBenchmarkTask, TwitterIronyTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
-                                  HeadlessPairAttnEncoder, \
-                                  MultiTaskModel, HeadlessPairEncoder, BoWSentEncoder
+                                  HeadlessPairAttnEncoder, MultiTaskModel, \
+                                  HeadlessPairEncoder, BoWSentEncoder
 from codebase.trainer import MultiTaskTrainer
 from codebase.evaluate import evaluate
 from codebase.utils.encoders import MultiLayerRNNEncoder
@@ -45,11 +45,12 @@ PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
 PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte8', 'snli', 'sst',
-             'sts-benchmark', 'twitter-irony']
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte5', 'rte8',
+             'snli', 'sst', 'sts-benchmark', 'twitter-irony']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
-             'rte': RTETask, 'snli': SNLITask,
+             'rte': RTETask, 'rte5': RTE5Task,
+             'snli': SNLITask,
              'sst': SSTTask, 'sts14': STS14Task,
              'sts-benchmark':STSBenchmarkTask,
              'small':QuoraTask, 'small2': QuoraTask,
@@ -58,6 +59,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
              'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
              'rte': PATH_PREFIX + 'rte/',
+             'rte5': PATH_PREFIX + 'rte/',
              'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
@@ -72,6 +74,7 @@ NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
              'quora': PATH_PREFIX + 'Quora/',
              'rte': PATH_PREFIX + 'rte/',
+             'rte5': PATH_PREFIX + 'rte/',
              'rte8': PATH_PREFIX + 'rte8/',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/',
@@ -428,6 +431,8 @@ def main(arguments):
                         type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate',
                         type=float, default=1.0)
+    parser.add_argument('--weight_decay', help='weight decay value',
+                        type=float, default=0.0)
     parser.add_argument('--task_patience', help='patience in decaying per task lr',
                         type=int, default=0)
     parser.add_argument('--scheduler_threshold', help='scheduler threshold',
@@ -566,7 +571,7 @@ def main(arguments):
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
     ### Set up trainer ###
-    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr}) #, 'weight_decay':.9})
+    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr, 'weight_decay':1e-5})
     scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
                                'factor':args.lr_decay_factor,
                                'patience':args.task_patience,
@@ -595,7 +600,6 @@ def main(arguments):
 
 
     # train just the classifiers for eval tasks
-    eval_tasks = [task for task in eval_tasks if task.name == 'msrp']
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
         to_train = pred_layer.parameters()

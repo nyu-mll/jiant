@@ -693,10 +693,87 @@ class RTE8Task(Task):
 
 class RTETask(Task):
     '''
-    Task class for Recognizing Textual Entailment 1, 2, 3, and 5.
+    Task class for Recognizing Textual Entailment 1, 2, and 3.
     '''
 
     def __init__(self, path, max_seq_len, name="rte"):
+        '''
+        Args:
+            path: path to RTE data directory
+        '''
+        super(RTETask, self).__init__(name, 2)
+        self.name = name
+        self.pair_input = 1
+        self.load_data(path, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        '''
+        Process the datasets located at path.
+        '''
+        def load_files(paths):
+
+            # Mapping the different label names to be consistent.
+            LABEL_MAP = {
+                "YES": 0,
+                "ENTAILMENT": 0,
+                "TRUE": 0,
+                "UNKNOWN": 1,
+                "NO": 2,
+                "CONTRADICTION": 2,
+                "FALSE": 2,
+            }
+
+            #data = {}
+            sents1, sents2, targs = [], [], []
+            for k in range(len(paths)):
+                path = paths[k]
+                root = xml.etree.ElementTree.parse(path).getroot()
+                for i in range(len(root)):
+                    sents1.append(process_sentence(root[i][0].text, max_seq_len))
+                    sents2.append(process_sentence(root[i][1].text, max_seq_len))
+                    if "entailment" in root[i].attrib.keys():
+                        label = root[i].attrib["entailment"]
+                    elif "value" in root[i].attrib.keys():
+                        label = root[i].attrib["value"]
+                    targs.append(LABEL_MAP[label])
+                try:
+                    assert len(sents1) == len(sents2) == len(targs)
+                except AssertionError as e:
+                    print(e)
+                    pdb.set_trace()
+            return sents1, sents2, targs
+
+        devs = ["RTE2_dev_stanford_fix.xml", "RTE3_pairs_dev-set-final.xml", "rte1dev.xml"]
+        tests = ["RTE2_test.annotated.xml", "RTE3-TEST-GOLD.xml", "rte1_annotated_test.xml"]
+
+        unpack = lambda x: [l for l in map(list, zip(*x))]
+        sort_data = lambda s1, s2, t: \
+                sorted(zip(s1, s2, t), key=lambda x: (len(x[0]), len(x[1])))
+
+        # need to shuffle the data
+        dev_sents1, dev_sents2, dev_targs = load_files([os.path.join(path, dev) for dev in devs])
+        te_sents1, te_sents2, te_targs = load_files([os.path.join(path, test) for test in tests])
+
+        n_exs = len(dev_sents1)
+        split_pt = int(.2 * n_exs)
+        tmp = list(zip(dev_sents1, dev_sents2, dev_targs))
+        random.shuffle(tmp)
+        dev_sents1, dev_sents2, dev_targs = zip(*tmp)
+        tr_data = sort_data(dev_sents1[split_pt:], dev_sents2[split_pt:], dev_targs[split_pt:])
+        val_data = sort_data(dev_sents1[:split_pt], dev_sents2[:split_pt], dev_targs[:split_pt])
+        te_data = sort_data(te_sents1, te_sents2, te_targs)
+
+        self.train_data_text = unpack(tr_data)
+        self.val_data_text = unpack(val_data)
+        self.test_data_text = unpack(te_data)
+        log.info("\tFinished processing RTE{1,2,3}.")
+
+class RTE5Task(Task):
+    '''
+    Task class for Recognizing Textual Entailment 5.
+    '''
+
+    def __init__(self, path, max_seq_len, name="rte5"):
         '''
         Args:
             path: path to RTE data directory
@@ -743,10 +820,8 @@ class RTETask(Task):
                     pdb.set_trace()
             return sents1, sents2, targs
 
-        devs = ["RTE2_dev_stanford_fix.xml", "RTE3_pairs_dev-set-final.xml",
-                "RTE5_MainTask_DevSet.xml", "rte1dev.xml"]
-        tests = ["RTE2_test.annotated.xml", "RTE3-TEST-GOLD.xml",
-                 "RTE5_MainTask_TestSet_Gold.xml", "rte1_annotated_test.xml"]
+        devs = ["RTE5_MainTask_DevSet.xml"]
+        tests = ["RTE5_MainTask_TestSet_Gold.xml"]
 
         unpack = lambda x: [l for l in map(list, zip(*x))]
         sort_data = lambda s1, s2, t: \
@@ -768,8 +843,7 @@ class RTETask(Task):
         self.train_data_text = unpack(tr_data)
         self.val_data_text = unpack(val_data)
         self.test_data_text = unpack(te_data)
-        log.info("\tFinished processing RTE{1,2,3,5}.")
-
+        log.info("\tFinished processing RTE5.")
 
 class TwitterIronyTask(Task):
     '''
