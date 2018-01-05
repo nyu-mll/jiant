@@ -660,7 +660,7 @@ class RTE8Task(Task):
                         sent1s.append(ans_text)
                         sent2s.append(ref_text)
                         targs.append(targ)
-            print("\t\tSkipped %d examples" % missing)
+            #print("\t\tSkipped %d examples" % missing)
             return sent1s, sent2s, targs
 
         def do_everything(split, domains):
