@@ -43,7 +43,7 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte5', 'rte8',
              'snli', 'sst', 'sts-benchmark', 'twitter-irony']
@@ -484,12 +484,8 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
-    if args.tasks == 'all': # handle 'none'?
-        task_names = ALL_TASKS
-    else:
-        task_names = args.tasks.split(',')
     tasks, vocab, word_embs = \
-            prepare_tasks(task_names, args.word_embs_file,
+            prepare_tasks(ALL_TASKS, args.word_embs_file,
                           word_dim, args.max_vocab_size, args.max_char_vocab_size,
                           args.max_seq_len,
                           os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
@@ -500,12 +496,12 @@ def main(arguments):
     elif args.tasks == 'none':
         eval_tasks = tasks
     else:
+        task_list = args.tasks.split(',')
         for task in tasks:
-            if task.name in args.tasks:
+            if task.name in task_list:
                 train_tasks.append(task)
             else:
                 eval_tasks.append(task)
-    pdb.set_trace()
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
     log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
@@ -588,7 +584,7 @@ def main(arguments):
                            'patience':args.patience,
                            'grad_norm':5.,
                            'lr_decay':.99, 'min_lr':1e-5,
-                           'no_tqdm':False})
+                           'no_tqdm':True})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
 
@@ -618,19 +614,20 @@ def main(arguments):
         model.load_state_dict(layer_state)
 
     ### Evaluate ###
-    log.info('********************')
-    log.info('*** TEST RESULTS ***')
-    log.info('********************')
-
+    log.info('***** TEST RESULTS *****')
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
         results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        '''
         log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
         for name, value in results.items():
             log.info("%s\t%3f", name, value)
+        '''
+        all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in results.items()])
+        log.info('%s, %s', task, all_metrics_str)
 
 
 if __name__ == '__main__':

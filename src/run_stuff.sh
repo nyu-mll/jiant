@@ -1,21 +1,25 @@
 #!/bin/bash
 # 
-#SBATCH -t 2-00:00
-#SBATCH --gres=gpu:1080ti:1
+#SBATCH -t 4-00:00
+#SBATCH --gres=gpu:p40:1
 #SBATCH --mail-type=end
 #SBATCH --mail-user=aw3272@nyu.edu
 
+# SBATCH -t 2-00:00
+# SBATCH --gres=gpu:1080ti:1
+
 # TODO config files
 SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-#SCRATCH_PREFIX='/beegfs/aw3272/'
-EXP_NAME=${3:-'debug'}
-GPUID=${2:-3}
-RANDOM_SEED=${17:-19}
+SCRATCH_PREFIX='/beegfs/aw3272/'
+EXP_NAME=${2:-'debug'}
+RUN_NAME=${3:-'debug'}
+GPUID=0
+RANDOM_SEED=${16:-19}
 
-DATE=${16:-"$(date +%m-%d)"}
-LOG_PATH="${SCRATCH_PREFIX}/ckpts/$DATE/${EXP_NAME}/log.log"
-EXP_DIR="${SCRATCH_PREFIX}/ckpts/${DATE}/${EXP_NAME}/"
-VOCAB_DIR="${SCRATCH_PREFIX}/ckpts/${DATE}/${EXP_NAME}/vocab/"
+PROJECT_NAME='mtl-sent-rep'
+LOG_PATH="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/${RUN_NAME}/log.log"
+EXP_DIR="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/${RUN_NAME}"
+VOCAB_DIR="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/vocab/"
 mkdir -p $EXP_DIR
 mkdir -p $VOCAB_DIR
 
@@ -41,10 +45,10 @@ PAIR_ENC=${15:-simple}
 N_LAYERS=2
 N_HIGHWAY_LAYERS=2
 
-OPTIMIZER=${18:-sgd}
+OPTIMIZER=${17:-sgd}
 LR=${14:-1.}
 LR_DECAY=.5
-WEIGHT_DECAY=${19:-0.0}
+WEIGHT_DECAY=${18:-0.0}
 SCHED_THRESH=1e-3
 BATCH_SIZE=64
 BPP_METHOD=${10:-fixed}

@@ -235,7 +235,7 @@ class MultiTaskTrainer:
                         ['micro_accuracy', 'macro_accuracy']
         metric_histories = {metric: [] for metric in all_metrics}
         metric_stopped = {metric: False for metric in all_metrics}
-        best_metric_epoch = {metric: -1 for metric in all_metrics}
+        best_metric_epoch = {metric: (-1, {}) for metric in all_metrics}
         stop_training = {task.name: False for task in tasks}
 
         # Get ordering on tasks, maybe should vary per pass
@@ -417,7 +417,7 @@ class MultiTaskTrainer:
                                                     task.val_metric_decreases)
                         self._save_checkpoint(epoch, is_best=is_best_so_far, task=task.name)
                         if is_best_so_far:
-                            best_metric_epoch[task.val_metric] = epoch
+                            best_metric_epoch[task.val_metric] = (epoch, all_val_metrics)
                         if out_of_patience:
                             metric_stopped[task.val_metric] = True
                             logger.info("Out of patience. Stopped tracking %s", task.name)
@@ -451,7 +451,7 @@ class MultiTaskTrainer:
                             self._check_history(metric_history, this_epoch_metric)
                     self._save_checkpoint(epoch, is_best=is_best_so_far, task=task)
                     if is_best_so_far:
-                        best_metric_epoch[metric] = epoch
+                        best_metric_epoch[metric] = (epoch, all_val_metrics)
                     if out_of_patience:
                         metric_stopped[metric] = True
                         logger.info("Out of patience. Stopped tracking %s", task)
@@ -492,8 +492,10 @@ class MultiTaskTrainer:
             logging.info('Trained %s for %d batches or %.3f epochs',
                          task.name, task_info['total_batches_trained'],
                          task_info['total_batches_trained'] / task_info['n_tr_batches'])
-        for metric, best_epoch in best_metric_epoch.items():
-            logging.info('Best %s in epoch %d', metric, best_epoch)
+        logging.info('***** VALIDATION RESULTS *****')
+        for metric, (best_epoch, epoch_metrics) in best_metric_epoch.items():
+            all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in epoch_metrics.items()])
+            logging.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
 
     def _forward(self, batch: dict, for_training: bool,
                  task=None) -> dict:
@@ -518,16 +520,22 @@ class MultiTaskTrainer:
             be copied to a "best.th" file. The value of this flag should
             be based on some validation metric computed by your model.
         """
-        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+        model_path = os.path.join(self._serialization_dir, "{}_best.th".format(task))
         model_state = self._model.state_dict()
+
+        if is_best:
+            logger.info("Best model found for %s.", task)
+            torch.save(model_state, model_path)
+            #shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
+
+        '''
+        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
         torch.save(model_state, model_path)
 
         training_state = {'epoch': epoch}#, 'optimizer': self._optimizer.state_dict()}
         torch.save(training_state, os.path.join(self._serialization_dir,
                                                 "training_state_epoch_{}.th".format(epoch)))
-        if is_best:
-            logger.info("Best model found for %s.", task)
-            shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
+        '''
 
     def _restore_checkpoint(self) -> int:
         """
