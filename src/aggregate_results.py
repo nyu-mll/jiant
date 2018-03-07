@@ -1,17 +1,18 @@
 import os
 import pdb
 
+import numpy as np
 from collections import defaultdict
 
 SCRATCH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/ckpts/%s/%s/'
-SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/%s/%s/'
+#SCRATCH_PREFIX = '/beegfs/aw3272/ckpts/%s/%s/'
 PROJECT_NAME = 'mtl-sent-rep'
-EXP_NAME = 'all_tasks_01_08_18'
+EXP_NAME = 'n_layers_01_15_18'
 EXP_DIR = SCRATCH_PREFIX % (PROJECT_NAME, EXP_NAME)
 
 TASKS = ['mnli', 'snli', 'msrp', 'sst',
          'twitter-irony', 'sts-benchmark', 'twitter', 'sts',
-         'rte', 'rte5', 'rte8', 'quora', 'micro', 'macro']
+         'rte', 'quora', 'micro', 'macro']
 
 OUT_FILE = "%s/summary.tex" % EXP_DIR
 
@@ -96,15 +97,14 @@ def get_runs(exp_dir):
 def latexify(out_file, results):
 
     def get_orders(results):
-        run_order, metric_order = ['all'], ['macro', 'micro']
+        run_order, metric_order = [], ['macro', 'micro']
         run_order += [k for k in results['valid'].keys() if k not in run_order]
         metric_order += [k for k in results['valid'][run_order[0]].keys() if k not in metric_order]
         task_order = [k for k in results['valid'][run_order[0]][metric_order[0]].keys()]
         task_order.sort()
         return run_order, metric_order, task_order
 
-
-    average = lambda x: sum(x) / len(x)
+    variances = []
     with open(out_file, 'w') as fh:
         header = 'run & metric & '
         run_order, metric_order, task_order = get_orders(results)
@@ -119,18 +119,21 @@ def latexify(out_file, results):
                 scores = results['valid'][run_name][metric]
                 for task in task_order:
                     try:
-                        res_str += ' & %.3f' % average(scores[task])
+                        res_str += ' & %.3f' % np.mean(scores[task])
+                        variances.append(np.var(scores[task]))
                     except:
                         pdb.set_trace()
                 res_str += ' \\\\\n'
                 fh.write(res_str)
+    print("Average variance: %.3f" % (np.mean(variances))
+
 
 # aggregated results
 # structure is something like
 # run name: results
 #           stopping criteria : metric : scores
 all_results = {'valid': defaultdict(lambda: defaultdict(lambda: defaultdict(list))),
-        'test': defaultdict(lambda: defaultdict(lambda: defaultdict(list)))}
+               'test': defaultdict(lambda: defaultdict(lambda: defaultdict(list)))}
 
 # aggregate results
 for run_dir in get_runs(EXP_DIR):
@@ -147,14 +150,13 @@ for run_dir in get_runs(EXP_DIR):
             if 'loss' in score:
                 continue
             score = extract_task(score)
-            all_results['valid'][task][metric][score].append(value)
+            all_results['valid'][run_name][metric][score].append(value)
     for metric, value in run_results['test'].items():
         for score, value in scores.items():
             if 'loss' in score:
                 continue
             score = extract_task(score)
-            all_results['test'][task][metric][score].append(value)
-
+            all_results['test'][run_name][metric][score].append(value)
 
 
 # display results in a useful way, e.g. can copy to notebook easily
@@ -163,9 +165,7 @@ for run_name in all_results['valid'].keys():
     for metric, scores in all_results['valid'][run_name].items():
         print('\tMetric: %s' % metric)
         for score, values in scores.items():
-            try:
-                print('\t\t%s: %.3f' % (score, sum(values) / len(values)))
-            except:
-                pdb.set_trace()
+            print('\t\t%s: %.3f' % (score, sum(values) / len(values)))
+            all_results['valid'][run_name][metric][scores][score] = np.array(values)
 
 latexify(OUT_FILE, all_results)

@@ -1,7 +1,8 @@
 import os
-import xml.etree.ElementTree
-import glob
 import pdb # pylint disable=unused-import
+import xml.etree.ElementTree
+import json
+import glob
 import random
 import logging as log
 from collections import Counter
@@ -11,14 +12,9 @@ import _pickle as pkl
 
 from allennlp.training.metrics import CategoricalAccuracy, Average
 
-# TODO(Alex)
-# - Twitter humor
-# - Twitter irony
-
-# TODO(Alex): put in another library
 def process_sentence(sent, max_seq_len):
     '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    return ['<s>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['</s>']
+    return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
 
 def shuffle(sent):
     raise NotImplementedError
@@ -138,7 +134,7 @@ class QuoraTask(Task):
             # isn't correctly counting truncated sents
             n_truncated += int(len(sent1) > max_seq_len)
             n_truncated += int(len(sent2) > max_seq_len)
-            if len(sent1) == 0 or len(sent2) == 0:
+            if not len(sent1) == 0 or not len(sent2) == 0:
                 continue # will break preprocessing
             targ = int(targ)
             sents1.append(sent1), sents2.append(sent2), targs.append(targ)
@@ -724,7 +720,7 @@ class RTETask(Task):
                 "NO": 1,
                 "CONTRADICTION": 1,
                 "FALSE": 1,
-                "UNKNOWN": 2,
+                "UNKNOWN": 1,
             }
 
             #data = {}
@@ -747,8 +743,10 @@ class RTETask(Task):
                     pdb.set_trace()
             return sents1, sents2, targs
 
-        devs = ["RTE2_dev_stanford_fix.xml", "RTE3_pairs_dev-set-final.xml", "rte1dev.xml"]
-        tests = ["RTE2_test.annotated.xml", "RTE3-TEST-GOLD.xml", "rte1_annotated_test.xml"]
+        devs = ["RTE2_dev_stanford_fix.xml", "RTE3_pairs_dev-set-final.xml",
+                "rte1dev.xml", "RTE5_MainTask_DevSet.xml"]
+        tests = ["RTE2_test.annotated.xml", "RTE3-TEST-GOLD.xml",
+                 "rte1_annotated_test.xml", "RTE5_MainTask_TestSet_Gold.xml"]
 
         unpack = lambda x: [l for l in map(list, zip(*x))]
         sort_data = lambda s1, s2, t: \
@@ -849,6 +847,36 @@ class RTE5Task(Task):
         self.test_data_text = unpack(te_data)
         log.info("\tFinished processing RTE5.")
 
+class SQuADTask(Task):
+    '''Task class for adversarial SQuAD'''
+    def __init__(self, path, max_seq_len, name="squad"):
+        super(SQuADTask, self).__init__(name, 2)
+        self.name = name
+        self.pair_input = 0
+        self.load_data(path, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+
+        def load_split(path):
+            '''Load a single split'''
+            quests, ctxs, targs = [], [], []
+            data = json.load(open(path))
+            for datum in data:
+                #quests.append(process_sentence(datum['question'], max_seq_len))
+                ctxs.append(process_sentence(datum['sentence'], max_seq_len))
+                assert datum['label'] in ['True', 'False'], pdb.set_trace()
+                targs.append(int(datum['label'] == 'True'))
+            #return quests, ctxs, targs
+            return ctxs, targs
+
+        tr_data = load_split(os.path.join(path, "adv_squad_train.json"))
+        val_data = load_split(os.path.join(path, "adv_squad_dev.json"))
+        te_data = load_split(os.path.join(path, "adv_squad_test.json"))
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished processing SQuAD.")
 
 
 class TwitterIronyTask(Task):

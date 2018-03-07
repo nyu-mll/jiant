@@ -12,7 +12,6 @@ import numpy as np
 
 import torch
 
-#from allennlp.commands.evaluate import evaluate
 from allennlp.common.params import Params
 from allennlp.data import Instance, Dataset, Vocabulary
 from allennlp.data.fields import TextField, LabelField, NumericField
@@ -29,8 +28,8 @@ from allennlp.nn.util import device_mapping
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
-        RTETask, RTE5Task, RTE8Task, SNLITask, SSTTask, STS14Task, \
-        STSBenchmarkTask, TwitterIronyTask
+        RTETask, RTE5Task, RTE8Task, SQuADTask, SNLITask, SSTTask, \
+        STS14Task, STSBenchmarkTask, TwitterIronyTask
 from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
                                   HeadlessPairAttnEncoder, MultiTaskModel, \
                                   HeadlessPairEncoder, BoWSentEncoder
@@ -43,17 +42,17 @@ from codebase.utils.utils import GPUVariable
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
               'mtl-sentence-representations/'
-PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'rte5', 'rte8',
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', #'rte5', 'rte8',
              'snli', 'sst', 'sts-benchmark', 'twitter-irony']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
              'rte': RTETask, 'rte5': RTE5Task,
-             'snli': SNLITask,
+             'squad': SQuADTask, 'snli': SNLITask,
              'sst': SSTTask, 'sts14': STS14Task,
-             'sts-benchmark':STSBenchmarkTask,
-             'small':QuoraTask, 'small2': QuoraTask,
+             'sts-benchmark': STSBenchmarkTask,
+             'small': QuoraTask, 'small2': QuoraTask,
              'twitter-irony': TwitterIronyTask}
 NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
@@ -61,6 +60,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'rte': PATH_PREFIX + 'rte/',
              'rte5': PATH_PREFIX + 'rte/',
              'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
+             'squad': PATH_PREFIX + 'squad/',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/binary/',
              'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
@@ -69,6 +69,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'small2': PATH_PREFIX + 'Quora/quora_small.tsv',
              'twitter-irony': PATH_PREFIX + 'twitter-irony/datasets/train/' +
                               'SemEval2018-T4-train-taskA.txt'}
+
 # lazy way to map tasks to preprocessed tasks
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
              'mnli': PATH_PREFIX + 'MNLI/',
@@ -76,6 +77,7 @@ NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
              'rte': PATH_PREFIX + 'rte/',
              'rte5': PATH_PREFIX + 'rte/',
              'rte8': PATH_PREFIX + 'rte8/',
+             'squad': PATH_PREFIX + 'squad/',
              'snli': PATH_PREFIX + 'SNLI/',
              'sst': PATH_PREFIX + 'SST/',
              'sts14': PATH_PREFIX + 'STS/',
@@ -149,6 +151,7 @@ def get_words(tasks):
     return word2freq, char2freq
 
 def get_word_vecs(path, vocab, word_dim):
+    '''Load word vectors'''
     word_vecs = {}
     with open(path) as fh:
         for line in fh:
@@ -201,8 +204,8 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
         chars_by_freq.sort(key=lambda x: x[1], reverse=True)
         for word, _ in words_by_freq[:max_word_vocab_size]:
             vocab.add_token_to_namespace(word, 'tokens')
-        for c, _ in chars_by_freq[:max_char_vocab_size]:
-            vocab.add_token_to_namespace(c, 'chars')
+        for char, _ in chars_by_freq[:max_char_vocab_size]:
+            vocab.add_token_to_namespace(char, 'chars')
         if vocab_path:
             vocab.save_to_files(vocab_path)
             log.info('\tSaved vocabulary to %s', vocab_path)
@@ -320,9 +323,7 @@ def load_word_embeddings(path, vocab, word_dim):
     vocab_size = vocab.get_vocab_size('tokens')
     unk_idx = vocab.get_token_index('@@UNKNOWN@@')
     pad_idx = vocab.get_token_index('@@PADDING@@')
-    embeddings = np.random.rand(vocab.get_vocab_size('tokens'),
-                                word_dim).astype(float)
-    #embeddings = np.zeros((vocab.get_vocab_size('tokens'), word_dim))#.astype(float)
+    embeddings = np.random.rand(vocab.get_vocab_size('tokens'), word_dim).astype(float) # pylint: disable=no-member
     n_embs = 0
     counter = 0
     with open(path) as fh:
@@ -352,9 +353,7 @@ def load_word_embeddings(path, vocab, word_dim):
     return torch.FloatTensor(embeddings)
 
 def main(arguments):
-    '''
-    Train or load a model. Evaluate on some tasks.
-    '''
+    ''' Train or load a model. Evaluate on some tasks. '''
     parser = argparse.ArgumentParser(description='')
 
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
@@ -484,12 +483,12 @@ def main(arguments):
     word_dim, char_dim = args.word_dim, args.char_dim
     input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
-    tasks, vocab, word_embs = \
-            prepare_tasks(ALL_TASKS, args.word_embs_file,
-                          word_dim, args.max_vocab_size, args.max_char_vocab_size,
-                          args.max_seq_len,
-                          os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
-                          args.load_tasks, args.load_vocab, args.load_index)
+    tasks = ['squad'] #ALL_TASKS
+    tasks, vocab, word_embs = prepare_tasks(tasks, args.word_embs_file,
+                                            word_dim, args.max_vocab_size,
+                                            args.max_char_vocab_size, args.max_seq_len,
+                                            os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
+                                            args.load_tasks, args.load_vocab, args.load_index)
     train_tasks, eval_tasks = [], []
     if args.tasks == 'all':
         train_tasks = tasks
@@ -502,6 +501,7 @@ def main(arguments):
                 train_tasks.append(task)
             else:
                 eval_tasks.append(task)
+    eval_tasks = []
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
     log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
@@ -557,12 +557,12 @@ def main(arguments):
             'num_layers': args.n_layers,
             'bidirectional': True}))
         pair_encoder = HeadlessPairAttnEncoder(vocab, text_field_embedder,
-                                     args.n_highway_layers,
-                                     phrase_layer,
-                                     #LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
-                                     DotProductSimilarity(),
-                                     modeling_layer,
-                                     dropout=args.dropout)
+                                               args.n_highway_layers,
+                                               phrase_layer,
+                                               #LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
+                                               DotProductSimilarity(),
+                                               modeling_layer,
+                                               dropout=args.dropout)
     model = MultiTaskModel(sent_encoder, pair_encoder, args.pair_enc)
     build_classifiers(tasks, model, args.classifier, args.pair_enc, dim,
                       args.classifier_hid_dim, args.classifier_dropout)
@@ -584,7 +584,7 @@ def main(arguments):
                            'patience':args.patience,
                            'grad_norm':5.,
                            'lr_decay':.99, 'min_lr':1e-5,
-                           'no_tqdm':True})
+                           'no_tqdm':False})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
 

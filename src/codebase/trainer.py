@@ -189,7 +189,7 @@ class MultiTaskTrainer:
         parameters = train_params #[p for p in self._model.parameters() if p.requires_grad]
         if 'proportional' in bpp_method: # for computing n batches per pass
             if 'tr' in bpp_method:
-                sizes = [iterator.get_num_batches(task.train_data) for\
+                sizes = [iterator.get_num_batches(task.train_data) for \
                          task in tasks]
                 min_size = min(sizes)
                 bpps = [size / min_size for size in sizes]
