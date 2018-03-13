@@ -28,9 +28,9 @@ from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.data.iterators.data_iterator import DataIterator
 from allennlp.models.model import Model
-from allennlp.nn.util import arrays_to_variables, device_mapping
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
+from util import arrays_to_variables, device_mapping
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 class MultiTaskTrainer:
@@ -205,7 +205,8 @@ class MultiTaskTrainer:
             n_tr_batches = iterator.get_num_batches(task.train_data)
             n_val_batches = iterator.get_num_batches(task.val_data)
             task_info['n_tr_batches'] = n_tr_batches
-            tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None),
+            tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None,
+                                     cuda_device=self._cuda_device),
                                      disable=self._no_tqdm, total=n_tr_batches)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0 # Maybe don't need here
@@ -369,7 +370,7 @@ class MultiTaskTrainer:
                     n_examples = 0.0
                     n_val_batches = task_infos[task.name]['n_val_batches']
                     scheduler = task_infos[task.name]['scheduler']
-                    val_generator = iterator(task.val_data, num_epochs=1)
+                    val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
                     val_generator_tqdm = tqdm.tqdm(val_generator,
                                                    disable=self._no_tqdm,
                                                    total=n_val_batches)
@@ -499,7 +500,8 @@ class MultiTaskTrainer:
 
     def _forward(self, batch: dict, for_training: bool,
                  task=None) -> dict:
-        tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
+        # tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
+        tensor_batch = batch
         return self._model.forward(task, **tensor_batch)
 
     def _description_from_metrics(self, metrics: Dict[str, float]) -> str:
@@ -526,7 +528,7 @@ class MultiTaskTrainer:
         if is_best:
             logger.info("Best model found for %s.", task)
             torch.save(model_state, model_path)
-            #shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
+            # shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
 
         '''
         model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
@@ -568,7 +570,7 @@ class MultiTaskTrainer:
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
         training_state = torch.load(training_state_path)
         self._model.load_state_dict(model_state)
-        #self._optimizer.load_state_dict(training_state["optimizer"])
+        # self._optimizer.load_state_dict(training_state["optimizer"])
         return training_state["epoch"]
 
     @classmethod

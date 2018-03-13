@@ -35,7 +35,7 @@ from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.iterators import DataIterator
 from allennlp.models.archival import load_archive
 from allennlp.models.model import Model
-from allennlp.nn.util import arrays_to_variables
+from util import arrays_to_variables
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 

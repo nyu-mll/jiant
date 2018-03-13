@@ -5,3 +5,5 @@ dependencies:
     - pytorch
     - numpy
     - nltk
+    - pip:
+        - allennlp

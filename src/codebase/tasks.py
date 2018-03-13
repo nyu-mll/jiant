@@ -852,7 +852,7 @@ class SQuADTask(Task):
     def __init__(self, path, max_seq_len, name="squad"):
         super(SQuADTask, self).__init__(name, 2)
         self.name = name
-        self.pair_input = 0
+        self.pair_input = 1
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
@@ -863,12 +863,12 @@ class SQuADTask(Task):
             quests, ctxs, targs = [], [], []
             data = json.load(open(path))
             for datum in data:
-                #quests.append(process_sentence(datum['question'], max_seq_len))
+                quests.append(process_sentence(datum['question'], max_seq_len))
                 ctxs.append(process_sentence(datum['sentence'], max_seq_len))
                 assert datum['label'] in ['True', 'False'], pdb.set_trace()
                 targs.append(int(datum['label'] == 'True'))
-            #return quests, ctxs, targs
-            return ctxs, targs
+            return quests, ctxs, targs
+            #return ctxs, targs
 
         tr_data = load_split(os.path.join(path, "adv_squad_train.json"))
         val_data = load_split(os.path.join(path, "adv_squad_dev.json"))

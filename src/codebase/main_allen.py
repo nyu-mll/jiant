@@ -13,17 +13,17 @@ import numpy as np
 import torch
 
 from allennlp.common.params import Params
-from allennlp.data import Instance, Dataset, Vocabulary
+from allennlp.data import Instance, Dataset, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField, NumericField
 from allennlp.data.iterators import BasicIterator
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer
+from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, ELMoTokenCharactersIndexer
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
-from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, \
-                                              CnnEncoder
+from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.nn.util import device_mapping
+from allennlp.modules.token_embedders.elmo_token_embedder import ElmoTokenEmbedder
+from util import device_mapping
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
@@ -36,15 +36,17 @@ from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
 from codebase.trainer import MultiTaskTrainer
 from codebase.evaluate import evaluate
 from codebase.utils.encoders import MultiLayerRNNEncoder
-from codebase.utils.seq_batch import SequenceBatch
-from codebase.utils.token_embedder import TokenEmbedder
-from codebase.utils.utils import GPUVariable
+#from codebase.utils.seq_batch import SequenceBatch
+#from codebase.utils.token_embedder import TokenEmbedder
+#from codebase.utils.utils import GPUVariable
 
-PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
-              'mtl-sentence-representations/'
+ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
+ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+
+PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/'
 #PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', #'rte5', 'rte8',
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad',
              'snli', 'sst', 'sts-benchmark', 'twitter-irony']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
              'quora': QuoraTask, 'rte8': RTE8Task,
@@ -66,9 +68,7 @@ NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
              'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
              'sts-benchmark': PATH_PREFIX + 'STS/STSBenchmark/',
              'small': PATH_PREFIX + 'Quora/quora_small.tsv',
-             'small2': PATH_PREFIX + 'Quora/quora_small.tsv',
-             'twitter-irony': PATH_PREFIX + 'twitter-irony/datasets/train/' +
-                              'SemEval2018-T4-train-taskA.txt'}
+             'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
 
 # lazy way to map tasks to preprocessed tasks
 NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
@@ -164,7 +164,7 @@ def get_word_vecs(path, vocab, word_dim):
              len(vocab))
     return word_vecs
 
-def prepare_tasks(task_names, word_vecs_path, word_dim,
+def prepare_tasks(task_names, word_vecs_path, word_dim, elmo,
                   max_word_vocab_size, max_char_vocab_size, max_seq_len,
                   vocab_path, exp_dir,
                   load_task, load_vocab, load_index):
@@ -229,8 +229,9 @@ def prepare_tasks(task_names, word_vecs_path, word_dim,
     embeddings = torch.FloatTensor(embeddings)
 
     # convert text data to AllenNLP text fields
-    token_indexer = {"words": SingleIdTokenIndexer(),
-                     "chars": TokenCharactersIndexer("chars")}
+    token_indexer = {"words": SingleIdTokenIndexer(), "chars": TokenCharactersIndexer("chars")}
+    if elmo:
+        token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
 
     # index words and chars using vocab
     for task in tasks:
@@ -276,31 +277,24 @@ def process_split(split, token_indexer, pair_input, categorical):
     Returns:
     '''
     if pair_input:
-        inputs1 = [TextField(sent, token_indexers=token_indexer) for \
-                   sent in split[0]]
-        inputs2 = [TextField(sent, token_indexers=token_indexer) for \
-                   sent in split[1]]
+        inputs1 = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[0]]
+        inputs2 = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[1]]
         if categorical:
-            labels = [LabelField(l, label_namespace="labels",
-                                 skip_indexing=True) for l in split[-1]]
+            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[-1]]
         else:
             labels = [NumericField(l) for l in split[-1]]
 
         instances = [Instance({"input1": input1, "input2": input2, \
-                     "label": label}) for (input1, input2, label) in
-                     zip(inputs1, inputs2, labels)]
+                     "label": label}) for (input1, input2, label) in zip(inputs1, inputs2, labels)]
 
     else:
-        inputs1 = [TextField(sent, token_indexers=token_indexer) for \
-                   sent in split[0]]
+        inputs1 = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[0]]
         if categorical:
-            labels = [LabelField(l, label_namespace="labels",
-                                 skip_indexing=True) for l in split[-1]]
+            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[-1]]
         else:
             labels = [NumericField(l) for l in split[-1]]
 
-        instances = [Instance({"input1": input1, \
-                     "label": label}) for (input1, label) in
+        instances = [Instance({"input1": input1, "label": label}) for (input1, label) in
                      zip(inputs1, labels)]
     return Dataset(instances)
 
@@ -356,17 +350,12 @@ def main(arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
-                        type=int, default=0)
-    parser.add_argument('--random_seed', help='random seed to use',
-                        type=int, default=None)
+    parser.add_argument('--cuda', help='0 if no CUDA, else gpu id', type=int, default=0)
+    parser.add_argument('--random_seed', help='random seed to use', type=int, default=None)
 
-    parser.add_argument('--exp_name', help='experiment name',
-                        type=str, default='')
-    parser.add_argument('--log_file', help='path to log to',
-                        type=str, default=0)
-    parser.add_argument('--exp_dir', help='path to log to',
-                        type=str, default='')
+    parser.add_argument('--exp_name', help='experiment name', type=str, default='')
+    parser.add_argument('--log_file', help='path to log to', type=str, default=0)
+    parser.add_argument('--exp_dir', help='path to log to', type=str, default='')
     parser.add_argument('--data_path', help='path to directory containing '
                         ' {train,val,test}.pkl', type=str, default='')
     parser.add_argument('--vocab_path', help='path to directory containing '
@@ -374,33 +363,23 @@ def main(arguments):
     parser.add_argument('--word_embs_file', help='file containing word ' +
                         'embeddings', type=str, default='')
 
-    parser.add_argument('--should_train', help='1 if should train model',
-                        type=int, default=1)
-    parser.add_argument('--load_model', help='1 if load from checkpoint',
-                        type=int, default=1)
-    parser.add_argument('--load_tasks', help='1 if load tasks',
-                        type=int, default=1)
-    parser.add_argument('--load_vocab', help='1 if load vocabulary',
-                        type=int, default=1)
-    parser.add_argument('--load_index', help='1 if load indexed datasets',
-                        type=int, default=1)
+    parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
+    parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
+    parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
+    parser.add_argument('--load_vocab', help='1 if load vocabulary', type=int, default=1)
+    parser.add_argument('--load_index', help='1 if load indexed datasets', type=int, default=1)
 
-    parser.add_argument('--tasks', help='comma separated list of tasks',
-                        type=str, default='')
-    parser.add_argument('--max_vocab_size', help='vocabulary size',
-                        type=int, default=50000)
-    parser.add_argument('--max_seq_len', help='max sequence length',
-                        type=int, default=35)
-    parser.add_argument('--classifier', help='type of classifier to use',
-                        type=str, default='log_reg',
-                        choices=['log_reg', 'mlp', 'fancy_mlp'])
-    parser.add_argument('--classifier_hid_dim', help='hid dim of classifier',
-                        type=int, default=512)
-    parser.add_argument('--classifier_dropout', help='classifier dropout',
-                        type=float, default=0.0)
+    parser.add_argument('--tasks', help='comma separated list of tasks', type=str, default='')
+    parser.add_argument('--max_vocab_size', help='vocabulary size', type=int, default=50000)
+    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=35)
+    parser.add_argument('--classifier', help='type of classifier to use', type=str,
+                        default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
+    parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
+    parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
 
-    parser.add_argument('--max_char_vocab_size', help='char vocabulary size',
-                        type=int, default=2000)
+    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
+    parser.add_argument('--max_char_vocab_size', help='char vocabulary size', type=int,
+                        default=2000)
     parser.add_argument('--n_char_filters', help='num of conv filters for ' +
                         'char embedding combiner', type=int, default=64)
     parser.add_argument('--char_filter_sizes', help='filter sizes for char' +
@@ -481,11 +460,11 @@ def main(arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     word_dim, char_dim = args.word_dim, args.char_dim
-    input_dim = word_dim + char_dim
+    input_dim = word_dim + char_dim + (1024 * args.elmo)
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
-    tasks = ['squad'] #ALL_TASKS
+    tasks = args.tasks.split(',') # ALL_TASKS
     tasks, vocab, word_embs = prepare_tasks(tasks, args.word_embs_file,
-                                            word_dim, args.max_vocab_size,
+                                            word_dim, args.elmo, args.max_vocab_size,
                                             args.max_char_vocab_size, args.max_seq_len,
                                             os.path.join(PATH_PREFIX, 'vocab'), args.exp_dir,
                                             args.load_tasks, args.load_vocab, args.load_index)
@@ -506,8 +485,7 @@ def main(arguments):
     log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
     log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
 
-    ### Build model ###
-    # Probably should create another function
+    # Build model #
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), word_dim,
                               weight=word_embs, trainable=False,
                               padding_index=vocab.get_token_index('@@PADDING@@'))
@@ -520,7 +498,11 @@ def main(arguments):
                               output_dim=args.char_dim)
     #char_encoder = torch.nn.Dropout(p=args.dropout)(char_encoder)
     char_embedder = TokenCharactersEncoder(char_embedder, char_encoder)
-    token_embedder = {"words": word_embedder, "chars": char_embedder}
+    if args.elmo:
+        elmo_embedder = ElmoTokenEmbedder(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH)
+        token_embedder = {"words": word_embedder, "chars": char_embedder, "elmo": elmo_embedder}
+    else:
+        token_embedder = {"words": word_embedder, "chars": char_embedder}
     text_field_embedder = BasicTextFieldEmbedder(token_embedder)
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({
         'input_size': input_dim,
@@ -570,25 +552,25 @@ def main(arguments):
         model = model.cuda()
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    ### Set up trainer ###
-    optimizer_params = Params({'type':args.optimizer, 'lr':args.lr, 'weight_decay':1e-5})
-    scheduler_params = Params({'type':'reduce_on_plateau', 'mode':'max',
-                               'factor':args.lr_decay_factor,
-                               'patience':args.task_patience,
-                               'threshold':args.scheduler_threshold,
-                               'threshold_mode':'abs',
+    # Set up trainer #
+    optimizer_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
+    scheduler_params = Params({'type': 'reduce_on_plateau', 'mode':'max',
+                               'factor': args.lr_decay_factor,
+                               'patience': args.task_patience,
+                               'threshold': args.scheduler_threshold,
+                               'threshold_mode': 'abs',
                                'verbose':True})
-    iterator = BasicIterator(args.batch_size)
-    train_params = Params({'num_epochs':args.n_epochs,
-                           'cuda_device':args.cuda,
-                           'patience':args.patience,
-                           'grad_norm':5.,
-                           'lr_decay':.99, 'min_lr':1e-5,
-                           'no_tqdm':False})
+    iterator = BasicIterator(args.batch_size) # BucketIterator()
+    train_params = Params({'num_epochs': args.n_epochs,
+                           'cuda_device': args.cuda,
+                           'patience': args.patience,
+                           'grad_norm': 5.,
+                           'lr_decay': .99, 'min_lr': 1e-5,
+                           'no_tqdm': False})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
 
-    ### Train ###
+    # Train #
     to_train = [p for p in model.parameters() if p.requires_grad]
     if train_tasks and args.should_train:
         trainer.train(train_tasks, args.task_ordering,
@@ -597,7 +579,6 @@ def main(arguments):
                       to_train, optimizer_params, scheduler_params, args.load_model)
     else:
         log.info("No training tasks found. Skipping training.")
-
 
     # train just the classifiers for eval tasks
     for task in eval_tasks:
@@ -613,7 +594,7 @@ def main(arguments):
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(layer_state)
 
-    ### Evaluate ###
+    # Evaluate #
     log.info('***** TEST RESULTS *****')
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:

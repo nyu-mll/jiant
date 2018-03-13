@@ -80,7 +80,7 @@ class MultiTaskModel(nn.Module):
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
         scorer = task.scorer
         if pair_input:
-            if isinstance(task, STS14Task) or isinstance(task, STSBenchmarkTask):
+            if isinstance(task, (STS14Task, STSBenchmarkTask)):
                 sent1 = self.sent_encoder(input1)
                 sent2 = self.sent_encoder(input2) # causes a bug with BiDAF
                 logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1))
@@ -105,7 +105,7 @@ class MultiTaskModel(nn.Module):
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
         if label is not None:
-            if isinstance(task, STS14Task) or isinstance(task, STSBenchmarkTask):
+            if isinstance(task, (STS14Task, STSBenchmarkTask)):
                 loss = F.binary_cross_entropy_with_logits(logits, label)
                 #loss = -logits.mean() # negative cosine similarity
                 label = label.squeeze(-1).data.cpu().numpy()
