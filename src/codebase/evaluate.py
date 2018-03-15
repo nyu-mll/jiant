@@ -54,7 +54,7 @@ def evaluate(model: Model,
             dataset = task.val_data
         elif split == "test":
             dataset = task.test_data
-        generator = iterator(dataset, num_epochs=1, shuffle=False)
+        generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         generator_tqdm = tqdm.tqdm(
             generator, total=iterator.get_num_batches(dataset),
             disable=True)

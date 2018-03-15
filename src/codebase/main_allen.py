@@ -1,3 +1,4 @@
+'''Train a multi-task model using AllenNLP'''
 import os
 import pdb
 import sys
@@ -16,32 +17,19 @@ from allennlp.common.params import Params
 from allennlp.data import Instance, Dataset, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField, NumericField
 from allennlp.data.iterators import BasicIterator
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, ELMoTokenCharactersIndexer
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
-from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
-from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.modules.token_embedders.elmo_token_embedder import ElmoTokenEmbedder
+from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, \
+                                         ELMoTokenCharactersIndexer
 from util import device_mapping
+
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
 from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, \
         RTETask, RTE5Task, RTE8Task, SQuADTask, SNLITask, SSTTask, \
         STS14Task, STSBenchmarkTask, TwitterIronyTask
-from codebase.models_allen import HeadlessBiDAF, HeadlessSentEncoder, \
-                                  HeadlessPairAttnEncoder, MultiTaskModel, \
-                                  HeadlessPairEncoder, BoWSentEncoder
+from codebase.models_allen import build_model
 from codebase.trainer import MultiTaskTrainer
 from codebase.evaluate import evaluate
-from codebase.utils.encoders import MultiLayerRNNEncoder
-#from codebase.utils.seq_batch import SequenceBatch
-#from codebase.utils.token_embedder import TokenEmbedder
-#from codebase.utils.utils import GPUVariable
-
-ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
-ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/'
 #PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
@@ -105,27 +93,6 @@ def load_tasks(task_names, max_seq_len, load):
     log.info("\tFinished loading tasks: %s.", ' '.join(
         [task.name for task in tasks]))
     return tasks
-
-def build_classifiers(tasks, model, classifier_type, pair_enc, input_dim,
-                      hid_dim, dropout):
-    '''
-    Build the classifier for each task
-    '''
-    for task in tasks:
-        if task.pair_input:
-            if pair_enc == 'bidaf':
-                task_dim = input_dim * 10
-            elif pair_enc == 'simple':
-                task_dim = input_dim * 8
-            elif pair_enc == 'bow':
-                task_dim = input_dim * 4
-            elif pair_enc == 'attn':
-                task_dim = input_dim * 8
-        else:
-            task_dim = input_dim * 2
-        model.build_classifier(task, classifier_type, task_dim, hid_dim,
-                               dropout)
-    return
 
 def get_words(tasks):
     '''
@@ -351,7 +318,7 @@ def main(arguments):
     parser = argparse.ArgumentParser(description='')
 
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id', type=int, default=0)
-    parser.add_argument('--random_seed', help='random seed to use', type=int, default=None)
+    parser.add_argument('--random_seed', help='random seed to use', type=int, default=19)
 
     parser.add_argument('--exp_name', help='experiment name', type=str, default='')
     parser.add_argument('--log_file', help='path to log to', type=str, default=0)
@@ -377,40 +344,30 @@ def main(arguments):
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
 
-    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
-    parser.add_argument('--max_char_vocab_size', help='char vocabulary size', type=int,
-                        default=2000)
+    parser.add_argument('--max_char_vocab_size', help='char vocabulary size', type=int, default=999)
     parser.add_argument('--n_char_filters', help='num of conv filters for ' +
                         'char embedding combiner', type=int, default=64)
     parser.add_argument('--char_filter_sizes', help='filter sizes for char' +
                         ' embedding combiner', type=str, default='2,3,4,5')
+    parser.add_argument('--dropout_embs', help='dropout rate for embeddisn', type=float, default=.2)
+    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
+    parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
+    parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
-    parser.add_argument('--pair_enc', help='type of pair encoder to use',
-                        type=str, default='bidaf',
+    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='bidaf',
                         choices=['simple', 'bidaf', 'bow', 'attn'])
-    parser.add_argument('--word_dim', help='dimension of word embeddings',
-                        type=int, default=300)
-    parser.add_argument('--char_dim', help='dimension of char embeddings',
-                        type=int, default=100)
-    parser.add_argument('--hid_dim', help='hidden dimension size',
-                        type=int, default=4096)
-    parser.add_argument('--n_layers', help='number of RNN layers',
-                        type=int, default=1)
-    parser.add_argument('--n_highway_layers', help='num of highway layers',
-                        type=int, default=1)
-    parser.add_argument('--dropout', help='dropout rate to use in training',
-                        type=float, default=.2)
+    parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
+    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
+    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
+    parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
+    parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
+    parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
 
-    parser.add_argument('--batch_size', help='batch size',
-                        type=int, default=64)
-    parser.add_argument('--optimizer', help='optimizer to use',
-                        type=str, default='sgd')
-    parser.add_argument('--n_epochs', help='n epochs to train for',
-                        type=int, default=10)
-    parser.add_argument('--lr', help='starting learning rate',
-                        type=float, default=1.0)
-    parser.add_argument('--weight_decay', help='weight decay value',
-                        type=float, default=0.0)
+    parser.add_argument('--batch_size', help='batch size', type=int, default=64)
+    parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
+    parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
+    parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
+    parser.add_argument('--weight_decay', help='weight decay value', type=float, default=0.0)
     parser.add_argument('--task_patience', help='patience in decaying per task lr',
                         type=int, default=0)
     parser.add_argument('--scheduler_threshold', help='scheduler threshold',
@@ -420,8 +377,7 @@ def main(arguments):
 
     parser.add_argument('--val_interval', help='Number of passes between '+
                         ' validating', type=int, default=10)
-    parser.add_argument('--max_vals', help='Maximum number of validation'+
-                        ' checks', type=int, default=100)
+    parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int, default=100)
     parser.add_argument('--bpp_method', help='How to calculate ' +
                         'the number of batches per pass for each task', type=str,
                         choices=['fixed', 'percent_tr', 'proportional_rank'],
@@ -429,12 +385,10 @@ def main(arguments):
     parser.add_argument('--bpp_base', help='If fixed n batches ' +
                         'per pass, this is the number. If proportional, this ' +
                         'is the smallest number', type=int, default=10)
-    parser.add_argument('--patience', help='patience in early stopping',
-                        type=int, default=5)
-    parser.add_argument('--task_ordering', help='Method for ordering tasks',
-                        type=str, default='given',
-                        choices=['given', 'random', 'random_per_pass',
-                                 'small_to_large', 'large_to_small'])
+    parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
+    parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str,
+                        default='given', choices=['given', 'random', 'random_per_pass',
+                                                  'small_to_large', 'large_to_small'])
 
     args = parser.parse_args(arguments)
 
@@ -457,10 +411,11 @@ def main(arguments):
         torch.cuda.manual_seed_all(seed)
 
     ### Load tasks ###
+    # TODO(Alex): put this in task file
     log.info("Loading tasks...")
     start_time = time.time()
     word_dim, char_dim = args.word_dim, args.char_dim
-    input_dim = word_dim + char_dim + (1024 * args.elmo)
+    input_dim = word_dim + char_dim
     dim = args.hid_dim if args.pair_enc != 'bow' else input_dim
     tasks = args.tasks.split(',') # ALL_TASKS
     tasks, vocab, word_embs = prepare_tasks(tasks, args.word_embs_file,
@@ -486,87 +441,21 @@ def main(arguments):
     log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
 
     # Build model #
-    word_embedder = Embedding(vocab.get_vocab_size('tokens'), word_dim,
-                              weight=word_embs, trainable=False,
-                              padding_index=vocab.get_token_index('@@PADDING@@'))
-    char_embedder = Embedding(vocab.get_vocab_size('chars'),
-                              char_dim)
-    #char_encoder = BagOfEmbeddingsEncoder(char_dim, True)
-    filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
-    char_encoder = CnnEncoder(args.char_dim, num_filters=args.n_char_filters,
-                              ngram_filter_sizes=filter_sizes,
-                              output_dim=args.char_dim)
-    #char_encoder = torch.nn.Dropout(p=args.dropout)(char_encoder)
-    char_embedder = TokenCharactersEncoder(char_embedder, char_encoder)
-    if args.elmo:
-        elmo_embedder = ElmoTokenEmbedder(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH)
-        token_embedder = {"words": word_embedder, "chars": char_embedder, "elmo": elmo_embedder}
-    else:
-        token_embedder = {"words": word_embedder, "chars": char_embedder}
-    text_field_embedder = BasicTextFieldEmbedder(token_embedder)
-    phrase_layer = s2s_e.by_name('lstm').from_params(Params({
-        'input_size': input_dim,
-        'hidden_size': dim,
-        'bidirectional': True}))
-    if args.pair_enc == 'bow':
-        sent_encoder = BoWSentEncoder(vocab, text_field_embedder)
-        pair_encoder = None
-    else:
-        sent_encoder = HeadlessSentEncoder(vocab, text_field_embedder,
-                                           args.n_highway_layers,
-                                           phrase_layer)
-    if args.pair_enc == 'bidaf':
-        modeling_layer = s2s_e.by_name('lstm').from_params(Params({
-            'input_size': 8 * dim,
-            'hidden_size': dim,
-            'num_layers': args.n_layers,
-            'bidirectional': True}))
-        pair_encoder = HeadlessBiDAF(vocab, text_field_embedder,
-                                     args.n_highway_layers,
-                                     phrase_layer,
-                                     LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
-                                     modeling_layer,
-                                     dropout=args.dropout)
-    elif args.pair_enc == 'simple':
-        pair_encoder = HeadlessPairEncoder(vocab, text_field_embedder,
-                                           args.n_highway_layers,
-                                           phrase_layer,
-                                           dropout=0.0)
-    elif args.pair_enc == 'attn':
-        modeling_layer = s2s_e.by_name('lstm').from_params(Params({
-            'input_size': 4 * dim,
-            'hidden_size': dim,
-            'num_layers': args.n_layers,
-            'bidirectional': True}))
-        pair_encoder = HeadlessPairAttnEncoder(vocab, text_field_embedder,
-                                               args.n_highway_layers,
-                                               phrase_layer,
-                                               #LinearSimilarity(2*dim, 2*dim, "x,y,x*y"),
-                                               DotProductSimilarity(),
-                                               modeling_layer,
-                                               dropout=args.dropout)
-    model = MultiTaskModel(sent_encoder, pair_encoder, args.pair_enc)
-    build_classifiers(tasks, model, args.classifier, args.pair_enc, dim,
-                      args.classifier_hid_dim, args.classifier_dropout)
-    if args.cuda >= 0:
-        model = model.cuda()
+    log.info('Building model!')
+    model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
     # Set up trainer #
+    # TODO(Alex): put this in trainer file
     optimizer_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
     scheduler_params = Params({'type': 'reduce_on_plateau', 'mode':'max',
-                               'factor': args.lr_decay_factor,
-                               'patience': args.task_patience,
-                               'threshold': args.scheduler_threshold,
-                               'threshold_mode': 'abs',
+                               'factor': args.lr_decay_factor, 'patience': args.task_patience,
+                               'threshold': args.scheduler_threshold, 'threshold_mode': 'abs',
                                'verbose':True})
     iterator = BasicIterator(args.batch_size) # BucketIterator()
-    train_params = Params({'num_epochs': args.n_epochs,
-                           'cuda_device': args.cuda,
-                           'patience': args.patience,
-                           'grad_norm': 5.,
-                           'lr_decay': .99, 'min_lr': 1e-5,
-                           'no_tqdm': False})
+    train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
+                           'patience': args.patience, 'grad_norm': 5.,
+                           'lr_decay': .99, 'min_lr': 1e-5, 'no_tqdm': False})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
 
@@ -595,6 +484,7 @@ def main(arguments):
         model.load_state_dict(layer_state)
 
     # Evaluate #
+    # TODO(Alex): put this in evaluate file
     log.info('***** TEST RESULTS *****')
     # load the different task best models and evaluate them
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
