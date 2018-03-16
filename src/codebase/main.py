@@ -1,270 +1,175 @@
+'''Train a multi-task model using AllenNLP'''
 import os
 import pdb
 import sys
 import time
+import copy
+import random
 import argparse
 import logging as log
-from collections import Counter
-import _pickle as pkl
-import nltk
-import numpy as np
-
 import torch
-import torch.nn as nn
-from torch.autograd import Variable
+
+from allennlp.data.iterators import BasicIterator
+from util import device_mapping
 
 PATH_TO_PKG = '../'
 sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
-from codebase.utils.encoders import MultiLayerRNNEncoder
-from codebase.models import MultiTaskModel
-from codebase.tasks import Task, Dataset, QuoraTask, SNLITask
-from codebase.utils.seq_batch import SequenceBatch
-from codebase.utils.token_embedder import TokenEmbedder
-from codebase.utils.utils import GPUVariable
-
-PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/' + \
-              'mtl-sentence-representations/'
-NAME2TASK = {'quora': QuoraTask, 'snli': SNLITask, 'small':QuoraTask}
-NAME2DATA = {'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
-             'snli': PATH_PREFIX + 'SNLI/',
-             'small': PATH_PREFIX + 'Quora/quora_small.tsv'}
-
-# lazy way to map tasks to vocab pickles
-NAME2VOCAB = {QuoraTask: PATH_PREFIX + 'Quora/quora_vocab.pkl',
-              SNLITask: PATH_PREFIX + 'SNLI/snli_vocab.pkl'}
-SPECIALS = ['<pad>', '<unk>', '<s>', '</s>']
-
-def process_tasks(task_names, input_dim, max_vocab_size, max_seq_len,
-                  batch_size, cuda):
-    '''
-    Process the tasks.
-
-    Args:
-        - task_names (list[str]): list of task names
-
-    Returns:
-        - tasks (list[Task]): list of tasks
-    '''
-
-    tasks = []
-    for name in task_names:
-        assert name in NAME2TASK, 'Task not found!'
-        tasks.append(NAME2TASK[name](NAME2DATA[name], input_dim, max_seq_len,
-                                     cuda))
-
-    tok2idx = build_vocabulary(tasks, max_vocab_size)
-
-    max_seq_len -= 2 # adding SOS and EOS tokens
-    for task in tasks:
-        task.train_data = process_split(task.train_data_text,
-                                        task.pair_input, tok2idx,
-                                        batch_size, cuda)
-        task.val_data = process_split(task.val_data_text, task.pair_input,
-                                      tok2idx, batch_size, cuda)
-        task.test_data = process_split(task.test_data_text, task.pair_input,
-                                       tok2idx, batch_size, cuda)
-
-    return tasks, tok2idx
-
-def process_split(split, pair_input, tok2idx, batch_size, cuda):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-        - max_seq_len (int)
-
-    Returns:
-    '''
-    #inputs1 = Variable(torch.LongTensor([process_sentence(
-    #    sent, tok2idx, max_seq_len) for sent in split[0]]))
-    targs = GPUVariable(torch.LongTensor(split[-1]))
-    if pair_input:
-        processed_split = Dataset([split[0], split[1]], targs, batch_size,
-                                  tok2idx, pair_input)
-
-    else:
-        processed_split = Dataset([split[0]], targs, batch_size, tok2idx,
-                                  pair_input)
-    return processed_split
-
-def process_sentence(sentence, tok2idx=None, max_seq_len=None):
-    '''
-    Process a single sentence.
-
-    Args:
-        - sentence (str)
-        - all_lower (int): 1 if uncase all words
-        - tok2idx (dict): if given, return the sentence as indices
-
-    Returns:
-        - toks (list[str]): a list of processed tokens or indexes
-    '''
-
-    # use a tokenizer
-    toks = nltk.word_tokenize(sentence)
-    if tok2idx is not None:
-        toks = [tok2idx[t] if t in tok2idx else tok2idx['<unk>'] \
-                for t in toks]
-        toks = [tok2idx['<s>']] + toks[:max_seq_len] + [tok2idx['</s>']] + \
-               [tok2idx['<pad>']] * (max_seq_len - len(toks))
-    return toks
-
-def build_vocabulary(tasks, max_vocab_size):
-    '''
-    Build vocabulary across training data of all tasks.
-
-    Args:
-        - tasks (list[Task])
-
-    Returns:
-        - tok2idx (dict)
-    '''
-
-    # count frequencies
-    '''
-    tok2freq = Counter()
-    for task in tasks:
-        for sent in task.train_data_text[0]:
-            toks = process_sentence(sent)
-            for tok in toks:
-                tok2freq[tok] += 1
-
-        if task.pair_input:
-            for sent in task.train_data_text[1]:
-                toks = process_sentence(sent)
-                for tok in toks:
-                    tok2freq[tok] += 1
-    '''
-    tok2freq = Counter()
-    counters = [task.count_words(NAME2VOCAB[task.__class__]) for task in tasks]
-    for counter in counters:
-        tok2freq.update(counter)
-
-    # special characters
-    tok2idx = {}
-    for special in SPECIALS:
-        tok2idx[special] = len(tok2idx)
-
-    # pick top words
-    if not max_vocab_size:
-        max_vocab_size = len(tok2freq)
-    else:
-        max_vocab_size = max_vocab_size - len(SPECIALS)
-    for tok, _ in tok2freq.most_common()[:max_vocab_size]:
-        tok2idx[tok] = len(tok2idx)
-
-    return tok2idx
-
-def load_embeddings(path, tok2idx, word_dim):
-    '''
-    Load embeddings from GloVe vectors.
-
-    TODO
-        - make this a standard library function.
-
-    Args:
-        - path (str): path to word embedding file
-        - tok2idx (dict): dictionary mapping words to indices
-        - word_dim (int): word vector dimensionality
-
-    Returns
-        - embeddings (np.FloatArray): embeddings
-    '''
-    embeddings = np.random.rand(len(tok2idx), word_dim).astype(float)
-    n_embs = 0
-    with open(path) as fh:
-        for row in fh:
-            row = row.split()
-            word = row[0]
-            if word in tok2idx:
-                assert len(row[1:]) == word_dim
-                embeddings[tok2idx[word]] = np.array([float(v) for \
-                                                     v in row[1:]])
-                n_embs += 1
-
-    embeddings[tok2idx['<pad>']] = 0.
-    log.info("\tLoaded pretrained embeddings for {0} words".format(n_embs))
-    return embeddings
+from codebase.preprocess import build_tasks
+from codebase.models import build_model
+from codebase.trainer import MultiTaskTrainer, build_trainer
+from codebase.evaluate import evaluate
 
 def main(arguments):
-    '''
-    Train or load a model. Evaluate on some tasks.
-    '''
+    ''' Train or load a model. Evaluate on some tasks. '''
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--cuda', help='0 if no CUDA, else gpu id',
-                        type=int, default=0)
+    parser.add_argument('--cuda', help='0 if no CUDA, else gpu id', type=int, default=0)
+    parser.add_argument('--random_seed', help='random seed to use', type=int, default=19)
 
-    parser.add_argument('--log_file', help='file to log to',
-                        type=str, default=0)
-    parser.add_argument('--data_path', help='path to directory containing '
-                        ' {train,val,test}.pkl', type=str, default='')
-    parser.add_argument('--word_embs_file', help='file containing word ' +
-                        'embeddings', type=str, default='')
-
-    parser.add_argument('--tasks', help='comma separated list of tasks',
+    parser.add_argument('--log_file', help='path to log to', type=str, default=0)
+    parser.add_argument('--exp_dir', help='path to log to', type=str, default='')
+    parser.add_argument('--vocab_path', help='folder containing vocab stuff', type=str, default='')
+    parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
+    parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='')
-    parser.add_argument('--max_vocab_size', help='vocabulary size',
-                        type=int, default=10000)
-    parser.add_argument('--max_seq_len', help='max sequence length',
-                        type=int, default=40)
 
-    parser.add_argument('--word_dim', help='dimension of word embeddings',
-                        type=int, default=300)
-    parser.add_argument('--hid_dim', help='hidden dimension size',
-                        type=int, default=4096)
-    parser.add_argument('--n_layers', help='number of RNN layers',
-                        type=int, default=1)
+    parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
+    parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
+    parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
+    parser.add_argument('--load_preproc', help='1 if load vocabulary', type=int, default=1)
 
-    parser.add_argument('--batch_size', help='batch size',
-                        type=int, default=64)
-    parser.add_argument('--optimizer', help='optimizer to use',
-                        type=str, default='sgd')
-    parser.add_argument('--n_epochs', help='n epochs to train for',
-                        type=int, default=10)
-    parser.add_argument('--lr', help='starting learning rate',
-                        type=float, default=1.0)
+    parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
+                        type=str)
+    parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
+                        'then evaluate on', type=str, default='')
+    parser.add_argument('--classifier', help='type of classifier to use', type=str,
+                        default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
+    parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
+    parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
+
+    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=35)
+    parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=50000)
+    parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
+    parser.add_argument('--char_encoder', help='char embedding encoder', type=str, default='cnn',
+                        choices=['bow', 'cnn'])
+    parser.add_argument('--n_char_filters', help='num of conv filters for ' +
+                        'char embedding combiner', type=int, default=64)
+    parser.add_argument('--char_filter_sizes', help='filter sizes for char' +
+                        ' embedding combiner', type=str, default='2,3,4,5')
+    parser.add_argument('--dropout_embs', help='dropout rate for embeddisn', type=float, default=.2)
+    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
+    parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
+    parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
+
+    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='bidaf',
+                        choices=['simple', 'bidaf', 'bow', 'attn'])
+    parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
+    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
+    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
+    parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
+    parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
+    parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
+
+    parser.add_argument('--batch_size', help='batch size', type=int, default=64)
+    parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
+    parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
+    parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
+    parser.add_argument('--weight_decay', help='weight decay value', type=float, default=0.0)
+    parser.add_argument('--task_patience', help='patience in decaying per task lr',
+                        type=int, default=0)
+    parser.add_argument('--scheduler_threshold', help='scheduler threshold',
+                        type=float, default=1e-3)
+    parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
+                        ' doesn\'t improve', type=float, default=.5)
+
+    parser.add_argument('--val_interval', help='Number of passes between '+
+                        ' validating', type=int, default=10)
+    parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
+                        default=100)
+    parser.add_argument('--bpp_method', help='How to calculate ' +
+                        'the number of batches per pass for each task', type=str,
+                        choices=['fixed', 'percent_tr', 'proportional_rank'],
+                        default='fixed')
+    parser.add_argument('--bpp_base', help='If fixed n batches ' +
+                        'per pass, this is the number. If proportional, this ' +
+                        'is the smallest number', type=int, default=10)
+    parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
+    parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str, default='given',
+                        choices=['given', 'random', 'random_per_pass', 'small_to_large', 'large_to_small'])
 
     args = parser.parse_args(arguments)
 
-    log.basicConfig(format='%(asctime)s: %(message)s', level=log.DEBUG,
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
+    ### Logistics ###
+    log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
-
+    seed = random.randint(1, 10000) if args.random_seed is None else args.random_seed
+    random.seed(seed)
+    torch.manual_seed(seed)
     if args.cuda >= 0:
+        log.info("Using GPU %d", args.cuda)
         torch.cuda.set_device(args.cuda)
+        torch.cuda.manual_seed_all(seed)
+    log.info("Using random seed %d", seed)
 
-    # TODO(Alex): hid_dim depends on if pair input or not
+    ### Load tasks ###
     log.info("Loading tasks...")
     start_time = time.time()
-    tasks, tok2idx = process_tasks(args.tasks.split(','), args.hid_dim * 4,
-                                   args.max_vocab_size, args.max_seq_len,
-                                   args.batch_size, args.cuda)
-    log.info('\tFinished loading tasks in {0}s'.format(
-        time.time() - start_time))
+    train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
+    tasks = train_tasks + eval_tasks
+    log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
+    log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
+    log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
 
-    log.info("Building model...")
+    # Build model #
+    log.info('Building model...')
     start_time = time.time()
-    embeddings = load_embeddings(args.word_embs_file, tok2idx,
-                                 args.word_dim)
-    token_embedder = TokenEmbedder(embeddings, tok2idx)
-    #token_embedder = nn.Embedding(args.max_vocab_size, args.word_dim,
-    #                              padding_idx=0)
+    model = build_model(args, vocab, word_embs, tasks)
+    log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    encoder = MultiLayerRNNEncoder(args.word_dim, args.hid_dim,
-                                   args.n_layers, nn.LSTMCell)
-    model = MultiTaskModel(encoder, token_embedder, tasks)
-    if args.cuda:
-        model = model.cuda()
-    log.info('\tFinished building model in {0}s'.format(
-        time.time() - start_time))
+    # Set up trainer #
+    iterator = BasicIterator(args.batch_size)
+    trainer, train_params, opt_params, schd_params = build_trainer(args, model, iterator)
 
-    model.train_model(args.n_epochs, args.optimizer, args.lr)
+    # Train #
+    if train_tasks and args.should_train:
+        to_train = [p for p in model.parameters() if p.requires_grad]
+        trainer.train(train_tasks, args.task_ordering, args.val_interval, args.max_vals,
+                      args.bpp_method, args.bpp_base, to_train, opt_params, schd_params,
+                      args.load_model)
+    else:
+        log.info("Skipping training.")
+
+    # train just the classifiers for eval tasks
+    for task in eval_tasks:
+        pred_layer = getattr(model, "%s_pred_layer" % task.name)
+        to_train = pred_layer.parameters()
+        trainer = MultiTaskTrainer.from_params(model, args.exp_dir + '/%s/' % task.name,
+                                               iterator, copy.deepcopy(train_params))
+        trainer.train([task], args.task_ordering, 1, args.max_vals, 'percent_tr', 1, to_train,
+                      opt_params, schd_params, 1)
+        layer_path = os.path.join(args.exp_dir, task.name, "%s_best.th" % task.name)
+        layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(layer_state)
+
+    # Evaluate #
+    # TODO(Alex): put this in evaluate file
+    log.info('***** TEST RESULTS *****')
+    # load the different task best models and evaluate them
+    for task in [task.name for task in train_tasks] + ['micro', 'macro']:
+        model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
+        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(model_state)
+        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        '''
+        log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
+        for name, value in results.items():
+            log.info("%s\t%3f", name, value)
+        '''
+        all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in results.items()])
+        log.info('%s, %s', task, all_metrics_str)
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
