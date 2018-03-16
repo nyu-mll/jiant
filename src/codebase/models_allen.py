@@ -49,7 +49,7 @@ def build_model(args, vocab, word_embs, tasks):
     '''
     d_word, d_char, n_layers_highway = args.d_word, args.d_char, args.n_layers_highway
     d_inp_phrase = d_word + d_char
-    d_hid = args.hid_dim if args.pair_enc != 'bow' else d_inp_phrase
+    d_hid = args.d_hid if args.pair_enc != 'bow' else d_inp_phrase
 
     # Build embedding layers
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
@@ -159,8 +159,8 @@ class MultiTaskModel(nn.Module):
         self.pair_encoder = pair_encoder
         self.pair_enc_type = args.pair_enc
 
-        self.classifier_type = args.classifier
-        self.classifier_dropout = args.classifier_dropout
+        self.cls_type = args.classifier
+        self.dropout_cls = args.classifier_dropout
         self.d_hid_cls = args.classifier_hid_dim
 
     def build_classifier(self, task, d_inp):
@@ -200,26 +200,15 @@ class MultiTaskModel(nn.Module):
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
         scorer = task.scorer
         if pair_input:
-            if isinstance(task, (STS14Task, STSBenchmarkTask)):
+            if isinstance(task, (STS14Task, STSBenchmarkTask)) or self.pair_enc_type == 'bow':
                 sent1 = self.sent_encoder(input1)
                 sent2 = self.sent_encoder(input2) # causes a bug with BiDAF
-                logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1))
-                #logits = pred_layer(sent1, sent2) # not really logits
-            elif self.pair_enc_type == 'bidaf':
-                #pair_embs = self.pair_encoder(input1, input2)
-                #pair_emb, _ = pair_embs.max(1)
+                logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2),
+                                               sent1 * sent2], 1))
+            else:
                 pair_emb = self.pair_encoder(input1, input2)
                 logits = pred_layer(pair_emb)
-            elif self.pair_enc_type == 'attn':
-                pair_emb = self.pair_encoder(input1, input2)
-                logits = pred_layer(pair_emb)
-            elif self.pair_enc_type == 'simple':
-                pair_emb = self.pair_encoder(input1, input2)
-                logits = pred_layer(pair_emb)
-            elif self.pair_enc_type == 'bow': # can simplify this to have the same signature
-                sent1 = self.sent_encoder(input1)
-                sent2 = self.sent_encoder(input2)
-                logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1))
+
         else:
             sent_emb = self.sent_encoder(input1)
             logits = pred_layer(sent_emb)
@@ -227,7 +216,6 @@ class MultiTaskModel(nn.Module):
         if label is not None:
             if isinstance(task, (STS14Task, STSBenchmarkTask)):
                 loss = F.binary_cross_entropy_with_logits(logits, label)
-                #loss = -logits.mean() # negative cosine similarity
                 label = label.squeeze(-1).data.cpu().numpy()
                 logits = logits.squeeze(-1).data.cpu().numpy()
                 scorer(pearsonr(logits, label)[0])
@@ -252,7 +240,8 @@ class HeadlessPairEncoder(Model):
         super(HeadlessPairEncoder, self).__init__(vocab)#, regularizer)
 
         self._text_field_embedder = text_field_embedder
-        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(), num_highway_layers))
+        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(),
+                                                      num_highway_layers))
         self._phrase_layer = phrase_layer
         self._cove = cove_layer
         self._elmo = elmo_layer
@@ -261,16 +250,15 @@ class HeadlessPairEncoder(Model):
         encoding_dim = phrase_layer.get_output_dim()
         self.output_dim = encoding_dim
 
-        if (cove_layer is None and elmo_layer is None and text_field_embedder.get_output_dim() != phrase_layer.get_input_dim()) \
-                or (cove_layer is not None and text_field_embedder.get_output_dim() + 600 != phrase_layer.get_input_dim()) \
-                or (elmo_layer is not None and text_field_embedder.get_output_dim() + 1024 != phrase_layer.get_input_dim()):
-            raise ConfigurationError("The output dimension of the "
-                                     "text_field_embedder "
-                                     "(embedding_dim + char_cnn) "
-                                     "must match the input "
-                                     "dimension of the phrase_encoder. "
-                                     "Found {} and {} "
-                                     "respectively.".format(text_field_embedder.get_output_dim(), phrase_layer.get_input_dim()))
+        d_emb = text_field_embedder.get_output_dim()
+        d_inp_phrase = phrase_layer.get_input_dim()
+        if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
+            or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
+            or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
+            raise ConfigurationError("The output dimension of the text_field_embedder "
+                                     "(embedding_dim + char_cnn) must match the input "
+                                     "dimension of the phrase_encoder. Found {} and {} "
+                                     "respectively.".format(d_emb, d_inp_phrase))
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
         else:
@@ -330,10 +318,10 @@ class HeadlessPairEncoder(Model):
             - get inverse mask and send 1 -> big negative number
             - add negative mask
         '''
-        passage_lstm_mask[passage_lstm_mask == 0] = -1e3
+        passage_lstm_mask[passage_lstm_mask == 0] = -1e9
         passage_lstm_mask[passage_lstm_mask == 1] = 0
         passage_lstm_mask = passage_lstm_mask.unsqueeze(dim=-1)
-        question_lstm_mask[question_lstm_mask == 0] = -1e3
+        question_lstm_mask[question_lstm_mask == 0] = -1e9
         question_lstm_mask[question_lstm_mask == 1] = 0
         question_lstm_mask = question_lstm_mask.unsqueeze(dim=-1)
         encoded_question = encoded_question + question_lstm_mask
@@ -345,7 +333,6 @@ class HeadlessPairEncoder(Model):
         encoded_question, _ = encoded_question.max(1)
         encoded_passage, _ = encoded_passage.max(1)
 
-        pdb.set_trace()
 
         return torch.cat([encoded_question, encoded_passage,
                           torch.abs(encoded_question - encoded_passage),

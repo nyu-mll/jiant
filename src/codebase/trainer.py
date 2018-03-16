@@ -26,12 +26,27 @@ from tensorboardX import SummaryWriter
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
+from allennlp.data.iterators import BasicIterator
 from allennlp.data.iterators.data_iterator import DataIterator
 from allennlp.models.model import Model
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from util import arrays_to_variables, device_mapping
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+def build_trainer(args, model, iterator):
+    '''Build a trainer'''
+    opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
+    schd_params = Params({'type': 'reduce_on_plateau', 'mode':'max', 'factor': args.lr_decay_factor,
+                          'patience': args.task_patience, 'threshold': args.scheduler_threshold,
+                          'threshold_mode': 'abs', 'verbose':True})
+    train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
+                           'patience': args.patience, 'grad_norm': 5.,
+                           'lr_decay': .99, 'min_lr': 1e-5, 'no_tqdm': False})
+    trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
+                                           copy.deepcopy(train_params))
+    return trainer, train_params, opt_params, schd_params
+
 
 class MultiTaskTrainer:
     def __init__(self,

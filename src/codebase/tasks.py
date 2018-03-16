@@ -1,3 +1,4 @@
+'''Define the tasks and code for loading them'''
 import os
 import pdb # pylint disable=unused-import
 import xml.etree.ElementTree
@@ -7,8 +8,9 @@ import random
 import logging as log
 from collections import Counter
 from abc import ABCMeta, abstractmethod
-import nltk
 import _pickle as pkl
+import torch
+import nltk
 
 from allennlp.training.metrics import CategoricalAccuracy, Average
 
