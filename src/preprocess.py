@@ -100,9 +100,9 @@ def build_tasks(args):
     else:
         log.info("\tProcessing tasks from scratch")
         word2freq, char2freq = get_words(tasks)
-        word2vec = get_word_vecs(args.word_embs_file, word2freq)
-        vocab = get_vocab(word2vec, word2freq, char2freq, max_v_sizes)
-        word_embs = get_embeddings(vocab, word2vec, args.d_word)
+        #word2vec = get_word_vecs(args.word_embs_file, word2freq)
+        vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+        word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         preproc = {'word_embs': word_embs}
         for task in tasks:
             train, val, test = process_task(task, token_indexer, vocab)
@@ -163,23 +163,10 @@ def get_words(tasks):
     log.info("\tFinished counting words and chars")
     return word2freq, char2freq
 
-def get_word_vecs(vec_file, vocab):
-    '''Load all vectors for all words in vocab with vectors'''
-    word_vecs = {}
-    with open(vec_file) as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(' ', 1)
-            if word in vocab:
-                word_vecs[word] = np.array(list(map(float, vec.split())))
-    log.info('\tFinished retrieving word vectors. Found %d/%d words with word vectors',
-             len(word_vecs), len(vocab))
-    return word_vecs
-
-def get_vocab(word2vec, word2freq, char2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes['word'])
-    words_by_freq = [(word, freq) for word, freq in word2freq.items() if
-                     word in word2vec]
+    words_by_freq = [(word, freq) for word, freq in word2freq.items()]
     words_by_freq.sort(key=lambda x: x[1], reverse=True)
     chars_by_freq = [(c, freq) for c, freq in char2freq.items()]
     chars_by_freq.sort(key=lambda x: x[1], reverse=True)
@@ -191,20 +178,17 @@ def get_vocab(word2vec, word2freq, char2freq, max_v_sizes):
              vocab.get_vocab_size('chars'))
     return vocab
 
-def get_embeddings(vocab, word2vec, d_word):
+def get_embeddings(vocab, vec_file, d_word):
     '''Get embeddings for the words in vocab'''
-    word_v_size = vocab.get_vocab_size('tokens')
-    embeddings = np.zeros((word_v_size, d_word))
-    for idx in range(word_v_size): # kind of hacky
-        word = vocab.get_token_from_index(idx)
-        if word == '@@PADDING@@' or word == '@@UNKNOWN@@':
-            continue
-        try:
-            assert word in word2vec
-        except AssertionError as error:
-            log.debug(error)
-            pdb.set_trace()
-        embeddings[idx] = word2vec[word]
+    word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, d_word) #np.zeros((word_v_size, d_word))
+    with open(vec_file) as vec_fh:
+        for line in vec_fh:
+            word, vec = line.split(' ', 1)
+            idx = vocab.get_token_index(word)
+            if idx != unk_idx:
+                idx = vocab.get_token_index(word)
+                embeddings[idx] = np.array(list(map(float, vec.split())))
     embeddings[vocab.get_token_index('@@PADDING@@')] = 0.
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
