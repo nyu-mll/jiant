@@ -12,9 +12,9 @@ from allennlp.data.fields import TextField, LabelField, NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, \
                                          ELMoTokenCharactersIndexer
 
-from codebase.tasks import MSRPTask, MultiNLITask, QuoraTask, RTE8Task, STS14Task, \
-                           RTETask, RTE5Task, SQuADTask, SNLITask, SSTTask, \
-                           STSBenchmarkTask, TwitterIronyTask
+from tasks import MSRPTask, MultiNLITask, QuoraTask, RTE8Task, STS14Task, \
+                  RTETask, RTE5Task, SQuADTask, SNLITask, SSTTask, \
+                  STSBenchmarkTask, TwitterIronyTask
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/'
 #PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'

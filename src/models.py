@@ -22,7 +22,7 @@ from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
-from codebase.tasks import STS14Task, STSBenchmarkTask
+from tasks import STS14Task, STSBenchmarkTask
 from scipy.stats import pearsonr
 
 # CoVe stuff

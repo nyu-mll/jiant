@@ -60,7 +60,6 @@ while getopts 'ikmn:r:s:tvh:l:L:o:T:E:O:b:H:p:edc' flag; do
         r) RUN_NAME="${OPTARG}" ;;
         s) SEED="${OPTARG}" ;;
         t) SHOULD_TRAIN=0 ;;
-        v) LOAD_VOCAB=0 ;;
         k) LOAD_TASKS=0 ;;
         m) LOAD_PREPROC=0 ;;
         T) train_tasks="${OPTARG}" ;;
@@ -86,5 +85,5 @@ VOCAB_DIR="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/vocab/"
 mkdir -p $EXP_DIR
 mkdir -p $VOCAB_DIR
 
-ALLEN_CMD="python codebase/main.py --cuda ${GPUID} --random_seed ${RANDOM_SEED} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --vocab_path ${VOCAB_DIR} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --elmo ${ELMO} --deep_elmo ${deep_elmo} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --preproc_file ${PREPROC_FILE}"
+ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${RANDOM_SEED} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --vocab_path ${VOCAB_DIR} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --elmo ${ELMO} --deep_elmo ${deep_elmo} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --preproc_file ${PREPROC_FILE}"
 eval ${ALLEN_CMD}

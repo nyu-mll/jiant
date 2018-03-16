@@ -12,12 +12,12 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from util import device_mapping
 
-PATH_TO_PKG = '../'
-sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
-from codebase.preprocess import build_tasks
-from codebase.models import build_model
-from codebase.trainer import MultiTaskTrainer, build_trainer
-from codebase.evaluate import evaluate
+#PATH_TO_PKG = '../'
+#sys.path.append(os.path.join(os.path.dirname(__file__), PATH_TO_PKG))
+from preprocess import build_tasks
+from models import build_model
+from trainer import MultiTaskTrainer, build_trainer
+from evaluate import evaluate
 
 def main(arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
