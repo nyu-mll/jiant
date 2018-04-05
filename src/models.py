@@ -1,6 +1,7 @@
 '''AllenNLP models and functions for building them'''
+import os
 import sys
-import pdb
+import ipdb as pdb
 import logging as log
 from typing import Any, Dict, List, Optional
 
@@ -26,7 +27,12 @@ from tasks import STS14Task, STSBenchmarkTask
 from scipy.stats import pearsonr
 
 # CoVe stuff
-PATH_TO_COVE = '/misc/vlgscratch4/BowmanGroup/awang/models/cove'
+if "cs.nyu.edu" in os.uname()[1]:
+    PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
+else:
+    PATH_PREFIX = '/beegfs/aw3272/'
+
+PATH_TO_COVE = PATH_PREFIX + '/models/cove'
 sys.path.append(PATH_TO_COVE)
 from cove import MTLSTM as cove_lstm
 
@@ -35,7 +41,6 @@ ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_
 ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5" # pylint: disable=line-too-long
 
 logger = log.getLogger(__name__)  # pylint: disable=invalid-name
-
 
 def build_model(args, vocab, word_embs, tasks):
     '''Build model according to arguments
@@ -48,12 +53,11 @@ def build_model(args, vocab, word_embs, tasks):
     returns: model
     '''
     d_word, d_char, n_layers_highway = args.d_word, args.d_char, args.n_layers_highway
-    d_inp_phrase = d_word + d_char
-    d_hid = args.d_hid if args.pair_enc != 'bow' else d_inp_phrase
 
     # Build embedding layers
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
-                              trainable=False, padding_index=vocab.get_token_index('@@PADDING@@'))
+                              trainable=bool(args.train_word),
+                              padding_index=vocab.get_token_index('@@PADDING@@'))
     char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
     if args.char_encoder == 'cnn':
         filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
@@ -62,22 +66,33 @@ def build_model(args, vocab, word_embs, tasks):
     else:
         char_encoder = BagOfEmbeddingsEncoder(d_char, True)
     char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder, dropout=args.dropout_embs)
-    token_embedder = {"words": word_embedder, "chars": char_embedder}
-    text_field_embedder = BasicTextFieldEmbedder(token_embedder)
+    d_inp_phrase = d_char
 
-
-    # Build encoders
+    # Handle elmo and cove
     if args.elmo:
+        log.info("\tUsing ELMo embeddings!")
         if args.deep_elmo: # need to adjust modeling layer inputs
             n_reps = 2
+            log.info("\t  Using deep ELMo embeddings!")
         else:
             n_reps = 1
+        if args.elmo_no_glove:
+            token_embedder = {"chars": char_embedder}
+            log.info("\t  NOT using GLoVe embeddings!")
+        else:
+            token_embedder = {"words": word_embedder, "chars": char_embedder}
+            log.info("\t  Using GLoVe embeddings!")
+            d_inp_phrase += d_word
         elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
                     num_output_representations=n_reps)
         d_inp_phrase += 1024
-        log.info("\tUsing ELMo embeddings!")
     else:
         elmo = None
+        token_embedder = {"words": word_embedder, "chars": char_embedder}
+        d_inp_phrase += d_word
+    text_field_embedder = BasicTextFieldEmbedder(token_embedder)
+    d_hid = args.d_hid if args.pair_enc != 'bow' else d_inp_phrase
+
     if args.cove:
         cove_layer = cove_lstm(n_vocab=vocab.get_vocab_size('tokens'),
                                vectors=word_embedder.weight.data)
@@ -85,6 +100,8 @@ def build_model(args, vocab, word_embs, tasks):
         log.info("\tUsing CoVe embeddings!")
     else:
         cove_layer = None
+
+    # Build encoders
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': d_inp_phrase,
                                                              'hidden_size': d_hid,
                                                              'bidirectional': True}))
@@ -239,9 +256,11 @@ class HeadlessPairEncoder(Model):
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super(HeadlessPairEncoder, self).__init__(vocab)#, regularizer)
 
+        d_emb = text_field_embedder.get_output_dim()
+        d_inp_phrase = phrase_layer.get_input_dim()
+
         self._text_field_embedder = text_field_embedder
-        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(),
-                                                      num_highway_layers))
+        self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
         self._phrase_layer = phrase_layer
         self._cove = cove_layer
         self._elmo = elmo_layer
@@ -250,8 +269,6 @@ class HeadlessPairEncoder(Model):
         encoding_dim = phrase_layer.get_output_dim()
         self.output_dim = encoding_dim
 
-        d_emb = text_field_embedder.get_output_dim()
-        d_inp_phrase = phrase_layer.get_input_dim()
         if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
             or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
             or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
@@ -288,6 +305,7 @@ class HeadlessPairEncoder(Model):
         """
         embedded_question = self._highway_layer(self._text_field_embedder(question))
         embedded_passage = self._highway_layer(self._text_field_embedder(passage))
+
         if self._elmo is not None:
             elmo_q_reps = self._elmo(question['elmo'])
             elmo_p_reps = self._elmo(passage['elmo'])
@@ -302,37 +320,25 @@ class HeadlessPairEncoder(Model):
             embedded_passage_cove = self._cove(passage['words'], passage_lens)
             embedded_passage = torch.cat([embedded_passage, embedded_passage_cove], dim=-1)
 
-        #batch_size = embedded_question.size(0)
-        #passage_length = embedded_passage.size(1)
-        question_mask = util.get_text_field_mask(question).float()
-        passage_mask = util.get_text_field_mask(passage).float()
-        question_lstm_mask = question_mask if self._mask_lstms else None
-        passage_lstm_mask = passage_mask if self._mask_lstms else None
+        question_mask = util.get_text_field_mask(question)
+        passage_mask = util.get_text_field_mask(passage)
+        question_lstm_mask = question_mask.float() if self._mask_lstms else None
+        passage_lstm_mask = passage_mask.float() if self._mask_lstms else None
 
         encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
         encoded_passage = self._dropout(self._phrase_layer(embedded_passage, passage_lstm_mask))
 
-        '''
-        Want to kill padding terms by making very negative
-            - pad terms are already 0's
-            - get inverse mask and send 1 -> big negative number
-            - add negative mask
-        '''
-        passage_lstm_mask[passage_lstm_mask == 0] = -1e9
-        passage_lstm_mask[passage_lstm_mask == 1] = 0
-        passage_lstm_mask = passage_lstm_mask.unsqueeze(dim=-1)
-        question_lstm_mask[question_lstm_mask == 0] = -1e9
-        question_lstm_mask[question_lstm_mask == 1] = 0
-        question_lstm_mask = question_lstm_mask.unsqueeze(dim=-1)
-        encoded_question = encoded_question + question_lstm_mask
-        encoded_passage = encoded_passage + passage_lstm_mask
-
         if self._elmo is not None and len(elmo_q_reps['elmo_representations']) > 1:
             encoded_question = torch.cat([encoded_question, elmo_q_reps['elmo_representations'][1]], dim=-1)
             encoded_passage = torch.cat([encoded_passage, elmo_p_reps['elmo_representations'][1]], dim=-1)
-        encoded_question, _ = encoded_question.max(1)
-        encoded_passage, _ = encoded_passage.max(1)
 
+        question_mask = question_mask.unsqueeze(dim=-1)
+        passage_mask = passage_mask.unsqueeze(dim=-1)
+        encoded_question.data.masked_fill_(1 - question_mask.byte().data, -float('inf'))
+        encoded_passage.data.masked_fill_(1 - passage_mask.byte().data, -float('inf'))
+
+        encoded_question, _ = encoded_question.max(dim=1)
+        encoded_passage, _ = encoded_passage.max(dim=1)
 
         return torch.cat([encoded_question, encoded_passage,
                           torch.abs(encoded_question - encoded_passage),
@@ -703,7 +709,7 @@ class HeadlessPairAttnEncoder(Model):
         self._matrix_attention = MatrixAttention(attention_similarity_function)
         self._modeling_layer = modeling_layer
         self._cove = cove_layer
-        self._elmo = _layer
+        self._elmo = elmo_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
 
         encoding_dim = phrase_layer.get_output_dim()

@@ -1,9 +1,9 @@
 '''Train a multi-task model using AllenNLP'''
 import os
-import pdb
 import sys
 import time
 import copy
+import ipdb as pdb
 import random
 import argparse
 import logging as log
@@ -45,9 +45,10 @@ def main(arguments):
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
 
-    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=35)
+    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=100)
     parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=50000)
     parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
+    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
     parser.add_argument('--char_encoder', help='char embedding encoder', type=str, default='cnn',
                         choices=['bow', 'cnn'])
     parser.add_argument('--n_char_filters', help='num of conv filters for ' +
@@ -55,14 +56,15 @@ def main(arguments):
     parser.add_argument('--char_filter_sizes', help='filter sizes for char' +
                         ' embedding combiner', type=str, default='2,3,4,5')
     parser.add_argument('--dropout_embs', help='dropout rate for embeddisn', type=float, default=.2)
+    parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
+    parser.add_argument('--train_word', help='1 if make word embs trainable', type=int, default=1)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
+    parser.add_argument('--elmo_no_glove', help='1 if don\'t use glove with elmo', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='bidaf',
                         choices=['simple', 'bidaf', 'bow', 'attn'])
-    parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
-    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
@@ -80,7 +82,7 @@ def main(arguments):
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
                         ' doesn\'t improve', type=float, default=.5)
 
-    parser.add_argument('--val_interval', help='Number of passes between '+
+    parser.add_argument('--val_interval', help='Number of passes between ' +
                         ' validating', type=int, default=10)
     parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
                         default=100)
@@ -97,12 +99,12 @@ def main(arguments):
 
     args = parser.parse_args(arguments)
 
-    ### Logistics ###
+    # Logistics #
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
-    seed = random.randint(1, 10000) if args.random_seed is None else args.random_seed
+    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
     if args.cuda >= 0:
@@ -111,14 +113,12 @@ def main(arguments):
         torch.cuda.manual_seed_all(seed)
     log.info("Using random seed %d", seed)
 
-    ### Load tasks ###
+    # Load tasks #
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-    log.info('\t\tTraining on %s', ', '.join([task.name for task in train_tasks]))
-    log.info('\t\tEvaluating on %s', ', '.join([task.name for task in eval_tasks]))
 
     # Build model #
     log.info('Building model...')
@@ -159,12 +159,8 @@ def main(arguments):
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
+        pdb.set_trace()
         results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-        '''
-        log.info('*** %s EARLY STOPPING: TEST RESULTS ***', task)
-        for name, value in results.items():
-            log.info("%s\t%3f", name, value)
-        '''
         all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in results.items()])
         log.info('%s, %s', task, all_metrics_str)
 

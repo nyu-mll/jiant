@@ -437,8 +437,7 @@ class MultiTaskTrainer:
                         if out_of_patience:
                             metric_stopped[task.val_metric] = True
                             logger.info("Out of patience. Stopped tracking %s", task.name)
-                    if isinstance(scheduler, # scheduler step
-                                  torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                         scheduler.step(this_epoch_metric, epoch)
                     else:
                         scheduler.step(epoch)

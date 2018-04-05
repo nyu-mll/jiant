@@ -12,52 +12,37 @@ from allennlp.data.fields import TextField, LabelField, NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, \
                                          ELMoTokenCharactersIndexer
 
-from tasks import MSRPTask, MultiNLITask, QuoraTask, RTE8Task, STS14Task, \
-                  RTETask, RTE5Task, SQuADTask, SNLITask, SSTTask, \
-                  STSBenchmarkTask, TwitterIronyTask
+from tasks import AcceptabilityTask, MSRPTask, MultiNLITask, QuoraTask, \
+                  RTETask, SQuADTask, SNLITask, SSTTask, DPRTask, \
+                  STSBenchmarkTask, WinogradNLITask, AdversarialTask
 
 PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/'
 #PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
 
 
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-benchmark']
-NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask,
-             'quora': QuoraTask, 'rte8': RTE8Task,
-             'rte': RTETask, 'rte5': RTE5Task,
-             'squad': SQuADTask, 'snli': SNLITask,
-             'sst': SSTTask, 'sts14': STS14Task,
-             'sts-benchmark': STSBenchmarkTask,
-             'small': QuoraTask, 'small2': QuoraTask,
-             'twitter-irony': TwitterIronyTask}
-NAME2DATA = {'msrp': PATH_PREFIX + 'MRPC/',
-             'mnli': PATH_PREFIX + 'MNLI/',
-             'quora': PATH_PREFIX + 'Quora/quora_duplicate_questions.tsv',
-             'rte': PATH_PREFIX + 'rte/',
-             'rte5': PATH_PREFIX + 'rte/',
-             'rte8': PATH_PREFIX + 'rte8/semeval2013-Task7-2and3way',
-             'squad': PATH_PREFIX + 'squad/',
-             'snli': PATH_PREFIX + 'SNLI/',
-             'sst': PATH_PREFIX + 'SST/binary/',
-             'sts14': PATH_PREFIX + 'STS/STS14-en-test/',
-             'sts-benchmark': PATH_PREFIX + 'STS/STSBenchmark/',
-             'small': PATH_PREFIX + 'Quora/quora_small.tsv',
-             'small2': PATH_PREFIX + 'Quora/quora_small.tsv'}
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b',
+             'wnli', 'acceptability', 'adversarial']
+NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask, 'quora': QuoraTask,
+             'rte': RTETask, 'squad': SQuADTask, 'snli': SNLITask,
+             'acceptability': AcceptabilityTask, 'sst': SSTTask,
+             'wnli': WinogradNLITask, 'sts-b': STSBenchmarkTask,
+             'adversarial': AdversarialTask, 'dpr': DPRTask}
+NAME2DATA = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'rte': 'rte/',
+             'quora': 'Quora/', 'dpr': 'dpr/dpr_data.txt',
+             'acceptability': 'acceptability/', 'wnli': 'wnli/',
+             'squad': 'squad/', 'snli': 'SNLI/', 'sst': 'SST/binary/',
+             'sts-b': 'STS/STSBenchmark/', 'adversarial': 'adversarial/'}
+for k, v in NAME2DATA.items():
+    NAME2DATA[k] = PATH_PREFIX + v
 
 # lazy way to map tasks to preprocessed tasks
-NAME2SAVE = {'msrp': PATH_PREFIX + 'MRPC/',
-             'mnli': PATH_PREFIX + 'MNLI/',
-             'quora': PATH_PREFIX + 'Quora/',
-             'rte': PATH_PREFIX + 'rte/',
-             'rte5': PATH_PREFIX + 'rte/',
-             'rte8': PATH_PREFIX + 'rte8/',
-             'squad': PATH_PREFIX + 'squad/',
-             'snli': PATH_PREFIX + 'SNLI/',
-             'sst': PATH_PREFIX + 'SST/',
-             'sts14': PATH_PREFIX + 'STS/',
-             'sts-benchmark': PATH_PREFIX + 'STS/',
-             'small': PATH_PREFIX + 'Quora/',
-             'small2': PATH_PREFIX + 'Quora/',
-             'twitter-irony': PATH_PREFIX + 'twitter-irony/'}
+# TODO(Alex): get rid of this
+NAME2SAVE = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'quora': 'Quora/',
+             'rte': 'rte/', 'squad': 'squad/', 'snli': 'SNLI/', 'dpr': 'dpr/',
+             'sst': 'SST/', 'sts-benchmark': 'STS/', 'wnli': 'wnli/',
+             'acceptability': 'acceptability/', 'adversarial': 'adversarial/'}
+for k, v in NAME2SAVE.items():
+    NAME2SAVE[k] = PATH_PREFIX + v
 
 def build_tasks(args):
     '''Prepare tasks'''
@@ -100,7 +85,6 @@ def build_tasks(args):
     else:
         log.info("\tProcessing tasks from scratch")
         word2freq, char2freq = get_words(tasks)
-        #word2vec = get_word_vecs(args.word_embs_file, word2freq)
         vocab = get_vocab(word2freq, char2freq, max_v_sizes)
         word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         preproc = {'word_embs': word_embs}
@@ -115,9 +99,10 @@ def build_tasks(args):
         vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", args.exp_dir)
 
-
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]
+    log.info('\t  Training on %s', ', '.join([task.name for task in train_tasks]))
+    log.info('\t  Evaluating on %s', ', '.join([task.name for task in eval_tasks]))
     return train_tasks, eval_tasks, vocab, word_embs
 
 def get_tasks(task_names, max_seq_len, load):
@@ -145,6 +130,7 @@ def get_words(tasks):
     '''
     word2freq = defaultdict(int)
     char2freq = defaultdict(int)
+
     def count_sentence(sentence):
         '''Update counts for words and chars in the sentence'''
         for word in sentence:
@@ -154,7 +140,8 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        for split in [task.train_data_text, task.val_data_text, task.test_data_text]:
+        splits = [task.train_data_text, task.val_data_text, task.test_data_text]
+        for split in [split for split in splits if split is not None]:
             for sentence in split[0]:
                 count_sentence(sentence)
             if task.pair_input:
@@ -199,12 +186,21 @@ def process_task(task, token_indexer, vocab):
     Convert a task's splits into AllenNLP fields then
     Index the splits using the given vocab (experiment dependent)
     '''
-    train = process_split(task.train_data_text, token_indexer, task.pair_input, task.categorical)
-    val = process_split(task.val_data_text, token_indexer, task.pair_input, task.categorical)
-    test = process_split(task.test_data_text, token_indexer, task.pair_input, task.categorical)
-    train.index_instances(vocab)
-    val.index_instances(vocab)
-    test.index_instances(vocab)
+    if hasattr(task, 'train_data_text') and task.train_data_text is not None:
+        train = process_split(task.train_data_text, token_indexer, task.pair_input, task.categorical)
+        train.index_instances(vocab)
+    else:
+        train = None
+    if hasattr(task, 'val_data_text') and task.val_data_text is not None:
+        val = process_split(task.val_data_text, token_indexer, task.pair_input, task.categorical)
+        val.index_instances(vocab)
+    else:
+        val = None
+    if hasattr(task, 'test_data_text') and task.test_data_text is not None:
+        test = process_split(task.test_data_text, token_indexer, task.pair_input, task.categorical)
+        test.index_instances(vocab)
+    else:
+        test = None
     return train, val, test
 
 def process_split(split, indexers, pair_input, categorical):

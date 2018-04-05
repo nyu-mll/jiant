@@ -21,51 +21,38 @@ and report any metrics calculated by the model.
     --cuda_device CUDA_DEVICE
                             id of GPU to use (if any)
 """
-from typing import Dict, Any
 import pdb
-import argparse
 import logging
-
 import tqdm
 
-import torch.optim as optim
-
-from allennlp.data import Dataset
-from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.iterators import DataIterator
-from allennlp.models.archival import load_archive
 from allennlp.models.model import Model
-from util import arrays_to_variables
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-def evaluate(model: Model,
-             tasks,
-             iterator: DataIterator,
-             cuda_device: int,
-             split="val") -> Dict[str, Any]:
+def evaluate(model, tasks, iterator, cuda_device, split="val"):
+    '''Evaluate on a dataset'''
     model.eval()
 
-    all_metrics = {"micro_accuracy":0.0, "macro_accuracy":0.0}
+    all_metrics = {"micro_accuracy": 0.0, "macro_accuracy": 0.0}
     n_overall_examples = 0
     for task in tasks:
         n_examples = 0
         if split == "val":
             dataset = task.val_data
+        elif split == 'train':
+            dataset = task.train_data
         elif split == "test":
             dataset = task.test_data
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
-        generator_tqdm = tqdm.tqdm(
-            generator, total=iterator.get_num_batches(dataset),
-            disable=True)
+        generator_tqdm = tqdm.tqdm(generator, total=iterator.get_num_batches(dataset), disable=True)
         for batch in generator_tqdm:
             #tensor_batch = arrays_to_variables(batch, cuda_device, for_training=False)
             tensor_batch = batch
             model.forward(task, **tensor_batch)
             task_metrics = task.get_metrics()
-            description = ', '.join(["%s_%s: %.2f" %
-                (task.name, name, value) for name, value in
-                task_metrics.items()]) + " ||"
+            description = ', '.join(["%s_%s: %.2f" % (task.name, name, value) for name, value in
+                                     task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
             n_examples += batch['label'].size()[0]
 
