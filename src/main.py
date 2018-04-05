@@ -21,9 +21,11 @@ def main(arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     parser = argparse.ArgumentParser(description='')
 
+    # Logistics
     parser.add_argument('--cuda', help='0 if no CUDA, else gpu id', type=int, default=0)
     parser.add_argument('--random_seed', help='random seed to use', type=int, default=19)
 
+    # Paths and logging
     parser.add_argument('--log_file', help='path to log to', type=str, default=0)
     parser.add_argument('--exp_dir', help='path to log to', type=str, default='')
     parser.add_argument('--vocab_path', help='folder containing vocab stuff', type=str, default='')
@@ -31,11 +33,13 @@ def main(arguments):
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='')
 
+    # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
     parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
     parser.add_argument('--load_preproc', help='1 if load vocabulary', type=int, default=1)
 
+    # Tasks and task-specific classifiers
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
@@ -45,9 +49,12 @@ def main(arguments):
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
 
+    # Preprocessing options
     parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=100)
     parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=50000)
     parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
+
+    # Embedding options
     parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
     parser.add_argument('--char_encoder', help='char embedding encoder', type=str, default='cnn',
                         choices=['bow', 'cnn'])
@@ -63,6 +70,7 @@ def main(arguments):
     parser.add_argument('--elmo_no_glove', help='1 if don\'t use glove with elmo', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
+    # Model options
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='bidaf',
                         choices=['simple', 'bidaf', 'bow', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
@@ -70,6 +78,7 @@ def main(arguments):
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
     parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
 
+    # Training options
     parser.add_argument('--batch_size', help='batch size', type=int, default=64)
     parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
@@ -82,6 +91,7 @@ def main(arguments):
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
                         ' doesn\'t improve', type=float, default=.5)
 
+    # Multi-task training options
     parser.add_argument('--val_interval', help='Number of passes between ' +
                         ' validating', type=int, default=10)
     parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
