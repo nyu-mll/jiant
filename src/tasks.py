@@ -83,7 +83,7 @@ class Task():
         self.val_data = None
         self.test_data = None
         self.pred_layer = None
-        self.pair_input = None
+        self.pair_input = 1
         self.categorical = 1 # most tasks are
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
