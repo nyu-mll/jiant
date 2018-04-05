@@ -130,6 +130,8 @@ def main(arguments):
     iterator = BasicIterator(args.batch_size)
     trainer, train_params, opt_params, schd_params = build_trainer(args, model, iterator)
 
+    pdb.set_trace()
+
     # Train #
     if train_tasks and args.should_train:
         to_train = [p for p in model.parameters() if p.requires_grad]

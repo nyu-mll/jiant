@@ -8,8 +8,8 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-#SCRATCH_PREFIX='/beegfs/aw3272/'
+#SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
+SCRATCH_PREFIX='/beegfs/aw3272/'
 PROJECT_NAME='mtl-sent-rep'
 EXP_NAME="debug"
 RUN_NAME="debug"
@@ -23,7 +23,8 @@ LOAD_PREPROC=1
 
 train_tasks='all'
 eval_tasks='none'
-CLASSIFIER=log_reg
+CLASSIFIER=mlp
+d_hid_cls=512
 VOCAB_SIZE=100000
 CHAR_VOCAB_SIZE=100
 WORD_EMBS_FILE="${SCRATCH_PREFIX}/raw_data/GloVe/glove.840B.300d.txt"
@@ -44,9 +45,9 @@ n_layers_highway=2
 
 OPTIMIZER="sgd"
 LR=1.
-LR_DECAY=.5
+LR_DECAY=.2
 WEIGHT_DECAY=0.0
-SCHED_THRESH=1e-3
+SCHED_THRESH=0.0
 BATCH_SIZE=64
 BPP_METHOD="percent_tr"
 BPP_BASE=1
@@ -88,5 +89,5 @@ VOCAB_DIR="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/vocab/"
 mkdir -p $EXP_DIR
 mkdir -p $VOCAB_DIR
 
-ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${RANDOM_SEED} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --vocab_path ${VOCAB_DIR} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --preproc_file ${PREPROC_FILE}"
+ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${RANDOM_SEED} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --classifier_hid_dim ${d_hid_cls} --vocab_path ${VOCAB_DIR} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --n_epochs ${N_EPOCHS} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --preproc_file ${PREPROC_FILE}"
 eval ${ALLEN_CMD}

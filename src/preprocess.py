@@ -16,8 +16,11 @@ from tasks import AcceptabilityTask, MSRPTask, MultiNLITask, QuoraTask, \
                   RTETask, SQuADTask, SNLITask, SSTTask, DPRTask, \
                   STSBenchmarkTask, WinogradNLITask, AdversarialTask
 
-PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/'
-#PATH_PREFIX = '/beegfs/aw3272/processed_data/mtl-sentence-representations/'
+if 'cs.nyu.edu' in os.uname()[1]:
+    PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
+else:
+    PATH_PREFIX = '/beegfs/aw3272/'
+PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
 
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b',

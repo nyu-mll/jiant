@@ -189,7 +189,7 @@ class MultiTaskModel(nn.Module):
             layer = nn.Linear(d_inp, task.n_classes)
         elif cls_type == 'log_reg':
             layer = nn.Linear(d_inp, task.n_classes)
-        elif self.classifier_type == 'mlp':
+        elif cls_type == 'mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid), nn.Tanh(),
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
         elif cls_type == 'fancy_mlp':
