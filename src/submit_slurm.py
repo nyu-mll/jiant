@@ -19,7 +19,7 @@ exp_name = 'base'
 
 # define lots of parameters
 
-run_name = 'debug'
+run_name = 'debug_elmo'
 job_name = '%s_%s' % (run_name, exp_name)
 
 # logging
@@ -31,12 +31,33 @@ err_file = exp_dir + '/sbatch.err'
 
 seed = str(random.randint(1, 10000))
 
+elmo = 1
+cove = 0
+
+optimizer = 'sgd'
+lr = '1e-3'
+d_hid = '1024'
+
+bpp_method = 'percent_tr'
+bpp_base = 10
+val_interval = 10
+
+if elmo:
+    mem_req = 84
+else:
+    mem_req = 32
 slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
-              '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type, '--mem=32GB',
+              '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type, '--mem=%dGB' % mem_req,
               '--mail-type=end', '--mail-user=aw3272@nyu.edu',
               'run_stuff.sh']
-exp_args = ['-P', PATH_PREFIX, '-n', exp_name, '-r', run_name, '-S', seed,
-            '-T', 'all']
+exp_args = ['-P', PATH_PREFIX, '-n', exp_name, '-r', run_name, '-S', seed, '-T', 'all',
+            '-o', optimizer, '-l', lr, '-h', d_hid,
+            '-M', bpp_method, '-B', str(bpp_base), '-V', str(val_interval),
+            '-q']
+if elmo:
+    exp_args.append('-e')
+if cove:
+    exp_args.append('-c')
 
 cmd = slurm_args + exp_args
 print(' '.join(cmd))

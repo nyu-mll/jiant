@@ -30,7 +30,7 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, targ_map=No
             try:
                 row = row.split(delimiter)
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if not row[targ_idx] or len(sent1) == 2:
+                if not row[targ_idx] or not len(sent1):
                     continue
                 if targ_map is not None:
                     targ = targ_map[row[targ_idx]]
@@ -40,7 +40,7 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, targ_map=No
                     targ = int(row[targ_idx])
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
-                    if len(sent2) == 2:
+                    if not len(sent2):
                         continue
                     sent2s.append(sent2)
                 sent1s.append(sent1)
