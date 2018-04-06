@@ -14,7 +14,8 @@ from allennlp.training.metrics import CategoricalAccuracy, Average
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
+    #return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
+    return nltk.word_tokenize(sent)[:max_seq_len]
 
 def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, targ_map=None, targ_fn=None,
              skip_rows=0, delimiter='\t'):
@@ -235,11 +236,11 @@ class SSTTask(Task):
     def load_data(self, path, max_seq_len):
         ''' '''
         tr_data = load_tsv(os.path.join(path, 'sentiment-train'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=2)
+                           s1_idx=0, s2_idx=None, targ_idx=1)
         val_data = load_tsv(os.path.join(path, 'sentiment-dev'), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=2)
+                            s1_idx=0, s2_idx=None, targ_idx=1)
         te_data = load_tsv(os.path.join(path, 'sentiment-test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=2)
+                           s1_idx=0, s2_idx=None, targ_idx=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

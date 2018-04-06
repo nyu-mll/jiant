@@ -24,7 +24,7 @@ PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
 
 
 ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b',
-             'wnli', 'acceptability', 'adversarial']
+             'wnli', 'acceptability']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask, 'quora': QuoraTask,
              'rte': RTETask, 'squad': SQuADTask, 'snli': SNLITask,
              'acceptability': AcceptabilityTask, 'sst': SSTTask,

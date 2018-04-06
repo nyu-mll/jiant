@@ -162,18 +162,21 @@ def main(arguments):
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(layer_state)
 
-    # Evaluate #
+    # Evaluate: load the different task best models and evaluate them
     # TODO(Alex): put this in evaluate file
     log.info('***** TEST RESULTS *****')
-    # load the different task best models and evaluate them
+    all_results = {}
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
-        pdb.set_trace()
-        results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        te_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        val_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
         all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in results.items()])
         log.info('%s, %s', task, all_metrics_str)
+        all_results[task] = (val_results, te_results, model_path)
+    results_file = os.path.join(args.exp_dir, "results.pkl")
+    pkl.dump(all_results, open(results_file, 'wb'))
 
 
 if __name__ == '__main__':
