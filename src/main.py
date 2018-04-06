@@ -64,7 +64,7 @@ def main(arguments):
                         ' embedding combiner', type=str, default='2,3,4,5')
     parser.add_argument('--dropout_embs', help='dropout rate for embeddisn', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
-    parser.add_argument('--train_word', help='1 if make word embs trainable', type=int, default=1)
+    parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=1)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
     parser.add_argument('--elmo_no_glove', help='1 if don\'t use glove with elmo', type=int, default=0)

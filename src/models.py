@@ -56,7 +56,7 @@ def build_model(args, vocab, word_embs, tasks):
 
     # Build embedding layers
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
-                              trainable=bool(args.train_word),
+                              trainable=bool(args.train_words),
                               padding_index=vocab.get_token_index('@@PADDING@@'))
     char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
     if args.char_encoder == 'cnn':
@@ -73,15 +73,15 @@ def build_model(args, vocab, word_embs, tasks):
         log.info("\tUsing ELMo embeddings!")
         if args.deep_elmo: # need to adjust modeling layer inputs
             n_reps = 2
-            log.info("\t  Using deep ELMo embeddings!")
+            log.info("\tUsing deep ELMo embeddings!")
         else:
             n_reps = 1
         if args.elmo_no_glove:
             token_embedder = {"chars": char_embedder}
-            log.info("\t  NOT using GLoVe embeddings!")
+            log.info("\tNOT using GLoVe embeddings!")
         else:
             token_embedder = {"words": word_embedder, "chars": char_embedder}
-            log.info("\t  Using GLoVe embeddings!")
+            log.info("\tUsing GLoVe embeddings!")
             d_inp_phrase += d_word
         elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
                     num_output_representations=n_reps)
@@ -105,6 +105,8 @@ def build_model(args, vocab, word_embs, tasks):
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': d_inp_phrase,
                                                              'hidden_size': d_hid,
                                                              'bidirectional': True}))
+    d_hid *= 2 # to account for bidirectional
+    d_hid += (args.elmo and args.deep_elmo) * 1024 # deep elmo embeddings
     if args.pair_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, text_field_embedder) # maybe should take in CoVe/ELMO?
         pair_encoder = None # model will just run sent_encoder on both inputs
@@ -112,7 +114,7 @@ def build_model(args, vocab, word_embs, tasks):
         sent_encoder = HeadlessSentEncoder(vocab, text_field_embedder, n_layers_highway,
                                            phrase_layer, cove_layer=cove_layer, elmo_layer=elmo)
     if args.pair_enc == 'bidaf':
-        modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 8 * d_hid,
+        modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 4 * d_hid,
                                                                    'hidden_size': d_hid,
                                                                    'num_layers': args.n_layers_enc,
                                                                    'bidirectional': True}))
@@ -124,7 +126,7 @@ def build_model(args, vocab, word_embs, tasks):
                                            phrase_layer, cove_layer=cove_layer, elmo_layer=elmo,
                                            dropout=args.dropout)
     elif args.pair_enc == 'attn':
-        modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 4 * d_hid,
+        modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 2 * d_hid,
                                                                    'hidden_size': d_hid,
                                                                    'num_layers': args.n_layers_enc,
                                                                    'bidirectional': True}))
@@ -132,15 +134,14 @@ def build_model(args, vocab, word_embs, tasks):
                                                phrase_layer, DotProductSimilarity(), modeling_layer,
                                                cove_layer=cove_layer, elmo_layer=elmo,
                                                dropout=args.dropout)
-
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, pair_encoder)
-    build_classifiers(tasks, model, d_hid)
+    build_classifiers(tasks, model, d_hid, (args.elmo and args.deep_elmo))
     if args.cuda >= 0:
         model = model.cuda()
     return model
 
-def build_classifiers(tasks, model, d_inp):
+def build_classifiers(tasks, model, d_inp, deep_elmo):
     '''
     Build the classifier for each task
     '''
@@ -148,15 +149,15 @@ def build_classifiers(tasks, model, d_inp):
     for task in tasks:
         if task.pair_input:
             if pair_enc == 'bidaf':
-                d_task = d_inp * 10
+                d_task = d_inp * 5
             elif pair_enc == 'simple':
-                d_task = d_inp * 8
-            elif pair_enc == 'bow':
                 d_task = d_inp * 4
+            elif pair_enc == 'bow':
+                d_task = d_inp * 2
             elif pair_enc == 'attn':
-                d_task = d_inp * 8
+                d_task = d_inp * 4
         else:
-            d_task = d_inp * 2
+            d_task = d_inp
         model.build_classifier(task, d_task)
     return
 
