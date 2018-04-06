@@ -1,6 +1,6 @@
 '''Preprocessing functions and pipeline'''
 import os
-import pdb # pylint disable=unused-import
+import ipdb as pdb # pylint disable=unused-import
 import logging as log
 from collections import defaultdict
 import _pickle as pkl
@@ -42,10 +42,11 @@ for k, v in NAME2DATA.items():
 # TODO(Alex): get rid of this
 NAME2SAVE = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'quora': 'Quora/',
              'rte': 'rte/', 'squad': 'squad/', 'snli': 'SNLI/', 'dpr': 'dpr/',
-             'sst': 'SST/', 'sts-benchmark': 'STS/', 'wnli': 'wnli/',
+             'sst': 'SST/', 'sts-b': 'STS/', 'wnli': 'wnli/',
              'acceptability': 'acceptability/', 'adversarial': 'adversarial/'}
 for k, v in NAME2SAVE.items():
     NAME2SAVE[k] = PATH_PREFIX + v
+assert NAME2SAVE.keys() == NAME2DATA.keys() == NAME2TASK.keys()
 
 def build_tasks(args):
     '''Prepare tasks'''
