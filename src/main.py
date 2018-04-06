@@ -83,11 +83,12 @@ def main(arguments):
     parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
+    parser.add_argument('--min_lr', help='minimum learning rate', type=float, default=1e-5)
     parser.add_argument('--weight_decay', help='weight decay value', type=float, default=0.0)
     parser.add_argument('--task_patience', help='patience in decaying per task lr',
                         type=int, default=0)
     parser.add_argument('--scheduler_threshold', help='scheduler threshold',
-                        type=float, default=1e-3)
+                        type=float, default=0.0)
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
                         ' doesn\'t improve', type=float, default=.5)
 

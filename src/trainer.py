@@ -42,7 +42,7 @@ def build_trainer(args, model, iterator):
                           'threshold_mode': 'abs', 'verbose':True})
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': 5.,
-                           'lr_decay': .99, 'min_lr': 1e-5, 'no_tqdm': False})
+                           'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': False})
     trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
                                            copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
