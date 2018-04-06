@@ -67,7 +67,7 @@ def build_tasks(args):
     tasks = get_tasks(all_task_names, args.max_seq_len, args.load_tasks)
 
     max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
-    token_indexer = {"words": SingleIdTokenIndexer(), "chars": TokenCharactersIndexer("chars")}
+    token_indexer = {"words": SingleIdTokenIndexer()}#, "chars": TokenCharactersIndexer("chars")}
     if args.elmo:
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
 
@@ -85,7 +85,6 @@ def build_tasks(args):
         log.info("\tFinished building vocab. Using %d words, %d chars",
                  vocab.get_vocab_size('tokens'), vocab.get_vocab_size('chars'))
         log.info("\tLoaded data from %s", preproc_file)
-
     else:
         log.info("\tProcessing tasks from scratch")
         word2freq, char2freq = get_words(tasks)
@@ -102,6 +101,8 @@ def build_tasks(args):
         pkl.dump(preproc, open(preproc_file, 'wb'))
         vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", preproc_file)
+        del word2freq, char2freq
+    del preproc
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]

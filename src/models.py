@@ -58,6 +58,7 @@ def build_model(args, vocab, word_embs, tasks):
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
                               trainable=bool(args.train_words),
                               padding_index=vocab.get_token_index('@@PADDING@@'))
+    '''
     char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
     if args.char_encoder == 'cnn':
         filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
@@ -67,6 +68,8 @@ def build_model(args, vocab, word_embs, tasks):
         char_encoder = BagOfEmbeddingsEncoder(d_char, True)
     char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder, dropout=args.dropout_embs)
     d_inp_phrase = d_char
+    '''
+    d_inp_phrase = 0
 
     # Handle elmo and cove
     if args.elmo:
@@ -77,10 +80,10 @@ def build_model(args, vocab, word_embs, tasks):
         else:
             n_reps = 1
         if args.elmo_no_glove:
-            token_embedder = {"chars": char_embedder}
+            token_embedder = {} #{"chars": char_embedder}
             log.info("\tNOT using GLoVe embeddings!")
         else:
-            token_embedder = {"words": word_embedder, "chars": char_embedder}
+            token_embedder = {"words": word_embedder}#, "chars": char_embedder}
             log.info("\tUsing GLoVe embeddings!")
             d_inp_phrase += d_word
         elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
@@ -88,7 +91,7 @@ def build_model(args, vocab, word_embs, tasks):
         d_inp_phrase += 1024
     else:
         elmo = None
-        token_embedder = {"words": word_embedder, "chars": char_embedder}
+        token_embedder = {"words": word_embedder}#, "chars": char_embedder}
         d_inp_phrase += d_word
     text_field_embedder = BasicTextFieldEmbedder(token_embedder)
     d_hid = args.d_hid if args.pair_enc != 'bow' else d_inp_phrase
