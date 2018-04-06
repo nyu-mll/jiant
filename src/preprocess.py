@@ -101,7 +101,7 @@ def build_tasks(args):
         log.info("\tFinished indexing tasks")
         pkl.dump(preproc, open(preproc_file, 'wb'))
         vocab.save_to_files(vocab_path)
-        log.info("\tSaved data to %s", args.exp_dir)
+        log.info("\tSaved data to %s", preproc_file)
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]

@@ -22,7 +22,7 @@ elmo = 0
 cove = 0
 
 optimizer = 'sgd'
-lr = '1e-3'
+lr = '1e-1'
 d_hid = '1024'
 
 bpp_method = 'percent_tr'
@@ -45,7 +45,7 @@ seed = str(random.randint(1, 10000))
 if elmo:
     mem_req = 84
 else:
-    mem_req = 32
+    mem_req = 56
 slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
               '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type, '--mem=%dGB' % mem_req,
               '--mail-type=end', '--mail-user=aw3272@nyu.edu',
@@ -62,7 +62,7 @@ if cove:
 cmd = slurm_args + exp_args
 print(' '.join(cmd))
 subprocess.call(cmd)
-time.sleep(10)
+#time.sleep(10)
 
 ''' READ ME!!
 - elmo has to have its own preprocessing

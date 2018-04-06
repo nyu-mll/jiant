@@ -43,7 +43,7 @@ def build_trainer(args, model, iterator):
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
-    trainer = MultiTaskTrainer.from_params(model, args.exp_dir, iterator,
+    trainer = MultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                            copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 

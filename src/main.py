@@ -28,7 +28,10 @@ def main(arguments):
 
     # Paths and logging
     parser.add_argument('--log_file', help='path to log to', type=str, default=0)
-    parser.add_argument('--exp_dir', help='path to log to', type=str, default='')
+    parser.add_argument('--exp_dir', help='experiment directory containing shared preprocessing',
+                        type=str, default='')
+    parser.add_argument('--run_dir', help='run directory for saving results, models, etc.',
+                        type=str, default='')
     parser.add_argument('--vocab_path', help='folder containing vocab stuff', type=str, default='')
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
@@ -115,6 +118,7 @@ def main(arguments):
 
     # Logistics #
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
+    print(args.log_file)
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
@@ -157,11 +161,11 @@ def main(arguments):
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
         to_train = pred_layer.parameters()
-        trainer = MultiTaskTrainer.from_params(model, args.exp_dir + '/%s/' % task.name,
+        trainer = MultiTaskTrainer.from_params(model, args.run_dir + '/%s/' % task.name,
                                                iterator, copy.deepcopy(train_params))
         trainer.train([task], args.task_ordering, 1, args.max_vals, 'percent_tr', 1, to_train,
                       opt_params, schd_params, 1)
-        layer_path = os.path.join(args.exp_dir, task.name, "%s_best.th" % task.name)
+        layer_path = os.path.join(args.run_dir, task.name, "%s_best.th" % task.name)
         layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(layer_state)
 
@@ -170,7 +174,7 @@ def main(arguments):
     log.info('***** TEST RESULTS *****')
     all_results = {}
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
-        model_path = os.path.join(args.exp_dir, "%s_best.th" % task)
+        model_path = os.path.join(args.run_dir, "%s_best.th" % task)
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
         te_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
@@ -179,7 +183,7 @@ def main(arguments):
                                      te_results.items()])
         log.info('%s, %s', task, all_metrics_str)
         all_results[task] = (val_results, te_results, model_path)
-    results_file = os.path.join(args.exp_dir, "results.pkl")
+    results_file = os.path.join(args.run_dir, "results.pkl")
     pkl.dump(all_results, open(results_file, 'wb'))
 
 
