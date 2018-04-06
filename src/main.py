@@ -3,10 +3,11 @@ import os
 import sys
 import time
 import copy
-import ipdb as pdb
 import random
 import argparse
 import logging as log
+import _pickle as pkl
+import ipdb as pdb
 import torch
 
 from allennlp.data.iterators import BasicIterator
@@ -172,7 +173,8 @@ def main(arguments):
         model.load_state_dict(model_state)
         te_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
         val_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
-        all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in results.items()])
+        all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in \
+                                     te_results.items()])
         log.info('%s, %s', task, all_metrics_str)
         all_results[task] = (val_results, te_results, model_path)
     results_file = os.path.join(args.exp_dir, "results.pkl")

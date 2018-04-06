@@ -43,8 +43,9 @@ print(' '.join(cmd))
 subprocess.call(cmd)
 time.sleep(10)
 
-'''
+''' READ ME!!
 - elmo has to have its own preprocessing
 - make sure no non-strings
 - order your for loops so as the most informative exps finish first
+- refresh your interactive sessions before launching a lot of jobs
 '''
