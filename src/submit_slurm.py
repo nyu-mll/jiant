@@ -18,8 +18,18 @@ proj_name = 'mtl-sent-rep'
 exp_name = 'base'
 
 # define lots of parameters
+elmo = 0
+cove = 0
 
-run_name = 'debug_elmo'
+optimizer = 'sgd'
+lr = '1e-3'
+d_hid = '1024'
+
+bpp_method = 'percent_tr'
+bpp_base = 10
+val_interval = 10
+
+run_name = 'lr%s_d%s' % (lr, d_hid)
 job_name = '%s_%s' % (run_name, exp_name)
 
 # logging
@@ -31,16 +41,6 @@ err_file = exp_dir + '/sbatch.err'
 
 seed = str(random.randint(1, 10000))
 
-elmo = 1
-cove = 0
-
-optimizer = 'sgd'
-lr = '1e-3'
-d_hid = '1024'
-
-bpp_method = 'percent_tr'
-bpp_base = 10
-val_interval = 10
 
 if elmo:
     mem_req = 84

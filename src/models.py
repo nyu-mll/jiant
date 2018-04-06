@@ -155,7 +155,7 @@ def build_classifiers(tasks, model, d_inp, deep_elmo):
             elif pair_enc == 'bow':
                 d_task = d_inp * 2
             elif pair_enc == 'attn':
-                d_task = d_inp * 4
+                d_task = d_inp * 8
         else:
             d_task = d_inp
         model.build_classifier(task, d_task)
