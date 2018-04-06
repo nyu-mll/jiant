@@ -137,6 +137,7 @@ def main(arguments):
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
+    pdb.set_trace()
 
     # Build model #
     log.info('Building model...')

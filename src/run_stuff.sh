@@ -26,7 +26,7 @@ train_tasks='all'
 eval_tasks='none'
 CLASSIFIER=mlp
 d_hid_cls=512
-VOCAB_SIZE=50000
+VOCAB_SIZE=30000
 CHAR_VOCAB_SIZE=100
 WORD_EMBS_FILE="${SCRATCH_PREFIX}/raw_data/GloVe/glove.840B.300d.txt"
 
