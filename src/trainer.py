@@ -8,15 +8,13 @@ rather than instantiating a ``MultiTaskTrainer`` yourself.
 """
 
 import os
-import pdb # pylint: disable=unused-import
+import ipdb as pdb # pylint: disable=unused-import
 import math
 import time
 import copy
 import random
-import shutil
 import logging
 import itertools
-from typing import Dict, Optional, List
 
 import torch
 import torch.optim.lr_scheduler
@@ -26,9 +24,6 @@ from tensorboardX import SummaryWriter
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
-from allennlp.data.iterators import BasicIterator
-from allennlp.data.iterators.data_iterator import DataIterator
-from allennlp.models.model import Model
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from util import arrays_to_variables, device_mapping
@@ -47,22 +42,24 @@ def build_trainer(args, model, iterator):
                                            copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
+def get_task_order(method, tasks, iterator):
+    '''Get order to train tasks on'''
+    if method == 'given':
+        task_order = range(len(tasks))
+    elif 'random' in method:
+        task_order = [i for i in range(len(tasks))]
+        random.shuffle(task_order)
+    else:
+        task_sizes = [(idx, iterator.get_num_batches(task.train_data)) \
+                      for idx, task in enumerate(tasks)]
+        task_sizes.sort(key=lambda x: x[1], reverse=bool(method == 'large_to_small'))
+        task_order = [task_idx for task_idx, _ in task_sizes]
+    return task_order
 
 class MultiTaskTrainer:
-    def __init__(self,
-                 model,
-                 iterator: DataIterator,
-                 patience: int = 2,
-                 num_epochs: int = 20,
-                 serialization_dir: Optional[str] = None,
-                 cuda_device: int = -1,
-                 grad_norm: Optional[float] = None,
-                 grad_clipping: Optional[float] = None,
-                 lr_decay: Optional[float] = None,
-                 min_lr: Optional[float] = None,
-                 no_tqdm: bool = False) -> None:
-        """
-        Parameters
+    def __init__(self, model, iterator, patience=2, num_epochs=20, serialization_dir=None, cuda_device=-1,
+                 grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None, no_tqdm=False):
+        """ Parameters
         ----------
         model : ``Model``, required.
             An AllenNLP model to be optimized. Pytorch Modules can also be optimized if
@@ -73,19 +70,19 @@ class MultiTaskTrainer:
             model to be optimized.
         iterator : ``DataIterator``, required.
             A method for iterating over a ``Dataset``, yielding padded indexed batches.
-        patience : int, optional (default=2)
+        patience , optional (default=2)
             Number of epochs to be patient before early stopping.
-        val_metric : str, optional (default="loss")
+        val_metric , optional (default="loss")
             Validation metric to measure for whether to stop training using patience
             and whether to serialize an ``is_best`` model each epoch. The metric name
             must be prepended with either "+" or "-", which specifies whether the metric
             is an increasing or decreasing function.
-        num_epochs : int, optional (default = 20)
+        num_epochs , optional (default = 20)
             Number of training epochs.
-        serialization_dir : str, optional (default=None)
+        serialization_dir , optional (default=None)
             Path to directory for saving and loading model files. Models will not be saved if
             this parameter is not passed.
-        cuda_device : int, optional (default = -1)
+        cuda_device , optional (default = -1)
             An integer specifying the CUDA device to use. If -1, the CPU is used.
             Multi-gpu training is not currently supported, but will be once the
             Pytorch DataParallel API stabilises.
@@ -119,6 +116,9 @@ class MultiTaskTrainer:
         self._lr_decay = lr_decay
         self._min_lr = min_lr
 
+        self._task_infos = None
+        self._metric_infos = None
+
         self._no_tqdm = no_tqdm
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between logging to tensorboard
@@ -151,10 +151,10 @@ class MultiTaskTrainer:
 
         return best_so_far, out_of_patience
 
+
     def train(self, tasks, task_ordering, validation_interval, max_vals,
               bpp_method, bpp_base,
-              train_params, optimizer_params, scheduler_params,
-              load_model=1) -> None:
+              train_params, optimizer_params, scheduler_params, load_model=1):
         '''
         Train on tasks.
 
@@ -164,10 +164,66 @@ class MultiTaskTrainer:
         Returns: None
         '''
 
-        epoch_counter = 0 # for resuming training
+        n_pass, should_stop = 0, False
         n_tasks = len(tasks)
         iterator = self._iterator
-        patience = self._patience
+        parameters = train_params
+        task_order = get_task_order(task_ordering, tasks, iterator)
+
+        if 'proportional' in bpp_method: # for computing n batches per pass
+            if 'tr' in bpp_method:
+                sizes = [iterator.get_num_batches(task.train_data) for task in tasks]
+                min_size = min(sizes)
+                bpps = [size / min_size for size in sizes]
+            else:
+                sizes = [(idx, iterator.get_num_batches(task.train_data)) for \
+                        idx, task in enumerate(tasks)]
+                sizes.sort(key=lambda x: x[1])
+                bpps = [0] * n_tasks
+                for rank, (idx, _) in enumerate(sizes):
+                    bpps[idx] = rank + 1
+
+        # Task bookkeeping
+        task_infos = {task.name: {} for task in tasks}
+        for task_idx, task in enumerate(tasks):
+            task_info = task_infos[task.name]
+            n_tr_batches = iterator.get_num_batches(task.train_data)
+            n_val_batches = iterator.get_num_batches(task.val_data)
+            task_info['n_tr_batches'] = n_tr_batches
+            tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None,
+                                              cuda_device=self._cuda_device),
+                                     disable=self._no_tqdm, total=n_tr_batches)
+            task_info['tr_generator'] = tr_generator
+            task_info['loss'] = 0.0 # Maybe don't need here
+            task_info['total_batches_trained'] = 0
+            task_info['n_batches_since_val'] = 0
+            if bpp_method == 'fixed':
+                n_batches_per_pass = bpp_base
+            elif bpp_method == 'percent_tr':
+                n_batches_per_pass = int(math.ceil((1/bpp_base) * n_tr_batches))
+            elif bpp_method == 'proportional_rank':
+                n_batches_per_pass = int(bpp_base * bpps[task_idx])
+            task_info['n_batches_per_pass'] = n_batches_per_pass
+            task_info['n_val_batches'] = n_val_batches
+            task_info['optimizer'] = Optimizer.from_params(parameters,
+                                                           copy.deepcopy(optimizer_params))
+            task_info['scheduler'] = LearningRateScheduler.from_params(task_info['optimizer'],
+                                                                       copy.deepcopy(scheduler_params))
+            task_info['stopped'] = False
+            task_info['last_log'] = time.time()
+            logger.info("Task %s: training %d of %d batches per pass", task.name,
+                        n_batches_per_pass, n_tr_batches)
+            logger.info("\t%d batches, %.3f epochs between validation checks",
+                        n_batches_per_pass * validation_interval,
+                        n_batches_per_pass * validation_interval / n_tr_batches)
+
+        # Metric bookkeeping
+        all_metrics = [task.val_metric for task in tasks] + ['micro_accuracy', 'macro_accuracy']
+        metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for \
+                        metric in all_metrics}
+
+        self._task_infos = task_infos
+        self._metric_infos = metric_infos
 
         # Resume from serialization path if it contains a saved model.
         if self._serialization_dir is not None:
@@ -186,11 +242,10 @@ class MultiTaskTrainer:
                 self._serialization_dir, "macro_accuracy", "valid"))
             val_logs["micro_accuracy"] = SummaryWriter(os.path.join(
                 self._serialization_dir, "micro_accuracy", "valid"))
-            if load_model and \
-                    any(["model_state_epoch_" in x
-                         for x in os.listdir(self._serialization_dir)]):
+            if load_model and any(["model_state_epoch_" in x
+                                   for x in os.listdir(self._serialization_dir)]):
                 logger.info("Loading model from checkpoint.")
-                epoch_counter = self._restore_checkpoint()
+                n_pass, should_stop = self._restore_checkpoint()
 
         if self._grad_clipping is not None:
             # pylint: disable=invalid-unary-operand-type
@@ -200,95 +255,23 @@ class MultiTaskTrainer:
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
-        task_infos = {task.name: {} for task in tasks}
-        parameters = train_params #[p for p in self._model.parameters() if p.requires_grad]
-        if 'proportional' in bpp_method: # for computing n batches per pass
-            if 'tr' in bpp_method:
-                sizes = [iterator.get_num_batches(task.train_data) for \
-                         task in tasks]
-                min_size = min(sizes)
-                bpps = [size / min_size for size in sizes]
-            else:
-                sizes = [(idx, iterator.get_num_batches(task.train_data)) for \
-                        idx, task in enumerate(tasks)]
-                sizes.sort(key=lambda x: x[1])
-                bpps = [0] * n_tasks
-                for rank, (idx, _) in enumerate(sizes):
-                    bpps[idx] = rank + 1
-        for task_idx, task in enumerate(tasks):
-            task_info = task_infos[task.name]
-            n_tr_batches = iterator.get_num_batches(task.train_data)
-            n_val_batches = iterator.get_num_batches(task.val_data)
-            task_info['n_tr_batches'] = n_tr_batches
-            tr_generator = tqdm.tqdm(iterator(task.train_data, num_epochs=None,
-                                     cuda_device=self._cuda_device),
-                                     disable=self._no_tqdm, total=n_tr_batches)
-            task_info['tr_generator'] = tr_generator
-            task_info['loss'] = 0.0 # Maybe don't need here
-            task_info['total_batches_trained'] = 0
-            task_info['n_batches_since_val'] = 0
-            task_info['loss'] = 0
-            if bpp_method == 'fixed':
-                n_batches_per_pass = bpp_base
-            elif bpp_method == 'percent_tr':
-                n_batches_per_pass = int(math.ceil((1/bpp_base) * n_tr_batches))
-            elif bpp_method == 'proportional_rank':
-                n_batches_per_pass = int(bpp_base * bpps[task_idx])
-            task_info['n_batches_per_pass'] = n_batches_per_pass
-            task_info['n_val_batches'] = n_val_batches
-            optimizer = Optimizer.from_params(parameters, copy.deepcopy(optimizer_params))
-            scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
-            task_info['optimizer'] = optimizer
-            task_info['scheduler'] = scheduler
-            task_info['last_log'] = time.time()
-            logger.info("Task %s: training %d of %d batches per pass", task.name,
-                        n_batches_per_pass, n_tr_batches)
-            logger.info("\t%d batches, %.3f epochs between validation checks",
-                        n_batches_per_pass * validation_interval,
-                        n_batches_per_pass * validation_interval / n_tr_batches)
-        all_metrics = [task.val_metric for task in tasks] + ['micro_accuracy', 'macro_accuracy']
-        metric_histories = {metric: [] for metric in all_metrics}
-        metric_stopped = {metric: False for metric in all_metrics}
-        best_metric_epoch = {metric: (-1, {}) for metric in all_metrics}
-        stop_training = {task.name: False for task in tasks}
-
-        # Get ordering on tasks, maybe should vary per pass
-        if task_ordering == 'given':
-            task_order = range(len(tasks))
-        elif 'random' in task_ordering:
-            task_order = [i for i in range(len(tasks))]
-            random.shuffle(task_order)
-        elif task_ordering == 'small_to_large':
-            task_sizes = [(idx, task_infos[task.name]['n_tr_batches']) \
-                          for idx, task in enumerate(tasks)]
-            task_sizes.sort(key=lambda x: x[1])
-            task_order = [task_idx for task_idx, _ in task_sizes]
-        elif task_ordering == 'large_to_small':
-            task_sizes = [(idx, task_infos[task.name]['n_tr_batches']) \
-                          for idx, task in enumerate(tasks)]
-            task_sizes.sort(key=lambda x: x[1], reverse=True)
-            task_order = [task_idx for task_idx, _ in task_sizes]
-
         logger.info("Beginning training.")
         logger.info("\tTask order: %s", ", ".join([tasks[idx].name for idx in task_order]))
-        n_pass = 0
         all_tr_metrics = {}
-        should_stop = False
         while not should_stop:
             self._model.train()
             if task_ordering == 'random_per_pass':
                 random.shuffle(task_order)
             for train_idx, task_idx in enumerate(task_order):
                 task = tasks[task_idx]
-                if stop_training[task.name]:
-                    continue
                 task_info = task_infos[task.name]
+                if task_info['stopped']:
+                    continue
                 tr_generator = task_info['tr_generator']
                 optimizer = task_info['optimizer']
                 total_batches_trained = task_info['total_batches_trained']
                 n_batches_since_val = task_info['n_batches_since_val']
                 tr_loss = task_info['loss']
-                n_exs = 0
                 for batch in itertools.islice(tr_generator, task_info['n_batches_per_pass']):
                     n_batches_since_val += 1
                     total_batches_trained += 1
@@ -298,7 +281,6 @@ class MultiTaskTrainer:
                     loss = output_dict["loss"]
                     loss.backward()
                     tr_loss += loss.data.cpu().numpy()
-                    n_exs += batch['label'].size()[0]
 
                     # Gradient regularization and application
                     if self._grad_norm:
@@ -325,8 +307,7 @@ class MultiTaskTrainer:
                         task_info['last_log'] = time.time()
 
                     # Tensorboard logging
-                    if self._serialization_dir and \
-                            n_batches_since_val % self._summary_interval == 0:
+                    if self._serialization_dir and n_batches_since_val % self._summary_interval == 0:
                         metric = task.val_metric
                         for name, param in self._model.named_parameters():
                             train_logs[metric].add_scalar("PARAMETER_MEAN/" + \
@@ -348,7 +329,7 @@ class MultiTaskTrainer:
 
             # Overall training logging after a pass through data
             for task in tasks:
-                if stop_training[task.name]:
+                if task_info['stopped']:
                     continue
                 task_info = task_infos[task.name]
                 task_metrics = task.get_metrics(reset=True)
@@ -356,14 +337,15 @@ class MultiTaskTrainer:
                     all_tr_metrics["%s_%s" % (task.name, name)] = value
                     all_tr_metrics["%s_loss" % task.name] = \
                             float(task_info['loss'] / task_info['n_batches_since_val'])
+            n_pass += 1
 
             # Validation
-            # Could probably use a continue and save some indentation
             if n_pass % (validation_interval) == 0:
                 logger.info("Validating...")
                 epoch = int(n_pass / validation_interval)
                 val_losses = [0.0] * n_tasks
                 n_examples_overall = 0.0
+                should_save = False
                 all_val_metrics = {"macro_accuracy":0.0, "micro_accuracy":0.0}
                 self._model.eval()
                 for task_idx, task in enumerate(tasks):
@@ -371,14 +353,12 @@ class MultiTaskTrainer:
                     n_val_batches = task_infos[task.name]['n_val_batches']
                     scheduler = task_infos[task.name]['scheduler']
                     val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
-                    val_generator_tqdm = tqdm.tqdm(val_generator,
-                                                   disable=self._no_tqdm,
+                    val_generator_tqdm = tqdm.tqdm(val_generator, disable=self._no_tqdm,
                                                    total=n_val_batches)
                     batch_num = 0
                     for batch in val_generator_tqdm:
                         batch_num += 1
-                        val_output_dict = self._forward(batch, task=task,
-                                                        for_training=False)
+                        val_output_dict = self._forward(batch, task=task, for_training=False)
                         loss = val_output_dict["loss"]
                         val_losses[task_idx] += loss.data.cpu().numpy()
                         task_metrics = task.get_metrics()
@@ -388,8 +368,7 @@ class MultiTaskTrainer:
                         val_generator_tqdm.set_description(description)
                         if self._no_tqdm and \
                                 time.time() - task_info['last_log'] > self._log_interval:
-                            logger.info("Batch %d/%d: %s", batch_num, \
-                                        n_val_batches, description)
+                            logger.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                             task_info['last_log'] = time.time()
                         n_examples += batch['label'].size()[0]
 
@@ -408,19 +387,19 @@ class MultiTaskTrainer:
                     # If not out of patience,
                     # check if should save based on aggregate score
                     # do a patience check, adjust learning rate
-                    if not metric_stopped[task.val_metric]:
+                    if not metric_infos[task.val_metric]['stopped']:
                         this_epoch_metric = all_val_metrics[task.val_metric]
-                        metric_history = metric_histories[task.val_metric]
+                        metric_history = metric_infos[task.val_metric]['hist']
                         metric_history.append(this_epoch_metric)
                         is_best_so_far, out_of_patience = \
-                                self._check_history(metric_history,
-                                                    this_epoch_metric,
+                                self._check_history(metric_history, this_epoch_metric,
                                                     task.val_metric_decreases)
                         if is_best_so_far:
-                            best_metric_epoch[task.val_metric] = (epoch, all_val_metrics)
-                            self._save_checkpoint(epoch, task=task.name)
+                            logger.info("Best model found for %s.", task.name)
+                            metric_infos[task.val_metric]['best'] = (epoch, all_val_metrics)
+                            should_save = True
                         if out_of_patience:
-                            metric_stopped[task.val_metric] = True
+                            metric_infos[task.val_metric]['stopped'] = True
                             logger.info("Out of patience. Stopped tracking %s", task.name)
                     if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                         scheduler.step(this_epoch_metric, epoch)
@@ -442,18 +421,19 @@ class MultiTaskTrainer:
                 # Track macro and micro
                 for task in ['micro', 'macro']:
                     metric = "%s_accuracy" % task # not really accuracy
-                    if metric_stopped[metric]:
+                    if metric_infos[metric]['stopped']:
                         continue
                     this_epoch_metric = all_val_metrics[metric]
-                    metric_history = metric_histories[metric]
+                    metric_history = metric_infos[metric]['hist']
                     metric_history.append(this_epoch_metric)
                     is_best_so_far, out_of_patience = \
                             self._check_history(metric_history, this_epoch_metric)
                     if is_best_so_far:
-                        best_metric_epoch[metric] = (epoch, all_val_metrics)
-                        self._save_checkpoint(epoch, task=task)
+                        logger.info("Best model found for %s.", task)
+                        metric_infos[metric]['best'] = (epoch, all_val_metrics)
+                        should_save = True
                     if out_of_patience:
-                        metric_stopped[metric] = True
+                        metric_infos[metric]['hist'] = True
                         logger.info("Out of patience. Stopped tracking %s", task)
 
                 # Reset training progress after validating
@@ -463,12 +443,13 @@ class MultiTaskTrainer:
                     task_info = task_infos[task.name]
                     if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
                         logger.info("Minimum lr hit on %s.", task.name)
-                        stop_training[task.name] = True
-                    stop_tr = stop_tr and stop_training[task.name]
-                    stop_val = stop_val and metric_stopped[task.val_metric]
+                        task_info['stopped'] = True
+                    stop_tr = stop_tr and task_info['stopped']
+                    stop_val = stop_val and metric_infos[task.val_metric]['stopped']
                     task_info['n_batches_since_val'] = 0
                     task_info['loss'] = 0
-                stop_val = stop_val and metric_stopped['micro_accuracy'] and metric_stopped['macro_accuracy']
+                stop_val = stop_val and metric_infos['micro_accuracy']['stopped'] and \
+                            metric_infos['macro_accuracy']['stopped']
                 all_tr_metrics = {}
 
                 # Check to see if should stop
@@ -481,57 +462,87 @@ class MultiTaskTrainer:
                 if epoch >= max_vals:
                     logging.info("Maximum number of validations hit. Stopping training.")
                     should_stop = True
+                self._metric_infos = metric_infos
+                self._task_infos = task_infos
+                if should_save:
+                    self._save_checkpoint({"pass": n_pass, "should_stop": should_stop})
 
-            n_pass += 1
+
 
         # print number of effective epochs trained per task
         logging.info('Stopped training after %d passes, %d validation checks',
                      n_pass, n_pass / validation_interval)
+        return_dict = {}
         for task in tasks:
             task_info = task_infos[task.name]
             logging.info('Trained %s for %d batches or %.3f epochs',
                          task.name, task_info['total_batches_trained'],
                          task_info['total_batches_trained'] / task_info['n_tr_batches'])
+            return_dict[task.name] = metric_infos[task.val_metric]['best'][0]
+        return_dict['micro'] = metric_infos['micro_accuracy']['best'][0]
+        return_dict['macro'] = metric_infos['macro_accuracy']['best'][0]
         logging.info('***** VALIDATION RESULTS *****')
-        for metric, (best_epoch, epoch_metrics) in best_metric_epoch.items():
-            all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in epoch_metrics.items()])
+        for metric in metric_infos.keys():
+            best_epoch, epoch_metrics = metric_infos[metric]['best']
+            all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for \
+                                         metric, score in epoch_metrics.items()])
             logging.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
+        return return_dict
 
-    def _forward(self, batch: dict, for_training: bool,
-                 task=None) -> dict:
+    def _forward(self, batch, for_training, task=None):
         # tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
         tensor_batch = batch
         return self._model.forward(task, **tensor_batch)
 
-    def _description_from_metrics(self, metrics: Dict[str, float]) -> str:
+    def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _save_checkpoint(self, epoch: int, task: str = None) -> None:
+    def _save_checkpoint(self, training_state):
         """
         Parameters
         ----------
-        epoch : int, required.
+        epoch , required.
             The epoch of training.
-        is_best: bool, optional (default = None)
+        is_best, optional (default = None)
             A flag which causes the model weights at the given epoch to
             be copied to a "best.th" file. The value of this flag should
             be based on some validation metric computed by your model.
         """
-        logger.info("Best model found for %s.", task)
-        model_path = os.path.join(self._serialization_dir, "{}_best.th".format(task))
-        #model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+        epoch = training_state["pass"]
+        #model_path = os.path.join(self._serialization_dir, "{}_best.th".format(task))
+        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
         model_state = self._model.state_dict()
         torch.save(model_state, model_path)
 
-        '''
-        training_state = {'epoch': epoch, 'optimizer': self._optimizer.state_dict()}
         torch.save(training_state, os.path.join(self._serialization_dir,
                                                 "training_state_epoch_{}.th".format(epoch)))
-        '''
-        # shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
 
-    def _restore_checkpoint(self) -> int:
+        task_states = {}
+        for task_name, task_info in self._task_infos.items():
+            task_states[task_name] = {}
+            task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
+            task_states[task_name]['scheduler'] = task_info['scheduler']
+            sched = task_info['scheduler']
+            sched_params = {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                            'cooldown_counter': sched.cooldown_counter}
+            task_states[task_name]['scheduler'] = sched_params
+            task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
+            task_states[task_name]['stopped'] = task_info['stopped']
+        torch.save(task_states, os.path.join(self._serialization_dir,
+                                             "task_state_epoch_{}.th".format(epoch)))
+
+        metric_states = {}
+        for metric_name, metric_info in self._metric_infos.items():
+            metric_states[metric_name] = {}
+            metric_states[metric_name]['hist'] = metric_info['hist']
+            metric_states[metric_name]['stopped'] = metric_info['stopped']
+            metric_states[metric_name]['best'] = metric_info['best']
+        torch.save(metric_states, os.path.join(self._serialization_dir,
+                                             "metric_state_epoch_{}.th".format(epoch)))
+        logging.info("Saved files to %s", self._serialization_dir)
+
+    def _restore_checkpoint(self):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -542,7 +553,7 @@ class MultiTaskTrainer:
 
         Returns
         -------
-        epoch: int
+        epoch
             The epoch at which to resume training.
         """
         if not self._serialization_dir:
@@ -558,22 +569,32 @@ class MultiTaskTrainer:
                                   "model_state_epoch_{}.th".format(epoch_to_load))
         training_state_path = os.path.join(self._serialization_dir,
                                            "training_state_epoch_{}.th".format(epoch_to_load))
+        task_state_path = os.path.join(self._serialization_dir,
+                                       "task_state_epoch_{}.th".format(epoch_to_load))
+        metric_state_path = os.path.join(self._serialization_dir,
+                                         "metric_state_epoch_{}.th".format(epoch_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
         training_state = torch.load(training_state_path)
+        task_states = torch.load(task_state_path)
+        metric_states = torch.load(metric_state_path)
+
         self._model.load_state_dict(model_state)
-        self._optimizer.load_state_dict(training_state["optimizer"])
-        return training_state["epoch"]
+        for task_name, task_state in task_states.items():
+            self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
+            for param, val in task_state['scheduler'].items():
+                setattr(self._task_infos[task_name]['scheduler'], param, val)
+            self._task_infos[task_name]['total_batches_trained'] = task_state['total_batches_trained']
+            self._task_infos[task_name]['stopped'] = task_state['stopped']
+        for metric_name, metric_state in metric_states.items():
+            self._metric_infos[metric_name]['hist'] = metric_state['hist']
+            self._metric_infos[metric_name]['stopped'] = metric_state['stopped']
+            self._metric_infos[metric_name]['best'] = metric_state['best']
+        return training_state["pass"], training_state["should_stop"]
 
     @classmethod
-    def from_params(cls,
-                    model,
-                    serialization_dir: str,
-                    iterator: DataIterator,
-                    params: Params) -> 'MultiTaskTrainer':
-        '''
-        Generator trainer from parameters.
-        '''
+    def from_params(cls, model, serialization_dir, iterator, params):
+        ''' Generator trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
         num_epochs = params.pop("num_epochs", 20)

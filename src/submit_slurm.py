@@ -32,7 +32,7 @@ val_interval = 10
 
 n_runs = 3
 
-for run_n in range(1, n_runs):
+for run_n in range(n_runs):
     for lr in lrs:
         for drop in drops:
             for cove in coves:

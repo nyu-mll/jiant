@@ -68,7 +68,7 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:' flag; do
         q) no_tqdm=1 ;;
         t) SHOULD_TRAIN=0 ;;
         k) LOAD_TASKS=0 ;;
-        m) LOAD_MODEL=0 ;;
+        m) LOAD_MODEL=1 ;;
         i) LOAD_PREPROC=0 ;;
         M) BPP_METHOD="${OPTARG}" ;; 
         B) BPP_BASE="${OPTARG}" ;;

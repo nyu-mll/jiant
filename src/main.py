@@ -151,11 +151,12 @@ def main(arguments):
     # Train #
     if train_tasks and args.should_train:
         to_train = [p for p in model.parameters() if p.requires_grad]
-        trainer.train(train_tasks, args.task_ordering, args.val_interval, args.max_vals,
-                      args.bpp_method, args.bpp_base, to_train, opt_params, schd_params,
-                      args.load_model)
+        best_epochs = trainer.train(train_tasks, args.task_ordering, args.val_interval,
+                                    args.max_vals, args.bpp_method, args.bpp_base, to_train,
+                                    opt_params, schd_params, args.load_model)
     else:
         log.info("Skipping training.")
+        best_epochs = {}
 
     # train just the classifiers for eval tasks
     for task in eval_tasks:
@@ -173,8 +174,21 @@ def main(arguments):
     # TODO(Alex): put this in evaluate file
     log.info('***** TEST RESULTS *****')
     all_results = {}
+
+    if best_epochs is None:
+        serialization_files = os.listdir(args.run_dir)
+        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
+        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
+                             for x in model_checkpoints])
+    else:
+        epoch_to_load = -1
+
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
-        model_path = os.path.join(args.run_dir, "%s_best.th" % task)
+        #model_path = os.path.join(args.run_dir, "%s_best.th" % task)
+        load_idx = best_epochs[task] if best_epochs is not None else epoch_to_load
+        model_path = os.path.join(args.run_dir,
+                                  "model_state_epoch_{}.th".format(load_idx))
+
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
         te_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
