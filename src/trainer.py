@@ -50,7 +50,7 @@ def build_trainer(args, model, iterator):
 
 class MultiTaskTrainer:
     def __init__(self,
-                 model: Model,
+                 model,
                  iterator: DataIterator,
                  patience: int = 2,
                  num_epochs: int = 20,
@@ -237,8 +237,7 @@ class MultiTaskTrainer:
             task_info['n_batches_per_pass'] = n_batches_per_pass
             task_info['n_val_batches'] = n_val_batches
             optimizer = Optimizer.from_params(parameters, copy.deepcopy(optimizer_params))
-            scheduler = LearningRateScheduler.from_params(optimizer,
-                                                          copy.deepcopy(scheduler_params))
+            scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
             task_info['optimizer'] = optimizer
             task_info['scheduler'] = scheduler
             task_info['last_log'] = time.time()
@@ -247,8 +246,7 @@ class MultiTaskTrainer:
             logger.info("\t%d batches, %.3f epochs between validation checks",
                         n_batches_per_pass * validation_interval,
                         n_batches_per_pass * validation_interval / n_tr_batches)
-        all_metrics = [task.val_metric for task in tasks] + \
-                        ['micro_accuracy', 'macro_accuracy']
+        all_metrics = [task.val_metric for task in tasks] + ['micro_accuracy', 'macro_accuracy']
         metric_histories = {metric: [] for metric in all_metrics}
         metric_stopped = {metric: False for metric in all_metrics}
         best_metric_epoch = {metric: (-1, {}) for metric in all_metrics}
@@ -296,8 +294,7 @@ class MultiTaskTrainer:
                     total_batches_trained += 1
                     optimizer.zero_grad()
                     output_dict = self._forward(batch, task=task, for_training=True)
-                    assert "loss" in output_dict, "Model must return a dict " \
-                                                  "containing a 'loss' key"
+                    assert "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                     loss = output_dict["loss"]
                     loss.backward()
                     tr_loss += loss.data.cpu().numpy()
@@ -305,33 +302,26 @@ class MultiTaskTrainer:
 
                     # Gradient regularization and application
                     if self._grad_norm:
-                        clip_grad_norm(self._model.parameters(),
-                                       self._grad_norm)
+                        clip_grad_norm(self._model.parameters(), self._grad_norm)
                     optimizer.step()
 
                     # Get metrics for all progress so far, update tqdm
                     task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = \
-                            float(tr_loss / n_batches_since_val)
+                    task_metrics["%s_loss" % task.name] = float(tr_loss / n_batches_since_val)
                     description = self._description_from_metrics(task_metrics)
                     tr_generator.set_description(description)
 
                     # Training logging
                     if self._no_tqdm and time.time() - task_info['last_log'] > self._log_interval:
                         logger.info("Task %d/%d: %s, Batch %d (%d): %s", train_idx + 1, n_tasks,
-                                    task.name, n_batches_since_val, total_batches_trained,
-                                    description)
+                                    task.name, n_batches_since_val, total_batches_trained, description)
                         for name, param in self._model.named_parameters():
-                            logger.debug("PARAM MEAN %s: %.7f", name,
-                                         param.data.mean())
-                            logger.debug("PARAM STD %s: %.7f", name,
-                                         param.data.std())
+                            logger.debug("PARAM MEAN %s: %.7f", name, param.data.mean())
+                            logger.debug("PARAM STD %s: %.7f", name, param.data.std())
                             if param.grad is None:
                                 continue
-                            logger.debug("GRAD MEAN %s: %.7f", name,
-                                         param.grad.data.mean())
-                            logger.debug("GRAD STD %s: %.7f", name, \
-                                         param.grad.data.std())
+                            logger.debug("GRAD MEAN %s: %.7f", name, param.grad.data.mean())
+                            logger.debug("GRAD STD %s: %.7f", name, param.grad.data.std())
                         task_info['last_log'] = time.time()
 
                     # Tensorboard logging
@@ -340,21 +330,16 @@ class MultiTaskTrainer:
                         metric = task.val_metric
                         for name, param in self._model.named_parameters():
                             train_logs[metric].add_scalar("PARAMETER_MEAN/" + \
-                                    name, param.data.mean(), \
-                                    total_batches_trained)
+                                    name, param.data.mean(), total_batches_trained)
                             train_logs[metric].add_scalar("PARAMETER_STD/" + \
-                                    name, param.data.std(), \
-                                    total_batches_trained)
+                                    name, param.data.std(), total_batches_trained)
                             if param.grad is not None:
                                 train_logs[metric].add_scalar("GRAD_MEAN/" + \
-                                        name, param.grad.data.mean(), \
-                                        total_batches_trained)
+                                        name, param.grad.data.mean(), total_batches_trained)
                                 train_logs[metric].add_scalar("GRAD_STD/" + \
-                                        name, param.grad.data.std(), \
-                                        total_batches_trained)
+                                        name, param.grad.data.std(), total_batches_trained)
                         train_logs[metric].add_scalar("LOSS/loss_train", \
-                                task_metrics["%s_loss" % task.name], \
-                                n_batches_since_val)
+                                task_metrics["%s_loss" % task.name], n_batches_since_val)
 
                     # Update training progress on that task
                     task_info['n_batches_since_val'] = n_batches_since_val
@@ -431,9 +416,9 @@ class MultiTaskTrainer:
                                 self._check_history(metric_history,
                                                     this_epoch_metric,
                                                     task.val_metric_decreases)
-                        self._save_checkpoint(epoch, is_best=is_best_so_far, task=task.name)
                         if is_best_so_far:
                             best_metric_epoch[task.val_metric] = (epoch, all_val_metrics)
+                            self._save_checkpoint(epoch, task=task.name)
                         if out_of_patience:
                             metric_stopped[task.val_metric] = True
                             logger.info("Out of patience. Stopped tracking %s", task.name)
@@ -464,9 +449,9 @@ class MultiTaskTrainer:
                     metric_history.append(this_epoch_metric)
                     is_best_so_far, out_of_patience = \
                             self._check_history(metric_history, this_epoch_metric)
-                    self._save_checkpoint(epoch, is_best=is_best_so_far, task=task)
                     if is_best_so_far:
                         best_metric_epoch[metric] = (epoch, all_val_metrics)
+                        self._save_checkpoint(epoch, task=task)
                     if out_of_patience:
                         metric_stopped[metric] = True
                         logger.info("Out of patience. Stopped tracking %s", task)
@@ -522,10 +507,7 @@ class MultiTaskTrainer:
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _save_checkpoint(self,
-                         epoch: int,
-                         is_best: Optional[bool] = None,
-                         task: str = None) -> None:
+    def _save_checkpoint(self, epoch: int, task: str = None) -> None:
         """
         Parameters
         ----------
@@ -536,22 +518,18 @@ class MultiTaskTrainer:
             be copied to a "best.th" file. The value of this flag should
             be based on some validation metric computed by your model.
         """
+        logger.info("Best model found for %s.", task)
         model_path = os.path.join(self._serialization_dir, "{}_best.th".format(task))
+        #model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
         model_state = self._model.state_dict()
-
-        if is_best:
-            logger.info("Best model found for %s.", task)
-            torch.save(model_state, model_path)
-            # shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
-
-        '''
-        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
         torch.save(model_state, model_path)
 
-        training_state = {'epoch': epoch}#, 'optimizer': self._optimizer.state_dict()}
+        '''
+        training_state = {'epoch': epoch, 'optimizer': self._optimizer.state_dict()}
         torch.save(training_state, os.path.join(self._serialization_dir,
                                                 "training_state_epoch_{}.th".format(epoch)))
         '''
+        # shutil.copyfile(model_path, os.path.join(self._serialization_dir, "%s_best.th" % task))
 
     def _restore_checkpoint(self) -> int:
         """
@@ -584,12 +562,12 @@ class MultiTaskTrainer:
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
         training_state = torch.load(training_state_path)
         self._model.load_state_dict(model_state)
-        # self._optimizer.load_state_dict(training_state["optimizer"])
+        self._optimizer.load_state_dict(training_state["optimizer"])
         return training_state["epoch"]
 
     @classmethod
     def from_params(cls,
-                    model: Model,
+                    model,
                     serialization_dir: str,
                     iterator: DataIterator,
                     params: Params) -> 'MultiTaskTrainer':
