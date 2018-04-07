@@ -24,7 +24,7 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
 from tasks import STS14Task, STSBenchmarkTask
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 
 # CoVe stuff
 if "cs.nyu.edu" in os.uname()[1]:
@@ -219,7 +219,6 @@ class MultiTaskModel(nn.Module):
         '''
         pair_input = task.pair_input
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
-        scorer = task.scorer
         if pair_input:
             if isinstance(task, (STS14Task, STSBenchmarkTask)) or self.pair_enc_type == 'bow':
                 sent1 = self.sent_encoder(input1)
@@ -236,14 +235,15 @@ class MultiTaskModel(nn.Module):
         out = {'logits': logits}
         if label is not None:
             if isinstance(task, (STS14Task, STSBenchmarkTask)):
-                loss = F.binary_cross_entropy_with_logits(logits, label)
+                loss = F.mse_loss(logits, label)
                 label = label.squeeze(-1).data.cpu().numpy()
                 logits = logits.squeeze(-1).data.cpu().numpy()
-                scorer(pearsonr(logits, label)[0])
+                task.scorer1(pearsonr(logits, label)[0])
+                task.scorer2(spearmanr(logits, label)[0])
             else:
                 label = label.squeeze(-1)
                 loss = F.cross_entropy(logits, label)
-                scorer(logits, label)
+                task.scorer(logits, label)
             out['loss'] = loss
         return out
 

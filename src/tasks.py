@@ -205,7 +205,8 @@ class STSBenchmarkTask(Task):
         self.categorical = 0
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.scorer = Average()
+        self.scorer1 = Average()
+        self.scorer2 = Average()
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
@@ -223,7 +224,8 @@ class STSBenchmarkTask(Task):
 
     def get_metrics(self, reset=False):
         # NB: I think I call it accuracy b/c something weird in training
-        return {'accuracy': self.scorer.get_metric(reset)}
+        return {'accuracy': self.scorer1.get_metric(reset),
+                'spearmanr': self.scorer2.get_metric(reset)}
 
 class SSTTask(Task):
     ''' Task class for Stanford Sentiment Treebank.  '''

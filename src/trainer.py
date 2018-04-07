@@ -29,6 +29,8 @@ from allennlp.training.optimizers import Optimizer
 from util import arrays_to_variables, device_mapping
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+from tasks import STS14Task, STSBenchmarkTask
+
 def build_trainer(args, model, iterator):
     '''Build a trainer'''
     opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
@@ -238,6 +240,12 @@ class MultiTaskTrainer:
                     self._serialization_dir, task.name, "train"))
                 val_logs[task.val_metric] = SummaryWriter(os.path.join(
                     self._serialization_dir, task.name, "valid"))
+                if isinstance(task, (STSBenchmarkTask, STS14Task)):
+                    train_logs[task.name + '_spearmanr'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "train"))
+                    val_logs[task.name + '_spearmanr'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "valid"))
+
             val_logs["macro_accuracy"] = SummaryWriter(os.path.join(
                 self._serialization_dir, "macro_accuracy", "valid"))
             val_logs["micro_accuracy"] = SummaryWriter(os.path.join(
@@ -335,8 +343,8 @@ class MultiTaskTrainer:
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_tr_metrics["%s_%s" % (task.name, name)] = value
-                    all_tr_metrics["%s_loss" % task.name] = \
-                            float(task_info['loss'] / task_info['n_batches_since_val'])
+                all_tr_metrics["%s_loss" % task.name] = \
+                        float(task_info['loss'] / task_info['n_batches_since_val'])
             n_pass += 1
 
             # Validation
