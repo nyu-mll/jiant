@@ -441,7 +441,7 @@ class MultiTaskTrainer:
                         metric_infos[metric]['best'] = (epoch, all_val_metrics)
                         should_save = True
                     if out_of_patience:
-                        metric_infos[metric]['hist'] = True
+                        metric_infos[metric]['stopped'] = True
                         logger.info("Out of patience. Stopped tracking %s", task)
 
                 # Reset training progress after validating
