@@ -72,6 +72,7 @@ def build_model(args, vocab, word_embs, tasks):
     d_inp_phrase = 0
 
     # Handle elmo and cove
+    token_embedder = {}
     if args.elmo:
         log.info("\tUsing ELMo embeddings!")
         if args.deep_elmo: # need to adjust modeling layer inputs
@@ -80,7 +81,7 @@ def build_model(args, vocab, word_embs, tasks):
         else:
             n_reps = 1
         if args.elmo_no_glove:
-            token_embedder = {} #{"chars": char_embedder}
+            #token_embedder = {} #{"chars": char_embedder}
             log.info("\tNOT using GLoVe embeddings!")
         else:
             token_embedder = {"words": word_embedder}#, "chars": char_embedder}
@@ -93,7 +94,8 @@ def build_model(args, vocab, word_embs, tasks):
         elmo = None
         token_embedder = {"words": word_embedder}#, "chars": char_embedder}
         d_inp_phrase += d_word
-    text_field_embedder = BasicTextFieldEmbedder(token_embedder)
+    text_field_embedder = BasicTextFieldEmbedder(token_embedder) if "words" in token_embedder \
+                            else None
     d_hid = args.d_hid if args.pair_enc != 'bow' else d_inp_phrase
 
     if args.cove:
@@ -255,18 +257,20 @@ class HeadlessPairEncoder(Model):
                  initializer=InitializerApplicator(), regularizer=None):
         super(HeadlessPairEncoder, self).__init__(vocab)#, regularizer)
 
-        d_emb = text_field_embedder.get_output_dim()
-        d_inp_phrase = phrase_layer.get_input_dim()
-
-        self._text_field_embedder = text_field_embedder
-        self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
+        if text_field_embedder is None: # just using ELMo embeddings
+            self._text_field_embedder = lambda x: x
+            d_emb = 0
+            self._highway_layer = lambda x: x
+        else:
+            self._text_field_embedder = text_field_embedder
+            d_emb = text_field_embedder.get_output_dim()
+            self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
         self._phrase_layer = phrase_layer
+        d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
         self._elmo = elmo_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
-
-        encoding_dim = phrase_layer.get_output_dim()
-        self.output_dim = encoding_dim
+        self.output_dim = phrase_layer.get_output_dim()
 
         if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
             or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
@@ -308,8 +312,13 @@ class HeadlessPairEncoder(Model):
         if self._elmo is not None:
             s1_elmo_embs = self._elmo(s1['elmo'])
             s2_elmo_embs = self._elmo(s2['elmo'])
-            s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
-            s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
+            if "words" in s1:
+                s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
+                s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
+            else:
+                s1_embs = s1_elmo_embs['elmo_representations'][0]
+                s2_embs = s2_elmo_embs['elmo_representations'][0]
+
         if self._cove is not None:
             s1_lens = torch.ne(s1['words'], self.pad_idx).long().sum(dim=-1).data
             s2_lens = torch.ne(s2['words'], self.pad_idx).long().sum(dim=-1).data
@@ -384,27 +393,29 @@ class HeadlessSentEncoder(Model):
                  initializer=InitializerApplicator(), regularizer= None):
         super(HeadlessSentEncoder, self).__init__(vocab)#, regularizer)
 
-        self._text_field_embedder = text_field_embedder
-        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(),
-                                                      num_highway_layers))
+        if text_field_embedder is None:
+            self._text_field_embedder = lambda x: x
+            d_emb = 0
+            self._highway_layer = lambda x: x
+        else:
+            self._text_field_embedder = text_field_embedder
+            d_emb = text_field_embedder.get_output_dim()
+            self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
         self._phrase_layer = phrase_layer
+        d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
         self._elmo = elmo_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
+        self.output_dim = phrase_layer.get_output_dim()
 
-        encoding_dim = phrase_layer.get_output_dim()
-        self.output_dim = encoding_dim
-
-        #if text_field_embedder.get_output_dim() != phrase_layer.get_input_dim():
-        if (cove_layer is None and elmo_layer is None and text_field_embedder.get_output_dim() != phrase_layer.get_input_dim()) \
-                or (cove_layer is not None and text_field_embedder.get_output_dim() + 600 != phrase_layer.get_input_dim()) \
-                or (elmo_layer is not None and text_field_embedder.get_output_dim() + 1024 != phrase_layer.get_input_dim()):
-
+        #if d_emb != d_inp_phrase:
+        if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
+                or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
+                or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
                                      "(embedding_dim + char_cnn) must match the input dimension of"
                                      "the phrase_encoder. Found {} and {} respectively." \
-                                     .format(text_field_embedder.get_output_dim(),
-                                             phrase_layer.get_input_dim()))
+                                     .format(d_emb, d_inp_phrase))
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
         else:
@@ -431,7 +442,10 @@ class HeadlessSentEncoder(Model):
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
         if self._elmo is not None:
             elmo_embs = self._elmo(sent['elmo'])
-            sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
+            if "words" in sent:
+                sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
+            else:
+                sent_embs = elmo_embs['elmo_representations'][0]
         sent_embs = self._dropout(sent_embs)
 
         sent_mask = util.get_text_field_mask(sent).float()
@@ -667,8 +681,15 @@ class HeadlessPairAttnEncoder(Model):
                  initializer=InitializerApplicator(), regularizer=None):
         super(HeadlessPairAttnEncoder, self).__init__(vocab)#, regularizer)
 
-        self._text_field_embedder = text_field_embedder
-        self._highway_layer = TimeDistributed(Highway(text_field_embedder.get_output_dim(), num_highway_layers))
+        if text_field_embedder is None: # just using ELMo embeddings
+            self._text_field_embedder = lambda x: x
+            d_emb = 0
+            self._highway_layer = lambda x: x
+        else:
+            self._text_field_embedder = text_field_embedder
+            d_emb = text_field_embedder.get_output_dim()
+            self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
+
         self._phrase_layer = phrase_layer
         self._matrix_attention = MatrixAttention(attention_similarity_function)
         self._modeling_layer = modeling_layer
@@ -676,27 +697,23 @@ class HeadlessPairAttnEncoder(Model):
         self._elmo = elmo_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
 
-        encoding_dim = phrase_layer.get_output_dim()
-        modeling_dim = modeling_layer.get_output_dim()
-        self.output_dim = modeling_dim
+        d_inp_phrase = phrase_layer.get_input_dim()
+        d_out_phrase = phrase_layer.get_output_dim()
+        d_out_model = modeling_layer.get_output_dim()
+        d_inp_model = modeling_layer.get_input_dim()
+        self.output_dim = d_out_model
 
-        # Bidaf has lots of layer dimensions which need to match up - these
-        # aren't necessarily obvious from the configuration files, so we check here.
-        if modeling_layer.get_input_dim() != 2 * encoding_dim:
+        if d_inp_model != 2 * d_out_phrase:
             raise ConfigurationError("The input dimension to the modeling_layer must be "
                                      "equal to 4 times the encoding dimension of the phrase_layer. "
-                                     "Found {} and 4 * {} respectively.".format(modeling_layer.get_input_dim(),
-                                                                                encoding_dim))
-        #if text_field_embedder.get_output_dim() != phrase_layer.get_input_dim():
-        if (cove_layer is None and text_field_embedder.get_output_dim() != phrase_layer.get_input_dim()) \
-                or (cove_layer is not None and text_field_embedder.get_output_dim() + 600 != phrase_layer.get_input_dim()):
-
-            raise ConfigurationError("The output dimension of the "
-                                     "text_field_embedder (embedding_dim + "
-                                     "char_cnn) must match the input "
-                                     "dimension of the phrase_encoder. "
-                                     "Found {} and {}, respectively.".format(text_field_embedder.get_output_dim(),
-                                                                             phrase_layer.get_input_dim()))
+                                     "Found {} and 4 * {} respectively.".format(d_inp_model, d_out_phrase))
+        if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
+            or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
+            or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
+            raise ConfigurationError("The output dimension of the text_field_embedder "
+                                     "(embedding_dim + char_cnn) must match the input "
+                                     "dimension of the phrase_encoder. Found {} and {} "
+                                     "respectively.".format(d_emb, d_inp_phrase))
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
         else:
@@ -724,13 +741,17 @@ class HeadlessPairAttnEncoder(Model):
             to be plugged into the next module
 
         """
-        s1_embs = self._highway_layer(self._dropout(self._text_field_embedder(s1)))
-        s2_embs = self._highway_layer(self._dropout(self._text_field_embedder(s2)))
+        s1_embs = self._highway_layer(self._text_field_embedder(s1))
+        s2_embs = self._highway_layer(self._text_field_embedder(s2))
         if self._elmo is not None:
             s1_elmo_embs = self._elmo(s1['elmo'])
             s2_elmo_embs = self._elmo(s2['elmo'])
-            s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
-            s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
+            if "words" in s1:
+                s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
+                s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
+            else:
+                s1_embs = s1_elmo_embs['elmo_representations'][0]
+                s2_embs = s2_elmo_embs['elmo_representations'][0]
         if self._cove is not None:
             s1_lens = torch.ne(s1['words'], self.pad_idx).long().sum(dim=-1).data
             s2_lens = torch.ne(s2['words'], self.pad_idx).long().sum(dim=-1).data

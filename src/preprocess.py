@@ -67,9 +67,13 @@ def build_tasks(args):
     tasks = get_tasks(all_task_names, args.max_seq_len, args.load_tasks)
 
     max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
-    token_indexer = {"words": SingleIdTokenIndexer()}#, "chars": TokenCharactersIndexer("chars")}
+    token_indexer = {}
     if args.elmo:
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        if not args.elmo_no_glove:
+            token_indexer["words"] = SingleIdTokenIndexer()
+    else:
+        token_indexer["words"] = SingleIdTokenIndexer()
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
