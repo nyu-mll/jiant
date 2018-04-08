@@ -50,7 +50,7 @@ def build_model(args, vocab, word_embs, tasks):
         - vocab (Vocab):
         - word_embs (TODO): word embeddings to use
 
-    returns: model
+    returns
     '''
     d_word, d_char, n_layers_highway = args.d_word, args.d_char, args.n_layers_highway
 
@@ -250,16 +250,9 @@ class MultiTaskModel(nn.Module):
         return out
 
 class HeadlessPairEncoder(Model):
-    def __init__(self, vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
-                 num_highway_layers: int,
-                 phrase_layer: Seq2SeqEncoder,
-                 cove_layer: Model = None,
-                 elmo_layer: Model = None,
-                 dropout: float = 0.2,
-                 mask_lstms: bool = True,
-                 initializer: InitializerApplicator = InitializerApplicator(),
-                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+    def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
+                 cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
+                 initializer=InitializerApplicator(), regularizer=None):
         super(HeadlessPairEncoder, self).__init__(vocab)#, regularizer)
 
         d_emb = text_field_embedder.get_output_dim()
@@ -290,7 +283,7 @@ class HeadlessPairEncoder(Model):
 
         initializer(self)
 
-    def forward(self, question, passage):
+    def forward(self, s1, s2):
         # pylint: disable=arguments-differ
         """
         Parameters
@@ -309,52 +302,52 @@ class HeadlessPairEncoder(Model):
             to be plugged into the next module
 
         """
-        embedded_question = self._highway_layer(self._text_field_embedder(question))
-        embedded_passage = self._highway_layer(self._text_field_embedder(passage))
-
+        # Embeddings
+        s1_embs = self._highway_layer(self._text_field_embedder(s1))
+        s2_embs = self._highway_layer(self._text_field_embedder(s2))
         if self._elmo is not None:
-            elmo_q_reps = self._elmo(question['elmo'])
-            elmo_p_reps = self._elmo(passage['elmo'])
-            embedded_question = torch.cat([embedded_question, elmo_q_reps['elmo_representations'][0]], dim=-1)
-            embedded_passage = torch.cat([embedded_passage, elmo_p_reps['elmo_representations'][0]], dim=-1)
-
+            s1_elmo_embs = self._elmo(s1['elmo'])
+            s2_elmo_embs = self._elmo(s2['elmo'])
+            s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
+            s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
         if self._cove is not None:
-            question_lens = torch.ne(question['words'], self.pad_idx).long().sum(dim=-1).data
-            passage_lens = torch.ne(passage['words'], self.pad_idx).long().sum(dim=-1).data
-            embedded_question_cove = self._cove(question['words'], question_lens)
-            embedded_question = torch.cat([embedded_question, embedded_question_cove], dim=-1)
-            embedded_passage_cove = self._cove(passage['words'], passage_lens)
-            embedded_passage = torch.cat([embedded_passage, embedded_passage_cove], dim=-1)
+            s1_lens = torch.ne(s1['words'], self.pad_idx).long().sum(dim=-1).data
+            s2_lens = torch.ne(s2['words'], self.pad_idx).long().sum(dim=-1).data
+            s1_cove_embs = self._cove(s1['words'], s1_lens)
+            s1_embs = torch.cat([s1_embs, s1_cove_embs], dim=-1)
+            s2_cove_embs = self._cove(s2['words'], s2_lens)
+            s2_embs = torch.cat([s2_embs, s2_cove_embs], dim=-1)
+        s1_embs = self._dropout(s1_embs)
+        s2_embs = self._dropout(s2_embs)
 
-        question_mask = util.get_text_field_mask(question)
-        passage_mask = util.get_text_field_mask(passage)
-        question_lstm_mask = question_mask.float() if self._mask_lstms else None
-        passage_lstm_mask = passage_mask.float() if self._mask_lstms else None
+        # Set up masks
+        s1_mask = util.get_text_field_mask(s1)
+        s2_mask = util.get_text_field_mask(s2)
+        s1_lstm_mask = s1_mask.float() if self._mask_lstms else None
+        s2_lstm_mask = s2_mask.float() if self._mask_lstms else None
 
-        encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
-        encoded_passage = self._dropout(self._phrase_layer(embedded_passage, passage_lstm_mask))
+        # Sentence encodings with LSTMs
+        s1_enc = self._phrase_layer(s1_embs, s1_lstm_mask)
+        s2_enc = self._phrase_layer(s2_embs, s2_lstm_mask)
+        if self._elmo is not None and len(s1_elmo_embs['elmo_representations']) > 1:
+            s1_enc = torch.cat([s1_enc, s1_elmo_embs['elmo_representations'][1]], dim=-1)
+            s2_enc = torch.cat([s2_enc, s2_elmo_embs['elmo_representations'][1]], dim=-1)
+        s1_enc = self._dropout(s1_enc)
+        s2_enc = self._dropout(s2_enc)
 
-        if self._elmo is not None and len(elmo_q_reps['elmo_representations']) > 1:
-            encoded_question = torch.cat([encoded_question, elmo_q_reps['elmo_representations'][1]], dim=-1)
-            encoded_passage = torch.cat([encoded_passage, elmo_p_reps['elmo_representations'][1]], dim=-1)
+        # Max pooling
+        s1_mask = s1_mask.unsqueeze(dim=-1)
+        s2_mask = s2_mask.unsqueeze(dim=-1)
+        s1_enc.data.masked_fill_(1 - s1_mask.byte().data, -float('inf'))
+        s2_enc.data.masked_fill_(1 - s2_mask.byte().data, -float('inf'))
+        s1_enc, _ = s1_enc.max(dim=1)
+        s2_enc, _ = s2_enc.max(dim=1)
 
-        question_mask = question_mask.unsqueeze(dim=-1)
-        passage_mask = passage_mask.unsqueeze(dim=-1)
-        encoded_question.data.masked_fill_(1 - question_mask.byte().data, -float('inf'))
-        encoded_passage.data.masked_fill_(1 - passage_mask.byte().data, -float('inf'))
-
-        encoded_question, _ = encoded_question.max(dim=1)
-        encoded_passage, _ = encoded_passage.max(dim=1)
-
-        return torch.cat([encoded_question, encoded_passage,
-                          torch.abs(encoded_question - encoded_passage),
-                          encoded_question * encoded_passage], 1)
+        return torch.cat([s1_enc, s2_enc, torch.abs(s1_enc - s2_enc), s1_enc * s2_enc], 1)
 
 class BoWSentEncoder(Model):
-    def __init__(self, vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
-                 initializer: InitializerApplicator = InitializerApplicator(),
-                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+    def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator(),
+                 regularizer=None):
         super(BoWSentEncoder, self).__init__(vocab)
 
         self._text_field_embedder = text_field_embedder
@@ -386,16 +379,9 @@ class BoWSentEncoder(Model):
 
 
 class HeadlessSentEncoder(Model):
-    def __init__(self, vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
-                 num_highway_layers: int,
-                 phrase_layer: Seq2SeqEncoder,
-                 cove_layer: Model = None,
-                 elmo_layer: Model = None,
-                 dropout: float = 0.2,
-                 mask_lstms: bool = True,
-                 initializer: InitializerApplicator = InitializerApplicator(),
-                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+    def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
+                 cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
+                 initializer=InitializerApplicator(), regularizer= None):
         super(HeadlessSentEncoder, self).__init__(vocab)#, regularizer)
 
         self._text_field_embedder = text_field_embedder
@@ -427,46 +413,38 @@ class HeadlessSentEncoder(Model):
 
         initializer(self)
 
-    def forward(self, question):
+    def forward(self, sent):
         # pylint: disable=arguments-differ
         """
         Parameters
         ----------
-        question : Dict[str, torch.LongTensor]
+        sent : Dict[str, torch.LongTensor]
             From a ``TextField``.
-        passage : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this passage contains the answer to the
-            question, and predicts the beginning and ending positions of the answer within the
-            passage.
 
         Returns
         -------
-        pair_rep : torch.FloatTensor?
-            Tensor representing the final output of the BiDAF model
-            to be plugged into the next module
-
         """
-        embedded_question = self._highway_layer(self._text_field_embedder(question))
+        sent_embs = self._highway_layer(self._text_field_embedder(sent))
         if self._cove is not None:
-            question_lens = torch.ne(question['words'], self.pad_idx).long().sum(dim=-1).data
-            embedded_question_cove = self._cove(question['words'], question_lens)
-            embedded_question = torch.cat([embedded_question, embedded_question_cove], dim=-1)
+            sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
+            sent_cove_embs = self._cove(sent['words'], sent_lens)
+            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
         if self._elmo is not None:
-            elmo_reps = self._elmo(question['elmo'])
-            embedded_question = torch.cat([embedded_question, elmo_reps['elmo_representations'][0]], dim=-1)
-        question_mask = util.get_text_field_mask(question).float()
-        question_lstm_mask = question_mask if self._mask_lstms else None
+            elmo_embs = self._elmo(sent['elmo'])
+            sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
+        sent_embs = self._dropout(sent_embs)
 
-        encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
-        question_lstm_mask[question_lstm_mask == 0] = -1e3
-        question_lstm_mask[question_lstm_mask == 1] = 0
-        question_lstm_mask = question_lstm_mask.unsqueeze(dim=-1)
-        encoded_question += question_lstm_mask
-        if self._elmo is not None and len(elmo_reps['elmo_representations']) > 1:
-            encoded_question = torch.cat([encoded_question, elmo_reps['elmo_representations'][1]], dim=-1)
+        sent_mask = util.get_text_field_mask(sent).float()
+        sent_lstm_mask = sent_mask if self._mask_lstms else None
 
-        return encoded_question.max(1)[0]
+        sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if self._elmo is not None and len(elmo_embs['elmo_representations']) > 1:
+            sent_enc = torch.cat([sent_enc, elmo_embs['elmo_representations'][1]], dim=-1)
+        sent_enc = self._dropout(sent_enc)
 
+        sent_mask = sent_mask.unsqueeze(dim=-1)
+        sent_enc.data.masked_fill_(1 - sent_mask.byte().data, -float('inf'))
+        return sent_enc.max(dim=1)[0]
 
 
 @Model.register("headless_bidaf")
@@ -512,16 +490,9 @@ class HeadlessBiDAF(Model):
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
         If provided, will be used to calculate the regularization penalty during training.
     """
-    def __init__(self, vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
-                 num_highway_layers: int,
-                 phrase_layer: Seq2SeqEncoder,
-                 attention_similarity_function: SimilarityFunction,
-                 modeling_layer: Seq2SeqEncoder,
-                 dropout: float = 0.2,
-                 mask_lstms: bool = True,
-                 initializer: InitializerApplicator = InitializerApplicator(),
-                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+    def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
+                 attention_similarity_function, modeling_layer, dropout=0.2, mask_lstms = True,
+                 initializer = InitializerApplicator(), regularizer= None):
         super(HeadlessBiDAF, self).__init__(vocab)#, regularizer)
 
         self._text_field_embedder = text_field_embedder
@@ -627,7 +598,7 @@ class HeadlessBiDAF(Model):
         return pair_rep
 
     @classmethod
-    def from_params(cls, vocab: Vocabulary, params: Params) -> 'BidirectionalAttentionFlow':
+    def from_params(cls, vocab, params):
         embedder_params = params.pop("text_field_embedder")
         text_field_embedder = TextFieldEmbedder.from_params(vocab, embedder_params)
         num_highway_layers = params.pop("num_highway_layers")
@@ -641,16 +612,11 @@ class HeadlessBiDAF(Model):
 
         mask_lstms = params.pop('mask_lstms', True)
         params.assert_empty(cls.__name__)
-        return cls(vocab=vocab,
-                   text_field_embedder=text_field_embedder,
-                   num_highway_layers=num_highway_layers,
-                   phrase_layer=phrase_layer,
-                   attention_similarity_function=similarity_function,
-                   modeling_layer=modeling_layer,
-                   dropout=dropout,
-                   mask_lstms=mask_lstms,
-                   initializer=initializer,
-                   regularizer=regularizer)
+        return cls(vocab=vocab, text_field_embedder=text_field_embedder,
+                   num_highway_layers=num_highway_layers, phrase_layer=phrase_layer,
+                   attention_similarity_function=similarity_function, modeling_layer=modeling_layer,
+                   dropout=dropout, mask_lstms=mask_lstms,
+                   initializer=initializer, regularizer=regularizer)
 
 
 class HeadlessPairAttnEncoder(Model):
@@ -695,18 +661,10 @@ class HeadlessPairAttnEncoder(Model):
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
         If provided, will be used to calculate the regularization penalty during training.
     """
-    def __init__(self, vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
-                 num_highway_layers: int,
-                 phrase_layer: Seq2SeqEncoder,
-                 attention_similarity_function: SimilarityFunction,
-                 modeling_layer: Seq2SeqEncoder,
-                 cove_layer: Model = None,
-                 elmo_layer: Model = None,
-                 dropout: float = 0.2,
-                 mask_lstms: bool = True,
-                 initializer: InitializerApplicator = InitializerApplicator(),
-                 regularizer: Optional[RegularizerApplicator] = None) -> None:
+    def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
+                 attention_similarity_function, modeling_layer, cove_layer=None, elmo_layer=None,
+                 dropout=0.2, mask_lstms=True,
+                 initializer=InitializerApplicator(), regularizer=None):
         super(HeadlessPairAttnEncoder, self).__init__(vocab)#, regularizer)
 
         self._text_field_embedder = text_field_embedder
@@ -723,8 +681,7 @@ class HeadlessPairAttnEncoder(Model):
         self.output_dim = modeling_dim
 
         # Bidaf has lots of layer dimensions which need to match up - these
-        # aren't necessarily obvious from the configuration files, so we check
-        # here.
+        # aren't necessarily obvious from the configuration files, so we check here.
         if modeling_layer.get_input_dim() != 2 * encoding_dim:
             raise ConfigurationError("The input dimension to the modeling_layer must be "
                                      "equal to 4 times the encoding dimension of the phrase_layer. "
@@ -748,17 +705,17 @@ class HeadlessPairAttnEncoder(Model):
 
         initializer(self)
 
-    def forward(self, question, passage):
+    def forward(self, s1, s2):
         # pylint: disable=arguments-differ
         """
         Parameters
         ----------
-        question : Dict[str, torch.LongTensor]
+        s1 : Dict[str, torch.LongTensor]
             From a ``TextField``.
-        passage : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this passage contains the answer to the
-            question, and predicts the beginning and ending positions of the answer within the
-            passage.
+        s2 : Dict[str, torch.LongTensor]
+            From a ``TextField``.  The model assumes that this s2 contains the answer to the
+            s1, and predicts the beginning and ending positions of the answer within the
+            s2.
 
         Returns
         -------
@@ -767,93 +724,72 @@ class HeadlessPairAttnEncoder(Model):
             to be plugged into the next module
 
         """
-        embedded_question = self._highway_layer(self._dropout(self._text_field_embedder(question)))
-        embedded_passage = self._highway_layer(self._dropout(self._text_field_embedder(passage)))
+        s1_embs = self._highway_layer(self._dropout(self._text_field_embedder(s1)))
+        s2_embs = self._highway_layer(self._dropout(self._text_field_embedder(s2)))
+        if self._elmo is not None:
+            s1_elmo_embs = self._elmo(s1['elmo'])
+            s2_elmo_embs = self._elmo(s2['elmo'])
+            s1_embs = torch.cat([s1_embs, s1_elmo_embs['elmo_representations'][0]], dim=-1)
+            s2_embs = torch.cat([s2_embs, s2_elmo_embs['elmo_representations'][0]], dim=-1)
         if self._cove is not None:
-            question_lens = torch.ne(question['words'], self.pad_idx).long().sum(dim=-1).data
-            passage_lens = torch.ne(passage['words'], self.pad_idx).long().sum(dim=-1).data
-            embedded_question_cove = self._cove(question['words'], question_lens)
-            embedded_question = torch.cat([embedded_question, embedded_question_cove], dim=-1)
-            embedded_passage_cove = self._cove(passage['words'], passage_lens)
-            embedded_passage = torch.cat([embedded_passage, embedded_passage_cove], dim=-1)
-
-        batch_size = embedded_question.size(0)
-        passage_length = embedded_passage.size(1)
+            s1_lens = torch.ne(s1['words'], self.pad_idx).long().sum(dim=-1).data
+            s2_lens = torch.ne(s2['words'], self.pad_idx).long().sum(dim=-1).data
+            s1_cove_embs = self._cove(s1['words'], s1_lens)
+            s1_embs = torch.cat([s1_embs, s1_cove_embs], dim=-1)
+            s2_cove_embs = self._cove(s2['words'], s2_lens)
+            s2_embs = torch.cat([s2_embs, s2_cove_embs], dim=-1)
+        s1_embs = self._dropout(s1_embs)
+        s2_embs = self._dropout(s2_embs)
 
         if self._mask_lstms:
-            question_mask = util.get_text_field_mask(question).float()
-            passage_mask = util.get_text_field_mask(passage).float()
-            question_mask_2 = util.get_text_field_mask(question).float()
-            passage_mask_2 = util.get_text_field_mask(passage).float()
-            question_lstm_mask = question_mask
-            question_lstm_mask_2 = question_mask_2
-            passage_lstm_mask = passage_mask
-            passage_lstm_mask_2 = passage_mask_2
+            s1_mask = s1_lstm_mask = util.get_text_field_mask(s1).float()
+            s2_mask = s2_lstm_mask = util.get_text_field_mask(s2).float()
+            s1_mask_2 = util.get_text_field_mask(s1).float()
+            s2_mask_2 = util.get_text_field_mask(s2).float()
         else:
-            question_lstm_mask, passage_lstm_mask, passage_lstm_mask_2 = \
-                    None, None, None, None
+            s1_lstm_mask, s2_lstm_mask, s2_lstm_mask_2 = None, None, None
 
-        encoded_question = self._dropout(self._phrase_layer(embedded_question, question_lstm_mask))
-        encoded_passage = self._dropout(self._phrase_layer(embedded_passage, passage_lstm_mask))
-        encoding_dim = encoded_question.size(-1)
+        s1_enc = self._phrase_layer(s1_embs, s1_lstm_mask)
+        s2_enc = self._phrase_layer(s2_embs, s2_lstm_mask)
+        if self._elmo is not None and len(s1_elmo_embs['elmo_representations']) > 1:
+            s1_enc = torch.cat([s1_enc, s1_elmo_embs['elmo_representations'][1]], dim=-1)
+            s2_enc = torch.cat([s2_enc, s2_elmo_embs['elmo_representations'][1]], dim=-1)
+        s1_enc = self._dropout(s1_enc)
+        s2_enc = self._dropout(s2_enc)
 
         # Similarity matrix
-        # Shape: (batch_size, passage_length, question_length)
-        passage_question_similarity = self._matrix_attention(encoded_passage, encoded_question)
+        # Shape: (batch_size, s2_length, s1_length)
+        similarity_mat = self._matrix_attention(s2_enc, s1_enc)
 
-        # Passage representation
-        # From the paper, C2Q attn
-        # Shape: (batch_size, passage_length, question_length)
-        passage_question_attention = util.last_dim_softmax(passage_question_similarity, question_mask)
-        # Shape: (batch_size, passage_length, encoding_dim)
-        passage_question_vectors = util.weighted_sum(encoded_question, passage_question_attention)
+        # s2 representation
+        # Shape: (batch_size, s2_length, s1_length)
+        s2_s1_attention = util.last_dim_softmax(similarity_mat, s1_mask)
+        # Shape: (batch_size, s2_length, encoding_dim)
+        s2_s1_vectors = util.weighted_sum(s1_enc, s2_s1_attention)
         # batch_size, seq_len, 4*enc_dim
-        passage_w_context = torch.cat([encoded_passage, passage_question_vectors], 2)
-        modeled_passage = self._dropout(self._modeling_layer(passage_w_context, passage_lstm_mask))
-        passage_lstm_mask_2[passage_lstm_mask_2 == 0] = -1e7
-        passage_lstm_mask_2[passage_lstm_mask_2 == 1] = 0
-        passage_lstm_mask_2 = passage_lstm_mask_2.unsqueeze(dim=-1)
-        final_passage, _ = (modeled_passage + passage_lstm_mask_2).max(1)
+        s2_w_context = torch.cat([s2_enc, s2_s1_vectors], 2)
+        modeled_s2 = self._dropout(self._modeling_layer(s2_w_context, s2_lstm_mask))
+        s2_mask_2 = s2_mask_2.unsqueeze(dim=-1)
+        modeled_s2.data.masked_fill_(1 - s2_mask_2.byte().data, -float('inf'))
+        s2_enc_attn = modeled_s2.max(dim=1)[0]
 
 
-        # Question representation
-        '''
-        # Using the BiDAF max attention approach
-        # We replace masked values with something really negative here, so they don't affect the
-        # max below.
+        # s1 representation, using same attn method as for the s2 representation
+        s1_s2_attention = util.last_dim_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
+        # Shape: (batch_size, s1_length, encoding_dim)
+        s1_s2_vectors = util.weighted_sum(s2_enc, s1_s2_attention)
+        s1_w_context = torch.cat([s1_enc, s1_s2_vectors], 2)
+        modeled_s1 = self._dropout(self._modeling_layer(s1_w_context, s1_lstm_mask))
+        s1_mask_2 = s1_mask_2.unsqueeze(dim=-1)
+        modeled_s1.data.masked_fill_(1 - s1_mask_2.byte().data, -float('inf'))
+        s1_enc_attn = modeled_s1.max(dim=1)[0]
 
-        masked_similarity = util.replace_masked_values(passage_question_similarity,
-                                                       question_mask.unsqueeze(1), -1e7)
-
-        # From the paper, Q2C attn
-        question_passage_similarity = masked_similarity.max(dim=-1)[0].squeeze(-1)
-        # Shape: (batch_size, passage_length)
-        question_passage_attention = util.masked_softmax(question_passage_similarity, passage_mask)
-        # Shape: (batch_size, encoding_dim)
-        question_passage_vector = util.weighted_sum(encoded_passage, question_passage_attention)
-        encoded_question = question_passage_vector
-        '''
-
-        # Using same attn method as for the passage representation
-        question_passage_attention = util.last_dim_softmax(passage_question_similarity.transpose(1, 2).contiguous(), passage_mask)
-        # Shape: (batch_size, question_length, encoding_dim)
-        question_passage_vectors = util.weighted_sum(encoded_passage, question_passage_attention)
-        question_w_context = torch.cat([encoded_question, question_passage_vectors], 2)
-        modeled_question = self._dropout(self._modeling_layer(question_w_context, question_lstm_mask))
-        question_lstm_mask_2[question_lstm_mask_2 == 0] = -1e7
-        question_lstm_mask_2[question_lstm_mask_2 == 1] = 0
-        question_lstm_mask_2 = question_lstm_mask_2.unsqueeze(dim=-1)
-        final_question, _ = (modeled_question + question_lstm_mask_2).max(1)
-
-
-        return torch.cat([final_question, final_passage,
-                          torch.abs(final_question - final_passage),
-                          final_question * final_passage], 1)
-
+        return torch.cat([s1_enc_attn, s2_enc_attn, torch.abs(s1_enc_attn - s2_enc_attn),
+                          s1_enc_attn * s2_enc_attn], 1)
 
 
     @classmethod
-    def from_params(cls, vocab: Vocabulary, params: Params) -> 'BidirectionalAttentionFlow':
+    def from_params(cls, vocab, params):
         embedder_params = params.pop("text_field_embedder")
         text_field_embedder = TextFieldEmbedder.from_params(vocab, embedder_params)
         num_highway_layers = params.pop("num_highway_layers")
@@ -867,13 +803,8 @@ class HeadlessPairAttnEncoder(Model):
 
         mask_lstms = params.pop('mask_lstms', True)
         params.assert_empty(cls.__name__)
-        return cls(vocab=vocab,
-                   text_field_embedder=text_field_embedder,
-                   num_highway_layers=num_highway_layers,
-                   phrase_layer=phrase_layer,
-                   attention_similarity_function=similarity_function,
-                   modeling_layer=modeling_layer,
-                   dropout=dropout,
-                   mask_lstms=mask_lstms,
-                   initializer=initializer,
-                   regularizer=regularizer)
+        return cls(vocab=vocab, text_field_embedder=text_field_embedder,
+                   num_highway_layers=num_highway_layers, phrase_layer=phrase_layer,
+                   attention_similarity_function=similarity_function, modeling_layer=modeling_layer,
+                   dropout=dropout, mask_lstms=mask_lstms,
+                   initializer=initializer, regularizer=regularizer)
