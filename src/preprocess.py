@@ -91,14 +91,19 @@ def build_tasks(args):
         vocab = get_vocab(word2freq, char2freq, max_v_sizes)
         word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         preproc = {'word_embs': word_embs}
+        #preproc2 = {'word_embs': word_embs}
         for task in tasks:
             train, val, test = process_task(task, token_indexer, vocab)
             task.train_data = train
             task.val_data = val
             task.test_data = test
+            del_field_tokens(task)
             preproc[task.name] = (train, val, test)
+            #preproc2[task.name] = (train, val, test)
         log.info("\tFinished indexing tasks")
         pkl.dump(preproc, open(preproc_file, 'wb'))
+        #preproc_file2 = os.path.join(args.exp_dir, args.preproc_file + '_thin')
+        #pkl.dump(preproc2, open(preproc_file2, 'wb'))
         vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", preproc_file)
         del word2freq, char2freq
@@ -109,6 +114,17 @@ def build_tasks(args):
     log.info('\t  Training on %s', ', '.join([task.name for task in train_tasks]))
     log.info('\t  Evaluating on %s', ', '.join([task.name for task in eval_tasks]))
     return train_tasks, eval_tasks, vocab, word_embs
+
+def del_field_tokens(task):
+    ''' Save memory by deleting the tokens that will no longer be used '''
+    all_instances = task.train_data.instances + task.val_data.instances + task.test_data.instances
+    for instance in all_instances:
+        if 'input1' in instance.fields:
+            field = instance.fields['input1']
+            del field.tokens
+        if 'input2' in instance.fields:
+            field = instance.fields['input2']
+            del field.tokens
 
 def get_tasks(task_names, max_seq_len, load):
     '''

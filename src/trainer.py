@@ -265,8 +265,8 @@ class MultiTaskTrainer:
                 self._serialization_dir, "micro_accuracy", "valid"))
             if load_model and any(["model_state_epoch_" in x
                                    for x in os.listdir(self._serialization_dir)]):
-                logger.info("Loading model from checkpoint.")
                 n_pass, should_stop = self._restore_checkpoint()
+                logger.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
 
         if self._grad_clipping is not None:
             # pylint: disable=invalid-unary-operand-type

@@ -54,8 +54,8 @@ def main(arguments):
     parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
 
     # Preprocessing options
-    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=100)
-    parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=50000)
+    parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=40)
+    parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=30000)
     parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
 
     # Embedding options
