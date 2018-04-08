@@ -191,15 +191,14 @@ def main(arguments):
 
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
-        te_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-        val_results = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
+        te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
+        val_results, val_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
         all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in \
                                      te_results.items()])
         log.info('%s, %s', task, all_metrics_str)
         all_results[task] = (val_results, te_results, model_path)
     results_file = os.path.join(args.run_dir, "results.pkl")
     pkl.dump(all_results, open(results_file, 'wb'))
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

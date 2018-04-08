@@ -10,7 +10,7 @@ import logging as log
 from abc import ABCMeta, abstractmethod
 import nltk
 
-from allennlp.training.metrics import CategoricalAccuracy, Average
+from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
@@ -88,7 +88,8 @@ class Task():
         self.categorical = 1 # most tasks are
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.scorer = CategoricalAccuracy()
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
 
     @abstractmethod
     def load_data(self, path):
@@ -99,7 +100,8 @@ class Task():
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        return {'accuracy': self.scorer.get_metric(reset)}
+        prc, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'accuracy': self.scorer1.get_metric(reset), 'f1': f1, 'precision': prc, 'recall': rcl}
 
 class QuoraTask(Task):
     '''
@@ -130,6 +132,7 @@ class SNLITask(Task):
         ''' Args: '''
         super(SNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
+        self.scorer2 = None
 
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
@@ -154,6 +157,10 @@ class SNLITask(Task):
         #self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
 
+    def get_metrics(self, reset=False):
+        ''' No F1 '''
+        return {'accuracy': self.scorer1.get_metric(reset)}
+
 class MultiNLITask(Task):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
@@ -161,6 +168,7 @@ class MultiNLITask(Task):
         '''MNLI'''
         super(MultiNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
+        self.scorer2 = None
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
@@ -175,6 +183,10 @@ class MultiNLITask(Task):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
+
+    def get_metrics(self, reset=False):
+        ''' No F1 '''
+        return {'accuracy': self.scorer1.get_metric(reset)}
 
 class MSRPTask(Task):
     ''' Task class for Microsoft Research Paraphase Task.  '''
@@ -255,6 +267,7 @@ class RTETask(Task):
         ''' '''
         super(RTETask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.scorer2 = F1Measure(0) # 0 is positive
 
     def load_data(self, path, max_seq_len):
         ''' Process the datasets located at path. '''

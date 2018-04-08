@@ -245,6 +245,19 @@ class MultiTaskTrainer:
                         self._serialization_dir, task.name, "train"))
                     val_logs[task.name + '_spearmanr'] = SummaryWriter(os.path.join(
                         self._serialization_dir, task.name, "valid"))
+                elif task.scorer2 is not None:
+                    train_logs[task.name + '_f1'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "train"))
+                    val_logs[task.name + '_f1'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "valid"))
+                    train_logs[task.name + '_recall'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "train"))
+                    val_logs[task.name + '_recall'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "valid"))
+                    train_logs[task.name + '_precision'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "train"))
+                    val_logs[task.name + '_precision'] = SummaryWriter(os.path.join(
+                        self._serialization_dir, task.name, "valid"))
 
             val_logs["macro_accuracy"] = SummaryWriter(os.path.join(
                 self._serialization_dir, "macro_accuracy", "valid"))
@@ -337,9 +350,9 @@ class MultiTaskTrainer:
 
             # Overall training logging after a pass through data
             for task in tasks:
+                task_info = task_infos[task.name]
                 if task_info['stopped']:
                     continue
-                task_info = task_infos[task.name]
                 task_metrics = task.get_metrics(reset=True)
                 for name, value in task_metrics.items():
                     all_tr_metrics["%s_%s" % (task.name, name)] = value

@@ -28,6 +28,8 @@ import tqdm
 from allennlp.data.iterators import DataIterator
 from allennlp.models.model import Model
 
+from tasks import STSBenchmarkTask, STS14Task
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 def evaluate(model, tasks, iterator, cuda_device, split="val"):
@@ -35,9 +37,11 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
     model.eval()
 
     all_metrics = {"micro_accuracy": 0.0, "macro_accuracy": 0.0}
+    all_preds = {}
     n_overall_examples = 0
     for task in tasks:
         n_examples = 0
+        task_preds = []
         if split == "val":
             dataset = task.val_data
         elif split == 'train':
@@ -49,12 +53,14 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         for batch in generator_tqdm:
             #tensor_batch = arrays_to_variables(batch, cuda_device, for_training=False)
             tensor_batch = batch
-            model.forward(task, **tensor_batch)
+            out = model.forward(task, **tensor_batch)
             task_metrics = task.get_metrics()
             description = ', '.join(["%s_%s: %.2f" % (task.name, name, value) for name, value in
                                      task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
             n_examples += batch['label'].size()[0]
+            _, preds = out['logits'].max(dim=1)
+            task_preds += preds.data.tolist()
 
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
@@ -62,8 +68,11 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         all_metrics["micro_accuracy"] += all_metrics["%s_accuracy" % task.name] * n_examples
         all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
         n_overall_examples += n_examples
+        if isinstance(task, (STSBenchmarkTask, STS14Task)):
+            task_preds = [pred * 5. for pred in task_preds]
+        all_preds[task.name] = task_preds
 
     all_metrics["macro_accuracy"] /= len(tasks)
     all_metrics["micro_accuracy"] /= n_overall_examples
 
-    return all_metrics
+    return all_metrics, all_preds

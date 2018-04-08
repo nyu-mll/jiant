@@ -243,7 +243,9 @@ class MultiTaskModel(nn.Module):
             else:
                 label = label.squeeze(-1)
                 loss = F.cross_entropy(logits, label)
-                task.scorer(logits, label)
+                task.scorer1(logits, label)
+                if task.scorer2 is not None:
+                    task.scorer2(logits, label)
             out['loss'] = loss
         return out
 
