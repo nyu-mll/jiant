@@ -43,7 +43,7 @@ COVE=0
 
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
-n_layers_highway=1
+n_layers_highway=0
 
 OPTIMIZER="sgd"
 LR=.1

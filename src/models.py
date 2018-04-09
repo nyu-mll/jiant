@@ -131,6 +131,7 @@ def build_model(args, vocab, word_embs, tasks):
                                            phrase_layer, cove_layer=cove_layer, elmo_layer=elmo,
                                            dropout=args.dropout)
     elif args.pair_enc == 'attn':
+        log.info("\tUsing attention!")
         modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 2 * d_hid,
                                                                    'hidden_size': d_hid,
                                                                    'num_layers': args.n_layers_enc,
