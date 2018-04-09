@@ -188,9 +188,7 @@ class MultiTaskModel(nn.Module):
         self.d_hid_cls = args.classifier_hid_dim
 
     def build_classifier(self, task, d_inp):
-        '''
-        Build a task specific prediction layer and register it
-        '''
+        ''' Build a task specific prediction layer and register it '''
         cls_type, dropout, d_hid = self.cls_type, self.dropout_cls, self.d_hid_cls
         if isinstance(task, (STSBenchmarkTask, STS14Task)) or cls_type == 'log_reg':
             layer = nn.Linear(d_inp, task.n_classes)
@@ -221,7 +219,9 @@ class MultiTaskModel(nn.Module):
         pair_input = task.pair_input
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
         if pair_input:
-            if isinstance(task, (STS14Task, STSBenchmarkTask)) or self.pair_enc_type == 'bow':
+            #if isinstance(task, (STS14Task, STSBenchmarkTask)) or self.pair_enc_type == 'bow':
+            if self.pair_enc_type == 'bow':
+                pdb.set_trace()
                 sent1 = self.sent_encoder(input1)
                 sent2 = self.sent_encoder(input2) # causes a bug with BiDAF
                 logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2),
