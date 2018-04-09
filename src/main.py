@@ -55,7 +55,7 @@ def main(arguments):
 
     # Preprocessing options
     parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=40)
-    parser.add_argument('--max_word_v_size', help='max word vocabulary size', type=int, default=30000)
+    parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
     parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
 
     # Embedding options
@@ -71,7 +71,7 @@ def main(arguments):
     parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=1)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
-    parser.add_argument('--elmo_no_glove', help='1 if don\'t use glove with elmo', type=int, default=0)
+    parser.add_argument('--elmo_no_glove', help='1 if no glove, assuming elmo', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     # Model options
@@ -95,8 +95,8 @@ def main(arguments):
                         type=int, default=0)
     parser.add_argument('--scheduler_threshold', help='scheduler threshold',
                         type=float, default=0.0)
-    parser.add_argument('--lr_decay_factor', help='lr decay factor when val score' +
-                        ' doesn\'t improve', type=float, default=.5)
+    parser.add_argument('--lr_decay_factor', help='lr decay factor when val score doesn\'t improve',
+                        type=float, default=.5)
 
     # Multi-task training options
     parser.add_argument('--val_interval', help='Number of passes between ' +
@@ -118,7 +118,6 @@ def main(arguments):
 
     # Logistics #
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
-    print(args.log_file)
     file_handler = log.FileHandler(args.log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)

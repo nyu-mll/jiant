@@ -60,7 +60,7 @@ VAL_INTERVAL=1
 MAX_VALS=100
 TASK_ORDERING="random"
 
-while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:' flag; do
+while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
         n) EXP_NAME="${OPTARG}" ;;
@@ -90,6 +90,7 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:' flag; do
         g) elmo_no_glove=1 ;;
         c) COVE=1 ;;
         D) dropout="${OPTARG}" ;;
+        C) CLASSIFIER="${OPTARG}" ;;
     esac
 done
 

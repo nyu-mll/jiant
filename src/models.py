@@ -191,9 +191,7 @@ class MultiTaskModel(nn.Module):
         Build a task specific prediction layer and register it
         '''
         cls_type, dropout, d_hid = self.cls_type, self.dropout_cls, self.d_hid_cls
-        if isinstance(task, (STSBenchmarkTask, STS14Task)):
-            layer = nn.Linear(d_inp, task.n_classes)
-        elif cls_type == 'log_reg':
+        if isinstance(task, (STSBenchmarkTask, STS14Task)) or cls_type == 'log_reg':
             layer = nn.Linear(d_inp, task.n_classes)
         elif cls_type == 'mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid), nn.Tanh(),

@@ -15,22 +15,29 @@ else:
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
-exp_name = 'glove_no_char'
+exp_name = 'elmo_no_glove_no_char_thin'
 
-# define lots of parameters
-elmo = 0
+# model options
+elmo = 1
+# attn
+# deep_elmo
+coves = [0]
 
 optimizer = 'sgd'
-lrs = ['1e0', '5e-1', '1e-1', '5e-2']
-d_hid = '1024'
-drops = ['.1', '.2', '.3']
-coves = [0]
-n_layers_encs = ['1', '2']
-n_layers_hwys = ['0', '1', '2']
+lrs = ['1e0']#, '5e-1', '1e-1', '5e-2']
+d_hid = '512'
+drops = ['.1']#, '.2', '.3']
+n_layers_encs = ['1']#, '2']
+n_layers_hwys = ['0']#, '1', '2']
 
 bpp_method = 'percent_tr'
 bpp_base = 10
 val_interval = 10
+
+# Optimizer: momentum; adam?
+# learning rate decay
+
+# classifier to use
 
 n_runs = 1
 
@@ -41,12 +48,14 @@ for run_n in range(n_runs):
                 for n_layers_enc in n_layers_encs:
                     for n_layers_hwy in n_layers_hwys:
                         if elmo:
-                            mem_req = 84
-                        else:
                             mem_req = 56
+                        else:
+                            mem_req = 32 # get a tighter bound here
 
                         run_name = 'lr%s_do%s_nenc%s_nhwy%s_d%s_r%d' % \
                                     (lr, drop, n_layers_enc, n_layers_hwy, d_hid, run_n)
+                        run_name = "test"
+
                         if cove:
                             run_name = 'cove_' + run_name
                         if elmo:
@@ -72,7 +81,7 @@ for run_n in range(n_runs):
                                     '-M', bpp_method, '-B', str(bpp_base), '-V', str(val_interval),
                                     '-q', '-b', '128'] # turn off tqdm
                         if elmo:
-                            exp_args.append('-e')
+                            exp_args.append('-eg')
                         if cove:
                             exp_args.append('-c')
 
