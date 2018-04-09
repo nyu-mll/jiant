@@ -499,9 +499,9 @@ class MultiTaskTrainer:
             logging.info('Trained %s for %d batches or %.3f epochs',
                          task.name, task_info['total_batches_trained'],
                          task_info['total_batches_trained'] / task_info['n_tr_batches'])
-            return_dict[task.name] = metric_infos[task.val_metric]['best'][0]
-        return_dict['micro'] = metric_infos['micro_accuracy']['best'][0]
-        return_dict['macro'] = metric_infos['macro_accuracy']['best'][0]
+            return_dict[task.name] = metric_infos[task.val_metric]['best'][0] * validation_interval
+        return_dict['micro'] = metric_infos['micro_accuracy']['best'][0] * validation_interval
+        return_dict['macro'] = metric_infos['macro_accuracy']['best'][0] * validation_interval
         logging.info('***** VALIDATION RESULTS *****')
         for metric in metric_infos.keys():
             best_epoch, epoch_metrics = metric_infos[metric]['best']

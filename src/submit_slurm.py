@@ -20,6 +20,8 @@ exp_name = 'glove_no_char_thin'
 # model options
 elmo = 0
 deep_elmo = 0
+if elmo:
+    assert 'elmo' in exp_name
 
 attn = 1
 cove = 0
@@ -82,7 +84,7 @@ for run_n in range(n_runs):
                                 '-S', seed, '-T', 'all', '-C', classifier,
                                 '-o', optimizer, '-l', lr, '-h', d_hid, '-D', drop,
                                 '-M', bpp_method, '-B', str(bpp_base), '-V', str(val_interval),
-                                '-q', '-b', '128'] # turn off tqdm
+                                '-q', '-b', '128', '-m'] # turn off tqdm
                     if elmo:
                         exp_args.append('-eg')
                         if deep_elmo:

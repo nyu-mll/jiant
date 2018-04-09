@@ -55,9 +55,9 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
 BPP_METHOD="percent_tr"
-BPP_BASE=1
-VAL_INTERVAL=1
-MAX_VALS=100
+BPP_BASE=10
+VAL_INTERVAL=10
+MAX_VALS=50
 TASK_ORDERING="random"
 
 while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:' flag; do
