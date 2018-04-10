@@ -331,7 +331,7 @@ class RTETask(Task):
         tr_data = load_files([os.path.join(path, dev) for dev in devs])
         tr_data, val_data = split_data(tr_data, .8)
         te_data = load_tsv(os.path.join(path, 'rte_test_clean.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data

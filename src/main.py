@@ -173,7 +173,8 @@ def main(arguments):
     # TODO(Alex): put this in evaluate file
     all_results = {}
 
-    if best_epochs is None:
+    #if best_epochs is None:
+    if not best_epochs:
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
         epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
@@ -183,7 +184,7 @@ def main(arguments):
 
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
         # Load best model
-        load_idx = best_epochs[task] if best_epochs is not None else epoch_to_load
+        load_idx = best_epochs[task] if best_epochs else epoch_to_load
         model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)

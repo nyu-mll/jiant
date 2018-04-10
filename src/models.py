@@ -110,7 +110,7 @@ def build_model(args, vocab, word_embs, tasks):
     # Build encoders
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': d_inp_phrase,
                                                              'hidden_size': d_hid,
-                                                             'n_layers': args.n_layers_enc,
+                                                             'num_layers': args.n_layers_enc,
                                                              'bidirectional': True}))
     d_hid *= 2 # to account for bidirectional
     d_hid += (args.elmo and args.deep_elmo) * 1024 # deep elmo embeddings
@@ -222,7 +222,6 @@ class MultiTaskModel(nn.Module):
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
         if pair_input:
             if self.pair_enc_type == 'bow':
-                pdb.set_trace()
                 sent1 = self.sent_encoder(input1)
                 sent2 = self.sent_encoder(input2) # causes a bug with BiDAF
                 logits = pred_layer(torch.cat([sent1, sent2, torch.abs(sent1 - sent2),
