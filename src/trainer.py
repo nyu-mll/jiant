@@ -230,6 +230,7 @@ class MultiTaskTrainer:
         # Resume from serialization path if it contains a saved model.
         if self._serialization_dir is not None:
             # Set up tensorboard logging.
+            '''
             train_logs, val_logs = {}, {}
             for task in tasks:
                 train_logs["%s_loss" % task.name] = SummaryWriter(os.path.join(
@@ -263,6 +264,7 @@ class MultiTaskTrainer:
                 self._serialization_dir, "macro_accuracy", "valid"))
             val_logs["micro_accuracy"] = SummaryWriter(os.path.join(
                 self._serialization_dir, "micro_accuracy", "valid"))
+            '''
             if load_model and any(["model_state_epoch_" in x
                                    for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
@@ -330,6 +332,7 @@ class MultiTaskTrainer:
                     # Tensorboard logging
                     if self._serialization_dir and n_batches_since_val % self._summary_interval == 0:
                         metric = task.val_metric
+                        '''
                         for name, param in self._model.named_parameters():
                             train_logs[metric].add_scalar("PARAMETER_MEAN/" + \
                                     name, param.data.mean(), total_batches_trained)
@@ -342,6 +345,7 @@ class MultiTaskTrainer:
                                         name, param.grad.data.std(), total_batches_trained)
                         train_logs[metric].add_scalar("LOSS/loss_train", \
                                 task_metrics["%s_loss" % task.name], n_batches_since_val)
+                        '''
 
                     # Update training progress on that task
                     task_info['n_batches_since_val'] = n_batches_since_val
@@ -435,9 +439,9 @@ class MultiTaskTrainer:
                     logger.info("Statistic: %s", name)
                     if name in all_tr_metrics:
                         logger.info("\ttraining: %3f", all_tr_metrics[name])
-                        train_logs[name].add_scalar(name, all_tr_metrics[name], epoch)
+                        #train_logs[name].add_scalar(name, all_tr_metrics[name], epoch)
                     logger.info("\tvalidation: %3f", value)
-                    val_logs[name].add_scalar(name, value, epoch)
+                    #val_logs[name].add_scalar(name, value, epoch)
 
                 # Track macro and micro
                 for task in ['micro', 'macro']:

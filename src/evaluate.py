@@ -41,7 +41,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
     n_overall_examples = 0
     for task in tasks:
         n_examples = 0
-        task_preds = []
+        task_preds, task_idxs = [], []
         if split == "val":
             dataset = task.val_data
         elif split == 'train':
@@ -53,6 +53,9 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         for batch in generator_tqdm:
             #tensor_batch = arrays_to_variables(batch, cuda_device, for_training=False)
             tensor_batch = batch
+            if 'idx' in tensor_batch:
+                task_idxs += tensor_batch['idx'].squeeze(dim=1).data.tolist()
+                tensor_batch.pop('idx', None)
             out = model.forward(task, **tensor_batch)
             task_metrics = task.get_metrics()
             description = ', '.join(["%s_%s: %.2f" % (task.name, name, value) for name, value in
@@ -70,7 +73,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         n_overall_examples += n_examples
         if isinstance(task, (STSBenchmarkTask, STS14Task)):
             task_preds = [pred * 5. for pred in task_preds]
-        all_preds[task.name] = task_preds
+        all_preds[task.name] = (task_preds, task_idxs)
 
     all_metrics["macro_accuracy"] /= len(tasks)
     all_metrics["micro_accuracy"] /= n_overall_examples

@@ -171,7 +171,6 @@ def main(arguments):
 
     # Evaluate: load the different task best models and evaluate them
     # TODO(Alex): put this in evaluate file
-    log.info('***** TEST RESULTS *****')
     all_results = {}
 
     if best_epochs is None:
@@ -183,21 +182,32 @@ def main(arguments):
         epoch_to_load = -1
 
     for task in [task.name for task in train_tasks] + ['micro', 'macro']:
-        #model_path = os.path.join(args.run_dir, "%s_best.th" % task)
+        # Load best model
         load_idx = best_epochs[task] if best_epochs is not None else epoch_to_load
-        model_path = os.path.join(args.run_dir,
-                                  "model_state_epoch_{}.th".format(load_idx))
-
+        model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
         model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
         model.load_state_dict(model_state)
+
+        # Test evaluation and prediction
         te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-        val_results, val_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
-        all_metrics_str = ', '.join(['%s: %.5f' % (metric, score) for metric, score in \
-                                     te_results.items()])
-        log.info('%s, %s', task, all_metrics_str)
+        val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
         all_results[task] = (val_results, te_results, model_path)
-    results_file = os.path.join(args.run_dir, "results.pkl")
-    pkl.dump(all_results, open(results_file, 'wb'))
+
+        if task == 'macro': # aggregate results easily
+            for eval_task in te_preds:
+                with open(os.path.join(args.run_dir, "%s_preds.tsv" % (eval_task)), 'w') as pred_fh:
+                    pred_fh.write("index\tprediction\n")
+                    for idx, pred in zip(te_preds[eval_task][1], te_preds[eval_task][0]):
+                        pred_fh.write("%d\t%d\n" % (idx, pred))
+
+            with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh:
+                run_name = args.run_dir.split('/')[-1]
+                all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
+                                            metric, score in val_results.items()])
+                results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
+
+    # Dump everything to a pickle for posterity
+    pkl.dump(all_results, open(os.path.join(args.run_dir, "results.pkl"), 'wb'))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

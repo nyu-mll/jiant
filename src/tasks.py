@@ -17,12 +17,12 @@ def process_sentence(sent, max_seq_len):
     #return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
     return nltk.word_tokenize(sent)[:max_seq_len]
 
-def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, targ_map=None, targ_fn=None,
-             skip_rows=0, delimiter='\t'):
+def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=None,
+             targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t'):
     '''Load a tsv
 
     TODO: error handling; verifying parsed the TSV correctly (e.g. wrong # of cols)'''
-    sent1s, sent2s, targs = [], [], []
+    sent1s, sent2s, targs, idxs = [], [], [], []
     with codecs.open(data_file, 'r', 'utf-8') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
@@ -30,25 +30,42 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, targ_map=No
             try:
                 row = row.split(delimiter)
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if not row[targ_idx] or not len(sent1):
+                if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
-                if targ_map is not None:
-                    targ = targ_map[row[targ_idx]]
-                elif targ_fn is not None:
-                    targ = targ_fn(row[targ_idx])
+
+                if targ_idx is not None:
+                    if targ_map is not None:
+                        targ = targ_map[row[targ_idx]]
+                    elif targ_fn is not None:
+                        targ = targ_fn(row[targ_idx])
+                    else:
+                        targ = int(row[targ_idx])
                 else:
-                    targ = int(row[targ_idx])
+                    targ = 0
+
+
+
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)
+
+                if idx_idx is not None:
+                    idx = int(row[idx_idx])
+                    idxs.append(idx)
+
                 sent1s.append(sent1)
                 targs.append(targ)
+
             except Exception as e:
                 print(e, row_idx)
                 continue
-    return sent1s, sent2s, targs
+
+    if idx_idx is not None:
+        return sent1s, sent2s, targs, idxs
+    else:
+        return sent1s, sent2s, targs
 
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
@@ -119,12 +136,19 @@ class QuoraTask(Task):
         tr_data = load_tsv(os.path.join(path, 'quora_duplicate_questions_clean.tsv'), max_seq_len,
                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
         tr_data, val_data = split_data(tr_data, .8)
-        te_data = load_tsv(os.path.join(path, 'quora_test.tsv'), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'quora_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading Quora data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        prc, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'accuracy': (acc + f1) / 2, 'acc': acc, 'f1': f1,
+                'precision': prc, 'recall': rcl}
 
 class SNLITask(Task):
     ''' Task class for Stanford Natural Language Inference '''
@@ -203,12 +227,19 @@ class MSRPTask(Task):
         tr_data = load_tsv(os.path.join(path, 'msr_paraphrase_train.txt'), max_seq_len,
                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
         tr_data, val_data = split_data(tr_data, ratio=.8)
-        te_data = load_tsv(os.path.join(path, 'msr_paraphrase_test.txt'), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'msrp_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MSRP data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        prc, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'accuracy': (acc + f1) / 2, 'acc': acc, 'f1': f1,
+                'precision': prc, 'recall': rcl}
 
 class STSBenchmarkTask(Task):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''

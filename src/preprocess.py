@@ -95,7 +95,6 @@ def build_tasks(args):
         vocab = get_vocab(word2freq, char2freq, max_v_sizes)
         word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         preproc = {'word_embs': word_embs}
-        #preproc2 = {'word_embs': word_embs}
         for task in tasks:
             train, val, test = process_task(task, token_indexer, vocab)
             task.train_data = train
@@ -103,11 +102,8 @@ def build_tasks(args):
             task.test_data = test
             del_field_tokens(task)
             preproc[task.name] = (train, val, test)
-            #preproc2[task.name] = (train, val, test)
         log.info("\tFinished indexing tasks")
         pkl.dump(preproc, open(preproc_file, 'wb'))
-        #preproc_file2 = os.path.join(args.exp_dir, args.preproc_file + '_thin')
-        #pkl.dump(preproc2, open(preproc_file2, 'wb'))
         vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", preproc_file)
         del word2freq, char2freq
@@ -243,21 +239,32 @@ def process_split(split, indexers, pair_input, categorical):
         inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         inputs2 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[1]]
         if categorical:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[-1]]
+            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
         else:
             labels = [NumericField(l) for l in split[-1]]
 
-        instances = [Instance({"input1": input1, "input2": input2, "label": label}) for \
-                        (input1, input2, label) in zip(inputs1, inputs2, labels)]
+        if len(split) == 4: # numbered test examples
+            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
+            instances = [Instance({"input1": input1, "input2": input2, "label": label, "idx": idx})\
+                          for (input1, input2, label, idx) in zip(inputs1, inputs2, labels, idxs)]
+
+        else:
+            instances = [Instance({"input1": input1, "input2": input2, "label": label}) for \
+                            (input1, input2, label) in zip(inputs1, inputs2, labels)]
 
     else:
         inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         if categorical:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[-1]]
+            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[1]]
         else:
             labels = [NumericField(l) for l in split[-1]]
 
-        instances = [Instance({"input1": input1, "label": label}) for (input1, label) in
-                     zip(inputs1, labels)]
+        if len(split) == 3:
+            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[2]]
+            instances = [Instance({"input1": input1, "label": label, "idx": idx}) for \
+                         (input1, label, idx) in zip(inputs1, labels, idxs)]
+        else:
+            instances = [Instance({"input1": input1, "label": label}) for (input1, label) in
+                         zip(inputs1, labels)]
     return Dataset(instances)
 
