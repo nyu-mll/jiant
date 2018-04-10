@@ -60,7 +60,7 @@ VAL_INTERVAL=10
 MAX_VALS=50
 TASK_ORDERING="random"
 
-while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:' flag; do
+while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
         n) EXP_NAME="${OPTARG}" ;;
@@ -74,6 +74,7 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:' flag; do
         M) BPP_METHOD="${OPTARG}" ;; 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
+        X) MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         O) TASK_ORDERING="${OPTARG}" ;;
