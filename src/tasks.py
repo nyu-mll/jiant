@@ -101,7 +101,8 @@ class Task():
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         prc, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'accuracy': self.scorer1.get_metric(reset), 'f1': f1, 'precision': prc, 'recall': rcl}
+        return {'accuracy': self.scorer1.get_metric(reset), 'f1': f1,
+                'precision': prc, 'recall': rcl}
 
 class QuoraTask(Task):
     '''
@@ -340,6 +341,10 @@ class AcceptabilityTask(Task):
         super(AcceptabilityTask, self).__init__(name, 2)
         self.pair_input = 0
         self.load_data(path, max_seq_len)
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = Average()
+        self.scorer2 = CategoricalAccuracy()
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -353,6 +358,11 @@ class AcceptabilityTask(Task):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading Acceptability.")
+
+    def get_metrics(self, reset=False):
+        # NB: I think I call it accuracy b/c something weird in training
+        return {'accuracy': self.scorer1.get_metric(reset),
+                'f1': self.scorer2.get_metric(reset)}
 
 class WinogradNLITask(Task):
     '''Class for Winograd NLI task'''

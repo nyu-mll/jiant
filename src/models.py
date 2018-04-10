@@ -23,8 +23,9 @@ from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
-from tasks import STS14Task, STSBenchmarkTask
+from tasks import STS14Task, STSBenchmarkTask, AcceptabilityTask
 from scipy.stats import pearsonr, spearmanr
+from sklearn.metrics import matthews_corrcoef
 
 # CoVe stuff
 if "cs.nyu.edu" in os.uname()[1]:
@@ -219,7 +220,6 @@ class MultiTaskModel(nn.Module):
         pair_input = task.pair_input
         pred_layer = getattr(self, '%s_pred_layer' % task.name)
         if pair_input:
-            #if isinstance(task, (STS14Task, STSBenchmarkTask)) or self.pair_enc_type == 'bow':
             if self.pair_enc_type == 'bow':
                 pdb.set_trace()
                 sent1 = self.sent_encoder(input1)
@@ -241,6 +241,13 @@ class MultiTaskModel(nn.Module):
                 logits = logits.squeeze(-1).data.cpu().numpy()
                 task.scorer1(pearsonr(logits, label)[0])
                 task.scorer2(spearmanr(logits, label)[0])
+            elif isinstance(task, AcceptabilityTask):
+                label = label.squeeze(-1)
+                loss = F.cross_entropy(logits, label)
+                task.scorer2(logits, label)
+                label = label.data.cpu().numpy()
+                _, preds = logits.max(dim=1)
+                task.scorer1(matthews_corrcoef(label, preds.data.cpu().numpy()))
             else:
                 label = label.squeeze(-1)
                 loss = F.cross_entropy(logits, label)
