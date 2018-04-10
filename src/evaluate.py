@@ -21,7 +21,7 @@ and report any metrics calculated by the model.
     --cuda_device CUDA_DEVICE
                             id of GPU to use (if any)
 """
-import pdb
+import ipdb as pdb
 import logging
 import tqdm
 
@@ -62,7 +62,10 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
                                      task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
             n_examples += batch['label'].size()[0]
-            _, preds = out['logits'].max(dim=1)
+            if isinstance(task, (STSBenchmarkTask, STS14Task)):
+                preds, _ = out['logits'].max(dim=1)
+            else:
+                _, preds = out['logits'].max(dim=1)
             task_preds += preds.data.tolist()
 
         task_metrics = task.get_metrics(reset=True)
@@ -72,7 +75,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
         n_overall_examples += n_examples
         if isinstance(task, (STSBenchmarkTask, STS14Task)):
-            task_preds = [pred * 5. for pred in task_preds]
+            task_preds = [max(min(0., pred * 5.), 5.) for pred in task_preds]
         all_preds[task.name] = (task_preds, task_idxs)
 
     all_metrics["macro_accuracy"] /= len(tasks)

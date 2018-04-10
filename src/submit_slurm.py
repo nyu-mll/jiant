@@ -15,7 +15,7 @@ else:
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
-exp_name = 'glove_no_char_thin'
+exp_name = 'glove_no_char_v2'
 
 # special stuff
 elmo = 0
@@ -42,7 +42,7 @@ bpp_method = 'percent_tr'
 bpp_base = 10
 val_interval = 10
 
-n_runs = 1
+n_runs = 17
 
 for run_n in range(n_runs):
     d_hid = random.choice(d_hids)

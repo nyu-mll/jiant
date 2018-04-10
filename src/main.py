@@ -182,7 +182,10 @@ def main(arguments):
     else:
         epoch_to_load = -1
 
-    for task in [task.name for task in train_tasks] + ['micro', 'macro']:
+    #for task in [task.name for task in train_tasks] + ['micro', 'macro']:
+    for task in ['macro']:
+        log.info("Testing on %s..." % task)
+
         # Load best model
         load_idx = best_epochs[task] if best_epochs else epoch_to_load
         model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
@@ -201,7 +204,10 @@ def main(arguments):
                 with open(os.path.join(args.run_dir, "%s_preds.tsv" % (eval_task)), 'w') as pred_fh:
                     pred_fh.write("index\tprediction\n")
                     for idx, pred in idxs_and_preds:
-                        pred_fh.write("%d\t%d\n" % (idx, pred))
+                        if 'sts-b' in eval_task:
+                            pred_fh.write("%d\t%.3f\n" % (idx, pred))
+                        else:
+                            pred_fh.write("%d\t%d\n" % (idx, pred))
 
             with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh: # aggregate results easily
                 run_name = args.run_dir.split('/')[-1]
