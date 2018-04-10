@@ -193,14 +193,16 @@ def main(arguments):
         val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
         all_results[task] = (val_results, te_results, model_path)
 
-        if task == 'macro': # aggregate results easily
-            for eval_task in te_preds:
+        if task == 'macro':
+            for eval_task, task_preds in te_preds.items(): # write predictions for each task
+                idxs_and_preds = [(idx, pred) for pred, idx in zip(task_preds[0], task_preds[1])]
+                idxs_and_preds.sort(key=lambda x: x[0])
                 with open(os.path.join(args.run_dir, "%s_preds.tsv" % (eval_task)), 'w') as pred_fh:
                     pred_fh.write("index\tprediction\n")
-                    for idx, pred in zip(te_preds[eval_task][1], te_preds[eval_task][0]):
+                    for idx, pred in idxs_and_preds:
                         pred_fh.write("%d\t%d\n" % (idx, pred))
 
-            with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh:
+            with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh: # aggregate results easily
                 run_name = args.run_dir.split('/')[-1]
                 all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
                                             metric, score in val_results.items()])

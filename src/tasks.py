@@ -137,7 +137,7 @@ class QuoraTask(Task):
                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
         tr_data, val_data = split_data(tr_data, .8)
         te_data = load_tsv(os.path.join(path, 'quora_test_clean.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -202,8 +202,8 @@ class MultiNLITask(Task):
                            s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
         val_data = load_tsv(os.path.join(path, 'multinli_1.0_dev_matched.txt'), max_seq_len,
                             s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'multinli_1.0_test.txt'), max_seq_len,
-                           s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'multinli_both_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -259,8 +259,8 @@ class STSBenchmarkTask(Task):
                            s1_idx=5, s2_idx=6, targ_idx=4, targ_fn=lambda x: float(x) / 5)
         val_data = load_tsv(os.path.join(path, 'sts-dev.csv'), max_seq_len,
                             s1_idx=5, s2_idx=6, targ_idx=4, targ_fn=lambda x: float(x) / 5)
-        te_data = load_tsv(os.path.join(path, 'sts-test.csv'), max_seq_len,
-                           s1_idx=5, s2_idx=6, targ_idx=4, targ_fn=lambda x: float(x) / 5)
+        te_data = load_tsv(os.path.join(path, 'sts_benchmark_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -285,8 +285,8 @@ class SSTTask(Task):
                            s1_idx=0, s2_idx=None, targ_idx=1)
         val_data = load_tsv(os.path.join(path, 'sentiment-dev'), max_seq_len,
                             s1_idx=0, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, 'sentiment-test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'sst_binary_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -330,7 +330,9 @@ class RTETask(Task):
 
         tr_data = load_files([os.path.join(path, dev) for dev in devs])
         tr_data, val_data = split_data(tr_data, .8)
-        te_data = load_files([os.path.join(path, test) for test in tests])
+        te_data = load_tsv(os.path.join(path, 'rte_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -359,7 +361,8 @@ class SQuADTask(Task):
 
         tr_data = load_split(os.path.join(path, "adv_squad_train.json"))
         val_data = load_split(os.path.join(path, "adv_squad_dev.json"))
-        te_data = load_split(os.path.join(path, "adv_squad_test.json"))
+        te_data = load_tsv(os.path.join(path, 'squad_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -383,8 +386,8 @@ class AcceptabilityTask(Task):
                            s1_idx=3, s2_idx=None, targ_idx=1)
         val_data = load_tsv(os.path.join(path, "acceptability_valid.tsv"), max_seq_len,
                             s1_idx=3, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, "acceptability_test.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'acceptability_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -406,7 +409,8 @@ class WinogradNLITask(Task):
         '''Load the data'''
         tr_data = load_tsv(os.path.join(path, "wnli_train.tsv"), max_seq_len)
         val_data = load_tsv(os.path.join(path, "wnli_valid.tsv"), max_seq_len)
-        te_data = load_tsv(os.path.join(path, "wnli_test.tsv"), max_seq_len)
+        te_data = load_tsv(os.path.join(path, 'wnli_test_clean.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

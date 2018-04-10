@@ -255,12 +255,12 @@ def process_split(split, indexers, pair_input, categorical):
     else:
         inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         if categorical:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[1]]
+            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
         else:
-            labels = [NumericField(l) for l in split[-1]]
+            labels = [NumericField(l) for l in split[2]]
 
-        if len(split) == 3:
-            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[2]]
+        if len(split) == 4:
+            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
             instances = [Instance({"input1": input1, "label": label, "idx": idx}) for \
                          (input1, label, idx) in zip(inputs1, labels, idxs)]
         else:
