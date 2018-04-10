@@ -202,7 +202,7 @@ class MultiNLITask(Task):
                            s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
         val_data = load_tsv(os.path.join(path, 'multinli_1.0_dev_matched.txt'), max_seq_len,
                             s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'multinli_both_test_clean.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'mnli_both_test_clean.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data

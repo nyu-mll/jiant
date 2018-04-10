@@ -110,6 +110,7 @@ def build_model(args, vocab, word_embs, tasks):
     # Build encoders
     phrase_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': d_inp_phrase,
                                                              'hidden_size': d_hid,
+                                                             'n_layers': args.n_layers_enc,
                                                              'bidirectional': True}))
     d_hid *= 2 # to account for bidirectional
     d_hid += (args.elmo and args.deep_elmo) * 1024 # deep elmo embeddings
@@ -122,7 +123,7 @@ def build_model(args, vocab, word_embs, tasks):
     if args.pair_enc == 'bidaf':
         modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 4 * d_hid,
                                                                    'hidden_size': d_hid,
-                                                                   'num_layers': args.n_layers_enc,
+                                                                   'num_layers': 1,
                                                                    'bidirectional': True}))
         pair_encoder = HeadlessBiDAF(vocab, text_field_embedder, n_layers_highway, phrase_layer,
                                      LinearSimilarity(2*d_hid, 2*d_hid, "x,y,x*y"), modeling_layer,
@@ -135,7 +136,7 @@ def build_model(args, vocab, word_embs, tasks):
         log.info("\tUsing attention!")
         modeling_layer = s2s_e.by_name('lstm').from_params(Params({'input_size': 2 * d_hid,
                                                                    'hidden_size': d_hid,
-                                                                   'num_layers': args.n_layers_enc,
+                                                                   'num_layers':  1,
                                                                    'bidirectional': True}))
         pair_encoder = HeadlessPairAttnEncoder(vocab, text_field_embedder, n_layers_highway,
                                                phrase_layer, DotProductSimilarity(), modeling_layer,

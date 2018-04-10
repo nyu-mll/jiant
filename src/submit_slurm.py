@@ -17,22 +17,23 @@ else:
 proj_name = 'mtl-sent-rep'
 exp_name = 'glove_no_char_thin'
 
-# model options
+# special stuff
 elmo = 0
 deep_elmo = 0
 if elmo:
     assert 'elmo' in exp_name
-
-attn = 1
+attn = 0
 cove = 0
 
-# Optimizer: momentum; adam?
-# learning rate decay
+# model parameters
+d_hids = ['500', '1000', '1500']
+n_enc_layers = ['1', '2', '3'] # change to be the sentence encoder layer
+n_hwy_layers = ['0', '1', '2']
+drops = ['.0', '.1', '.2', '.3']
 
+# learning rate decay
 optimizer = 'sgd'
-lrs = ['1e0', '1e-1', '1e-2', '1e-3']
-d_hids = ['512', '1024']
-drops = ['.1', '.2', '.3']
+lrs = ['1e0', '1e-1']#, '1e-2', '1e-3']
 classifiers = ['log_reg', 'mlp']
 
 # momentum??
