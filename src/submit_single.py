@@ -33,11 +33,11 @@ proj_name = 'mtl-sent-rep'
 elmo = 1
 cove = 0
 BIGS = ['500', '1000', '1500']
-SMALLS = ['50', '100']
+SMALLS = ['50', '100', '200', '500']
 ADAM_LRS = ['1e-3', '3e-4', '1e-4']
 SGD_LRS = ['1e0', '1e-1']
 
-n_runs = 5
+n_runs = 15
 
 for task, size in tasks:
     exp_name = '%s_bl' % task
@@ -64,7 +64,7 @@ for task, size in tasks:
     val_interval = 10
 
 
-    for run_n in range(n_runs):
+    for run_n in range(10, n_runs):
         attn = random.choice(attn_opts)
         deep_elmo = random.choice(deep_elmo_opts)
         optimizer = random.choice(optimizers)

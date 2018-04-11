@@ -26,8 +26,8 @@ attn = 0
 cove = 0
 
 # model parameters
-d_hids = ['500', '1000', '1500']
-n_enc_layers = ['1', '2', '3'] # change to be the sentence encoder layer
+d_hids = ['1500', '2000'] #['500', '1000', '1500']
+n_enc_layers = ['1', '2', '3']
 n_hwy_layers = ['0', '1', '2']
 drops = ['.0', '.1', '.2', '.3']
 classifiers = ['log_reg', 'mlp']
@@ -42,9 +42,9 @@ bpp_method = 'percent_tr'
 bpp_base = 10
 val_interval = 10
 
-n_runs = 1
+n_runs = 31
 
-for run_n in range(n_runs):
+for run_n in range(24, n_runs):
     d_hid = random.choice(d_hids)
     n_enc_layer = random.choice(n_enc_layers)
     n_hwy_layer = random.choice(n_hwy_layers)
@@ -86,7 +86,13 @@ for run_n in range(n_runs):
                 '-o', optimizer, '-l', lr, '-h', d_hid, '-D', drop,
                 '-L', n_enc_layer, '-H', n_hwy_layer,
                 '-M', bpp_method, '-B', str(bpp_base), '-V', str(val_interval),
-                '-q', '-b', '128', '-m'] # turn off tqdm
+                '-q', '-m'] # turn off tqdm
+
+    exp_args.append('-b')
+    if d_hid == '2000' or 'n_enc_layer' == '3':
+        exp_args.append('64')
+    else:
+        exp_args.append('128')
 
     if elmo:
         exp_args.append('-eg')
