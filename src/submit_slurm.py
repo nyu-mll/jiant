@@ -15,21 +15,22 @@ else:
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
-exp_name = 'glove_no_char_v2'
 
 # special stuff
-elmo = 0
+elmo = 1
 deep_elmo = 0
 if elmo:
-    assert 'elmo' in exp_name
+    exp_name = 'glove_no_char_v2'
+else:
+    exp_name = 'elmo_no_glove_no_char_v2'
 attn = 0
 cove = 0
 
 # model parameters
-d_hids = ['1500', '2000'] #['500', '1000', '1500']
+d_hids = ['500', '1000', '1500', '2000']
 n_enc_layers = ['1', '2', '3']
 n_hwy_layers = ['0', '1', '2']
-drops = ['.0', '.1', '.2', '.3']
+drops = ['0.0', '0.1', '0.2', '0.3']
 classifiers = ['log_reg', 'mlp']
 
 # optimization settings
@@ -37,34 +38,51 @@ optimizer = 'sgd'
 lrs = ['1e0', '1e-1']#, '1e-2', '1e-3']
 decay = '.2' #decays = ['.2', '.5']
 
+best_lr = '1e0'
+best_d_hid = '1500'
+best_n_enc_layer = '2'
+best_n_hwy_layer = '0'
+best_drop = '0.0'
+best_classifier = 'log_reg'
+
 # multi task training settings
 bpp_method = 'percent_tr'
 bpp_base = 10
 val_interval = 10
 
-n_runs = 31
+rand_search = 0
+n_runs = 3
 
-for run_n in range(24, n_runs):
-    d_hid = random.choice(d_hids)
-    n_enc_layer = random.choice(n_enc_layers)
-    n_hwy_layer = random.choice(n_hwy_layers)
-    drop = random.choice(drops)
-    classifier = random.choice(classifiers)
-    lr = random.choice(lrs)
+for run_n in range(n_runs):
+    if rand_search:
+        d_hid = random.choice(d_hids)
+        n_enc_layer = random.choice(n_enc_layers)
+        n_hwy_layer = random.choice(n_hwy_layers)
+        drop = random.choice(drops)
+        classifier = random.choice(classifiers)
+        lr = random.choice(lrs)
+    else:
+        d_hid = best_d_hid
+        n_enc_layer = best_n_enc_layer
+        n_hwy_layer = best_n_hwy_layer
+        drop = best_drop
+        classifier = best_classifier
+        lr = best_lr
 
     if elmo:
         mem_req = 64
     else:
         mem_req = 16
 
-    run_name = 'r%d_d%s_lenc%s_nhwy%s_lr%s_do%s_c%s' % \
-                (run_n, d_hid, n_enc_layer, n_hwy_layer, lr, drop, classifier)
+    run_name = 'd%s_lenc%s_nhwy%s_lr%s_do%s_c%s' % \
+                (d_hid, n_enc_layer, n_hwy_layer, lr, drop, classifier)
     if attn:
         run_name = 'attn_' + run_name
     if cove:
         run_name = 'cove_' + run_name
     if elmo:
         run_name = 'elmo_' + run_name
+    run_name = ("r%d_" % run_n) + run_name
     job_name = '%s_%s' % (run_name, exp_name)
 
     # logging

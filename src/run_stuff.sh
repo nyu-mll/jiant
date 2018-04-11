@@ -8,8 +8,8 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-#SCRATCH_PREFIX='/beegfs/aw3272/'
+#SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
+SCRATCH_PREFIX='/beegfs/aw3272/'
 PROJECT_NAME='mtl-sent-rep'
 EXP_NAME="debug"
 RUN_NAME="debug"
