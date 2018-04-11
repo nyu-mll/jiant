@@ -37,6 +37,8 @@ SMALLS = ['50', '100']
 ADAM_LRS = ['1e-3', '3e-4', '1e-4']
 SGD_LRS = ['1e0', '1e-1']
 
+n_runs = 5
+
 for task, size in tasks:
     exp_name = '%s_bl' % task
 
@@ -61,7 +63,6 @@ for task, size in tasks:
     bpp_base = 10
     val_interval = 10
 
-    n_runs = 1
 
     for run_n in range(n_runs):
         attn = random.choice(attn_opts)

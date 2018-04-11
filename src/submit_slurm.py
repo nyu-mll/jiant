@@ -42,7 +42,7 @@ bpp_method = 'percent_tr'
 bpp_base = 10
 val_interval = 10
 
-n_runs = 17
+n_runs = 1
 
 for run_n in range(n_runs):
     d_hid = random.choice(d_hids)
