@@ -17,12 +17,12 @@ else:
 proj_name = 'mtl-sent-rep'
 
 # special stuff
-elmo = 1
+elmo = 0
 deep_elmo = 0
 if elmo:
-    exp_name = 'glove_no_char_v2'
-else:
     exp_name = 'elmo_no_glove_no_char_v2'
+else:
+    exp_name = 'glove_no_char_v2'
 attn = 0
 cove = 0
 
@@ -51,7 +51,7 @@ bpp_base = 10
 val_interval = 10
 
 rand_search = 0
-n_runs = 3
+n_runs = 5
 
 for run_n in range(n_runs):
     if rand_search:

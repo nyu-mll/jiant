@@ -8,8 +8,8 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-#SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-SCRATCH_PREFIX='/beegfs/aw3272/'
+SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
+#SCRATCH_PREFIX='/beegfs/aw3272/'
 PROJECT_NAME='mtl-sent-rep'
 EXP_NAME="debug"
 RUN_NAME="debug"
@@ -60,7 +60,7 @@ VAL_INTERVAL=10
 MAX_VALS=50
 TASK_ORDERING="random"
 
-while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:' flag; do
+while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:G:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
         n) EXP_NAME="${OPTARG}" ;;
@@ -92,6 +92,7 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:' flag; do
         c) COVE=1 ;;
         D) dropout="${OPTARG}" ;;
         C) CLASSIFIER="${OPTARG}" ;;
+        G) GPUID="${OPTARG}" ;;
     esac
 done
 
