@@ -6,12 +6,12 @@ import random
 import datetime
 import subprocess
 
-if 'cs.nyu.edu' in os.uname()[1]:
+if 'cs.nyu.edu' in os.uname()[1] or 'dgx' in os.uname()[1]:
     PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang'
     gpu_type = '1080ti'
 else:
     PATH_PREFIX = '/beegfs/aw3272'
-    gpu_type = 'p40'
+    gpu_type = 'p100' # should be p100 or p40
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
@@ -23,7 +23,7 @@ if elmo:
     exp_name = 'elmo_no_glove_no_char_v2'
 else:
     exp_name = 'glove_no_char_v2'
-attn = 0
+attn = 1
 cove = 0
 
 # model parameters
@@ -51,7 +51,7 @@ bpp_base = 10
 val_interval = 10
 
 rand_search = 0
-n_runs = 5
+n_runs = 1
 
 for run_n in range(n_runs):
     if rand_search:
