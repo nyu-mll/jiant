@@ -109,7 +109,6 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
             preds.append(targ)
 
     assert len(golds) == len(preds)
-    pdb.set_trace()
     n_exs = len(golds)
     if 'acc' in metrics:
         acc = sum([1 for gold, pred in zip(golds, preds) if gold == pred]) / len(golds)
@@ -160,10 +159,15 @@ def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
     corr = spearmanr(golds, preds)[0]
     print("spearman r: %.3f" % corr)
 
-tasks = 'wnli'
-#exp_dir = 'glove_no_char_v2'
-exp_dir = 'elmo_no_glove_no_char_v2'
-run_dir = 'r3_elmo_d1500_lenc2_nhwy0_lr1e0_do0.0_clog_reg'
+tasks = 'benchmark'
+run_n = 7
+exp = 'base'
+if exp == 'elmo':
+    exp_dir = 'elmo_no_glove_no_char_v2'
+else:
+    exp_dir = 'glove_no_char_v2'
+
+run_dir = 'r%d_%s_d1500_lenc2_nhwy0_lr1e0_do0.0_clog_reg' % (run_n, exp)
 #run_dir = 'r0_base_d1500_lenc2_nhwy0_lr1e0_do0.0_clog_reg'
 #run_dir = 'r3_attn_d1500_lenc2_nhwy0_lr1e0_d0.0_clog_reg'
 
