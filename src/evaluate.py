@@ -75,7 +75,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
         n_overall_examples += n_examples
         if isinstance(task, (STSBenchmarkTask, STS14Task)):
-            task_preds = [max(min(0., pred * 5.), 5.) for pred in task_preds]
+            task_preds = [min(max(0., pred * 5.), 5.) for pred in task_preds]
         all_preds[task.name] = (task_preds, task_idxs)
 
     all_metrics["macro_accuracy"] /= len(tasks)

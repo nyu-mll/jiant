@@ -17,13 +17,13 @@ else:
 proj_name = 'mtl-sent-rep'
 
 # special stuff
-elmo = 0
+elmo = 1
 deep_elmo = 0
 if elmo:
     exp_name = 'elmo_no_glove_no_char_v2'
 else:
     exp_name = 'glove_no_char_v2'
-attn = 1
+attn = 0
 cove = 0
 
 # model parameters
@@ -51,9 +51,9 @@ bpp_base = 10
 val_interval = 10
 
 rand_search = 0
-n_runs = 1
+n_runs = 5
 
-for run_n in range(n_runs):
+for run_n in range(4, n_runs):
     if rand_search:
         d_hid = random.choice(d_hids)
         n_enc_layer = random.choice(n_enc_layers)
@@ -82,6 +82,8 @@ for run_n in range(n_runs):
         run_name = 'cove_' + run_name
     if elmo:
         run_name = 'elmo_' + run_name
+    if not attn and not cove and not elmo and not rand_search:
+        run_name = 'base_' + run_name
     run_name = ("r%d_" % run_n) + run_name
     job_name = '%s_%s' % (run_name, exp_name)
 
@@ -93,6 +95,7 @@ for run_n in range(n_runs):
     err_file = exp_dir + '/sbatch.err'
 
     seed = str(random.randint(1, 10000))
+    seed = str(8462)
 
     slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
                   '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type,

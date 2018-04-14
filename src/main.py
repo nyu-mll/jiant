@@ -40,6 +40,7 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
+    parser.add_argument('--load_epoch', help='1 if load from checkpoint', type=int, default=-1)
     parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
     parser.add_argument('--load_preproc', help='1 if load vocabulary', type=int, default=1)
 
@@ -173,8 +174,9 @@ def main(arguments):
     # TODO(Alex): put this in evaluate file
     all_results = {}
 
-    #if best_epochs is None:
-    if not best_epochs:
+    if not best_epochs and args.load_epoch >= 0:
+        epoch_to_load = args.load_epoch
+    elif not best_epochs and not args.load_epoch:
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
         epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
@@ -195,9 +197,9 @@ def main(arguments):
         # Test evaluation and prediction
         te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
         val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
-        all_results[task] = (val_results, te_results, model_path)
 
         if task == 'macro':
+            all_results[task] = (val_results, te_results, model_path)
             for eval_task, task_preds in te_preds.items(): # write predictions for each task
                 idxs_and_preds = [(idx, pred) for pred, idx in zip(task_preds[0], task_preds[1])]
                 idxs_and_preds.sort(key=lambda x: x[0])
@@ -214,6 +216,7 @@ def main(arguments):
                 all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
                                             metric, score in val_results.items()])
                 results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
+    log.info("Done testing")
 
     # Dump everything to a pickle for posterity
     pkl.dump(all_results, open(os.path.join(args.run_dir, "results.pkl"), 'wb'))

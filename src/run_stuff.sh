@@ -8,8 +8,8 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-#SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-SCRATCH_PREFIX='/beegfs/aw3272/'
+SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
+#SCRATCH_PREFIX='/beegfs/aw3272/'
 PROJECT_NAME='mtl-sent-rep'
 EXP_NAME="debug"
 RUN_NAME="debug"
@@ -21,6 +21,7 @@ SHOULD_TRAIN=1
 LOAD_MODEL=0
 LOAD_TASKS=1
 LOAD_PREPROC=1
+load_epoch=-1
 
 train_tasks='all'
 eval_tasks='none'
@@ -60,7 +61,7 @@ VAL_INTERVAL=10
 MAX_VALS=50
 TASK_ORDERING="random"
 
-while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:G:' flag; do
+while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:G:N:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
         n) EXP_NAME="${OPTARG}" ;;
@@ -93,6 +94,7 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:G:' flag; do
         D) dropout="${OPTARG}" ;;
         C) CLASSIFIER="${OPTARG}" ;;
         G) GPUID="${OPTARG}" ;;
+        N) load_epoch="${OPTARG}" ;;
     esac
 done
 
@@ -105,5 +107,5 @@ mkdir -p ${EXP_DIR}
 mkdir -p ${RUN_DIR}
 mkdir -p ${VOCAB_DIR}
 
-ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${SEED} --no_tqdm ${no_tqdm} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --run_dir ${RUN_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --classifier_hid_dim ${d_hid_cls} --vocab_path ${VOCAB_DIR} --max_seq_len ${max_seq_len} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --train_words ${train_words} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --min_lr ${min_lr} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --dropout ${dropout} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --preproc_file ${PREPROC_FILE}"
+ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${SEED} --no_tqdm ${no_tqdm} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --run_dir ${RUN_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --classifier_hid_dim ${d_hid_cls} --vocab_path ${VOCAB_DIR} --max_seq_len ${max_seq_len} --max_word_v_size ${VOCAB_SIZE} --max_char_v_size ${CHAR_VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --train_words ${train_words} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --n_char_filters ${N_CHAR_FILTERS} --char_filter_sizes ${CHAR_FILTER_SIZES} --d_char ${d_char} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --min_lr ${min_lr} --lr_decay_factor ${LR_DECAY} --weight_decay ${WEIGHT_DECAY} --dropout ${dropout} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --load_tasks ${LOAD_TASKS} --load_preproc ${LOAD_PREPROC} --should_train ${SHOULD_TRAIN} --load_epoch ${load_epoch} --preproc_file ${PREPROC_FILE}"
 eval ${ALLEN_CMD}
