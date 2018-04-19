@@ -195,21 +195,55 @@ def main(arguments):
         model.load_state_dict(model_state)
 
         # Test evaluation and prediction
+        # could just filter out tasks to get what i want...
+        #tasks = [task for task in tasks if 'mnli' in task.name]
         te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
         val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
 
         if task == 'macro':
             all_results[task] = (val_results, te_results, model_path)
             for eval_task, task_preds in te_preds.items(): # write predictions for each task
+                #if 'mnli' not in eval_task:
+                #    continue
                 idxs_and_preds = [(idx, pred) for pred, idx in zip(task_preds[0], task_preds[1])]
                 idxs_and_preds.sort(key=lambda x: x[0])
-                with open(os.path.join(args.run_dir, "%s_preds.tsv" % (eval_task)), 'w') as pred_fh:
-                    pred_fh.write("index\tprediction\n")
-                    for idx, pred in idxs_and_preds:
-                        if 'sts-b' in eval_task:
-                            pred_fh.write("%d\t%.3f\n" % (idx, pred))
-                        else:
-                            pred_fh.write("%d\t%d\n" % (idx, pred))
+                if 'mnli' in eval_task:
+                    pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
+                    with open(os.path.join(args.run_dir, "%s-m.tsv" % (eval_task)), 'w') as pred_fh:
+                        pred_fh.write("index\tprediction\n")
+                        split_idx = 0
+                        for idx, pred in idxs_and_preds[:9796]:
+                            pred = pred_map[pred]
+                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                            split_idx += 1
+                    with open(os.path.join(args.run_dir, "%s-mm.tsv" % (eval_task)), 'w') as pred_fh:
+                        pred_fh.write("index\tprediction\n")
+                        split_idx = 0
+                        for idx, pred in idxs_and_preds[9796:9796+9847]:
+                            pred = pred_map[pred]
+                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                            split_idx += 1
+                    with open(os.path.join(args.run_dir, "diagnostic.tsv"), 'w') as pred_fh:
+                        pred_fh.write("index\tprediction\n")
+                        split_idx = 0
+                        for idx, pred in idxs_and_preds[9796+9847:]:
+                            pred = pred_map[pred]
+                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                            split_idx += 1
+                else:
+                    with open(os.path.join(args.run_dir, "%s.tsv" % (eval_task)), 'w') as pred_fh:
+                        pred_fh.write("index\tprediction\n")
+                        for idx, pred in idxs_and_preds:
+                            if 'sts-b' in eval_task:
+                                pred_fh.write("%d\t%.3f\n" % (idx, pred))
+                            elif 'rte' in eval_task:
+                                pred = 'entailment' if pred else 'not_entailment'
+                                pred_fh.write('%d\t%s\n' % (idx, pred))
+                            elif 'squad' in eval_task:
+                                pred = 'contains' if pred else 'not_contain'
+                                pred_fh.write('%d\t%s\n' % (idx, pred))
+                            else:
+                                pred_fh.write("%d\t%d\n" % (idx, pred))
 
             with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh: # aggregate results easily
                 run_name = args.run_dir.split('/')[-1]

@@ -44,7 +44,6 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
                     targ = 0
 
 
-
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
@@ -200,9 +199,9 @@ class MultiNLITask(Task):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'multinli_1.0_train.txt'), max_seq_len,
                            s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'multinli_1.0_dev_matched.txt'), max_seq_len,
+        val_data = load_tsv(os.path.join(path, 'multinli_1.0_dev_both.txt'), max_seq_len,
                             s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'mnli_both_test_clean.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'mnli_diagnostic_test_clean.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
