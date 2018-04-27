@@ -23,28 +23,31 @@ if 'cs.nyu.edu' in os.uname()[1]:
     tasks = small_tasks
 else:
     PATH_PREFIX = '/beegfs/aw3272'
-    gpu_type = 'p40'
+    gpu_type = 'p40' # or p100
     tasks = big_tasks
+tasks = big_tasks
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
 
 # special stuff
 elmo = 1
+deep_elmo = 0
 cove = 0
+attn = 1
 BIGS = ['500', '1000', '1500']
 SMALLS = ['50', '100', '200', '500']
 ADAM_LRS = ['1e-3', '3e-4', '1e-4']
 SGD_LRS = ['1e0', '1e-1']
 
-n_runs = 15
+n_runs = 1
 
 for task, size in tasks:
-    exp_name = '%s_bl' % task
+    exp_name = '%s_baseline_v2' % task
 
     # model parameters
-    attn_opts = [0, 1]
-    deep_elmo_opts = [0, 1]
+    #attn_opts = [0, 1]
+    #deep_elmo_opts = [0, 1]
     if size == 'big':
         d_hids = BIGS
     else:
@@ -64,9 +67,9 @@ for task, size in tasks:
     val_interval = 10
 
 
-    for run_n in range(10, n_runs):
-        attn = random.choice(attn_opts)
-        deep_elmo = random.choice(deep_elmo_opts)
+    for run_n in range(n_runs):
+        #attn = random.choice(attn_opts)
+        #deep_elmo = random.choice(deep_elmo_opts)
         optimizer = random.choice(optimizers)
         if optimizer == 'sgd':
             lr = random.choice(SGD_LRS)
@@ -83,14 +86,15 @@ for task, size in tasks:
         else:
             mem_req = 16
 
-        run_name = 'r%d_d%s_lenc%s_nhwy%s_lr%s_do%s_c%s' % \
-                    (run_n, d_hid, n_enc_layer, n_hwy_layer, lr, drop, classifier)
+        run_name = 'd%s_lenc%s_nhwy%s_lr%s_do%s_c%s' % \
+                    (d_hid, n_enc_layer, n_hwy_layer, lr, drop, classifier)
         if attn:
             run_name = 'attn_' + run_name
         if cove:
             run_name = 'cove_' + run_name
         if elmo:
             run_name = 'elmo_' + run_name
+        run_name = ("r%d_" % run_n) + run_name
         job_name = '%s_%s' % (exp_name, run_name)
 
         # logging
@@ -126,8 +130,8 @@ for task, size in tasks:
 
         cmd = slurm_args + exp_args
         print(' '.join(cmd))
-        subprocess.call(cmd)
-        time.sleep(10)
+        #subprocess.call(cmd)
+        time.sleep(3)
 
 
 ''' Old grid search code '''

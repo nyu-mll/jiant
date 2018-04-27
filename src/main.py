@@ -40,7 +40,8 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
-    parser.add_argument('--load_epoch', help='1 if load from checkpoint', type=int, default=-1)
+    parser.add_argument('--load_epoch', help='Force loading from a certain epoch', type=int,
+                        default=-1)
     parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
     parser.add_argument('--load_preproc', help='1 if load vocabulary', type=int, default=1)
 
@@ -63,10 +64,10 @@ def main(arguments):
     parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
     parser.add_argument('--char_encoder', help='char embedding encoder', type=str, default='cnn',
                         choices=['bow', 'cnn'])
-    parser.add_argument('--n_char_filters', help='num of conv filters for ' +
-                        'char embedding combiner', type=int, default=64)
-    parser.add_argument('--char_filter_sizes', help='filter sizes for char' +
-                        ' embedding combiner', type=str, default='2,3,4,5')
+    parser.add_argument('--n_char_filters', help='num of conv filters for char embedding combiner',
+                        type=int, default=64)
+    parser.add_argument('--char_filter_sizes', help='filter sizes for char embedding combiner',
+                        type=str, default='2,3,4,5')
     parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
     parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=1)
@@ -185,6 +186,7 @@ def main(arguments):
         epoch_to_load = -1
 
     #for task in [task.name for task in train_tasks] + ['micro', 'macro']:
+    pdb.set_trace()
     for task in ['macro']:
         log.info("Testing on %s..." % task)
 

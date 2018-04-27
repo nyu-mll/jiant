@@ -95,7 +95,6 @@ for run_n in range(4, n_runs):
     err_file = exp_dir + '/sbatch.err'
 
     seed = str(random.randint(1, 10000))
-    seed = str(8462)
 
     slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
                   '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type,
