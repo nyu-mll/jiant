@@ -10,7 +10,7 @@ import _pickle as pkl
 import ipdb as pdb
 import torch
 
-from allennlp.data.iterators import BasicIterator
+from allennlp.data.iterators import BasicIterator, BucketIterator
 from util import device_mapping
 
 from preprocess import build_tasks
@@ -86,6 +86,10 @@ def main(arguments):
 
     # Training options
     parser.add_argument('--no_tqdm', help='1 to turn off tqdm', type=int, default=0)
+    parser.add_argument('--trainer_type', help='type of trainer', type=str,
+                        choices=['sampling', 'mtl'], default='sampling')
+    parser.add_argument('--shared_optimizer', help='1 to use same optimizer for all tasks',
+                        type=int, default=1)
     parser.add_argument('--batch_size', help='batch size', type=int, default=64)
     parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
@@ -147,14 +151,20 @@ def main(arguments):
 
     # Set up trainer #
     iterator = BasicIterator(args.batch_size)
-    trainer, train_params, opt_params, schd_params = build_trainer(args, model, iterator)
+    #iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")], batch_size=args.batch_size)
+    trainer, train_params, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
 
     # Train #
     if train_tasks and args.should_train:
         to_train = [p for p in model.parameters() if p.requires_grad]
-        best_epochs = trainer.train(train_tasks, args.task_ordering, args.val_interval,
-                                    args.max_vals, args.bpp_method, args.bpp_base, to_train,
-                                    opt_params, schd_params, args.load_model)
+        if args.trainer_type == 'mtl':
+            best_epochs = trainer.train(train_tasks, args.task_ordering, args.val_interval,
+                                        args.max_vals, args.bpp_method, args.bpp_base, to_train,
+                                        opt_params, schd_params, args.load_model)
+        elif args.trainer_type == 'sampling':
+            best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base, to_train,
+                                        opt_params, schd_params, args.shared_optimizer,
+                                        args.load_model)
     else:
         log.info("Skipping training.")
         best_epochs = {}
@@ -186,7 +196,6 @@ def main(arguments):
         epoch_to_load = -1
 
     #for task in [task.name for task in train_tasks] + ['micro', 'macro']:
-    pdb.set_trace()
     for task in ['macro']:
         log.info("Testing on %s..." % task)
 

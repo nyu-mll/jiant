@@ -6,7 +6,8 @@ import ipdb as pdb
 from sklearn.metrics import matthews_corrcoef, f1_score
 from scipy.stats import pearsonr, spearmanr
 
-if "cs.nyu.edu" in os.uname()[1]: PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
+if "cs.nyu.edu" in os.uname()[1]:
+    PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
 else:
     PATH_PREFIX = '/beegfs/aw3272/'
 
@@ -168,16 +169,16 @@ else:
     exp_dir = 'glove_no_char_v2'
 run_dir = 'r%d_%s_d1500_lenc2_nhwy0_lr1e0_do0.0_clog_reg' % (run_n, exp)
 
-exp_dir = 'msrp_bl'
+exp_dir = 'debug'
 run_n = 14
 #run_dir = 'elmo_r14_d500_lenc2_nhwy0_lr1e-3_do.1_cmlp'
-run_dir = 'elmo_attn_r13_d200_lenc1_nhwy1_lr1e-4_do.2_clog_reg'
+run_dir = 'debug_trainer'
 
 #codebase = 'SentEval'
 #exp_dir = 'bow'
 #run_dir = 'debug_v0'
 
-tasks = 'msrp'
+tasks = 'sst'
 
 if 'mnli' in tasks or 'benchmark' in tasks:
     print('MNLI matched')
@@ -193,7 +194,8 @@ if 'msrp' in tasks or 'benchmark' in tasks:
     GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/msrp_test_ans.tsv'
     #PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/msrp_preds.tsv' % (exp_dir, run_dir)
     PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/MRPC.tsv' % (codebase, exp_dir, run_dir)
-    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/msrp_preds.tsv' % (codebase, exp_dir, run_dir)
+    #PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/msrp_preds.tsv' % (codebase, exp_dir, run_dir)
+    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/msrp.tsv' % (codebase, exp_dir, run_dir)
     evaluate(GOLD_FILE, PRED_FILE, metrics=['acc', 'f1'])
 
 if 'quora' in tasks or 'benchmark' in tasks:
@@ -224,7 +226,8 @@ if 'squad' in tasks or 'benchmark' in tasks:
 if 'sst' in tasks or 'benchmark' in tasks:
     print('SST')
     GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/sst_binary_test_ans.tsv'
-    PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/sst_preds.tsv' % (exp_dir, run_dir)
+    #PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/sst_preds.tsv' % (exp_dir, run_dir)
+    PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/sst.tsv' % (exp_dir, run_dir)
     evaluate(GOLD_FILE, PRED_FILE)
 
 # STS-B
