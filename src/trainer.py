@@ -837,17 +837,18 @@ class SamplingMultiTaskTrainer:
                     clip_grad_norm(self._model.parameters(), self._grad_norm)
                 optimizer.step()
 
-                # Update training progress on that task
-                task_info['n_batches_since_val'] = n_batches_since_val
-                task_info['total_batches_trained'] = total_batches_trained
-                task_info['loss'] = tr_loss
-
                 n_pass += 1 # update per batch
+
+            # Update training progress on that task
+            task_info['n_batches_since_val'] = n_batches_since_val
+            task_info['total_batches_trained'] = total_batches_trained
+            task_info['loss'] = tr_loss
+
 
             # Intermediate logging
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
-                task_metrics["%s_loss" % task.name] = float(tr_loss / n_batches_since_val)
+                task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
                 description = self._description_from_metrics(task_metrics)
                 logger.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                             task.name, n_batches_since_val, total_batches_trained, description)
@@ -925,12 +926,13 @@ class SamplingMultiTaskTrainer:
             task_info = task_infos[task.name]
             val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
             n_val_batches = iterator.get_num_batches(task.val_data)
+            all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
                 batch_num += 1
                 val_output_dict = self._forward(batch, task=task, for_training=False)
                 loss = val_output_dict["loss"]
-                all_val_metrics["%s_loss" % task.name] = loss.data.cpu().numpy()
+                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
 
                 # Logging
                 if time.time() - task_info['last_log'] > self._log_interval:
@@ -940,12 +942,13 @@ class SamplingMultiTaskTrainer:
                     logger.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                     task_info['last_log'] = time.time()
                 n_examples += batch['label'].size()[0]
+            assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= batch_num
+            all_val_metrics["%s_loss" % task.name] /= n_val_batches
             all_val_metrics["micro_accuracy"] += \
                     all_val_metrics["%s_accuracy" % (task.name)] * n_examples
             all_val_metrics["macro_accuracy"] += \
