@@ -858,11 +858,14 @@ class SamplingMultiTaskTrainer:
             if n_pass % (validation_interval) == 0:
                 # Get metrics for all training progress so far
                 for task in tasks:
-                    task_metrics = task.get_metrics(reset=True)
-                    for name, value in task_metrics.items():
-                        all_tr_metrics["%s_%s" % (task.name, name)] = value
-                    all_tr_metrics["%s_loss" % task.name] = \
-                            float(task_info['loss'] / task_info['n_batches_since_val'])
+                    if task_info['n_batches_since_val'] > 0:
+                        task_metrics = task.get_metrics(reset=True)
+                        for name, value in task_metrics.items():
+                            all_tr_metrics["%s_%s" % (task.name, name)] = value
+                        all_tr_metrics["%s_loss" % task.name] = \
+                                float(task_info['loss'] / task_info['n_batches_since_val'])
+                    else:
+                        all_tr_metrics["%s_loss" % task.name] = 0.0
 
                 logger.info("Validating...")
                 epoch = int(n_pass / validation_interval)
