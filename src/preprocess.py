@@ -23,30 +23,17 @@ else:
 PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
 
 
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b',
-             'wnli', 'acceptability']
+ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b', 'wnli', 'acceptability']
 NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask, 'quora': QuoraTask,
              'rte': RTETask, 'squad': SQuADTask, 'snli': SNLITask,
              'acceptability': AcceptabilityTask, 'sst': SSTTask,
-             'wnli': WinogradNLITask, 'sts-b': STSBenchmarkTask,
-             'adversarial': AdversarialTask, 'dpr': DPRTask}
-NAME2DATA = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'rte': 'rte/',
-             'quora': 'Quora/', 'dpr': 'dpr/dpr_data.txt',
-             'acceptability': 'acceptability/', 'wnli': 'wnli/',
-             'squad': 'squad/', 'snli': 'SNLI/', 'sst': 'SST/binary/',
-             'sts-b': 'STS/STSBenchmark/', 'adversarial': 'adversarial/'}
+             'wnli': WinogradNLITask, 'sts-b': STSBenchmarkTask}
+NAME2DATA = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'rte': 'RTE/',
+             'quora': 'QQP/', 'acceptability': 'CoLA/', 'wnli': 'WNLI/',
+             'squad': 'QNLI/', 'snli': 'SNLI/', 'sst': 'SST-2/',
+             'sts-b': 'STS-B/'}
 for k, v in NAME2DATA.items():
     NAME2DATA[k] = PATH_PREFIX + v
-
-# lazy way to map tasks to preprocessed tasks
-# TODO(Alex): get rid of this
-NAME2SAVE = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'quora': 'Quora/',
-             'rte': 'rte/', 'squad': 'squad/', 'snli': 'SNLI/', 'dpr': 'dpr/',
-             'sst': 'SST/', 'sts-b': 'STS/', 'wnli': 'wnli/',
-             'acceptability': 'acceptability/', 'adversarial': 'adversarial/'}
-for k, v in NAME2SAVE.items():
-    NAME2SAVE[k] = PATH_PREFIX + v
-assert NAME2SAVE.keys() == NAME2DATA.keys() == NAME2TASK.keys()
 
 def build_tasks(args):
     '''Prepare tasks'''
@@ -133,7 +120,7 @@ def get_tasks(task_names, max_seq_len, load):
     tasks = []
     for name in task_names:
         assert name in NAME2TASK, 'Task not found!'
-        pkl_path = NAME2SAVE[name] + "%s_task.pkl" % name
+        pkl_path = NAME2DATA[name] + "%s_task.pkl" % name
         if os.path.isfile(pkl_path) and load:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)

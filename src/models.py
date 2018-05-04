@@ -43,21 +43,28 @@ ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4
 
 logger = log.getLogger(__name__)  # pylint: disable=invalid-name
 
-def build_model(args, vocab, word_embs, tasks):
+def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to arguments
 
     args:
         - args (TODO): object with attributes:
         - vocab (Vocab):
-        - word_embs (TODO): word embeddings to use
+        - pretrained_embs (TODO): word embeddings to use
 
     returns
     '''
     d_word, d_char, n_layers_highway = args.d_word, args.d_char, args.n_layers_highway
 
     # Build embedding layers
+    if args.glove:
+        word_embs = pretrained_embs
+        train_embs = bool(args.train_words)
+    else:
+        log.info("\tLearning embeddings from scratch!")
+        word_embs = None #torch.FloatTensor(pretrained_embs.size()).normal_()
+        train_embs = True
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
-                              trainable=bool(args.train_words),
+                              trainable=train_embs,
                               padding_index=vocab.get_token_index('@@PADDING@@'))
     '''
     char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)

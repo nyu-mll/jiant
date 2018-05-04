@@ -48,8 +48,8 @@ best_classifier = 'mlp'
 
 # multi task training settings
 bpp_method = 'percent_tr'
-bpps = [1, 5, 10]
-val_intervals = [500, 1000, 5000]
+bpps = [1]
+val_intervals = [10000]
 
 rand_search = 0
 n_runs = 3
@@ -142,6 +142,9 @@ n_hwy_layer = best_n_hwy_layer
 drop = best_drop
 classifier = best_classifier
 lr = best_lr
+lr_decay = '.5'
+patience = '10'
+task_patience = 1 # really need to do patience - 1
 
 n_runs = 3
 
@@ -153,8 +156,9 @@ for run_n in range(n_runs):
             else:
                 mem_req = 16
 
-            run_name = 'bpp%d_vi%d_d%s_lenc%s_nhwy%s_%s_lr%s_do%s_c%s' % \
-                        (bpp, val_interval, d_hid, n_enc_layer, n_hwy_layer, optimizer, lr, drop, classifier)
+            run_name = 'bpp%d_vi%d_d%s_lenc%s_nhwy%s_%s_lr%s_decay%s_p%s_tp%s_do%s_c%s' % \
+                        (bpp, val_interval, d_hid, n_enc_layer, n_hwy_layer, optimizer,
+                         lr, lr_decay, patience, str(task_patience + 1), drop, classifier)
             if attn:
                 run_name = 'attn_' + run_name
             if cove:
@@ -185,6 +189,7 @@ for run_n in range(n_runs):
                         '-o', optimizer, '-l', lr, '-h', d_hid, '-D', drop,
                         '-L', n_enc_layer, '-H', n_hwy_layer,
                         '-M', bpp_method, '-B', str(bpp), '-V', str(val_interval),
+                        '-y', lr_decay, '-K', str(task_patience), '-p', patience,
                         '-q', '-m'] # turn off tqdm
 
             exp_args.append('-b')
@@ -200,7 +205,7 @@ for run_n in range(n_runs):
             if cove:
                 exp_args.append('-c')
             if attn:
-                exp_args.append('-p')
+                exp_args.append('-E')
                 exp_args.append('attn')
 
             cmd = slurm_args + exp_args

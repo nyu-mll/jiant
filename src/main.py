@@ -70,7 +70,8 @@ def main(arguments):
                         type=str, default='2,3,4,5')
     parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
-    parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=1)
+    parser.add_argument('--glove', help='1 if use glove, else from scratch', type=int, default=1)
+    parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=0)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
     parser.add_argument('--elmo_no_glove', help='1 if no glove, assuming elmo', type=int, default=0)
@@ -116,6 +117,10 @@ def main(arguments):
     parser.add_argument('--bpp_base', help='If fixed n batches ' +
                         'per pass, this is the number. If proportional, this ' +
                         'is the smallest number', type=int, default=10)
+    parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
+                        choices=['uniform', 'proportional'], default='uniform')
+    parser.add_argument('--scale_loss', help='method for scaling loss', type=str,
+                        choices=[], default='')
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
     parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str, default='given',
                         choices=['given', 'random', 'random_per_pass', 'small_to_large', 'large_to_small'])
@@ -150,6 +155,7 @@ def main(arguments):
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
     # Set up trainer #
+    # TODO(Alex): move iterator creation
     iterator = BasicIterator(args.batch_size)
     #iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")], batch_size=args.batch_size)
     trainer, train_params, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
@@ -162,7 +168,8 @@ def main(arguments):
                                         args.max_vals, args.bpp_method, args.bpp_base, to_train,
                                         opt_params, schd_params, args.load_model)
         elif args.trainer_type == 'sampling':
-            best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base, to_train,
+            best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
+                                        args.weighting_method, to_train,
                                         opt_params, schd_params, args.shared_optimizer,
                                         args.load_model)
     else:

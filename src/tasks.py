@@ -1,8 +1,7 @@
 '''Define the tasks and code for loading them'''
 import os
-import pdb # pylint disable=unused-import
+import ipdb as pdb # pylint disable=unused-import
 import xml.etree.ElementTree
-import json
 import glob
 import codecs
 import random
@@ -28,7 +27,7 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
             try:
-                row = row.split(delimiter)
+                row = row.strip().split(delimiter)
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
@@ -58,7 +57,7 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
                 targs.append(targ)
 
             except Exception as e:
-                print(e, row_idx)
+                print(e, " file: %s, row: %d" % (data_file, row_idx))
                 continue
 
     if idx_idx is not None:
@@ -105,10 +104,10 @@ class Task():
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = F1Measure(1)
+        self.scorer2 = None
 
     @abstractmethod
-    def load_data(self, path):
+    def load_data(self, path, max_seq_len):
         '''
         Load data from path and create splits.
         '''
@@ -116,31 +115,33 @@ class Task():
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        prc, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'accuracy': self.scorer1.get_metric(reset), 'f1': f1,
-                'precision': prc, 'recall': rcl}
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 class QuoraTask(Task):
     '''
-    Task class for Quora question pairs.
+    Task class for Quora Question Pairs.
     '''
 
     def __init__(self, path, max_seq_len, name="quora"):
         ''' '''
         super(QuoraTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.scorer2 = F1Measure(1)
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, 'quora_duplicate_questions_clean.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
-        tr_data, val_data = split_data(tr_data, .8)
-        te_data = load_tsv(os.path.join(path, 'quora_test_clean.tsv'), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        pdb.set_trace()
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading Quora data.")
+        log.info("\tFinished loading QQP data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -160,25 +161,17 @@ class SNLITask(Task):
 
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
-
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        for split, attr_name in zip(['train', 'dev', 'test'],
-                                    ['train_data_text', 'val_data_text', 'test_data_text']):
-            sents1, sents2, targs = [], [], []
-            s1_fh = open(path + 's1.' + split)
-            s2_fh = open(path + 's2.' + split)
-            targ_fh = open(path + 'labels.' + split)
-            for s1, s2, targ in zip(s1_fh, s2_fh, targ_fh):
-                sents1.append(process_sentence(s1.strip(), max_seq_len))
-                sents2.append(process_sentence(s2.strip(), max_seq_len))
-                targs.append(targ_map[targ.strip()])
-            sorted_data = (sents1, sents2, targs)
-            setattr(self, attr_name, sorted_data)
-
-        # Use adversarial NLI data instead of SNLI test because SNLI isn't in our benchmark
-        #te_data = load_tsv(os.path.join(path, "adversarial_nli.tsv"), max_seq_len,
-        #                   s1_idx=6, s2_idx=7, targ_idx=8, targ_map=targ_map, skip_rows=1)
-        #self.test_data_text = te_data
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
+                            s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
+        pdb.set_trace()
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
 
     def get_metrics(self, reset=False):
@@ -197,12 +190,26 @@ class MultiNLITask(Task):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'multinli_1.0_train.txt'), max_seq_len,
-                           s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'multinli_1.0_dev_both.txt'), max_seq_len,
-                            s1_idx=5, s2_idx=6, targ_idx=0, targ_map=targ_map, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'mnli_diagnostic_test_clean.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                           s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
+        val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
+                                    s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
+        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+                                       s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
+                                       skip_rows=1)
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
+
+        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
+                                   s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
+                                      s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'), max_seq_len,
+                                      s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        te_data = [m + mm + d for m, mm, d in \
+                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
+        te_data[3] = list(range(len(te_data[3])))
+
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -219,15 +226,16 @@ class MSRPTask(Task):
         ''' '''
         super(MSRPTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.scorer2 = F1Measure(1)
 
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
-
-        tr_data = load_tsv(os.path.join(path, 'msr_paraphrase_train.txt'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
-        tr_data, val_data = split_data(tr_data, ratio=.8)
-        te_data = load_tsv(os.path.join(path, 'msrp_test_clean.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=3, s2_idx=4, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -254,12 +262,12 @@ class STSBenchmarkTask(Task):
 
     def load_data(self, path, max_seq_len):
         ''' '''
-        tr_data = load_tsv(os.path.join(path, 'sts-train.csv'), max_seq_len,
-                           s1_idx=5, s2_idx=6, targ_idx=4, targ_fn=lambda x: float(x) / 5)
-        val_data = load_tsv(os.path.join(path, 'sts-dev.csv'), max_seq_len,
-                            s1_idx=5, s2_idx=6, targ_idx=4, targ_fn=lambda x: float(x) / 5)
-        te_data = load_tsv(os.path.join(path, 'sts_benchmark_test_clean.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
+                            s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -280,11 +288,11 @@ class SSTTask(Task):
 
     def load_data(self, path, max_seq_len):
         ''' '''
-        tr_data = load_tsv(os.path.join(path, 'sentiment-train'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1)
-        val_data = load_tsv(os.path.join(path, 'sentiment-dev'), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, 'sst_binary_test_clean.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -298,38 +306,15 @@ class RTETask(Task):
         ''' '''
         super(RTETask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
-        self.scorer2 = F1Measure(0) # 0 is positive
 
     def load_data(self, path, max_seq_len):
         ''' Process the datasets located at path. '''
-
-        def load_files(paths):
-            '''Load all files for a split'''
-            targ_map = {"YES": 0, "ENTAILMENT": 0, "TRUE": 0,
-                        "NO": 1, "CONTRADICTION": 1, "FALSE": 1, "UNKNOWN": 1, }
-
-            sents1, sents2, targs = [], [], []
-            for path in paths:
-                root = xml.etree.ElementTree.parse(path).getroot()
-                for child in root:
-                    sents1.append(process_sentence(child[0].text, max_seq_len))
-                    sents2.append(process_sentence(child[1].text, max_seq_len))
-                    if "entailment" in child.attrib.keys():
-                        label = child.attrib["entailment"]
-                    elif "value" in child.attrib.keys():
-                        label = child.attrib["value"]
-                    targs.append(targ_map[label])
-                    assert len(sents1) == len(sents2) == len(targs), pdb.set_trace()
-            return sents1, sents2, targs
-
-        devs = ["RTE2_dev_stanford_fix.xml", "RTE3_pairs_dev-set-final.xml",
-                "rte1dev.xml", "RTE5_MainTask_DevSet.xml"]
-        tests = ["RTE2_test.annotated.xml", "RTE3-TEST-GOLD.xml",
-                 "rte1_annotated_test.xml", "RTE5_MainTask_TestSet_Gold.xml"]
-
-        tr_data = load_files([os.path.join(path, dev) for dev in devs])
-        tr_data, val_data = split_data(tr_data, .8)
-        te_data = load_tsv(os.path.join(path, 'rte_test_clean.tsv'), max_seq_len,
+        targ_map = {"not_entailment": 0, "entailment": 1}
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, targ_map=targ_map,
+                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, targ_map=targ_map,
+                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
 
         self.train_data_text = tr_data
@@ -337,35 +322,25 @@ class RTETask(Task):
         self.test_data_text = te_data
         log.info("\tFinished loading RTE{1,2,3}.")
 
-
 class SQuADTask(Task):
-    '''Task class for adversarial SQuAD'''
+    '''Task class for SQuAD NLI'''
     def __init__(self, path, max_seq_len, name="squad"):
         super(SQuADTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
-
-        def load_split(path):
-            '''Load a single split'''
-            quests, ctxs, targs = [], [], []
-            data = json.load(open(path))
-            for datum in data:
-                quests.append(process_sentence(datum['question'], max_seq_len))
-                ctxs.append(process_sentence(datum['sentence'], max_seq_len))
-                assert datum['label'] in ['True', 'False'], pdb.set_trace()
-                targs.append(int(datum['label'] == 'True'))
-            return quests, ctxs, targs
-
-        tr_data = load_split(os.path.join(path, "adv_squad_train.json"))
-        val_data = load_split(os.path.join(path, "adv_squad_dev.json"))
-        te_data = load_tsv(os.path.join(path, 'squad_test_clean.tsv'), max_seq_len,
+        targ_map = {'not_entailment': 0, 'entailment': 1}
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
+                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading SQuAD.")
+        log.info("\tFinished loading QNLI.")
 
 class AcceptabilityTask(Task):
     '''Class for Warstdadt acceptability task'''
@@ -381,21 +356,21 @@ class AcceptabilityTask(Task):
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
-        tr_data = load_tsv(os.path.join(path, "acceptability_train.tsv"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
                            s1_idx=3, s2_idx=None, targ_idx=1)
-        val_data = load_tsv(os.path.join(path, "acceptability_valid.tsv"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
                             s1_idx=3, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, 'acceptability_test_clean.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading Acceptability.")
+        log.info("\tFinished loading CoLA.")
 
     def get_metrics(self, reset=False):
         # NB: I think I call it accuracy b/c something weird in training
         return {'accuracy': self.scorer1.get_metric(reset),
-                'f1': self.scorer2.get_metric(reset)}
+                'acc': self.scorer2.get_metric(reset)}
 
 class WinogradNLITask(Task):
     '''Class for Winograd NLI task'''
@@ -406,14 +381,21 @@ class WinogradNLITask(Task):
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
-        tr_data = load_tsv(os.path.join(path, "wnli_train.tsv"), max_seq_len)
-        val_data = load_tsv(os.path.join(path, "wnli_valid.tsv"), max_seq_len)
-        te_data = load_tsv(os.path.join(path, 'wnli_test_clean.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+        pdb.set_trace()
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading Winograd.")
+
+#######################################
+# Non-benchmark tasks
+#######################################
 
 class AdversarialTask(Task):
     '''Class for adversarial examples'''
@@ -434,10 +416,6 @@ class AdversarialTask(Task):
         self.train_data_text = te_data
         self.val_data_text = te_data
         log.info("\tFinished loading adversarial.")
-
-#######################################
-# Non-benchmark tasks
-#######################################
 
 class DPRTask(Task):
     '''Definite pronoun resolution'''
