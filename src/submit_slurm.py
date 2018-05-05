@@ -20,9 +20,9 @@ proj_name = 'mtl-sent-rep'
 elmo = 0
 deep_elmo = 0
 if elmo:
-    exp_name = 'elmo_no_glove'
+    exp_name = 'elmo_no_glove_v2'
 else:
-    exp_name = 'glove'
+    exp_name = 'glove_v2'
 attn = 0
 cove = 0
 
@@ -133,8 +133,8 @@ for run_n in range(n_runs):
 '''
 
 ''' Old grid search code '''
-optimizer = 'adam'
-best_lr = '1e-3'
+optimizer = 'sgd'
+best_lr = '1e0'
 
 d_hid = best_d_hid
 n_enc_layer = best_n_enc_layer
@@ -142,73 +142,77 @@ n_hwy_layer = best_n_hwy_layer
 drop = best_drop
 classifier = best_classifier
 lr = best_lr
-lr_decay = '.5'
-patience = '10'
-task_patience = 1 # really need to do patience - 1
+lr_decay = '.2'
+patience = '5'
+task_patience = 0 # really need to do patience - 1
+scales = ['none'] #['max', 'min']
+weighting_method = 'proportional'
 
 n_runs = 3
 
 for run_n in range(n_runs):
     for bpp in bpps:
         for val_interval in val_intervals:
-            if elmo:
-                mem_req = 64
-            else:
-                mem_req = 16
+            for scale in scales:
+                if elmo:
+                    mem_req = 64
+                else:
+                    mem_req = 16
 
-            run_name = 'bpp%d_vi%d_d%s_lenc%s_nhwy%s_%s_lr%s_decay%s_p%s_tp%s_do%s_c%s' % \
-                        (bpp, val_interval, d_hid, n_enc_layer, n_hwy_layer, optimizer,
-                         lr, lr_decay, patience, str(task_patience + 1), drop, classifier)
-            if attn:
-                run_name = 'attn_' + run_name
-            if cove:
-                run_name = 'cove_' + run_name
-            if elmo:
-                run_name = 'elmo_' + run_name
-            if not attn and not cove and not elmo and not rand_search:
-                run_name = 'base_' + run_name
-            run_name = ("r%d_" % run_n) + run_name
-            job_name = '%s_%s' % (run_name, exp_name)
+                run_name = 'bpp%d_vi%d_d%s_lenc%s_nhwy%s_%s_lr%s_decay%s_p%s_tp%s_%sscale_do%s_c%s' % \
+                            (bpp, val_interval, d_hid, n_enc_layer, n_hwy_layer, optimizer,
+                             lr, lr_decay, patience, str(task_patience + 1), scale, drop, classifier)
+                if attn:
+                    run_name = 'attn_' + run_name
+                if cove:
+                    run_name = 'cove_' + run_name
+                if elmo:
+                    run_name = 'elmo_' + run_name
+                if not attn and not cove and not elmo and not rand_search:
+                    run_name = 'base_' + run_name
+                run_name = ("r%d_" % run_n) + run_name
+                job_name = '%s_%s' % (run_name, exp_name)
 
-            # logging
-            exp_dir = '%s/ckpts/%s/%s/%s' % (PATH_PREFIX, proj_name, exp_name, run_name)
-            if not os.path.exists(exp_dir):
-                os.makedirs(exp_dir)
-            out_file = exp_dir + '/sbatch.out'
-            err_file = exp_dir + '/sbatch.err'
+                # logging
+                exp_dir = '%s/ckpts/%s/%s/%s' % (PATH_PREFIX, proj_name, exp_name, run_name)
+                if not os.path.exists(exp_dir):
+                    os.makedirs(exp_dir)
+                out_file = exp_dir + '/sbatch.out'
+                err_file = exp_dir + '/sbatch.err'
 
-            seed = str(random.randint(1, 10000))
+                seed = str(random.randint(1, 10000))
 
-            slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
-                          '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type,
-                          '--mem=%dGB' % mem_req,
-                          '--mail-type=end', '--mail-user=aw3272@nyu.edu',
-                          'run_stuff.sh']
-            exp_args = ['-P', PATH_PREFIX, '-n', exp_name, '-r', run_name,
-                        '-S', seed, '-T', 'all', '-C', classifier,
-                        '-o', optimizer, '-l', lr, '-h', d_hid, '-D', drop,
-                        '-L', n_enc_layer, '-H', n_hwy_layer,
-                        '-M', bpp_method, '-B', str(bpp), '-V', str(val_interval),
-                        '-y', lr_decay, '-K', str(task_patience), '-p', patience,
-                        '-q', '-m'] # turn off tqdm
+                slurm_args = ['sbatch', '-J', job_name, '-e', err_file, '-o', out_file,
+                              '-t', '2-00:00', '--gres=gpu:%s:1' % gpu_type,
+                              '--mem=%dGB' % mem_req,
+                              '--mail-type=end', '--mail-user=aw3272@nyu.edu',
+                              'run_stuff.sh']
+                exp_args = ['-P', PATH_PREFIX, '-n', exp_name, '-r', run_name,
+                            '-S', seed, '-T', 'all', '-C', classifier,
+                            '-o', optimizer, '-l', lr, '-h', d_hid, '-D', drop,
+                            '-L', n_enc_layer, '-H', n_hwy_layer,
+                            '-M', bpp_method, '-B', str(bpp), '-V', str(val_interval),
+                            '-y', lr_decay, '-K', str(task_patience), '-p', patience,
+                            '-W', weighting_method, '-s', scale,
+                            '-q', '-m'] # turn off tqdm
 
-            exp_args.append('-b')
-            if d_hid == '2000' or 'n_enc_layer' == '3':
-                exp_args.append('64')
-            else:
-                exp_args.append('128')
+                exp_args.append('-b')
+                if d_hid == '2000' or 'n_enc_layer' == '3':
+                    exp_args.append('64')
+                else:
+                    exp_args.append('128')
 
-            if elmo:
-                exp_args.append('-eg')
-                if deep_elmo:
-                    exp_args.append('-d')
-            if cove:
-                exp_args.append('-c')
-            if attn:
-                exp_args.append('-E')
-                exp_args.append('attn')
+                if elmo:
+                    exp_args.append('-eg')
+                    if deep_elmo:
+                        exp_args.append('-d')
+                if cove:
+                    exp_args.append('-c')
+                if attn:
+                    exp_args.append('-E')
+                    exp_args.append('attn')
 
-            cmd = slurm_args + exp_args
-            print(' '.join(cmd))
-            subprocess.call(cmd)
-            time.sleep(10)
+                cmd = slurm_args + exp_args
+                print(' '.join(cmd))
+                subprocess.call(cmd)
+                time.sleep(10)

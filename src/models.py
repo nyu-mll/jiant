@@ -124,7 +124,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
         pair_encoder = None # model will just run sent_encoder on both inputs
     else: # output will be 2 x d_hid_phrase (+ deep elmo)
         sent_encoder = HeadlessSentEncoder(vocab, text_field_embedder, n_layers_highway,
-                                           phrase_layer, cove_layer=cove_layer, elmo_layer=elmo)
+                                           phrase_layer, dropout=args.dropout,
+                                           cove_layer=cove_layer, elmo_layer=elmo)
     d_single = 2 * d_hid_phrase + (args.elmo and args.deep_elmo) * 1024
     if args.pair_enc == 'simple': # output will be 4 x [2 x d_hid_phrase (+ deep elmo)]
         pair_encoder = HeadlessPairEncoder(vocab, text_field_embedder, n_layers_highway,
@@ -290,23 +291,7 @@ class HeadlessPairEncoder(Model):
 
     def forward(self, s1, s2):
         # pylint: disable=arguments-differ
-        """
-        Parameters
-        ----------
-        question : Dict[str, torch.LongTensor]
-            From a ``TextField``.
-        passage : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this passage contains the answer to the
-            question, and predicts the beginning and ending positions of the answer within the
-            passage.
-
-        Returns
-        -------
-        pair_rep : torch.FloatTensor?
-            Tensor representing the final output of the BiDAF model
-            to be plugged into the next module
-
-        """
+        """ """
         # Embeddings
         s1_embs = self._highway_layer(self._text_field_embedder(s1))
         s2_embs = self._highway_layer(self._text_field_embedder(s2))

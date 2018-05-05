@@ -119,8 +119,8 @@ def main(arguments):
                         'is the smallest number', type=int, default=10)
     parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
                         choices=['uniform', 'proportional'], default='uniform')
-    parser.add_argument('--scale_loss', help='method for scaling loss', type=str,
-                        choices=[], default='')
+    parser.add_argument('--scaling_method', help='method for scaling loss', type=str,
+                        choices=['min', 'max', 'unit', 'none'], default='none')
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
     parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str, default='given',
                         choices=['given', 'random', 'random_per_pass', 'small_to_large', 'large_to_small'])
@@ -168,8 +168,21 @@ def main(arguments):
                                         args.max_vals, args.bpp_method, args.bpp_base, to_train,
                                         opt_params, schd_params, args.load_model)
         elif args.trainer_type == 'sampling':
+            if args.weighting_method == 'uniform':
+                log.info("Sampling tasks uniformly")
+            elif args.weighting_method == 'proportional':
+                log.info("Sampling tasks proportional to number of training batches")
+
+            if args.scaling_method == 'max':
+                # divide by # batches, multiply by max # batches
+                log.info("Scaling losses to largest task")
+            elif args.scaling_method == 'min':
+                # divide by # batches, multiply by fewest # batches
+                log.info("Scaling losses to the smallest task")
+            elif args.scaling_method == 'unit':
+                log.info("Dividing losses by number of training batches")
             best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
-                                        args.weighting_method, to_train,
+                                        args.weighting_method, args.scaling_method, to_train,
                                         opt_params, schd_params, args.shared_optimizer,
                                         args.load_model)
     else:

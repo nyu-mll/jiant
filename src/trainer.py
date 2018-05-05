@@ -770,7 +770,8 @@ class SamplingMultiTaskTrainer:
         return task_infos, metric_infos
 
 
-    def train(self, tasks, validation_interval, n_batches_per_pass, weighting_method,
+    def train(self, tasks, validation_interval, n_batches_per_pass,
+              weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
               shared_optimizer=0, load_model=1):
 
@@ -803,6 +804,7 @@ class SamplingMultiTaskTrainer:
         elif weighting_method == 'proportional':
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
+            min_weight = min(sample_weights)
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         logger.info("Beginning training.")
@@ -828,8 +830,12 @@ class SamplingMultiTaskTrainer:
                 output_dict = self._forward(batch, task=task, for_training=True)
                 assert "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 loss = output_dict["loss"] # optionally scale loss
-                loss /= task_info['n_tr_batches']
-                #loss *= (max_weight / task_info['n_tr_batches'])
+                if scaling_method == 'unit' and weighting_method == 'proportional':
+                    loss /= task_info['n_tr_batches']
+                elif scaling_method == 'max' and weighting_method == 'proportional':
+                    loss *= (max_weight / task_info['n_tr_batches'])
+                elif scaling_method == 'min' and weighting_method == 'proportional':
+                    loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
                 tr_loss += loss.data.cpu().numpy()
 
