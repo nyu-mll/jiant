@@ -16,17 +16,17 @@ else:
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
 rand_search = 0
-n_runs = 3
+n_runs = 1
 
 # embedding stuff
-elmo = 1
+elmo = 0
 deep_elmo = 0
 if elmo:
     exp_name = 'elmo_no_glove_v3'
 else:
     exp_name = 'glove_v3'
 cove = 0
-glove = 1
+glove = 0
 
 # model parameters
 d_hids = ['500', '1000', '1500', '2000']
@@ -34,7 +34,7 @@ n_enc_layers = ['1', '2', '3']
 n_hwy_layers = ['0', '1', '2']
 drops = ['0.0', '0.1', '0.2', '0.3']
 classifiers = ['log_reg', 'mlp']
-attn = 0
+attn = 1
 
 # optimization settings
 optimizers = ['sgd', 'adam']
