@@ -38,3 +38,21 @@ We use the CoVe implementation provided [here](https://github.com/salesforce/cov
 To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py``.
 
 We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
+
+## Reference
+
+If you use this code or GLUE, please consider citing us.
+
+```
+ @unpublished{wang2018glue
+     title={{GLUE}: A Multi-Task Benchmark and Analysis Platform for
+             Natural Language Understanding}
+     author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill,
+             Felix and Levy, Omer and Bowman, Samuel R.}
+     note={arXiv preprint 1804.07461}
+     year={2018}
+ }
+```
+
+
+Feel free to contact alexwang _at_ nyu.edu with any questions or comments.
