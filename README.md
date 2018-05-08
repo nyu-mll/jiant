@@ -4,7 +4,7 @@ See [our paper](https://www.nyu.edu/projects/bowman/glue.pdf) for more details a
 
 ## Dependencies
 
-Make sure you have the packages listed in environment.yml.
+Make sure you have installed the packages listed in environment.yml.
 When listed, specific particular package versions are required.
 If you use conda, you can create an environment from this package with the following command:
 
