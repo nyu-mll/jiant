@@ -13,19 +13,20 @@ else:
     PATH_PREFIX = '/beegfs/aw3272'
     gpu_type = 'p40' # should be p100 or p40
 
-tasks = [('squad', 723), ('wnli', 5), ('msrp', 25), ('rte', 18), ('sts-b', 39)]
-tasks = [('mnli', 2612), ('quora', 2421)]
+small_tasks = [('squad', 723), ('wnli', 5), ('msrp', 25), ('rte', 18), ('sts-b', 39)]
+big_tasks = [('mnli', 2612), ('quora', 2421)]
+tasks = small_tasks + big_tasks
 
 # MAKE SURE TO CHANGE ME #
 proj_name = 'mtl-sent-rep'
 rand_search = 0
-n_runs = 1
+n_runs = 3
 
 # embedding stuff
 elmo = 0
 deep_elmo = 0
 cove = 0
-glove = 0
+glove = 1
 
 # model parameters
 d_hids = ['500', '1000', '1500', '2000']
@@ -33,7 +34,7 @@ n_enc_layers = ['1', '2', '3']
 n_hwy_layers = ['0', '1', '2']
 drops = ['0.0', '0.1', '0.2', '0.3']
 classifiers = ['log_reg', 'mlp']
-attn = 1
+attn = 0
 
 # optimization settings
 optimizers = ['sgd', 'adam']
@@ -69,7 +70,7 @@ best_val_interval = 10000
 best_scale = 'max'
 best_weighting_method = 'proportional'
 
-for run_n in range(n_runs):
+for run_n in range(1, n_runs):
     for task, val_interval in tasks:
         exp_name = 'baseline'
         if elmo:
