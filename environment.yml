@@ -1,4 +1,4 @@
-name: mtl-sent-rep
+name: glue
 
 dependencies:
     - python=3.6

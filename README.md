@@ -17,7 +17,7 @@ conda env create -f environment.yml
 We provide a convenience python script for downloading all GLUE data and standard splits.
 
 ```
-python download_glue_data.py
+python download_glue_data.py --data_dir glue_data --tasks all
 ```
 
 ## Running
