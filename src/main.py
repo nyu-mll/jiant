@@ -27,7 +27,7 @@ def main(arguments):
     parser.add_argument('--random_seed', help='random seed to use', type=int, default=19)
 
     # Paths and logging
-    parser.add_argument('--log_file', help='path to log to', type=str, default=0)
+    parser.add_argument('--log_file', help='path to log to', type=str, default='log.log')
     parser.add_argument('--exp_dir', help='experiment directory containing shared preprocessing',
                         type=str, default='')
     parser.add_argument('--run_dir', help='run directory for saving results, models, etc.',
@@ -62,12 +62,6 @@ def main(arguments):
 
     # Embedding options
     parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
-    parser.add_argument('--char_encoder', help='char embedding encoder', type=str, default='cnn',
-                        choices=['bow', 'cnn'])
-    parser.add_argument('--n_char_filters', help='num of conv filters for char embedding combiner',
-                        type=int, default=64)
-    parser.add_argument('--char_filter_sizes', help='filter sizes for char embedding combiner',
-                        type=str, default='2,3,4,5')
     parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
     parser.add_argument('--glove', help='1 if use glove, else from scratch', type=int, default=1)

@@ -22,7 +22,8 @@ python download_glue_data.py --data_dir glue_data --tasks all
 
 ## Running
 
-To run our baselines, use either ``src/main.py`` or ``src/run_stuff.sh``.
+To run our baselines, use either ``src/main.py`` or ``src/run_stuff.sh`` (which we used to submit jobs to a scheduler).
+Because preprocessing can be quite time consuming, we save the outputs of the preprocessing to pickle files that are shared by a set of experiments.
 
 ```
 python main.py --data_dir glue_data --tasks all
@@ -53,6 +54,5 @@ If you use this code or GLUE, please consider citing us.
      year={2018}
  }
 ```
-
 
 Feel free to contact alexwang _at_ nyu.edu with any questions or comments.

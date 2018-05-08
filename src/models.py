@@ -53,7 +53,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     returns
     '''
-    d_word, d_char, n_layers_highway = args.d_word, args.d_char, args.n_layers_highway
+    d_word, n_layers_highway = args.d_word, args.n_layers_highway
 
     # Build embedding layers
     if args.glove:
@@ -61,38 +61,26 @@ def build_model(args, vocab, pretrained_embs, tasks):
         train_embs = bool(args.train_words)
     else:
         log.info("\tLearning embeddings from scratch!")
-        word_embs = None #torch.FloatTensor(pretrained_embs.size()).normal_()
+        word_embs = None
         train_embs = True
     word_embedder = Embedding(vocab.get_vocab_size('tokens'), d_word, weight=word_embs,
                               trainable=train_embs,
                               padding_index=vocab.get_token_index('@@PADDING@@'))
-    '''
-    char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
-    if args.char_encoder == 'cnn':
-        filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
-        char_encoder = CnnEncoder(args.d_char, num_filters=args.n_char_filters,
-                                  ngram_filter_sizes=filter_sizes, output_dim=args.d_char)
-    else:
-        char_encoder = BagOfEmbeddingsEncoder(d_char, True)
-    char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder, dropout=args.dropout_embs)
-    d_inp_phrase = d_char
-    '''
     d_inp_phrase = 0
 
     # Handle elmo and cove
     token_embedder = {}
     if args.elmo:
         log.info("\tUsing ELMo embeddings!")
-        if args.deep_elmo: # need to adjust modeling layer inputs
+        if args.deep_elmo:
             n_reps = 2
             log.info("\tUsing deep ELMo embeddings!")
         else:
             n_reps = 1
         if args.elmo_no_glove:
-            #token_embedder = {} #{"chars": char_embedder}
             log.info("\tNOT using GLoVe embeddings!")
         else:
-            token_embedder = {"words": word_embedder}#, "chars": char_embedder}
+            token_embedder = {"words": word_embedder}
             log.info("\tUsing GLoVe embeddings!")
             d_inp_phrase += d_word
         elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
@@ -100,7 +88,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_inp_phrase += 1024
     else:
         elmo = None
-        token_embedder = {"words": word_embedder}#, "chars": char_embedder}
+        token_embedder = {"words": word_embedder}
         d_inp_phrase += d_word
     text_field_embedder = BasicTextFieldEmbedder(token_embedder) if "words" in token_embedder \
                             else None
@@ -399,7 +387,7 @@ class HeadlessSentEncoder(Model):
                 or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
                 or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
-                                     "(embedding_dim + char_cnn) must match the input dimension of"
+                                     "must match the input dimension of "
                                      "the phrase_encoder. Found {} and {} respectively." \
                                      .format(d_emb, d_inp_phrase))
         if dropout > 0:
