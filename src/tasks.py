@@ -135,7 +135,6 @@ class QuoraTask(Task):
                             s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
-        pdb.set_trace()
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -166,7 +165,6 @@ class SNLITask(Task):
                             s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
-        pdb.set_trace()
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -385,7 +383,6 @@ class WinogradNLITask(Task):
                             s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
-        pdb.set_trace()
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

@@ -64,7 +64,7 @@ def build_tasks(args):
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
-    if args.load_preproc and os.path.exists(args.preproc_file):
+    if args.load_preproc and os.path.exists(preproc_file):
         preproc = pkl.load(open(preproc_file, 'rb'))
         vocab = Vocabulary.from_files(vocab_path)
         word_embs = preproc['word_embs']
