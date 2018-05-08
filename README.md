@@ -42,9 +42,10 @@ To use GloVe vectors, download and extract the relevant files and set ``word_emb
 To learn embeddings from scratch, set ``--glove`` to 0.
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
-To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py``.
+To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py`` and set ``--cove`` to 1.
 
 We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
+To use ELMo, set ``--elmo`` to 1. To use ELMo without GloVe, additionally set ``--elmo_no_glove`` to 1.
 
 ## Reference
 
