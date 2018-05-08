@@ -12,4 +12,19 @@ We provide a convenience python script for downloading all GLUE data and standar
 python download_glue_data.py
 ```
 
+## Running
+
+```
+python main.py --data_dir glue_data --tasks all
+```
+
+```
+./run_stuff.sh -n -r -T all
+```
+
 ## CoVe and ELMo
+
+We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
+To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ```src/models.py``.
+
+We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
