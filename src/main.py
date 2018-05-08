@@ -23,15 +23,13 @@ def main(arguments):
     parser = argparse.ArgumentParser(description='')
 
     # Logistics
-    parser.add_argument('--cuda', help='0 if no CUDA, else gpu id', type=int, default=0)
+    parser.add_argument('--cuda', help='-1 if no CUDA, else gpu id', type=int, default=0)
     parser.add_argument('--random_seed', help='random seed to use', type=int, default=19)
 
     # Paths and logging
-    parser.add_argument('--log_file', help='path to log to', type=str, default='log.log')
-    parser.add_argument('--exp_dir', help='experiment directory containing shared preprocessing',
-                        type=str, default='')
-    parser.add_argument('--run_dir', help='run directory for saving results, models, etc.',
-                        type=str, default='')
+    parser.add_argument('--log_file', help='file to log to', type=str, default='log.log')
+    parser.add_argument('--exp_dir', help='directory containing shared preprocessing', type=str)
+    parser.add_argument('--run_dir', help='directory for saving results, models, etc.', type=str)
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='preproc.pkl')
@@ -97,16 +95,15 @@ def main(arguments):
                         type=float, default=.5)
 
     # Multi-task training options
-    parser.add_argument('--val_interval', help='Number of passes between ' +
-                        ' validating', type=int, default=10)
+    parser.add_argument('--val_interval', help='Number of passes between validation checks',
+                        type=int, default=10)
     parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
                         default=100)
-    parser.add_argument('--bpp_method', help='How to calculate ' +
-                        'the number of batches per pass for each task', type=str,
-                        choices=['fixed', 'percent_tr', 'proportional_rank'],
-                        default='fixed')
-    parser.add_argument('--bpp_base', help='If fixed n batches ' +
-                        'per pass, this is the number. If proportional, this ' +
+    parser.add_argument('--bpp_method', help='if using nonsampling trainer, ' +
+                        'method for calculating number of batches per pass', type=str,
+                        choices=['fixed', 'percent_tr', 'proportional_rank'], default='fixed')
+    parser.add_argument('--bpp_base', help='If sampling or fixed bpp' +
+                        'per pass, this is the bpp. If proportional, this ' +
                         'is the smallest number', type=int, default=10)
     parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
                         choices=['uniform', 'proportional'], default='uniform')

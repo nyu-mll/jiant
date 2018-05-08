@@ -25,7 +25,7 @@ After downloading GLUE, point ``PATH_PREFIX`` in  ``src/preprocess.py`` to the d
 ## Running
 
 To run our baselines, use ``src/main.py``.
-Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``exp_dir`` for sharing preprocessing between experiments. We use argument ``run_dir`` to save information specific to a particular run, with ``run_dir`` usually nested within ``exp_dir``.
+Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` usually nested within ``exp_dir``.
 
 
 ```
@@ -36,6 +36,10 @@ NB: The version of AllenNLP used has [issues](https://github.com/allenai/allennl
 
 
 ## GloVe, CoVe, and ELMo
+
+Many of our models make use of [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), in particular the 300-dimensional, 840B version.
+To use GloVe vectors, download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
+To learn embeddings from scratch, set ``--glove`` to 0.
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
 To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py``.

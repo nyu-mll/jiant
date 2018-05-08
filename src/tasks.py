@@ -1,12 +1,12 @@
 '''Define the tasks and code for loading them'''
 import os
-import ipdb as pdb # pylint disable=unused-import
 import xml.etree.ElementTree
 import glob
 import codecs
 import random
 import logging as log
 from abc import ABCMeta, abstractmethod
+import ipdb as pdb # pylint disable=unused-import
 import nltk
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
@@ -18,9 +18,7 @@ def process_sentence(sent, max_seq_len):
 
 def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=None,
              targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t'):
-    '''Load a tsv
-
-    TODO: error handling; verifying parsed the TSV correctly (e.g. wrong # of cols)'''
+    '''Load a tsv '''
     sent1s, sent2s, targs, idxs = [], [], [], []
     with codecs.open(data_file, 'r', 'utf-8') as data_fh:
         for _ in range(skip_rows):
