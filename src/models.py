@@ -266,7 +266,7 @@ class HeadlessPairEncoder(Model):
             or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
             or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
-                                     "(embedding_dim + char_cnn) must match the input "
+                                     "must match the input "
                                      "dimension of the phrase_encoder. Found {} and {} "
                                      "respectively.".format(d_emb, d_inp_phrase))
         if dropout > 0:
@@ -516,7 +516,7 @@ class HeadlessPairAttnEncoder(Model):
             or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
             or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
-                                     "(embedding_dim + char_cnn) must match the input "
+                                     "must match the input "
                                      "dimension of the phrase_encoder. Found {} and {} "
                                      "respectively.".format(d_emb, d_inp_phrase))
         if dropout > 0:

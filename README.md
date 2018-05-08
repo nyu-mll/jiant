@@ -5,7 +5,7 @@ See [our paper](https://www.nyu.edu/projects/bowman/glue.pdf) for more details a
 ## Dependencies
 
 Make sure you have the packages listed in environment.yml.
-When listed, specific particular package versions required.
+When listed, specific particular package versions are required.
 If you use conda, you can create an environment from this package with the following command:
 
 ```
@@ -20,20 +20,22 @@ We provide a convenience python script for downloading all GLUE data and standar
 python download_glue_data.py --data_dir glue_data --tasks all
 ```
 
+After downloading GLUE, point ``PATH_PREFIX`` in  ``src/preprocess.py`` to the directory containing the data.
+
 ## Running
 
-To run our baselines, use either ``src/main.py`` or ``src/run_stuff.sh`` (which we used to submit jobs to a scheduler).
-Because preprocessing can be quite time consuming, we save the outputs of the preprocessing to pickle files that are shared by a set of experiments.
+To run our baselines, use ``src/main.py``.
+Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``exp_dir`` for sharing preprocessing between experiments. We use argument ``run_dir`` to save information specific to a particular run, with ``run_dir`` usually nested within ``exp_dir``.
+
 
 ```
-python main.py --data_dir glue_data --tasks all
+python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs_file PATH_TO_GLOVE
 ```
 
-```
-./run_stuff.sh -n -r -T all
-```
+NB: The version of AllenNLP used has [issues](https://github.com/allenai/allennlp/issues/342) with tensorboard. You may need to substitute calls ``from tensorboard import SummaryWriter`` to ``from tensorboardX import SummaryWriter`` in your AllenNLP source files.
 
-## CoVe and ELMo
+
+## GloVe, CoVe, and ELMo
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
 To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py``.

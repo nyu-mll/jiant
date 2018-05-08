@@ -32,10 +32,9 @@ def main(arguments):
                         type=str, default='')
     parser.add_argument('--run_dir', help='run directory for saving results, models, etc.',
                         type=str, default='')
-    parser.add_argument('--vocab_path', help='folder containing vocab stuff', type=str, default='')
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
-                        type=str, default='')
+                        type=str, default='preproc.pkl')
 
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
@@ -58,10 +57,8 @@ def main(arguments):
     # Preprocessing options
     parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=40)
     parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
-    parser.add_argument('--max_char_v_size', help='char vocabulary size', type=int, default=999)
 
     # Embedding options
-    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
     parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
     parser.add_argument('--glove', help='1 if use glove, else from scratch', type=int, default=1)
@@ -123,7 +120,8 @@ def main(arguments):
 
     # Logistics #
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
-    file_handler = log.FileHandler(args.log_file)
+    log_file = os.path.join(args.run_dir, args.log_file)
+    file_handler = log.FileHandler(log_file)
     log.getLogger().addHandler(file_handler)
     log.info(args)
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed

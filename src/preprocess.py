@@ -8,9 +8,9 @@ import numpy as np
 import torch
 
 from allennlp.data import Instance, Dataset, Vocabulary, Token
-from allennlp.data.fields import TextField, LabelField, NumericField
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenCharactersIndexer, \
-                                         ELMoTokenCharactersIndexer
+from allennlp.data.fields import TextField, LabelField
+from allennlp_mods.numeric_field import NumericField
+from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
 
 from tasks import AcceptabilityTask, MSRPTask, MultiNLITask, QuoraTask, \
                   RTETask, SQuADTask, SNLITask, SSTTask, DPRTask, \
@@ -53,7 +53,7 @@ def build_tasks(args):
     all_task_names = list(set(train_task_names + eval_task_names))
     tasks = get_tasks(all_task_names, args.max_seq_len, args.load_tasks)
 
-    max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
+    max_v_sizes = {'word': args.max_word_v_size}
     token_indexer = {}
     if args.elmo:
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
@@ -73,13 +73,13 @@ def build_tasks(args):
             task.train_data = train
             task.val_data = val
             task.test_data = test
-        log.info("\tFinished building vocab. Using %d words, %d chars",
-                 vocab.get_vocab_size('tokens'), vocab.get_vocab_size('chars'))
+        log.info("\tFinished building vocab. Using %d words",
+                 vocab.get_vocab_size('tokens'))
         log.info("\tLoaded data from %s", preproc_file)
     else:
         log.info("\tProcessing tasks from scratch")
-        word2freq, char2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+        word2freq = get_words(tasks)
+        vocab = get_vocab(word2freq, max_v_sizes)
         word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         preproc = {'word_embs': word_embs}
         for task in tasks:
@@ -93,7 +93,7 @@ def build_tasks(args):
         pkl.dump(preproc, open(preproc_file, 'wb'))
         vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", preproc_file)
-        del word2freq, char2freq
+        del word2freq
     del preproc
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
@@ -137,14 +137,11 @@ def get_words(tasks):
     Return dictionary mapping words to frequencies.
     '''
     word2freq = defaultdict(int)
-    char2freq = defaultdict(int)
 
     def count_sentence(sentence):
-        '''Update counts for words and chars in the sentence'''
+        '''Update counts for words in the sentence'''
         for word in sentence:
             word2freq[word] += 1
-            for char in list(word):
-                char2freq[char] += 1
         return
 
     for task in tasks:
@@ -155,22 +152,17 @@ def get_words(tasks):
             if task.pair_input:
                 for sentence in split[1]:
                     count_sentence(sentence)
-    log.info("\tFinished counting words and chars")
-    return word2freq, char2freq
+    log.info("\tFinished counting words")
+    return word2freq
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
+def get_vocab(word2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes['word'])
     words_by_freq = [(word, freq) for word, freq in word2freq.items()]
     words_by_freq.sort(key=lambda x: x[1], reverse=True)
-    chars_by_freq = [(c, freq) for c, freq in char2freq.items()]
-    chars_by_freq.sort(key=lambda x: x[1], reverse=True)
     for word, _ in words_by_freq[:max_v_sizes['word']]:
         vocab.add_token_to_namespace(word, 'tokens')
-    for char, _ in chars_by_freq[:max_v_sizes['char']]:
-        vocab.add_token_to_namespace(char, 'chars')
-    log.info("\tFinished building vocab. Using %d words, %d chars", vocab.get_vocab_size('tokens'),
-             vocab.get_vocab_size('chars'))
+    log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
     return vocab
 
 def get_embeddings(vocab, vec_file, d_word):
