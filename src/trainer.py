@@ -1113,7 +1113,7 @@ class SamplingMultiTaskTrainer:
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
         training_state = torch.load(training_state_path)
-        return training_state["pass"], training_state["should_stop"]
+        return training_state["epoch"], training_state["should_stop"]
 
     @classmethod
     def from_params(cls, model, serialization_dir, iterator, params):
