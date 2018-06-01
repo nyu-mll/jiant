@@ -83,7 +83,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
         for _ in range(skip_gold):
             gold_fh.readline()
         for row in gold_fh:
-            targ = row.split('\t')[-1].strip()
+            targ = row.strip().split('\t')[-1]
             try:
                 targ = int(targ)
             except:
@@ -102,7 +102,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
         for _ in range(skip_pred):
             pred_fh.readline()
         for row in pred_fh:
-            targ = row.split('\t')[-1].strip()
+            targ = row.strip().split('\t')[-1]
             try:
                 targ = int(targ)
             except:
@@ -112,7 +112,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
     assert len(golds) == len(preds)
     n_exs = len(golds)
     if 'acc' in metrics:
-        acc = sum([1 for gold, pred in zip(golds, preds) if gold == pred]) / len(golds)
+        acc = sum([1 for gold, pred in zip(golds, preds) if gold == pred]) / float(len(golds))
         print("acc: %.3f" % acc)
     if 'f1' in metrics:
         f1 = f1_score(golds, preds)
@@ -161,24 +161,19 @@ def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
     print("spearman r: %.3f" % corr)
 
 codebase = 'mtl-sent-rep'
-run_n = 4
-exp = 'base'
-if exp == 'elmo':
-    exp_dir = 'elmo_no_glove_no_char_v2'
+run_n = 1
+exp = 'base_attn'
+if 'elmo' in exp:
+    exp_dir = 'elmo_no_glove_v3'
 else:
-    exp_dir = 'glove_no_char_v2'
-run_dir = 'r%d_%s_d1500_lenc2_nhwy0_lr1e0_do0.0_clog_reg' % (run_n, exp)
-
-exp_dir = 'debug'
-run_n = 14
-#run_dir = 'elmo_r14_d500_lenc2_nhwy0_lr1e-3_do.1_cmlp'
-run_dir = 'debug_trainer'
+    exp_dir = 'glove_v3'
+run_dir = 'r%d_%s_bpp1_vi10000_d1500_lenc2_nhwy0_adam_lr1e-3_decay.2_p5_tp1_maxscale_do0.2_cmlp' % (run_n, exp)
 
 #codebase = 'SentEval'
-#exp_dir = 'bow'
-#run_dir = 'debug_v0'
+#exp_dir = 'infersent'
+#run_dir = 'r8_benchmark_v3'
 
-tasks = 'sst'
+tasks = 'acceptability'
 
 if 'mnli' in tasks or 'benchmark' in tasks:
     print('MNLI matched')
@@ -191,11 +186,10 @@ if 'mnli' in tasks or 'benchmark' in tasks:
 
 if 'msrp' in tasks or 'benchmark' in tasks:
     print('MSRP')
-    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/msrp_test_ans.tsv'
+    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations-old/tests/msrp_test_ans.tsv'
     #PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/msrp_preds.tsv' % (exp_dir, run_dir)
     PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/MRPC.tsv' % (codebase, exp_dir, run_dir)
     #PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/msrp_preds.tsv' % (codebase, exp_dir, run_dir)
-    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/msrp.tsv' % (codebase, exp_dir, run_dir)
     evaluate(GOLD_FILE, PRED_FILE, metrics=['acc', 'f1'])
 
 if 'quora' in tasks or 'benchmark' in tasks:
@@ -208,18 +202,20 @@ if 'quora' in tasks or 'benchmark' in tasks:
 # RTE
 if 'rte' in tasks or 'benchmark' in tasks:
     print('RTE')
-    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/rte_test_ans.tsv'
+    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations-old/tests/rte_test_ans.tsv'
     #PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/rte_preds.tsv' % (exp_dir, run_dir)
     PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/RTE.tsv' % (codebase, exp_dir, run_dir)
-    gold_map = {'entailment': 0, 'not_entailment': 1}
+    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/RTE.tsv' % (codebase, exp_dir)
     evaluate(GOLD_FILE, PRED_FILE)#, gold_map=gold_map)
 
 # SQuAD
 if 'squad' in tasks or 'benchmark' in tasks:
     print('SQuAD')
-    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/squad_test_ans.tsv'
+    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations-old/tests/squad_test_ans.tsv'
     PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/squad_preds.tsv' % (exp_dir, run_dir)
-    gold_map = {'contains': 1, 'not_contain': 0}
+    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/SQuAD.tsv' % (codebase, exp_dir, run_dir)
+    #gold_map = {'contains': 1, 'not_contain': 0, 'entailment': 1, 'not_entailment': 0}
+    gold_map = {'contains': 'entailment', 'not_contain': 'not_entailment'}
     evaluate(GOLD_FILE, PRED_FILE, gold_map=gold_map)
 
 # SST
@@ -241,8 +237,9 @@ if 'sts' in tasks or 'benchmark' in tasks:
 # Warstadt
 if 'acceptability' in tasks or 'benchmark' in tasks:
     print("Warstadt Acceptability")
-    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/acceptability_test_ans.tsv'
-    PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/acceptability_preds.tsv' % (exp_dir, run_dir)
+    GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/CoLA/test_ans.tsv'
+    PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/acceptability.tsv' % (codebase, exp_dir, run_dir)
+    #PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/Warstadt.tsv' % (codebase, exp_dir, run_dir)
     evaluate(GOLD_FILE, PRED_FILE, metrics=['matthews'])
 
 # WNLI

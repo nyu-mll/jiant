@@ -7,7 +7,9 @@ import _pickle as pkl
 import numpy as np
 import torch
 
-from allennlp.data import Instance, Dataset, Vocabulary, Token
+from allennlp.data import Instance, Vocabulary, Token
+from allennlp.data.dataset import Batch
+from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data.fields import TextField, LabelField
 from allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
@@ -104,7 +106,8 @@ def build_tasks(args):
 
 def del_field_tokens(task):
     ''' Save memory by deleting the tokens that will no longer be used '''
-    all_instances = task.train_data.instances + task.val_data.instances + task.test_data.instances
+    #all_instances = task.train_data.instances + task.val_data.instances + task.test_data.instances
+    all_instances = task.train_data + task.val_data + task.test_data
     for instance in all_instances:
         if 'input1' in instance.fields:
             field = instance.fields['input1']
@@ -188,19 +191,21 @@ def process_task(task, token_indexer, vocab):
     '''
     if hasattr(task, 'train_data_text') and task.train_data_text is not None:
         train = process_split(task.train_data_text, token_indexer, task.pair_input, task.categorical)
-        train.index_instances(vocab)
+        #train.index_instances(vocab)
     else:
         train = None
     if hasattr(task, 'val_data_text') and task.val_data_text is not None:
         val = process_split(task.val_data_text, token_indexer, task.pair_input, task.categorical)
-        val.index_instances(vocab)
+        #val.index_instances(vocab)
     else:
         val = None
     if hasattr(task, 'test_data_text') and task.test_data_text is not None:
         test = process_split(task.test_data_text, token_indexer, task.pair_input, task.categorical)
-        test.index_instances(vocab)
+        #test.index_instances(vocab)
     else:
         test = None
+    for instance in train + val + test:
+        instance.index_fields(vocab)
     return train, val, test
 
 def process_split(split, indexers, pair_input, categorical):
@@ -245,5 +250,4 @@ def process_split(split, indexers, pair_input, categorical):
         else:
             instances = [Instance({"input1": input1, "label": label}) for (input1, label) in
                          zip(inputs1, labels)]
-    return Dataset(instances)
-
+    return instances #DatasetReader(instances) #Batch(instances) #Dataset(instances)

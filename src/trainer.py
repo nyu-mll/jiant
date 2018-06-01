@@ -899,7 +899,7 @@ class SamplingMultiTaskTrainer:
                     logger.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                     task_info['last_log'] = time.time()
                 n_examples += batch['label'].size()[0]
-            assert batch_num == n_val_batches
+            assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
@@ -1027,16 +1027,16 @@ class SamplingMultiTaskTrainer:
             task_states[task_name]['stopped'] = task_info['stopped']
             task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
             sched = task_info['scheduler']
-            sched_params = {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                            'cooldown_counter': sched.cooldown_counter}
+            sched_params = {} #{'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                            #'cooldown_counter': sched.cooldown_counter}
             task_states[task_name]['scheduler'] = sched_params
         task_states['global'] = {}
         task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
         if self._g_scheduler is not None:
             sched = self._g_scheduler
-            sched_params = {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                        'cooldown_counter': sched.cooldown_counter}
+            sched_params = {} #{'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                        #'cooldown_counter': sched.cooldown_counter}
             task_states['global']['scheduler'] = sched_params
         else:
             task_states['global']['scheduler'] = None
@@ -1098,7 +1098,8 @@ class SamplingMultiTaskTrainer:
                 setattr(self._task_infos[task_name]['scheduler'], param, val)
             self._task_infos[task_name]['stopped'] = task_state['stopped']
             generator = self._task_infos[task_name]['tr_generator']
-            for _ in itertools.islice(generator, task_state['total_batches_trained']):
+            for _ in itertools.islice(generator, task_state['total_batches_trained'] % \
+                                      self._task_infos[task_name]['n_tr_batches']):
                 pass
         if task_states['global']['optimizer'] is not None:
             self._g_optimizer.load_state_dict(task_states['global']['optimizer'])

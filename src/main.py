@@ -67,8 +67,8 @@ def main(arguments):
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     # Model options
-    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='bidaf',
-                        choices=['simple', 'bidaf', 'bow', 'attn'])
+    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='simple',
+                        choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
@@ -151,7 +151,8 @@ def main(arguments):
 
     # Train #
     if train_tasks and args.should_train:
-        to_train = [p for p in model.parameters() if p.requires_grad]
+        #to_train = [p for p in model.parameters() if p.requires_grad]
+        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         if args.trainer_type == 'mtl':
             best_epochs = trainer.train(train_tasks, args.task_ordering, args.val_interval,
                                         args.max_vals, args.bpp_method, args.bpp_base, to_train,
@@ -260,7 +261,7 @@ def main(arguments):
                                 pred = 'entailment' if pred else 'not_entailment'
                                 pred_fh.write('%d\t%s\n' % (idx, pred))
                             elif 'squad' in eval_task:
-                                pred = 'contains' if pred else 'not_contain'
+                                pred = 'entailment' if pred else 'not_entailment'
                                 pred_fh.write('%d\t%s\n' % (idx, pred))
                             else:
                                 pred_fh.write("%d\t%d\n" % (idx, pred))
