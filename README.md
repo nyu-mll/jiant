@@ -12,6 +12,8 @@ If you use conda, you can create an environment from this package with the follo
 conda env create -f environment.yml
 ```
 
+Note: The version of AllenNLP available on pip may not be compatible with PyTorch 0.4, in which we recommend installing from [source](https://github.com/allenai/allennlp).
+
 ## Downloading GLUE
 
 We provide a convenience python script for downloading all GLUE data and standard splits.
