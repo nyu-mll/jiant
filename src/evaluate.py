@@ -28,7 +28,7 @@ import tqdm
 from allennlp.data.iterators import DataIterator
 from allennlp.models.model import Model
 
-from tasks import STSBenchmarkTask, STS14Task
+from tasks import STSBTask, STS14Task
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -62,7 +62,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
                                      task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
             n_examples += batch['label'].size()[0]
-            if isinstance(task, (STSBenchmarkTask, STS14Task)):
+            if isinstance(task, (STSBTask, STS14Task)):
                 preds, _ = out['logits'].max(dim=1)
             else:
                 _, preds = out['logits'].max(dim=1)
@@ -74,7 +74,7 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         all_metrics["micro_accuracy"] += all_metrics["%s_accuracy" % task.name] * n_examples
         all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
         n_overall_examples += n_examples
-        if isinstance(task, (STSBenchmarkTask, STS14Task)):
+        if isinstance(task, (STSBTask, STS14Task)):
             task_preds = [min(max(0., pred * 5.), 5.) for pred in task_preds]
         all_preds[task.name] = (task_preds, task_idxs)
 

@@ -28,7 +28,7 @@ from allennlp.training.optimizers import Optimizer
 from util import arrays_to_variables, device_mapping
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-from tasks import STS14Task, STSBenchmarkTask
+from tasks import STS14Task, STSBTask
 
 def build_trainer(args, trainer_type, model, iterator):
     '''Build a trainer'''
@@ -757,8 +757,7 @@ class SamplingMultiTaskTrainer:
             self._model.train()
 
             # randomly select a task
-            #task = random.choice(tasks)
-            task =  samples[n_pass % (validation_interval)]
+            task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]
             if task_info['stopped']:
                 continue

@@ -1,22 +1,19 @@
 '''Preprocessing functions and pipeline'''
 import os
-import ipdb as pdb # pylint disable=unused-import
 import logging as log
 from collections import defaultdict
+import ipdb as pdb # pylint disable=unused-import
 import _pickle as pkl
 import numpy as np
 import torch
 
 from allennlp.data import Instance, Vocabulary, Token
-from allennlp.data.dataset import Batch
-from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data.fields import TextField, LabelField
-from allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
+from allennlp_mods.numeric_field import NumericField
 
-from tasks import AcceptabilityTask, MSRPTask, MultiNLITask, QuoraTask, \
-                  RTETask, SQuADTask, SNLITask, SSTTask, DPRTask, \
-                  STSBenchmarkTask, WinogradNLITask, AdversarialTask
+from tasks import CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
+                  QNLITask, SNLITask, SSTTask, STSBTask, WNLITask
 
 if "cs.nyu.edu" in os.uname()[1] or "dgx" in os.uname()[1]:
     PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
@@ -24,18 +21,20 @@ else:
     PATH_PREFIX = '/beegfs/aw3272/'
 PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
 
-
-ALL_TASKS = ['mnli', 'msrp', 'quora', 'rte', 'squad', 'snli', 'sst', 'sts-b', 'wnli', 'acceptability']
-NAME2TASK = {'msrp': MSRPTask, 'mnli': MultiNLITask, 'quora': QuoraTask,
-             'rte': RTETask, 'squad': SQuADTask, 'snli': SNLITask,
-             'acceptability': AcceptabilityTask, 'sst': SSTTask,
-             'wnli': WinogradNLITask, 'sts-b': STSBenchmarkTask}
-NAME2DATA = {'msrp': 'MRPC/', 'mnli': 'MNLI/', 'rte': 'RTE/',
-             'quora': 'QQP/', 'acceptability': 'CoLA/', 'wnli': 'WNLI/',
-             'squad': 'QNLI/', 'snli': 'SNLI/', 'sst': 'SST-2/',
-             'sts-b': 'STS-B/'}
-for k, v in NAME2DATA.items():
-    NAME2DATA[k] = PATH_PREFIX + v
+ALL_TASKS = ['mnli', 'mrpc', 'qqp', 'rte', 'qnli', 'snli', 'sst', 'sts-b', 'wnli', 'cola']
+NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
+             'cola': (CoLATask, 'CoLA/'),
+             'mrpc': (MRPCTask, 'MRPC/'),
+             'qqp': (QQPTask, 'QQP'),
+             'sts-b': (STSBTask, 'STS-B/'),
+             'mnli': (MultiNLITask, 'MNLI/'),
+             'qnli': (QNLITask, 'QNLI/'),
+             'rte': (RTETask, 'RTE/'),
+             'snli': (SNLITask, 'SNLI/'),
+             'wnli': (WNLITask, 'WNLI/')
+            }
+for k, v in NAME2INFO.items():
+    NAME2INFO[k] = (v[0], PATH_PREFIX + v[1])
 
 def build_tasks(args):
     '''Prepare tasks'''
@@ -122,13 +121,13 @@ def get_tasks(task_names, max_seq_len, load):
     '''
     tasks = []
     for name in task_names:
-        assert name in NAME2TASK, 'Task not found!'
-        pkl_path = NAME2DATA[name] + "%s_task.pkl" % name
+        assert name in NAME2INFO, 'Task not found!'
+        pkl_path = NAME2INFO[name][1] + "%s_task.pkl" % name
         if os.path.isfile(pkl_path) and load:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
-            task = NAME2TASK[name](NAME2DATA[name], max_seq_len, name)
+            task = NAME2INFO[name][0](NAME2INFO[name][1], max_seq_len, name)
             pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))

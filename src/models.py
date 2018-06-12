@@ -23,7 +23,7 @@ from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
-from tasks import STS14Task, STSBenchmarkTask, AcceptabilityTask
+from tasks import STS14Task, STSBTask, CoLATask
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef
 
@@ -176,7 +176,7 @@ class MultiTaskModel(nn.Module):
     def build_classifier(self, task, d_inp):
         ''' Build a task specific prediction layer and register it '''
         cls_type, dropout, d_hid = self.cls_type, self.dropout_cls, self.d_hid_cls
-        if isinstance(task, (STSBenchmarkTask, STS14Task)) or cls_type == 'log_reg':
+        if isinstance(task, (STSBTask, STS14Task)) or cls_type == 'log_reg':
             layer = nn.Linear(d_inp, task.n_classes)
         elif cls_type == 'mlp':
             layer = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid), nn.Tanh(),
@@ -219,13 +219,13 @@ class MultiTaskModel(nn.Module):
             logits = pred_layer(sent_emb)
         out = {'logits': logits}
         if label is not None:
-            if isinstance(task, (STS14Task, STSBenchmarkTask)):
+            if isinstance(task, (STS14Task, STSBTask)):
                 loss = F.mse_loss(logits, label)
                 label = label.squeeze(-1).data.cpu().numpy()
                 logits = logits.squeeze(-1).data.cpu().numpy()
                 task.scorer1(pearsonr(logits, label)[0])
                 task.scorer2(spearmanr(logits, label)[0])
-            elif isinstance(task, AcceptabilityTask):
+            elif isinstance(task, CoLATask):
                 label = label.squeeze(-1)
                 loss = F.cross_entropy(logits, label)
                 task.scorer2(logits, label)

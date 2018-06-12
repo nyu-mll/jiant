@@ -6,7 +6,7 @@ import codecs
 import random
 import logging as log
 from abc import ABCMeta, abstractmethod
-import ipdb as pdb # pylint disable=unused-import
+import ipdb as pdb
 import nltk
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
@@ -116,14 +116,14 @@ class Task():
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-class QuoraTask(Task):
+class QQPTask(Task):
     '''
     Task class for Quora Question Pairs.
     '''
 
     def __init__(self, path, max_seq_len, name="quora"):
         ''' '''
-        super(QuoraTask, self).__init__(name, 2)
+        super(QQPTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.scorer2 = F1Measure(1)
 
@@ -215,12 +215,12 @@ class MultiNLITask(Task):
         ''' No F1 '''
         return {'accuracy': self.scorer1.get_metric(reset)}
 
-class MSRPTask(Task):
+class MRPCTask(Task):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 
-    def __init__(self, path, max_seq_len, name="msrp"):
+    def __init__(self, path, max_seq_len, name="mrpc"):
         ''' '''
-        super(MSRPTask, self).__init__(name, 2)
+        super(MRPCTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.scorer2 = F1Measure(1)
 
@@ -244,11 +244,11 @@ class MSRPTask(Task):
         return {'accuracy': (acc + f1) / 2, 'acc': acc, 'f1': f1,
                 'precision': prc, 'recall': rcl}
 
-class STSBenchmarkTask(Task):
+class STSBTask(Task):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
     def __init__(self, path, max_seq_len, name="sts_benchmark"):
         ''' '''
-        super(STSBenchmarkTask, self).__init__(name, 1)
+        super(STSBTask, self).__init__(name, 1)
         self.categorical = 0
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -318,10 +318,10 @@ class RTETask(Task):
         self.test_data_text = te_data
         log.info("\tFinished loading RTE{1,2,3}.")
 
-class SQuADTask(Task):
+class QNLITask(Task):
     '''Task class for SQuAD NLI'''
     def __init__(self, path, max_seq_len, name="squad"):
-        super(SQuADTask, self).__init__(name, 2)
+        super(QNLITask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
@@ -338,11 +338,11 @@ class SQuADTask(Task):
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
 
-class AcceptabilityTask(Task):
+class CoLATask(Task):
     '''Class for Warstdadt acceptability task'''
     def __init__(self, path, max_seq_len, name="acceptability"):
         ''' '''
-        super(AcceptabilityTask, self).__init__(name, 2)
+        super(CoLATask, self).__init__(name, 2)
         self.pair_input = 0
         self.load_data(path, max_seq_len)
         self.val_metric = "%s_accuracy" % self.name
@@ -368,11 +368,11 @@ class AcceptabilityTask(Task):
         return {'accuracy': self.scorer1.get_metric(reset),
                 'acc': self.scorer2.get_metric(reset)}
 
-class WinogradNLITask(Task):
+class WNLITask(Task):
     '''Class for Winograd NLI task'''
     def __init__(self, path, max_seq_len, name="winograd"):
         ''' '''
-        super(WinogradNLITask, self).__init__(name, 2)
+        super(WNLITask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
 
     def load_data(self, path, max_seq_len):
@@ -391,26 +391,6 @@ class WinogradNLITask(Task):
 #######################################
 # Non-benchmark tasks
 #######################################
-
-class AdversarialTask(Task):
-    '''Class for adversarial examples'''
-    def __init__(self, path, max_seq_len, name="adversarial"):
-        '''
-        Args:
-            path: path to data directory
-        '''
-        super(AdversarialTask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
-
-    def load_data(self, path, max_seq_len):
-        '''Load the data'''
-        targ_map = {'entailment': 1, 'neutral': 0, 'contradiction': 2}
-        te_data = load_tsv(os.path.join(path, "adversarial_nli.tsv"), max_seq_len,
-                           s1_idx=6, s2_idx=7, targ_idx=8, targ_map=targ_map, skip_rows=1)
-        self.test_data_text = te_data
-        self.train_data_text = te_data
-        self.val_data_text = te_data
-        log.info("\tFinished loading adversarial.")
 
 class DPRTask(Task):
     '''Definite pronoun resolution'''
