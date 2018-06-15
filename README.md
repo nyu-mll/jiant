@@ -36,6 +36,11 @@ python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs
 
 NB: The version of AllenNLP used has [issues](https://github.com/allenai/allennlp/issues/342) with tensorboard. You may need to substitute calls ``from tensorboard import SummaryWriter`` to ``from tensorboardX import SummaryWriter`` in your AllenNLP source files.
 
+## Adding New Tasks
+
+To add new tasks, you should:
+- Create a class in src/tasks.py, inheriting from existing classes as necessary (e.g. PairClassificationTask, SequenceGenerationTask, etc.). The task definition should also include the data loader, as a method called load\_data().
+- In src/model.py, make sure that your task is correctly being handled in forward() of MultiTaskModel. Create additional methods or add branches to existing methods as necessary.
 
 ## GloVe, CoVe, and ELMo
 
