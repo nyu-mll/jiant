@@ -4,7 +4,10 @@ Assorted utilities for working with neural networks in AllenNLP.
 
 import pdb
 from typing import Dict, List, Optional, Union
+import random
 import logging
+import codecs
+import nltk
 
 import numpy
 import torch
@@ -14,8 +17,70 @@ from allennlp.common.checks import ConfigurationError
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+def process_sentence(sent, max_seq_len):
+    '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
+    #return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
+    return nltk.word_tokenize(sent)[:max_seq_len]
 
-def get_lengths_from_binary_sequence_mask(mask: torch.Tensor):
+def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=None,
+             targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t'):
+    '''Load a tsv '''
+    sent1s, sent2s, targs, idxs = [], [], [], []
+    with codecs.open(data_file, 'r', 'utf-8') as data_fh:
+        for _ in range(skip_rows):
+            data_fh.readline()
+        for row_idx, row in enumerate(data_fh):
+            try:
+                row = row.strip().split(delimiter)
+                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
+                    continue
+
+                if targ_idx is not None:
+                    if targ_map is not None:
+                        targ = targ_map[row[targ_idx]]
+                    elif targ_fn is not None:
+                        targ = targ_fn(row[targ_idx])
+                    else:
+                        targ = int(row[targ_idx])
+                else:
+                    targ = 0
+
+
+                if s2_idx is not None:
+                    sent2 = process_sentence(row[s2_idx], max_seq_len)
+                    if not len(sent2):
+                        continue
+                    sent2s.append(sent2)
+
+                if idx_idx is not None:
+                    idx = int(row[idx_idx])
+                    idxs.append(idx)
+
+                sent1s.append(sent1)
+                targs.append(targ)
+
+            except Exception as e:
+                print(e, " file: %s, row: %d" % (data_file, row_idx))
+                continue
+
+    if idx_idx is not None:
+        return sent1s, sent2s, targs, idxs
+    else:
+        return sent1s, sent2s, targs
+
+def split_data(data, ratio, shuffle=1):
+    '''Split dataset according to ratio, larger split is first return'''
+    n_exs = len(data[0])
+    split_pt = int(n_exs * ratio)
+    splits = [[], []]
+    for col in data:
+        splits[0].append(col[:split_pt])
+        splits[1].append(col[split_pt:])
+    return tuple(splits[0]), tuple(splits[1])
+
+
+def get_lengths_from_binary_sequence_mask(mask):
     """
     Compute sequence lengths for each batch element in a tensor using a
     binary mask.
@@ -34,7 +99,7 @@ def get_lengths_from_binary_sequence_mask(mask: torch.Tensor):
     return mask.long().sum(-1)
 
 
-def sort_batch_by_length(tensor: torch.autograd.Variable, sequence_lengths: torch.autograd.Variable):
+def sort_batch_by_length(tensor, sequence_lengths):
     """
     Sort a batch first tensor by some specified lengths.
 
@@ -75,7 +140,7 @@ def sort_batch_by_length(tensor: torch.autograd.Variable, sequence_lengths: torc
     return sorted_tensor, sorted_sequence_lengths, restoration_indices
 
 
-def get_dropout_mask(dropout_probability: float, tensor_for_masking: torch.autograd.Variable):
+def get_dropout_mask(dropout_probability, tensor_for_masking):
     """
     Computes and returns an element-wise dropout mask for a given tensor, where
     each element in the mask is dropped out with probability dropout_probability.
@@ -102,10 +167,8 @@ def get_dropout_mask(dropout_probability: float, tensor_for_masking: torch.autog
     return dropout_mask
 
 
-def arrays_to_variables(data_structure: Dict[str, Union[dict, numpy.ndarray]],
-                        cuda_device: int = -1,
-                        add_batch_dimension: bool = False,
-                        for_training: bool = True):
+def arrays_to_variables(data_structure, cuda_device=-1, add_batch_dimension=False,
+                        for_training=True):
     """
     Convert an (optionally) nested dictionary of arrays to Pytorch ``Variables``,
     suitable for use in a computation graph.

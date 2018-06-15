@@ -11,11 +11,11 @@ import ipdb as pdb
 import torch
 
 from allennlp.data.iterators import BasicIterator, BucketIterator
-from util import device_mapping
+from utils import device_mapping
 
 from preprocess import build_tasks
 from models import build_model
-from trainer import MultiTaskTrainer, build_trainer
+from trainer import build_trainer
 from evaluate import evaluate
 
 def main(arguments):
@@ -67,6 +67,8 @@ def main(arguments):
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     # Model options
+    parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
+                        choices=['bow', 'rnn'])
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='simple',
                         choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
@@ -183,8 +185,9 @@ def main(arguments):
     for task in eval_tasks:
         pred_layer = getattr(model, "%s_pred_layer" % task.name)
         to_train = pred_layer.parameters()
-        trainer = MultiTaskTrainer.from_params(model, args.run_dir + '/%s/' % task.name,
-                                               iterator, copy.deepcopy(train_params))
+        #trainer = MultiTaskTrainer.from_params(model, args.run_dir + '/%s/' % task.name,
+        #                                       iterator, copy.deepcopy(train_params))
+        trainer = None # todo
         trainer.train([task], args.task_ordering, 1, args.max_vals, 'percent_tr', 1, to_train,
                       opt_params, schd_params, 1)
         layer_path = os.path.join(args.run_dir, task.name, "%s_best.th" % task.name)
