@@ -1,6 +1,5 @@
-# GLUE Baselines
-This repo contains the code for baselines for the [Generalized Language Understanding Evaluation](https://gluebenchmark.com/) (GLUE) benchmark.
-See [our paper](https://www.nyu.edu/projects/bowman/glue.pdf) for more details about GLUE or the baselines.
+# JSALT: *J*iant / *J*SALT *S*entence *A*ggregating *L*earning *T*hing
+This repo contains the code for jiant sentence representation learning model for the 2018 JSALT Workshop.
 
 ## Dependencies
 
@@ -14,15 +13,17 @@ conda env create -f environment.yml
 
 Note: The version of AllenNLP available on pip may not be compatible with PyTorch 0.4, in which we recommend installing from [source](https://github.com/allenai/allennlp).
 
-## Downloading GLUE
+## Downloading data
 
-We provide a convenience python script for downloading all GLUE data and standard splits.
+The repo contains a convenience python script for downloading all GLUE data and standard splits.
 
 ```
 python download_glue_data.py --data_dir glue_data --tasks all
 ```
 
 After downloading GLUE, point ``PATH_PREFIX`` in  ``src/preprocess.py`` to the directory containing the data.
+
+For other pretraining task data, contact the person in charge.
 
 ## Running
 
@@ -40,7 +41,7 @@ python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs
 
 To add new tasks, you should:
 - Create a class in ``src/tasks.py``, making sure that:
-    - You task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
+    - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
     - The task definition should also include the data loader, as a method called ``load\_data()``.
     - Your task should include an attributes ``task.sentences`` that is a list of all text to index.
 - In ``src/model.py``, make sure that:
@@ -71,19 +72,6 @@ To use ELMo, set ``--elmo`` to 1. To use ELMo without GloVe, additionally set ``
 
 TODO.
 
-## Reference
-
-If you use this code or GLUE, please consider citing us.
-
-```
- @unpublished{wang2018glue
-     title={{GLUE}: A Multi-Task Benchmark and Analysis Platform for
-             Natural Language Understanding}
-     author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill,
-             Felix and Levy, Omer and Bowman, Samuel R.}
-     note={arXiv preprint 1804.07461}
-     year={2018}
- }
-```
+## Getting Help
 
 Feel free to contact alexwang _at_ nyu.edu with any questions or comments.
