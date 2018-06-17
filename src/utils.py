@@ -46,7 +46,6 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
                 else:
                     targ = 0
 
-
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
@@ -78,7 +77,6 @@ def split_data(data, ratio, shuffle=1):
         splits[0].append(col[:split_pt])
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
-
 
 def get_lengths_from_binary_sequence_mask(mask):
     """

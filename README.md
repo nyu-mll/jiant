@@ -39,8 +39,10 @@ NB: The version of AllenNLP used has [issues](https://github.com/allenai/allennl
 ## Adding New Tasks
 
 To add new tasks, you should:
-- Create a class in src/tasks.py, inheriting from existing classes as necessary (e.g. PairClassificationTask, SequenceGenerationTask, etc.). The task definition should also include the data loader, as a method called load\_data().
-- In src/model.py, make sure that your task is correctly being handled in forward() of MultiTaskModel. Create additional methods or add branches to existing methods as necessary.
+- Create a class in ``src/tasks.py``, inheriting from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.). The task definition should also include the data loader, as a method called ``load\_data()``.
+- In src/model.py, make sure that:
+    - The correct task-specific module is being created for your task in ``build_module()``.
+    - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
 
 ## GloVe, CoVe, and ELMo
 

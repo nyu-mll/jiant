@@ -23,22 +23,19 @@ class Task():
     '''
     __metaclass__ = ABCMeta
 
-    def __init__(self, name, n_classes):
+    def __init__(self, name):
         self.name = name
-        self.n_classes = n_classes
         self.train_data_text, self.val_data_text, self.test_data_text = \
             None, None, None
         self.train_data = None
         self.val_data = None
         self.test_data = None
-        self.pair_input = 1
-        self.categorical = 1
+        # move below to the next generation?
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = None
 
-    @abstractmethod
     def load_data(self, path, max_seq_len):
         '''
         Load data from path and create splits.
@@ -50,30 +47,47 @@ class Task():
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-class PairClassificationTask(Task):
-    ''' Generic sentence pair classification '''
-    def __init_(self, name, n_classes):
-        super().__init__(name, n_classes)
-
 class SingleClassificationTask(Task):
     ''' Generic sentence pair classification '''
-    def __init_(self, name, n_classes):
-        super().__init__(name, n_classes)
+    def __init__(self, name, n_classes):
+        super().__init__(name)
+        self.type = 'classification'
+        self.n_classes = n_classes
+
+class PairClassificationTask(Task):
+    ''' Generic sentence pair classification '''
+    def __init__(self, name, n_classes):
+        super().__init__(name)
+        self.type = 'classification'
+        self.n_classes = n_classes
 
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
-    def __init_(self, name, n_classes):
-        super().__init__(name, n_classes)
+    def __init__(self, name):
+        super().__init__(name)
+        self.type = 'regression'
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
-    def __init_(self, name, n_classes):
-        super().__init__(name, n_classes)
+    def __init__(self, name):
+        super().__init__(name)
+        self.type = 'generation'
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
-    def __init_(self, name, n_classes):
+    def __init__(self, name, n_classes):
         super().__init__(name, n_classes)
+        self.type = 'ranking'
+
+class LanguageModelingTask(SequenceGenerationTask):
+    ''' Generic language modeling task '''
+    def __init__(self, name):
+        super().__init__(name)
+
+    def load_data(self, path, max_seq_len):
+        pass
+
+""" GLUE TASKS """
 
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
@@ -179,6 +193,8 @@ class MRPCTask(PairClassificationTask):
         ''' '''
         super(MRPCTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[1] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
 
     def load_data(self, path, max_seq_len):
@@ -206,7 +222,6 @@ class STSBTask(PairRegressionTask):
     def __init__(self, path, max_seq_len, name="sts_benchmark"):
         ''' '''
         super(STSBTask, self).__init__(name, 1)
-        self.categorical = 0
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Average()

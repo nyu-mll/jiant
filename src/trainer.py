@@ -368,7 +368,7 @@ class SamplingMultiTaskTrainer:
                     description = self._description_from_metrics(task_metrics)
                     logger.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                     task_info['last_log'] = time.time()
-                n_examples += batch['label'].size()[0]
+                n_examples += batch['labels'].size()[0]
             assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics

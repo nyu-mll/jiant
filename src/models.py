@@ -137,19 +137,44 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, pair_encoder)
-    build_classifiers(tasks, model, d_pair, d_single)
+    build_modules(tasks, model, d_pair, d_single, args)
     if args.cuda >= 0:
         model = model.cuda()
     return model
 
-def build_classifiers(tasks, model, d_pair, d_single):
-    '''
-    Build the classifier for each task
-    '''
+def build_modules(tasks, model, d_pair, d_single, args):
+    ''' Build task-specific components for each task and add them to model '''
     for task in tasks:
-        d_task = d_pair * 4 if task.pair_input else d_single
-        model.build_classifier(task, d_task)
+        if task.type == 'classification':
+            d_task = d_pair * 4 if isinstance(task, PairClassificationTask) else d_single
+            module = build_classifier(task, d_task, args)
+        elif task.type == 'regression':
+            pass
+        elif task.type == 'seq_generation':
+            pass
+        setattr(model, '%s_mdl' % task.name, module)
     return
+
+def build_classifier(task, d_inp, args):
+    ''' Build a task specific classifier '''
+    cls_type, dropout, d_hid = \
+            args.classifier, args.classifier_dropout, args.classifier_hid_dim
+    if isinstance(task, STSBTask) or cls_type == 'log_reg':
+        classifier = nn.Linear(d_inp, task.n_classes)
+    elif cls_type == 'mlp':
+        classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
+                                   nn.Tanh(), nn.Dropout(p=dropout),
+                                   nn.Linear(d_hid, task.n_classes))
+    elif cls_type == 'fancy_mlp':
+        classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
+                                   nn.Tanh(), nn.Dropout(p=dropout),
+                                   nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                   nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
+    else:
+        raise ValueError("Unrecognized classifier!")
+
+    return classifier
+
 
 class MultiTaskModel(nn.Module):
     '''
@@ -165,27 +190,6 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.pair_encoder = pair_encoder
         self.pair_enc_type = args.pair_enc
-
-        self.cls_type = args.classifier
-        self.dropout_cls = args.classifier_dropout
-        self.d_hid_cls = args.classifier_hid_dim
-
-    def build_classifier(self, task, d_inp):
-        ''' Build a task specific prediction layer and register it '''
-        cls_type, dropout, d_hid = self.cls_type, self.dropout_cls, self.d_hid_cls
-        if isinstance(task, STSBTask) or cls_type == 'log_reg':
-            layer = nn.Linear(d_inp, task.n_classes)
-        elif cls_type == 'mlp':
-            layer = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid), nn.Tanh(),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
-        elif cls_type == 'fancy_mlp':
-            layer = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid), nn.Tanh(),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, d_hid), nn.Tanh(),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
-        else:
-            raise ValueError("Unrecognized classifier!")
-
-        setattr(self, '%s_mdl' % task.name, layer)
 
     def forward(self, task, batch):
         '''
@@ -225,8 +229,8 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_emb)
 
-        if 'label' in batch:
-            labels = batch['label'].squeeze(-1)
+        if 'labels' in batch:
+            labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
@@ -244,16 +248,16 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent_emb1, s1_mask = self.sent_encoder(batch['input1'])
-        sent_emb2, s2_mask = self.sent_encoder(batch['input2'])
-        pair_emb = self.pair_encoder(sent_emb1, sent_emb2)
+        s1, s1_mask = self.sent_encoder(batch['input1'])
+        s2, s2_mask = self.sent_encoder(batch['input2'])
+        pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(pair_emb) # might want to pass sent_embs
 
-        if 'label' in batch:
-            labels = batch['label'].squeeze(-1)
+        if 'labels' in batch:
+            labels = batch['labels'].squeeze(-1)
             task.scorer1(logits, labels)
             if task.scorer2 is not None:
                 task.scorer2(logits, labels)
@@ -264,17 +268,17 @@ class MultiTaskModel(nn.Module):
     def _pair_regression_forward(self, batch, task):
         ''' For STS-B '''
         out = {}
-        sent_emb1, s1_mask = self.sent_encoder(batch['input1'])
-        sent_emb2, s2_mask = self.sent_encoder(batch['input2'])
-        pair_emb = self.pair_encoder(sent_emb1, sent_emb2)
+        s1, s1_mask = self.sent_encoder(batch['input1'])
+        s2, s2_mask = self.sent_encoder(batch['input2'])
+        pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         scores = classifier(pair_emb) # might want to pass sent_embs
 
         out['logits'] = scores # maybe change the name here?
-        if 'label' in batch:
-            labels = batch['label']
+        if 'labels' in batch:
+            labels = batch['labels']
             out['loss'] = F.mse_loss(scores, labels)
             if isinstance(task, STSBTask):
                 scores = scores.squeeze(-1).data.cpu().numpy()
@@ -285,7 +289,17 @@ class MultiTaskModel(nn.Module):
 
     def _seq_gen_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
-        raise NotImplementedError
+        out = {}
+        s1, s1_mask = self.sent_encoder(batch['input1'])
+
+        classifier = getattr(self, "%s_mdl" % task.name)
+        logits = classifier(s1)
+        out['logits'] = logits
+
+        if 'labels' in batch:
+            labels = batch['labels']
+            out['loss'] = F.cross_entropy(logits, labels, ignore_index=1) # some pad index
+        return out
 
     def _ranking_forward(self, batch, task):
         ''' For caption and image ranking '''

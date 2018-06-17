@@ -131,7 +131,7 @@ class SimplePairEncoder(Model):
     def __init__(self, vocab):
         super(SimplePairEncoder, self).__init__(vocab)
 
-    def forward(self, s1, s2):
+    def forward(self, s1, s2, s1_mask, s2_mask):
         """ See above """
         sent_emb1 = s1.max(dim=1)[0]
         sent_emb2 = s2.max(dim=1)[0]
@@ -184,16 +184,14 @@ class AttnPairEncoder(Model):
 
         initializer(self)
 
-    def forward(self, s1, s2): # pylint: disable=arguments-differ
+    def forward(self, s1, s2, s1_mask, s2_mask): # pylint: disable=arguments-differ
         """
         Parameters
         ----------
         s1 : Dict[str, torch.LongTensor]
             From a ``TextField``.
         s2 : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this s2 contains the answer to the
-            s1, and predicts the beginning and ending positions of the answer within the
-            s2.
+            From a ``TextField``.
 
         Returns
         -------
@@ -204,12 +202,6 @@ class AttnPairEncoder(Model):
         """
         # Similarity matrix
         # Shape: (batch_size, s2_length, s1_length)
-        if self._mask_lstms:
-            s1_mask = util.get_text_field_mask(s1)
-            s2_mask = util.get_text_field_mask(s2)
-        else:
-            s1_mask, s2_mask = None, None
-
         similarity_mat = self._matrix_attention(s2, s1)
 
         # s2 representation
