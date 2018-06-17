@@ -149,7 +149,7 @@ def build_modules(tasks, model, d_pair, d_single, args):
             d_task = d_pair * 4 if isinstance(task, PairClassificationTask) else d_single
             module = build_classifier(task, d_task, args)
         elif task.type == 'regression':
-            pass
+            module = build_regressor(task, d_pair * 4, args)
         elif task.type == 'seq_generation':
             pass
         setattr(model, '%s_mdl' % task.name, module)
@@ -174,6 +174,23 @@ def build_classifier(task, d_inp, args):
         raise ValueError("Unrecognized classifier!")
 
     return classifier
+
+def build_regressor(task, d_inp, args):
+    ''' Build a task specific regressor '''
+    cls_type, dropout, d_hid = \
+            args.classifier, args.classifier_dropout, args.classifier_hid_dim
+    if isinstance(task, STSBTask) or cls_type == 'log_reg':
+        regressor = nn.Linear(d_inp, 1)
+    elif cls_type == 'mlp':
+        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
+                                  nn.Tanh(), nn.Dropout(p=dropout),
+                                  nn.Linear(d_hid, 1))
+    elif cls_type == 'fancy_mlp':
+        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
+                                  nn.Tanh(), nn.Dropout(p=dropout),
+                                  nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                  nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
+    return regressor
 
 
 class MultiTaskModel(nn.Module):
@@ -273,8 +290,8 @@ class MultiTaskModel(nn.Module):
         pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
 
         # pass to a task specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
-        scores = classifier(pair_emb) # might want to pass sent_embs
+        regressor = getattr(self, "%s_mdl" % task.name)
+        scores = regressor(pair_emb) # might want to pass sent_embs
 
         out['logits'] = scores # maybe change the name here?
         if 'labels' in batch:

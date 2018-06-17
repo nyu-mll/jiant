@@ -63,7 +63,7 @@ TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
-while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:GI:N:y:K:W:' flag; do
+while getopts 'ivkmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:GI:N:y:K:W:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
         n) EXP_NAME="${OPTARG}" ;;
@@ -73,7 +73,8 @@ while getopts 'ikmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:GI:N:y:K:W:' 
         t) SHOULD_TRAIN=0 ;;
         k) LOAD_TASKS=0 ;;
         m) LOAD_MODEL=1 ;;
-        i) LOAD_PREPROC=0 ;;
+        i) RELOAD_INDEX=1 ;;
+        v) RELOAD_VOCAB=1 ;;
         M) BPP_METHOD="${OPTARG}" ;; 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;

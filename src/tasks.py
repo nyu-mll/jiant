@@ -95,6 +95,8 @@ class QQPTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name="qqp"):
         super().__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
         self.val_metric = "%s_acc_f1" # TODO(Alex): handle non acc validation
 
@@ -125,6 +127,9 @@ class SNLITask(PairClassificationTask):
         ''' Args: '''
         super(SNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
+
         self.scorer2 = None
 
     def load_data(self, path, max_seq_len):
@@ -153,6 +158,8 @@ class MultiNLITask(PairClassificationTask):
         super(MultiNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
         self.scorer2 = None
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
@@ -194,7 +201,7 @@ class MRPCTask(PairClassificationTask):
         super(MRPCTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-                         self.val_data_text[1] + self.val_data_text[1]
+                         self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
 
     def load_data(self, path, max_seq_len):
@@ -221,12 +228,14 @@ class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
     def __init__(self, path, max_seq_len, name="sts_benchmark"):
         ''' '''
-        super(STSBTask, self).__init__(name, 1)
+        super(STSBTask, self).__init__(name)
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Average()
         self.scorer2 = Average()
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         ''' '''
@@ -253,6 +262,7 @@ class SSTTask(SingleClassificationTask):
         super(SSTTask, self).__init__(name, 2)
         self.pair_input = 0
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
     def load_data(self, path, max_seq_len):
         ''' '''
@@ -274,6 +284,8 @@ class RTETask(PairClassificationTask):
         ''' '''
         super(RTETask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         ''' Process the datasets located at path. '''
@@ -295,6 +307,8 @@ class QNLITask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name="squad"):
         super(QNLITask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -321,6 +335,7 @@ class CoLATask(SingleClassificationTask):
         self.val_metric_decreases = False
         self.scorer1 = Average()
         self.scorer2 = CategoricalAccuracy()
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -346,6 +361,8 @@ class WNLITask(PairClassificationTask):
         ''' '''
         super(WNLITask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
