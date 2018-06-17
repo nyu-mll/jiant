@@ -1,4 +1,4 @@
-# JSALT: *J*iant / *J*SALT *S*entence *A*ggregating *L*earning *T*hing
+# JSALT: *J*iant (or *J*SALT) *S*entence *A*ggregating *L*earning *T*hing
 This repo contains the code for jiant sentence representation learning model for the 2018 JSALT Workshop.
 
 ## Dependencies
