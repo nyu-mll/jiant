@@ -54,7 +54,7 @@ def build_tasks(args):
     train_task_names = parse_tasks(args.train_tasks)
     eval_task_names = parse_tasks(args.eval_tasks)
     all_task_names = list(set(train_task_names + eval_task_names))
-    tasks = get_tasks(all_task_names, args.max_seq_len, args.load_tasks)
+    tasks = get_tasks(all_task_names, args.max_seq_len, bool(not args.reload_tasks))
 
     max_v_sizes = {'word': args.max_word_v_size}
     token_indexer = {}
@@ -65,35 +65,52 @@ def build_tasks(args):
     else:
         token_indexer["words"] = SingleIdTokenIndexer()
 
+    # Load vocab and associated word embeddings
     vocab_path = os.path.join(args.exp_dir, 'vocab')
-    preproc_file = os.path.join(args.exp_dir, args.preproc_file)
-    if args.load_preproc and os.path.exists(preproc_file):
-        preproc = pkl.load(open(preproc_file, 'rb'))
+    emb_file = os.path.join(args.exp_dir, 'embs.pkl')
+    if not args.reload_vocab and os.path.exists(vocab_path):
         vocab = Vocabulary.from_files(vocab_path)
-        word_embs = preproc['word_embs']
-        for task in tasks:
+        log.info("\tLoaded vocab from %s", vocab_path)
+    else:
+        log.info("\tBuilding vocab from scratch")
+        word2freq = get_words(tasks)
+        vocab = get_vocab(word2freq, max_v_sizes)
+        vocab.save_to_files(vocab_path)
+        log.info("\tSaved vocab to %s", vocab_path)
+        del word2freq
+    log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
+    if not args.reload_vocab and os.path.exists(emb_file):
+        word_embs = pkl.load(open(emb_file, 'rb'))
+    else:
+        log.info("\tBuilding embeddings from scratch")
+        word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+        pkl.dump(word_embs, open(emb_file, 'wb'))
+        log.info("\tSaved embeddings to %s", emb_file)
+
+    # Index tasks using vocab, using previous preprocessing if available.
+    preproc_file = os.path.join(args.exp_dir, args.preproc_file)
+    if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
+        preproc = pkl.load(open(preproc_file, 'rb'))
+        save_preproc = 0
+    else:
+        preproc = {}
+    for task in tasks:
+        if task.name in preproc:
             train, val, test = preproc[task.name]
             task.train_data = train
             task.val_data = val
             task.test_data = test
-        log.info("\tFinished building vocab. Using %d words",
-                 vocab.get_vocab_size('tokens'))
-        log.info("\tLoaded data from %s", preproc_file)
-    else:
-        log.info("\tProcessing tasks from scratch")
-        word2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, max_v_sizes)
-        word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-        preproc = {'word_embs': word_embs}
-        for task in tasks:
+            log.info("\tLoaded indexed data for %s from %s", task.name, preproc_file)
+        else:
+            log.info("\tIndexing task %s from scratch", task.name)
             process_task(task, token_indexer, vocab)
             del_field_tokens(task)
             preproc[task.name] = (task.train_data, task.val_data, task.test_data)
-        log.info("\tFinished indexing tasks")
+            save_preproc = 1
+    log.info("\tFinished indexing tasks")
+    if save_preproc: # save preprocessing again because we processed something from scratch
         pkl.dump(preproc, open(preproc_file, 'wb'))
-        vocab.save_to_files(vocab_path)
         log.info("\tSaved data to %s", preproc_file)
-        del word2freq
     del preproc
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
@@ -121,7 +138,7 @@ def get_tasks(task_names, max_seq_len, load):
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
         pkl_path = NAME2INFO[name][1] + "%s_task.pkl" % name
-        if os.path.isfile(pkl_path) and load:
+        if os.path.isfile(pkl_path) and not load:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:

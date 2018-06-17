@@ -39,8 +39,10 @@ def main(arguments):
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
     parser.add_argument('--load_epoch', help='Force loading from a certain epoch', type=int,
                         default=-1)
-    parser.add_argument('--load_tasks', help='1 if load tasks', type=int, default=1)
-    parser.add_argument('--load_preproc', help='1 if load vocabulary', type=int, default=1)
+    parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int, default=0)
+    parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
+                        type=int, default=0)
+    parser.add_argument('--reload_vocab', help='1 if force vocabulary rebuild', type=int, default=0)
 
     # Tasks and task-specific classifiers
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
