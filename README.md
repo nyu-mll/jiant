@@ -27,7 +27,7 @@ For other pretraining task data, contact the person in charge.
 
 ## Running
 
-To run things, use ``src/main.py`` or ``run_stuff.sh``..
+To run things, use ``src/main.py`` or ``run_stuff.sh``.
 Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` usually nested within ``exp_dir``.
 
 To force rereading and reloading of the tasks, perhaps because you changed the format, use the flag ``--reload_tasks 1``.
@@ -48,7 +48,8 @@ To add new tasks, you should:
     - The correct task-specific module is being created for your task in ``build_module()``.
     - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
 - In ``src/preprocess.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``process_task()``
+    - The correct task-specific preprocessing is being used for your task in ``process_task()``.
+- The current training procedure is task-agnostic: we randomly sample a task to train on, pass a batch to the model, and receive an output dictionary at least containing a ``loss`` key. Training loss should be calculated within the model; validation metrics should also be computed within AllenNLP ``scorer``s and not in the training loop. So you should *not* need to modify the training loop; please reach out if you think you need to.
 
 ## Pretrained Embeddings
 
