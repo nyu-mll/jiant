@@ -40,15 +40,17 @@ python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs
 ## Adding New Tasks
 
 To add new tasks, you should:
+- Add your data in a subfolder in whatever folder contains all your data.
 - Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
     - The task definition should also include the data loader, as a method called ``load\_data()``.
     - Your task should include an attributes ``task.sentences`` that is a list of all text to index.
+- In ``src/preprocess.py``, make sure that:
+    - The correct task-specific preprocessing is being used for your task in ``process_task()``.
+    - At the top of the file, add an abbreviation for the name of your task to ``ALL_TASKS`` and route it to the correct task and data folder in ``NAME2INFO``.
 - In ``src/model.py``, make sure that:
     - The correct task-specific module is being created for your task in ``build_module()``.
     - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
-- In ``src/preprocess.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``process_task()``.
 - The current training procedure is task-agnostic: we randomly sample a task to train on, pass a batch to the model, and receive an output dictionary at least containing a ``loss`` key. Training loss should be calculated within the model; validation metrics should also be computed within AllenNLP ``scorer``s and not in the training loop. So you should *not* need to modify the training loop; please reach out if you think you need to.
 
 ## Pretrained Embeddings
