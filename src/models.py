@@ -29,21 +29,26 @@ from tasks import STSBTask, CoLATask, SSTTask, \
 from modules import RNNEncoder, BoWSentEncoder, \
                     AttnPairEncoder, SimplePairEncoder
 
-# CoVe stuff
+logger = log.getLogger(__name__)  # pylint: disable=invalid-name
+
 if "cs.nyu.edu" in os.uname()[1] or "dgx" in os.uname()[1]:
     PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
 else:
     PATH_PREFIX = '/beegfs/aw3272/'
 
+# CoVe stuff
 PATH_TO_COVE = PATH_PREFIX + '/models/cove'
 sys.path.append(PATH_TO_COVE)
-from cove import MTLSTM as cove_lstm
+try:
+    from cove import MTLSTM as cove_lstm
+except ImportError:
+    logger.info("Failed to import CoVE!")
+
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json" # pylint: disable=line-too-long
 ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5" # pylint: disable=line-too-long
 
-logger = log.getLogger(__name__)  # pylint: disable=invalid-name
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to arguments

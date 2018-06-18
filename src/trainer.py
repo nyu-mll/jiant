@@ -371,7 +371,7 @@ class SamplingMultiTaskTrainer:
                 if 'labels' in batch:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
-                    n_examples += batch['targs']['words'].nelement().item()
+                    n_examples += batch['targs']['words'].nelement()
             assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics

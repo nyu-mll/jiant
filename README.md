@@ -43,10 +43,10 @@ To add new tasks, you should:
 1. Add your data in a subfolder in whatever folder contains all your data, e.g. in the folder created by ``download_glue_data.py``. Make sure to add the correct path to the top of ``preprocess.py``.
 2. Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
-    - The task definition should also include the data loader, as a method called ``load\_data()``.
-    - Your task should include an attributes ``task.sentences`` that is a list of all text to index.
+    - The task definition should include the data loader, as a method called ``load\_data()`` which stores tokenized but un-indexed data for each split in attributes named ``{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example.
+    - Your task should include an attributes ``task.sentences`` that is a list of all text to index, e.g. ``self.sentences = self.train_data_text[0] + self.train_data_text[1] + self.val_data_text[0] + ...``
 3. In ``src/preprocess.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``process_task()``.
+    - The correct task-specific preprocessing is being used for your task in ``process_task()``. The recommended approach is to create a function that takes in a split of your data and produces a list of AllenNlp ``Instance``s. An ``Instance`` is a wrapper around a dictionary of values. The names of the values, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` or ``targs``!
     - At the top of the file, add an abbreviation for the name of your task to ``ALL_TASKS`` and route it to the correct task and data folder in ``NAME2INFO``.
 4. In ``src/model.py``, make sure that:
     - The correct task-specific module is being created for your task in ``build_module()``.
