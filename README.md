@@ -28,19 +28,27 @@ For other pretraining task data, contact the person in charge.
 ## Running
 
 To run things, use ``src/main.py`` or ``run_stuff.sh``.
-Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` usually nested within ``exp_dir``.
+Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` nested within ``exp_dir``.
 
-To force rereading and reloading of the tasks, perhaps because you changed the format, use the flag ``--reload_tasks 1``.
+- exp1
+    - run1 (with some hyperparameter settings)
+    - run2 (with possibly the same hyperparameter settings)
+- exp2
+    - [...]
+
+You should also be sure to set ``--data_dir``and  ``--word_embs_file`` to point to the directory containing the data and word embeddings (see later sections) respectively.
+
+To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
 
 ```
-python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs_file PATH_TO_GLOVE
+python main.py --data_dir $DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
 ```
 
 To use the shell script, run
 
 ```
-./run_stuff.sh -n EXP_DIR -r RUN_DIR -T tasks
+./run_stuff.sh -d $DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
 ```
 
 See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.

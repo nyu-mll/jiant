@@ -64,11 +64,13 @@ TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
-while getopts 'ivkmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:GI:N:y:K:W:' flag; do
+while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:W:' flag; do
     case "${flag}" in
         P) SCRATCH_PREFIX="${OPTARG}" ;;
+        d) DATA_DIR=${OPTARGS} ;;
         n) EXP_NAME="${OPTARG}" ;;
         r) RUN_NAME="${OPTARG}" ;;
+        w) WORD_EMBS_FILE="${OPTARG}" ;;
         S) SEED="${OPTARG}" ;;
         q) no_tqdm=1 ;;
         t) SHOULD_TRAIN=0 ;;
@@ -93,7 +95,6 @@ while getopts 'ivkmn:r:S:s:tvh:l:L:o:T:E:O:b:H:p:edcgP:qB:V:M:D:C:X:GI:N:y:K:W:'
         E) PAIR_ENC="${OPTARG}" ;;
         G) glove=0 ;;
         e) ELMO=1 ;;
-        d) deep_elmo=1 ;;
         g) elmo_no_glove=1 ;;
         c) COVE=1 ;;
         D) dropout="${OPTARG}" ;;
