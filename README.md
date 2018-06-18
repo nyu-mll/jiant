@@ -40,14 +40,18 @@ python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs
 ## Adding New Tasks
 
 To add new tasks, you should:
-1. Add your data in a subfolder in whatever folder contains all your data, e.g. in the folder created by ``download_glue_data.py``. Make sure to add the correct path to the top of ``preprocess.py``.
+1. Add your data in a subfolder in whatever folder contains all your data, e.g. in the folder created by ``download_glue_data.py``. Make sure to add the correct path to the dctionary ``NAME2INFO``, formatted as ``task_name: (task_class, data_directory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
+
 2. Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
-    - The task definition should include the data loader, as a method called ``load\_data()`` which stores tokenized but un-indexed data for each split in attributes named ``{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example.
-    - Your task should include an attributes ``task.sentences`` that is a list of all text to index, e.g. ``self.sentences = self.train_data_text[0] + self.train_data_text[1] + self.val_data_text[0] + ...``
+    - The task definition should include the data loader, as a method called ``load_data()`` which stores tokenized but un-indexed data for each split in attributes named ``task.{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code (in ``src/preprocess.py``, see next bullet) expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example. Make sure to call your data loader in initialization!
+    - Your task should include an attributes ``task.sentences`` that is a list of all text to index, e.g. for MNLI we have ``self.sentences = self.train_data_text[0] + self.train_data_text[1] + self.val_data_text[0] + ...``. Make sure to set this attribute after calling the data loader!
+
 3. In ``src/preprocess.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``process_task()``. The recommended approach is to create a function that takes in a split of your data and produces a list of AllenNlp ``Instance``s. An ``Instance`` is a wrapper around a dictionary of values. The names of the values, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` or ``targs``!
-    - At the top of the file, add an abbreviation for the name of your task to ``ALL_TASKS`` and route it to the correct task and data folder in ``NAME2INFO``.
+    - The correct task-specific preprocessing is being used for your task in ``process_task()``. The recommended approach is to create a function that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(Field name, Field)`` pairs.
+    - ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples at the bottom of ``src/preprocess.py``.
+    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` or ``targs``!
+
 4. In ``src/model.py``, make sure that:
     - The correct task-specific module is being created for your task in ``build_module()``.
     - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
