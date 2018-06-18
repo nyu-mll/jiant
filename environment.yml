@@ -9,4 +9,5 @@ dependencies:
     - pip:
         - allennlp==0.4
         - ipdb
+        - tensorboard
         - tensorboardX=1.2
