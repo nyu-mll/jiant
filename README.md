@@ -5,11 +5,13 @@ This repo contains the code for jiant sentence representation learning model for
 
 Make sure you have installed the packages listed in environment.yml.
 When listed, specific particular package versions are required.
-If you use conda, you can create an environment from this package with the following command:
+If you use conda (recommended, [instructions for installing miniconda here](https://conda.io/miniconda.html)), you can create an environment from this package with the following command:
 
 ```
 conda env create -f environment.yml
 ```
+
+To activate the environment run ``source activate jiant``, and to deactivate run ``source deactivate``
 
 ## Downloading data
 

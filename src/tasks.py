@@ -78,6 +78,8 @@ class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
     def __init__(self, name):
         super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
 
 class WikiTextLMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext '''

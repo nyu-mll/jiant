@@ -347,6 +347,7 @@ class MultiTaskModel(nn.Module):
         if 'targs' in batch:
             targs = batch['targs']['words'].view(-1)
             out['loss'] = F.cross_entropy(logits, targs, ignore_index=0) # some pad index
+            task.scorer1(out['loss'].item())
         return out
 
     def _ranking_forward(self, batch, task):
