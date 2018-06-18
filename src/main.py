@@ -28,6 +28,8 @@ def main(arguments):
 
     # Paths and logging
     parser.add_argument('--log_file', help='file to log to', type=str, default='log.log')
+    parser.add_argument('--data_dir', help='directory containing all data', type=str,
+                        default='/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/')
     parser.add_argument('--exp_dir', help='directory containing shared preprocessing', type=str)
     parser.add_argument('--run_dir', help='directory for saving results, models, etc.', type=str)
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')

@@ -11,6 +11,7 @@
 SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
 #SCRATCH_PREFIX='/beegfs/aw3272/'
 PROJECT_NAME='mtl-sent-rep'
+DATA_DIR="${SCRATCH_PREFIX}/processed_data/mtl-sentence-representations/"
 EXP_NAME="debug"
 RUN_NAME="debug"
 GPUID=0
@@ -113,5 +114,5 @@ RUN_DIR="${SCRATCH_PREFIX}/ckpts/${PROJECT_NAME}/${EXP_NAME}/${RUN_NAME}"
 mkdir -p ${EXP_DIR}
 mkdir -p ${RUN_DIR}
 
-ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${SEED} --no_tqdm ${no_tqdm} --log_file ${LOG_PATH} --exp_dir ${EXP_DIR} --run_dir ${RUN_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --classifier_hid_dim ${d_hid_cls} --max_seq_len ${max_seq_len} --max_word_v_size ${VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --train_words ${train_words} --glove ${glove} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --min_lr ${min_lr} --lr_decay_factor ${LR_DECAY} --task_patience ${task_patience} --patience ${patience} --weight_decay ${WEIGHT_DECAY} --dropout ${dropout} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --weighting_method ${weighting_method} --scaling_method ${scaling_method} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --reload_tasks ${RELOAD_TASKS} --reload_indexing ${RELOAD_INDEX} --reload_vocab ${RELOAD_VOCAB} --should_train ${SHOULD_TRAIN} --load_epoch ${load_epoch}"
+ALLEN_CMD="python main.py --cuda ${GPUID} --random_seed ${SEED} --no_tqdm ${no_tqdm} --log_file ${LOG_PATH} --data_dir ${DATA_DIR} --exp_dir ${EXP_DIR} --run_dir ${RUN_DIR} --train_tasks ${train_tasks} --eval_tasks ${eval_tasks} --classifier ${CLASSIFIER} --classifier_hid_dim ${d_hid_cls} --max_seq_len ${max_seq_len} --max_word_v_size ${VOCAB_SIZE} --word_embs_file ${WORD_EMBS_FILE} --train_words ${train_words} --glove ${glove} --elmo ${ELMO} --deep_elmo ${deep_elmo} --elmo_no_glove ${elmo_no_glove} --cove ${COVE} --d_word ${d_word} --d_hid ${d_hid} --n_layers_enc ${N_LAYERS_ENC} --pair_enc ${PAIR_ENC} --n_layers_highway ${n_layers_highway} --batch_size ${BATCH_SIZE} --bpp_method ${BPP_METHOD} --bpp_base ${BPP_BASE} --optimizer ${OPTIMIZER} --lr ${LR} --min_lr ${min_lr} --lr_decay_factor ${LR_DECAY} --task_patience ${task_patience} --patience ${patience} --weight_decay ${WEIGHT_DECAY} --dropout ${dropout} --val_interval ${VAL_INTERVAL} --max_vals ${MAX_VALS} --task_ordering ${TASK_ORDERING} --weighting_method ${weighting_method} --scaling_method ${scaling_method} --scheduler_threshold ${SCHED_THRESH} --load_model ${LOAD_MODEL} --reload_tasks ${RELOAD_TASKS} --reload_indexing ${RELOAD_INDEX} --reload_vocab ${RELOAD_VOCAB} --should_train ${SHOULD_TRAIN} --load_epoch ${load_epoch}"
 eval ${ALLEN_CMD}

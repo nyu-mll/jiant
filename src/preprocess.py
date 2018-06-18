@@ -18,12 +18,6 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
                   QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
                   LanguageModelingTask, WikiTextLMTask
 
-if "cs.nyu.edu" in os.uname()[1] or "dgx" in os.uname()[1]:
-    PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
-else:
-    PATH_PREFIX = '/beegfs/aw3272/'
-PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
-
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
@@ -36,8 +30,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wnli': (WNLITask, 'WNLI/'),
              'wiki': (WikiTextLMTask, 'WikiText/')
             }
-for k, v in NAME2INFO.items():
-    NAME2INFO[k] = (v[0], PATH_PREFIX + v[1])
 
 def build_tasks(args):
     '''Prepare tasks'''
@@ -55,7 +47,7 @@ def build_tasks(args):
     train_task_names = parse_tasks(args.train_tasks)
     eval_task_names = parse_tasks(args.eval_tasks)
     all_task_names = list(set(train_task_names + eval_task_names))
-    tasks = get_tasks(all_task_names, args.max_seq_len, bool(not args.reload_tasks))
+    tasks = get_tasks(all_task_names, args.max_seq_len, args.data_dir, bool(not args.reload_tasks))
 
     max_v_sizes = {'word': args.max_word_v_size}
     token_indexer = {}
@@ -131,19 +123,20 @@ def del_field_tokens(task):
             field = instance.fields['input2']
             del field.tokens
 
-def get_tasks(task_names, max_seq_len, load):
+def get_tasks(task_names, max_seq_len, path='', load=1):
     '''
     Load tasks
     '''
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        pkl_path = NAME2INFO[name][1] + "%s_task.pkl" % name
+        task_path = os.path.join(path, NAME2INFO[name][1])
+        pkl_path = os.path.join(task_path, "%s_task.pkl" % name)
         if os.path.isfile(pkl_path) and not load:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
-            task = NAME2INFO[name][0](NAME2INFO[name][1], max_seq_len, name)
+            task = NAME2INFO[name][0](task_path, max_seq_len, name)
             pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
