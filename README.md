@@ -37,6 +37,14 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 python main.py --exp_dir EXP_DIR --run_dir RUN_DIR --train_tasks all --word_embs_file PATH_TO_GLOVE
 ```
 
+To use the shell script, run
+
+```
+./run_stuff.sh -n EXP_DIR -r RUN_DIR -T tasks
+```
+
+See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.
+
 ## Adding New Tasks
 
 To add new tasks, you should:
