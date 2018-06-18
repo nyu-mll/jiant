@@ -11,7 +11,7 @@
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
 # SET THESE BEFORE RUNNING:
-SCRATCH_PREFIX='/Users/Bowman/Drive/JSALT/demo/'
+SCRATCH_PREFIX='/Users/Bowman/Drive/JSALT/demo'
 DATA_DIR="/Users/Bowman/Drive/JSALT/jiant/glue_data/"
 
 PROJECT_NAME='jiant-demo'
@@ -28,8 +28,8 @@ RELOAD_INDEX=1
 RELOAD_VOCAB=1
 load_epoch=-1
 
-train_tasks='sst'
-eval_tasks='sst'
+train_tasks='mnli-fiction'
+eval_tasks='mnli'
 CLASSIFIER=mlp
 d_hid_cls=16
 max_seq_len=10

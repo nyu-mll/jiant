@@ -213,6 +213,79 @@ class MultiNLITask(PairClassificationTask):
         ''' No F1 '''
         return {'accuracy': self.scorer1.get_metric(reset)}
 
+class MultiNLISingleGenreTask(PairClassificationTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, genre, name):
+        '''MNLI'''
+        super(MultiNLISingleGenreTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, genre)
+        self.scorer2 = None
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, genre):
+        '''Process the dataset located at path. We only use the in-genre matche data.'''
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                           s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1, filter_idx=3, filter_value=genre)
+
+        val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
+                                    s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1, filter_idx=3, filter_value=genre)
+
+        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
+                                   s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1, filter_idx=3, filter_value=genre)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_matched_data
+        self.test_data_text = te_matched_data
+        log.info("\tFinished loading MNLI " + genre + " data.")
+
+    def get_metrics(self, reset=False):
+        ''' No F1 '''
+        return {'accuracy': self.scorer1.get_metric(reset)}
+
+
+class MultiNLIFictionTask(MultiNLISingleGenreTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, name="mnli"):
+        '''MNLI'''
+        super(MultiNLIFictionTask, self).__init__(path, max_seq_len, genre="fiction", name="mnli-fiction")
+
+class MultiNLISlateTask(MultiNLISingleGenreTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, name="mnli"):
+        '''MNLI'''
+        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name="mnli-slate")
+        
+
+class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, name="mnli"):
+        '''MNLI'''
+        super(MultiNLIGovernmentTask, self).__init__(path, max_seq_len, genre="government", name="mnli-government")
+        
+
+class MultiNLITelephoneTask(MultiNLISingleGenreTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, name="mnli"):
+        '''MNLI'''
+        super(MultiNLITelephoneTask, self).__init__(path, max_seq_len, genre="telephone", name="mnli-telephone")
+        
+
+class MultiNLITravelTask(MultiNLISingleGenreTask):
+    ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
+
+    def __init__(self, path, max_seq_len, name="mnli"):
+        '''MNLI'''
+        super(MultiNLITravelTask, self).__init__(path, max_seq_len, genre="travel", name="mnli-travel")
+        
+
 class MRPCTask(PairClassificationTask):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 

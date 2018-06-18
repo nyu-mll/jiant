@@ -14,7 +14,9 @@ from allennlp_mods.numeric_field import NumericField
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
                   PairRegressionTask, SequenceGenerationTask, RankingTask, \
-                  CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
+                  CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
+                  MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
+                  MultiNLITelephoneTask, QQPTask, RTETask, \
                   QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
                   LanguageModelingTask, WikiTextLMTask
 
@@ -24,6 +26,11 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'qqp': (QQPTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
+             'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
+             'mnli-slate': (MultiNLISlateTask, 'MNLI/'),
+             'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
+             'mnli-telephone': (MultiNLITelephoneTask, 'MNLI/'),
+             'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
