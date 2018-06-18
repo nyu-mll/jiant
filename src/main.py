@@ -44,7 +44,7 @@ def main(arguments):
                         type=int, default=0)
     parser.add_argument('--reload_vocab', help='1 if force vocabulary rebuild', type=int, default=0)
 
-    # Tasks and task-specific classifiers
+    # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
@@ -53,6 +53,8 @@ def main(arguments):
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
     parser.add_argument('--classifier_dropout', help='classifier dropout', type=float, default=0.0)
+    parser.add_argument('--d_hid_dec', help='decoder hidden size', type=int, default=300)
+    parser.add_argument('--n_layers_dec', help='n decoder layers', type=int, default=1)
 
     # Preprocessing options
     parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=40)

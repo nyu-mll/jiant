@@ -15,7 +15,8 @@ from allennlp_mods.numeric_field import NumericField
 from tasks import SingleClassificationTask, PairClassificationTask, \
                   PairRegressionTask, SequenceGenerationTask, RankingTask, \
                   CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
-                  QNLITask, SNLITask, SSTTask, STSBTask, WNLITask
+                  QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
+                  LanguageModelingTask, WikiTextLMTask
 
 if "cs.nyu.edu" in os.uname()[1] or "dgx" in os.uname()[1]:
     PATH_PREFIX = '/misc/vlgscratch4/BowmanGroup/awang/'
@@ -23,7 +24,6 @@ else:
     PATH_PREFIX = '/beegfs/aw3272/'
 PATH_PREFIX = PATH_PREFIX + 'processed_data/mtl-sentence-representations/'
 
-ALL_TASKS = ['mnli', 'mrpc', 'qqp', 'rte', 'qnli', 'snli', 'sst', 'sts-b', 'wnli', 'cola']
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
@@ -33,7 +33,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'qnli': (QNLITask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
-             'wnli': (WNLITask, 'WNLI/')
+             'wnli': (WNLITask, 'WNLI/'),
+             'wiki': (WikiTextLMTask, 'WikiText/')
             }
 for k, v in NAME2INFO.items():
     NAME2INFO[k] = (v[0], PATH_PREFIX + v[1])
@@ -44,7 +45,7 @@ def build_tasks(args):
     def parse_tasks(task_list):
         '''parse string of tasks'''
         if task_list == 'all':
-            tasks = ALL_TASKS
+            tasks = [task for task in NAME2INFO.keys()]
         elif task_list == 'none':
             tasks = []
         else:
@@ -211,6 +212,8 @@ def process_task(task, token_indexer, vocab):
         elif isinstance(task, PairRegressionTask):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
                                                    classification=False)
+        elif isinstance(task, LanguageModelingTask):
+            split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):
             pass
         elif isinstance(task, RankingTask):
@@ -265,3 +268,10 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
             instances = [Instance({"input1": input1, "labels": label}) for (input1, label) in
                          zip(inputs1, labels)]
     return instances #DatasetReader(instances) #Batch(instances) #Dataset(instances)
+
+def process_lm_task_split(split, indexers):
+    ''' Process a language modeling split '''
+    inputs = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+    targs = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
+    instances = [Instance({"inputs": inp, "targs": targ}) for (inp, targ) in zip(inputs, targs)]
+    return instances

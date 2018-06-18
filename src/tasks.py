@@ -51,41 +51,59 @@ class SingleClassificationTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name, n_classes):
         super().__init__(name)
-        self.type = 'classification'
         self.n_classes = n_classes
 
 class PairClassificationTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name, n_classes):
         super().__init__(name)
-        self.type = 'classification'
         self.n_classes = n_classes
 
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name):
         super().__init__(name)
-        self.type = 'regression'
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
     def __init__(self, name):
         super().__init__(name)
-        self.type = 'generation'
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     def __init__(self, name, n_classes):
         super().__init__(name, n_classes)
-        self.type = 'ranking'
 
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
     def __init__(self, name):
         super().__init__(name)
 
+class WikiTextLMTask(LanguageModelingTask):
+    ''' Language modeling task on Wikitext '''
+    def __init__(self, path, max_seq_len, name="wiki"):
+        super().__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text + self.val_data_text
+
     def load_data(self, path, max_seq_len):
-        pass
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WikiText")
+
+    def load_txt(self, path, max_seq_len):
+        data = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip().split()[:max_seq_len]
+                if not toks:
+                    continue
+                data.append(['<SOS>'] + toks + ['<EOS>'])
+        return data
 
 """ GLUE TASKS """
 

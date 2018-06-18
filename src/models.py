@@ -25,7 +25,7 @@ from allennlp.modules.elmo import Elmo
 from tasks import STSBTask, CoLATask, SSTTask, \
                   PairClassificationTask, SingleClassificationTask, \
                   PairRegressionTask, RankingTask, \
-                  SequenceGenerationTask
+                  SequenceGenerationTask, LanguageModelingTask
 from modules import RNNEncoder, BoWSentEncoder, \
                     AttnPairEncoder, SimplePairEncoder
 
@@ -137,22 +137,32 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, pair_encoder)
-    build_modules(tasks, model, d_pair, d_single, args)
+    build_modules(tasks, model, d_pair, d_single, vocab, text_field_embedder, args)
     if args.cuda >= 0:
         model = model.cuda()
     return model
 
-def build_modules(tasks, model, d_pair, d_single, args):
+def build_modules(tasks, model, d_pair, d_single, vocab, embedder, args):
     ''' Build task-specific components for each task and add them to model '''
     for task in tasks:
-        if task.type == 'classification':
+        if isinstance(task, (SingleClassificationTask, PairClassificationTask)):
             d_task = d_pair * 4 if isinstance(task, PairClassificationTask) else d_single
             module = build_classifier(task, d_task, args)
-        elif task.type == 'regression':
+            setattr(model, '%s_mdl' % task.name, module)
+        elif isinstance(task, PairRegressionTask):
             module = build_regressor(task, d_pair * 4, args)
-        elif task.type == 'seq_generation':
+            setattr(model, '%s_mdl' % task.name, module)
+        elif isinstance(task, LanguageModelingTask):
+            hid2voc = build_lm(task, d_pair, args)
+            setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, SequenceGenerationTask):
+            decoder, hid2voc = build_decoder(task, d_pair, vocab, embedder, args)
+            setattr(model, '%s_decoder' % task.name, decoder)
+            setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, RankingTask):
             pass
-        setattr(model, '%s_mdl' % task.name, module)
+        else:
+            raise ValueError("Module not found for %s", task.name)
     return
 
 def build_classifier(task, d_inp, args):
@@ -192,10 +202,26 @@ def build_regressor(task, d_inp, args):
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
 
+def build_lm(task, d_inp, args):
+    hid2voc = nn.Linear(d_inp, args.max_word_v_size)
+    return hid2voc
+
+def build_decoder(task, d_inp, vocab, embedder, args):
+    ''' Build a task specific decoder
+
+    TODO: handle different vocabs (languages)?
+    '''
+    rnn = s2s_e.by_name('lstm').from_params(
+        Params({'input_size': embedder.get_output_dim(),
+                'hidden_size': args.d_hid_dec,
+                'num_layers': args.n_layers_dec, 'bidirectional': False}))
+    decoder = RNNEncoder(vocab, embedder, 0, rnn)
+    hid2voc = nn.Linear(args.d_hid_dec, args.max_word_v_size)
+    return decoder, hid2voc
 
 class MultiTaskModel(nn.Module):
     '''
-    Playing around designing a class
+    Giant model with task-specific components and a shared word and sentence encoder.
     '''
 
     def __init__(self, args, sent_encoder, pair_encoder):
@@ -213,8 +239,8 @@ class MultiTaskModel(nn.Module):
         Pass inputs to correct forward pass
 
         Args:
-            - batch
             - task
+            - batch
 
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
@@ -227,7 +253,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, PairRegressionTask):
             out = self._pair_regression_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
-            out = self._sequence_generation_forward(batch, task)
+            out = self._seq_gen_forward(batch, task)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task)
 
@@ -307,15 +333,20 @@ class MultiTaskModel(nn.Module):
     def _seq_gen_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        s1, s1_mask = self.sent_encoder(batch['input1'])
+        b_size, seq_len = batch['inputs']['words'].size()
+        sent, sent_mask = self.sent_encoder(batch['inputs'])
 
-        classifier = getattr(self, "%s_mdl" % task.name)
-        logits = classifier(s1)
+        if isinstance(task, LanguageModelingTask):
+            hid2voc = getattr(self, "%s_hid2voc" % task.name)
+            logits = hid2voc(sent)
+            logits = logits.view(b_size * seq_len, -1)
+        else:
+            pass
         out['logits'] = logits
 
-        if 'labels' in batch:
-            labels = batch['labels']
-            out['loss'] = F.cross_entropy(logits, labels, ignore_index=1) # some pad index
+        if 'targs' in batch:
+            targs = batch['targs']['words'].view(-1)
+            out['loss'] = F.cross_entropy(logits, targs, ignore_index=0) # some pad index
         return out
 
     def _ranking_forward(self, batch, task):
