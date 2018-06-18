@@ -93,9 +93,9 @@ def format_mrpc(data_dir, path_to_data):
 
 def download_diagnostic(data_dir):
     print("Downloading and extracting diagnostic...")
-    if not os.path.isdir(os.path.join(data_dir, "diagnostic")):
-        os.mkdir(os.path.join(data_dir, "diagnostic"))
-    data_file = os.path.join(data_dir, "diagnostic", "diagnostic.tsv")
+    if not os.path.isdir(os.path.join(data_dir, "MNLI")):
+        os.mkdir(os.path.join(data_dir, "MNLI"))
+    data_file = os.path.join(data_dir, "MNLI", "diagnostic.tsv")
     urllib.request.urlretrieve(TASK2PATH["diagnostic"], data_file)
     print("\tCompleted!")
     return
