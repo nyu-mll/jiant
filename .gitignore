@@ -1,3 +1,4 @@
 *.pyc
 *.swp
 *.log
+glue_data/
