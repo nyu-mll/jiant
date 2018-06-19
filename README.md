@@ -27,8 +27,8 @@ For other pretraining task data, contact the person in charge.
 
 ## Running
 
-To run things, use ``src/main.py`` or ``run_stuff.sh``.
-Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` nested within ``exp_dir``:
+To run things, use ``src/main.py`` with flags or a script like the one in ``example_experiment_scripts/demo.sh``.
+Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` nested within ``exp_dir``.
 
 - exp1
     - run1 (with some hyperparameter settings)

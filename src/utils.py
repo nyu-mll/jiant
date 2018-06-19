@@ -23,8 +23,10 @@ def process_sentence(sent, max_seq_len):
     return nltk.word_tokenize(sent)[:max_seq_len]
 
 def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=None,
-             targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t'):
-    '''Load a tsv '''
+             targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t', filter_idx=None, filter_value=None):
+    '''Load a tsv 
+
+    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
     with codecs.open(data_file, 'r', 'utf-8') as data_fh:
         for _ in range(skip_rows):
@@ -32,6 +34,8 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.strip().split(delimiter)
+                if filter_idx and row[filter_idx] != filter_value:
+                    continue
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
