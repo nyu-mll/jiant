@@ -177,7 +177,7 @@ class SamplingMultiTaskTrainer:
             task_info['stopped'] = False
             task_info['last_log'] = time.time()
         # Metric bookkeeping
-        all_metrics = [task.val_metric for task in tasks] + ['micro_accuracy', 'macro_accuracy']
+        all_metrics = [task.val_metric for task in tasks] + ['micro_avg', 'macro_avg']
         metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for \
                         metric in all_metrics}
         self._task_infos = task_infos
@@ -251,6 +251,7 @@ class SamplingMultiTaskTrainer:
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
+                assert not torch.isnan(loss).any(), pdb.set_trace()
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
@@ -329,8 +330,8 @@ class SamplingMultiTaskTrainer:
                          task.name, task_info['total_batches_trained'],
                          task_info['total_batches_trained'] / task_info['n_tr_batches'])
             results[task.name] = metric_infos[task.val_metric]['best'][0]# * validation_interval
-        results['micro'] = metric_infos['micro_accuracy']['best'][0]# * validation_interval
-        results['macro'] = metric_infos['macro_accuracy']['best'][0]# * validation_interval
+        results['micro'] = metric_infos['micro_avg']['best'][0]# * validation_interval
+        results['macro'] = metric_infos['macro_avg']['best'][0]# * validation_interval
         logging.info('***** VALIDATION RESULTS *****')
         for metric in metric_infos.keys():
             best_epoch, epoch_metrics = metric_infos[metric]['best']
@@ -343,8 +344,8 @@ class SamplingMultiTaskTrainer:
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
-        all_val_metrics["macro_accuracy"] = 0.0
-        all_val_metrics["micro_accuracy"] = 0.0
+        all_val_metrics["macro_avg"] = 0.0
+        all_val_metrics["micro_avg"] = 0.0
         n_examples_overall = 0.0
 
         # Get validation numbers for each task
@@ -379,24 +380,24 @@ class SamplingMultiTaskTrainer:
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
             all_val_metrics["%s_loss" % task.name] /= n_val_batches
-            all_val_metrics["micro_accuracy"] += \
-                    all_val_metrics["%s_accuracy" % (task.name)] * n_examples
-            all_val_metrics["macro_accuracy"] += \
-                    all_val_metrics["%s_accuracy" % (task.name)]
+            all_val_metrics["micro_avg"] += \
+                    all_val_metrics[task.val_metric] * n_examples
+            all_val_metrics["macro_avg"] += \
+                    all_val_metrics[task.val_metric]
             n_examples_overall += n_examples
 
             # Reset training progress
             task_info['n_batches_since_val'] = 0
             task_info['loss'] = 0
 
-        all_val_metrics['micro_accuracy'] /= n_examples_overall
-        all_val_metrics['macro_accuracy'] /= len(tasks)
+        all_val_metrics['micro_avg'] /= n_examples_overall
+        all_val_metrics['macro_avg'] /= len(tasks)
 
         # Track per task patience
         should_save = False # whether to save this epoch or not
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
-                metric = "%s_accuracy" % task # not really accuracy
+                metric = "%s_avg" % task
             else:
                 metric = task.val_metric
                 task = task.name
@@ -448,9 +449,9 @@ class SamplingMultiTaskTrainer:
             else:
                 stop_tr = False
 
-        #stop_val = stop_val and metric_infos['micro_accuracy']['stopped'] and \
-        #            metric_infos['macro_accuracy']['stopped']
-        stop_val = metric_infos['macro_accuracy']['stopped']
+        #stop_val = stop_val and metric_infos['micro_avg']['stopped'] and \
+        #            metric_infos['macro_avg']['stopped']
+        stop_val = metric_infos['macro_avg']['stopped']
 
         should_stop = False
         if stop_tr:
@@ -523,7 +524,7 @@ class SamplingMultiTaskTrainer:
             metric_states[metric_name]['stopped'] = metric_info['stopped']
             metric_states[metric_name]['best'] = metric_info['best']
         torch.save(metric_states, os.path.join(self._serialization_dir,
-                                             "metric_state_epoch_{}.th".format(epoch)))
+                                               "metric_state_epoch_{}.th".format(epoch)))
         logging.info("Saved files to %s", self._serialization_dir)
 
     def _restore_checkpoint(self):
@@ -604,15 +605,9 @@ class SamplingMultiTaskTrainer:
         no_tqdm = params.pop("no_tqdm", False)
 
         params.assert_empty(cls.__name__)
-        return SamplingMultiTaskTrainer(model,
-                                        iterator,
-                                        patience=patience,
-                                        num_epochs=num_epochs,
-                                        max_vals=max_vals,
+        return SamplingMultiTaskTrainer(model, iterator, patience=patience,
+                                        num_epochs=num_epochs, max_vals=max_vals,
                                         serialization_dir=serialization_dir,
-                                        cuda_device=cuda_device,
-                                        grad_norm=grad_norm,
-                                        grad_clipping=grad_clipping,
-                                        lr_decay=lr_decay,
-                                        min_lr=min_lr,
-                                        no_tqdm=no_tqdm)
+                                        cuda_device=cuda_device, grad_norm=grad_norm,
+                                        grad_clipping=grad_clipping, lr_decay=lr_decay,
+                                        min_lr=min_lr, no_tqdm=no_tqdm)

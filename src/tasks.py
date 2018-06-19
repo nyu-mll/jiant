@@ -1,7 +1,12 @@
-'''Define the tasks and code for loading them'''
+'''Define the tasks and code for loading their data.
+
+- As much as possible, following the existing task hierarchy structure.
+- When inheriting, be sure to write and call load_data.
+- Set all text data as an attribute, task.sentences (List[List[str]])
+- Each task's val_metric should be name_metric, where metric is returned by get_metrics()
+'''
 import os
 import logging as log
-from abc import ABCMeta, abstractmethod
 import ipdb as pdb
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
@@ -9,7 +14,7 @@ from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from utils import load_tsv
 
 class Task():
-    '''Abstract class for a task
+    '''Generic class for a task
 
     Methods and attributes:
         - load_data: load dataset from a path and create splits
@@ -21,58 +26,86 @@ class Task():
         - process: pad and indexify data given a mapping
         - optimizer
     '''
-    __metaclass__ = ABCMeta
 
     def __init__(self, name):
         self.name = name
-        self.train_data_text, self.val_data_text, self.test_data_text = \
-            None, None, None
-        self.train_data = None
-        self.val_data = None
-        self.test_data = None
-        # move below to the next generation?
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
-        self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = None
 
     def load_data(self, path, max_seq_len):
-        '''
-        Load data from path and create splits.
-        '''
+        ''' Load data from path and create splits. '''
         raise NotImplementedError
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
+        raise NotImplementedError
 
 class SingleClassificationTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name, n_classes):
         super().__init__(name)
         self.n_classes = n_classes
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 class PairClassificationTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name, n_classes):
         super().__init__(name)
         self.n_classes = n_classes
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
     def __init__(self, name):
         super().__init__(name)
+        self.scorer1 = Average() # for average MSE
+        self.scorer2 = None
+        self.val_metric = "%s_mse" % self.name
+        self.val_metric_decreases = True
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        mse = self.scorer1.get_metric(reset)
+        return {'mse': mse}
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
     def __init__(self, name):
         super().__init__(name)
+        self.scorer1 = Average() # for average BLEU or something
+        self.scorer2 = None
+        self.val_metric = "%s_bleu" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        bleu = self.scorer1.get_metric(reset)
+        return {'bleu': bleu}
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
-    def __init__(self, name, n_classes):
-        super().__init__(name, n_classes)
+    def __init__(self, name, n_choices):
+        super().__init__(name)
+        self.n_choices = n_choices
+        raise NotImplementedError
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        raise NotImplementedError
 
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
@@ -80,6 +113,13 @@ class LanguageModelingTask(SequenceGenerationTask):
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
 
 class WikiTextLMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext '''
@@ -107,18 +147,66 @@ class WikiTextLMTask(LanguageModelingTask):
                 data.append(['<SOS>'] + toks + ['<EOS>'])
         return data
 
-""" GLUE TASKS """
+class SSTTask(SingleClassificationTask):
+    ''' Task class for Stanford Sentiment Treebank.  '''
+    def __init__(self, path, max_seq_len, name="sst"):
+        ''' '''
+        super(SSTTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+
+    def load_data(self, path, max_seq_len):
+        ''' Load data '''
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading SST data.")
+
+class CoLATask(SingleClassificationTask):
+    '''Class for Warstdadt acceptability task'''
+    def __init__(self, path, max_seq_len, name="acceptability"):
+        ''' '''
+        super(CoLATask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = Average()
+        self.scorer2 = CategoricalAccuracy()
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, targ_idx=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading CoLA.")
+
+    def get_metrics(self, reset=False):
+        return {'mcc': self.scorer1.get_metric(reset),
+                'accuracy': self.scorer2.get_metric(reset)}
 
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
-
     def __init__(self, path, max_seq_len, name="qqp"):
         super().__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
                          self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
-        self.val_metric = "%s_acc_f1" # TODO(Alex): handle non acc validation
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
@@ -136,21 +224,83 @@ class QQPTask(PairClassificationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
-        prc, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'accuracy': (acc + f1) / 2, 'acc': acc, 'f1': f1,
-                'precision': prc, 'recall': rcl}
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
+                'precision': pcs, 'recall': rcl}
+
+class MRPCTask(PairClassificationTask):
+    ''' Task class for Microsoft Research Paraphase Task.  '''
+
+    def __init__(self, path, max_seq_len, name="mrpc"):
+        ''' '''
+        super(MRPCTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
+        self.scorer2 = F1Measure(1)
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=3, s2_idx=4, targ_idx=None, idx_idx=0, skip_rows=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MRPC data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
+                'precision': pcs, 'recall': rcl}
+
+class STSBTask(PairRegressionTask):
+    ''' Task class for Sentence Textual Similarity Benchmark.  '''
+    def __init__(self, path, max_seq_len, name="sts_benchmark"):
+        ''' '''
+        super(STSBTask, self).__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+                         self.val_data_text[0] + self.val_data_text[1]
+        self.scorer1 = Average()
+        self.scorer2 = Average()
+        self.val_metric = "%s_corr" % self.name
+        self.val_metric_decreases = False
+
+    def load_data(self, path, max_seq_len):
+        ''' Load data '''
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
+                            s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading STS Benchmark data.")
+
+    def get_metrics(self, reset=False):
+        pearsonr = self.scorer1.get_metric(reset)
+        spearmanr = self.scorer2.get_metric(reset)
+        return {'corr': (pearsonr + spearmanr) / 2,
+                'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
-
     def __init__(self, path, max_seq_len, name="snli"):
-        ''' Args: '''
+        ''' Do stuff '''
         super(SNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
                          self.val_data_text[0] + self.val_data_text[1]
-
-        self.scorer2 = None
 
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
@@ -166,10 +316,6 @@ class SNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
 
-    def get_metrics(self, reset=False):
-        ''' No F1 '''
-        return {'accuracy': self.scorer1.get_metric(reset)}
-
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
@@ -177,7 +323,6 @@ class MultiNLITask(PairClassificationTask):
         '''MNLI'''
         super(MultiNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
-        self.scorer2 = None
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
                          self.val_data_text[0] + self.val_data_text[1]
 
@@ -208,94 +353,6 @@ class MultiNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
-
-    def get_metrics(self, reset=False):
-        ''' No F1 '''
-        return {'accuracy': self.scorer1.get_metric(reset)}
-
-class MRPCTask(PairClassificationTask):
-    ''' Task class for Microsoft Research Paraphase Task.  '''
-
-    def __init__(self, path, max_seq_len, name="mrpc"):
-        ''' '''
-        super(MRPCTask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-                         self.val_data_text[0] + self.val_data_text[1]
-        self.scorer2 = F1Measure(1)
-
-    def load_data(self, path, max_seq_len):
-        ''' Process the dataset located at path.  '''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=None, idx_idx=0, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading MSRP data.")
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        prc, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'accuracy': (acc + f1) / 2, 'acc': acc, 'f1': f1,
-                'precision': prc, 'recall': rcl}
-
-class STSBTask(PairRegressionTask):
-    ''' Task class for Sentence Textual Similarity Benchmark.  '''
-    def __init__(self, path, max_seq_len, name="sts_benchmark"):
-        ''' '''
-        super(STSBTask, self).__init__(name)
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
-        self.scorer1 = Average()
-        self.scorer2 = Average()
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-                         self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        ''' '''
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading STS Benchmark data.")
-
-    def get_metrics(self, reset=False):
-        # NB: I think I call it accuracy b/c something weird in training
-        return {'accuracy': self.scorer1.get_metric(reset),
-                'spearmanr': self.scorer2.get_metric(reset)}
-
-class SSTTask(SingleClassificationTask):
-    ''' Task class for Stanford Sentiment Treebank.  '''
-    def __init__(self, path, max_seq_len, name="sst"):
-        ''' '''
-        super(SSTTask, self).__init__(name, 2)
-        self.pair_input = 0
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-
-    def load_data(self, path, max_seq_len):
-        ''' '''
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading SST data.")
 
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
@@ -344,36 +401,6 @@ class QNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
 
-class CoLATask(SingleClassificationTask):
-    '''Class for Warstdadt acceptability task'''
-    def __init__(self, path, max_seq_len, name="acceptability"):
-        ''' '''
-        super(CoLATask, self).__init__(name, 2)
-        self.pair_input = 0
-        self.load_data(path, max_seq_len)
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
-        self.scorer1 = Average()
-        self.scorer2 = CategoricalAccuracy()
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-
-    def load_data(self, path, max_seq_len):
-        '''Load the data'''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=None, targ_idx=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading CoLA.")
-
-    def get_metrics(self, reset=False):
-        # NB: I think I call it accuracy b/c something weird in training
-        return {'accuracy': self.scorer1.get_metric(reset),
-                'acc': self.scorer2.get_metric(reset)}
 
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''

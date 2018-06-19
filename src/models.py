@@ -1,4 +1,6 @@
-'''AllenNLP models and functions for building them'''
+'''Core model and functions for building it.
+
+If you are adding a new task, you should [...]'''
 import os
 import sys
 import logging as log
@@ -49,17 +51,8 @@ except ImportError:
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json" # pylint: disable=line-too-long
 ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5" # pylint: disable=line-too-long
 
-
 def build_model(args, vocab, pretrained_embs, tasks):
-    '''Build model according to arguments
-
-    args:
-        - args (TODO): object with attributes:
-        - vocab (Vocab):
-        - pretrained_embs (TODO): word embeddings to use
-
-    returns
-    '''
+    '''Build model according to args '''
     d_word, n_layers_highway = args.d_word, args.n_layers_highway
 
     # Build embedding layers
@@ -109,18 +102,18 @@ def build_model(args, vocab, pretrained_embs, tasks):
     else:
         cove_layer = None
 
-    # Build encoders
+    # Build single sentence encoder: the main component of interest
     if args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, text_field_embedder)
     elif args.sent_enc == 'rnn': # output will be 2 x d_hid_phrase (+ deep elmo)
         phrase_layer = s2s_e.by_name('lstm').from_params(
             Params({'input_size': d_inp_phrase, 'hidden_size': d_hid_phrase,
                     'num_layers': args.n_layers_enc, 'bidirectional': True}))
-
         sent_encoder = RNNEncoder(vocab, text_field_embedder, n_layers_highway,
                                   phrase_layer, dropout=args.dropout,
                                   cove_layer=cove_layer, elmo_layer=elmo)
 
+        # Build pair encoder; TODO(Alex): this is task dependent, except attention?
     d_single = 2 * d_hid_phrase + (args.elmo and args.deep_elmo) * 1024
     if args.pair_enc == 'simple': # output will be 4 x [2 x d_hid_phrase (+ deep elmo)]
         pair_encoder = SimplePairEncoder(vocab)

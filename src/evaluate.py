@@ -51,7 +51,6 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         generator_tqdm = tqdm.tqdm(generator, total=iterator.get_num_batches(dataset), disable=True)
         for batch in generator_tqdm:
-            #tensor_batch = arrays_to_variables(batch, cuda_device, for_training=False)
             tensor_batch = batch
             if 'idx' in tensor_batch:
                 task_idxs += tensor_batch['idx'].squeeze(dim=1).data.tolist()
@@ -61,7 +60,11 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
             description = ', '.join(["%s_%s: %.2f" % (task.name, name, value) for name, value in
                                      task_metrics.items()]) + " ||"
             generator_tqdm.set_description(description)
-            n_examples += batch['labels'].size()[0]
+            if 'labels' in batch:
+                n_examples += batch['labels'].size()[0]
+            else:
+                assert 'targs' in batch
+                n_examples += batch['targs']['words'].nelement()
             if isinstance(task, STSBTask):
                 preds, _ = out['logits'].max(dim=1)
             else:

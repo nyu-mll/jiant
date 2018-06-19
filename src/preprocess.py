@@ -1,9 +1,10 @@
-'''Preprocessing functions and pipeline'''
+'''Preprocessing functions and pipeline
+
+To add new tasks, add task-specific preprocessing functions to process_task()'''
 import os
 import logging as log
 from collections import defaultdict
-import ipdb as pdb # pylint disable=unused-import
-import _pickle as pkl
+import ipdb as pdb
 import numpy as np
 import torch
 
@@ -11,6 +12,8 @@ from allennlp.data import Instance, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
+
+import _pickle as pkl
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
                   PairRegressionTask, SequenceGenerationTask, RankingTask, \
@@ -32,23 +35,19 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
             }
 
 def build_tasks(args):
-    '''Prepare tasks'''
+    '''Main logic for preparing tasks, doing so by
+    1) creating / loading the tasks
+    2) building / loading the vocabulary
+    3) building / loading the word vectors
+    4) indexing each task's data
+    '''
 
-    def parse_tasks(task_list):
-        '''parse string of tasks'''
-        if task_list == 'all':
-            tasks = [task for task in NAME2INFO.keys()]
-        elif task_list == 'none':
-            tasks = []
-        else:
-            tasks = task_list.split(',')
-        return tasks
+    # 1) create / load tasks
+    tasks, train_task_names, eval_task_names = \
+            get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
+                      args.data_dir, bool(not args.reload_tasks))
 
-    train_task_names = parse_tasks(args.train_tasks)
-    eval_task_names = parse_tasks(args.eval_tasks)
-    all_task_names = list(set(train_task_names + eval_task_names))
-    tasks = get_tasks(all_task_names, args.max_seq_len, args.data_dir, bool(not args.reload_tasks))
-
+    # 2 + 3) build / load vocab and word vectors
     max_v_sizes = {'word': args.max_word_v_size}
     token_indexer = {}
     if args.elmo:
@@ -80,7 +79,7 @@ def build_tasks(args):
         pkl.dump(word_embs, open(emb_file, 'wb'))
         log.info("\tSaved embeddings to %s", emb_file)
 
-    # Index tasks using vocab, using previous preprocessing if available.
+    # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
     if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
         preproc = pkl.load(open(preproc_file, 'rb'))
@@ -108,25 +107,26 @@ def build_tasks(args):
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]
-    log.info('\t  Training on %s', ', '.join([task.name for task in train_tasks]))
-    log.info('\t  Evaluating on %s', ', '.join([task.name for task in eval_tasks]))
+    log.info('\t  Training on %s', ', '.join(train_task_names))
+    log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
 
-def del_field_tokens(task):
-    ''' Save memory by deleting the tokens that will no longer be used '''
-    all_instances = task.train_data + task.val_data + task.test_data
-    for instance in all_instances:
-        if 'input1' in instance.fields:
-            field = instance.fields['input1']
-            del field.tokens
-        if 'input2' in instance.fields:
-            field = instance.fields['input2']
-            del field.tokens
+def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
+    ''' Load tasks '''
+    def parse_tasks(task_list):
+        '''parse string of tasks'''
+        if task_list == 'all':
+            tasks = [task for task in NAME2INFO]
+        elif task_list == 'none':
+            tasks = []
+        else:
+            tasks = task_list.split(',')
+        return tasks
 
-def get_tasks(task_names, max_seq_len, path='', load=1):
-    '''
-    Load tasks
-    '''
+    train_task_names = parse_tasks(train_tasks)
+    eval_task_names = parse_tasks(eval_tasks)
+    task_names = list(set(train_task_names + eval_task_names))
+
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
@@ -140,7 +140,7 @@ def get_tasks(task_names, max_seq_len, path='', load=1):
             pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
-    return tasks
+    return tasks, train_task_names, eval_task_names
 
 def get_words(tasks):
     '''
@@ -171,6 +171,17 @@ def get_vocab(word2freq, max_v_sizes):
         vocab.add_token_to_namespace(word, 'tokens')
     log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
     return vocab
+
+def del_field_tokens(task):
+    ''' Save memory by deleting the tokens that will no longer be used '''
+    all_instances = task.train_data + task.val_data + task.test_data
+    for instance in all_instances:
+        if 'input1' in instance.fields:
+            field = instance.fields['input1']
+            del field.tokens
+        if 'input2' in instance.fields:
+            field = instance.fields['input2']
+            del field.tokens
 
 def get_embeddings(vocab, vec_file, d_word):
     '''Get embeddings for the words in vocab'''
