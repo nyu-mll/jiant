@@ -11,11 +11,13 @@
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
 # SET THESE BEFORE RUNNING:
-SCRATCH_PREFIX='/Users/Bowman/Drive/JSALT/demo'
-DATA_DIR="/Users/Bowman/Drive/JSALT/jiant/glue_data/"
+PROJECT_PREFIX='/Users/Bowman/Drive/JSALT/demo'
+PROJECT_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/ckpts'
 
-PROJECT_NAME='jiant-demo'
-EXP_NAME="cola"
+DATA_DIR="/Users/Bowman/Drive/JSALT/jiant/glue_data/"
+DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/"
+
+EXP_NAME='jiant-demo'
 RUN_NAME="cola_1"
 GPUID=-1
 SEED=42
@@ -23,9 +25,9 @@ no_tqdm=0
 
 SHOULD_TRAIN=1
 LOAD_MODEL=0
-RELOAD_TASKS=1
-RELOAD_INDEX=1
-RELOAD_VOCAB=1
+RELOAD_TASKS=0
+RELOAD_INDEX=0
+RELOAD_VOCAB=0
 load_epoch=-1
 
 train_tasks='mnli-fiction'
@@ -67,4 +69,4 @@ TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
-source run_from_vars.sh
+source ../src/run_from_vars.sh
