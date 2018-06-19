@@ -69,9 +69,9 @@ def format_mrpc(data_dir, path_to_data):
         for row in ids_fh:
             dev_ids.append(row.strip().split('\t'))
 
-    with open(mrpc_train_file) as data_fh, \
-         open(os.path.join(mrpc_dir, "train.tsv"), 'w') as train_fh, \
-         open(os.path.join(mrpc_dir, "dev.tsv"), 'w') as dev_fh:
+    with open(mrpc_train_file, encoding='utf-8') as data_fh, \
+         open(os.path.join(mrpc_dir, "train.tsv"), 'w', encoding='utf-8') as train_fh, \
+         open(os.path.join(mrpc_dir, "dev.tsv"), 'w', encoding='utf-8') as dev_fh:
         header = data_fh.readline()
         train_fh.write(header)
         dev_fh.write(header)
@@ -82,8 +82,8 @@ def format_mrpc(data_dir, path_to_data):
             else:
                 train_fh.write("%s\t%s\t%s\t%s\t%s\n" % (label, id1, id2, s1, s2))
 
-    with open(mrpc_test_file) as data_fh, \
-            open(os.path.join(mrpc_dir, "test.tsv"), 'w') as test_fh:
+    with open(mrpc_test_file, encoding='utf-8') as data_fh, \
+            open(os.path.join(mrpc_dir, "test.tsv"), 'w', encoding='utf-8') as test_fh:
         header = data_fh.readline()
         test_fh.write("index\t#1 ID\t#2 ID\t#1 String\t#2 String\n")
         for idx, row in enumerate(data_fh):
