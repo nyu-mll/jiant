@@ -13,6 +13,9 @@ conda env create -f environment.yml
 
 To activate the environment run ``source activate jiant``, and to deactivate run ``source deactivate``
 
+To use [fastText](https://github.com/facebookresearch/fastText) models and embeddings, download the [pretrained vectors](https://fasttext.cc/docs/en/english-vectors.html) or the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
+fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
+
 ## Downloading data
 
 The repo contains a convenience python script for downloading all GLUE data and standard splits.
