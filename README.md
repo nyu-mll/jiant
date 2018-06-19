@@ -21,22 +21,20 @@ The repo contains a convenience python script for downloading all GLUE data and 
 python download_glue_data.py --data_dir glue_data --tasks all
 ```
 
-After downloading GLUE, point ``PATH_PREFIX`` in  ``src/preprocess.py`` to the directory containing the data.
-
 For other pretraining task data, contact the person in charge.
 
 ## Running
 
 To run things, use ``src/main.py`` with flags or a script like the one in ``example_experiment_scripts/demo.sh``.
-Because preprocessing is expensive (particularly for ELMo) and we often want to run multiple experiments using the same preprocessing, we use an argument ``--exp_dir`` for sharing preprocessing between experiments. We use argument ``--run_dir`` to save information specific to a particular run, with ``run_dir`` nested within ``exp_dir``.
+Because preprocessing is expensive (particularly for ELMo), we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
 
-- exp1
+- exp1 (e.g. training and evaluating on WikiText and all the GLUE tasks)
     - run1 (with some hyperparameter settings)
     - run2 (with possibly the same hyperparameter settings)
-- exp2
+- exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
-You should also be sure to set ``--data_dir``and  ``--word_embs_file`` to point to the directory containing the data and word embeddings (see later sections) respectively.
+You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively.
 
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
@@ -56,7 +54,7 @@ See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script wa
 ## Adding New Tasks
 
 To add new tasks, you should:
-1. Add your data in a subfolder in whatever folder contains all your data, e.g. in the folder created by ``download_glue_data.py``. Make sure to add the correct path to the dctionary ``NAME2INFO``, formatted as ``task_name: (task_class, data_directory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
+1. Add your data in a subfolder in whatever folder contains all your data ``$DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
 
 2. Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
@@ -64,9 +62,9 @@ To add new tasks, you should:
     - Your task should include an attributes ``task.sentences`` that is a list of all text to index, e.g. for MNLI we have ``self.sentences = self.train_data_text[0] + self.train_data_text[1] + self.val_data_text[0] + ...``. Make sure to set this attribute after calling the data loader!
 
 3. In ``src/preprocess.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``process_task()``. The recommended approach is to create a function that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(Field name, Field)`` pairs.
+    - The correct task-specific preprocessing is being used for your task in ``process_task()``. The recommended approach is to create a function that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(field_name, Field)`` pairs.
     - ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples at the bottom of ``src/preprocess.py``.
-    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` or ``targs``!
+    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
 
 4. In ``src/model.py``, make sure that:
     - The correct task-specific module is being created for your task in ``build_module()``.
