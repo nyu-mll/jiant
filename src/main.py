@@ -155,77 +155,76 @@ def main(arguments):
     # TODO(Alex): move iterator creation
     iterator = BasicIterator(args.batch_size)
     #iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")], batch_size=args.batch_size)
-    trainer, train_params, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
+    trainer, _, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
 
     # Train #
     if train_tasks and args.should_train:
-        #to_train = [p for p in model.parameters() if p.requires_grad]
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        if args.trainer_type == 'mtl':
-            best_epochs = trainer.train(train_tasks, args.task_ordering, args.val_interval,
-                                        args.max_vals, args.bpp_method, args.bpp_base, to_train,
-                                        opt_params, schd_params, args.load_model)
-        elif args.trainer_type == 'sampling':
-            if args.weighting_method == 'uniform':
-                log.info("Sampling tasks uniformly")
-            elif args.weighting_method == 'proportional':
-                log.info("Sampling tasks proportional to number of training batches")
+        if args.weighting_method == 'uniform':
+            log.info("Sampling tasks uniformly")
+        elif args.weighting_method == 'proportional':
+            log.info("Sampling tasks proportional to number of training batches")
 
-            if args.scaling_method == 'max':
-                # divide by # batches, multiply by max # batches
-                log.info("Scaling losses to largest task")
-            elif args.scaling_method == 'min':
-                # divide by # batches, multiply by fewest # batches
-                log.info("Scaling losses to the smallest task")
-            elif args.scaling_method == 'unit':
-                log.info("Dividing losses by number of training batches")
-            best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
-                                        args.weighting_method, args.scaling_method, to_train,
-                                        opt_params, schd_params, args.shared_optimizer,
-                                        args.load_model)
+        if args.scaling_method == 'max':
+            # divide by # batches, multiply by max # batches
+            log.info("Scaling losses to largest task")
+        elif args.scaling_method == 'min':
+            # divide by # batches, multiply by fewest # batches
+            log.info("Scaling losses to the smallest task")
+        elif args.scaling_method == 'unit':
+            log.info("Dividing losses by number of training batches")
+        best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
+                                    args.weighting_method, args.scaling_method, to_train,
+                                    opt_params, schd_params, args.shared_optimizer,
+                                    args.load_model)
     else:
         log.info("Skipping training.")
         best_epochs = {}
 
-    # train just the classifiers for eval tasks
-    for task in eval_tasks:
-        pred_layer = getattr(model, "%s_pred_layer" % task.name)
-        to_train = pred_layer.parameters()
-        #trainer = MultiTaskTrainer.from_params(model, args.run_dir + '/%s/' % task.name,
-        #                                       iterator, copy.deepcopy(train_params))
-        trainer = None # todo
-        trainer.train([task], args.task_ordering, 1, args.max_vals, 'percent_tr', 1, to_train,
-                      opt_params, schd_params, 1)
-        layer_path = os.path.join(args.run_dir, task.name, "%s_best.th" % task.name)
-        layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(layer_state)
-
-    # Evaluate: load the different task best models and evaluate them
-    # TODO(Alex): put this in evaluate file
-    all_results = {}
-
-    if not best_epochs and args.load_epoch >= 0:
+    # Select model checkpoint to load
+    if args.load_epoch >= 0: # force loading a particular epoch
         epoch_to_load = args.load_epoch
-    elif not best_epochs and not args.load_epoch:
+    elif not best_epochs and not args.load_epoch: # choose the max
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
         epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
                              for x in model_checkpoints])
     else:
         epoch_to_load = -1
+    load_idx = best_epochs['macro'] if best_epochs else epoch_to_load
+    model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
+    model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+    model.load_state_dict(model_state)
 
+    # train just the classifiers for eval tasks
+    # TODO(Alex): currently will overwrite model checkpoints from training
+    for task in eval_tasks:
+        pred_module = getattr(model, "%s_mdl" % task.name)
+        to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+        trainer, _, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
+        best_epoch = trainer.train([task], args.val_interval, args.bpp_base,
+                                   args.weighting_method, args.scaling_method,
+                                   to_train, opt_params, schd_params,
+                                   args.shared_optimizer, args.load_model)
+        best_epoch = best_epoch[task]
+        layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+        layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
+        model.load_state_dict(layer_state)
+
+    # Evaluate: load the different task best models and evaluate them
+    # TODO(Alex): clean up and put this in evaluate.py
+    all_results = {}
     #for task in [task.name for task in train_tasks] + ['micro', 'macro']:
     for task in ['macro']:
         log.info("Testing on %s..." % task)
 
-        # Load best model
-        load_idx = best_epochs[task] if best_epochs else epoch_to_load
-        model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
-        model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(model_state)
+        # Load best model; will overwrite eval-only modules
+        #load_idx = best_epochs[task] if best_epochs else epoch_to_load
+        #model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
+        #model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
+        #model.load_state_dict(model_state)
 
         # Test evaluation and prediction
-        # could just filter out tasks to get what i want...
         #tasks = [task for task in tasks if 'mnli' in task.name]
         te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
         val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")

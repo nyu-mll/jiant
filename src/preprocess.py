@@ -143,6 +143,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
+            log.info('\tCreating task %s from scratch', name)
             task = NAME2INFO[name][0](task_path, max_seq_len, name)
             pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)

@@ -19,7 +19,7 @@ DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-repres
 
 EXP_NAME='jiant-demo'
 RUN_NAME="cola_1"
-GPUID=-1
+GPUID=0
 SEED=42
 no_tqdm=0
 
@@ -37,6 +37,7 @@ d_hid_cls=16
 max_seq_len=10
 VOCAB_SIZE=1000
 WORD_EMBS_FILE="~/glove.840B.300d.txt"
+WORD_EMBS_FILE="/misc/vlgscratch4/BowmanGroup/awang/raw_data/GloVe/glove.840B.300d.txt"
 
 d_word=300
 d_hid=32
