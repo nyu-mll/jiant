@@ -2,3 +2,4 @@
 *.swp
 *.log
 glue_data/
+user_config.sh

@@ -86,7 +86,11 @@ def build_tasks(args):
         word_embs = pkl.load(open(emb_file, 'rb'))
     else:
         log.info("\tBuilding embeddings from scratch")
-        word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+        if args.fastText:
+            word_embs = get_fastText_embeddings(vocab, args.fastText_embs_file, args.d_word,
+                                                model_file=args.fastText_model_file)
+        else:
+            word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
         pkl.dump(word_embs, open(emb_file, 'wb'))
         log.info("\tSaved embeddings to %s", emb_file)
 
@@ -205,7 +209,7 @@ def get_embeddings(vocab, vec_file, d_word):
             idx = vocab.get_token_index(word)
             if idx != unk_idx:
                 embeddings[idx] = np.array(list(map(float, vec.split())))
-    embeddings[vocab._padding_token] = 0.
+    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
     return embeddings
@@ -219,14 +223,14 @@ def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
     '''
     word_v_size, unk_idk = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
-    if model is None:
+    if model_file is None:
         fin = io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore')
         for line in fin:
             word, vec = line.rstrip().split(' ', 1)
             idx = vocab.get_token_index(word)
             if idx != unk_idx:
                 embeddings[idx] = np.array(list(map(float, vec.split())))
-        embeddings[vocab._padding_token] = 0.
+        embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
         embeddings = torch.FloatTensor(embeddings)
         log.info("\tFinished loading pretrained fastText embeddings")
         return embeddings
@@ -235,11 +239,11 @@ def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
         special_tokens = [vocab._padding_token, vocab._oov_token]
         # We can also just check if idx >= 2
         for idx in range(word_v_size):
-            word = get_token_from_index(idx)
+            word = vocab.get_token_from_index(idx)
             if word in special_tokens:
                 continue
             embeddings[idx] = model.get_word_vector(word)
-        embeddings[vocab._padding_token] = 0.
+        embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
         embeddings = torch.FloatTensor(embeddings)
         log.info("\tFinished loading pretrained fastText model and embeddings")
         return embeddings, model
