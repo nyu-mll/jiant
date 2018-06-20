@@ -33,6 +33,8 @@ def main(arguments):
     parser.add_argument('--exp_dir', help='directory containing shared preprocessing', type=str)
     parser.add_argument('--run_dir', help='directory for saving results, models, etc.', type=str)
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
+    parser.add_argument('--path_to_cove', help='path to cove repo', type=str,
+                        default='/misc/vlgscratch4/BowmanGroup/awang/models/cove')
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='preproc.pkl')
 
@@ -63,20 +65,25 @@ def main(arguments):
     parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
 
     # Embedding options
-    parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
+    parser.add_argument('--no_word_embs', help='1 if no word embs', type=int, default=0)
+    parser.add_argument('--glove', help='1 if use glove', type=int, default=1)
+    parser.add_argument('--fasttext', help='1 if use fasttext', type=int, default=0)
+    parser.add_argument('--word_embs', help='type of word embeddings', type=str,
+                        choices=['glove', 'fasttext', 'scratch', 'none'], default='glove')
+    parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
-    parser.add_argument('--glove', help='1 if use glove, else from scratch', type=int, default=1)
     parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=0)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
-    parser.add_argument('--elmo_no_glove', help='1 if no glove, assuming elmo', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
                         choices=['bow', 'rnn'])
-    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='simple',
-                        choices=['simple', 'attn'])
+    parser.add_argument('--shared_pair_enc', help='1 to share pair encoder for pair sentence tasks',
+                        type=int, default=1)
+    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
+                        default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
@@ -272,7 +279,10 @@ def main(arguments):
                                 pred = 'entailment' if pred else 'not_entailment'
                                 pred_fh.write('%d\t%s\n' % (idx, pred))
                             else:
-                                pred_fh.write("%d\t%d\n" % (idx, pred))
+                                try:
+                                    pred_fh.write("%d\t%d\n" % (idx, pred))
+                                except:
+                                    pdb.set_trace()
 
             with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh: # aggregate results easily
                 run_name = args.run_dir.split('/')[-1]

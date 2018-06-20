@@ -139,7 +139,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
         assert name in NAME2INFO, 'Task not found!'
         task_path = os.path.join(path, NAME2INFO[name][1])
         pkl_path = os.path.join(task_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and not load:
+        if os.path.isfile(pkl_path) and load:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:

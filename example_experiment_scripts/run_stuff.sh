@@ -8,9 +8,8 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-SCRATCH_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/'
-PROJECT_NAME='mtl-sent-rep'
-DATA_DIR="${SCRATCH_PREFIX}/processed_data/mtl-sentence-representations/"
+PROJECT_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep'
+DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/"
 EXP_NAME="debug"
 RUN_NAME="debug"
 GPUID=0
@@ -19,9 +18,9 @@ no_tqdm=0
 
 SHOULD_TRAIN=1
 LOAD_MODEL=0
-RELOAD_TASKS=1
-RELOAD_INDEX=1
-RELOAD_VOCAB=1
+RELOAD_TASKS=0
+RELOAD_INDEX=0
+RELOAD_VOCAB=0
 load_epoch=-1
 
 train_tasks='all'
@@ -30,7 +29,7 @@ CLASSIFIER=mlp
 d_hid_cls=512
 max_seq_len=40
 VOCAB_SIZE=30000
-WORD_EMBS_FILE="${SCRATCH_PREFIX}/raw_data/GloVe/glove.840B.300d.txt"
+WORD_EMBS_FILE="/misc/vlgscratch4/BowmanGroup/awang/raw_data/GloVe/glove.840B.300d.txt"
 
 d_word=300
 d_hid=512
