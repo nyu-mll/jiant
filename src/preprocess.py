@@ -87,12 +87,13 @@ def build_tasks(args):
     else:
         log.info("\tBuilding embeddings from scratch")
         if args.fastText:
-            word_embs = get_fastText_embeddings(vocab, args.fastText_embs_file, args.d_word,
-                                                model_file=args.fastText_model_file)
+            word_embs, _ = get_fastText_embeddings(vocab, args.fastText_embs_file, args.d_word,
+                                                   model_file=args.fastText_model_file)
+            log.info(f'\tNo pickling')
         else:
             word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-        pkl.dump(word_embs, open(emb_file, 'wb'))
-        log.info("\tSaved embeddings to %s", emb_file)
+            pkl.dump(word_embs, open(emb_file, 'wb'))
+            log.info("\tSaved embeddings to %s", emb_file)
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
@@ -233,7 +234,7 @@ def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
         embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
         embeddings = torch.FloatTensor(embeddings)
         log.info("\tFinished loading pretrained fastText embeddings")
-        return embeddings
+        return embeddings, None
     else:
         model = fastText.FastText.load_model(model_file)
         special_tokens = [vocab._padding_token, vocab._oov_token]
