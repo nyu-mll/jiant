@@ -19,7 +19,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:
         V) VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
-        #E) eval_tasks="${OPTARG}" ;;
+        E) eval_tasks="${OPTARG}" ;;
         O) TASK_ORDERING="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
         l) LR="${OPTARG}" ;;
@@ -28,7 +28,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:
         o) OPTIMIZER="${OPTARG}" ;;
         h) d_hid="${OPTARG}" ;;
         b) BATCH_SIZE="${OPTARG}" ;;
-        E) PAIR_ENC="${OPTARG}" ;;
+        #E) PAIR_ENC="${OPTARG}" ;;
         G) glove=0 ;;
         e) ELMO=1 ;;
         c) COVE=1 ;;

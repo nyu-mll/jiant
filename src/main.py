@@ -196,11 +196,12 @@ def main(arguments):
                                    args.weighting_method, args.scaling_method,
                                    to_train, opt_params, schd_params,
                                    args.shared_optimizer, args.load_model)
-        best_epoch = best_epoch[task]
+        best_epoch = best_epoch[task.name]
         layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
         load_model_state(model, layer_path, args.cuda)
 
     # Evaluate #
+    log.info("Evaluating...")
     _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
     val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
     if args.write_preds:

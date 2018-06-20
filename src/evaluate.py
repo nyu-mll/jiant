@@ -1,6 +1,6 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
-import logging
+import logging as log
 import ipdb as pdb
 import tqdm
 
@@ -8,8 +8,6 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from utils import device_mapping
 from tasks import STSBTask
-
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
@@ -54,8 +52,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
             all_metrics["%s_%s" % (task.name, name)] = value
-        all_metrics["micro_accuracy"] += all_metrics["%s_accuracy" % task.name] * n_examples
-        all_metrics["macro_accuracy"] += all_metrics["%s_accuracy" % task.name]
+        all_metrics["micro_accuracy"] += all_metrics[task.val_metric] * n_examples
+        all_metrics["macro_accuracy"] += all_metrics[task.val_metric]
         n_overall_examples += n_examples
         if isinstance(task, STSBTask):
             task_preds = [min(max(0., pred * 5.), 5.) for pred in task_preds]
@@ -108,10 +106,7 @@ def write_preds(all_preds, pred_dir):
                         pred = 'entailment' if pred else 'not_entailment'
                         pred_fh.write('%d\t%s\n' % (idx, pred))
                     else:
-                        try:
-                            pred_fh.write("%d\t%d\n" % (idx, pred))
-                        except:
-                            pdb.set_trace()
+                        pred_fh.write("%d\t%d\n" % (idx, pred))
 
     return
 
@@ -121,6 +116,7 @@ def write_results(results, results_file, run_name):
         all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
                                     metric, score in results.items()])
         results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
+    log.info(all_metrics_str)
 
 def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''
