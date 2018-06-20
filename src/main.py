@@ -96,7 +96,7 @@ def main(arguments):
     parser.add_argument('--shared_optimizer', help='1 to use same optimizer for all tasks',
                         type=int, default=1)
     parser.add_argument('--batch_size', help='batch size', type=int, default=64)
-    parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
+    parser.add_argument('--optimizer', help='optimizer to use. all valid AllenNLP options are available, including `sgd`. `adam` uses to the newer AMSGrad variant.', type=str, default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
     parser.add_argument('--min_lr', help='minimum learning rate', type=float, default=1e-5)
