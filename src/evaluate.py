@@ -1,40 +1,20 @@
-"""
-The ``evaluate`` subcommand can be used to
-evaluate a trained model against a dataset
-and report any metrics calculated by the model.
-
-.. code-block:: bash
-
-    $ python -m allennlp.run evaluate --help
-    usage: run [command] evaluate [-h] --archive_file ARCHIVE_FILE
-                                --evaluation_data_file EVALUATION_DATA_FILE
-                                [--cuda_device CUDA_DEVICE]
-
-    Evaluate the specified model + dataset
-
-    optional arguments:
-    -h, --help            show this help message and exit
-    --archive_file ARCHIVE_FILE
-                            path to an archived trained model
-    --evaluation_data_file EVALUATION_DATA_FILE
-                            path to the file containing the evaluation data
-    --cuda_device CUDA_DEVICE
-                            id of GPU to use (if any)
-"""
-import ipdb as pdb
+""" Helper functions to evaluate a model on a dataset """
+import os
 import logging
+import ipdb as pdb
 import tqdm
 
-from allennlp.data.iterators import DataIterator
-from allennlp.models.model import Model
-
+import torch
+from allennlp.data.iterators import BasicIterator
+from utils import device_mapping
 from tasks import STSBTask
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-def evaluate(model, tasks, iterator, cuda_device, split="val"):
+def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
     model.eval()
+    iterator = BasicIterator(batch_size)
 
     all_metrics = {"micro_accuracy": 0.0, "macro_accuracy": 0.0}
     all_preds = {}
@@ -85,3 +65,64 @@ def evaluate(model, tasks, iterator, cuda_device, split="val"):
     all_metrics["micro_accuracy"] /= n_overall_examples
 
     return all_metrics, all_preds
+
+def write_preds(all_preds, pred_dir):
+    ''' Write predictions to files in pred_dir
+
+    We write special code to handle various GLUE tasks. '''
+    for task, preds in all_preds.items():
+        if isinstance(preds[1][0], list):
+            preds = [[p for p in preds[0]], [p[0] for p in preds[1]]]
+        idxs_and_preds = [(idx, pred) for pred, idx in zip(preds[0], preds[1])]
+        idxs_and_preds.sort(key=lambda x: x[0])
+        if task == 'mnli':
+            pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
+            with open(os.path.join(pred_dir, "%s-m.tsv" % (task)), 'w') as pred_fh:
+                pred_fh.write("index\tprediction\n")
+                split_idx = 0
+                for idx, pred in idxs_and_preds[:9796]:
+                    pred = pred_map[pred]
+                    pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                    split_idx += 1
+            with open(os.path.join(pred_dir, "%s-mm.tsv" % (task)), 'w') as pred_fh:
+                pred_fh.write("index\tprediction\n")
+                split_idx = 0
+                for idx, pred in idxs_and_preds[9796:9796+9847]:
+                    pred = pred_map[pred]
+                    pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                    split_idx += 1
+            with open(os.path.join(pred_dir, "diagnostic.tsv"), 'w') as pred_fh:
+                pred_fh.write("index\tprediction\n")
+                split_idx = 0
+                for idx, pred in idxs_and_preds[9796+9847:]:
+                    pred = pred_map[pred]
+                    pred_fh.write("%d\t%s\n" % (split_idx, pred))
+                    split_idx += 1
+        else:
+            with open(os.path.join(pred_dir, "%s.tsv" % (task)), 'w') as pred_fh:
+                pred_fh.write("index\tprediction\n")
+                for idx, pred in idxs_and_preds:
+                    if 'sts-b' in task:
+                        pred_fh.write("%d\t%.3f\n" % (idx, pred))
+                    elif 'rte' in task or 'qnli' in task:
+                        pred = 'entailment' if pred else 'not_entailment'
+                        pred_fh.write('%d\t%s\n' % (idx, pred))
+                    else:
+                        try:
+                            pred_fh.write("%d\t%d\n" % (idx, pred))
+                        except:
+                            pdb.set_trace()
+
+    return
+
+def write_results(results, results_file, run_name):
+    ''' Aggregate results by appending results to results_file '''
+    with open(results_file, 'a') as results_fh:
+        all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
+                                    metric, score in results.items()])
+        results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
+
+def load_model_state(model, state_path, gpu_id):
+    ''' Helper function to load a model state '''
+    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model.load_state_dict(model_state)

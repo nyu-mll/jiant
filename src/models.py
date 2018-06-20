@@ -27,8 +27,6 @@ from tasks import STSBTask, CoLATask, SSTTask, \
 from modules import RNNEncoder, BoWSentEncoder, \
                     AttnPairEncoder, SimplePairEncoder
 
-logger = log.getLogger(__name__)  # pylint: disable=invalid-name
-
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json" # pylint: disable=line-too-long
 ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5" # pylint: disable=line-too-long
@@ -109,7 +107,7 @@ def build_embeddings(args, vocab, pretrained_embs=None):
             d_emb += 600
             log.info("\tUsing CoVe embeddings!")
         except ImportError:
-            logger.info("Failed to import CoVE!")
+            log.info("Failed to import CoVE!")
     else:
         cove_emb = None
 
