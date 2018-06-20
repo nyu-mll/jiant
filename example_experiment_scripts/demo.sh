@@ -51,8 +51,8 @@ PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
 
-OPTIMIZER="sgd"
-LR=.1
+OPTIMIZER="adam"
+LR=.001
 min_lr=1e-5
 dropout=.2
 LR_DECAY=.5

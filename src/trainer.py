@@ -25,7 +25,11 @@ def build_trainer(args, model):
     #iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
     #                          batch_size=args.batch_size)
 
-    opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
+    if args.optimizer == 'adam':
+        # AMSGrad is a flag variant of Adam, not its own object.
+        opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5, 'amsgrad': True})
+    else:
+        opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
     schd_params = Params({'type': 'reduce_on_plateau', 'mode':'max', 'factor': args.lr_decay_factor,
                           'patience': args.task_patience, 'threshold': args.scheduler_threshold,
                           'threshold_mode': 'abs', 'verbose':True})
