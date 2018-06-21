@@ -17,14 +17,27 @@ from allennlp.common.checks import ConfigurationError
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+
 def process_sentence(sent, max_seq_len):
     '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    #return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
+    # return ['<SOS>'] + nltk.word_tokenize(sent)[:max_seq_len] + ['<EOS>']
     return nltk.word_tokenize(sent)[:max_seq_len]
 
-def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=None,
-             targ_map=None, targ_fn=None, skip_rows=0, delimiter='\t', filter_idx=None, filter_value=None):
-    '''Load a tsv 
+
+def load_tsv(
+        data_file,
+        max_seq_len,
+        s1_idx=0,
+        s2_idx=1,
+        targ_idx=2,
+        idx_idx=None,
+        targ_map=None,
+        targ_fn=None,
+        skip_rows=0,
+        delimiter='\t',
+        filter_idx=None,
+        filter_value=None):
+    '''Load a tsv
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
@@ -72,6 +85,7 @@ def load_tsv(data_file, max_seq_len, s1_idx=0, s2_idx=1, targ_idx=2, idx_idx=Non
     else:
         return sent1s, sent2s, targs
 
+
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
     n_exs = len(data[0])
@@ -81,6 +95,7 @@ def split_data(data, ratio, shuffle=1):
         splits[0].append(col[:split_pt])
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
+
 
 def get_lengths_from_binary_sequence_mask(mask):
     """
@@ -125,7 +140,8 @@ def sort_batch_by_length(tensor, sequence_lengths):
     """
 
     if not isinstance(tensor, Variable) or not isinstance(sequence_lengths, Variable):
-        raise ConfigurationError("Both the tensor and sequence lengths must be torch.autograd.Variables.")
+        raise ConfigurationError(
+            "Both the tensor and sequence lengths must be torch.autograd.Variables.")
 
     sorted_sequence_lengths, permutation_index = sequence_lengths.sort(0, descending=True)
     sorted_tensor = tensor.index_select(0, permutation_index)
@@ -292,9 +308,10 @@ def viterbi_decode(tag_sequence: torch.Tensor,
     sequence_length, num_tags = list(tag_sequence.size())
     if tag_observations:
         if len(tag_observations) != sequence_length:
-            raise ConfigurationError("Observations were provided, but they were not the same length "
-                                     "as the sequence. Found sequence of length: {} and evidence: {}"
-                                     .format(sequence_length, tag_observations))
+            raise ConfigurationError(
+                "Observations were provided, but they were not the same length "
+                "as the sequence. Found sequence of length: {} and evidence: {}" .format(
+                    sequence_length, tag_observations))
     else:
         tag_observations = [-1 for _ in range(sequence_length)]
 
@@ -492,7 +509,9 @@ def replace_masked_values(tensor: Variable, mask: Variable, replace_with: float)
     # We'll build a tensor of the same shape as `tensor`, zero out masked values, then add back in
     # the `replace_with` value.
     if tensor.dim() != mask.dim():
-        raise ConfigurationError("tensor.dim() (%d) != mask.dim() (%d)" % (tensor.dim(), mask.dim()))
+        raise ConfigurationError(
+            "tensor.dim() (%d) != mask.dim() (%d)" %
+            (tensor.dim(), mask.dim()))
     one_minus_mask = 1.0 - mask
     values_to_add = replace_with * one_minus_mask
     return tensor * mask + values_to_add
@@ -606,7 +625,8 @@ def _get_combination_dim(combination: str, tensor_dims: List[int]) -> int:
         second_tensor_dim = _get_combination_dim(combination[2], tensor_dims)
         operation = combination[1]
         if first_tensor_dim != second_tensor_dim:
-            raise ConfigurationError("Tensor dims must match for operation \"{}\"".format(operation))
+            raise ConfigurationError(
+                "Tensor dims must match for operation \"{}\"".format(operation))
         return first_tensor_dim
 
 

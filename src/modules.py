@@ -2,7 +2,7 @@
 import os
 import sys
 import logging as log
-import ipdb as pdb # pylint: disable=unused-import
+import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -23,8 +23,10 @@ from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
+
 class RNNEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
+
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
@@ -45,13 +47,13 @@ class RNNEncoder(Model):
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.output_dim = phrase_layer.get_output_dim()
 
-        #if d_emb != d_inp_phrase:
+        # if d_emb != d_inp_phrase:
         if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
                 or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
                 or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
                                      "must match the input dimension of "
-                                     "the phrase_encoder. Found {} and {} respectively." \
+                                     "the phrase_encoder. Found {} and {} respectively."
                                      .format(d_emb, d_inp_phrase))
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
@@ -93,7 +95,8 @@ class RNNEncoder(Model):
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         sent_enc.data.masked_fill_(1 - sent_mask.byte().data, -float('inf'))
-        return sent_enc, sent_mask #.max(dim=1)[0]
+        return sent_enc, sent_mask  # .max(dim=1)[0]
+
 
 class BoWSentEncoder(Model):
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
@@ -124,10 +127,12 @@ class BoWSentEncoder(Model):
         """
         word_embs = self._text_field_embedder(sent)
         word_mask = util.get_text_field_mask(sent).float()
-        return word_embs, word_mask # need to get # nonzero elts
+        return word_embs, word_mask  # need to get # nonzero elts
+
 
 class SimplePairEncoder(Model):
     ''' Given two sentence vectors u and v, model the pair as [u; v; |u-v|; u * v] '''
+
     def __init__(self, vocab):
         super(SimplePairEncoder, self).__init__(vocab)
 
@@ -137,6 +142,7 @@ class SimplePairEncoder(Model):
         sent_emb2 = s2.max(dim=1)[0]
         return torch.cat([sent_emb1, sent_emb2, torch.abs(sent_emb1 - sent_emb2),
                           sent_emb1 * sent_emb2], 1)
+
 
 class AttnPairEncoder(Model):
     """
@@ -165,6 +171,7 @@ class AttnPairEncoder(Model):
     regularizer : ``RegularizerApplicator``, optional (default=``None``)
         If provided, will be used to calculate the regularization penalty during training.
     """
+
     def __init__(self, vocab, attention_similarity_function, modeling_layer,
                  dropout=0.2, mask_lstms=True, initializer=InitializerApplicator()):
         super(AttnPairEncoder, self).__init__(vocab)
@@ -184,7 +191,7 @@ class AttnPairEncoder(Model):
 
         initializer(self)
 
-    def forward(self, s1, s2, s1_mask, s2_mask): # pylint: disable=arguments-differ
+    def forward(self, s1, s2, s1_mask, s2_mask):  # pylint: disable=arguments-differ
         """
         Parameters
         ----------

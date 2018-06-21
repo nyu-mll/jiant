@@ -1,22 +1,20 @@
-'''Train a multi-task model using AllenNLP'''
+'''Train a multi-task model using AllenNLP '''
 import os
 import sys
 import time
-import copy
 import random
 import argparse
 import logging as log
-import _pickle as pkl
 import ipdb as pdb
 import torch
-
-from allennlp.data.iterators import BasicIterator, BucketIterator
-from utils import device_mapping
 
 from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer
-from evaluate import evaluate
+from evaluate import evaluate, load_model_state, write_results, write_preds
+
+import _pickle as pkl
+
 
 def main(arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -28,8 +26,11 @@ def main(arguments):
 
     # Paths and logging
     parser.add_argument('--log_file', help='file to log to', type=str, default='log.log')
-    parser.add_argument('--data_dir', help='directory containing all data', type=str,
-                        default='/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/')
+    parser.add_argument(
+        '--data_dir',
+        help='directory containing all data',
+        type=str,
+        default='/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/')
     parser.add_argument('--exp_dir', help='directory containing shared preprocessing', type=str)
     parser.add_argument('--run_dir', help='directory for saving results, models, etc.', type=str)
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
@@ -42,9 +43,13 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
-    parser.add_argument('--load_epoch', help='Force loading from a certain epoch', type=int,
-                        default=-1)
-    parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int, default=0)
+    parser.add_argument('--force_load_epoch', help='Force loading from a certain epoch',
+                        type=int, default=-1)
+    parser.add_argument(
+        '--reload_tasks',
+        help='1 if force re-reading of tasks',
+        type=int,
+        default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
                         type=int, default=0)
     parser.add_argument('--reload_vocab', help='1 if force vocabulary rebuild', type=int, default=0)
@@ -66,20 +71,25 @@ def main(arguments):
     parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
 
     # Embedding options
-    parser.add_argument('--dropout_embs', help='dropout rate for embeddings', type=float, default=.2)
+    parser.add_argument('--no_word_embs', help='1 if no word embs', type=int, default=0)
+    parser.add_argument('--glove', help='1 if use glove', type=int, default=1)
+    parser.add_argument('--fasttext', help='1 if use fasttext', type=int, default=0)
+    parser.add_argument('--word_embs', help='type of word embeddings', type=str,
+                        choices=['glove', 'fasttext', 'scratch', 'none'], default='glove')
+    parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
-    parser.add_argument('--glove', help='1 if use glove, else from scratch', type=int, default=1)
     parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=0)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
-    parser.add_argument('--elmo_no_glove', help='1 if no glove, assuming elmo', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
                         choices=['bow', 'rnn'])
-    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str, default='simple',
-                        choices=['simple', 'attn'])
+    parser.add_argument('--shared_pair_enc', help='1 to share pair encoder for pair sentence tasks',
+                        type=int, default=1)
+    parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
+                        default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
@@ -92,7 +102,11 @@ def main(arguments):
     parser.add_argument('--shared_optimizer', help='1 to use same optimizer for all tasks',
                         type=int, default=1)
     parser.add_argument('--batch_size', help='batch size', type=int, default=64)
-    parser.add_argument('--optimizer', help='optimizer to use', type=str, default='sgd')
+    parser.add_argument(
+        '--optimizer',
+        help='optimizer to use. all valid AllenNLP options are available, including `sgd`. `adam` uses to the newer AMSGrad variant.',
+        type=str,
+        default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
     parser.add_argument('--min_lr', help='minimum learning rate', type=float, default=1e-5)
@@ -121,16 +135,25 @@ def main(arguments):
     parser.add_argument('--scaling_method', help='method for scaling loss', type=str,
                         choices=['min', 'max', 'unit', 'none'], default='none')
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
-    parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str, default='given',
-                        choices=['given', 'random', 'random_per_pass', 'small_to_large', 'large_to_small'])
+    parser.add_argument(
+        '--task_ordering',
+        help='Method for ordering tasks',
+        type=str,
+        default='given',
+        choices=[
+            'given',
+            'random',
+            'random_per_pass',
+            'small_to_large',
+            'large_to_small'])
+
+    parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=1)
 
     args = parser.parse_args(arguments)
 
     # Logistics #
     log.basicConfig(format='%(asctime)s: %(message)s', level=log.INFO, datefmt='%m/%d %I:%M:%S %p')
-    log_file = os.path.join(args.run_dir, args.log_file)
-    file_handler = log.FileHandler(log_file)
-    log.getLogger().addHandler(file_handler)
+    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir, args.log_file)))
     log.info(args)
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
@@ -141,7 +164,7 @@ def main(arguments):
         torch.cuda.manual_seed_all(seed)
     log.info("Using random seed %d", seed)
 
-    # Load tasks #
+    # Prepare data #
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
@@ -154,138 +177,62 @@ def main(arguments):
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    # Set up trainer #
-    # TODO(Alex): move iterator creation
-    iterator = BasicIterator(args.batch_size)
-    #iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")], batch_size=args.batch_size)
-    trainer, _, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
-
-    # Train #
+    # Train on train tasks #
     if train_tasks and args.should_train:
+        log.info("Training...")
+        trainer, _, opt_params, schd_params = build_trainer(args, model)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        if args.weighting_method == 'uniform':
-            log.info("Sampling tasks uniformly")
-        elif args.weighting_method == 'proportional':
-            log.info("Sampling tasks proportional to number of training batches")
-
-        if args.scaling_method == 'max':
-            # divide by # batches, multiply by max # batches
-            log.info("Scaling losses to largest task")
-        elif args.scaling_method == 'min':
-            # divide by # batches, multiply by fewest # batches
-            log.info("Scaling losses to the smallest task")
-        elif args.scaling_method == 'unit':
-            log.info("Dividing losses by number of training batches")
         best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
-                                    args.weighting_method, args.scaling_method, to_train,
-                                    opt_params, schd_params, args.shared_optimizer,
-                                    args.load_model)
+                                    args.weighting_method, args.scaling_method,
+                                    to_train, opt_params, schd_params,
+                                    args.shared_optimizer, args.load_model)
     else:
         log.info("Skipping training.")
         best_epochs = {}
 
-    # Select model checkpoint to load
-    if args.load_epoch >= 0: # force loading a particular epoch
-        epoch_to_load = args.load_epoch
-    elif not best_epochs and not args.load_epoch: # choose the max
+    # Select model checkpoint from training to load
+    if args.force_load_epoch >= 0:  # force loading a particular epoch
+        epoch_to_load = args.force_load_epoch
+    elif "macro" in best_epochs:
+        epoch_to_load = best_epochs['macro']
+    else:
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
-                             for x in model_checkpoints])
-    else:
-        epoch_to_load = -1
-    load_idx = best_epochs['macro'] if best_epochs else epoch_to_load
-    model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
-    model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-    model.load_state_dict(model_state)
+        if model_checkpoints:
+            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
+                                 for x in model_checkpoints])
+        else:
+            epoch_to_load = -1
+    if epoch_to_load >= 0:
+        state_path = os.path.join(args.run_dir,
+                                  "model_state_epoch_{}.th".format(epoch_to_load))
+        load_model_state(model, state_path, args.cuda)
 
-    # train just the classifiers for eval tasks
+    # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training
     for task in eval_tasks:
         pred_module = getattr(model, "%s_mdl" % task.name)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-        trainer, _, opt_params, schd_params = build_trainer(args, args.trainer_type, model, iterator)
+        trainer, _, opt_params, schd_params = build_trainer(args, model)
         best_epoch = trainer.train([task], args.val_interval, args.bpp_base,
                                    args.weighting_method, args.scaling_method,
                                    to_train, opt_params, schd_params,
                                    args.shared_optimizer, args.load_model)
-        best_epoch = best_epoch[task]
+        best_epoch = best_epoch[task.name]
         layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
-        layer_state = torch.load(layer_path, map_location=device_mapping(args.cuda))
-        model.load_state_dict(layer_state)
+        load_model_state(model, layer_path, args.cuda)
 
-    # Evaluate: load the different task best models and evaluate them
-    # TODO(Alex): clean up and put this in evaluate.py
-    all_results = {}
-    #for task in [task.name for task in train_tasks] + ['micro', 'macro']:
-    for task in ['macro']:
-        log.info("Testing on %s..." % task)
+    # Evaluate #
+    log.info("Evaluating...")
+    _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
+    val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    if args.write_preds:
+        write_preds(te_preds, args.run_dir)
+    write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
+                  args.run_dir.split('/')[-1])
 
-        # Load best model; will overwrite eval-only modules
-        #load_idx = best_epochs[task] if best_epochs else epoch_to_load
-        #model_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(load_idx))
-        #model_state = torch.load(model_path, map_location=device_mapping(args.cuda))
-        #model.load_state_dict(model_state)
+    log.info("Done!")
 
-        # Test evaluation and prediction
-        #tasks = [task for task in tasks if 'mnli' in task.name]
-        te_results, te_preds = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="test")
-        val_results, _ = evaluate(model, tasks, iterator, cuda_device=args.cuda, split="val")
-
-        if task == 'macro':
-            all_results[task] = (val_results, te_results, model_path)
-            for eval_task, task_preds in te_preds.items(): # write predictions for each task
-                #if 'mnli' not in eval_task:
-                #    continue
-                idxs_and_preds = [(idx, pred) for pred, idx in zip(task_preds[0], task_preds[1])]
-                idxs_and_preds.sort(key=lambda x: x[0])
-                if 'mnli' in eval_task:
-                    pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
-                    with open(os.path.join(args.run_dir, "%s-m.tsv" % (eval_task)), 'w') as pred_fh:
-                        pred_fh.write("index\tprediction\n")
-                        split_idx = 0
-                        for idx, pred in idxs_and_preds[:9796]:
-                            pred = pred_map[pred]
-                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
-                            split_idx += 1
-                    with open(os.path.join(args.run_dir, "%s-mm.tsv" % (eval_task)), 'w') as pred_fh:
-                        pred_fh.write("index\tprediction\n")
-                        split_idx = 0
-                        for idx, pred in idxs_and_preds[9796:9796+9847]:
-                            pred = pred_map[pred]
-                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
-                            split_idx += 1
-                    with open(os.path.join(args.run_dir, "diagnostic.tsv"), 'w') as pred_fh:
-                        pred_fh.write("index\tprediction\n")
-                        split_idx = 0
-                        for idx, pred in idxs_and_preds[9796+9847:]:
-                            pred = pred_map[pred]
-                            pred_fh.write("%d\t%s\n" % (split_idx, pred))
-                            split_idx += 1
-                else:
-                    with open(os.path.join(args.run_dir, "%s.tsv" % (eval_task)), 'w') as pred_fh:
-                        pred_fh.write("index\tprediction\n")
-                        for idx, pred in idxs_and_preds:
-                            if 'sts-b' in eval_task:
-                                pred_fh.write("%d\t%.3f\n" % (idx, pred))
-                            elif 'rte' in eval_task:
-                                pred = 'entailment' if pred else 'not_entailment'
-                                pred_fh.write('%d\t%s\n' % (idx, pred))
-                            elif 'squad' in eval_task:
-                                pred = 'entailment' if pred else 'not_entailment'
-                                pred_fh.write('%d\t%s\n' % (idx, pred))
-                            else:
-                                pred_fh.write("%d\t%d\n" % (idx, pred))
-
-            with open(os.path.join(args.exp_dir, "results.tsv"), 'a') as results_fh: # aggregate results easily
-                run_name = args.run_dir.split('/')[-1]
-                all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
-                                            metric, score in val_results.items()])
-                results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
-    log.info("Done testing")
-
-    # Dump everything to a pickle for posterity
-    pkl.dump(all_results, open(os.path.join(args.run_dir, "results.pkl"), 'wb'))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
