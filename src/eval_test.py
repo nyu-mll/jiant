@@ -11,7 +11,14 @@ if "cs.nyu.edu" in os.uname()[1]:
 else:
     PATH_PREFIX = '/beegfs/aw3272/'
 
-def evaluate_mnli(pred_file, matched_file, mismatched_file, skip_gold=1, skip_pred=1, gold_map=None):
+
+def evaluate_mnli(
+        pred_file,
+        matched_file,
+        mismatched_file,
+        skip_gold=1,
+        skip_pred=1,
+        gold_map=None):
     m_golds = []
     with open(matched_file) as gold_fh:
         for _ in range(skip_gold):
@@ -20,7 +27,7 @@ def evaluate_mnli(pred_file, matched_file, mismatched_file, skip_gold=1, skip_pr
             targ = row.split('\t')[-1].strip()
             try:
                 targ = int(targ)
-            except:
+            except BaseException:
                 pass
             '''
             try:
@@ -39,7 +46,7 @@ def evaluate_mnli(pred_file, matched_file, mismatched_file, skip_gold=1, skip_pr
             targ = row.split('\t')[-1].strip()
             try:
                 targ = int(targ)
-            except:
+            except BaseException:
                 pass
             '''
             try:
@@ -59,11 +66,11 @@ def evaluate_mnli(pred_file, matched_file, mismatched_file, skip_gold=1, skip_pr
             targ = row.split('\t')[-1].strip()
             try:
                 targ = int(targ)
-            except:
+            except BaseException:
                 pass
             try:
                 targ = float(targ)
-            except:
+            except BaseException:
                 pass
             preds.append(targ)
 
@@ -76,6 +83,7 @@ def evaluate_mnli(pred_file, matched_file, mismatched_file, skip_gold=1, skip_pr
     mm_acc = sum([1 for gold, pred in zip(mm_golds, mm_preds) if gold == pred]) / len(mm_golds)
     print("mismatched acc: %.3f" % mm_acc)
 
+
 def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, gold_map=None):
     golds = []
     preds = []
@@ -86,7 +94,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
             targ = row.strip().split('\t')[-1]
             try:
                 targ = int(targ)
-            except:
+            except BaseException:
                 pass
             '''
             try:
@@ -105,7 +113,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
             targ = row.strip().split('\t')[-1]
             try:
                 targ = int(targ)
-            except:
+            except BaseException:
                 pass
             preds.append(targ)
 
@@ -126,6 +134,7 @@ def evaluate(gold_file, pred_file, metrics=['acc'], skip_gold=1, skip_pred=1, go
         corr = spearmanr(golds, preds)[0]
         print("spearman r: %.3f" % corr)
 
+
 def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
     golds = []
     preds = []
@@ -136,7 +145,7 @@ def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
             targ = row.split('\t')[-1].strip()
             try:
                 targ = float(targ)
-            except:
+            except BaseException:
                 pass
             if gold_map is not None:
                 targ = gold_map[targ]
@@ -149,7 +158,7 @@ def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
             targ = row.split('\t')[-1].strip()
             try:
                 targ = float(targ)
-            except:
+            except BaseException:
                 pass
             preds.append(targ)
 
@@ -160,6 +169,7 @@ def evaluate_sts(gold_file, pred_file, skip_gold=1, skip_pred=1, gold_map=None):
     corr = spearmanr(golds, preds)[0]
     print("spearman r: %.3f" % corr)
 
+
 codebase = 'mtl-sent-rep'
 run_n = 1
 exp = 'base_attn'
@@ -167,7 +177,8 @@ if 'elmo' in exp:
     exp_dir = 'elmo_no_glove_v3'
 else:
     exp_dir = 'glove_v3'
-run_dir = 'r%d_%s_bpp1_vi10000_d1500_lenc2_nhwy0_adam_lr1e-3_decay.2_p5_tp1_maxscale_do0.2_cmlp' % (run_n, exp)
+run_dir = 'r%d_%s_bpp1_vi10000_d1500_lenc2_nhwy0_adam_lr1e-3_decay.2_p5_tp1_maxscale_do0.2_cmlp' % (
+    run_n, exp)
 
 #codebase = 'SentEval'
 #exp_dir = 'infersent'
@@ -197,7 +208,7 @@ if 'quora' in tasks or 'benchmark' in tasks:
     GOLD_FILE = PATH_PREFIX + 'processed_data/mtl-sentence-representations/tests/quora_test_ans.tsv'
     PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/quora_preds.tsv' % (exp_dir, run_dir)
     gold_map = {'contains': 1, 'not_contain': 0}
-    evaluate(GOLD_FILE, PRED_FILE, metrics=['acc', 'f1'])#, gold_map=gold_map)
+    evaluate(GOLD_FILE, PRED_FILE, metrics=['acc', 'f1'])  # , gold_map=gold_map)
 
 # RTE
 if 'rte' in tasks or 'benchmark' in tasks:
@@ -206,7 +217,7 @@ if 'rte' in tasks or 'benchmark' in tasks:
     #PRED_FILE = PATH_PREFIX + 'ckpts/mtl-sent-rep/%s/%s/rte_preds.tsv' % (exp_dir, run_dir)
     PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/%s/RTE.tsv' % (codebase, exp_dir, run_dir)
     PRED_FILE = PATH_PREFIX + 'ckpts/%s/%s/RTE.tsv' % (codebase, exp_dir)
-    evaluate(GOLD_FILE, PRED_FILE)#, gold_map=gold_map)
+    evaluate(GOLD_FILE, PRED_FILE)  # , gold_map=gold_map)
 
 # SQuAD
 if 'squad' in tasks or 'benchmark' in tasks:

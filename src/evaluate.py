@@ -9,6 +9,7 @@ from allennlp.data.iterators import BasicIterator
 from utils import device_mapping
 from tasks import STSBTask
 
+
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
     model.eval()
@@ -64,6 +65,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 
     return all_metrics, all_preds
 
+
 def write_preds(all_preds, pred_dir):
     ''' Write predictions to files in pred_dir
 
@@ -85,14 +87,14 @@ def write_preds(all_preds, pred_dir):
             with open(os.path.join(pred_dir, "%s-mm.tsv" % (task)), 'w') as pred_fh:
                 pred_fh.write("index\tprediction\n")
                 split_idx = 0
-                for idx, pred in idxs_and_preds[9796:9796+9847]:
+                for idx, pred in idxs_and_preds[9796:9796 + 9847]:
                     pred = pred_map[pred]
                     pred_fh.write("%d\t%s\n" % (split_idx, pred))
                     split_idx += 1
             with open(os.path.join(pred_dir, "diagnostic.tsv"), 'w') as pred_fh:
                 pred_fh.write("index\tprediction\n")
                 split_idx = 0
-                for idx, pred in idxs_and_preds[9796+9847:]:
+                for idx, pred in idxs_and_preds[9796 + 9847:]:
                     pred = pred_map[pred]
                     pred_fh.write("%d\t%s\n" % (split_idx, pred))
                     split_idx += 1
@@ -110,13 +112,15 @@ def write_preds(all_preds, pred_dir):
 
     return
 
+
 def write_results(results, results_file, run_name):
     ''' Aggregate results by appending results to results_file '''
     with open(results_file, 'a') as results_fh:
-        all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for \
-                                    metric, score in results.items()])
+        all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for
+                                     metric, score in results.items()])
         results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
     log.info(all_metrics_str)
+
 
 def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''

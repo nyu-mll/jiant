@@ -16,12 +16,12 @@ from allennlp_mods.numeric_field import NumericField
 import _pickle as pkl
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
-                  PairRegressionTask, SequenceGenerationTask, RankingTask, \
-                  CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
-                  MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
-                  MultiNLITelephoneTask, QQPTask, RTETask, \
-                  QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
-                  LanguageModelingTask, WikiTextLMTask
+    PairRegressionTask, SequenceGenerationTask, RankingTask, \
+    CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
+    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
+    MultiNLITelephoneTask, QQPTask, RTETask, \
+    QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
+    LanguageModelingTask, WikiTextLMTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -39,7 +39,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
              'wiki': (WikiTextLMTask, 'WikiText/')
-            }
+             }
+
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -51,8 +52,8 @@ def build_tasks(args):
 
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
-            get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
-                      args.data_dir, bool(not args.reload_tasks))
+        get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
+                  args.data_dir, bool(not args.reload_tasks))
 
     # 2 + 3) build / load vocab and word vectors
     max_v_sizes = {'word': args.max_word_v_size}
@@ -107,7 +108,7 @@ def build_tasks(args):
             preproc[task.name] = (task.train_data, task.val_data, task.test_data)
             save_preproc = 1
     log.info("\tFinished indexing tasks")
-    if save_preproc: # save preprocessing again because we processed something from scratch
+    if save_preproc:  # save preprocessing again because we processed something from scratch
         pkl.dump(preproc, open(preproc_file, 'wb'))
         log.info("\tSaved data to %s", preproc_file)
     del preproc
@@ -117,6 +118,7 @@ def build_tasks(args):
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
+
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
     ''' Load tasks '''
@@ -150,6 +152,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
 
+
 def get_words(tasks):
     '''
     Get all words for all tasks for all splits for all sentences
@@ -170,6 +173,7 @@ def get_words(tasks):
     log.info("\tFinished counting words")
     return word2freq
 
+
 def get_vocab(word2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes['word'])
@@ -179,6 +183,7 @@ def get_vocab(word2freq, max_v_sizes):
         vocab.add_token_to_namespace(word, 'tokens')
     log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
     return vocab
+
 
 def del_field_tokens(task):
     ''' Save memory by deleting the tokens that will no longer be used '''
@@ -190,6 +195,7 @@ def del_field_tokens(task):
         if 'input2' in instance.fields:
             field = instance.fields['input2']
             del field.tokens
+
 
 def get_embeddings(vocab, vec_file, d_word):
     '''Get embeddings for the words in vocab'''
@@ -206,6 +212,7 @@ def get_embeddings(vocab, vec_file, d_word):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
     return embeddings
+
 
 def process_task(task, token_indexer, vocab):
     '''
@@ -237,6 +244,7 @@ def process_task(task, token_indexer, vocab):
         setattr(task, '%s_data' % split_name, split)
     return
 
+
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
     '''
     Convert a dataset of sentences into padded sequences of indices.
@@ -256,14 +264,14 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         else:
             labels = [NumericField(l) for l in split[-1]]
 
-        if len(split) == 4: # numbered test examples
+        if len(split) == 4:  # numbered test examples
             idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label, "idx": idx}) \
-                          for (input1, input2, label, idx) in zip(inputs1, inputs2, labels, idxs)]
+            instances = [Instance({"input1": input1, "input2": input2, "labels": label, "idx": idx})
+                         for (input1, input2, label, idx) in zip(inputs1, inputs2, labels, idxs)]
 
         else:
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label}) for \
-                            (input1, input2, label) in zip(inputs1, inputs2, labels)]
+            instances = [Instance({"input1": input1, "input2": input2, "labels": label}) for
+                         (input1, input2, label) in zip(inputs1, inputs2, labels)]
 
     else:
         inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
@@ -274,12 +282,13 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
         if len(split) == 4:
             idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "labels": label, "idx": idx}) for \
+            instances = [Instance({"input1": input1, "labels": label, "idx": idx}) for
                          (input1, label, idx) in zip(inputs1, labels, idxs)]
         else:
             instances = [Instance({"input1": input1, "labels": label}) for (input1, label) in
                          zip(inputs1, labels)]
-    return instances #DatasetReader(instances) #Batch(instances) #Dataset(instances)
+    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
+
 
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''

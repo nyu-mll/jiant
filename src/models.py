@@ -3,7 +3,7 @@
 If you are adding a new task, you should [...]'''
 import sys
 import logging as log
-import ipdb as pdb # pylint: disable=unused-import
+import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -21,15 +21,16 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
 from tasks import STSBTask, CoLATask, SSTTask, \
-                  PairClassificationTask, SingleClassificationTask, \
-                  PairRegressionTask, RankingTask, \
-                  SequenceGenerationTask, LanguageModelingTask
+    PairClassificationTask, SingleClassificationTask, \
+    PairRegressionTask, RankingTask, \
+    SequenceGenerationTask, LanguageModelingTask
 from modules import RNNEncoder, BoWSentEncoder, \
-                    AttnPairEncoder, SimplePairEncoder
+    AttnPairEncoder, SimplePairEncoder
 
 # Elmo stuff
-ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json" # pylint: disable=line-too-long
-ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5" # pylint: disable=line-too-long
+ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
+ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"  # pylint: disable=line-too-long
+
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
@@ -56,6 +57,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     if args.cuda >= 0:
         model = model.cuda()
     return model
+
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
@@ -114,6 +116,7 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, elmo, cove_emb
 
+
 def build_modules(tasks, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for each task and add them to model '''
     for task in tasks:
@@ -139,10 +142,11 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             raise ValueError("Module not found for %s" % task.name)
     return
 
+
 def build_classifier(task, d_inp, args):
     ''' Build a task specific classifier '''
     cls_type, dropout, d_hid = \
-            args.classifier, args.classifier_dropout, args.classifier_hid_dim
+        args.classifier, args.classifier_dropout, args.classifier_hid_dim
     if isinstance(task, STSBTask) or cls_type == 'log_reg':
         classifier = nn.Linear(d_inp, task.n_classes)
     elif cls_type == 'mlp':
@@ -159,6 +163,7 @@ def build_classifier(task, d_inp, args):
 
     return classifier
 
+
 def build_pair_classifier(task, d_inp, model, vocab, args):
     ''' Build a pair classifier, shared if necessary '''
 
@@ -168,10 +173,10 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
             d_inp_classifier = 4 * d_inp
         elif args.pair_enc == 'attn':
             d_inp_model = 2 * d_inp
-            d_hid_model = d_inp # make it as large as the original sentence emb
+            d_hid_model = d_inp  # make it as large as the original sentence emb
             modeling_layer = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
-                        'num_layers':  1, 'bidirectional': True}))
+                        'num_layers': 1, 'bidirectional': True}))
             pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
                                            modeling_layer, dropout=args.dropout)
             d_inp_classifier = 4 * d_hid_model
@@ -192,10 +197,11 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
         module = nn.Sequential(pair_encoder, classifier)
     return module
 
+
 def build_regressor(task, d_inp, args):
     ''' Build a task specific regressor '''
     cls_type, dropout, d_hid = \
-            args.classifier, args.classifier_dropout, args.classifier_hid_dim
+        args.classifier, args.classifier_dropout, args.classifier_hid_dim
     if isinstance(task, STSBTask) or cls_type == 'log_reg':
         regressor = nn.Linear(d_inp, 1)
     elif cls_type == 'mlp':
@@ -209,10 +215,12 @@ def build_regressor(task, d_inp, args):
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
 
+
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
+
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder
@@ -226,6 +234,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     decoder = RNNEncoder(vocab, embedder, 0, rnn)
     hid2voc = nn.Linear(args.d_hid_dec, args.max_word_v_size)
     return decoder, hid2voc
+
 
 class MultiTaskModel(nn.Module):
     '''
@@ -328,9 +337,9 @@ class MultiTaskModel(nn.Module):
 
         # pass to a task specific classifier
         regressor = getattr(self, "%s_mdl" % task.name)
-        scores = regressor(pair_emb) # might want to pass sent_embs
+        scores = regressor(pair_emb)  # might want to pass sent_embs
 
-        out['logits'] = scores # maybe change the name here?
+        out['logits'] = scores  # maybe change the name here?
         if 'labels' in batch:
             labels = batch['labels']
             out['loss'] = F.mse_loss(scores, labels)
@@ -357,7 +366,7 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             targs = batch['targs']['words'].view(-1)
-            out['loss'] = F.cross_entropy(logits, targs, ignore_index=0) # some pad index
+            out['loss'] = F.cross_entropy(logits, targs, ignore_index=0)  # some pad index
             task.scorer1(out['loss'].item())
         return out
 

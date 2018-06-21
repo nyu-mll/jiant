@@ -15,6 +15,7 @@ from evaluate import evaluate, load_model_state, write_results, write_preds
 
 import _pickle as pkl
 
+
 def main(arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     parser = argparse.ArgumentParser(description='')
@@ -25,8 +26,11 @@ def main(arguments):
 
     # Paths and logging
     parser.add_argument('--log_file', help='file to log to', type=str, default='log.log')
-    parser.add_argument('--data_dir', help='directory containing all data', type=str,
-                        default='/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/')
+    parser.add_argument(
+        '--data_dir',
+        help='directory containing all data',
+        type=str,
+        default='/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/')
     parser.add_argument('--exp_dir', help='directory containing shared preprocessing', type=str)
     parser.add_argument('--run_dir', help='directory for saving results, models, etc.', type=str)
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
@@ -40,7 +44,11 @@ def main(arguments):
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
     parser.add_argument('--force_load_epoch', help='Force loading from a certain epoch',
                         type=int, default=-1)
-    parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int, default=0)
+    parser.add_argument(
+        '--reload_tasks',
+        help='1 if force re-reading of tasks',
+        type=int,
+        default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
                         type=int, default=0)
     parser.add_argument('--reload_vocab', help='1 if force vocabulary rebuild', type=int, default=0)
@@ -93,7 +101,11 @@ def main(arguments):
     parser.add_argument('--shared_optimizer', help='1 to use same optimizer for all tasks',
                         type=int, default=1)
     parser.add_argument('--batch_size', help='batch size', type=int, default=64)
-    parser.add_argument('--optimizer', help='optimizer to use. all valid AllenNLP options are available, including `sgd`. `adam` uses to the newer AMSGrad variant.', type=str, default='sgd')
+    parser.add_argument(
+        '--optimizer',
+        help='optimizer to use. all valid AllenNLP options are available, including `sgd`. `adam` uses to the newer AMSGrad variant.',
+        type=str,
+        default='sgd')
     parser.add_argument('--n_epochs', help='n epochs to train for', type=int, default=10)
     parser.add_argument('--lr', help='starting learning rate', type=float, default=1.0)
     parser.add_argument('--min_lr', help='minimum learning rate', type=float, default=1e-5)
@@ -122,8 +134,17 @@ def main(arguments):
     parser.add_argument('--scaling_method', help='method for scaling loss', type=str,
                         choices=['min', 'max', 'unit', 'none'], default='none')
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
-    parser.add_argument('--task_ordering', help='Method for ordering tasks', type=str, default='given',
-                        choices=['given', 'random', 'random_per_pass', 'small_to_large', 'large_to_small'])
+    parser.add_argument(
+        '--task_ordering',
+        help='Method for ordering tasks',
+        type=str,
+        default='given',
+        choices=[
+            'given',
+            'random',
+            'random_per_pass',
+            'small_to_large',
+            'large_to_small'])
 
     parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=1)
 
@@ -169,7 +190,7 @@ def main(arguments):
         best_epochs = {}
 
     # Select model checkpoint from training to load
-    if args.force_load_epoch >= 0: # force loading a particular epoch
+    if args.force_load_epoch >= 0:  # force loading a particular epoch
         epoch_to_load = args.force_load_epoch
     elif "macro" in best_epochs:
         epoch_to_load = best_epochs['macro']
@@ -177,7 +198,7 @@ def main(arguments):
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
         if model_checkpoints:
-            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th")) \
+            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
                                  for x in model_checkpoints])
         else:
             epoch_to_load = -1
@@ -210,6 +231,7 @@ def main(arguments):
                   args.run_dir.split('/')[-1])
 
     log.info("Done!")
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
