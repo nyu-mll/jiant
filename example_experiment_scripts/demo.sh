@@ -30,8 +30,8 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 load_epoch=-1
 
-train_tasks='mnli-fiction'
-eval_tasks='mnli'
+train_tasks='sst'
+eval_tasks='sst'
 CLASSIFIER=mlp
 d_hid_cls=16
 max_seq_len=10
@@ -39,11 +39,11 @@ VOCAB_SIZE=1000
 
 d_word=300
 d_hid=32
-glove=1
+glove=0
 ELMO=0
 deep_elmo=0
 elmo_no_glove=0
-fastText=0
+fastText=1
 COVE=0
 
 PAIR_ENC="simple"

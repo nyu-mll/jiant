@@ -222,7 +222,7 @@ def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
     **Crucially, the embeddings from the pretrained model DO NOT match those from the released
     vector file**
     '''
-    word_v_size, unk_idk = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
+    word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
     if model_file is None:
         fin = io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore')

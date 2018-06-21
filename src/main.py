@@ -35,7 +35,7 @@ def main(arguments):
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
     parser.add_argument('--fastText', help='whether fastText embeddings are used', type=int, default=0)
     parser.add_argument('--fastText_embs_file', help='file containing fastText embeddings', type=str)
-    parser.add_argument('--fastText_model_file', help='file containing fastText model', type=str)
+    parser.add_argument('--fastText_model_file', help='file containing fastText model', type=str, default=None)
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='preproc.pkl')
 
