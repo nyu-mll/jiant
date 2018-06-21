@@ -11,11 +11,11 @@
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
 # SET THESE BEFORE RUNNING:
-PROJECT_PREFIX='/Users/Bowman/Drive/JSALT/demo'
-PROJECT_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/ckpts'
 
-DATA_DIR="/Users/Bowman/Drive/JSALT/jiant/glue_data/"
-DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/"
+# machine-specific paths
+# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
+source ../user_config.sh
 
 EXP_NAME='jiant-demo'
 RUN_NAME="cola_1"
@@ -30,21 +30,20 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 load_epoch=-1
 
-train_tasks='mnli-fiction'
-eval_tasks='mnli'
+train_tasks='sst'
+eval_tasks='sst'
 CLASSIFIER=mlp
 d_hid_cls=16
 max_seq_len=10
 VOCAB_SIZE=1000
-WORD_EMBS_FILE="~/glove.840B.300d.txt"
-WORD_EMBS_FILE="/misc/vlgscratch4/BowmanGroup/awang/raw_data/GloVe/glove.840B.300d.txt"
 
 d_word=300
 d_hid=32
-glove=1
+glove=0
 ELMO=0
 deep_elmo=0
 elmo_no_glove=0
+fastText=1
 COVE=0
 
 PAIR_ENC="simple"

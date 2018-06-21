@@ -1,6 +1,7 @@
 '''Preprocessing functions and pipeline
 
 To add new tasks, add task-specific preprocessing functions to process_task()'''
+import io
 import os
 import logging as log
 from collections import defaultdict
@@ -12,6 +13,9 @@ from allennlp.data import Instance, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
+
+import fastText
+from nltk.tokenize.moses import MosesTokenizer # todo(pitrack): tokenize with this
 
 import _pickle as pkl
 
@@ -83,9 +87,14 @@ def build_tasks(args):
         word_embs = pkl.load(open(emb_file, 'rb'))
     else:
         log.info("\tBuilding embeddings from scratch")
-        word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-        pkl.dump(word_embs, open(emb_file, 'wb'))
-        log.info("\tSaved embeddings to %s", emb_file)
+        if args.fastText:
+            word_embs, _ = get_fastText_embeddings(vocab, args.fastText_embs_file, args.d_word,
+                                                   model_file=args.fastText_model_file)
+            log.info(f'\tNo pickling')
+        else:
+            word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+            pkl.dump(word_embs, open(emb_file, 'wb'))
+            log.info("\tSaved embeddings to %s", emb_file)
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
@@ -206,13 +215,45 @@ def get_embeddings(vocab, vec_file, d_word):
             word, vec = line.split(' ', 1)
             idx = vocab.get_token_index(word)
             if idx != unk_idx:
-                idx = vocab.get_token_index(word)
                 embeddings[idx] = np.array(list(map(float, vec.split())))
-    embeddings[vocab.get_token_index('@@PADDING@@')] = 0.
+    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading embeddings")
     return embeddings
 
+def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
+    '''
+    Same interface as get_embeddings except for fastText. Note that if the path to the model
+    is provided, the embeddings will rely on that model instead.
+    **Crucially, the embeddings from the pretrained model DO NOT match those from the released
+    vector file**
+    '''
+    word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, d_word)
+    if model_file is None:
+        fin = io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore')
+        for line in fin:
+            word, vec = line.rstrip().split(' ', 1)
+            idx = vocab.get_token_index(word)
+            if idx != unk_idx:
+                embeddings[idx] = np.array(list(map(float, vec.split())))
+        embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
+        embeddings = torch.FloatTensor(embeddings)
+        log.info("\tFinished loading pretrained fastText embeddings")
+        return embeddings, None
+    else:
+        model = fastText.FastText.load_model(model_file)
+        special_tokens = [vocab._padding_token, vocab._oov_token]
+        # We can also just check if idx >= 2
+        for idx in range(word_v_size):
+            word = vocab.get_token_from_index(idx)
+            if word in special_tokens:
+                continue
+            embeddings[idx] = model.get_word_vector(word)
+        embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
+        embeddings = torch.FloatTensor(embeddings)
+        log.info("\tFinished loading pretrained fastText model and embeddings")
+        return embeddings, model
 
 def process_task(task, token_indexer, vocab):
     '''
