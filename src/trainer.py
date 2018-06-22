@@ -1,6 +1,7 @@
 """ Trainer """
 
 import os
+import glob
 import time
 import copy
 import random
@@ -222,6 +223,11 @@ class SamplingMultiTaskTrainer:
                     ["model_state_epoch_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
+            else:
+                log.info("Not loading. Deleting any existing checkpoints.")
+                checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
+                for f in glob.glob(checkpoint_pattern):
+                    os.remove(f)
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
