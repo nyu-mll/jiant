@@ -160,8 +160,11 @@ def main(arguments):
     torch.manual_seed(seed)
     if args.cuda >= 0:
         log.info("Using GPU %d", args.cuda)
-        torch.cuda.set_device(args.cuda)
-        torch.cuda.manual_seed_all(seed)
+        try:
+            torch.cuda.set_device(args.cuda)
+            torch.cuda.manual_seed_all(seed)
+        except AttributeError:
+            log.info("GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
     log.info("Using random seed %d", seed)
 
     # Prepare data #
