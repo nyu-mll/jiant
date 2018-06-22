@@ -44,7 +44,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
-             'wiki': (WikiTextLMTask, 'WikiText/')
+             'wiki': (WikiTextLMTask, 'WikiText/'),
              'pdtb': (PDTBTask, 'PDTB/')
              }
 
