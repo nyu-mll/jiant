@@ -125,4 +125,4 @@ def write_results(results, results_file, run_name):
 def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
-    model.load_state_dict(model_state)
+    model.load_state_dict(model_state, strict=False)

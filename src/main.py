@@ -79,7 +79,6 @@ def main(arguments):
     parser.add_argument('--n_char_filters', help='n char filters', type=int, default=100)
     parser.add_argument('--char_filter_sizes', help='filter sizes for char emb cnn', type=str,
                         default='2,3,4,5')
-    parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=0)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
