@@ -14,8 +14,10 @@ from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
 
-import fastText
-from nltk.tokenize.moses import MosesTokenizer # todo(pitrack): tokenize with this
+try:
+    import fastText
+except:
+    log.info("fastText library not found!")
 
 import _pickle as pkl
 
