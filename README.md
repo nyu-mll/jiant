@@ -37,7 +37,7 @@ Because preprocessing is expensive (particularly for ELMo), we often want to run
 - exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
-You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively.
+You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively).
 
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
@@ -83,7 +83,7 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 
 To set up fastText, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python").
 To use fastText, set the flag ``--word_embs fastText``
-If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic. You can also use pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors.
+If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic. You can also use pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
 ### ELMo
 

@@ -82,6 +82,7 @@ def build_tasks(args):
         vocab = get_vocab(word2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
+        pdb.set_trace()
         del word2freq
     log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
     if not args.reload_vocab and os.path.exists(emb_file):

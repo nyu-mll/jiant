@@ -1,13 +1,12 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:W:f:F:' flag; do
+while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:W:F:' flag; do
     case "${flag}" in
         P) PROJECT_PREFIX="${OPTARG}" ;;
         d) DATA_DIR=${OPTARGS} ;;
         n) EXP_NAME="${OPTARG}" ;;
         r) RUN_NAME="${OPTARG}" ;;
-        w) WORD_EMBS_FILE="${OPTARG}" ;;
-	    f) FASTTEXT_EMBS_FILE="${OPTARG}" ;;
+        w) word_embs="${OPTARG}" ;;
 	    F) FASTTEXT_MODEL_FILE="${OPTARG}" ;;
         S) SEED="${OPTARG}" ;;
         q) no_tqdm=1 ;;
