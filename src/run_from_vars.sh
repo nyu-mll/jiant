@@ -37,7 +37,6 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:C:X:GI:N:y:K:
         D) dropout="${OPTARG}" ;;
         C) CLASSIFIER="${OPTARG}" ;;
         I) GPUID="${OPTARG}" ;;
-        N) force_load_epoch="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
         p) patience="${OPTARG}" ;;

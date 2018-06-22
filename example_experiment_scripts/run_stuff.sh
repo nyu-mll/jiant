@@ -8,6 +8,14 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
+# Defaults. Don't overwrite here; see below for ../user_config.sh
+FASTTEXT_EMBS_FILE=.
+FASTTEXT_MODEL_FILE=.
+WORD_EMBS_FILE=.
+
+# machine-specific paths
+# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
 source ../user_config.sh
 
 EXP_NAME="debug"
