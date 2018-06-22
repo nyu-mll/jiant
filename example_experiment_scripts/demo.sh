@@ -42,7 +42,6 @@ VOCAB_SIZE=1000
 
 word_embs=fastText
 fastText=0
-train_words=0
 d_word=300
 ELMO=0
 deep_elmo=0
@@ -60,7 +59,6 @@ dropout=.2
 LR_DECAY=.5
 patience=50
 task_patience=50
-train_words=0
 WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=16
