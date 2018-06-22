@@ -233,9 +233,9 @@ def main(arguments):
 
     # Evaluate #
     log.info("Evaluating...")
-    _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
     val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
     if args.write_preds:
+        _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
         write_preds(te_preds, args.run_dir)
     write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                   args.run_dir.split('/')[-1])
