@@ -505,7 +505,18 @@ class SamplingMultiTaskTrainer:
         """
         epoch = training_state["epoch"]
         model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+
         model_state = self._model.state_dict()
+
+        # Don't save embeddings here. 
+        # TODO: There has to be a prettier way to do this.
+        keys_to_skip = []
+        for key in model_state:
+            if 'token_embedder_words' in key:
+                keys_to_skip.append(key)
+        for key in keys_to_skip:
+            del model_state[key]
+
         torch.save(model_state, model_path)
 
         torch.save(training_state, os.path.join(self._serialization_dir,
@@ -577,7 +588,7 @@ class SamplingMultiTaskTrainer:
                                          "metric_state_epoch_{}.th".format(epoch_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
-        self._model.load_state_dict(model_state)
+        self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
         for task_name, task_state in task_states.items():
