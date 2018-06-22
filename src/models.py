@@ -27,7 +27,7 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask
 from modules import RNNEncoder, BoWSentEncoder, \
-    AttnPairEncoder, SimplePairEncoder
+    AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -54,6 +54,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_sent = 2 * args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
+                                                  hidden_dim=args.d_hid,
+                                                  projection_dim=args.d_hid,
+                                                  feedforward_hidden_dim=args.d_hid,
+                                                  num_layers=args.n_layers_enc,
+                                                  num_attention_heads=args.n_heads)
+    elif args.sent_enc == 'transformer-d':
+        transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                   hidden_dim=args.d_hid,
                                                   projection_dim=args.d_hid,
                                                   feedforward_hidden_dim=args.d_hid,
