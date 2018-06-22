@@ -39,6 +39,7 @@ max_seq_len=40
 VOCAB_SIZE=30000
 
 word_embs=fastText
+char_embs=0
 fastText=0
 train_words=0
 d_word=300
