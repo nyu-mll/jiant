@@ -64,12 +64,10 @@ def build_tasks(args):
     # 2 + 3) build / load vocab and word vectors
     max_v_sizes = {'word': args.max_word_v_size}
     token_indexer = {}
+    if not args.word_embs == 'none':
+        token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
-        if not args.elmo_no_glove:
-            token_indexer["words"] = SingleIdTokenIndexer()
-    else:
-        token_indexer["words"] = SingleIdTokenIndexer()
 
     # Load vocab and associated word embeddings
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -92,7 +90,7 @@ def build_tasks(args):
         if args.fastText:
             word_embs, _ = get_fastText_embeddings(vocab, args.fastText_embs_file, args.d_word,
                                                    model_file=args.fastText_model_file)
-            log.info(f'\tNo pickling')
+            log.info("\tNo pickling")
         else:
             word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
             pkl.dump(word_embs, open(emb_file, 'wb'))

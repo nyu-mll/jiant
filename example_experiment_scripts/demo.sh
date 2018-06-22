@@ -18,7 +18,7 @@
 source ../user_config.sh
 
 EXP_NAME='jiant-demo'
-RUN_NAME="cola_1"
+RUN_NAME="sst"
 GPUID=0
 SEED=42
 no_tqdm=0
@@ -31,21 +31,21 @@ RELOAD_VOCAB=0
 load_epoch=-1
 
 train_tasks='sst'
-eval_tasks='sst'
+eval_tasks='none'
 CLASSIFIER=mlp
 d_hid_cls=16
 max_seq_len=10
 VOCAB_SIZE=1000
 
+word_embs=fastText
+fastText=0
+train_words=0
 d_word=300
-d_hid=32
-glove=0
 ELMO=0
 deep_elmo=0
-elmo_no_glove=0
-fastText=1
 COVE=0
 
+d_hid=512
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0

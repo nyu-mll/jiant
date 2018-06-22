@@ -64,8 +64,9 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     d_emb = 0
 
     # Word embeddings
-    if not args.no_word_embs == 'none':
-        if args.word_embs in ['glove', 'fasttext']:
+    if args.word_embs != 'none':
+        if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
+            log.info("\tUsing word embeddings from %s", args.word_embs_file)
             word_embs = pretrained_embs
             train_embs = bool(args.train_words)
             d_word = pretrained_embs.size()[-1]
@@ -81,7 +82,6 @@ def build_embeddings(args, vocab, pretrained_embs=None):
         token_embedder = {"words": embeddings}
         embedder = BasicTextFieldEmbedder(token_embedder)
         d_emb += d_word
-
     else:
         log.info("\tNot using word embeddings!")
         embedder = None

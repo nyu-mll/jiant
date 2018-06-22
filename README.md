@@ -42,6 +42,8 @@ You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
 
+If you are using the experiment scripts, you should also put a file ``user_config.sh`` in the top level directory containing paths specific to your machine.
+
 ```
 python main.py --data_dir $DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
 ```
@@ -81,7 +83,7 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 
 To set up fastText, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python").
 To use fastText, set the flag ``--word_embs fastText``
-If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic. You can also use pretrained vectors.
+If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic. You can also use pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors.
 
 ### ELMo
 
