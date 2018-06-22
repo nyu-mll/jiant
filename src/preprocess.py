@@ -11,7 +11,8 @@ import torch
 
 from allennlp.data import Instance, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField
-from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer
+from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
+                                            TokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
 
 try:
@@ -63,12 +64,14 @@ def build_tasks(args):
                   args.data_dir, bool(not args.reload_tasks))
 
     # 2 + 3) build / load vocab and word vectors
-    max_v_sizes = {'word': args.max_word_v_size}
+    max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
     token_indexer = {}
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
+    if args.char_embs:
+        token_indexer["chars"] = TokenCharactersIndexer("chars")
 
     # Load vocab and associated word embeddings
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -78,12 +81,13 @@ def build_tasks(args):
         log.info("\tLoaded vocab from %s", vocab_path)
     else:
         log.info("\tBuilding vocab from scratch")
-        word2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, max_v_sizes)
+        word2freq, char2freq = get_words(tasks)
+        vocab = get_vocab(word2freq, char2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
-        del word2freq
-    log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
+        del word2freq, char2freq
+    log.info("\tFinished building vocab. Using %d words, %d chars.",
+             vocab.get_vocab_size('tokens'), vocab.get_vocab_size("chars"))
     if not args.reload_vocab and os.path.exists(emb_file):
         word_embs = pkl.load(open(emb_file, 'rb'))
     else:
@@ -168,12 +172,14 @@ def get_words(tasks):
     Get all words for all tasks for all splits for all sentences
     Return dictionary mapping words to frequencies.
     '''
-    word2freq = defaultdict(int)
+    word2freq, char2freq = defaultdict(int), defaultdict(int)
 
     def count_sentence(sentence):
         '''Update counts for words in the sentence'''
         for word in sentence:
             word2freq[word] += 1
+            for char in list(word):
+                char2freq[char] += 1
         return
 
     for task in tasks:
@@ -181,17 +187,22 @@ def get_words(tasks):
             count_sentence(sentence)
 
     log.info("\tFinished counting words")
-    return word2freq
+    return word2freq, char2freq
 
 
-def get_vocab(word2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
-    vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes['word'])
+    vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
+
     words_by_freq = [(word, freq) for word, freq in word2freq.items()]
     words_by_freq.sort(key=lambda x: x[1], reverse=True)
     for word, _ in words_by_freq[:max_v_sizes['word']]:
         vocab.add_token_to_namespace(word, 'tokens')
-    log.info("\tFinished building vocab. Using %d words", vocab.get_vocab_size('tokens'))
+
+    chars_by_freq = [(char, freq) for char, freq in char2freq.items()]
+    chars_by_freq.sort(key=lambda x: x[1], reverse=True)
+    for char, _ in chars_by_freq[:max_v_sizes['char']]:
+        vocab.add_token_to_namespace(char, 'chars')
     return vocab
 
 

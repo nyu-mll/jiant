@@ -15,8 +15,9 @@ from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.modules.similarity_functions import DotProductSimilarity
+from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.elmo import Elmo
 
@@ -61,8 +62,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
-    d_emb = 0
+    d_emb, d_char = 0, args.d_char
 
+    token_embedder = {}
     # Word embeddings
     if args.word_embs != 'none':
         if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
@@ -79,25 +81,10 @@ def build_embeddings(args, vocab, pretrained_embs=None):
         embeddings = Embedding(vocab.get_vocab_size('tokens'), d_word,
                                weight=word_embs, trainable=train_embs,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
-        token_embedder = {"words": embeddings}
-        embedder = BasicTextFieldEmbedder(token_embedder)
+        token_embedder["words"] = embeddings
         d_emb += d_word
     else:
         log.info("\tNot using word embeddings!")
-        embedder = None
-
-    # Handle elmo
-    if args.elmo:
-        log.info("\tUsing ELMo embeddings!")
-        n_reps = 1
-        if args.deep_elmo:
-            n_reps = 2
-            log.info("\tUsing deep ELMo embeddings!")
-        elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
-                    num_output_representations=n_reps)
-        d_emb += 1024
-    else:
-        elmo = None
 
     # Handle cove
     if args.cove:
@@ -113,6 +100,35 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     else:
         cove_emb = None
 
+    # Character embeddings
+    if args.char_embs:
+        log.info("\tUsing character embeddings!")
+        char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
+        filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
+        char_encoder = CnnEncoder(d_char, num_filters=args.n_char_filters,
+                                  ngram_filter_sizes=filter_sizes,
+                                  output_dim=d_char)
+        char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder,
+                                               dropout=args.dropout_embs)
+        d_emb += d_char
+        token_embedder["chars"] = char_embedder
+    else:
+        log.info("\tNot using character embeddings!")
+
+    # Handle elmo
+    if args.elmo:
+        log.info("\tUsing ELMo embeddings!")
+        n_reps = 1
+        if args.deep_elmo:
+            n_reps = 2
+            log.info("\tUsing deep ELMo embeddings!")
+        elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
+                    num_output_representations=n_reps)
+        d_emb += 1024
+    else:
+        elmo = None
+
+    embedder = BasicTextFieldEmbedder(token_embedder)
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, elmo, cove_emb
 

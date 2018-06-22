@@ -58,6 +58,7 @@ def main(arguments):
     # Preprocessing options
     parser.add_argument('--max_seq_len', help='max sequence length', type=int, default=40)
     parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
+    parser.add_argument('--max_char_v_size', help='max char vocab size', type=int, default=250)
 
     # Embedding options
     parser.add_argument(
@@ -74,10 +75,15 @@ def main(arguments):
     parser.add_argument('--fastText_model_file', help='file containing fastText model',
                         type=str, default=None)
     parser.add_argument('--d_word', help='dimension of word embeddings', type=int, default=300)
+    parser.add_argument('--d_char', help='dimension of char embeddings', type=int, default=100)
+    parser.add_argument('--n_char_filters', help='n char filters', type=int, default=100)
+    parser.add_argument('--char_filter_sizes', help='filter sizes for char emb cnn', type=str,
+                        default='2,3,4,5')
     parser.add_argument('--train_words', help='1 if make word embs trainable', type=int, default=0)
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
     parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
+    parser.add_argument('--char_embs', help='1 if use character embs', type=int, default=0)
     parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
     parser.add_argument('--preproc_file', help='file containing saved preprocessing stuff',
                         type=str, default='preproc.pkl')
