@@ -10,7 +10,10 @@
 
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
-# SET THESE BEFORE RUNNING:
+# Defaults. Don't overwrite here; see below for ../user_config.sh
+FASTTEXT_EMBS_FILE=.
+FASTTEXT_MODEL_FILE=.
+WORD_EMBS_FILE=.
 
 # machine-specific paths
 # Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
@@ -28,7 +31,6 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-load_epoch=-1
 
 train_tasks='sst'
 eval_tasks='sst'
@@ -42,7 +44,6 @@ d_hid=32
 glove=0
 ELMO=0
 deep_elmo=0
-elmo_no_glove=0
 fastText=1
 COVE=0
 

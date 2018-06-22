@@ -8,8 +8,16 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-PROJECT_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep'
-DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/"
+# Defaults. Don't overwrite here; see below for ../user_config.sh
+FASTTEXT_EMBS_FILE=.
+FASTTEXT_MODEL_FILE=.
+WORD_EMBS_FILE=.
+
+# machine-specific paths
+# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
+source ../user_config.sh
+
 EXP_NAME="debug"
 RUN_NAME="debug"
 GPUID=0
@@ -29,14 +37,12 @@ CLASSIFIER=mlp
 d_hid_cls=512
 max_seq_len=40
 VOCAB_SIZE=30000
-WORD_EMBS_FILE="/misc/vlgscratch4/BowmanGroup/awang/raw_data/GloVe/glove.840B.300d.txt"
 
 d_word=300
 d_hid=512
 glove=1
 ELMO=0
 deep_elmo=0
-elmo_no_glove=0
 COVE=0
 
 PAIR_ENC="simple"
