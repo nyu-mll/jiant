@@ -19,6 +19,7 @@ from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
+from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.modules.elmo import Elmo
 
 from tasks import STSBTask, CoLATask, SSTTask, \
@@ -51,9 +52,20 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                   sent_rnn, dropout=args.dropout,
                                   cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = 2 * args.d_hid + (args.elmo and args.deep_elmo) * 1024
+    elif args.sent_enc == 'transformer':
+        transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
+                                                  hidden_dim=args.d_hid,
+                                                  projection_dim=args.d_hid,
+                                                  feedforward_hidden_dim=args.d_hid,
+                                                  num_layers=args.n_layers_enc,
+                                                  num_attention_heads=args.n_heads)
+        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
+                                  transformer, dropout=args.dropout,
+                                  cove_layer=cove_emb, elmo_layer=elmo)
+        d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
 
     # Build model and classifiers
-    model = MultiTaskModel(args, sent_encoder)
+    model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
     if args.cuda >= 0:
         model = model.cuda()
@@ -257,10 +269,12 @@ class MultiTaskModel(nn.Module):
     Giant model with task-specific components and a shared word and sentence encoder.
     '''
 
-    def __init__(self, args, sent_encoder):
+    def __init__(self, args, sent_encoder, vocab):
         ''' Args: sentence encoder '''
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
+        self.combine_method = args.sent_combine_method
+        self.vocab = vocab
 
     def forward(self, task, batch):
         '''
@@ -294,7 +308,13 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = sent_embs.max(dim=1)[0]
+        if self.combine_method == 'max':
+            sent_emb = sent_embs.max(dim=1)[0]
+        elif self.combine_method == 'mean':
+            # TODO(Alex): take mean with masking
+            sent_emb = sent_embs.mean(dim=1)
+        elif self.combine_method == 'final':
+            sent_emb = sent_embs[-1]
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
@@ -382,7 +402,8 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             targs = batch['targs']['words'].view(-1)
-            out['loss'] = F.cross_entropy(logits, targs, ignore_index=0)  # some pad index
+            pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+            out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
             task.scorer1(out['loss'].item())
         return out
 
