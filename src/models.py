@@ -70,16 +70,14 @@ def build_embeddings(args, vocab, pretrained_embs=None):
         if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
             log.info("\tUsing word embeddings from %s", args.word_embs_file)
             word_embs = pretrained_embs
-            train_embs = bool(args.train_words)
             d_word = pretrained_embs.size()[-1]
         else:
             log.info("\tLearning word embeddings from scratch!")
             word_embs = None
-            train_embs = True
             d_word = args.d_word
 
         embeddings = Embedding(vocab.get_vocab_size('tokens'), d_word,
-                               weight=word_embs, trainable=train_embs,
+                               weight=word_embs, trainable=False,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
         token_embedder["words"] = embeddings
         d_emb += d_word
