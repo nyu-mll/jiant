@@ -13,9 +13,6 @@ conda env create -f environment.yml
 
 To activate the environment run ``source activate jiant``, and to deactivate run ``source deactivate``
 
-To use [fastText](https://github.com/facebookresearch/fastText) models and embeddings, download the [pretrained vectors](https://fasttext.cc/docs/en/english-vectors.html) or the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
-fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-
 ## Downloading data
 
 The repo contains a convenience python script for downloading all GLUE data and standard splits.
@@ -81,9 +78,13 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 
 ### FastText
 
-To set up fastText, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python").
-To use fastText, set the flag ``--word_embs fastText``
-If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic. You can also use pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
+To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
+To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
+fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
+To activate fastText model within our framework, set the flag ``--fastText 1``
+If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic; use the pretrained vectors.
+
+Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
 ### ELMo
 
