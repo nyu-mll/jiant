@@ -37,7 +37,7 @@ def main(arguments):
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
     parser.add_argument('--force_load_epoch', help='Force loading from a certain epoch',
                         type=int, default=-1)
-    parser.add_argument( '--reload_tasks', help='1 if force re-reading of tasks', type=int,
+    parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int,
                         default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
                         type=int, default=0)
@@ -60,7 +60,15 @@ def main(arguments):
     parser.add_argument('--max_word_v_size', help='max word vocab size', type=int, default=30000)
 
     # Embedding options
-    parser.add_argument('--word_embs', help='type of word embs to use', default='fastText', choices=['none', 'scratch', 'glove', 'fastText'])
+    parser.add_argument(
+        '--word_embs',
+        help='type of word embs to use',
+        default='fastText',
+        choices=[
+            'none',
+            'scratch',
+            'glove',
+            'fastText'])
     parser.add_argument('--word_embs_file', help='file containing word embs', type=str, default='')
     parser.add_argument('--fastText', help='1 if use fastText model', type=int, default=0)
     parser.add_argument('--fastText_model_file', help='file containing fastText model',
@@ -154,7 +162,8 @@ def main(arguments):
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
         except AttributeError:
-            log.warning("GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
+            log.warning(
+                "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
     log.info("Using random seed %d", seed)
 

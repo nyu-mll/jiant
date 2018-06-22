@@ -20,9 +20,11 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 TOKENIZER = MosesTokenizer()
+
+
 def process_sentence(sent, max_seq_len):
     '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    return TOKENIZER.tokenize(sent)[:max_seq_len] #nltk.word_tokenize(sent)[:max_seq_len]
+    return TOKENIZER.tokenize(sent)[:max_seq_len]  # nltk.word_tokenize(sent)[:max_seq_len]
 
 
 def load_tsv(
