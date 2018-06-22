@@ -11,7 +11,7 @@ import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.optim.lr_scheduler
-from torch.nn.utils.clip_grad import clip_grad_norm
+from torch.nn.utils.clip_grad import clip_grad_norm_
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
@@ -277,7 +277,7 @@ class SamplingMultiTaskTrainer:
 
                 # Gradient regularization and application
                 if self._grad_norm:
-                    clip_grad_norm(self._model.parameters(), self._grad_norm)
+                    clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
 
                 n_pass += 1  # update per batch
