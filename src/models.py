@@ -57,6 +57,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     build_modules(tasks, model, d_sent, vocab, embedder, args)
     if args.cuda >= 0:
         model = model.cuda()
+    log.info(model)
     return model
 
 
