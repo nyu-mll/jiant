@@ -16,7 +16,7 @@ from allennlp_mods.numeric_field import NumericField
 
 try:
     import fastText
-except:
+except BaseException:
     log.info("fastText library not found!")
 
 import _pickle as pkl
@@ -223,6 +223,7 @@ def get_embeddings(vocab, vec_file, d_word):
     log.info("\tFinished loading embeddings")
     return embeddings
 
+
 def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
     '''
     Same interface as get_embeddings except for fastText. Note that if the path to the model
@@ -256,6 +257,7 @@ def get_fastText_embeddings(vocab, vec_file, d_word, model_file=None):
         embeddings = torch.FloatTensor(embeddings)
         log.info("\tFinished loading pretrained fastText model and embeddings")
         return embeddings, model
+
 
 def process_task(task, token_indexer, vocab):
     '''

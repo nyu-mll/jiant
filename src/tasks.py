@@ -583,6 +583,7 @@ class WNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading Winograd.")
 
+
 class PDTBTask(PairClassificationTask):
     ''' Task class for discourse relation prediction using PDTB'''
 
@@ -599,11 +600,10 @@ class PDTBTask(PairClassificationTask):
         tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"), max_seq_len,
                            s1_idx=4, s2_idx=5, targ_idx=3)
         val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"), max_seq_len,
-                           s1_idx=4, s2_idx=5, targ_idx=3)
+                            s1_idx=4, s2_idx=5, targ_idx=3)
         te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"), max_seq_len,
                            s1_idx=4, s2_idx=5, targ_idx=3)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
-
