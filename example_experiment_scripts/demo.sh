@@ -31,6 +31,7 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
+FORCE_LOAD_EPOCH=-1
 
 train_tasks='sst'
 eval_tasks='none'
