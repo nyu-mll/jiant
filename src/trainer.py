@@ -331,7 +331,7 @@ class SamplingMultiTaskTrainer:
                 samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
                 if should_save:
-                    self._save_checkpoint({"epoch": epoch, "should_stop": should_stop})
+                    self._save_checkpoint({"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -605,7 +605,7 @@ class SamplingMultiTaskTrainer:
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
         training_state = torch.load(training_state_path)
-        return training_state["epoch"], training_state["should_stop"]
+        return training_state["pass"], training_state["should_stop"]
 
     @classmethod
     def from_params(cls, model, serialization_dir, iterator, params):
