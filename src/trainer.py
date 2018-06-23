@@ -50,6 +50,7 @@ def build_trainer(args, model):
 
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
+                           'max_vals': args.max_vals,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
     trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                                    copy.deepcopy(train_params))
@@ -191,7 +192,8 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
-    def train(self, tasks, validation_interval, n_batches_per_pass,
+    def train(self, tasks, stop_metric,
+              validation_interval, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
               shared_optimizer=0, load_model=1):
@@ -248,7 +250,7 @@ class SamplingMultiTaskTrainer:
             min_weight = min(sample_weights)
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        log.info("Beginning training.")
+        log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
@@ -327,7 +329,7 @@ class SamplingMultiTaskTrainer:
 
                 # Check stopping conditions
                 should_stop, task_infos, metric_infos = \
-                    self._check_stop(epoch, tasks, task_infos, metric_infos, g_optimizer)
+                    self._check_stop(epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results
                 for name, value in all_val_metrics.items():
@@ -462,7 +464,7 @@ class SamplingMultiTaskTrainer:
 
         return all_val_metrics, should_save, task_infos, metric_infos
 
-    def _check_stop(self, epoch, tasks, task_infos, metric_infos, g_optimizer):
+    def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
         if g_optimizer is None:
             stop_tr = True
@@ -480,9 +482,7 @@ class SamplingMultiTaskTrainer:
             else:
                 stop_tr = False
 
-        # stop_val = stop_val and metric_infos['micro_avg']['stopped'] and \
-        #            metric_infos['macro_avg']['stopped']
-        stop_val = metric_infos['macro_avg']['stopped']
+        stop_val = metric_infos[stop_metric]['stopped']
 
         should_stop = False
         if stop_tr:

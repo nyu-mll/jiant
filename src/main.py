@@ -7,7 +7,7 @@ import argparse
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s', datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-# import ipdb as pdb
+import ipdb as pdb
 import torch
 
 from preprocess import build_tasks
@@ -180,7 +180,9 @@ def main(arguments):
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        best_epochs = trainer.train(train_tasks, args.val_interval, args.bpp_base,
+        stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
+        best_epochs = trainer.train(train_tasks, stop_metric,
+                                    args.val_interval, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
                                     args.shared_optimizer, args.load_model)
@@ -212,7 +214,9 @@ def main(arguments):
         pred_module = getattr(model, "%s_mdl" % task.name)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         trainer, _, opt_params, schd_params = build_trainer(args, model)
-        best_epoch = trainer.train([task], args.val_interval, args.bpp_base,
+        pdb.set_trace()
+        best_epoch = trainer.train([task], task.val_metric,
+                                   args.val_interval, args.bpp_base,
                                    args.weighting_method, args.scaling_method,
                                    to_train, opt_params, schd_params,
                                    args.shared_optimizer, args.load_model)

@@ -16,7 +16,6 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
         m) LOAD_MODEL=1 ;;
-        M) BPP_METHOD="${OPTARG}" ;; 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;

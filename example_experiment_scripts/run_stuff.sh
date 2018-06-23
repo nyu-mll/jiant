@@ -33,7 +33,7 @@ FORCE_LOAD_EPOCH=-1
 
 train_tasks='wiki'
 eval_tasks='none'
-max_seq_len=40
+max_seq_len=100
 
 VOCAB_SIZE=100000
 word_embs=fastText
