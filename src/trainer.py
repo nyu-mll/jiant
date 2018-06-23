@@ -508,6 +508,7 @@ class SamplingMultiTaskTrainer:
             A flag which causes the model weights at the given epoch to
             be copied to a "best.th" file. The value of this flag should
             be based on some validation metric computed by your model.
+        TODO: Is there a reason this was removed?
         """
         epoch = training_state["epoch"]
         model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
