@@ -33,13 +33,21 @@ def build_trainer(args, model):
                              'weight_decay': 1e-5, 'amsgrad': True})
     else:
         opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
-    schd_params = Params({'type': 'reduce_on_plateau',
-                          'mode': 'max',
-                          'factor': args.lr_decay_factor,
-                          'patience': args.task_patience,
-                          'threshold': args.scheduler_threshold,
-                          'threshold_mode': 'abs',
-                          'verbose': True})
+
+    if args.sent_enc == 'transformer':
+        schd_params = Params({'type': 'noam',
+                              'model_size': 100,
+                              'warmup_steps': 4000,
+                              'factor': 1.0})
+    else:
+        schd_params = Params({'type': 'reduce_on_plateau',
+                              'mode': 'max',
+                              'factor': args.lr_decay_factor,
+                              'patience': args.task_patience,
+                              'threshold': args.scheduler_threshold,
+                              'threshold_mode': 'abs',
+                              'verbose': True})
+
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})

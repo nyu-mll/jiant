@@ -31,13 +31,11 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 FORCE_LOAD_EPOCH=-1
 
-train_tasks='all'
+train_tasks='wiki'
 eval_tasks='none'
-CLASSIFIER=mlp
-d_hid_cls=512
 max_seq_len=40
-VOCAB_SIZE=30000
 
+VOCAB_SIZE=30000
 word_embs=fastText
 char_embs=0
 fastText=0
@@ -46,10 +44,14 @@ ELMO=0
 deep_elmo=0
 COVE=0
 
+sent_enc="transformer"
+CLASSIFIER=mlp
+d_hid_cls=512
 d_hid=512
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
+n_heads=1
 
 OPTIMIZER="adam"
 LR=.001
@@ -61,8 +63,7 @@ task_patience=0
 WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
-BPP_METHOD="percent_tr"
-BPP_BASE=10
+BPP_BASE=1
 VAL_INTERVAL=10
 MAX_VALS=100
 TASK_ORDERING="random"

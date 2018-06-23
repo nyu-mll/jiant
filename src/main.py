@@ -89,7 +89,10 @@ def main(arguments):
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
-                        choices=['bow', 'rnn'])
+                        choices=['bow', 'rnn', 'transformer'])
+    parser.add_argument('--sent_combine_method', help='how to aggregate hidden states of sent rnn',
+                        type=str, default='max', choices=['max', 'mean', 'final'])
+
     parser.add_argument('--shared_pair_enc', help='1 to share pair encoder for pair sentence tasks',
                         type=int, default=1)
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
@@ -97,6 +100,7 @@ def main(arguments):
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
+    parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=1)
     parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
 
     # Training options
@@ -128,29 +132,15 @@ def main(arguments):
                         type=int, default=10)
     parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
                         default=100)
-    parser.add_argument('--bpp_method', help='if using nonsampling trainer, ' +
-                        'method for calculating number of batches per pass', type=str,
-                        choices=['fixed', 'percent_tr', 'proportional_rank'], default='fixed')
-    parser.add_argument('--bpp_base', help='If sampling or fixed bpp' +
-                        'per pass, this is the bpp. If proportional, this ' +
-                        'is the smallest number', type=int, default=10)
+    parser.add_argument('--bpp_base', help='Number of batches to train on per sampled task',
+                        type=int, default=1)
     parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
                         choices=['uniform', 'proportional'], default='uniform')
     parser.add_argument('--scaling_method', help='method for scaling loss', type=str,
                         choices=['min', 'max', 'unit', 'none'], default='none')
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
-    parser.add_argument(
-        '--task_ordering',
-        help='Method for ordering tasks',
-        type=str,
-        default='given',
-        choices=[
-            'given',
-            'random',
-            'random_per_pass',
-            'small_to_large',
-            'large_to_small'])
 
+    # Evaluation options
     parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=1)
 
     args = parser.parse_args(arguments)

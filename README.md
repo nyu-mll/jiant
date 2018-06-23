@@ -102,6 +102,13 @@ To learn embeddings from scratch, set ``--glove`` to 0.
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
 To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py`` and set ``--cove`` to 1.
 
+## Annoying AllenNLP Things
+
+To turn off the verbosity, you'll need to go in your AllenNLP location and create or turn on a ``quiet`` option, e.g. in ``allennlp/common/params.py``, line 186 set ``quiet=True``.
+Other common and verbose locations include ``allennlp/nn/initializers.py`` (many calls to ``logger``) and ``allennlp/common/params.py`` (`pop()`` will print param values often).
+
+To avoid needing to reconstruct vocabulary switching from using character embeddings <> not using character embeddings, using ELMo <> not using ELMo, [TODO]
+
 ## Getting Help
 
 Feel free to contact alexwang _at_ nyu.edu with any questions or comments.
