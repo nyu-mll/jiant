@@ -522,7 +522,7 @@ class SamplingMultiTaskTrainer:
 
         model_state = self._model.state_dict()
 
-        # Don't save embeddings here. 
+        # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
         keys_to_skip = []
         for key in model_state:

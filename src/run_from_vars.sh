@@ -31,6 +31,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W
         o) OPTIMIZER="${OPTARG}" ;;
         h) d_hid="${OPTARG}" ;;
         b) BATCH_SIZE="${OPTARG}" ;;
+        s) sent_enc="${OPTARG}" ;;
         #E) PAIR_ENC="${OPTARG}" ;;
         G) glove=0 ;;
         e) ELMO=1 ;;
@@ -43,7 +44,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W
         K) task_patience="${OPTARG}" ;;
         p) patience="${OPTARG}" ;;
         W) weighting_method="${OPTARG}" ;;
-        s) scaling_method="${OPTARG}" ;;
+        #s) scaling_method="${OPTARG}" ;;
     esac
 done
 

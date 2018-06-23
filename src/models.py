@@ -393,8 +393,8 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, LanguageModelingTask):
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            logits = hid2voc(sent)
-            logits = logits.view(b_size * seq_len, -1)
+            sent = sent.masked_fill(1 - sent_mask.byte(), 0) # avoid NaNs
+            logits = hid2voc(sent).view(b_size * seq_len, -1)
         else:
             pass
         out['logits'] = logits
@@ -403,7 +403,7 @@ class MultiTaskModel(nn.Module):
             targs = batch['targs']['words'].view(-1)
             pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
             out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
-            task.scorer1(out['loss'].item())
+            task.scorer1(torch.exp(out['loss']).item())
         return out
 
     def _ranking_forward(self, batch, task):
