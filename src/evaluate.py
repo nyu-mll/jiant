@@ -1,8 +1,8 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
 import logging as log
-import ipdb as pdb
 import tqdm
+# import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator

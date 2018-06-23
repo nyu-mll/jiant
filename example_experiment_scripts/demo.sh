@@ -36,18 +36,21 @@ FORCE_LOAD_EPOCH=-1
 train_tasks='sst'
 eval_tasks='none'
 CLASSIFIER=mlp
-d_hid_cls=16
+d_hid_cls=64
 max_seq_len=10
-VOCAB_SIZE=1000
+VOCAB_SIZE=30000
 
 word_embs=fastText
 fastText=0
+char_embs=1
 d_word=300
 ELMO=0
 deep_elmo=0
 COVE=0
 
-d_hid=512
+sent_enc="rnn"
+n_heads=1
+d_hid=128
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0

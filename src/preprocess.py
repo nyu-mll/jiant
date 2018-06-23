@@ -5,14 +5,14 @@ import io
 import os
 import logging as log
 from collections import defaultdict
-import ipdb as pdb
+# import ipdb as pdb
 import numpy as np
 import torch
 
 from allennlp.data import Instance, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
-                                            TokenCharactersIndexer
+    TokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
 
 try:
