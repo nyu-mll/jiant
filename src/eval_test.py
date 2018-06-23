@@ -1,7 +1,7 @@
 ''' Scrappy eval script '''
 import os
 import json
-import ipdb as pdb
+# import ipdb as pdb
 
 from sklearn.metrics import matthews_corrcoef, f1_score
 from scipy.stats import pearsonr, spearmanr

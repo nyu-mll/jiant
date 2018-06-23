@@ -7,7 +7,7 @@ import copy
 import random
 import logging as log
 import itertools
-import ipdb as pdb  # pylint: disable=unused-import
+# import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.optim.lr_scheduler
@@ -164,9 +164,6 @@ class SamplingMultiTaskTrainer:
             else:
                 out_of_patience = min(metric_history[-patience:]) >= cur_score
 
-        if best_so_far and out_of_patience:
-            pdb.set_trace()
-
         return best_so_far, out_of_patience
 
     def _setup_training(self, tasks, train_params, optimizer_params, scheduler_params, iterator):
@@ -280,7 +277,7 @@ class SamplingMultiTaskTrainer:
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
-                assert not torch.isnan(loss).any(), pdb.set_trace()
+                assert not torch.isnan(loss).any()
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
@@ -405,7 +402,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches, pdb.set_trace()
+            assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
