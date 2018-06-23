@@ -10,7 +10,10 @@
 
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
-# SET THESE BEFORE RUNNING:
+# Defaults. Don't overwrite here; see below for ../user_config.sh
+FASTTEXT_EMBS_FILE=.
+FASTTEXT_MODEL_FILE=.
+WORD_EMBS_FILE=.
 
 # machine-specific paths
 # Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
@@ -18,7 +21,7 @@
 source ../user_config.sh
 
 EXP_NAME='jiant-demo'
-RUN_NAME="cola_1"
+RUN_NAME="sst"
 GPUID=0
 SEED=42
 no_tqdm=0
@@ -28,24 +31,23 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-load_epoch=-1
+FORCE_LOAD_EPOCH=-1
 
 train_tasks='sst'
-eval_tasks='sst'
+eval_tasks='none'
 CLASSIFIER=mlp
 d_hid_cls=16
 max_seq_len=10
 VOCAB_SIZE=1000
 
+word_embs=fastText
+fastText=0
 d_word=300
-d_hid=32
-glove=0
 ELMO=0
 deep_elmo=0
-elmo_no_glove=0
-fastText=1
 COVE=0
 
+d_hid=512
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
@@ -57,7 +59,6 @@ dropout=.2
 LR_DECAY=.5
 patience=50
 task_patience=50
-train_words=0
 WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=16

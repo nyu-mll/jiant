@@ -8,8 +8,16 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-PROJECT_PREFIX='/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep'
-DATA_DIR="/misc/vlgscratch4/BowmanGroup/awang/processed_data/mtl-sentence-representations/"
+# Defaults. Don't overwrite here; see below for ../user_config.sh
+FASTTEXT_EMBS_FILE=.
+FASTTEXT_MODEL_FILE=.
+WORD_EMBS_FILE=.
+
+# machine-specific paths
+# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
+source ../user_config.sh
+
 EXP_NAME="debug"
 RUN_NAME="debug"
 GPUID=0
@@ -21,27 +29,29 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-force_load_epoch=-1
+FORCE_LOAD_EPOCH=-1
 
-train_tasks='all'
+train_tasks='wiki'
 eval_tasks='none'
-CLASSIFIER=mlp
-d_hid_cls=512
 max_seq_len=40
-VOCAB_SIZE=30000
-WORD_EMBS_FILE="/misc/vlgscratch4/BowmanGroup/awang/raw_data/GloVe/glove.840B.300d.txt"
 
+VOCAB_SIZE=30000
+word_embs=fastText
+char_embs=0
+fastText=0
 d_word=300
-d_hid=512
-glove=1
 ELMO=0
 deep_elmo=0
-elmo_no_glove=0
 COVE=0
 
+sent_enc="transformer"
+CLASSIFIER=mlp
+d_hid_cls=512
+d_hid=512
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
+n_heads=1
 
 OPTIMIZER="adam"
 LR=.001
@@ -50,12 +60,10 @@ dropout=.2
 LR_DECAY=.5
 patience=5
 task_patience=0
-train_words=0
 WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
-BPP_METHOD="percent_tr"
-BPP_BASE=10
+BPP_BASE=1
 VAL_INTERVAL=10
 MAX_VALS=100
 TASK_ORDERING="random"

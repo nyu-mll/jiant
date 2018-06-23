@@ -619,3 +619,26 @@ class JOCITask(PairOrdinalRegressionTask):
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
 
+class PDTBTask(PairClassificationTask):
+    ''' Task class for discourse relation prediction using PDTB'''
+
+    def __init__(self, path, max_seq_len, name="pdtb"):
+        ''' Load data and initialize'''
+        super(PDTBTask, self).__init__(name, 99)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"), max_seq_len,
+                           s1_idx=4, s2_idx=5, targ_idx=3)
+        val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"), max_seq_len,
+                            s1_idx=4, s2_idx=5, targ_idx=3)
+        te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"), max_seq_len,
+                           s1_idx=4, s2_idx=5, targ_idx=3)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading PDTB data.")

@@ -1,6 +1,7 @@
 """ Trainer """
 
 import os
+import glob
 import time
 import copy
 import random
@@ -10,7 +11,7 @@ import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.optim.lr_scheduler
-from torch.nn.utils.clip_grad import clip_grad_norm
+from torch.nn.utils.clip_grad import clip_grad_norm_
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
@@ -32,13 +33,21 @@ def build_trainer(args, model):
                              'weight_decay': 1e-5, 'amsgrad': True})
     else:
         opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
-    schd_params = Params({'type': 'reduce_on_plateau',
-                          'mode': 'max',
-                          'factor': args.lr_decay_factor,
-                          'patience': args.task_patience,
-                          'threshold': args.scheduler_threshold,
-                          'threshold_mode': 'abs',
-                          'verbose': True})
+
+    if args.sent_enc == 'transformer':
+        schd_params = Params({'type': 'noam',
+                              'model_size': 100,
+                              'warmup_steps': 4000,
+                              'factor': 1.0})
+    else:
+        schd_params = Params({'type': 'reduce_on_plateau',
+                              'mode': 'max',
+                              'factor': args.lr_decay_factor,
+                              'patience': args.task_patience,
+                              'threshold': args.scheduler_threshold,
+                              'threshold_mode': 'abs',
+                              'verbose': True})
+
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
@@ -222,6 +231,11 @@ class SamplingMultiTaskTrainer:
                     ["model_state_epoch_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
+            else:
+                log.info("Not loading. Deleting any existing checkpoints.")
+                checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
+                for f in glob.glob(checkpoint_pattern):
+                    os.remove(f)
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -271,7 +285,7 @@ class SamplingMultiTaskTrainer:
 
                 # Gradient regularization and application
                 if self._grad_norm:
-                    clip_grad_norm(self._model.parameters(), self._grad_norm)
+                    clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
 
                 n_pass += 1  # update per batch
@@ -331,7 +345,7 @@ class SamplingMultiTaskTrainer:
                 samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
                 if should_save:
-                    self._save_checkpoint({"epoch": epoch, "should_stop": should_stop})
+                    self._save_checkpoint({"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -505,7 +519,18 @@ class SamplingMultiTaskTrainer:
         """
         epoch = training_state["epoch"]
         model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+
         model_state = self._model.state_dict()
+
+        # Don't save embeddings here. 
+        # TODO: There has to be a prettier way to do this.
+        keys_to_skip = []
+        for key in model_state:
+            if 'token_embedder_words' in key:
+                keys_to_skip.append(key)
+        for key in keys_to_skip:
+            del model_state[key]
+
         torch.save(model_state, model_path)
 
         torch.save(training_state, os.path.join(self._serialization_dir,
@@ -577,7 +602,7 @@ class SamplingMultiTaskTrainer:
                                          "metric_state_epoch_{}.th".format(epoch_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
-        self._model.load_state_dict(model_state)
+        self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
         for task_name, task_state in task_states.items():
@@ -605,7 +630,7 @@ class SamplingMultiTaskTrainer:
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
         training_state = torch.load(training_state_path)
-        return training_state["epoch"], training_state["should_stop"]
+        return training_state["pass"], training_state["should_stop"]
 
     @classmethod
     def from_params(cls, model, serialization_dir, iterator, params):

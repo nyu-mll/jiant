@@ -15,9 +15,11 @@ from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.modules.similarity_functions import DotProductSimilarity
+from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
+from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.modules.elmo import Elmo
 
 from tasks import STSBTask, CoLATask, SSTTask, \
@@ -50,54 +52,50 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                   sent_rnn, dropout=args.dropout,
                                   cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = 2 * args.d_hid + (args.elmo and args.deep_elmo) * 1024
+    elif args.sent_enc == 'transformer':
+        transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
+                                                  hidden_dim=args.d_hid,
+                                                  projection_dim=args.d_hid,
+                                                  feedforward_hidden_dim=args.d_hid,
+                                                  num_layers=args.n_layers_enc,
+                                                  num_attention_heads=args.n_heads)
+        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
+                                  transformer, dropout=args.dropout,
+                                  cove_layer=cove_emb, elmo_layer=elmo)
+        d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
 
     # Build model and classifiers
-    model = MultiTaskModel(args, sent_encoder)
+    model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
     if args.cuda >= 0:
         model = model.cuda()
+    log.info(model)
     return model
 
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
-    d_emb = 0
+    d_emb, d_char = 0, args.d_char
 
+    token_embedder = {}
     # Word embeddings
-    if not args.no_word_embs == 'none':
-        if args.word_embs in ['glove', 'fasttext']:
+    if args.word_embs != 'none':
+        if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
+            log.info("\tUsing word embeddings from %s", args.word_embs_file)
             word_embs = pretrained_embs
-            train_embs = bool(args.train_words)
             d_word = pretrained_embs.size()[-1]
         else:
             log.info("\tLearning word embeddings from scratch!")
             word_embs = None
-            train_embs = True
             d_word = args.d_word
 
         embeddings = Embedding(vocab.get_vocab_size('tokens'), d_word,
-                               weight=word_embs, trainable=train_embs,
+                               weight=word_embs, trainable=False,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
-        token_embedder = {"words": embeddings}
-        embedder = BasicTextFieldEmbedder(token_embedder)
+        token_embedder["words"] = embeddings
         d_emb += d_word
-
     else:
         log.info("\tNot using word embeddings!")
-        embedder = None
-
-    # Handle elmo
-    if args.elmo:
-        log.info("\tUsing ELMo embeddings!")
-        n_reps = 1
-        if args.deep_elmo:
-            n_reps = 2
-            log.info("\tUsing deep ELMo embeddings!")
-        elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
-                    num_output_representations=n_reps)
-        d_emb += 1024
-    else:
-        elmo = None
 
     # Handle cove
     if args.cove:
@@ -113,6 +111,35 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     else:
         cove_emb = None
 
+    # Character embeddings
+    if args.char_embs:
+        log.info("\tUsing character embeddings!")
+        char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
+        filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
+        char_encoder = CnnEncoder(d_char, num_filters=args.n_char_filters,
+                                  ngram_filter_sizes=filter_sizes,
+                                  output_dim=d_char)
+        char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder,
+                                               dropout=args.dropout_embs)
+        d_emb += d_char
+        token_embedder["chars"] = char_embedder
+    else:
+        log.info("\tNot using character embeddings!")
+
+    # Handle elmo
+    if args.elmo:
+        log.info("\tUsing ELMo embeddings!")
+        n_reps = 1
+        if args.deep_elmo:
+            n_reps = 2
+            log.info("\tUsing deep ELMo embeddings!")
+        elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
+                    num_output_representations=n_reps)
+        d_emb += 1024
+    else:
+        elmo = None
+
+    embedder = BasicTextFieldEmbedder(token_embedder)
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, elmo, cove_emb
 
@@ -241,10 +268,12 @@ class MultiTaskModel(nn.Module):
     Giant model with task-specific components and a shared word and sentence encoder.
     '''
 
-    def __init__(self, args, sent_encoder):
+    def __init__(self, args, sent_encoder, vocab):
         ''' Args: sentence encoder '''
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
+        self.combine_method = args.sent_combine_method
+        self.vocab = vocab
 
     def forward(self, task, batch):
         '''
@@ -278,7 +307,13 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = sent_embs.max(dim=1)[0]
+        if self.combine_method == 'max':
+            sent_emb = sent_embs.max(dim=1)[0]
+        elif self.combine_method == 'mean':
+            # TODO(Alex): take mean with masking
+            sent_emb = sent_embs.mean(dim=1)
+        elif self.combine_method == 'final':
+            sent_emb = sent_embs[-1]
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
@@ -366,7 +401,8 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             targs = batch['targs']['words'].view(-1)
-            out['loss'] = F.cross_entropy(logits, targs, ignore_index=0)  # some pad index
+            pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+            out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
             task.scorer1(out['loss'].item())
         return out
 
