@@ -92,16 +92,17 @@ class PairRegressionTask(Task):
 class PairOrdinalRegressionTask(Task):
     ''' Generic sentence pair ordinal regression '''
 
-    def __init__(self, name):
-	super().__init__(name)
-	self.scorer1 = Average() # for average MSE
-	self.scorer2 = Average() # for average Spearman's rho
-	self.val_metric = "%s_mse" % self.name
-	self.val_metric_decreases = True
+    def __init__(self, name, n_classes): # treat ordinals as classes
+        super().__init__(name)
+        self.n_classes = n_classes
+        self.scorer1 = Average() # for average MSE
+        self.scorer2 = Average() # for average Spearman's rho
+        self.val_metric = "%s_mse" % self.name
+        self.val_metric_decreases = True
 
     def get_metrics(self, reset=False):
         mse = self.scorer1.get_metric(reset)
-	spearmanr = self.scorer2.get_metric(reset)
+        spearmanr = self.scorer2.get_metric(reset)
         return {'mse': mse,
                 'spearmanr': spearmanr}
 
@@ -602,8 +603,8 @@ class JOCITask(PairOrdinalRegressionTask):
     '''Class for JOCI ordinal regression task'''
     
     def __init__(self, path, max_seq_len, name="joci"):
-	super(JOCITask, self).__init__(name)
-	self.load_data(path, max_seq_len)
+        super(JOCITask, self).__init__(name, 5)
+        self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
  

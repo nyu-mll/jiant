@@ -24,8 +24,9 @@ from allennlp.modules.elmo import Elmo
 
 from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask
+    PairRegressionTask, PairOrdinalRegressionTask, RankingTask, \
+    SequenceGenerationTask, LanguageModelingTask, \
+    JOCITask
 from modules import RNNEncoder, BoWSentEncoder, \
     AttnPairEncoder, SimplePairEncoder
 
@@ -156,6 +157,8 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, PairRegressionTask):
             module = build_regressor(task, d_sent * 4, args)
             setattr(model, '%s_mdl' % task.name, module)
+        elif isinstance(task, PairOrdinalRegressionTask):
+            module = build_pair_classifier(task, d_sent, model, vocab, args)
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
@@ -293,6 +296,8 @@ class MultiTaskModel(nn.Module):
             out = self._pair_classification_forward(batch, task)
         elif isinstance(task, PairRegressionTask):
             out = self._pair_regression_forward(batch, task)
+        elif isinstance(task, PairOrdinalRegressionTask):
+            out = self._pair_classification_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task)
         elif isinstance(task, RankingTask):
@@ -350,9 +355,13 @@ class MultiTaskModel(nn.Module):
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
-            task.scorer1(logits, labels)
-            if task.scorer2 is not None:
-                task.scorer2(logits, labels)
+            if isinstance(task, JOCITask):
+                task.scorer1(F.mse_loss(logits, labels))
+                task.scorer2(spearmanr(logits, labels)[0])
+            else:
+                task.scorer1(logits, labels)
+                if task.scorer2 is not None:
+                    task.scorer2(logits, labels)
             out['loss'] = F.cross_entropy(logits, labels)
         out['logits'] = logits
         return out
