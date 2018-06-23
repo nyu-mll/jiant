@@ -3,7 +3,7 @@
 If you are adding a new task, you should [...]'''
 import sys
 import logging as log
-# import ipdb as pdb  # pylint: disable=unused-import
+import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -157,7 +157,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             module = build_regressor(task, d_sent * 4, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, LanguageModelingTask):
-            hid2voc = build_lm(task, d_sent, args)
+            hid2voc = build_lm(task, d_sent / 2, args) # separate fwd + bwd
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -238,7 +238,7 @@ def build_regressor(task, d_inp, args):
     elif cls_type == 'fancy_mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                   nn.Tanh(),nn.LayerNorm(d_hid),  nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid), 
+                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
 
@@ -394,16 +394,22 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, LanguageModelingTask):
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
             sent = sent.masked_fill(1 - sent_mask.byte(), 0) # avoid NaNs
-            logits = hid2voc(sent).view(b_size * seq_len, -1)
+             # split sent reps by fwd, bwd
+            sent_fwd, sent_bwd = sent.split(int(sent.size(-1) / 2), dim=-1)
+            logits_fwd = hid2voc(sent_fwd).view(b_size * seq_len, -1)
+            logits_bwd = hid2voc(sent_bwd).view(b_size * seq_len, -1)
+            logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
         else:
             pass
         out['logits'] = logits
 
         if 'targs' in batch:
             targs = batch['targs']['words'].view(-1)
+            if isinstance(task, LanguageModelingTask):
+                targs = targs.repeat(2)
             pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
             out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
-            task.scorer1(torch.exp(out['loss']).item())
+            task.scorer1(out['loss'].item())
         return out
 
     def _ranking_forward(self, batch, task):

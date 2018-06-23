@@ -7,7 +7,7 @@ import copy
 import random
 import logging as log
 import itertools
-# import ipdb as pdb  # pylint: disable=unused-import
+import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.optim.lr_scheduler
@@ -427,8 +427,10 @@ class SamplingMultiTaskTrainer:
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
+                metric_decreases = False
             else:
                 metric = task.val_metric
+                metric_decreases = task.val_metric_decreases
                 task = task.name
             if metric_infos[metric]['stopped']:
                 continue
@@ -436,7 +438,7 @@ class SamplingMultiTaskTrainer:
             metric_history = metric_infos[metric]['hist']
             metric_history.append(this_epoch_metric)
             is_best_so_far, out_of_patience = \
-                self._check_history(metric_history, this_epoch_metric)
+                self._check_history(metric_history, this_epoch_metric, metric_decreases)
             if is_best_so_far:
                 log.info("Best model found for %s.", task)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)

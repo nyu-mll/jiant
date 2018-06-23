@@ -6,6 +6,7 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import os
+import math
 import logging as log
 # import ipdb as pdb
 
@@ -131,8 +132,8 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        nll = self.scorer1.get_metric(reset)
+        return {'perplexity': math.exp(nll)}
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -144,9 +145,9 @@ class WikiTextLMTask(LanguageModelingTask):
         self.sentences = self.train_data_text + self.val_data_text
 
     def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        tr_data = self.load_txt(os.path.join(path, "train-small.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid-small.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test-small.txt"), max_seq_len)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

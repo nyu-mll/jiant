@@ -35,7 +35,7 @@ train_tasks='wiki'
 eval_tasks='none'
 max_seq_len=40
 
-VOCAB_SIZE=30000
+VOCAB_SIZE=100000
 word_embs=fastText
 char_embs=0
 fastText=0
@@ -64,7 +64,7 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
 BPP_BASE=1
-VAL_INTERVAL=10
+VAL_INTERVAL=100
 MAX_VALS=100
 TASK_ORDERING="random"
 weighting_method="uniform"
