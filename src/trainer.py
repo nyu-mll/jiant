@@ -345,7 +345,8 @@ class SamplingMultiTaskTrainer:
                 samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
                 if should_save:
-                    self._save_checkpoint({"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
+                    self._save_checkpoint(
+                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -523,7 +524,7 @@ class SamplingMultiTaskTrainer:
 
         model_state = self._model.state_dict()
 
-        # Don't save embeddings here. 
+        # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
         keys_to_skip = []
         for key in model_state:
