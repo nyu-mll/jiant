@@ -178,12 +178,12 @@ def build_classifier(task, d_inp, args):
         classifier = nn.Linear(d_inp, task.n_classes)
     elif cls_type == 'mlp':
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                   nn.Tanh(), nn.Dropout(p=dropout),
+                                   nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, task.n_classes))
     elif cls_type == 'fancy_mlp':
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                   nn.Tanh(), nn.Dropout(p=dropout),
-                                   nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                   nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
+                                   nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
                                    nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
     else:
         raise ValueError("Classifier type not found!")
@@ -233,12 +233,12 @@ def build_regressor(task, d_inp, args):
         regressor = nn.Linear(d_inp, 1)
     elif cls_type == 'mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.Dropout(p=dropout),
+                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                   nn.Linear(d_hid, 1))
     elif cls_type == 'fancy_mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                  nn.Tanh(),nn.LayerNorm(d_hid),  nn.Dropout(p=dropout),
+                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid), 
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
 
