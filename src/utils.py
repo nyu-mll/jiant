@@ -10,7 +10,7 @@ import codecs
 import nltk
 from nltk.tokenize.moses import MosesTokenizer
 
-import numpy
+import numpy as np
 import torch
 from torch.autograd import Variable
 
@@ -799,8 +799,8 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         scaled_similarities = torch.bmm(queries_per_head, keys_per_head.transpose(1, 2)) / self._scale
 
         # Masking should go here
-        causality_mask = subsequent_mask(hidden_dim)
-        masked_scaled_similarities = masked_scaled_similarities.masked_fill(casuality_mask == 0, -1e9)
+        causality_mask = subsequent_mask(timesteps).cuda()
+        masked_scaled_similarities = scaled_similarities.masked_fill(causality_mask == 0, -1e9)
         
         # shape (num_heads * batch_size, timesteps, timesteps)
         # Normalise the distributions, using the same mask for all heads.

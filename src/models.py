@@ -59,6 +59,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                   feedforward_hidden_dim=args.d_hid,
                                                   num_layers=args.n_layers_enc,
                                                   num_attention_heads=args.n_heads)
+        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
+                                  transformer, dropout=args.dropout,
+                                  cove_layer=cove_emb, elmo_layer=elmo)
+        d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer-d':
         transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                   hidden_dim=args.d_hid,

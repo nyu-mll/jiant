@@ -308,7 +308,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                  num_attention_heads: int,
                  use_positional_encoding: bool = True,
                  dropout_prob: float = 0.2) -> None:
-        super(StackedSelfAttentionEncoder, self).__init__()
+        super(MaskedStackedSelfAttentionEncoder, self).__init__()
 
         self._use_positional_encoding = use_positional_encoding
         self._attention_layers: List[MaskedMultiHeadSelfAttention] = []
@@ -345,16 +345,16 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
 
             feedfoward_input_dim = hidden_dim
 
-        self.dropout = Dropout(dropout_prob)
+        self.dropout = torch.nn.Dropout(dropout_prob)
         self._input_dim = input_dim
         self._output_dim = self._attention_layers[-1].get_output_dim()
         self._output_layer_norm = LayerNorm(self._output_dim)
-
-    @overrides
+        
+    # @overrides
     def get_input_dim(self) -> int:
         return self._input_dim
 
-    @overrides
+    # @overrides
     def get_output_dim(self) -> int:
         return self._output_dim
 

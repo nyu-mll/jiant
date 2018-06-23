@@ -89,7 +89,7 @@ def main(arguments):
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
-                        choices=['bow', 'rnn', 'transformer'])
+                        choices=['bow', 'rnn', 'transformer', 'transformer-d'])
     parser.add_argument('--sent_combine_method', help='how to aggregate hidden states of sent rnn',
                         type=str, default='max', choices=['max', 'mean', 'final'])
 
