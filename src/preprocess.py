@@ -273,6 +273,9 @@ def process_task(task, token_indexer, vocab):
         elif isinstance(task, PairRegressionTask):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
                                                    classification=False)
+	elif isinstance(task, PairOrdinalRegressionTask)
+	    split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
+						   classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):

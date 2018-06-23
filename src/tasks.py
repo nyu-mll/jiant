@@ -608,7 +608,6 @@ class JOCITask(PairOrdinalRegressionTask):
             self.val_data_text[0] + self.val_data_text[1]
  
     def load_data(self, path, max_seq_len):
-	"""TODO"""
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
                            s1_idx=0, s2_idx=1, targ_idx=2)
         val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
