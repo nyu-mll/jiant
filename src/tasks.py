@@ -636,3 +636,91 @@ class WeakGroundedTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MSCOCO data.")
+
+class WeakGroundedTask(PairClassificationTask):
+    ''' Task class for Weakly Grounded Sentences i.e., training on pairs of captions for the same image '''
+
+    def __init__(self, path, max_seq_len, name="mscoco"):
+        ''' Do stuff '''
+        super(WeakGroundedTask, self).__init__(name, 3)
+
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+        ''' positive = captions of the same image, negative = captions of different images '''
+        targ_map = {'negative': 0, 'positive': 1}
+    
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        # we don't have predefined test captions because this the ImageNet task, will probably add sampled sentences
+        te_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MSCOCO data.")
+
+
+''' change core task! '''       
+class GroundedTask(PairClassificationTask):
+    ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
+
+    def __init__(self, path, max_seq_len, name="mscoco"):
+        ''' Do stuff '''
+        super(WeakGroundedTask, self).__init__(name, 3)
+
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+        ''' positive = captions of the same image, negative = captions of different images '''
+        targ_map = {'negative': 0, 'positive': 1}
+    
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        # we don't have predefined test captions because this the ImageNet task, will probably add sampled sentences
+        te_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MSCOCO data.")
+
+class DAETask(LanguageModelingTask):
+    ''' Denoising Autoencoder task on Toronto/Wikitext '''
+
+    def __init__(self, path, max_seq_len, name="wiki"):
+        ''' Do stuff '''
+        super().__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text + self.val_data_text
+
+    def load_data(self, path, max_seq_len):
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WikiText")
+
+    def load_txt(self, path, max_seq_len):
+        data = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip().split()[:max_seq_len]
+                if not toks:
+                    continue
+                data.append(['<SOS>'] + toks + ['<EOS>'])
+        return data
