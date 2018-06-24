@@ -611,7 +611,7 @@ class PDTBTask(PairClassificationTask):
 class WeakGroundedTask(PairClassificationTask):
     ''' Task class for Weakly Grounded Sentences i.e., training on pairs of captions for the same image '''
 
-    def __init__(self, path, max_seq_len, name="snli"):
+    def __init__(self, path, max_seq_len, name="mscoco"):
         ''' Do stuff '''
         super(WeakGroundedTask, self).__init__(name, 3)
 
