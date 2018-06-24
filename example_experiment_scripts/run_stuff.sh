@@ -8,6 +8,9 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
+# cd to jiant root directory
+pushd "$(dirname $0)/../"
+
 # Defaults if not already set.
 FASTTEXT_EMBS_FILE="${FASTTEXT_EMBS_FILE:-'.'}"
 FASTTEXT_MODEL_FILE="${FASTTEXT_MODEL_FILE:-'.'}"
@@ -16,9 +19,9 @@ WORD_EMBS_FILE="${WORD_EMBS_FILE:-'.'}"
 # machine-specific paths
 # Contains JIANT_PROJECT_PREFIX, JIANT_DATA_DIR, WORD_EMBS_FILE and optionally
 # FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
-if [ -e ../user_config.sh ]; then
-  echo "Loading environment from ../user_config.sh"
-  source ../user_config.sh
+if [ -e user_config.sh ]; then
+  echo "Loading environment from ${PWD}/user_config.sh"
+  source user_config.sh
 fi
 
 EXP_NAME="debug"

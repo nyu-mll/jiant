@@ -104,5 +104,5 @@ ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
 ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
 ALLEN_ARGS+=( --force_load_epoch ${FORCE_LOAD_EPOCH} )
 
-ALLEN_CMD="python ../src/main.py ${ALLEN_ARGS[@]}"
+ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
