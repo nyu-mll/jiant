@@ -61,7 +61,8 @@ def build_tasks(args):
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
-                  args.data_dir, bool(not args.reload_tasks))
+                  path=args.data_dir, scratch_path=args.exp_dir,
+                  load_pkl=bool(not args.reload_tasks))
 
     # 2 + 3) build / load vocab and word vectors
     max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
@@ -137,12 +138,13 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
+def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None, 
+              scratch_path=None, load_pkl=True):
     ''' Load tasks '''
     def parse_tasks(task_list):
         '''parse string of tasks'''
         if task_list == 'all':
-            tasks = [task for task in NAME2INFO]
+            tasks = sorted(NAME2INFO.keys())
         elif task_list == 'none':
             tasks = []
         else:
@@ -153,17 +155,24 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
     eval_task_names = parse_tasks(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
 
+    assert path is not None
+    scratch_path = scratch_path || path
+    log.info("Writing pre-preprocessed tasks to %s", scratch_path)
+
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        task_path = os.path.join(path, NAME2INFO[name][1])
-        pkl_path = os.path.join(task_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and load:
+        task_src_path = os.path.join(path, NAME2INFO[name][1])
+        task_scratch_path = os.path.join(scratch_path, NAME2INFO[name][1])
+        pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
+        if os.path.isfile(pkl_path) and load_pkl:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task = NAME2INFO[name][0](task_path, max_seq_len, name)
+            task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
+            if not os.path.isdir(task_scratch_path):
+                os.mkdir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
