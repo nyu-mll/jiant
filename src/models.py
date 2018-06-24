@@ -394,22 +394,30 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
 
-        if isinstance(task, LanguageModelingTask):
-            hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            sent = sent.masked_fill(1 - sent_mask.byte(), 0) # avoid NaNs
-             # split sent reps by fwd, bwd
-            sent_fwd, sent_bwd = sent.split(int(sent.size(-1) / 2), dim=-1)
-            logits_fwd = hid2voc(sent_fwd).view(b_size * seq_len, -1)
-            logits_bwd = hid2voc(sent_bwd).view(b_size * seq_len, -1)
-            logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
-        else:
+        if 'targs' in batch:
             pass
+        return out
+
+    def _lm_forward(self, batch, task):
+        ''' For translation, denoising, maybe language modeling? '''
+        out = {}
+        b_size, seq_len = batch['inp_fwd']['words'].size()
+        sent_fwd, mask_fwd = self.sent_encoder(batch['inp_fwd'])
+        sent_bwd, mask_bwd = self.sent_encoder(batch['trg_fwd'])
+        sent_fwd,  _ = sent_fwd.split(int(sent_fwd.size(-1) / 2), dim=-1)
+        _, sent_bwd = sent_bwd.split(int(sent_bwd.size(-1) / 2), dim=-1)
+        sent_fwd = sent_fwd.masked_fill(1 - mask_fwd.byte(), 0) # avoid NaNs
+        sent_bwd = sent_bwd.masked_fill(1 - mask_bwd.byte(), 0) # avoid NaNs
+
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        logits_fwd = hid2voc(sent_fwd).view(b_size * seq_len, -1)
+        logits_bwd = hid2voc(sent_bwd).view(b_size * seq_len, -1)
+        logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
         out['logits'] = logits
 
         if 'targs' in batch:
-            targs = batch['targs']['words'].view(-1)
-            if isinstance(task, LanguageModelingTask):
-                targs = targs.repeat(2)
+            targs = torch.cat([batch['trg_fwd']['words'].view(-1),
+                               batch['inp_fwd']['words'].view(-1)])
             pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
             out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
             task.scorer1(out['loss'].item())

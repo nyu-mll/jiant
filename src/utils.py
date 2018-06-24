@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 
 
-def process_sentence(sent, max_seq_len):
-    '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    return TOKENIZER.tokenize(sent)[:max_seq_len]  # nltk.word_tokenize(sent)[:max_seq_len]
+def process_sentence(sent):
+    '''process a sentence '''
+    return TOKENIZER.tokenize(sent)
+    #return nltk.word_tokenize(sent)
 
 
 def load_tsv(
         data_file,
-        max_seq_len,
         s1_idx=0,
         s2_idx=1,
         targ_idx=2,
@@ -52,7 +52,7 @@ def load_tsv(
                 row = row.strip().split(delimiter)
                 if filter_idx and row[filter_idx] != filter_value:
                     continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                sent1 = process_sentence(row[s1_idx])
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
 
@@ -67,7 +67,7 @@ def load_tsv(
                     targ = 0
 
                 if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len)
+                    sent2 = process_sentence(row[s2_idx])
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)

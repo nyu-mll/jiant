@@ -32,7 +32,7 @@ class Task():
     def __init__(self, name):
         self.name = name
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Load data from path and create splits. '''
         raise NotImplementedError
 
@@ -139,65 +139,65 @@ class LanguageModelingTask(SequenceGenerationTask):
 class WikiTextLMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext '''
 
-    def __init__(self, path, max_seq_len, name="wiki"):
+    def __init__(self, path, name="wiki"):
         super().__init__(name)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text + self.val_data_text
 
-    def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+    def load_data(self, path):
+        tr_data = self.load_txt(os.path.join(path, "train.txt"))
+        val_data = self.load_txt(os.path.join(path, "valid.txt"))
+        te_data = self.load_txt(os.path.join(path, "test.txt"))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading WikiText")
 
-    def load_txt(self, path, max_seq_len):
+    def load_txt(self, path):
         data = []
         with open(path) as txt_fh:
             for row in txt_fh:
-                toks = row.strip().split()[:max_seq_len]
+                toks = row.strip().split()
                 if not toks:
                     continue
-                data.append(['<SOS>'] + toks + ['<EOS>'])
+                data.append(toks)
         return data
 
 
 class WikiText2LMTask(WikiTextLMTask):
     ''' Language modeling task on Wikitext 2'''
 
-    def __init__(self, path, max_seq_len, name="wiki2"):
-        super().__init__(name)
-        self.load_data(path, max_seq_len)
+    def __init__(self, path, name="wiki2"):
+        super().__init__(path, name)
+        self.load_data(path)
         self.sentences = self.train_data_text + self.val_data_text
 
 
 class WikiText103LMTask(WikiTextLMTask):
     ''' Language modeling task on Wikitext 103'''
 
-    def __init__(self, path, max_seq_len, name="wiki103"):
-        super().__init__(name)
-        self.load_data(path, max_seq_len)
+    def __init__(self, path, name="wiki103"):
+        super().__init__(path, name)
+        self.load_data(path)
         self.sentences = self.train_data_text + self.val_data_text
 
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
 
-    def __init__(self, path, max_seq_len, name="sst"):
+    def __init__(self, path, name="sst"):
         ''' '''
         super(SSTTask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Load data '''
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'),
                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'),
                             s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -208,23 +208,23 @@ class SSTTask(SingleClassificationTask):
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
 
-    def __init__(self, path, max_seq_len, name="acceptability"):
+    def __init__(self, path, name="acceptability"):
         ''' '''
         super(CoLATask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Average()
         self.scorer2 = CategoricalAccuracy()
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''Load the data'''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"),
                            s1_idx=3, s2_idx=None, targ_idx=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"),
                             s1_idx=3, s2_idx=None, targ_idx=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -239,22 +239,22 @@ class CoLATask(SingleClassificationTask):
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
 
-    def __init__(self, path, max_seq_len, name="qqp"):
+    def __init__(self, path, name="qqp"):
         super().__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"),
                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"),
                             s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -272,15 +272,15 @@ class QQPTask(PairClassificationTask):
 class MultiNLISingleGenreTask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, genre, name):
+    def __init__(self, path, genre, name):
         '''MNLI'''
         super(MultiNLISingleGenreTask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len, genre)
+        self.load_data(path, genre)
         self.scorer2 = None
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len, genre):
+    def load_data(self, path, genre):
         '''Process the dataset located at path. We only use the in-genre matche data.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
 
@@ -288,7 +288,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             os.path.join(
                 path,
                 'train.tsv'),
-            max_seq_len,
             s1_idx=8,
             s2_idx=9,
             targ_idx=11,
@@ -301,7 +300,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             os.path.join(
                 path,
                 'dev_matched.tsv'),
-            max_seq_len,
             s1_idx=8,
             s2_idx=9,
             targ_idx=11,
@@ -314,7 +312,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             os.path.join(
                 path,
                 'test_matched.tsv'),
-            max_seq_len,
             s1_idx=8,
             s2_idx=9,
             targ_idx=None,
@@ -336,13 +333,12 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 class MultiNLIFictionTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
         super(
             MultiNLIFictionTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="fiction",
             name="mnli-fiction")
 
@@ -350,21 +346,20 @@ class MultiNLIFictionTask(MultiNLISingleGenreTask):
 class MultiNLISlateTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
-        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name="mnli-slate")
+        super(MultiNLISlateTask, self).__init__(path, genre="slate", name="mnli-slate")
 
 
 class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
         super(
             MultiNLIGovernmentTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="government",
             name="mnli-government")
 
@@ -372,13 +367,12 @@ class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
 class MultiNLITelephoneTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
         super(
             MultiNLITelephoneTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="telephone",
             name="mnli-telephone")
 
@@ -386,13 +380,12 @@ class MultiNLITelephoneTask(MultiNLISingleGenreTask):
 class MultiNLITravelTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
         super(
             MultiNLITravelTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="travel",
             name="mnli-travel")
 
@@ -400,23 +393,23 @@ class MultiNLITravelTask(MultiNLISingleGenreTask):
 class MRPCTask(PairClassificationTask):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 
-    def __init__(self, path, max_seq_len, name="mrpc"):
+    def __init__(self, path, name="mrpc"):
         ''' '''
         super(MRPCTask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Process the dataset located at path.  '''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"),
                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"),
                             s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=3, s2_idx=4, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -434,10 +427,10 @@ class MRPCTask(PairClassificationTask):
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
-    def __init__(self, path, max_seq_len, name="sts_benchmark"):
+    def __init__(self, path, name="sts_benchmark"):
         ''' '''
         super(STSBTask, self).__init__(name)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer1 = Average()
@@ -445,13 +438,13 @@ class STSBTask(PairRegressionTask):
         self.val_metric = "%s_corr" % self.name
         self.val_metric_decreases = False
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Load data '''
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), skip_rows=1,
                            s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), skip_rows=1,
                             s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -468,21 +461,21 @@ class STSBTask(PairRegressionTask):
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
 
-    def __init__(self, path, max_seq_len, name="snli"):
+    def __init__(self, path, name="snli"):
         ''' Do stuff '''
         super(SNLITask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Process the dataset located at path.  '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), targ_map=targ_map,
                            s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), targ_map=targ_map,
                             s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -493,31 +486,31 @@ class SNLITask(PairClassificationTask):
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, name="mnli"):
         '''MNLI'''
         super(MultiNLITask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'),
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
+        val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'),
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'),
                                        s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
 
-        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
+        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'),
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
+        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'),
                                       s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'), max_seq_len,
+        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'),
                                       s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
@@ -532,21 +525,21 @@ class MultiNLITask(PairClassificationTask):
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
-    def __init__(self, path, max_seq_len, name="rte"):
+    def __init__(self, path, name="rte"):
         ''' '''
         super(RTETask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Process the datasets located at path. '''
         targ_map = {"not_entailment": 0, "entailment": 1}
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, targ_map=targ_map,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), targ_map=targ_map,
                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, targ_map=targ_map,
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), targ_map=targ_map,
                             s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
 
         self.train_data_text = tr_data
@@ -558,20 +551,20 @@ class RTETask(PairClassificationTask):
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
-    def __init__(self, path, max_seq_len, name="squad"):
+    def __init__(self, path, name="squad"):
         super(QNLITask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''Load the data'''
         targ_map = {'not_entailment': 0, 'entailment': 1}
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), targ_map=targ_map,
                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), targ_map=targ_map,
                             s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -582,20 +575,20 @@ class QNLITask(PairClassificationTask):
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
 
-    def __init__(self, path, max_seq_len, name="winograd"):
+    def __init__(self, path, name="winograd"):
         ''' '''
         super(WNLITask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         '''Load the data'''
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "train.tsv"),
                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"),
                             s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'test.tsv'),
                            s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -606,21 +599,21 @@ class WNLITask(PairClassificationTask):
 class PDTBTask(PairClassificationTask):
     ''' Task class for discourse relation prediction using PDTB'''
 
-    def __init__(self, path, max_seq_len, name="pdtb"):
+    def __init__(self, path, name="pdtb"):
         ''' Load data and initialize'''
         super(PDTBTask, self).__init__(name, 99)
-        self.load_data(path, max_seq_len)
+        self.load_data(path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path):
         ''' Process the dataset located at path.  '''
 
-        tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"),
                            s1_idx=4, s2_idx=5, targ_idx=3)
-        val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"),
                             s1_idx=4, s2_idx=5, targ_idx=3)
-        te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"), max_seq_len,
+        te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"),
                            s1_idx=4, s2_idx=5, targ_idx=3)
         self.train_data_text = tr_data
         self.val_data_text = val_data
