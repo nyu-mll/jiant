@@ -607,3 +607,32 @@ class PDTBTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
+
+class WeakGroundedTask(PairClassificationTask):
+    ''' Task class for Weakly Grounded Sentences i.e., training on pairs of captions for the same image '''
+
+    def __init__(self, path, max_seq_len, name="snli"):
+        ''' Do stuff '''
+        super(WeakGroundedTask, self).__init__(name, 3)
+
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+        ''' positive = captions of the same image, negative = captions of different images '''
+        targ_map = {'negative': 0, 'positive': 1}
+    
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        # we don't have predefined test captions because this the ImageNet task, will probably add sampled sentences
+        te_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MSCOCO data.")
