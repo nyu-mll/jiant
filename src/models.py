@@ -293,6 +293,8 @@ class MultiTaskModel(nn.Module):
             out = self._pair_classification_forward(batch, task)
         elif isinstance(task, PairRegressionTask):
             out = self._pair_regression_forward(batch, task)
+        elif isinstance(task, LanguageModelingTask):
+            out = self._lm_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task)
         elif isinstance(task, RankingTask):
@@ -401,23 +403,22 @@ class MultiTaskModel(nn.Module):
     def _lm_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        b_size, seq_len = batch['inp_fwd']['words'].size()
-        sent_fwd, mask_fwd = self.sent_encoder(batch['inp_fwd'])
-        sent_bwd, mask_bwd = self.sent_encoder(batch['trg_fwd'])
-        sent_fwd,  _ = sent_fwd.split(int(sent_fwd.size(-1) / 2), dim=-1)
-        _, sent_bwd = sent_bwd.split(int(sent_bwd.size(-1) / 2), dim=-1)
-        sent_fwd = sent_fwd.masked_fill(1 - mask_fwd.byte(), 0) # avoid NaNs
-        sent_bwd = sent_bwd.masked_fill(1 - mask_bwd.byte(), 0) # avoid NaNs
+        b_size, seq_len = batch['input']['words'].size()
+        seq_len -= 1
+        sent, mask = self.sent_encoder(batch['input'])
+        sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
+        fwd, bwd = sent.split(int(sent.size(-1) / 2), dim=-1)
 
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        logits_fwd = hid2voc(sent_fwd).view(b_size * seq_len, -1)
-        logits_bwd = hid2voc(sent_bwd).view(b_size * seq_len, -1)
+        logits_fwd = hid2voc(fwd[:,:-1,:]).view(b_size * seq_len, -1)
+        logits_bwd = hid2voc(bwd[:,1:,:]).view(b_size * seq_len, -1)
         logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
         out['logits'] = logits
+        pdb.set_trace()
 
-        if 'targs' in batch:
+        if 'trg_fwd' in batch:
             targs = torch.cat([batch['trg_fwd']['words'].view(-1),
-                               batch['inp_fwd']['words'].view(-1)])
+                               batch['trg_bwd']['words'].view(-1)])
             pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
             out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
             task.scorer1(out['loss'].item())

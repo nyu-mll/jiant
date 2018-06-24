@@ -20,16 +20,26 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 TOKENIZER = MosesTokenizer()
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
-def process_sentence(sent):
+def process_sentence(sent, max_seq_len):
     '''process a sentence '''
-    return TOKENIZER.tokenize(sent)
-    #return nltk.word_tokenize(sent)
+    max_seq_len -= 2
+    assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    if isinstance(sent, str):
+        return [SOS_TOK] + TOKENIZER.tokenize(sent)[:max_seq_len] + [EOS_TOK]
+    elif isinstance(sent, list):
+        assert isinstance(sent[0], str), "Invalid sentence found!"
+        return [SOS_TOK] + sent[:max_seq_len] + [EOS_TOK]
 
+
+def truncate(sents, max_seq_len, sos, eos):
+    return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
 def load_tsv(
         data_file,
+        max_seq_len,
         s1_idx=0,
         s2_idx=1,
         targ_idx=2,
@@ -52,7 +62,7 @@ def load_tsv(
                 row = row.strip().split(delimiter)
                 if filter_idx and row[filter_idx] != filter_value:
                     continue
-                sent1 = process_sentence(row[s1_idx])
+                sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
 
@@ -67,7 +77,7 @@ def load_tsv(
                     targ = 0
 
                 if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx])
+                    sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)

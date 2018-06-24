@@ -52,6 +52,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+SPECIALS = [SOS_TOK, EOS_TOK]
 
 
 def build_tasks(args):
@@ -64,8 +65,9 @@ def build_tasks(args):
 
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
-        get_tasks(args.train_tasks, args.eval_tasks, args.data_dir, bool(not args.reload_tasks))
-    truncate_text(tasks, args.max_seq_len)
+        get_tasks(args.train_tasks, args.eval_tasks, args.data_dir,
+                  args.max_seq_len, bool(not args.reload_tasks))
+
 
     # 2 + 3) build / load vocab and word vectors
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -106,6 +108,7 @@ def build_tasks(args):
             pkl.dump(word_embs, open(emb_file, 'wb'))
             log.info("\tSaved embeddings to %s", emb_file)
 
+
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
     if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
@@ -139,7 +142,7 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def get_tasks(train_tasks, eval_tasks, path='', load=1):
+def get_tasks(train_tasks, eval_tasks, path, max_seq_len, load=1):
     ''' Load tasks '''
     def parse_tasks(task_list):
         '''parse string of tasks'''
@@ -165,19 +168,12 @@ def get_tasks(train_tasks, eval_tasks, path='', load=1):
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task = NAME2INFO[name][0](task_path, name)
+            task = NAME2INFO[name][0](task_path, max_seq_len, name)
             pkl.dump(task, open(pkl_path, 'wb'))
+        #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
-
-
-def truncate_text(tasks, max_seq_len):
-    ''' Truncate all tasks' text to be max_seq_len '''
-    for task in tasks:
-        task.sentences = [[SOS_TOK] + s[:max_seq_len-2] + [EOS_TOK] for s in \
-                            task.sentences]
-    return
 
 
 def get_words(tasks):
@@ -206,6 +202,8 @@ def get_words(tasks):
 def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
+    for special in SPECIALS:
+        vocab.add_token_to_namespace(special, 'tokens')
 
     words_by_freq = [(word, freq) for word, freq in word2freq.items()]
     words_by_freq.sort(key=lambda x: x[1], reverse=True)
@@ -348,12 +346,9 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
-    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    rev_split = [sent[::-1] for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in rev_split]
-    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in rev_split]
-    instances = [Instance({"inp_fwd": inp_f, "trg_fwd": trg_f,
-        "inp_bwd": inp_b, "trg_bwd": trg_b}) for (inp_f, trg_f, inp_b, trg_b) in \
-                zip(inp_fwd, trg_fwd, inp_bwd, trg_bwd)]
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split]
+    instances = [Instance({"input": inp, "trg_fwd": trg_f, "trg_bwd": trg_b}) for \
+                  (trg_f, trg_b, inp) in zip(trg_fwd, trg_bwd, inputs)]
     return instances
