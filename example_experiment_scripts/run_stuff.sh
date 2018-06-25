@@ -37,7 +37,7 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 FORCE_LOAD_EPOCH=-1
 
-train_tasks='wiki'
+train_tasks='sst'
 eval_tasks='none'
 max_seq_len=150
 
@@ -51,6 +51,7 @@ deep_elmo=0
 COVE=0
 
 sent_enc="rnn"
+bidirectional=1
 CLASSIFIER=mlp
 d_hid_cls=512
 d_hid=512
@@ -72,7 +73,6 @@ BATCH_SIZE=64
 BPP_BASE=1
 VAL_INTERVAL=100
 MAX_VALS=100
-TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 

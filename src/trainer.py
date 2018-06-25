@@ -21,7 +21,7 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 
 
-def build_trainer(args, model):
+def build_trainer(args, model, max_vals):
     '''Build a trainer'''
     iterator = BasicIterator(args.batch_size)
     # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
@@ -50,7 +50,7 @@ def build_trainer(args, model):
 
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
-                           'max_vals': args.max_vals,
+                           'max_vals': max_vals,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
     trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                                    copy.deepcopy(train_params))

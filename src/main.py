@@ -89,12 +89,13 @@ def main(arguments):
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
-                        choices=['bow', 'rnn', 'transformer'])
+                        choices=['bow', 'rnn', 'transformer', 'transformer-d'])
     parser.add_argument('--sent_combine_method', help='how to aggregate hidden states of sent rnn',
                         type=str, default='max', choices=['max', 'mean', 'final'])
 
     parser.add_argument('--shared_pair_enc', help='1 to share pair encoder for pair sentence tasks',
                         type=int, default=1)
+    parser.add_argument('--bidirectional', help='1 if bidirectional RNN', type=int, default=1)
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
                         default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
@@ -141,7 +142,10 @@ def main(arguments):
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
 
     # Evaluation options
-    parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=1)
+    parser.add_argument('--eval_val_interval', help='val interval for eval task', type=int, default=1000)
+    parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
+                        type=int, default=100)
+    parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)
 
     args = parser.parse_args(arguments)
 
@@ -178,7 +182,8 @@ def main(arguments):
     # Train on train tasks #
     if train_tasks and args.should_train:
         log.info("Training...")
-        trainer, _, opt_params, schd_params = build_trainer(args, model)
+        trainer, _, opt_params, schd_params = build_trainer(args, model,
+                                                            args.max_vals)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
         best_epochs = trainer.train(train_tasks, stop_metric,
@@ -213,14 +218,13 @@ def main(arguments):
     for task in eval_tasks:
         pred_module = getattr(model, "%s_mdl" % task.name)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-        trainer, _, opt_params, schd_params = build_trainer(args, model)
-        pdb.set_trace()
+        trainer, _, opt_params, schd_params = build_trainer(args, model,
+                                                            args.eval_max_vals)
         best_epoch = trainer.train([task], task.val_metric,
-                                   args.val_interval, args.bpp_base,
+                                   args.eval_val_interval, 1,
                                    args.weighting_method, args.scaling_method,
                                    to_train, opt_params, schd_params,
                                    args.shared_optimizer, args.load_model)
-        pdb.set_trace()
         best_epoch = best_epoch[task.name]
         layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
         load_model_state(model, layer_path, args.cuda)
