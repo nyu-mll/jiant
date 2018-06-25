@@ -145,9 +145,9 @@ class WikiTextLMTask(LanguageModelingTask):
         self.sentences = self.train_data_text + self.val_data_text
 
     def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train-small.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid-small.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test-small.txt"), max_seq_len)
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -162,6 +162,24 @@ class WikiTextLMTask(LanguageModelingTask):
                     continue
                 data.append(['<SOS>'] + toks + ['<EOS>'])
         return data
+
+
+class WikiText2LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 2'''
+
+    def __init__(self, path, max_seq_len, name="wiki2"):
+        super().__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text + self.val_data_text
+
+
+class WikiText103LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 103'''
+
+    def __init__(self, path, max_seq_len, name="wiki103"):
+        super().__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text + self.val_data_text
 
 
 class SSTTask(SingleClassificationTask):

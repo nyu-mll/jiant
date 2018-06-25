@@ -39,9 +39,9 @@ FORCE_LOAD_EPOCH=-1
 
 train_tasks='wiki'
 eval_tasks='none'
-max_seq_len=100
+max_seq_len=150
 
-VOCAB_SIZE=100000
+VOCAB_SIZE=50000
 word_embs=fastText
 char_embs=0
 fastText=0
@@ -61,7 +61,7 @@ n_heads=1
 
 OPTIMIZER="adam"
 LR=.001
-min_lr=1e-5
+min_lr=1e-6
 dropout=.2
 LR_DECAY=.5
 patience=5
