@@ -28,6 +28,7 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     SequenceGenerationTask, LanguageModelingTask
 from modules import RNNEncoder, BoWSentEncoder, \
     AttnPairEncoder, SimplePairEncoder
+from utils import combine_hidden_states
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -197,7 +198,7 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
 
     def build_pair_encoder():
         if args.pair_enc == 'simple':
-            pair_encoder = SimplePairEncoder(vocab)
+            pair_encoder = SimplePairEncoder(vocab, args.sent_combine_method)
             d_inp_classifier = 4 * d_inp
         elif args.pair_enc == 'attn':
             d_inp_model = 2 * d_inp
@@ -206,6 +207,7 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
                 Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
                         'num_layers': 1, 'bidirectional': True}))
             pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
+                                           args.sent_combine_method,
                                            modeling_layer, dropout=args.dropout)
             d_inp_classifier = 4 * d_hid_model
         else:
@@ -310,16 +312,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        if self.combine_method == 'max':
-            sent_emb = sent_embs.max(dim=1)[0]
-        elif self.combine_method == 'mean':
-            sent_emb = sent_embs.masked_fill(1 - sent_mask.byte(), 0).sum(dim=1)
-            n_steps = sent_mask.sum(dim=1)
-            sent_emb /= n_steps
-        elif self.combine_method == 'final':
-            # TODO(Alex): take an index select? or does hid state carry through?
-            #idxs = sent_mask.sum(dim=1)
-            sent_emb = sent_embs[:,-1,:]
+        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
