@@ -401,6 +401,7 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch['input']['words'].size()
         seq_len -= 1
 
+        ''' # single direction code
         sent, mask = self.sent_encoder(batch['input'])
         sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
@@ -422,7 +423,6 @@ class MultiTaskModel(nn.Module):
         trg_fwd = batch['targs'].view(-1)
         trg_bwd = batch['targs_b'].view(-1)
         targs = torch.cat([trg_fwd, trg_bwd])
-        ''' # single direction code
 
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)

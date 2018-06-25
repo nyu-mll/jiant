@@ -68,8 +68,9 @@ def build_tasks(args):
     if not os.path.isdir(prepreproc_dir):
         os.mkdir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
-        get_tasks(args.train_tasks, args.eval_tasks, args.data_dir,
-                  args.max_seq_len, bool(not args.reload_tasks))
+        get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
+                  path=args.data_dir, scratch_path=args.exp_dir,
+                  load_pkl=bool(not args.reload_tasks))
 
     # 2 + 3) build / load vocab and word vectors
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -144,7 +145,8 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def get_tasks(train_tasks, eval_tasks, path, max_seq_len, load=1):
+def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
+              scratch_path=None, load_pkl=1):
     ''' Load tasks '''
     def parse_tasks(task_list):
         '''parse string of tasks'''
