@@ -400,29 +400,26 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['input']['words'].size()
         seq_len -= 1
-
-        ''' # single direction code
-        sent, mask = self.sent_encoder(batch['input'])
+        sent_encoder = self.sent_encoder
+        sent, mask = sent_encoder(batch['input'])
         sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
-        hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
-        out['logits'] = logits
-        targs = batch['targs']['words'].view(-1)
 
-        ''' # bidirectional code
-        sent, mask = self.sent_encoder(batch['input'])
-        sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
-        split = int(self.sent_encoder.output_dim / 2)
-        fwd, bwd = sent[:, :, :split], sent[:, :, split:]
-
-        hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        logits_fwd = hid2voc(fwd[:,:-1,:]).view(b_size * seq_len, -1)
-        logits_bwd = hid2voc(bwd[:,1:,:]).view(b_size * seq_len, -1)
-        logits = torch.cat([logits_fwd, logits_bwd], dim=0)
-        out['logits'] = logits
-        trg_fwd = batch['targs'].view(-1)
-        trg_bwd = batch['targs_b'].view(-1)
-        targs = torch.cat([trg_fwd, trg_bwd])
+        if sent_encoder._phrase_layer.is_bidirectional():
+            hid2voc = getattr(self, "%s_hid2voc" % task.name)
+            logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
+            out['logits'] = logits
+            targs = batch['targs']['words'].view(-1)
+        else:
+            split = int(self.sent_encoder.output_dim / 2)
+            fwd, bwd = sent[:, :, :split], sent[:, :, split:]
+            hid2voc = getattr(self, "%s_hid2voc" % task.name)
+            logits_fwd = hid2voc(fwd[:, :-1, :]).view(b_size * seq_len, -1)
+            logits_bwd = hid2voc(bwd[:, 1:, :]).view(b_size * seq_len, -1)
+            logits = torch.cat([logits_fwd, logits_bwd], dim=0)
+            out['logits'] = logits
+            trg_fwd = batch['targs']['words'].view(-1)
+            trg_bwd = batch['trg_bwd']['words'].view(-1)
+            targs = torch.cat([trg_fwd, trg_bwd])
 
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
