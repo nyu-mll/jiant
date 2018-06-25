@@ -43,13 +43,13 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 If you are using the experiment scripts, you should also put a file ``user_config.sh`` in the top level directory containing paths specific to your machine.
 
 ```
-python main.py --data_dir $DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
+python main.py --data_dir $JIANT_DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
 ```
 
 To use the shell script, run
 
 ```
-./run_stuff.sh -d $DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
+./run_stuff.sh -d $JIANT_DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
 ```
 
 See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.
@@ -92,7 +92,7 @@ NB: "epoch" is generally used to refer to the amount of data between validation 
 ## Adding New Tasks
 
 To add new tasks, you should:
-1. Add your data in a subfolder in whatever folder contains all your data ``$DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
+1. Add your data in a subfolder in whatever folder contains all your data ``$JIANT_DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
 
 2. Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).

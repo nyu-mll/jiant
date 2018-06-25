@@ -64,10 +64,12 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
+    prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
+    if not os.path.isdir(prepreproc_dir):
+        os.mkdir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.data_dir,
                   args.max_seq_len, bool(not args.reload_tasks))
-
 
     # 2 + 3) build / load vocab and word vectors
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -147,7 +149,7 @@ def get_tasks(train_tasks, eval_tasks, path, max_seq_len, load=1):
     def parse_tasks(task_list):
         '''parse string of tasks'''
         if task_list == 'all':
-            tasks = [task for task in NAME2INFO]
+            tasks = sorted(NAME2INFO.keys())
         elif task_list == 'none':
             tasks = []
         else:
@@ -158,17 +160,24 @@ def get_tasks(train_tasks, eval_tasks, path, max_seq_len, load=1):
     eval_task_names = parse_tasks(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
 
+    assert path is not None
+    scratch_path = (scratch_path or path)
+    log.info("Writing pre-preprocessed tasks to %s", scratch_path)
+
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        task_path = os.path.join(path, NAME2INFO[name][1])
-        pkl_path = os.path.join(task_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and load:
+        task_src_path = os.path.join(path, NAME2INFO[name][1])
+        task_scratch_path = os.path.join(scratch_path, NAME2INFO[name][1])
+        pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
+        if os.path.isfile(pkl_path) and load_pkl:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task = NAME2INFO[name][0](task_path, max_seq_len, name)
+            task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
+            if not os.path.isdir(task_scratch_path):
+                os.mkdir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
