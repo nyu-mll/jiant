@@ -8,15 +8,18 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-# Defaults. Don't overwrite here; see below for ../user_config.sh
-FASTTEXT_EMBS_FILE=.
-FASTTEXT_MODEL_FILE=.
-WORD_EMBS_FILE=.
+# Defaults if not already set.
+FASTTEXT_EMBS_FILE="${FASTTEXT_EMBS_FILE:-'.'}"
+FASTTEXT_MODEL_FILE="${FASTTEXT_MODEL_FILE:-'.'}"
+WORD_EMBS_FILE="${WORD_EMBS_FILE:-'.'}"
 
 # machine-specific paths
-# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# Contains JIANT_PROJECT_PREFIX, JIANT_DATA_DIR, WORD_EMBS_FILE and optionally
 # FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
-source ../user_config.sh
+if [ -e ../user_config.sh ]; then
+  echo "Loading environment from ../user_config.sh"
+  source ../user_config.sh
+fi
 
 EXP_NAME="debug"
 RUN_NAME="debug"
