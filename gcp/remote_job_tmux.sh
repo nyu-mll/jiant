@@ -11,6 +11,8 @@
 # key. To re-attach, you can ssh to the remote host and run:
 #   tmux attach -t <job_name>
 # Or run this script with the command 'A'
+# 
+# To kill a target job and its associated tmux session, run with the command 'K'.
 
 # Usage: ./remote_job_tmux.sh <instance_name> <job_name> <command> [<zone>]
 INSTANCE_NAME="${1}"
@@ -31,6 +33,8 @@ fi
 
 if [[ $COMMAND == "A" || $COMMAND == "a" ]]; then
   FULL_COMMAND="tmux attach -t ${JOB_NAME}"
+elif [[ $COMMAND == "K" || $COMMAND == "k" ]]; then
+  FULL_COMMAND="tmux kill-session -t ${JOB_NAME}"
 else
   FULL_COMMAND="tmux new -s ${JOB_NAME} -d; "
   FULL_COMMAND+="tmux send '$COMMAND' Enter; "
