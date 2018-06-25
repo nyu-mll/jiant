@@ -1,27 +1,33 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F:A:' flag; do
+while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F:fA:' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
         n) EXP_NAME="${OPTARG}" ;;
         r) RUN_NAME="${OPTARG}" ;;
+        S) SEED="${OPTARG}" ;;
+        I) GPUID="${OPTARG}" ;;
+
         w) word_embs="${OPTARG}" ;;
         C) char_embs=1 ;;
+        f) fastText=1 ;;
 	    F) FASTTEXT_MODEL_FILE="${OPTARG}" ;;
-        S) SEED="${OPTARG}" ;;
+        e) ELMO=1 ;;
+        c) COVE=1 ;;
+
         q) no_tqdm=1 ;;
         t) SHOULD_TRAIN=0 ;;
         k) RELOAD_TASKS=1 ;;
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
         m) LOAD_MODEL=1 ;;
+
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
-        O) TASK_ORDERING="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
         A) n_heads="${OPTARG}" ;;
         l) LR="${OPTARG}" ;;
@@ -32,12 +38,8 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:O:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W
         b) BATCH_SIZE="${OPTARG}" ;;
         s) sent_enc="${OPTARG}" ;;
         #E) PAIR_ENC="${OPTARG}" ;;
-        G) glove=0 ;;
-        e) ELMO=1 ;;
-        c) COVE=1 ;;
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
-        I) GPUID="${OPTARG}" ;;
         N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;

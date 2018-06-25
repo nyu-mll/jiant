@@ -136,7 +136,6 @@ To use ELMo, set ``--elmo`` to 1. To use ELMo without GloVe, additionally set ``
 
 Many of our models make use of [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), in particular the 300-dimensional, 840B version.
 To use GloVe vectors, download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
-To learn embeddings from scratch, set ``--glove`` to 0.
 
 ### CoVe
 

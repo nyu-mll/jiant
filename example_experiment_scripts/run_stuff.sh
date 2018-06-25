@@ -70,7 +70,6 @@ BATCH_SIZE=64
 BPP_BASE=1
 VAL_INTERVAL=100
 MAX_VALS=100
-TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
