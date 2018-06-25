@@ -47,7 +47,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
     elif args.sent_enc == 'rnn':
         sent_rnn = s2s_e.by_name('lstm').from_params(
             Params({'input_size': d_emb, 'hidden_size': args.d_hid,
-                    'num_layers': args.n_layers_enc, 'bidirectional': True}))
+                    'num_layers': args.n_layers_enc,
+                    'bidirectional': True}))
         sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
                                   sent_rnn, dropout=args.dropout,
                                   cove_layer=cove_emb, elmo_layer=elmo)
@@ -405,23 +406,33 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['input']['words'].size()
         seq_len -= 1
+
+        ''' # single direction code
         sent, mask = self.sent_encoder(batch['input'])
         sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
-        fwd, bwd = sent.split(int(sent.size(-1) / 2), dim=-1)
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
+        out['logits'] = logits
+        targs = batch['targs']['words'].view(-1)
+
+        ''' # bidirectional code
+        sent, mask = self.sent_encoder(batch['input'])
+        sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
+        split = int(self.sent_encoder.output_dim / 2)
+        fwd, bwd = sent[:, :, :split], sent[:, :, split:]
 
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         logits_fwd = hid2voc(fwd[:,:-1,:]).view(b_size * seq_len, -1)
         logits_bwd = hid2voc(bwd[:,1:,:]).view(b_size * seq_len, -1)
-        logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
+        logits = torch.cat([logits_fwd, logits_bwd], dim=0)
         out['logits'] = logits
-        pdb.set_trace()
+        trg_fwd = batch['targs'].view(-1)
+        trg_bwd = batch['targs_b'].view(-1)
+        targs = torch.cat([trg_fwd, trg_bwd])
 
-        if 'trg_fwd' in batch:
-            targs = torch.cat([batch['trg_fwd']['words'].view(-1),
-                               batch['trg_bwd']['words'].view(-1)])
-            pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-            out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
-            task.scorer1(out['loss'].item())
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
         return out
 
     def _ranking_forward(self, batch, task):

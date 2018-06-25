@@ -346,9 +346,9 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
-    trg_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
     inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split]
-    instances = [Instance({"input": inp, "trg_fwd": trg_f, "trg_bwd": trg_b}) for \
-                  (trg_f, trg_b, inp) in zip(trg_fwd, trg_bwd, inputs)]
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+    instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b}) \
+                 for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     return instances
