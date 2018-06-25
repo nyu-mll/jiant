@@ -60,12 +60,14 @@ See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script wa
 This is a brief selection of some of the options available to control currently. Note that the commandline shortcuts are selected with no real rhyme or reason and are somewhat subject to change.
 
 Embedding options:
+
     - ``--word_embs`` / ``-w $WORD_EMBS``: use ``$WORD_EMBS`` for word embeddings. If ``$WORD_EMBS = glove`` or ``$WORD_EMBS = fastText``, we'll read from ``WORD_EMBS_FILE``. If ``$WORD_EMBS = none``, we won't use word embeddings.
     - ``--fastText 1``: if ``fastText = 1`` and ``$FASTTEXT_MODEL_FILE`` is set, we'll use a fastText model file to get word embeddings, which has the benefit of having no OOV.
     - ``--char_embs`` / ``-C``: use character emeddings, learned from scratch
     - ``--elmo`` / ``-e``: use ELMo embeddings, probably makes learning characted embeddings from scratch redundant
 
 Model options:
+
     - ``--n_layers_enc`` / ``-L $N_LAYERS_ENC``: number of encoder layers
     - ``--d_hid`` / ``-h $D_HID``: encoder hidden state
 
@@ -79,6 +81,7 @@ The learning rate is scheduled to decay by ``--lr_decay_factor`` (default: .5) w
 If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``/``-W``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``--scaling_method``/``-s`` if you want to weight tasks with different amounts of training data equally throughout training.
 
 Other training options include:
+
     - ``--optimizer`` / ``-o $OPTIMIZER``: use ``$OPTIMIZER`` usually just Adam
     - ``--lr`` / ``-l $LR``: set initial learning rate to ``$LR``
     - ``--batch_size`` / ``-b $BSIZE``: use batch size ``BSIZE``, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
