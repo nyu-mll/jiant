@@ -231,10 +231,9 @@ class SamplingMultiTaskTrainer:
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
             else:
-                log.info("Not loading. Deleting any existing checkpoints.")
+                log.info("Not loading.")
                 checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
-                for f in glob.glob(checkpoint_pattern):
-                    os.remove(f)
+                assert len(glob.glob(checkpoint_pattern)) == 0, "There are existing checkpoints here which will be overwritten. Use -m or LOAD_MODEL to load the checkpoints instead. If you don't want them, delete them or change your experimnent name."
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
