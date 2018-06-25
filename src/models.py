@@ -26,7 +26,7 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask
-from modules import RNNEncoder, BoWSentEncoder, \
+from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder
 from utils import combine_hidden_states
 
@@ -50,9 +50,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
             Params({'input_size': d_emb, 'hidden_size': args.d_hid,
                     'num_layers': args.n_layers_enc,
                     'bidirectional': args.bidirectional}))
-        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
-                                  sent_rnn, dropout=args.dropout,
-                                  cove_layer=cove_emb, elmo_layer=elmo)
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       sent_rnn, dropout=args.dropout,
+                                       cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = (1 + args.bidirectional) * args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
@@ -61,9 +61,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                   feedforward_hidden_dim=args.d_hid,
                                                   num_layers=args.n_layers_enc,
                                                   num_attention_heads=args.n_heads)
-        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
-                                  transformer, dropout=args.dropout,
-                                  cove_layer=cove_emb, elmo_layer=elmo)
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       transformer, dropout=args.dropout,
+                                       cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer-d':
         transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
@@ -72,9 +72,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                   feedforward_hidden_dim=args.d_hid,
                                                   num_layers=args.n_layers_enc,
                                                   num_attention_heads=args.n_heads)
-        sent_encoder = RNNEncoder(vocab, embedder, args.n_layers_highway,
-                                  transformer, dropout=args.dropout,
-                                  cove_layer=cove_emb, elmo_layer=elmo)
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       transformer, dropout=args.dropout,
+                                       cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
 
     # Build model and classifiers
@@ -273,7 +273,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
         Params({'input_size': embedder.get_output_dim(),
                 'hidden_size': args.d_hid_dec,
                 'num_layers': args.n_layers_dec, 'bidirectional': False}))
-    decoder = RNNEncoder(vocab, embedder, 0, rnn)
+    decoder = SentenceEncoder(vocab, embedder, 0, rnn)
     hid2voc = nn.Linear(args.d_hid_dec, args.max_word_v_size)
     return decoder, hid2voc
 
@@ -415,7 +415,7 @@ class MultiTaskModel(nn.Module):
         sent, mask = sent_encoder(batch['input'])
         sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
 
-        if sent_encoder._phrase_layer.is_bidirectional():
+        if not sent_encoder._phrase_layer.is_bidirectional():
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
             logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
             out['logits'] = logits

@@ -32,13 +32,13 @@ from allennlp.nn.util import add_positional_features
 from utils import combine_hidden_states
 
 
-class RNNEncoder(Model):
+class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
-        super(RNNEncoder, self).__init__(vocab)
+        super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
             self._text_field_embedder = lambda x: x
@@ -357,7 +357,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
         self._input_dim = input_dim
         self._output_dim = self._attention_layers[-1].get_output_dim()
         self._output_layer_norm = LayerNorm(self._output_dim)
-        
+
     # @overrides
     def get_input_dim(self) -> int:
         return self._input_dim
