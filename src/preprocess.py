@@ -48,7 +48,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wnli': (WNLITask, 'WNLI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'pdtb': (PDTBTask, 'PDTB/')
+             'pdtb': (PDTBTask, 'PDTB/'),
+	     'dissent': (DisSentTask, 'DisSent/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
