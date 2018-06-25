@@ -67,11 +67,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer-d':
         transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
-                                                  hidden_dim=args.d_hid,
-                                                  projection_dim=args.d_hid,
-                                                  feedforward_hidden_dim=args.d_hid,
-                                                  num_layers=args.n_layers_enc,
-                                                  num_attention_heads=args.n_heads)
+                                                        hidden_dim=args.d_hid,
+                                                        projection_dim=args.d_hid,
+                                                        feedforward_hidden_dim=args.d_hid,
+                                                        num_layers=args.n_layers_enc,
+                                                        num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        cove_layer=cove_emb, elmo_layer=elmo)
@@ -171,7 +171,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, LanguageModelingTask):
             d_inp = d_sent / 2 if args.bidirectional else d_sent
-            hid2voc = build_lm(task, d_inp, args) # separate fwd + bwd
+            hid2voc = build_lm(task, d_inp, args)  # separate fwd + bwd
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -194,7 +194,7 @@ def build_classifier(task, d_inp, args):
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, task.n_classes))
-    elif cls_type == 'fancy_mlp': # what they did in InferSent
+    elif cls_type == 'fancy_mlp':  # what they did in InferSent
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
@@ -252,7 +252,7 @@ def build_regressor(task, d_inp, args):
                                   nn.Linear(d_hid, 1))
     elif cls_type == 'fancy_mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(),nn.LayerNorm(d_hid),  nn.Dropout(p=dropout),
+                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                   nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
@@ -413,11 +413,11 @@ class MultiTaskModel(nn.Module):
         seq_len -= 1
         sent_encoder = self.sent_encoder
         sent, mask = sent_encoder(batch['input'])
-        sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
+        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
 
         if not sent_encoder._phrase_layer.is_bidirectional():
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
+            logits = hid2voc(sent[:, :-1, :]).view(b_size * seq_len, -1)
             out['logits'] = logits
             targs = batch['targs']['words'].view(-1)
         else:
