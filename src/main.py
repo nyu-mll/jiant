@@ -142,7 +142,11 @@ def main(arguments):
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
 
     # Evaluation options
-    parser.add_argument('--eval_val_interval', help='val interval for eval task', type=int, default=1000)
+    parser.add_argument(
+        '--eval_val_interval',
+        help='val interval for eval task',
+        type=int,
+        default=1000)
     parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
                         type=int, default=100)
     parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)

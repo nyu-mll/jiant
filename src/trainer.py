@@ -233,7 +233,10 @@ class SamplingMultiTaskTrainer:
             else:
                 log.info("Not loading.")
                 checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
-                assert len(glob.glob(checkpoint_pattern)) == 0, "There are existing checkpoints here which will be overwritten. Use -m or LOAD_MODEL to load the checkpoints instead. If you don't want them, delete them or change your experimnent name."
+                assert len(glob.glob(checkpoint_pattern)) == 0,
+                    "There are existing checkpoints here which will be overwritten." \
+                        "Use -m or LOAD_MODEL to load the checkpoints instead." \
+                        "If you don't want them, delete them or change your experimnent name."
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -327,8 +330,8 @@ class SamplingMultiTaskTrainer:
                     self._validate(epoch, tasks, task_infos, metric_infos, iterator, g_scheduler)
 
                 # Check stopping conditions
-                should_stop, task_infos, metric_infos = \
-                    self._check_stop(epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
+                should_stop, task_infos, metric_infos = self._check_stop(
+                    epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results
                 for name, value in all_val_metrics.items():

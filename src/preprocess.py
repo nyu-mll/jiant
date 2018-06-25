@@ -111,7 +111,6 @@ def build_tasks(args):
             pkl.dump(word_embs, open(emb_file, 'wb'))
             log.info("\tSaved embeddings to %s", emb_file)
 
-
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
     if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
@@ -360,6 +359,6 @@ def process_lm_task_split(split, indexers):
     inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split]
     trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
     trg_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b}) \
+    instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
                  for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     return instances
