@@ -21,6 +21,8 @@ fi
 
 if [[ $INSTANCE_TYPE == "cpu" || $INSTANCE_TYPE == "workstation" ]]; then
   TEMPLATE="cpu-workstation-template"
+elif [[ $INSTANCE_TYPE == "cpu-mini" ]]; then
+  TEMPLATE="cpu-workstation-template-mini"
 elif [[ $INSTANCE_TYPE == "gpu-1" ]]; then
   TEMPLATE="gpu-worker-template-1"
 elif [[ $INSTANCE_TYPE == "gpu-2" ]]; then
