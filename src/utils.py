@@ -31,12 +31,22 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 TOKENIZER = MosesTokenizer()
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
 def process_sentence(sent, max_seq_len):
-    '''process a sentence using NLTK toolkit and adding SOS+EOS tokens'''
-    return TOKENIZER.tokenize(sent)[:max_seq_len]  # nltk.word_tokenize(sent)[:max_seq_len]
+    '''process a sentence '''
+    max_seq_len -= 2
+    assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    if isinstance(sent, str):
+        return [SOS_TOK] + TOKENIZER.tokenize(sent)[:max_seq_len] + [EOS_TOK]
+    elif isinstance(sent, list):
+        assert isinstance(sent[0], str), "Invalid sentence found!"
+        return [SOS_TOK] + sent[:max_seq_len] + [EOS_TOK]
 
+
+def truncate(sents, max_seq_len, sos, eos):
+    return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
 def load_tsv(
         data_file,
@@ -109,6 +119,20 @@ def split_data(data, ratio, shuffle=1):
         splits[0].append(col[:split_pt])
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
+
+
+def combine_hidden_states(sent, mask, method):
+    if method == 'max':
+        sent = sent.masked_fill(1 - mask.byte().data, -float('inf'))
+        sent = sent.max(dim=1)[0]
+    elif method == 'mean':
+        sent = sent.masked_fill(1 - mask.byte().data, 0).sum(dim=1)
+        n_steps = mask.sum(dim=1)
+        sent /= n_steps
+    elif method == 'final':
+        idxs = mask.expand_as(sent).sum(dim=1, keepdim=True).long() - 1
+        sent = sent.gather(dim=1, index=idxs)
+    return sent
 
 
 def get_lengths_from_binary_sequence_mask(mask):

@@ -6,12 +6,13 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import os
+import math
 import logging as log
-import ipdb as pdb
+# import ipdb as pdb
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
-from utils import load_tsv
+from utils import load_tsv, process_sentence, truncate
 
 
 class Task():
@@ -19,9 +20,8 @@ class Task():
 
     Methods and attributes:
         - load_data: load dataset from a path and create splits
-        - yield dataset for training
-        - dataset size
-        - validate and test
+        - truncate: truncate data to be at most some length
+        - get_metrics:
 
     Outside the task:
         - process: pad and indexify data given a mapping
@@ -33,6 +33,10 @@ class Task():
 
     def load_data(self, path, max_seq_len):
         ''' Load data from path and create splits. '''
+        raise NotImplementedError
+
+    def truncate(self, max_seq_len, sos_tok, eos_tok):
+        ''' Shorten sentences to max_seq_len and add sos and eos tokens. '''
         raise NotImplementedError
 
     def get_metrics(self, reset=False):
@@ -50,6 +54,14 @@ class SingleClassificationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
+
+    def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
+        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
+                                         sos_tok, eos_tok), self.train_data_text[1]]
+        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
+                                       sos_tok, eos_tok), self.val_data_text[1]]
+        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
+                                        sos_tok, eos_tok), self.test_data_text[1]]
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -131,8 +143,8 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        nll = self.scorer1.get_metric(reset)
+        return {'perplexity': math.exp(nll)}
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -156,11 +168,25 @@ class WikiTextLMTask(LanguageModelingTask):
         data = []
         with open(path) as txt_fh:
             for row in txt_fh:
-                toks = row.strip().split()[:max_seq_len]
+                toks = row.strip().split()
                 if not toks:
                     continue
-                data.append(['<SOS>'] + toks + ['<EOS>'])
+                data.append(process_sentence(toks, max_seq_len))
         return data
+
+
+class WikiText2LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 2'''
+
+    def __init__(self, path, max_seq_len, name="wiki2"):
+        super().__init__(path, max_seq_len, name)
+
+
+class WikiText103LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 103'''
+
+    def __init__(self, path, max_seq_len, name="wiki103"):
+        super().__init__(path, max_seq_len, name)
 
 
 class SSTTask(SingleClassificationTask):
@@ -359,7 +385,6 @@ class MultiNLITelephoneTask(MultiNLISingleGenreTask):
             MultiNLITelephoneTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="telephone",
             name="mnli-telephone")
 

@@ -21,7 +21,7 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 
 
-def build_trainer(args, model):
+def build_trainer(args, model, max_vals):
     '''Build a trainer'''
     iterator = BasicIterator(args.batch_size)
     # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
@@ -50,6 +50,7 @@ def build_trainer(args, model):
 
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
+                           'max_vals': max_vals,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
     trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                                    copy.deepcopy(train_params))
@@ -164,9 +165,6 @@ class SamplingMultiTaskTrainer:
             else:
                 out_of_patience = min(metric_history[-patience:]) >= cur_score
 
-        if best_so_far and out_of_patience:
-            pdb.set_trace()
-
         return best_so_far, out_of_patience
 
     def _setup_training(self, tasks, train_params, optimizer_params, scheduler_params, iterator):
@@ -194,7 +192,8 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
-    def train(self, tasks, validation_interval, n_batches_per_pass,
+    def train(self, tasks, stop_metric,
+              validation_interval, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
               shared_optimizer=0, load_model=1):
@@ -251,7 +250,7 @@ class SamplingMultiTaskTrainer:
             min_weight = min(sample_weights)
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        log.info("Beginning training.")
+        log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
@@ -280,7 +279,7 @@ class SamplingMultiTaskTrainer:
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
-                assert not torch.isnan(loss).any(), pdb.set_trace()
+                assert not torch.isnan(loss).any()
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
@@ -330,7 +329,7 @@ class SamplingMultiTaskTrainer:
 
                 # Check stopping conditions
                 should_stop, task_infos, metric_infos = \
-                    self._check_stop(epoch, tasks, task_infos, metric_infos, g_optimizer)
+                    self._check_stop(epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results
                 for name, value in all_val_metrics.items():
@@ -345,7 +344,8 @@ class SamplingMultiTaskTrainer:
                 samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
                 if should_save:
-                    self._save_checkpoint({"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
+                    self._save_checkpoint(
+                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -404,7 +404,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches, pdb.set_trace()
+            assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
@@ -429,8 +429,10 @@ class SamplingMultiTaskTrainer:
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
+                metric_decreases = False
             else:
                 metric = task.val_metric
+                metric_decreases = task.val_metric_decreases
                 task = task.name
             if metric_infos[metric]['stopped']:
                 continue
@@ -438,7 +440,7 @@ class SamplingMultiTaskTrainer:
             metric_history = metric_infos[metric]['hist']
             metric_history.append(this_epoch_metric)
             is_best_so_far, out_of_patience = \
-                self._check_history(metric_history, this_epoch_metric)
+                self._check_history(metric_history, this_epoch_metric, metric_decreases)
             if is_best_so_far:
                 log.info("Best model found for %s.", task)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)
@@ -462,7 +464,7 @@ class SamplingMultiTaskTrainer:
 
         return all_val_metrics, should_save, task_infos, metric_infos
 
-    def _check_stop(self, epoch, tasks, task_infos, metric_infos, g_optimizer):
+    def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
         if g_optimizer is None:
             stop_tr = True
@@ -480,9 +482,7 @@ class SamplingMultiTaskTrainer:
             else:
                 stop_tr = False
 
-        # stop_val = stop_val and metric_infos['micro_avg']['stopped'] and \
-        #            metric_infos['macro_avg']['stopped']
-        stop_val = metric_infos['macro_avg']['stopped']
+        stop_val = metric_infos[stop_metric]['stopped']
 
         should_stop = False
         if stop_tr:
@@ -516,13 +516,14 @@ class SamplingMultiTaskTrainer:
             A flag which causes the model weights at the given epoch to
             be copied to a "best.th" file. The value of this flag should
             be based on some validation metric computed by your model.
+        TODO: Is there a reason this was removed?
         """
         epoch = training_state["epoch"]
         model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
 
         model_state = self._model.state_dict()
 
-        # Don't save embeddings here. 
+        # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
         keys_to_skip = []
         for key in model_state:

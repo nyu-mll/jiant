@@ -26,11 +26,12 @@ For other pretraining task data, contact the person in charge.
 ## Running
 
 To run things, use ``src/main.py`` with flags or a script like the one in ``example_experiment_scripts/demo.sh``.
-Because preprocessing is expensive (particularly for ELMo), we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
+Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
 
 - exp1 (e.g. training and evaluating on WikiText and all the GLUE tasks)
     - run1 (with some hyperparameter settings)
-    - run2 (with possibly the same hyperparameter settings)
+    - run2 (with possibly the same hyperparameter settings but a different random seed)
+    - run3 (with different hyperparameter settings)
 - exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
@@ -42,21 +43,61 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 If you are using the experiment scripts, you should also put a file ``user_config.sh`` in the top level directory containing paths specific to your machine.
 
 ```
-python main.py --data_dir $DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
+python main.py --data_dir $JIANT_DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
 ```
 
 To use the shell script, run
 
 ```
-./run_stuff.sh -d $DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
+./run_stuff.sh -d $JIANT_DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
 ```
 
 See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.
 
+
+## Model
+
+This is a brief selection of some of the options available to control currently. Note that the commandline shortcuts are selected with no real rhyme or reason and are somewhat subject to change.
+
+Embedding options:
+
+    - ``--word_embs`` / ``-w $WORD_EMBS``: use ``$WORD_EMBS`` for word embeddings. If ``$WORD_EMBS = glove`` or ``$WORD_EMBS = fastText``, we'll read from ``WORD_EMBS_FILE``. If ``$WORD_EMBS = none``, we won't use word embeddings.
+    - ``--fastText 1``: if ``fastText = 1`` and ``$FASTTEXT_MODEL_FILE`` is set, we'll use a fastText model file to get word embeddings, which has the benefit of having no OOV.
+    - ``--char_embs`` / ``-C``: use character emeddings, learned from scratch
+    - ``--elmo`` / ``-e``: use ELMo embeddings, probably makes learning characted embeddings from scratch redundant
+
+Model options:
+
+    - ``--n_layers_enc`` / ``-L $N_LAYERS_ENC``: number of encoder layers
+    - ``--d_hid`` / ``-h $D_HID``: encoder hidden state
+
+
+## Trainer
+
+The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``--bpp_base`` or `-B` of that task's training data is trained on.
+The trainer evaluates the model on the validation data after a fixed number of updates, set by (``--val_interval`` or `-V`).
+The learning rate is scheduled to decay by ``--lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``--task_patience`` (default: 1) validation checks.
+
+If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``/``-W``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``--scaling_method``/``-s`` if you want to weight tasks with different amounts of training data equally throughout training.
+
+Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``--train_tasks`` / ``-T $TRAIN_TASKS`` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``--eval_tasks`` / ``-E $EVAL_TASKS`` to specify the eval-only tasks.
+
+Other training options include:
+
+    - ``--optimizer`` / ``-o $OPTIMIZER``: use ``$OPTIMIZER`` usually just Adam
+    - ``--lr`` / ``-l $LR``: set initial learning rate to ``$LR``
+    - ``--batch_size`` / ``-b $BSIZE``: use batch size ``BSIZE``, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
+    - ``--should_train 0`` / ``-t``: skip training
+    - ``--load_model 1`` / ``-m``: start training by loading model from most recent checkpoint found in directory
+    - ``--force_load_epoch`` / ``-N $LOAD_EPOCH``: after training, force loading from ``$LOAD_EPOCH`` instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
+
+NB: "epoch" is generally used to refer to the amount of data between validation checks.
+
+
 ## Adding New Tasks
 
 To add new tasks, you should:
-1. Add your data in a subfolder in whatever folder contains all your data ``$DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
+1. Add your data in a subfolder in whatever folder contains all your data ``$JIANT_DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
 
 2. Create a class in ``src/tasks.py``, making sure that:
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
