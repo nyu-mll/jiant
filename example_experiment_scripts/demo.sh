@@ -49,6 +49,7 @@ deep_elmo=0
 COVE=0
 
 sent_enc="rnn"
+bidirectional=1
 n_heads=1
 d_hid=128
 PAIR_ENC="simple"

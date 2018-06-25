@@ -95,6 +95,7 @@ def main(arguments):
 
     parser.add_argument('--shared_pair_enc', help='1 to share pair encoder for pair sentence tasks',
                         type=int, default=1)
+    parser.add_argument('--bidirectional', help='1 if bidirectional RNN', type=int, default=1)
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
                         default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
