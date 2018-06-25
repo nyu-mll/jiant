@@ -16,6 +16,7 @@ fi
 JIANT_DIR=$(cd `dirname $0`/../; pwd)
 
 set -x
-gcloud compute scp --zone="$ZONE" --recurse $JIANT_DIR "$INSTANCE_NAME:~"
+gcloud compute scp --project jsalt-sentence-rep --zone "$ZONE" \
+  --recurse $JIANT_DIR "$INSTANCE_NAME:~"
 
 echo "Transfer completed successfully."
