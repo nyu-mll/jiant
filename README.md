@@ -80,6 +80,8 @@ The learning rate is scheduled to decay by ``--lr_decay_factor`` (default: .5) w
 
 If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``/``-W``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``--scaling_method``/``-s`` if you want to weight tasks with different amounts of training data equally throughout training.
 
+Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``--train_tasks`` / ``-T $TRAIN_TASKS`` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``--eval_tasks`` / ``-E $EVAL_TASKS`` to specify the eval-only tasks.
+
 Other training options include:
 
     - ``--optimizer`` / ``-o $OPTIMIZER``: use ``$OPTIMIZER`` usually just Adam
@@ -87,7 +89,7 @@ Other training options include:
     - ``--batch_size`` / ``-b $BSIZE``: use batch size ``BSIZE``, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
     - ``--should_train 0`` / ``-t``: skip training
     - ``--load_model 1`` / ``-m``: start training by loading model from most recent checkpoint found in directory
-    - ``--force_load_epoch`` / ``-N``: 
+    - ``--force_load_epoch`` / ``-N $LOAD_EPOCH``: after training, force loading from ``$LOAD_EPOCH`` instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
 
 NB: "epoch" is generally used to refer to the amount of data between validation checks.
 
