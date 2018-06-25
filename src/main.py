@@ -220,6 +220,7 @@ def main(arguments):
                                    args.weighting_method, args.scaling_method,
                                    to_train, opt_params, schd_params,
                                    args.shared_optimizer, args.load_model)
+        pdb.set_trace()
         best_epoch = best_epoch[task.name]
         layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
         load_model_state(model, layer_path, args.cuda)

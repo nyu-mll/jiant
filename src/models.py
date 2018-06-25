@@ -180,7 +180,7 @@ def build_classifier(task, d_inp, args):
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, task.n_classes))
-    elif cls_type == 'fancy_mlp':
+    elif cls_type == 'fancy_mlp': # what they did in InferSent
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
@@ -310,10 +310,13 @@ class MultiTaskModel(nn.Module):
         if self.combine_method == 'max':
             sent_emb = sent_embs.max(dim=1)[0]
         elif self.combine_method == 'mean':
-            # TODO(Alex): take mean with masking
-            sent_emb = sent_embs.mean(dim=1)
+            sent_emb = sent_embs.masked_fill(1 - sent_mask.byte(), 0).sum(dim=1)
+            n_steps = sent_mask.sum(dim=1)
+            sent_emb /= n_steps
         elif self.combine_method == 'final':
-            sent_emb = sent_embs[-1]
+            # TODO(Alex): take an index select? or does hid state carry through?
+            #idxs = sent_mask.sum(dim=1)
+            sent_emb = sent_embs[:,-1,:]
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
