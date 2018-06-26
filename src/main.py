@@ -168,7 +168,7 @@ def main(arguments):
         try:
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
-        except AttributeError:
+        except Exception:
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
