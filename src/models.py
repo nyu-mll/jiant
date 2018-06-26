@@ -15,12 +15,12 @@ from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
+from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, \
+                                             ElmoTokenEmbedder
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
-from allennlp.modules.elmo import Elmo
 
 from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -40,12 +40,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
     # Build embeddings.
-    d_emb, embedder, elmo, cove_emb = build_embeddings(args, vocab, pretrained_embs)
+    d_emb, embedder, cove_emb = build_embeddings(args, vocab, pretrained_embs)
 
     # Build single sentence encoder: the main component of interest
     if args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
-        d_sent = d_emb + (args.elmo and args.deep_elmo) * 1024
+        d_sent = d_emb
     elif args.sent_enc == 'rnn':
         if isinstance(tasks[0], LanguageModelingTask) and args.bidirectional:
             sent_fwd_rnn = s2s_e.by_name('lstm').from_params(
@@ -56,7 +56,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                         'num_layers': args.n_layers_enc, 'bidirectional': False}))
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                       sent_fwd_rnn, sent_bwd_rnn, dropout=args.dropout,
-                                      cove_layer=cove_emb, elmo_layer=elmo)
+                                      cove_layer=cove_emb)
         else:
             sent_rnn = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_emb, 'hidden_size': args.d_hid,
@@ -64,8 +64,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                         'bidirectional': args.bidirectional}))
             sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, dropout=args.dropout,
-                                       cove_layer=cove_emb, elmo_layer=elmo)
-        d_sent = (1 + args.bidirectional) * args.d_hid + (args.elmo and args.deep_elmo) * 1024
+                                       cove_layer=cove_emb)
+        d_sent = (1 + args.bidirectional) * args.d_hid
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
                                                   hidden_dim=args.d_hid,
@@ -75,8 +75,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                   num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       cove_layer=cove_emb, elmo_layer=elmo)
-        d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
+                                       cove_layer=cove_emb)
+        d_sent = args.d_hid
     elif args.sent_enc == 'transformer-d':
         transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
@@ -86,8 +86,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                         num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       cove_layer=cove_emb, elmo_layer=elmo)
-        d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
+                                       cove_layer=cove_emb)
+        d_sent = args.d_hid
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
@@ -154,19 +154,15 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     # Handle elmo
     if args.elmo:
         log.info("\tUsing ELMo embeddings!")
-        n_reps = 1
-        if args.deep_elmo:
-            n_reps = 2
-            log.info("\tUsing deep ELMo embeddings!")
-        elmo = Elmo(options_file=ELMO_OPT_PATH, weight_file=ELMO_WEIGHTS_PATH,
-                    num_output_representations=n_reps)
+        elmo_embedder = ElmoTokenEmbedder(options_file=ELMO_OPT_PATH,
+                                          weight_file=ELMO_WEIGHTS_PATH,
+                                          dropout=args.dropout)
         d_emb += 1024
-    else:
-        elmo = None
+        token_embedder["elmo"] = elmo_embedder
 
     embedder = BasicTextFieldEmbedder(token_embedder)
     assert d_emb, "You turned off all the embeddings, ya goof!"
-    return d_emb, embedder, elmo, cove_emb
+    return d_emb, embedder, cove_emb
 
 
 def build_modules(tasks, model, d_sent, vocab, embedder, args):

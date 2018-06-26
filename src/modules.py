@@ -21,7 +21,6 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.modules.elmo import Elmo
 # StackedSelfAttentionEncoder
 from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
@@ -36,7 +35,7 @@ class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
-                 cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
+                 cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
@@ -51,14 +50,12 @@ class SentenceEncoder(Model):
         self._phrase_layer = phrase_layer
         d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
-        self._elmo = elmo_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.output_dim = phrase_layer.get_output_dim()
 
         # if d_emb != d_inp_phrase:
-        if (cove_layer is None and elmo_layer is None and d_emb != d_inp_phrase) \
-                or (cove_layer is not None and d_emb + 600 != d_inp_phrase) \
-                or (elmo_layer is not None and d_emb + 1024 != d_inp_phrase):
+        if (cove_layer is None and d_emb != d_inp_phrase) \
+                or (cove_layer is not None and d_emb + 600 != d_inp_phrase):
             raise ConfigurationError("The output dimension of the text_field_embedder "
                                      "must match the input dimension of "
                                      "the phrase_encoder. Found {} and {} respectively."
@@ -85,20 +82,12 @@ class SentenceEncoder(Model):
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-        if self._elmo is not None:
-            elmo_embs = self._elmo(sent['elmo'])
-            if "words" in sent:
-                sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
-            else:
-                sent_embs = elmo_embs['elmo_representations'][0]
         sent_embs = self._dropout(sent_embs)
 
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
-        if self._elmo is not None and len(elmo_embs['elmo_representations']) > 1:
-            sent_enc = torch.cat([sent_enc, elmo_embs['elmo_representations'][1]], dim=-1)
         sent_enc = self._dropout(sent_enc)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
@@ -108,16 +97,16 @@ class SentenceEncoder(Model):
 
 
 class BiLMEncoder(SentenceEncoder):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM 
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM
     A simple wrap up for bidirectional LM training
     '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, \
                  phrase_layer, bwd_phrase_layer, \
-                 cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
+                 cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
         super(BiLMEncoder, self).__init__(vocab, text_field_embedder, num_highway_layers, phrase_layer, \
-                                          cove_layer, elmo_layer, dropout, mask_lstms, \
+                                          cove_layer, dropout, mask_lstms, \
                                           initializer)
         self._bwd_phrase_layer = bwd_phrase_layer
         self.output_dim += self._bwd_phrase_layer.get_output_dim()
@@ -129,12 +118,6 @@ class BiLMEncoder(SentenceEncoder):
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-        if self._elmo is not None:
-            elmo_embs = self._elmo(sent['elmo'])
-            if "words" in sent:
-                sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
-            else:
-                sent_embs = elmo_embs['elmo_representations'][0]
         sent_embs = self._dropout(sent_embs)
 
         sent_mask = util.get_text_field_mask(sent).float()
@@ -145,8 +128,6 @@ class BiLMEncoder(SentenceEncoder):
         else:
             sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
 
-        if self._elmo is not None and len(elmo_embs['elmo_representations']) > 1:
-            sent_enc = torch.cat([sent_enc, elmo_embs['elmo_representations'][1]], dim=-1)
         #sent_enc = self._dropout(sent_enc)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
