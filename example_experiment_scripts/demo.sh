@@ -39,12 +39,12 @@ RELOAD_VOCAB=0
 
 DO_TRAIN=0
 DO_EVAL=1
-TRAIN_FOR_EVAL=0
+TRAIN_FOR_EVAL=1
 #LOAD_EVAL_CHECKPOINT='None'
 LOAD_EVAL_CHECKPOINT='/home/elliepavlick_gmail_com/exp/jiant-demo/sst/model_state_epoch_1.th'
 
 train_tasks='sst'
-eval_tasks='none'
+eval_tasks='sst'
 CLASSIFIER=mlp
 d_hid_cls=64
 max_seq_len=10
