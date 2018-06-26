@@ -48,6 +48,8 @@ def main(arguments):
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
                         'then evaluate on', type=str, default='')
+    parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks (defaults to True)',
+                        type=int, default=1)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
@@ -98,10 +100,12 @@ def main(arguments):
     parser.add_argument('--bidirectional', help='1 if bidirectional RNN', type=int, default=1)
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
                         default='simple', choices=['simple', 'attn'])
-    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
+    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=512)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
-    parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=1)
+    parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=8)
+    parser.add_argument('--d_proj', help='transformer projection dim', type=int, default=64)
+    parser.add_argument('--d_ff', help='transformer feedforward dim', type=int, default=2048)
     parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
 
     # Training options
@@ -127,6 +131,8 @@ def main(arguments):
                         type=float, default=0.0)
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score doesn\'t improve',
                         type=float, default=.5)
+    parser.add_argument('--warmup', help='n warmup steps for Transformer LR scheduler',
+                        type=int, default=4000)
 
     # Multi-task training options
     parser.add_argument('--val_interval', help='Number of passes between validation checks',
@@ -142,7 +148,11 @@ def main(arguments):
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
 
     # Evaluation options
-    parser.add_argument('--eval_val_interval', help='val interval for eval task', type=int, default=1000)
+    parser.add_argument(
+        '--eval_val_interval',
+        help='val interval for eval task',
+        type=int,
+        default=1000)
     parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
                         type=int, default=100)
     parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)
@@ -160,7 +170,7 @@ def main(arguments):
         try:
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
-        except AttributeError:
+        except Exception:
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
@@ -216,18 +226,19 @@ def main(arguments):
     # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training
     for task in eval_tasks:
-        pred_module = getattr(model, "%s_mdl" % task.name)
-        to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-        trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                            args.eval_max_vals)
-        best_epoch = trainer.train([task], task.val_metric,
-                                   args.eval_val_interval, 1,
-                                   args.weighting_method, args.scaling_method,
-                                   to_train, opt_params, schd_params,
-                                   args.shared_optimizer, args.load_model)
-        best_epoch = best_epoch[task.name]
-        layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
-        load_model_state(model, layer_path, args.cuda)
+        if args.train_for_eval:
+            pred_module = getattr(model, "%s_mdl" % task.name)
+            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            trainer, _, opt_params, schd_params = build_trainer(args, model,
+                                                                args.eval_max_vals)
+            best_epoch = trainer.train([task], task.val_metric,
+                                       args.eval_val_interval, 1,
+                                       args.weighting_method, args.scaling_method,
+                                       to_train, opt_params, schd_params,
+                                       args.shared_optimizer, args.load_model)
+            best_epoch = best_epoch[task.name]
+            layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+            load_model_state(model, layer_path, args.cuda)
 
     # Evaluate #
     log.info("Evaluating...")

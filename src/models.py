@@ -27,7 +27,8 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask
 from modules import SentenceEncoder, BoWSentEncoder, \
-    AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder
+    AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder, \
+    BiLMEncoder
 from utils import combine_hidden_states
 
 # Elmo stuff
@@ -46,19 +47,30 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_encoder = BoWSentEncoder(vocab, embedder)
         d_sent = d_emb + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'rnn':
-        sent_rnn = s2s_e.by_name('lstm').from_params(
-            Params({'input_size': d_emb, 'hidden_size': args.d_hid,
-                    'num_layers': args.n_layers_enc,
-                    'bidirectional': args.bidirectional}))
-        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+        if isinstance(tasks[0], LanguageModelingTask) and args.bidirectional:
+            sent_fwd_rnn = s2s_e.by_name('lstm').from_params(
+                Params({'input_size': d_emb, 'hidden_size': args.d_hid,
+                        'num_layers': args.n_layers_enc, 'bidirectional': False}))
+            sent_bwd_rnn = s2s_e.by_name('lstm').from_params(
+                Params({'input_size': d_emb, 'hidden_size': args.d_hid,
+                        'num_layers': args.n_layers_enc, 'bidirectional': False}))
+            sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
+                                      sent_fwd_rnn, sent_bwd_rnn, dropout=args.dropout,
+                                      cove_layer=cove_emb, elmo_layer=elmo)
+        else:
+            sent_rnn = s2s_e.by_name('lstm').from_params(
+                Params({'input_size': d_emb, 'hidden_size': args.d_hid,
+                        'num_layers': args.n_layers_enc,
+                        'bidirectional': args.bidirectional}))
+            sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, dropout=args.dropout,
                                        cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = (1 + args.bidirectional) * args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
                                                   hidden_dim=args.d_hid,
-                                                  projection_dim=args.d_hid,
-                                                  feedforward_hidden_dim=args.d_hid,
+                                                  projection_dim=args.d_proj,
+                                                  feedforward_hidden_dim=args.d_ff,
                                                   num_layers=args.n_layers_enc,
                                                   num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
@@ -67,11 +79,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_sent = args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer-d':
         transformer = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
-                                                  hidden_dim=args.d_hid,
-                                                  projection_dim=args.d_hid,
-                                                  feedforward_hidden_dim=args.d_hid,
-                                                  num_layers=args.n_layers_enc,
-                                                  num_attention_heads=args.n_heads)
+                                                        hidden_dim=args.d_hid,
+                                                        projection_dim=args.d_proj,
+                                                        feedforward_hidden_dim=args.d_ff,
+                                                        num_layers=args.n_layers_enc,
+                                                        num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        cove_layer=cove_emb, elmo_layer=elmo)
@@ -170,7 +182,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             module = build_regressor(task, d_sent * 4, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, LanguageModelingTask):
-            d_inp = d_sent / 2 if args.bidirectional else d_sent
+            d_inp = d_sent / 2 if args.bidirectional and args.sent_enc != 'transformer-d' else d_sent
             hid2voc = build_lm(task, d_inp, args) # separate fwd + bwd
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, SequenceGenerationTask):
@@ -194,7 +206,7 @@ def build_classifier(task, d_inp, args):
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, task.n_classes))
-    elif cls_type == 'fancy_mlp': # what they did in InferSent
+    elif cls_type == 'fancy_mlp':  # what they did in InferSent
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
                                    nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                    nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
@@ -252,7 +264,7 @@ def build_regressor(task, d_inp, args):
                                   nn.Linear(d_hid, 1))
     elif cls_type == 'fancy_mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(),nn.LayerNorm(d_hid),  nn.Dropout(p=dropout),
+                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
                                   nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
                                   nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
     return regressor
@@ -410,22 +422,26 @@ class MultiTaskModel(nn.Module):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         b_size, seq_len = batch['input']['words'].size()
-        seq_len -= 1
+        #seq_len -= 1
         sent_encoder = self.sent_encoder
-        sent, mask = sent_encoder(batch['input'])
-        sent = sent.masked_fill(1 - mask.byte(), 0) # avoid NaNs
+        if 'input_bwd' not in batch:
+            sent, mask = sent_encoder(batch['input'])
+        else:
+            sent, mask = sent_encoder(batch['input'], batch['input_bwd'])
+        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
 
-        if not sent_encoder._phrase_layer.is_bidirectional():
+        if isinstance(sent_encoder, MaskedStackedSelfAttentionEncoder) or \
+            not sent_encoder._phrase_layer.is_bidirectional():
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            logits = hid2voc(sent[:,:-1,:]).view(b_size * seq_len, -1)
+            logits = hid2voc(sent).view(b_size * seq_len, -1)
             out['logits'] = logits
             targs = batch['targs']['words'].view(-1)
         else:
             split = int(self.sent_encoder.output_dim / 2)
             fwd, bwd = sent[:, :, :split], sent[:, :, split:]
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            logits_fwd = hid2voc(fwd[:, :-1, :]).view(b_size * seq_len, -1)
-            logits_bwd = hid2voc(bwd[:, 1:, :]).view(b_size * seq_len, -1)
+            logits_fwd = hid2voc(fwd).view(b_size * seq_len, -1)
+            logits_bwd = hid2voc(bwd).view(b_size * seq_len, -1)
             logits = torch.cat([logits_fwd, logits_bwd], dim=0)
             out['logits'] = logits
             trg_fwd = batch['targs']['words'].view(-1)

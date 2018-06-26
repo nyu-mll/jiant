@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F:fA:' flag; do
+while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -29,7 +29,12 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
+
         A) n_heads="${OPTARG}" ;;
+        p) d_proj="${OPTARG}" ;;
+        Q) d_ff="${OPTARG}" ;;
+        G) warmup="${OPTARG}" ;;
+
         l) LR="${OPTARG}" ;;
         #s) min_lr="${OPTARG}" ;;
         L) N_LAYERS_ENC="${OPTARG}" ;;
@@ -43,7 +48,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
         N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
-        p) patience="${OPTARG}" ;;
+        #p) patience="${OPTARG}" ;;
         W) weighting_method="${OPTARG}" ;;
         #s) scaling_method="${OPTARG}" ;;
     esac
@@ -85,6 +90,9 @@ ALLEN_ARGS+=( --n_layers_enc ${N_LAYERS_ENC} )
 ALLEN_ARGS+=( --pair_enc ${PAIR_ENC} )
 ALLEN_ARGS+=( --n_layers_highway ${n_layers_highway} )
 ALLEN_ARGS+=( --n_heads ${n_heads} )
+ALLEN_ARGS+=( --d_proj ${d_proj} )
+ALLEN_ARGS+=( --d_ff ${d_ff} )
+ALLEN_ARGS+=( --warmup ${warmup} )
 ALLEN_ARGS+=( --batch_size ${BATCH_SIZE} )
 ALLEN_ARGS+=( --bpp_base ${BPP_BASE} )
 ALLEN_ARGS+=( --optimizer ${OPTIMIZER} )

@@ -56,11 +56,14 @@ COVE=0
 
 sent_enc="rnn"
 bidirectional=1
-n_heads=1
 d_hid=128
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
+n_heads=8
+d_proj=64
+d_ff=2048
+warmup=4000
 
 OPTIMIZER="adam"
 LR=.001

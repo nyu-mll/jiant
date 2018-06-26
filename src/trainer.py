@@ -34,9 +34,9 @@ def build_trainer(args, model, max_vals):
     else:
         opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
 
-    if args.sent_enc == 'transformer':
+    if 'transformer' in args.sent_enc:
         schd_params = Params({'type': 'noam',
-                              'model_size': 100,
+                              'model_size': args.d_hid,
                               'warmup_steps': 4000,
                               'factor': 1.0})
     else:
@@ -231,10 +231,12 @@ class SamplingMultiTaskTrainer:
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
             else:
-                log.info("Not loading. Deleting any existing checkpoints.")
+                log.info("Not loading.")
                 checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
-                for f in glob.glob(checkpoint_pattern):
-                    os.remove(f)
+                assert len(glob.glob(checkpoint_pattern)) == 0, \
+                    "There are existing checkpoints here which will be overwritten." \
+                        "Use -m or LOAD_MODEL to load the checkpoints instead." \
+                        "If you don't want them, delete them or change your experimnent name."
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -328,8 +330,8 @@ class SamplingMultiTaskTrainer:
                     self._validate(epoch, tasks, task_infos, metric_infos, iterator, g_scheduler)
 
                 # Check stopping conditions
-                should_stop, task_infos, metric_infos = \
-                    self._check_stop(epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
+                should_stop, task_infos, metric_infos = self._check_stop(
+                    epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results
                 for name, value in all_val_metrics.items():

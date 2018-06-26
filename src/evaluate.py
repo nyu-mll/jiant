@@ -2,7 +2,7 @@
 import os
 import logging as log
 import tqdm
-# import ipdb as pdb
+import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator
@@ -128,3 +128,4 @@ def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
     model.load_state_dict(model_state, strict=False)
+    log.info("Loaded model state from %s", state_path)
