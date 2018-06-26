@@ -233,7 +233,7 @@ class SamplingMultiTaskTrainer:
             else:
                 log.info("Not loading.")
                 checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
-                assert len(glob.glob(checkpoint_pattern)) == 0,
+                assert len(glob.glob(checkpoint_pattern)) == 0, \
                     "There are existing checkpoints here which will be overwritten." \
                         "Use -m or LOAD_MODEL to load the checkpoints instead." \
                         "If you don't want them, delete them or change your experimnent name."
