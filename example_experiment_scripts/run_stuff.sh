@@ -35,7 +35,7 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-FORCE_LOAD_EPOCH=-1
+LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
 eval_tasks='none'
@@ -76,6 +76,7 @@ BATCH_SIZE=64
 BPP_BASE=1
 VAL_INTERVAL=100
 MAX_VALS=100
+EVAL_MAX_VALS=100
 weighting_method="uniform"
 scaling_method='none'
 

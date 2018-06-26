@@ -56,16 +56,16 @@ def build_model(args, vocab, pretrained_embs, tasks):
                 Params({'input_size': d_emb, 'hidden_size': args.d_hid,
                         'num_layers': args.n_layers_enc, 'bidirectional': False}))
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
-                                      sent_fwd_rnn, sent_bwd_rnn, dropout=args.dropout,
-                                      cove_layer=cove_emb, elmo_layer=elmo)
+                                       sent_fwd_rnn, sent_bwd_rnn, dropout=args.dropout,
+                                       cove_layer=cove_emb, elmo_layer=elmo)
         else:
             sent_rnn = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_emb, 'hidden_size': args.d_hid,
                         'num_layers': args.n_layers_enc,
                         'bidirectional': args.bidirectional}))
             sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       sent_rnn, dropout=args.dropout,
-                                       cove_layer=cove_emb, elmo_layer=elmo)
+                                           sent_rnn, dropout=args.dropout,
+                                           cove_layer=cove_emb, elmo_layer=elmo)
         d_sent = (1 + args.bidirectional) * args.d_hid + (args.elmo and args.deep_elmo) * 1024
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
@@ -187,7 +187,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_mdl' % task.name, regressor)
         elif isinstance(task, LanguageModelingTask):
             d_inp = d_sent / 2 if args.bidirectional and args.sent_enc != 'transformer-d' else d_sent
-            hid2voc = build_lm(task, d_inp, args) # separate fwd + bwd
+            hid2voc = build_lm(task, d_inp, args)  # separate fwd + bwd
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -450,7 +450,7 @@ class MultiTaskModel(nn.Module):
         sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
 
         if isinstance(sent_encoder, MaskedStackedSelfAttentionEncoder) or \
-            not sent_encoder._phrase_layer.is_bidirectional():
+                not sent_encoder._phrase_layer.is_bidirectional():
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
             logits = hid2voc(sent).view(b_size * seq_len, -1)
             out['logits'] = logits

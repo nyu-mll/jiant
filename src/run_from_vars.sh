@@ -26,6 +26,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
+        M) EVAL_MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
@@ -45,7 +46,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:
         #E) PAIR_ENC="${OPTARG}" ;;
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
-        N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
+        N) LOAD_EVAL_CHECKPOINT="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
         #p) patience="${OPTARG}" ;;
@@ -113,7 +114,9 @@ ALLEN_ARGS+=( --reload_tasks ${RELOAD_TASKS} )
 ALLEN_ARGS+=( --reload_indexing ${RELOAD_INDEX} )
 ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
 ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
-ALLEN_ARGS+=( --force_load_epoch ${FORCE_LOAD_EPOCH} )
+ALLEN_ARGS+=( --load_eval_checkpoint ${LOAD_EVAL_CHECKPOINT} )
+ALLEN_ARGS+=( --eval_max_vals ${EVAL_MAX_VALS} )
+
 
 ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
