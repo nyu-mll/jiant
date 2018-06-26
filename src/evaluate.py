@@ -1,8 +1,8 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
 import logging as log
-import ipdb as pdb
 import tqdm
+import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator
@@ -71,6 +71,8 @@ def write_preds(all_preds, pred_dir):
 
     We write special code to handle various GLUE tasks. '''
     for task, preds in all_preds.items():
+        if task not in ['cola', 'sst', 'qqp', 'mrpc', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']:
+            continue
         if isinstance(preds[1][0], list):
             preds = [[p for p in preds[0]], [p[0] for p in preds[1]]]
         idxs_and_preds = [(idx, pred) for pred, idx in zip(preds[0], preds[1])]
@@ -126,3 +128,4 @@ def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
     model.load_state_dict(model_state, strict=False)
+    log.info("Loaded model state from %s", state_path)

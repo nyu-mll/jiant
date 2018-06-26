@@ -12,7 +12,7 @@ import torch
 from allennlp.data import Instance, Vocabulary, Token
 from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
-                                            TokenCharactersIndexer
+    TokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
 
 try:
@@ -28,7 +28,9 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
-    LanguageModelingTask, WikiTextLMTask, PDTBTask, \
+    LanguageModelingTask, PDTBTask, \
+    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
+    DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
@@ -46,10 +48,17 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
-             'wiki': (WikiTextLMTask, 'WikiText/'),
+             'joci': (JOCITask, 'JOCI/'),
+             'wiki2': (WikiText2LMTask, 'WikiText2/'),
+             'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-	     'joci': (JOCITask, 'JOCI/')
+	     'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
+	     'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
+	     'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
              }
+
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+SPECIALS = [SOS_TOK, EOS_TOK]
 
 
 def build_tasks(args):
@@ -61,12 +70,17 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
+    prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
+    if not os.path.isdir(prepreproc_dir):
+        os.mkdir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
-                  args.data_dir, bool(not args.reload_tasks))
+                  path=args.data_dir, scratch_path=args.exp_dir,
+                  load_pkl=bool(not args.reload_tasks))
 
     # 2 + 3) build / load vocab and word vectors
-    max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
+    vocab_path = os.path.join(args.exp_dir, 'vocab')
+    emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     token_indexer = {}
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
@@ -74,22 +88,22 @@ def build_tasks(args):
         token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
         token_indexer["chars"] = TokenCharactersIndexer("chars")
-
-    # Load vocab and associated word embeddings
-    vocab_path = os.path.join(args.exp_dir, 'vocab')
-    emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     if not args.reload_vocab and os.path.exists(vocab_path):
         vocab = Vocabulary.from_files(vocab_path)
         log.info("\tLoaded vocab from %s", vocab_path)
     else:
         log.info("\tBuilding vocab from scratch")
+        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
         word2freq, char2freq = get_words(tasks)
         vocab = get_vocab(word2freq, char2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
         del word2freq, char2freq
+    word_v_size = vocab.get_vocab_size('tokens')
+    char_v_size = vocab.get_vocab_size('chars')
     log.info("\tFinished building vocab. Using %d words, %d chars.",
-             vocab.get_vocab_size('tokens'), vocab.get_vocab_size("chars"))
+             word_v_size, char_v_size)
+    args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
     if not args.reload_vocab and os.path.exists(emb_file):
         word_embs = pkl.load(open(emb_file, 'rb'))
     else:
@@ -136,12 +150,13 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
+def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
+              scratch_path=None, load_pkl=1):
     ''' Load tasks '''
     def parse_tasks(task_list):
         '''parse string of tasks'''
         if task_list == 'all':
-            tasks = [task for task in NAME2INFO]
+            tasks = sorted(NAME2INFO.keys())
         elif task_list == 'none':
             tasks = []
         else:
@@ -152,18 +167,26 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path='', load=1):
     eval_task_names = parse_tasks(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
 
+    assert path is not None
+    scratch_path = (scratch_path or path)
+    log.info("Writing pre-preprocessed tasks to %s", scratch_path)
+
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        task_path = os.path.join(path, NAME2INFO[name][1])
-        pkl_path = os.path.join(task_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and load:
+        task_src_path = os.path.join(path, NAME2INFO[name][1])
+        task_scratch_path = os.path.join(scratch_path, NAME2INFO[name][1])
+        pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
+        if os.path.isfile(pkl_path) and load_pkl:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task = NAME2INFO[name][0](task_path, max_seq_len, name)
+            task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
+            if not os.path.isdir(task_scratch_path):
+                os.mkdir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
+        #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -195,6 +218,8 @@ def get_words(tasks):
 def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
+    for special in SPECIALS:
+        vocab.add_token_to_namespace(special, 'tokens')
 
     words_by_freq = [(word, freq) for word, freq in word2freq.items()]
     words_by_freq.sort(key=lambda x: x[1], reverse=True)
@@ -340,7 +365,12 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
-    inputs = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    targs = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    instances = [Instance({"inputs": inp, "targs": targ}) for (inp, targ) in zip(inputs, targs)]
+    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split[::-1]]
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split[::-1]]
+    #instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+    #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
+    instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
+                 for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
     return instances

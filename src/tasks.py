@@ -6,12 +6,13 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import os
+import math
 import logging as log
-import ipdb as pdb
+# import ipdb as pdb
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
-from utils import load_tsv
+from utils import load_tsv, process_sentence, truncate
 
 
 class Task():
@@ -19,9 +20,8 @@ class Task():
 
     Methods and attributes:
         - load_data: load dataset from a path and create splits
-        - yield dataset for training
-        - dataset size
-        - validate and test
+        - truncate: truncate data to be at most some length
+        - get_metrics:
 
     Outside the task:
         - process: pad and indexify data given a mapping
@@ -33,6 +33,10 @@ class Task():
 
     def load_data(self, path, max_seq_len):
         ''' Load data from path and create splits. '''
+        raise NotImplementedError
+
+    def truncate(self, max_seq_len, sos_tok, eos_tok):
+        ''' Shorten sentences to max_seq_len and add sos and eos tokens. '''
         raise NotImplementedError
 
     def get_metrics(self, reset=False):
@@ -50,6 +54,14 @@ class SingleClassificationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
+
+    def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
+        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
+                                         sos_tok, eos_tok), self.train_data_text[1]]
+        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
+                                       sos_tok, eos_tok), self.val_data_text[1]]
+        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
+                                        sos_tok, eos_tok), self.test_data_text[1]]
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -148,8 +160,8 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        nll = self.scorer1.get_metric(reset)
+        return {'perplexity': math.exp(nll)}
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -173,11 +185,25 @@ class WikiTextLMTask(LanguageModelingTask):
         data = []
         with open(path) as txt_fh:
             for row in txt_fh:
-                toks = row.strip().split()[:max_seq_len]
+                toks = row.strip().split()
                 if not toks:
                     continue
-                data.append(['<SOS>'] + toks + ['<EOS>'])
+                data.append(process_sentence(toks, max_seq_len))
         return data
+
+
+class WikiText2LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 2'''
+
+    def __init__(self, path, max_seq_len, name="wiki2"):
+        super().__init__(path, max_seq_len, name)
+
+
+class WikiText103LMTask(WikiTextLMTask):
+    ''' Language modeling task on Wikitext 103'''
+
+    def __init__(self, path, max_seq_len, name="wiki103"):
+        super().__init__(path, max_seq_len, name)
 
 
 class SSTTask(SingleClassificationTask):
@@ -334,7 +360,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 class MultiNLIFictionTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-fiction"):
         '''MNLI'''
         super(
             MultiNLIFictionTask,
@@ -342,21 +368,21 @@ class MultiNLIFictionTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="fiction",
-            name="mnli-fiction")
+            name=name)
 
 
 class MultiNLISlateTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-slate"):
         '''MNLI'''
-        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name="mnli-slate")
+        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name=name)
 
 
 class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-government"):
         '''MNLI'''
         super(
             MultiNLIGovernmentTask,
@@ -364,27 +390,26 @@ class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="government",
-            name="mnli-government")
+            name=name)
 
 
 class MultiNLITelephoneTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-telephone"):
         '''MNLI'''
         super(
             MultiNLITelephoneTask,
             self).__init__(
             path,
-            max_seq_len,
             genre="telephone",
-            name="mnli-telephone")
+            name=name)
 
 
 class MultiNLITravelTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-travel"):
         '''MNLI'''
         super(
             MultiNLITravelTask,
@@ -392,7 +417,7 @@ class MultiNLITravelTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="travel",
-            name="mnli-travel")
+            name=name)
 
 
 class MRPCTask(PairClassificationTask):
@@ -644,3 +669,73 @@ class PDTBTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
+
+class DisSentBWBSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with the Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="dissentbwb"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'bwb.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwiki"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiFullTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwikifull"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+

@@ -10,15 +10,21 @@
 
 # This should train an SST model to a validation accuracy of at least 70% in a minute or two.
 
-# Defaults. Don't overwrite here; see below for ../user_config.sh
-FASTTEXT_EMBS_FILE=.
-FASTTEXT_MODEL_FILE=.
-WORD_EMBS_FILE=.
+# cd to jiant root directory
+pushd "$(dirname $0)/../"
+
+# Defaults if not already set.
+FASTTEXT_EMBS_FILE="${FASTTEXT_EMBS_FILE:-'.'}"
+FASTTEXT_MODEL_FILE="${FASTTEXT_MODEL_FILE:-'.'}"
+WORD_EMBS_FILE="${WORD_EMBS_FILE:-'.'}"
 
 # machine-specific paths
-# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# Contains JIANT_PROJECT_PREFIX, JIANT_DATA_DIR, WORD_EMBS_FILE and optionally
 # FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
-source ../user_config.sh
+if [ -e user_config.sh ]; then
+  echo "Loading environment from ${PWD}/user_config.sh"
+  source user_config.sh
+fi
 
 EXP_NAME='jiant-demo'
 RUN_NAME="sst"
@@ -36,21 +42,28 @@ FORCE_LOAD_EPOCH=-1
 train_tasks='sst'
 eval_tasks='none'
 CLASSIFIER=mlp
-d_hid_cls=16
+d_hid_cls=64
 max_seq_len=10
-VOCAB_SIZE=1000
+VOCAB_SIZE=30000
 
 word_embs=fastText
 fastText=0
+char_embs=1
 d_word=300
 ELMO=0
 deep_elmo=0
 COVE=0
 
-d_hid=512
+sent_enc="rnn"
+bidirectional=1
+d_hid=128
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
+n_heads=8
+d_proj=64
+d_ff=2048
+warmup=4000
 
 OPTIMIZER="adam"
 LR=.001
@@ -70,4 +83,4 @@ TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
-source ../src/run_from_vars.sh
+source ./src/run_from_vars.sh

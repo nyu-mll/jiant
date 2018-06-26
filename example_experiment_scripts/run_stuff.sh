@@ -8,15 +8,21 @@
 # SBATCH -t 4-00:00
 # SBATCH --gres=gpu:p40:1
 
-# Defaults. Don't overwrite here; see below for ../user_config.sh
-FASTTEXT_EMBS_FILE=.
-FASTTEXT_MODEL_FILE=.
-WORD_EMBS_FILE=.
+# cd to jiant root directory
+pushd "$(dirname $0)/../"
+
+# Defaults if not already set.
+FASTTEXT_EMBS_FILE="${FASTTEXT_EMBS_FILE:-'.'}"
+FASTTEXT_MODEL_FILE="${FASTTEXT_MODEL_FILE:-'.'}"
+WORD_EMBS_FILE="${WORD_EMBS_FILE:-'.'}"
 
 # machine-specific paths
-# Contains PROJECT_PREFIX, DATA_DIR, WORD_EMBS_FILE and optionally
+# Contains JIANT_PROJECT_PREFIX, JIANT_DATA_DIR, WORD_EMBS_FILE and optionally
 # FASTTEXT_EMBS_FILE and FASTTEXT_MODEL_FILE
-source ../user_config.sh
+if [ -e user_config.sh ]; then
+  echo "Loading environment from ${PWD}/user_config.sh"
+  source user_config.sh
+fi
 
 EXP_NAME="debug"
 RUN_NAME="debug"
@@ -31,11 +37,11 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 FORCE_LOAD_EPOCH=-1
 
-train_tasks='wiki'
+train_tasks='sst'
 eval_tasks='none'
-max_seq_len=40
+max_seq_len=100
 
-VOCAB_SIZE=30000
+VOCAB_SIZE=50000
 word_embs=fastText
 char_embs=0
 fastText=0
@@ -44,18 +50,22 @@ ELMO=0
 deep_elmo=0
 COVE=0
 
-sent_enc="transformer"
+sent_enc="rnn"
+bidirectional=0
 CLASSIFIER=mlp
 d_hid_cls=512
 d_hid=512
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
-n_heads=1
+n_heads=8
+d_proj=64
+d_ff=2048
+warmup=4000
 
 OPTIMIZER="adam"
 LR=.001
-min_lr=1e-5
+min_lr=1e-6
 dropout=.2
 LR_DECAY=.5
 patience=5
@@ -64,10 +74,9 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
 BPP_BASE=1
-VAL_INTERVAL=10
+VAL_INTERVAL=100
 MAX_VALS=100
-TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
-source ../src/run_from_vars.sh
+source src/run_from_vars.sh
