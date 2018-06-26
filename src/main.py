@@ -155,7 +155,7 @@ def main(arguments):
         default=1000)
     parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
                         type=int, default=100)
-    parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)
+    parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=0)
 
     args = parser.parse_args(arguments)
 

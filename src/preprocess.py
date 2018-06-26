@@ -29,7 +29,9 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask
+    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
+    DisSentWikiSingleTask, DisSentWikiFullTask, \
+    JOCITask, PairOrdinalRegressionTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -46,9 +48,13 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
+             'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'pdtb': (PDTBTask, 'PDTB/')
+             'pdtb': (PDTBTask, 'PDTB/'),
+	     'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
+	     'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
+	     'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -294,6 +300,9 @@ def process_task(task, token_indexer, vocab):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True)
         elif isinstance(task, PairRegressionTask):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
+                                                   classification=False)
+        elif isinstance(task, PairOrdinalRegressionTask):
+            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True, 
                                                    classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
