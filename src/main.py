@@ -129,6 +129,8 @@ def main(arguments):
                         type=float, default=0.0)
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score doesn\'t improve',
                         type=float, default=.5)
+    parser.add_argument('--warmup', help='n warmup steps for Transformer LR scheduler',
+                        type=int, default=4000)
 
     # Multi-task training options
     parser.add_argument('--val_interval', help='Number of passes between validation checks',
@@ -144,7 +146,11 @@ def main(arguments):
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
 
     # Evaluation options
-    parser.add_argument('--eval_val_interval', help='val interval for eval task', type=int, default=1000)
+    parser.add_argument(
+        '--eval_val_interval',
+        help='val interval for eval task',
+        type=int,
+        default=1000)
     parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
                         type=int, default=100)
     parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)
@@ -180,6 +186,7 @@ def main(arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
+    pdb.set_trace()
 
     # Train on train tasks #
     if train_tasks and args.should_train:

@@ -266,6 +266,8 @@ class AttnPairEncoder(Model):
                    mask_lstms=mask_lstms, initializer=initializer)
 
 # This class is identical to the one in allennlp.modules.seq2seq_encoders
+
+
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     # pylint: disable=line-too-long
     """
@@ -307,6 +309,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     dropout_prob : ``float``, optional, (default = 0.2)
         The dropout probability for the feedforward network.
     """
+
     def __init__(self,
                  input_dim: int,
                  hidden_dim: int,
@@ -341,9 +344,9 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
             self._feed_forward_layer_norm_layers.append(feedforward_layer_norm)
 
             self_attention = MaskedMultiHeadSelfAttention(num_heads=num_attention_heads,
-                                                    input_dim=hidden_dim,
-                                                    attention_dim=projection_dim,
-                                                    values_dim=projection_dim)
+                                                          input_dim=hidden_dim,
+                                                          attention_dim=projection_dim,
+                                                          values_dim=projection_dim)
             self.add_module(f"self_attention_{i}", self_attention)
             self._attention_layers.append(self_attention)
 

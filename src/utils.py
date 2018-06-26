@@ -26,7 +26,6 @@ from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
 
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -47,6 +46,7 @@ def process_sentence(sent, max_seq_len):
 
 def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
+
 
 def load_tsv(
         data_file,
@@ -731,6 +731,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         The dropout probability applied to the normalised attention
         distributions.
     """
+
     def __init__(self,
                  num_heads: int,
                  input_dim: int,
@@ -820,7 +821,9 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         values_per_head = values_per_head.view(num_heads * batch_size, timesteps, self._values_dim)
 
         # shape (num_heads * batch_size, timesteps, timesteps)
-        scaled_similarities = torch.bmm(queries_per_head, keys_per_head.transpose(1, 2)) / self._scale
+        scaled_similarities = torch.bmm(
+            queries_per_head, keys_per_head.transpose(
+                1, 2)) / self._scale
 
         # Masking should go here
         causality_mask = subsequent_mask(timesteps).cuda()
