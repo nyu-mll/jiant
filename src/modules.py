@@ -128,13 +128,11 @@ class BiLMEncoder(SentenceEncoder):
         else:
             sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
 
-        #sent_enc = self._dropout(sent_enc)
-
         sent_mask = sent_mask.unsqueeze(dim=-1)
 
         return sent_enc, sent_mask
 
-    def forward(self, fwd_sent, bwd_sent):
+    def forward(self, sent):#, bwd_sent):
         # pylint: disable=arguments-differ
         """
         Args:
@@ -143,13 +141,11 @@ class BiLMEncoder(SentenceEncoder):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(fwd_sent)
-        bwd_sent_enc, bwd_sent_mask = self._uni_directional_forward(bwd_sent, False)
+        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent)
+        bwd_sent_enc, bwd_sent_mask = self._uni_directional_forward(sent, False)
         sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=1)
         sent_mask = torch.cat([fwd_sent_mask, bwd_sent_mask], dim=1)
-
         sent_enc = self._dropout(sent_enc)
-
         return sent_enc, sent_mask
 
 

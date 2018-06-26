@@ -51,7 +51,7 @@ deep_elmo=0
 COVE=0
 
 sent_enc="rnn"
-bidirectional=0
+bidirectional=1
 CLASSIFIER=mlp
 d_hid_cls=512
 d_hid=512
