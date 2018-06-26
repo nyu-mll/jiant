@@ -48,7 +48,6 @@ def main(arguments):
 
     # Control flow for main
     parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
-<<<<<<< HEAD
     parser.add_argument(
         '--do_eval',
         help='1 to run eval tasks (where model can be retrained for eval task) else 0',
@@ -59,9 +58,6 @@ def main(arguments):
         help='1 if models should be trained for the eval tasks else 0',
         type=int,
         default=0)
-=======
-    parser.add_argument('--do_eval', help='1 to run eval tasks (where model can be retrained for eval task) else 0', type=int, default=0)
->>>>>>> 64356077fcc51f4c10b1226d665d0486bad53680
 
     # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
@@ -214,8 +210,8 @@ def main(arguments):
 
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
-<<<<<<< HEAD
-    if args.load_eval_checkpoint:
+
+    if not(args.load_eval_checkpoint == 'None'):
         try:
             assert os.path.exists(args.load_eval_checkpoint)
         except AssertionError:
@@ -223,23 +219,9 @@ def main(arguments):
                 "Error: Attempting to load model from non-existent path: [%s]" %
                 args.load_eval_checkpoint)
             return 0
-        try:
-            assert not args.do_train
-        except AssertionError:
-            log.error("Error: Attempting to train one model then evaluate another. Something is wrong.")
-            return 0
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
-=======
-    if not(args.load_eval_checkpoint == 'None'):
-      try:
-        assert os.path.exists(args.load_eval_checkpoint)
-      except AssertionError:
-        log.error("Error: Attempting to load model from non-existent path: [%s]"%args.load_eval_checkpoint)
-        return 0
-      steps_log.append("Loading model from path: %s"%args.load_eval_checkpoint)
     else:
-      steps_log.append("Initializing model from scratch.")
->>>>>>> 64356077fcc51f4c10b1226d665d0486bad53680
+        steps_log.append("Initializing model from scratch.")
 
     if args.do_train:
         try:
@@ -275,8 +257,9 @@ def main(arguments):
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    if not(args.load_eval_checkpoint == "None"): # is not None and args.load_eval_checkpoint != "None":
-        log.info("Loading existing model from %s..."%args.load_eval_checkpoint)
+    # is not None and args.load_eval_checkpoint != "None":
+    if not(args.load_eval_checkpoint == "None"):
+        log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
         try:
