@@ -9,8 +9,10 @@ import os
 import logging as log
 import ipdb as pdb
 import json
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity as cos_sim
 
-from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
+from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average, Entropy
 
 from utils import load_tsv
 
@@ -611,7 +613,7 @@ class PDTBTask(PairClassificationTask):
 
 
 class WeakGroundedTask(PairClassificationTask):
-    ''' Task class for Weakly Grounded Sentences i.e., training on pairs of captions for the same image '''
+    ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
 
     def __init__(self, path, max_seq_len, n_classes, name="weakgrounded"):
         ''' Do stuff '''
@@ -628,10 +630,8 @@ class WeakGroundedTask(PairClassificationTask):
 
         tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-        # change to test for now!
-        val_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-        # we don't have predefined test captions because this the ImageNet task, will probably add sampled sentences
         te_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
 
@@ -641,14 +641,17 @@ class WeakGroundedTask(PairClassificationTask):
         log.info("\tFinished loading MSCOCO data.")
 
 
-''' change core task! '''       
 class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
-
+    ''' Defined new metric function from AllenNLP Average '''
+    ''' Specify metric name as 'cos_sim' or 'abs_diff' '''
+    
     def __init__(self, path, max_seq_len, name="grounded"):
         ''' Do stuff '''
         super(GroundedTask, self).__init__(name)
         self.scorer1 = Average()
+        #self.scorer1 = Entropy()
+        #self.scorer1 = CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -658,23 +661,41 @@ class GroundedTask(Task):
         self.ids = self.train_data[1] + \
                    self.val_data[1]
 
+    '''
+    def __call__(self, value):
+        return value
+    '''
+
+    def _compute_metric(self, metric_name, tensor1, tensor2):
+        '''Metrics for similarity in image space'''
+
+        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
+        
+        if metric_name is 'abs_diff':
+            metric = np.mean(np1-np2)
+        elif metric_name is 'cos_sim':
+            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
+        else:
+            print('Undefined metric name!')
+            metric = 0
+            
+        return metric
+    
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
-
+        metric = self.scorer1.get_metric(reset)
+        
+        return {'metric_name': metric}
     
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
 
-        path = '/Users/romapatel/Desktop/mscoco/datasets/processed/'
-
         # changed for temp
-        f = open(os.path.join(path, "train_temp.json"), 'r')
+        f = open(os.path.join(path, "train.json"), 'r')
         for line in f: tr_dict = json.loads(line)
-        f = open(os.path.join(path, "val_temp.json"), 'r')
+        f = open(os.path.join(path, "val.json"), 'r')
         for line in f: val_dict = json.loads(line)
-        f = open(os.path.join(path, "test_temp.json"), 'r')
+        f = open(os.path.join(path, "test.json"), 'r')
         for line in f: te_dict = json.loads(line)
 
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
@@ -693,7 +714,6 @@ class GroundedTask(Task):
                 test[1].append(img_id)
                 test[2].append(caption_id)
 
-        print(train)
         self.train_data = train
         self.val_data = val
         self.test_data = test

@@ -27,7 +27,7 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask
 from modules import RNNEncoder, BoWSentEncoder, \
-    AttnPairEncoder, SimplePairEncoder
+    AttnPairEncoder, SimplePairEncoder, CNNEncoder
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -408,4 +408,17 @@ class MultiTaskModel(nn.Module):
 
     def _ranking_forward(self, batch, task):
         ''' For caption and image ranking '''
+        out = {}
+        b_size = batch['inputs']['sents']['words'].size()
+        sent, sent_mask = self.sent_encoder(batch['inputs']['sents'])
+        img, img_mask = self.img_encoder(batch['inputs']['images'])
+
+        if isinstance(task, GroundedTask):
+            hid2voc = getattr(self, "%s_hid2voc" % task.name)
+            logits = hid2voc(sent)
+            logits = logits.view(b_size * seq_len, -1)
+        else:
+            pass
+        out['logits'] = logits
+
         raise NotImplementedError

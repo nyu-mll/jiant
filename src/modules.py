@@ -493,8 +493,17 @@ class CNNEncoder(Model):
     def __init__(self, model_name, path, model=None):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
-        self._load_model(model_name)
-        self._load_features(path)
+        self.model = self._load_model(model_name)
+        self.feat_dict = self._load_features(path, 'train')
+        self.feat_dict.update(self._load_features(path, 'val'))
+        self.feat_dict.update(self._load_features(path, 'test'))
+
+        
+        '''
+        self.train = self._load_features(path, 'train')
+        self.val = self._load_features(path, 'val')
+        self.test = self._load_features(path, 'test')
+        '''
         
     def _load_model(self, model_name):
         if model_name == 'alexnet':
@@ -503,13 +512,14 @@ class CNNEncoder(Model):
             model = inception_v3(pretrained=True)
         elif model_name == 'resnet':
             model = resnet101(pretrained=True)
-        self.model = model
+        return model
 
-    def _load_features(self, path):
+    def _load_features(self, path, dataset):
+        print('Loading ' + str(dataset))
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
         train_dataset = datasets.ImageFolder(
-            path + 'train/',
+            path + dataset,
             transforms.Compose([
                 transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
@@ -522,46 +532,23 @@ class CNNEncoder(Model):
         classes = [d for d in os.listdir(train_dataset.root) if os.path.isdir(os.path.join(train_dataset.root, d))]
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
-        '''
-        val_dataset = datasets.ImageFolder(
-            path + 'val/',
-            transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-
-        val_loader = torch.utils.data.DataLoader(
-                train_dataset)
-
-        classes = [d for d in os.listdir(val_dataset.root) if os.path.isdir(os.path.join(val_dataset.root, d))]
-        class_to_idx = {classes[i]: i for i in range(len(classes))}
-        rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
-        
-        test_dataset = datasets.ImageFolder(
-            path + 'test/',
-            transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-
-        test_loader = torch.utils.data.DataLoader(
-                test_dataset)
-
-        classes = [d for d in os.listdir(test_dataset.root) if os.path.isdir(os.path.join(test_dataset.root, d))]
-        class_to_idx = {classes[i]: i for i in range(len(classes))}
-        rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
-        '''
 
         feat_dict = {}
         for i, (input, target) in enumerate(train_loader):
             x = self.model.forward(input)
             feat_dict[rev_class[i]] = x.data
-
         return feat_dict
+    
+    def forward(self, img_id):
+        """
+        Args:
+            - img_id that maps image -> sentence pairs in respective datasets.
+
+        Returns:
+            - img_enc (torch.FloatTensor): (b_size, seq_len)
+        """
+        # already computed tensor from pretrained
+        return self.feat_dict[img_id]
         
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
