@@ -53,11 +53,6 @@ def main(arguments):
         help='1 to run eval tasks (where model can be retrained for eval task) else 0',
         type=int,
         default=0)
-    parser.add_argument(
-        '--train_for_eval',
-        help='1 if models should be trained for the eval tasks else 0',
-        type=int,
-        default=0)
 
     # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
