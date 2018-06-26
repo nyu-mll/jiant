@@ -149,11 +149,13 @@ def main(arguments):
                         type=int, default=4000)
 
     # Multi-task training options
-    parser.add_argument('--val_interval', help='Number of passes between validation checks',
+    parser.add_argument('--val_interval', help='Number of passes between validation checks. '
+                        'Also serves as the number of intervals between checkpoints.',
                         type=int, default=10)
-    parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
+    parser.add_argument('--max_vals', help='Maximum number of validation checks.', type=int,
                         default=100)
-    parser.add_argument('--bpp_base', help='Number of batches to train on per sampled task',
+    parser.add_argument('--bpp_base', help='Number of batches to train on per sampled task. '
+                        'Val interval should be at least this high.',
                         type=int, default=1)
     parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
                         choices=['uniform', 'proportional'], default='uniform')

@@ -288,7 +288,6 @@ class SamplingMultiTaskTrainer:
                 if self._grad_norm:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
-
                 n_pass += 1  # update per batch
 
             # Update training progress on that task
@@ -436,9 +435,9 @@ class SamplingMultiTaskTrainer:
         all_val_metrics['macro_avg'] /= len(tasks)
 
         # Track per task patience
-        should_save = False  # whether to save this epoch or not
+        should_save = periodic_save  # whether to save this epoch or not.
+        # Currently we save every validation in the main training runs.
         new_best = False  # whether this epoch is a new best
-        # TODO: Set up true periodic saving.
 
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
