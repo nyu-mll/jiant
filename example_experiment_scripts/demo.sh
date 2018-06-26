@@ -28,7 +28,7 @@ fi
 
 EXP_NAME='jiant-demo'
 RUN_NAME="sst"
-GPUID=0
+GPUID=-1
 SEED=42
 no_tqdm=0
 
@@ -37,10 +37,11 @@ RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
 
-DO_TRAIN=1
+DO_TRAIN=0
 DO_EVAL=1
-TRAIN_FOR_EVAL=1
-LOAD_EVAL_CHECKPOINT='None'
+TRAIN_FOR_EVAL=0
+#LOAD_EVAL_CHECKPOINT='None'
+LOAD_EVAL_CHECKPOINT='/home/elliepavlick_gmail_com/exp/jiant-demo/sst/model_state_epoch_1.th'
 
 train_tasks='sst'
 eval_tasks='none'

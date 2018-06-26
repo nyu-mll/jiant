@@ -49,7 +49,6 @@ def main(arguments):
     # Control flow for main
     parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
     parser.add_argument('--do_eval', help='1 to run eval tasks (where model can be retrained for eval task) else 0', type=int, default=0)
-    parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks else 0', type=int, default=0)
 
     # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
@@ -58,9 +57,9 @@ def main(arguments):
                         'then evaluate on', type=str, default='')
     parser.add_argument(
         '--train_for_eval',
-        help='1 if models should be trained for the eval tasks (defaults to True)',
+        help='1 if models should be trained for the eval tasks else 0',
         type=int,
-        default=1)
+        default=0)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
@@ -202,7 +201,7 @@ def main(arguments):
 
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
-    if args.load_eval_checkpoint:
+    if not(args.load_eval_checkpoint == 'None'):
       try:
         assert os.path.exists(args.load_eval_checkpoint)
       except AssertionError:
@@ -233,9 +232,13 @@ def main(arguments):
       
     log.info("Will run the following steps:\n%s"%('\n'.join(steps_log)))
 
+    best_epochs = {}
     if args.do_train:
-        assert args.load_eval_checkpoint is None or args.load_eval_checkpoint == "None", \
-            "You're trying to train a model then evaluate a different model. Something is wrong."
+        try:
+            assert (args.load_eval_checkpoint == "None") #, #is None or args.load_eval_checkpoint == "None", \
+        except AssertionError:
+            log.error("You're trying to train a model then evaluate a different model. Something is wrong.")
+            return 0
 
         # Train on train tasks #
         log.info("Training...")
@@ -250,14 +253,14 @@ def main(arguments):
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    if args.load_eval_checkpoint is not None and args.load_eval_checkpoint != "None":
+    if not(args.load_eval_checkpoint == "None"): # is not None and args.load_eval_checkpoint != "None":
         log.info("Loading existing model from %s..."%args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
           try:
             assert "macro" in best_epochs
           except AssertionError:
-            log.error("Error: best_epochs just contain key 'macro' in order to determine best model")
+            log.error("Error: best_epochs must contain key 'macro' in order to determine best model.")
             return 0
           epoch_to_load = best_epochs['macro']
           state_path = os.path.join(args.run_dir,
