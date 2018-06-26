@@ -266,7 +266,7 @@ def main(arguments):
                                   "model_state_main_epoch_{}.th".format(epoch_to_load))
         load_model_state(model, state_path, args.cuda)
 
-    # Train just the task-specific components for eval tasks
+    # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
@@ -279,8 +279,10 @@ def main(arguments):
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
 
+            # The best checkpoint will accumulate the best parameters for each task.
+            # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
-            layer_path = os.path.join(args.run_dir, "model_state_eval_epoch_{}.th".format(best_epoch))
+            layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             load_model_state(model, layer_path, args.cuda)
 
     if args.do_eval:
