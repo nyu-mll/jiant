@@ -85,6 +85,11 @@ class PairClassificationTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+class NLIProbingTask(PairClassificationTask):
+    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
+
+    def __init__(self, name, n_classes):
+        super().__init__(name)
 
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
@@ -129,7 +134,6 @@ class RankingTask(Task):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         raise NotImplementedError
-
 
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
@@ -615,6 +619,30 @@ class PDTBTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name="pdtb"):
         ''' Load data and initialize'''
         super(PDTBTask, self).__init__(name, 99)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"), max_seq_len,
+                           s1_idx=4, s2_idx=5, targ_idx=3)
+        val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"), max_seq_len,
+                            s1_idx=4, s2_idx=5, targ_idx=3)
+        te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"), max_seq_len,
+                           s1_idx=4, s2_idx=5, targ_idx=3)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading PDTB data.")
+
+class ProbingDemoTask(NLIProbingTask):
+    ''' Task class to test probing infrastructure.'''
+
+    def __init__(self, path, max_seq_len, name="prob-test"):
+        ''' Load data and initialize'''
+        super(PDTBTask, self).__init__(name, )
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]

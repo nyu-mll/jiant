@@ -17,11 +17,11 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
         c) COVE=1 ;;
 
         q) no_tqdm=1 ;;
-        t) SHOULD_TRAIN=0 ;;
+        #t) SHOULD_TRAIN=0 ;;
         k) RELOAD_TASKS=1 ;;
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
-        m) LOAD_MODEL=1 ;;
+        #m) LOAD_MODEL=1 ;;
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
@@ -40,7 +40,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
         #E) PAIR_ENC="${OPTARG}" ;;
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
-        N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
+        #N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
         p) patience="${OPTARG}" ;;
@@ -100,12 +100,14 @@ ALLEN_ARGS+=( --max_vals ${MAX_VALS} )
 ALLEN_ARGS+=( --weighting_method ${weighting_method} )
 ALLEN_ARGS+=( --scaling_method ${scaling_method} )
 ALLEN_ARGS+=( --scheduler_threshold ${SCHED_THRESH} )
-ALLEN_ARGS+=( --load_model ${LOAD_MODEL} )
+#ALLEN_ARGS+=( --load_model ${LOAD_MODEL} )
 ALLEN_ARGS+=( --reload_tasks ${RELOAD_TASKS} )
 ALLEN_ARGS+=( --reload_indexing ${RELOAD_INDEX} )
 ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
-ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
-ALLEN_ARGS+=( --force_load_epoch ${FORCE_LOAD_EPOCH} )
+ALLEN_ARGS+=( --do_train ${DO_TRAIN} )
+ALLEN_ARGS+=( --do_eval ${DO_EVAL} )
+ALLEN_ARGS+=( --do_probe ${DO_PROBE} )
+ALLEN_ARGS+=( --train_for_eval ${TRAIN_FOR_EVAL} )
 
 ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
