@@ -208,9 +208,12 @@ def main(arguments):
       except AssertionError:
         log.error("Error: Attempting to load model from non-existent path: [%s]"%args.load_eval_checkpoint)
         return 0
+      try:
+        assert not args.do_train
+      except AssertionError:
+        log.error("Error: Attempting to train one model then evaluate another. Something is wrong.")
+        return 0
       steps_log.append("Loading model from path: %s"%args.load_eval_checkpoint)
-    else:
-      steps_log.append("Initializing model from scratch.")
 
     if args.do_train:
       try:
@@ -221,7 +224,7 @@ def main(arguments):
       steps_log.append("Training model on tasks: %s"%args.train_tasks)
 
     if args.train_for_eval:
-     steps_log.append("Re-training model for individual eval tasks")
+        steps_log.append("Re-training model for individual eval tasks")
 
     if args.do_eval:
       try:
@@ -234,9 +237,6 @@ def main(arguments):
     log.info("Will run the following steps:\n%s"%('\n'.join(steps_log)))
 
     if args.do_train:
-        assert args.load_eval_checkpoint is None or args.load_eval_checkpoint == "None", \
-            "You're trying to train a model then evaluate a different model. Something is wrong."
-
         # Train on train tasks #
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
@@ -265,7 +265,6 @@ def main(arguments):
           load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
-    # TODO(Alex): currently will overwrite model checkpoints from training
     if args.train_for_eval:
         for task in eval_tasks:
                 pred_module = getattr(model, "%s_mdl" % task.name)
