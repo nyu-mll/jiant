@@ -29,7 +29,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, WikiTextLMTask, PDTBTask, \
-    JOCITask
+    JOCITask, PairOrdinalRegressionTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -278,7 +278,7 @@ def process_task(task, token_indexer, vocab):
                                                    classification=False)
         elif isinstance(task, PairOrdinalRegressionTask):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True, 
-                                                   classification=True)
+                                                   classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):

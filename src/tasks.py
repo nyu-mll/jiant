@@ -90,11 +90,12 @@ class PairRegressionTask(Task):
         return {'mse': mse}
 
 class PairOrdinalRegressionTask(Task):
-    ''' Generic sentence pair ordinal regression '''
+    ''' Generic sentence pair ordinal regression.
+        Currently just doing regression but added new class 
+        in case we find a good way to implement ordinal regression with NN'''
 
-    def __init__(self, name, n_classes): # treat ordinals as classes
+    def __init__(self, name):
         super().__init__(name)
-        self.n_classes = n_classes
         self.scorer1 = Average() # for average MSE
         self.scorer2 = Average() # for average Spearman's rho
         self.val_metric = "%s_mse" % self.name
@@ -603,7 +604,7 @@ class JOCITask(PairOrdinalRegressionTask):
     '''Class for JOCI ordinal regression task'''
     
     def __init__(self, path, max_seq_len, name="joci"):
-        super(JOCITask, self).__init__(name, 5)
+        super(JOCITask, self).__init__(name)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]

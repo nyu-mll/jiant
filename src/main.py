@@ -141,7 +141,7 @@ def main(arguments):
     parser.add_argument('--patience', help='patience in early stopping', type=int, default=5)
 
     # Evaluation options
-    parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=1)
+    parser.add_argument('--write_preds', help='1 if write test preditions', type=int, default=0)
 
     args = parser.parse_args(arguments)
 

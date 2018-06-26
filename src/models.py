@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef
+from sklearn.metrics import matthews_corrcoef, mean_squared_error
 
 from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
@@ -158,7 +158,8 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             module = build_regressor(task, d_sent * 4, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, PairOrdinalRegressionTask):
-            module = build_pair_classifier(task, d_sent, model, vocab, args)
+            regressor = build_regressor(task, d_sent * 4, args, vocab)
+            setattr(model, '%s_mdl' % task.name, regressor)
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
@@ -228,11 +229,15 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
     return module
 
 
-def build_regressor(task, d_inp, args):
+def build_regressor(task, d_inp, args, vocab=None):
     ''' Build a task specific regressor '''
     cls_type, dropout, d_hid = \
         args.classifier, args.classifier_dropout, args.classifier_hid_dim
     if isinstance(task, STSBTask) or cls_type == 'log_reg':
+        regressor = nn.Linear(d_inp, 1)
+    elif isinstance(task, JOCITask):
+        pair_encoder = SimplePairEncoder(vocab)
+        model.pair_encoder = pair_encoder
         regressor = nn.Linear(d_inp, 1)
     elif cls_type == 'mlp':
         regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
@@ -297,7 +302,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, PairRegressionTask):
             out = self._pair_regression_forward(batch, task)
         elif isinstance(task, PairOrdinalRegressionTask):
-            out = self._pair_classification_forward(batch, task)
+            out = self._pair_regression_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task)
         elif isinstance(task, RankingTask):
@@ -356,7 +361,7 @@ class MultiTaskModel(nn.Module):
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
             if isinstance(task, JOCITask):
-                task.scorer1(F.mse_loss(logits, labels))
+                task.scorer1(mean_squared_error(logits, labels))
                 task.scorer2(spearmanr(logits, labels)[0])
             else:
                 task.scorer1(logits, labels)
@@ -391,6 +396,11 @@ class MultiTaskModel(nn.Module):
                 scores = scores.squeeze(-1).data.cpu().numpy()
                 labels = labels.squeeze(-1).data.cpu().numpy()
                 task.scorer1(pearsonr(scores, labels)[0])
+                task.scorer2(spearmanr(scores, labels)[0])
+            elif isinstance(task, JOCITask):
+                scores = scores.squeeze(-1).data.cpu().numpy()
+                labels = labels.squeeze(-1).data.cpu().numpy()
+                task.scorer1(mean_squared_error(scores, labels))
                 task.scorer2(spearmanr(scores, labels)[0])
         return out
 
