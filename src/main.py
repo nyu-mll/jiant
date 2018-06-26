@@ -35,8 +35,11 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
-    parser.add_argument('--load_eval_checkpoint', help='At the start of the eval phase, restore from a specific main training checkpoint.',
-                        type=str, default='None')
+    parser.add_argument(
+        '--load_eval_checkpoint',
+        help='At the start of the eval phase, restore from a specific main training checkpoint.',
+        type=str,
+        default='None')
     parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int,
                         default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
@@ -48,8 +51,11 @@ def main(arguments):
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
                         'then evaluate on', type=str, default='')
-    parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks (defaults to True)',
-                        type=int, default=1)
+    parser.add_argument(
+        '--train_for_eval',
+        help='1 if models should be trained for the eval tasks (defaults to True)',
+        type=int,
+        default=1)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
@@ -188,7 +194,7 @@ def main(arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
-   
+
     # Train on train tasks #
     if train_tasks and args.should_train:
         assert args.load_eval_checkpoint is None or args.load_eval_checkpoint == "None", \
@@ -213,7 +219,7 @@ def main(arguments):
     elif "macro" in best_epochs:
         epoch_to_load = best_epochs['macro']
         state_path = os.path.join(args.run_dir,
-                      "model_state_main_epoch_{}.th".format(epoch_to_load))
+                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
         load_model_state(model, state_path, args.cuda)
     else:
         serialization_files = os.listdir(args.run_dir)
@@ -222,9 +228,8 @@ def main(arguments):
             epoch_to_load = max([int(x.split("model_state_main_epoch_")[-1].strip(".th"))
                                  for x in model_checkpoints])
             state_path = os.path.join(args.run_dir,
-                          "model_state_main_epoch_{}.th".format(epoch_to_load))
+                                      "model_state_main_epoch_{}.th".format(epoch_to_load))
             load_model_state(model, state_path, args.cuda)
-
 
     # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training

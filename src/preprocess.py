@@ -52,9 +52,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-    	     'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
-    	     'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
-    	     'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
+             'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
+             'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
+             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -302,7 +302,7 @@ def process_task(task, token_indexer, vocab):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
                                                    classification=False)
         elif isinstance(task, PairOrdinalRegressionTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True, 
+            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
                                                    classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
@@ -366,10 +366,12 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split[::-1]]
+    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers)
+               for sent in split[::-1]]
     trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split[::-1]]
-    #instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers)
+               for sent in split[::-1]]
+    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]

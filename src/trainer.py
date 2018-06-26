@@ -235,8 +235,8 @@ class SamplingMultiTaskTrainer:
                 checkpoint_pattern = os.path.join(self._serialization_dir, "{}_*.th".format(phase))
                 assert len(glob.glob(checkpoint_pattern)) == 0, \
                     "There are existing checkpoints here which will be overwritten." \
-                        "Use -m or LOAD_MODEL to load the checkpoints instead." \
-                        "If you don't want them, delete them or change your experimnent name."
+                    "Use -m or LOAD_MODEL to load the checkpoints instead." \
+                    "If you don't want them, delete them or change your experimnent name."
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -522,7 +522,11 @@ class SamplingMultiTaskTrainer:
         TODO: Is there a reason this was removed?
         """
         epoch = training_state["epoch"]
-        model_path = os.path.join(self._serialization_dir, "model_state_{}_epoch_{}.th".format(phase, epoch))
+        model_path = os.path.join(
+            self._serialization_dir,
+            "model_state_{}_epoch_{}.th".format(
+                phase,
+                epoch))
 
         model_state = self._model.state_dict()
 
@@ -537,8 +541,13 @@ class SamplingMultiTaskTrainer:
 
         torch.save(model_state, model_path)
 
-        torch.save(training_state, os.path.join(self._serialization_dir,
-                                                "training_state_{}_epoch_{}.th".format(phase, epoch)))
+        torch.save(
+            training_state,
+            os.path.join(
+                self._serialization_dir,
+                "training_state_{}_epoch_{}.th".format(
+                    phase,
+                    epoch)))
 
         task_states = {}
         for task_name, task_info in self._task_infos.items():
@@ -583,10 +592,11 @@ class SamplingMultiTaskTrainer:
 
         serialization_files = os.listdir(self._serialization_dir)
         for current_search_phase in search_phases_in_priority_order:
-            checkpoints = [x for x in serialization_files if "model_state_{}_".format(current_search_phase) in x]
+            checkpoints = [
+                x for x in serialization_files if "model_state_{}_".format(current_search_phase) in x]
             if any(checkpoints):
-                epoch_to_load = max([int(x.split("model_state_{}_epoch_".format(current_search_phase))[-1].strip(".th"))
-                                     for x in checkpoints])
+                epoch_to_load = max([int(x.split("model_state_{}_epoch_".format(
+                    current_search_phase))[-1].strip(".th")) for x in checkpoints])
                 return "{}_epoch_{}.th".format(current_search_phase, epoch_to_load)
             return None
 
@@ -605,8 +615,8 @@ class SamplingMultiTaskTrainer:
             The epoch at which to resume training.
         """
 
-
-        suffix_to_load = self.find_checkpoint_suffix_to_load(search_phases_in_priority_order=search_phases_in_priority_order)
+        suffix_to_load = self.find_checkpoint_suffix_to_load(
+            search_phases_in_priority_order=search_phases_in_priority_order)
         assert suffix_to_load, "No checkpoint found."
         log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
 

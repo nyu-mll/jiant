@@ -108,17 +108,26 @@ class SentenceEncoder(Model):
 
 
 class BiLMEncoder(SentenceEncoder):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM 
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM
     A simple wrap up for bidirectional LM training
     '''
 
-    def __init__(self, vocab, text_field_embedder, num_highway_layers, \
-                 phrase_layer, bwd_phrase_layer, \
+    def __init__(self, vocab, text_field_embedder, num_highway_layers,
+                 phrase_layer, bwd_phrase_layer,
                  cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
-        super(BiLMEncoder, self).__init__(vocab, text_field_embedder, num_highway_layers, phrase_layer, \
-                                          cove_layer, elmo_layer, dropout, mask_lstms, \
-                                          initializer)
+        super(
+            BiLMEncoder,
+            self).__init__(
+            vocab,
+            text_field_embedder,
+            num_highway_layers,
+            phrase_layer,
+            cove_layer,
+            elmo_layer,
+            dropout,
+            mask_lstms,
+            initializer)
         self._bwd_phrase_layer = bwd_phrase_layer
         self.output_dim += self._bwd_phrase_layer.get_output_dim()
         initializer(self)
@@ -438,7 +447,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     def is_bidirectional(self) -> int:
         return 0
 
-    def forward(self, inputs: torch.Tensor, mask: torch.Tensor): # pylint: disable=arguments-differ
+    def forward(self, inputs: torch.Tensor, mask: torch.Tensor):  # pylint: disable=arguments-differ
         if self._use_positional_encoding:
             output = add_positional_features(inputs)
         else:
