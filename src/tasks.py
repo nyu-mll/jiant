@@ -85,11 +85,13 @@ class PairClassificationTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+
 class NLIProbingTask(PairClassificationTask):
     ''' Generic probing with NLI test data (cannot be used for train or eval)'''
 
     def __init__(self, name, n_classes):
         super().__init__(name)
+
 
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
@@ -153,6 +155,7 @@ class RankingTask(Task):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         raise NotImplementedError
+
 
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
@@ -677,6 +680,7 @@ class PDTBTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
+
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
