@@ -35,8 +35,11 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
-    parser.add_argument('--force_load_epoch', help='Force loading from a certain epoch',
-                        type=int, default=-1)
+    parser.add_argument(
+        '--load_eval_checkpoint',
+        help='At the start of the eval phase, restore from a specific main training checkpoint.',
+        type=str,
+        default='None')
     parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int,
                         default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
@@ -48,8 +51,11 @@ def main(arguments):
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
                         'then evaluate on', type=str, default='')
-    parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks (defaults to True)',
-                        type=int, default=1)
+    parser.add_argument(
+        '--train_for_eval',
+        help='1 if models should be trained for the eval tasks (defaults to True)',
+        type=int,
+        default=1)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
@@ -82,7 +88,7 @@ def main(arguments):
     parser.add_argument('--char_filter_sizes', help='filter sizes for char emb cnn', type=str,
                         default='2,3,4,5')
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
-    parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
+    parser.add_argument('--elmo_chars_only', help='1 if only use ELMo charCNN', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
     parser.add_argument('--char_embs', help='1 if use character embs', type=int, default=0)
     parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
@@ -91,7 +97,7 @@ def main(arguments):
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
-                        choices=['bow', 'rnn', 'transformer', 'transformer-d'])
+                        choices=['bow', 'rnn', 'transformer'])
     parser.add_argument('--sent_combine_method', help='how to aggregate hidden states of sent rnn',
                         type=str, default='max', choices=['max', 'mean', 'final'])
 
@@ -155,7 +161,7 @@ def main(arguments):
         default=1000)
     parser.add_argument('--eval_max_vals', help='Maximum number of validation checks for eval task',
                         type=int, default=100)
-    parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=1)
+    parser.add_argument('--write_preds', help='1 if write test predictions', type=int, default=0)
 
     args = parser.parse_args(arguments)
 
@@ -191,6 +197,8 @@ def main(arguments):
 
     # Train on train tasks #
     if train_tasks and args.should_train:
+        assert args.load_eval_checkpoint is None or args.load_eval_checkpoint == "None", \
+            "You're trying to train a model then evaluate a different model. Something is wrong."
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
                                                             args.max_vals)
@@ -200,28 +208,28 @@ def main(arguments):
                                     args.val_interval, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
-                                    args.shared_optimizer, args.load_model)
+                                    args.shared_optimizer, args.load_model, phase="main")
     else:
         log.info("Skipping training.")
         best_epochs = {}
 
-    # Select model checkpoint from training to load
-    if args.force_load_epoch >= 0:  # force loading a particular epoch
-        epoch_to_load = args.force_load_epoch
+    # Select model checkpoint from main training run to load
+    if args.load_eval_checkpoint is not None and args.load_eval_checkpoint != "None":
+        load_model_state(model, args.load_eval_checkpoint, args.cuda)
     elif "macro" in best_epochs:
         epoch_to_load = best_epochs['macro']
+        state_path = os.path.join(args.run_dir,
+                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
+        load_model_state(model, state_path, args.cuda)
     else:
         serialization_files = os.listdir(args.run_dir)
-        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
+        model_checkpoints = [x for x in serialization_files if "model_state_main_epoch_" in x]
         if model_checkpoints:
-            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
+            epoch_to_load = max([int(x.split("model_state_main_epoch_")[-1].strip(".th"))
                                  for x in model_checkpoints])
-        else:
-            epoch_to_load = -1
-    if epoch_to_load >= 0:
-        state_path = os.path.join(args.run_dir,
-                                  "model_state_epoch_{}.th".format(epoch_to_load))
-        load_model_state(model, state_path, args.cuda)
+            state_path = os.path.join(args.run_dir,
+                                      "model_state_main_epoch_{}.th".format(epoch_to_load))
+            load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training
@@ -235,7 +243,7 @@ def main(arguments):
                                        args.eval_val_interval, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
-                                       args.shared_optimizer, args.load_model)
+                                       args.shared_optimizer, load_model=False, phase="eval")
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
             load_model_state(model, layer_path, args.cuda)

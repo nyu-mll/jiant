@@ -29,7 +29,9 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask
+    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
+    DisSentWikiSingleTask, DisSentWikiFullTask, \
+    JOCITask, PairOrdinalRegressionTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -46,9 +48,13 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
+             'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'pdtb': (PDTBTask, 'PDTB/')
+             'pdtb': (PDTBTask, 'PDTB/'),
+             'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
+             'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
+             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -98,18 +104,21 @@ def build_tasks(args):
     log.info("\tFinished building vocab. Using %d words, %d chars.",
              word_v_size, char_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
-    if not args.reload_vocab and os.path.exists(emb_file):
-        word_embs = pkl.load(open(emb_file, 'rb'))
-    else:
-        log.info("\tBuilding embeddings from scratch")
-        if args.fastText:
-            word_embs, _ = get_fastText_model(vocab, args.d_word,
-                                              model_file=args.fastText_model_file)
-            log.info("\tNo pickling")
+    if args.word_embs != 'none':
+        if not args.reload_vocab and os.path.exists(emb_file):
+            word_embs = pkl.load(open(emb_file, 'rb'))
         else:
-            word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-            pkl.dump(word_embs, open(emb_file, 'wb'))
-            log.info("\tSaved embeddings to %s", emb_file)
+            log.info("\tBuilding embeddings from scratch")
+            if args.fastText:
+                word_embs, _ = get_fastText_model(vocab, args.d_word,
+                                                  model_file=args.fastText_model_file)
+                log.info("\tNo pickling")
+            else:
+                word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+                pkl.dump(word_embs, open(emb_file, 'wb'))
+                log.info("\tSaved embeddings to %s", emb_file)
+    else:
+        word_embs = None
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
@@ -295,6 +304,9 @@ def process_task(task, token_indexer, vocab):
         elif isinstance(task, PairRegressionTask):
             split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
                                                    classification=False)
+        elif isinstance(task, PairOrdinalRegressionTask):
+            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
+                                                   classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):
@@ -357,10 +369,12 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split[::-1]]
+    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers)
+               for sent in split[::-1]]
     trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split[::-1]]
-    #instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers)
+               for sent in split[::-1]]
+    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
