@@ -200,27 +200,26 @@ def main(arguments):
                                     args.val_interval, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
-                                    args.shared_optimizer, args.load_model)
+                                    args.shared_optimizer, args.load_model, phase="main")
     else:
         log.info("Skipping training.")
         best_epochs = {}
 
-    # Select model checkpoint from training to load
-    if args.force_load_epoch >= 0:  # force loading a particular epoch
-        epoch_to_load = args.force_load_epoch
-    elif "macro" in best_epochs:
+    # Select model checkpoint from main training run to load
+
+    if "macro" in best_epochs:
         epoch_to_load = best_epochs['macro']
     else:
         serialization_files = os.listdir(args.run_dir)
-        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
+        model_checkpoints = [x for x in serialization_files if "model_state_main_epoch_" in x]
         if model_checkpoints:
-            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
+            epoch_to_load = max([int(x.split("model_state_main_epoch_")[-1].strip(".th"))
                                  for x in model_checkpoints])
         else:
             epoch_to_load = -1
     if epoch_to_load >= 0:
         state_path = os.path.join(args.run_dir,
-                                  "model_state_epoch_{}.th".format(epoch_to_load))
+                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
         load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
@@ -235,7 +234,7 @@ def main(arguments):
                                        args.eval_val_interval, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
-                                       args.shared_optimizer, args.load_model)
+                                       args.shared_optimizer, load_model=False, phase="eval")
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
             load_model_state(model, layer_path, args.cuda)
