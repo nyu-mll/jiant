@@ -35,8 +35,8 @@ def main(arguments):
     # Time saving flags
     parser.add_argument('--should_train', help='1 if should train model', type=int, default=1)
     parser.add_argument('--load_model', help='1 if load from checkpoint', type=int, default=1)
-    parser.add_argument('--force_load_epoch', help='Force loading from a certain epoch',
-                        type=int, default=-1)
+    parser.add_argument('--load_eval_checkpoint', help='At the start of the eval phase, restore from a specific main training checkpoint.',
+                        type=str, default='None')
     parser.add_argument('--reload_tasks', help='1 if force re-reading of tasks', type=int,
                         default=0)
     parser.add_argument('--reload_indexing', help='1 if force re-indexing for all tasks',
@@ -188,9 +188,11 @@ def main(arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
-
+   
     # Train on train tasks #
     if train_tasks and args.should_train:
+        assert args.load_eval_checkpoint is None or args.load_eval_checkpoint == "None", \
+            "You're trying to train a model then evaluate a different model. Something is wrong."
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
                                                             args.max_vals)
@@ -206,21 +208,23 @@ def main(arguments):
         best_epochs = {}
 
     # Select model checkpoint from main training run to load
-
-    if "macro" in best_epochs:
+    if args.load_eval_checkpoint is not None and args.load_eval_checkpoint != "None":
+        load_model_state(model, args.load_eval_checkpoint, args.cuda)
+    elif "macro" in best_epochs:
         epoch_to_load = best_epochs['macro']
+        state_path = os.path.join(args.run_dir,
+                      "model_state_main_epoch_{}.th".format(epoch_to_load))
+        load_model_state(model, state_path, args.cuda)
     else:
         serialization_files = os.listdir(args.run_dir)
         model_checkpoints = [x for x in serialization_files if "model_state_main_epoch_" in x]
         if model_checkpoints:
             epoch_to_load = max([int(x.split("model_state_main_epoch_")[-1].strip(".th"))
                                  for x in model_checkpoints])
-        else:
-            epoch_to_load = -1
-    if epoch_to_load >= 0:
-        state_path = os.path.join(args.run_dir,
-                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
-        load_model_state(model, state_path, args.cuda)
+            state_path = os.path.join(args.run_dir,
+                          "model_state_main_epoch_{}.th".format(epoch_to_load))
+            load_model_state(model, state_path, args.cuda)
+
 
     # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training
