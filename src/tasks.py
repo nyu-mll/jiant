@@ -632,3 +632,73 @@ class PDTBTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
+
+class DisSentBWBSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with the Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="dissentbwb"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'bwb.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwiki"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiFullTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwikifull"):
+        super().__init__(name, 8) # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
