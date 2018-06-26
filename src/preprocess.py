@@ -29,7 +29,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask
+    WikiText2LMTask, WikiText103LMTask, DisSentTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -48,7 +48,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wnli': (WNLITask, 'WNLI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'pdtb': (PDTBTask, 'PDTB/')
+             'pdtb': (PDTBTask, 'PDTB/'),
+	     'dissent': (DisSentTask, 'DisSent/bwb/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
