@@ -29,7 +29,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     MultiNLITelephoneTask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask
+    WikiText2LMTask, WikiText103LMTask, MTTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -48,7 +48,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wnli': (WNLITask, 'WNLI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'pdtb': (PDTBTask, 'PDTB/')
+             'pdtb': (PDTBTask, 'PDTB/'),
+             'wmt14_en_de': (MTTask, 'wmt14_en_de')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -298,6 +299,8 @@ def process_task(task, token_indexer, vocab):
                                                    classification=False)
         elif isinstance(task, LanguageModelingTask):
             split = process_lm_task_split(split_text, token_indexer)
+        elif isinstance(task, MTTask):
+            split = process_mt_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):
             pass
         elif isinstance(task, RankingTask):
@@ -362,4 +365,11 @@ def process_lm_task_split(split, indexers):
     trg_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b}) \
                  for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
+    return instances
+
+def process_mt_task_split(split, indexers):
+    ''' Process a machine translation split '''
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
     return instances

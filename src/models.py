@@ -1,7 +1,7 @@
 '''Core model and functions for building it.
 
 If you are adding a new task, you should [...]'''
-import sys
+import sys, math
 import logging as log
 import ipdb as pdb  # pylint: disable=unused-import
 
@@ -16,7 +16,7 @@ from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.modules.similarity_functions import DotProductSimilarity
+from allennlp.modules.similarity_functions import DotProductSimilarity, BilinearSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
@@ -25,10 +25,12 @@ from allennlp.modules.elmo import Elmo
 from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask
+    SequenceGenerationTask, LanguageModelingTask, \
+    MTTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder
 from utils import combine_hidden_states
+from seq2seq_decoder import Seq2SeqDecoder
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -173,6 +175,15 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             d_inp = d_sent / 2 if args.bidirectional else d_sent
             hid2voc = build_lm(task, d_inp, args) # separate fwd + bwd
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, MTTask):
+            decoder = Seq2SeqDecoder.from_params(vocab,
+                Params({'input_dim': d_sent,
+                        'target_embedding_dim': 300,
+                        'max_decoding_steps': 200,
+                        'target_namespace': 'tokens',
+                        'attention_function': BilinearSimilarity(d_sent, d_sent),
+                        'scheduled_sampling_ratio': 0.0}))
+            setattr(model, '%s_decoder' % task.name, decoder)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
@@ -401,6 +412,12 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
+
+        if isinstance(task, MTTask):
+            decoder = getattr(self, "%s_decoder" % task.name)
+            out = decoder.forward(sent, sent_mask, batch['targs'])
+            task.scorer1(math.exp(out['loss'].item()))
+            return out
 
         if 'targs' in batch:
             pass
