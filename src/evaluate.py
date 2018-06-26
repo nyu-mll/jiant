@@ -7,7 +7,7 @@ import ipdb as pdb
 import torch
 from allennlp.data.iterators import BasicIterator
 from utils import device_mapping
-from tasks import STSBTask
+from tasks import STSBTask, JOCITask
 
 
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
@@ -44,7 +44,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             else:
                 assert 'targs' in batch
                 n_examples += batch['targs']['words'].nelement()
-            if isinstance(task, STSBTask):
+            if isinstance(task, STSBTask) or isinstance(task, JOCITask):
                 preds, _ = out['logits'].max(dim=1)
             else:
                 _, preds = out['logits'].max(dim=1)
