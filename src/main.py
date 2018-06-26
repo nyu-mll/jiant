@@ -186,7 +186,6 @@ def main(arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
-    pdb.set_trace()
 
     # Train on train tasks #
     if train_tasks and args.should_train:
