@@ -48,7 +48,11 @@ def main(arguments):
 
     # Control flow for main
     parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
-    parser.add_argument('--do_eval', help='1 to run eval tasks (where model can be retrained for eval task) else 0', type=int, default=0)
+    parser.add_argument(
+        '--do_eval',
+        help='1 to run eval tasks (where model can be retrained for eval task) else 0',
+        type=int,
+        default=0)
 
     # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
@@ -185,7 +189,7 @@ def main(arguments):
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
     log.info("Using random seed %d", seed)
-      
+
     # Prepare data #
     log.info("Loading tasks...")
     start_time = time.time()
@@ -201,45 +205,40 @@ def main(arguments):
 
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
+
     if not(args.load_eval_checkpoint == 'None'):
-      try:
-        assert os.path.exists(args.load_eval_checkpoint)
-      except AssertionError:
-        log.error("Error: Attempting to load model from non-existent path: [%s]"%args.load_eval_checkpoint)
-        return 0
-      steps_log.append("Loading model from path: %s"%args.load_eval_checkpoint)
+        try:
+            assert os.path.exists(args.load_eval_checkpoint)
+        except AssertionError:
+            log.error(
+                "Error: Attempting to load model from non-existent path: [%s]" %
+                args.load_eval_checkpoint)
+            return 0
+        steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
     else:
-      steps_log.append("Initializing model from scratch.")
+        steps_log.append("Initializing model from scratch.")
 
-    if args.do_train:
-      try:
-        assert args.train_tasks
-      except AssertionError:
-        log.error("Error: Must specify at least on training task: [%s]"%args.train_tasks)
-        return 0 
-      steps_log.append("Training model on tasks: %s"%args.train_tasks)
-
-    if args.train_for_eval:
-     steps_log.append("Re-training model for individual eval tasks")
-
-    if args.do_eval:
-      try:
-        assert args.eval_tasks
-      except AssertionError:
-        log.error("Error: Must specify at least one eval task: [%s]"%args.eval_tasks)
-        return 0 
-      steps_log.append("Evaluating model on tasks: %s"%args.eval_tasks)
-      
-    log.info("Will run the following steps:\n%s"%('\n'.join(steps_log)))
-
-    best_epochs = {}
     if args.do_train:
         try:
-            assert (args.load_eval_checkpoint == "None") #, #is None or args.load_eval_checkpoint == "None", \
+            assert args.train_tasks
         except AssertionError:
-            log.error("You're trying to train a model then evaluate a different model. Something is wrong.")
+            log.error("Error: Must specify at least on training task: [%s]" % args.train_tasks)
             return 0
+        steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
+    if args.train_for_eval:
+        steps_log.append("Re-training model for individual eval tasks")
+
+    if args.do_eval:
+        try:
+            assert args.eval_tasks
+        except AssertionError:
+            log.error("Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
+            return 0
+        steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
+
+    log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
+    if args.do_train:
         # Train on train tasks #
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
@@ -253,37 +252,37 @@ def main(arguments):
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    if not(args.load_eval_checkpoint == "None"): # is not None and args.load_eval_checkpoint != "None":
-        log.info("Loading existing model from %s..."%args.load_eval_checkpoint)
+    # is not None and args.load_eval_checkpoint != "None":
+    if not(args.load_eval_checkpoint == "None"):
+        log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
-          try:
+        try:
             assert "macro" in best_epochs
-          except AssertionError:
-            log.error("Error: best_epochs must contain key 'macro' in order to determine best model.")
+        except AssertionError:
+            log.error("Error: best_epochs just contain key 'macro' in order to determine best model")
             return 0
-          epoch_to_load = best_epochs['macro']
-          state_path = os.path.join(args.run_dir,
+        epoch_to_load = best_epochs['macro']
+        state_path = os.path.join(args.run_dir,
                                   "model_state_main_epoch_{}.th".format(epoch_to_load))
-          load_model_state(model, state_path, args.cuda)
+        load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
-    # TODO(Alex): currently will overwrite model checkpoints from training
     if args.train_for_eval:
         for task in eval_tasks:
-                pred_module = getattr(model, "%s_mdl" % task.name)
-                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-                trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                                    args.eval_max_vals)
-                best_epoch = trainer.train([task], task.val_metric,
-                                           args.eval_val_interval, 1,
-                                           args.weighting_method, args.scaling_method,
-                                           to_train, opt_params, schd_params,
-                                           args.shared_optimizer, load_model=False, phase="eval")
+            pred_module = getattr(model, "%s_mdl" % task.name)
+            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            trainer, _, opt_params, schd_params = build_trainer(args, model,
+                                                                args.eval_max_vals)
+            best_epoch = trainer.train([task], task.val_metric,
+                                       args.eval_val_interval, 1,
+                                       args.weighting_method, args.scaling_method,
+                                       to_train, opt_params, schd_params,
+                                       args.shared_optimizer, load_model=False, phase="eval")
 
-                best_epoch = best_epoch[task.name]
-                layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
-                load_model_state(model, layer_path, args.cuda)
+            best_epoch = best_epoch[task.name]
+            layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+            load_model_state(model, layer_path, args.cuda)
 
     if args.do_eval:
         # Evaluate #
@@ -292,11 +291,12 @@ def main(arguments):
         if args.write_preds:
             _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
             write_preds(te_preds, args.run_dir)
-    
+
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
-    
+
     log.info("Done!")
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
