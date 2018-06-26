@@ -1,9 +1,11 @@
 '''Train a multi-task model using AllenNLP '''
+import argparse
+import json
 import os
+import random
 import sys
 import time
-import random
-import argparse
+
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
@@ -19,12 +21,34 @@ from evaluate import evaluate, load_model_state, write_results, write_preds
 
 import _pickle as pkl
 
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
+DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
+
 def main(arguments):
-    args = config.parse_arguments(arguments)
+    ''' Train or load a model. Evaluate on some tasks. '''
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--config_file', 
+                        help="Config file (.conf) for model parameters.", 
+                        type=str, default=DEFAULT_CONFIG_FILE)
+    parser.add_argument('--overrides', help="Parameter overrides, as valid HOCON string.", type=str, default=None)
+
+    args = parser.parse_args(arguments)
+    args = config.params_from_file(args.config_file, args.overrides)
 
     # Logistics #
-    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir, args.log_file)))
-    log.info(args)
+    if not os.path.isdir(args.exp_dir):
+        os.mkdir(args.exp_dir)
+    if not os.path.isdir(args.run_dir):
+        os.mkdir(args.run_dir)
+    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir, 
+                                                            args.log_file)))
+    log.info("Parsed args: \n%s", args)
+
+    config_file = os.path.join(args.run_dir, "params.conf")
+    config.write_params(args, config_file)
+    log.info("Saved config to %s", config_file)
+
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)

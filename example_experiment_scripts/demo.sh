@@ -75,11 +75,9 @@ task_patience=50
 WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=16
-BPP_METHOD="percent_tr"
 BPP_BASE=100
 VAL_INTERVAL=100
 MAX_VALS=1000
-TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
 
