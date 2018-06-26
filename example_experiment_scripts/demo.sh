@@ -36,11 +36,17 @@ RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
 
-DO_TRAIN=1
+DO_TRAIN=0
 DO_EVAL=1
+<<<<<<< HEAD
 DO_PROBE=0
 TRAIN_FOR_EVAL=1
 LOAD_EVAL_CHECKPOINT='None'
+=======
+TRAIN_FOR_EVAL=0
+#LOAD_EVAL_CHECKPOINT='None'
+LOAD_EVAL_CHECKPOINT='/home/elliepavlick_gmail_com/exp/jiant-demo/sst/model_state_epoch_1.th'
+>>>>>>> 64356077fcc51f4c10b1226d665d0486bad53680
 
 train_tasks='sst'
 eval_tasks='sst'
