@@ -158,8 +158,8 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
     ''' Load tasks '''
     def parse_tasks(task_list):
         '''parse string of tasks'''
-        if task_list == 'all':
-            tasks = sorted(NAME2INFO.keys())
+        if task_list == 'glue':
+            tasks = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']
         elif task_list == 'none':
             tasks = []
         else:

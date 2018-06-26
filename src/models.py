@@ -207,7 +207,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             module = build_regressor(task, d_sent * 4, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, PairOrdinalRegressionTask):
-            regressor = build_regressor(task, d_sent * 4, args, vocab)
+            regressor = build_regressor(task, d_sent * 4, args, model, vocab)
             setattr(model, '%s_mdl' % task.name, regressor)
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
@@ -279,7 +279,7 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
     return module
 
 
-def build_regressor(task, d_inp, args, vocab=None):
+def build_regressor(task, d_inp, args, model=None, vocab=None):
     ''' Build a task specific regressor '''
     cls_type, dropout, d_hid = \
         args.classifier, args.classifier_dropout, args.classifier_hid_dim
