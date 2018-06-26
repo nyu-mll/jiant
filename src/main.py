@@ -247,7 +247,7 @@ def main(arguments):
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
 
     if args.do_train:
-            # Train on train tasks #
+        # Train on train tasks #
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
                                                             args.max_vals)
