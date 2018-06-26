@@ -98,10 +98,12 @@ def main(arguments):
     parser.add_argument('--bidirectional', help='1 if bidirectional RNN', type=int, default=1)
     parser.add_argument('--pair_enc', help='type of pair encoder to use', type=str,
                         default='simple', choices=['simple', 'attn'])
-    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=4096)
+    parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=512)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
-    parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=1)
+    parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=8)
+    parser.add_argument('--d_proj', help='transformer projection dim', type=int, default=64)
+    parser.add_argument('--d_ff', help='transformer feedforward dim', type=int, default=2048)
     parser.add_argument('--dropout', help='dropout rate to use in training', type=float, default=.2)
 
     # Training options
@@ -127,6 +129,8 @@ def main(arguments):
                         type=float, default=0.0)
     parser.add_argument('--lr_decay_factor', help='lr decay factor when val score doesn\'t improve',
                         type=float, default=.5)
+    parser.add_argument('--warmup', help='n warmup steps for Transformer LR scheduler',
+                        type=int, default=4000)
 
     # Multi-task training options
     parser.add_argument('--val_interval', help='Number of passes between validation checks',

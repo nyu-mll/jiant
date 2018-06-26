@@ -764,9 +764,9 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         # that these matrix multiplications are well conditioned initially.
         # Without this initialisation, this (non-deterministically) produces
         # NaNs and overflows.
-        init.xavier_normal(self._query_projections)
-        init.xavier_normal(self._key_projections)
-        init.xavier_normal(self._value_projections)
+        init.xavier_normal_(self._query_projections)
+        init.xavier_normal_(self._key_projections)
+        init.xavier_normal_(self._value_projections)
 
     def get_input_dim(self):
         return self._input_dim
