@@ -215,8 +215,6 @@ def main(arguments):
                 args.load_eval_checkpoint)
             return 0
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
-    else:
-        steps_log.append("Initializing model from scratch.")
 
     if args.do_train:
         try:
