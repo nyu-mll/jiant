@@ -49,7 +49,6 @@ def main(arguments):
     # Control flow for main
     parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
     parser.add_argument('--do_eval', help='1 to run eval tasks (where model can be retrained for eval task) else 0', type=int, default=0)
-    parser.add_argument('--do_probe', help='1 to run test-only probing tasks else 0', type=int, default=0)
     parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks else 0', type=int, default=0)
 
     # Tasks and task-specific modules
@@ -201,8 +200,8 @@ def main(arguments):
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    steps_log = []
     # Check that necessary parameters are set for each step. Exit with error if not.
+    steps_log = []
     if args.load_eval_checkpoint:
       try:
         assert os.path.exists(args.load_eval_checkpoint)
