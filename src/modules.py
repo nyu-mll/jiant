@@ -107,6 +107,71 @@ class SentenceEncoder(Model):
         return sent_enc, sent_mask
 
 
+class BiLMEncoder(SentenceEncoder):
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM 
+    A simple wrap up for bidirectional LM training
+    '''
+
+    def __init__(self, vocab, text_field_embedder, num_highway_layers, \
+                 phrase_layer, bwd_phrase_layer, \
+                 cove_layer=None, elmo_layer=None, dropout=0.2, mask_lstms=True,
+                 initializer=InitializerApplicator()):
+        super(BiLMEncoder, self).__init__(vocab, text_field_embedder, num_highway_layers, phrase_layer, \
+                                          cove_layer, elmo_layer, dropout, mask_lstms, \
+                                          initializer)
+        self._bwd_phrase_layer = bwd_phrase_layer
+        self.output_dim += self._bwd_phrase_layer.get_output_dim()
+        initializer(self)
+
+    def _uni_directional_forward(self, sent, go_forward=True):
+        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        if self._cove is not None:
+            sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
+            sent_cove_embs = self._cove(sent['words'], sent_lens)
+            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+        if self._elmo is not None:
+            elmo_embs = self._elmo(sent['elmo'])
+            if "words" in sent:
+                sent_embs = torch.cat([sent_embs, elmo_embs['elmo_representations'][0]], dim=-1)
+            else:
+                sent_embs = elmo_embs['elmo_representations'][0]
+        sent_embs = self._dropout(sent_embs)
+
+        sent_mask = util.get_text_field_mask(sent).float()
+        sent_lstm_mask = sent_mask if self._mask_lstms else None
+
+        if go_forward:
+            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        else:
+            sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
+
+        if self._elmo is not None and len(elmo_embs['elmo_representations']) > 1:
+            sent_enc = torch.cat([sent_enc, elmo_embs['elmo_representations'][1]], dim=-1)
+        #sent_enc = self._dropout(sent_enc)
+
+        sent_mask = sent_mask.unsqueeze(dim=-1)
+
+        return sent_enc, sent_mask
+
+    def forward(self, fwd_sent, bwd_sent):
+        # pylint: disable=arguments-differ
+        """
+        Args:
+            - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
+
+        Returns:
+            - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
+        """
+        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(fwd_sent)
+        bwd_sent_enc, bwd_sent_mask = self._uni_directional_forward(bwd_sent, False)
+        sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=1)
+        sent_mask = torch.cat([fwd_sent_mask, bwd_sent_mask], dim=1)
+
+        sent_enc = self._dropout(sent_enc)
+
+        return sent_enc, sent_mask
+
+
 class BoWSentEncoder(Model):
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
