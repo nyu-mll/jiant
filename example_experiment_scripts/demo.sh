@@ -37,14 +37,15 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 
 LOAD_MODEL=0
-DO_TRAIN=1
+DO_TRAIN=0
 DO_EVAL=1
-DO_PROBE=0
 TRAIN_FOR_EVAL=1
+
 LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
 eval_tasks='mrpc'
+
 CLASSIFIER=mlp
 d_hid_cls=64
 max_seq_len=10

@@ -236,6 +236,7 @@ def main(arguments):
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
+    best_epochs = {}
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
