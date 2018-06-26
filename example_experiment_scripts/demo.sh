@@ -40,6 +40,7 @@ DO_TRAIN=1
 DO_EVAL=1
 DO_PROBE=0
 TRAIN_FOR_EVAL=1
+LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
 eval_tasks='sst'
@@ -58,11 +59,14 @@ COVE=0
 
 sent_enc="rnn"
 bidirectional=1
-n_heads=1
 d_hid=128
 PAIR_ENC="simple"
 N_LAYERS_ENC=1
 n_layers_highway=0
+n_heads=8
+d_proj=64
+d_ff=2048
+warmup=4000
 
 OPTIMIZER="adam"
 LR=.001
@@ -77,7 +81,9 @@ BATCH_SIZE=16
 BPP_METHOD="percent_tr"
 BPP_BASE=100
 VAL_INTERVAL=100
-MAX_VALS=1000
+EVAL_VAL_INTERVAL=100
+MAX_VALS=10
+EVAL_MAX_VALS=20
 TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'

@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F:fA:' flag; do
+while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -25,11 +25,18 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
+        x) EVAL_VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
+        M) EVAL_MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
+
         A) n_heads="${OPTARG}" ;;
+        p) d_proj="${OPTARG}" ;;
+        Q) d_ff="${OPTARG}" ;;
+        G) warmup="${OPTARG}" ;;
+
         l) LR="${OPTARG}" ;;
         #s) min_lr="${OPTARG}" ;;
         L) N_LAYERS_ENC="${OPTARG}" ;;
@@ -41,9 +48,10 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:GI:N:y:K:W:F
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
         #N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
+        N) LOAD_EVAL_CHECKPOINT="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
-        p) patience="${OPTARG}" ;;
+        #p) patience="${OPTARG}" ;;
         W) weighting_method="${OPTARG}" ;;
         #s) scaling_method="${OPTARG}" ;;
     esac
@@ -85,6 +93,9 @@ ALLEN_ARGS+=( --n_layers_enc ${N_LAYERS_ENC} )
 ALLEN_ARGS+=( --pair_enc ${PAIR_ENC} )
 ALLEN_ARGS+=( --n_layers_highway ${n_layers_highway} )
 ALLEN_ARGS+=( --n_heads ${n_heads} )
+ALLEN_ARGS+=( --d_proj ${d_proj} )
+ALLEN_ARGS+=( --d_ff ${d_ff} )
+ALLEN_ARGS+=( --warmup ${warmup} )
 ALLEN_ARGS+=( --batch_size ${BATCH_SIZE} )
 ALLEN_ARGS+=( --bpp_base ${BPP_BASE} )
 ALLEN_ARGS+=( --optimizer ${OPTIMIZER} )
@@ -96,6 +107,7 @@ ALLEN_ARGS+=( --patience ${patience} )
 ALLEN_ARGS+=( --weight_decay ${WEIGHT_DECAY} )
 ALLEN_ARGS+=( --dropout ${dropout} )
 ALLEN_ARGS+=( --val_interval ${VAL_INTERVAL} )
+ALLEN_ARGS+=( --eval_val_interval ${EVAL_VAL_INTERVAL} )
 ALLEN_ARGS+=( --max_vals ${MAX_VALS} )
 ALLEN_ARGS+=( --weighting_method ${weighting_method} )
 ALLEN_ARGS+=( --scaling_method ${scaling_method} )
@@ -104,10 +116,9 @@ ALLEN_ARGS+=( --scheduler_threshold ${SCHED_THRESH} )
 ALLEN_ARGS+=( --reload_tasks ${RELOAD_TASKS} )
 ALLEN_ARGS+=( --reload_indexing ${RELOAD_INDEX} )
 ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
-ALLEN_ARGS+=( --do_train ${DO_TRAIN} )
-ALLEN_ARGS+=( --do_eval ${DO_EVAL} )
-ALLEN_ARGS+=( --do_probe ${DO_PROBE} )
-ALLEN_ARGS+=( --train_for_eval ${TRAIN_FOR_EVAL} )
+ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
+ALLEN_ARGS+=( --load_eval_checkpoint ${LOAD_EVAL_CHECKPOINT} )
+ALLEN_ARGS+=( --eval_max_vals ${EVAL_MAX_VALS} )
 
 ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
