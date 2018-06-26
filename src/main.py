@@ -232,7 +232,6 @@ def main(arguments):
             load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
-    # TODO(Alex): currently will overwrite model checkpoints from training
     for task in eval_tasks:
         if args.train_for_eval:
             pred_module = getattr(model, "%s_mdl" % task.name)
