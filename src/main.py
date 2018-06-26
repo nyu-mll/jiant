@@ -259,7 +259,7 @@ def main(arguments):
         try:
             assert "macro" in best_epochs
         except AssertionError:
-            log.error("Error: best_epochs just contain key 'macro' in order to determine best model")
+            log.error("No model to evaluate.")
             return 0
         epoch_to_load = best_epochs['macro']
         state_path = os.path.join(args.run_dir,
