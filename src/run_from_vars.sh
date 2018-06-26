@@ -17,11 +17,11 @@ while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W
         c) COVE=1 ;;
 
         q) no_tqdm=1 ;;
-        #t) SHOULD_TRAIN=0 ;;
+        t) SHOULD_TRAIN=0 ;;
         k) RELOAD_TASKS=1 ;;
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
-        #m) LOAD_MODEL=1 ;;
+        m) LOAD_MODEL=1 ;;
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
@@ -47,7 +47,6 @@ while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W
         #E) PAIR_ENC="${OPTARG}" ;;
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
-        #N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
         N) LOAD_EVAL_CHECKPOINT="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
