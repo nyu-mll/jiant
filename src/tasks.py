@@ -8,6 +8,7 @@
 import os
 import logging as log
 import ipdb as pdb
+import json
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
@@ -652,36 +653,54 @@ class GroundedTask(Task):
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
+        self.sentences = self.train_data[0] + \
+            self.val_data[0]
+        self.ids = self.train_data[1] + \
+                   self.val_data[1]
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
+
     
     def load_data(self, path, max_seq_len):
-        print('Inside load data!')
-        
-        ''' Process the dataset located at path.  '''
-        ''' positive = captions of the same image, negative = captions of different images '''
-        targ_map = {'negative': 0, 'positive': 1}
-        targ_map = {'0': 0, '1': 1}
+        '''Map sentences to image ids (keep track of sentence ids just in case)'''
 
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        path = '/Users/romapatel/Desktop/mscoco/datasets/processed/'
 
-        # change all to train for testing!
-        val_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-        # we don't have predefined test captions because this the ImageNet task, will probably add sampled sentences
-        te_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        # changed for temp
+        f = open(os.path.join(path, "train_temp.json"), 'r')
+        for line in f: tr_dict = json.loads(line)
+        f = open(os.path.join(path, "val_temp.json"), 'r')
+        for line in f: val_dict = json.loads(line)
+        f = open(os.path.join(path, "test_temp.json"), 'r')
+        for line in f: te_dict = json.loads(line)
 
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
+        train, val, test = ([], [], []), ([], [], []), ([], [], [])
+        for img_id in tr_dict:
+            for caption_id in tr_dict[img_id]['captions']:
+                train[0].append(tr_dict[img_id]['captions'][caption_id])
+                train[1].append(img_id)
+                train[2].append(caption_id)
+        for img_id in val_dict:
+            for caption_id in val_dict[img_id]['captions']:
+                val[0].append(val_dict[img_id]['captions'][caption_id])
+                val[2].append(caption_id)
+        for img_id in te_dict:
+            for caption_id in te_dict[img_id]['captions']:
+                test[0].append(te_dict[img_id]['captions'][caption_id])
+                test[1].append(img_id)
+                test[2].append(caption_id)
+
+        print(train)
+        self.train_data = train
+        self.val_data = val
+        self.test_data = test
+
         log.info("\tFinished loading MSCOCO data.")
+
+            
 
 class DAETask(LanguageModelingTask):
     ''' Denoising Autoencoder task on Toronto/Wikitext '''
