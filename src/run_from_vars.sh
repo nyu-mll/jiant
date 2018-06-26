@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
+while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -25,6 +25,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
+        x) EVAL_VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
         M) EVAL_MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
@@ -105,6 +106,7 @@ ALLEN_ARGS+=( --patience ${patience} )
 ALLEN_ARGS+=( --weight_decay ${WEIGHT_DECAY} )
 ALLEN_ARGS+=( --dropout ${dropout} )
 ALLEN_ARGS+=( --val_interval ${VAL_INTERVAL} )
+ALLEN_ARGS+=( --eval_val_interval ${EVAL_VAL_INTERVAL} )
 ALLEN_ARGS+=( --max_vals ${MAX_VALS} )
 ALLEN_ARGS+=( --weighting_method ${weighting_method} )
 ALLEN_ARGS+=( --scaling_method ${scaling_method} )
