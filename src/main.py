@@ -280,7 +280,7 @@ def main(arguments):
                                        args.shared_optimizer, load_model=False, phase="eval")
 
             best_epoch = best_epoch[task.name]
-            layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+            layer_path = os.path.join(args.run_dir, "model_state_eval_epoch_{}.th".format(best_epoch))
             load_model_state(model, layer_path, args.cuda)
 
     if args.do_eval:
