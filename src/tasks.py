@@ -86,6 +86,13 @@ class PairClassificationTask(Task):
         return {'accuracy': acc}
 
 
+class NLIProbingTask(PairClassificationTask):
+    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
+
+    def __init__(self, name, n_classes):
+        super().__init__(name)
+
+
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
 

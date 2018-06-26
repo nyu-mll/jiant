@@ -21,7 +21,7 @@ while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W
         k) RELOAD_TASKS=1 ;;
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
-        m) LOAD_MODEL=1 ;;
+        m) LOAD_MODEL=0 ;;
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
@@ -115,10 +115,12 @@ ALLEN_ARGS+=( --load_model ${LOAD_MODEL} )
 ALLEN_ARGS+=( --reload_tasks ${RELOAD_TASKS} )
 ALLEN_ARGS+=( --reload_indexing ${RELOAD_INDEX} )
 ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
-ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
+#ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
 ALLEN_ARGS+=( --load_eval_checkpoint ${LOAD_EVAL_CHECKPOINT} )
 ALLEN_ARGS+=( --eval_max_vals ${EVAL_MAX_VALS} )
-
+ALLEN_ARGS+=( --do_train ${DO_TRAIN} )
+ALLEN_ARGS+=( --do_eval ${DO_EVAL} )
+ALLEN_ARGS+=( --train_for_eval ${TRAIN_FOR_EVAL} )
 
 ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
