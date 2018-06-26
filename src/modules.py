@@ -366,6 +366,10 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     def get_output_dim(self) -> int:
         return self._output_dim
 
+    # @overrides
+    def is_bidirectional(self) -> int:
+        return 0
+
     def forward(self, inputs: torch.Tensor, mask: torch.Tensor): # pylint: disable=arguments-differ
         if self._use_positional_encoding:
             output = add_positional_features(inputs)

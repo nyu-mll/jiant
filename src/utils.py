@@ -698,7 +698,7 @@ def subsequent_mask(size):
     attn_shape = (1, size, size)
     subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('uint8')
     return torch.from_numpy(subsequent_mask) == 0
-        
+
 
 @Seq2SeqEncoder.register("masked_multi_head_self_attention")
 class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
@@ -763,9 +763,9 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         # that these matrix multiplications are well conditioned initially.
         # Without this initialisation, this (non-deterministically) produces
         # NaNs and overflows.
-        init.xavier_normal(self._query_projections)
-        init.xavier_normal(self._key_projections)
-        init.xavier_normal(self._value_projections)
+        init.xavier_normal_(self._query_projections)
+        init.xavier_normal_(self._key_projections)
+        init.xavier_normal_(self._value_projections)
 
     def get_input_dim(self):
         return self._input_dim
@@ -825,7 +825,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         # Masking should go here
         causality_mask = subsequent_mask(timesteps).cuda()
         masked_scaled_similarities = scaled_similarities.masked_fill(causality_mask == 0, -1e9)
-        
+
         # shape (num_heads * batch_size, timesteps, timesteps)
         # Normalise the distributions, using the same mask for all heads.
         attention = last_dim_softmax(masked_scaled_similarities, mask.repeat(num_heads, 1))

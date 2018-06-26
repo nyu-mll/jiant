@@ -36,7 +36,7 @@ FORCE_LOAD_EPOCH=-1
 
 train_tasks='sst'
 eval_tasks='none'
-max_seq_len=150
+max_seq_len=100
 
 VOCAB_SIZE=50000
 word_embs=fastText

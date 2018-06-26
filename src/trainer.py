@@ -34,9 +34,9 @@ def build_trainer(args, model, max_vals):
     else:
         opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
 
-    if args.sent_enc == 'transformer':
+    if 'transformer' in args.sent_enc:
         schd_params = Params({'type': 'noam',
-                              'model_size': 100,
+                              'model_size': args.d_hid,
                               'warmup_steps': 4000,
                               'factor': 1.0})
     else:
