@@ -343,7 +343,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 class MultiNLIFictionTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-fiction"):
         '''MNLI'''
         super(
             MultiNLIFictionTask,
@@ -351,21 +351,21 @@ class MultiNLIFictionTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="fiction",
-            name="mnli-fiction")
+            name=name)
 
 
 class MultiNLISlateTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-slate"):
         '''MNLI'''
-        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name="mnli-slate")
+        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name=name)
 
 
 class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-government"):
         '''MNLI'''
         super(
             MultiNLIGovernmentTask,
@@ -373,26 +373,26 @@ class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="government",
-            name="mnli-government")
+            name=name)
 
 
 class MultiNLITelephoneTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-telephone"):
         '''MNLI'''
         super(
             MultiNLITelephoneTask,
             self).__init__(
             path,
             genre="telephone",
-            name="mnli-telephone")
+            name=name)
 
 
 class MultiNLITravelTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-travel"):
         '''MNLI'''
         super(
             MultiNLITravelTask,
@@ -400,7 +400,7 @@ class MultiNLITravelTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="travel",
-            name="mnli-travel")
+            name=name)
 
 
 class MRPCTask(PairClassificationTask):

@@ -48,6 +48,8 @@ def main(arguments):
                         type=str)
     parser.add_argument('--eval_tasks', help='list of additional tasks to train a classifier,' +
                         'then evaluate on', type=str, default='')
+    parser.add_argument('--train_for_eval', help='1 if models should be trained for the eval tasks (defaults to True)',
+                        type=int, default=1)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
@@ -168,7 +170,7 @@ def main(arguments):
         try:
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
-        except AttributeError:
+        except Exception:
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
@@ -224,18 +226,19 @@ def main(arguments):
     # Train just the task-specific components for eval tasks
     # TODO(Alex): currently will overwrite model checkpoints from training
     for task in eval_tasks:
-        pred_module = getattr(model, "%s_mdl" % task.name)
-        to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-        trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                            args.eval_max_vals)
-        best_epoch = trainer.train([task], task.val_metric,
-                                   args.eval_val_interval, 1,
-                                   args.weighting_method, args.scaling_method,
-                                   to_train, opt_params, schd_params,
-                                   args.shared_optimizer, args.load_model)
-        best_epoch = best_epoch[task.name]
-        layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
-        load_model_state(model, layer_path, args.cuda)
+        if args.train_for_eval:
+            pred_module = getattr(model, "%s_mdl" % task.name)
+            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            trainer, _, opt_params, schd_params = build_trainer(args, model,
+                                                                args.eval_max_vals)
+            best_epoch = trainer.train([task], task.val_metric,
+                                       args.eval_val_interval, 1,
+                                       args.weighting_method, args.scaling_method,
+                                       to_train, opt_params, schd_params,
+                                       args.shared_optimizer, args.load_model)
+            best_epoch = best_epoch[task.name]
+            layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+            load_model_state(model, layer_path, args.cuda)
 
     # Evaluate #
     log.info("Evaluating...")
