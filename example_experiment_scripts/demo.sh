@@ -55,9 +55,8 @@ word_embs='none'
 fastText=0
 char_embs=0
 d_word=300
-ELMO=0
-deep_elmo=0
-elmo_chars_only=0
+ELMO=1
+elmo_chars_only=1
 COVE=0
 
 sent_enc="rnn"
