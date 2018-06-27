@@ -35,7 +35,7 @@ LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-FORCE_LOAD_EPOCH=-1
+LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
 eval_tasks='none'
@@ -47,11 +47,11 @@ char_embs=0
 fastText=0
 d_word=300
 ELMO=0
-deep_elmo=0
 COVE=0
+elmo_chars_only=0
 
 sent_enc="rnn"
-bidirectional=0
+bidirectional=1
 CLASSIFIER=mlp
 d_hid_cls=512
 d_hid=512
@@ -74,8 +74,10 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=64
 BPP_BASE=1
-VAL_INTERVAL=100
+VAL_INTERVAL=1000
+EVAL_VAL_INTERVAL=1000
 MAX_VALS=100
+EVAL_MAX_VALS=100
 weighting_method="uniform"
 scaling_method='none'
 

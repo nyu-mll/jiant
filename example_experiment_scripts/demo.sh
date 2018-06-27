@@ -28,19 +28,24 @@ fi
 
 EXP_NAME='jiant-demo'
 RUN_NAME="sst"
-GPUID=0
+GPUID=-1
 SEED=42
 no_tqdm=0
 
-SHOULD_TRAIN=1
-LOAD_MODEL=0
 RELOAD_TASKS=0
 RELOAD_INDEX=0
 RELOAD_VOCAB=0
-FORCE_LOAD_EPOCH=-1
+
+LOAD_MODEL=0
+DO_TRAIN=0
+DO_EVAL=1
+TRAIN_FOR_EVAL=1
+
+LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
-eval_tasks='none'
+eval_tasks='mrpc'
+
 CLASSIFIER=mlp
 d_hid_cls=64
 max_seq_len=10
@@ -77,8 +82,10 @@ SCHED_THRESH=0.0
 BATCH_SIZE=16
 BPP_METHOD="percent_tr"
 BPP_BASE=100
-VAL_INTERVAL=100
-MAX_VALS=1000
+VAL_INTERVAL=5
+EVAL_VAL_INTERVAL=5
+MAX_VALS=10
+EVAL_MAX_VALS=20
 TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'

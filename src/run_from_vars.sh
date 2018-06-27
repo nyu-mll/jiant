@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
+while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:RO' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -15,20 +15,24 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:
 	    F) FASTTEXT_MODEL_FILE="${OPTARG}" ;;
         e) ELMO=1 ;;
         c) COVE=1 ;;
+        O) elmo_chars_only=1 ;;
 
         q) no_tqdm=1 ;;
         t) SHOULD_TRAIN=0 ;;
         k) RELOAD_TASKS=1 ;;
         i) RELOAD_INDEX=1 ;;
         v) RELOAD_VOCAB=1 ;;
-        m) LOAD_MODEL=1 ;;
+        m) LOAD_MODEL=0 ;;
 
         B) BPP_BASE="${OPTARG}" ;;
         V) VAL_INTERVAL="${OPTARG}" ;;
+        x) EVAL_VAL_INTERVAL="${OPTARG}" ;;
         X) MAX_VALS="${OPTARG}" ;;
+        M) EVAL_MAX_VALS="${OPTARG}" ;;
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
+        R) bidirectional=0 ;;
 
         A) n_heads="${OPTARG}" ;;
         p) d_proj="${OPTARG}" ;;
@@ -45,7 +49,7 @@ while getopts 'ivkmn:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:
         #E) PAIR_ENC="${OPTARG}" ;;
         D) dropout="${OPTARG}" ;;
         #C) CLASSIFIER="${OPTARG}" ;;
-        N) FORCE_LOAD_EPOCH="${OPTARG}" ;;
+        N) LOAD_EVAL_CHECKPOINT="${OPTARG}" ;;
         y) LR_DECAY="${OPTARG}" ;;
         K) task_patience="${OPTARG}" ;;
         #p) patience="${OPTARG}" ;;
@@ -80,7 +84,7 @@ ALLEN_ARGS+=( --fastText_model_file ${FASTTEXT_MODEL_FILE} )
 ALLEN_ARGS+=( --fastText ${fastText} )
 ALLEN_ARGS+=( --char_embs ${char_embs} )
 ALLEN_ARGS+=( --elmo ${ELMO} )
-ALLEN_ARGS+=( --deep_elmo ${deep_elmo} )
+ALLEN_ARGS+=( --elmo_chars_only ${elmo_chars_only} )
 ALLEN_ARGS+=( --cove ${COVE} )
 ALLEN_ARGS+=( --d_word ${d_word} )
 ALLEN_ARGS+=( --d_hid ${d_hid} )
@@ -104,6 +108,7 @@ ALLEN_ARGS+=( --patience ${patience} )
 ALLEN_ARGS+=( --weight_decay ${WEIGHT_DECAY} )
 ALLEN_ARGS+=( --dropout ${dropout} )
 ALLEN_ARGS+=( --val_interval ${VAL_INTERVAL} )
+ALLEN_ARGS+=( --eval_val_interval ${EVAL_VAL_INTERVAL} )
 ALLEN_ARGS+=( --max_vals ${MAX_VALS} )
 ALLEN_ARGS+=( --weighting_method ${weighting_method} )
 ALLEN_ARGS+=( --scaling_method ${scaling_method} )
@@ -112,8 +117,12 @@ ALLEN_ARGS+=( --load_model ${LOAD_MODEL} )
 ALLEN_ARGS+=( --reload_tasks ${RELOAD_TASKS} )
 ALLEN_ARGS+=( --reload_indexing ${RELOAD_INDEX} )
 ALLEN_ARGS+=( --reload_vocab ${RELOAD_VOCAB} )
-ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
-ALLEN_ARGS+=( --force_load_epoch ${FORCE_LOAD_EPOCH} )
+#ALLEN_ARGS+=( --should_train ${SHOULD_TRAIN} )
+ALLEN_ARGS+=( --load_eval_checkpoint ${LOAD_EVAL_CHECKPOINT} )
+ALLEN_ARGS+=( --eval_max_vals ${EVAL_MAX_VALS} )
+ALLEN_ARGS+=( --do_train ${DO_TRAIN} )
+ALLEN_ARGS+=( --do_eval ${DO_EVAL} )
+ALLEN_ARGS+=( --train_for_eval ${TRAIN_FOR_EVAL} )
 
 ALLEN_CMD="python ./src/main.py ${ALLEN_ARGS[@]}"
 eval ${ALLEN_CMD}
