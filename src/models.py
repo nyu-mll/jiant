@@ -3,7 +3,6 @@
 If you are adding a new task, you should [...]'''
 import sys
 import logging as log
-import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -29,8 +28,8 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairOrdinalRegressionTask, JOCITask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, SimplePairEncoder, MaskedStackedSelfAttentionEncoder, \
-    BiLMEncoder, ElmoCharacterEncoder
-from utils import combine_hidden_states
+    BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
+    SingleClassifier, PairClassifier
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -58,19 +57,19 @@ def build_model(args, vocab, pretrained_embs, tasks):
             elif args.sent_enc == 'transformer':
                 fwd = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
-                                                        projection_dim=args.d_proj,
+                                                        projection_dim=args.d_tproj,
                                                         feedforward_hidden_dim=args.d_ff,
                                                         num_layers=args.n_layers_enc,
                                                         num_attention_heads=args.n_heads)
                 bwd = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
-                                                        projection_dim=args.d_proj,
+                                                        projection_dim=args.d_tproj,
                                                         feedforward_hidden_dim=args.d_ff,
                                                         num_layers=args.n_layers_enc,
                                                         num_attention_heads=args.n_heads)
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                        fwd, bwd, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, 
+                                       skip_embs=args.skip_embs,
                                        cove_layer=cove_emb)
         else:  # not bidirectional
             if args.sent_enc == 'rnn':
@@ -80,7 +79,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
             elif args.sent_enc == 'transformer':
                 fwd = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
-                                                        projection_dim=args.d_proj,
+                                                        projection_dim=args.d_tproj,
                                                         feedforward_hidden_dim=args.d_ff,
                                                         num_layers=args.n_layers_enc,
                                                         num_attention_heads=args.n_heads)
@@ -102,7 +101,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
                                                   hidden_dim=args.d_hid,
-                                                  projection_dim=args.d_proj,
+                                                  projection_dim=args.d_tproj,
                                                   feedforward_hidden_dim=args.d_ff,
                                                   num_layers=args.n_layers_enc,
                                                   num_attention_heads=args.n_heads)
@@ -200,17 +199,12 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for each task and add them to model '''
     for task in tasks:
         if isinstance(task, SingleClassificationTask):
-            module = build_classifier(task, d_sent, args)
+            module = build_single_sentence_module(task, d_sent, args)
             setattr(model, '%s_mdl' % task.name, module)
-        elif isinstance(task, PairClassificationTask):
-            module = build_pair_classifier(task, d_sent, model, vocab, args)
+        elif isinstance(task, (PairClassificationTask, PairRegressionTask,
+                               PairOrdinalRegressionTask)):
+            module = build_pair_sentence_module(task, d_sent, model, vocab, args)
             setattr(model, '%s_mdl' % task.name, module)
-        elif isinstance(task, PairRegressionTask):
-            module = build_regressor(task, d_sent * 4, args)
-            setattr(model, '%s_mdl' % task.name, module)
-        elif isinstance(task, PairOrdinalRegressionTask):
-            regressor = build_regressor(task, d_sent * 4, args, model, vocab)
-            setattr(model, '%s_mdl' % task.name, regressor)
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
@@ -225,36 +219,23 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
     return
 
 
-def build_classifier(task, d_inp, args):
-    ''' Build a task specific classifier '''
-    cls_type, dropout, d_hid = \
-        args.classifier, args.classifier_dropout, args.classifier_hid_dim
-    if isinstance(task, STSBTask) or cls_type == 'log_reg':
-        classifier = nn.Linear(d_inp, task.n_classes)
-    elif cls_type == 'mlp':
-        classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                   nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                   nn.Linear(d_hid, task.n_classes))
-    elif cls_type == 'fancy_mlp':  # what they did in InferSent
-        classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                   nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                   nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
-                                   nn.Dropout(p=dropout), nn.Linear(d_hid, task.n_classes))
-    else:
-        raise ValueError("Classifier type not found!")
-
-    return classifier
+def build_single_sentence_module(task, d_inp, args):
+    ''' Build a single classifier '''
+    pooler = Pooler.from_params(d_inp, args)
+    classifier = Classifier.from_params(args.d_proj, task.n_classes, args)
+    return SingleClassifier(pooler, classifier)
 
 
-def build_pair_classifier(task, d_inp, model, vocab, args):
+def build_pair_sentence_module(task, d_inp, model, vocab, args):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_encoder():
+    def build_pair_encoder(d_in):
+        ''' Build the pair model '''
         if args.pair_enc == 'simple':
-            pair_encoder = SimplePairEncoder(vocab, args.sent_combine_method)
-            d_inp_classifier = 4 * d_inp
+            pair_encoder = SimplePairEncoder(vocab)
+            d_out = 4 * d_in
         elif args.pair_enc == 'attn':
-            d_inp_model = 2 * d_inp
+            d_inp_model = 2 * d_in
             d_hid_model = d_inp  # make it as large as the original sentence emb
             modeling_layer = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
@@ -262,45 +243,27 @@ def build_pair_classifier(task, d_inp, model, vocab, args):
             pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
                                            args.sent_combine_method,
                                            modeling_layer, dropout=args.dropout)
-            d_inp_classifier = 4 * d_hid_model
+            d_out = 4 * d_hid_model
         else:
             raise ValueError("Pair classifier type not found!")
-        return pair_encoder, d_inp_classifier
+        return pair_encoder, d_out
 
+    d_proj = args.d_proj
+    pooler = Pooler.from_params(d_inp, args)
     if args.shared_pair_enc:
         if not hasattr(model, "pair_encoder"):
-            pair_encoder, d_inp_classifier = build_pair_encoder()
+            pair_encoder, d_inp_classifier = build_pair_encoder(d_proj)
             model.pair_encoder = pair_encoder
         else:
-            d_inp_classifier = 4 * d_inp if args.pair_enc == 'simple' else 4 * d_inp
-        module = build_classifier(task, d_inp_classifier, args)
+            pair_encoder = model.pair_encoder
+            d_inp_classifier = 4 * d_proj if args.pair_enc == 'simple' else 4 * d_proj # not right
     else:
-        pair_encoder, d_inp_classifier = build_pair_encoder()
-        classifier = build_classifier(task, d_inp_classifier, args)
-        module = nn.Sequential(pair_encoder, classifier)
+        pair_encoder, d_inp_classifier = build_pair_encoder(d_proj)
+
+    n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
+    classifier = Classifier.from_params(d_inp_classifier, n_classes, args)
+    module = PairClassifier(pooler, pair_encoder, classifier)
     return module
-
-
-def build_regressor(task, d_inp, args, model=None, vocab=None):
-    ''' Build a task specific regressor '''
-    cls_type, dropout, d_hid = \
-        args.classifier, args.classifier_dropout, args.classifier_hid_dim
-    if isinstance(task, STSBTask) or cls_type == 'log_reg':
-        regressor = nn.Linear(d_inp, 1)
-    elif isinstance(task, JOCITask):
-        pair_encoder = SimplePairEncoder(vocab)
-        model.pair_encoder = pair_encoder
-        regressor = nn.Linear(d_inp, 1)
-    elif cls_type == 'mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, 1))
-    elif cls_type == 'fancy_mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
-    return regressor
 
 
 def build_lm(task, d_inp, args):
@@ -310,10 +273,7 @@ def build_lm(task, d_inp, args):
 
 
 def build_decoder(task, d_inp, vocab, embedder, args):
-    ''' Build a task specific decoder
-
-    TODO: handle different vocabs (languages)?
-    '''
+    ''' Build a task specific decoder '''
     rnn = s2s_e.by_name('lstm').from_params(
         Params({'input_size': embedder.get_output_dim(),
                 'hidden_size': args.d_hid_dec,
@@ -346,15 +306,11 @@ class MultiTaskModel(nn.Module):
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
-
         if isinstance(task, SingleClassificationTask):
-            out = self._single_classification_forward(batch, task)
-        elif isinstance(task, PairClassificationTask):
-            out = self._pair_classification_forward(batch, task)
-        elif isinstance(task, PairRegressionTask):
-            out = self._pair_regression_forward(batch, task)
-        elif isinstance(task, PairOrdinalRegressionTask):
-            out = self._pair_regression_forward(batch, task)
+            out = self._single_sentence_forward(batch, task)
+        elif isinstance(task, (PairClassificationTask, PairRegressionTask,
+                               PairOrdinalRegressionTask)):
+            out = self._pair_sentence_forward(batch, task)
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
@@ -366,16 +322,15 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
-    def _single_classification_forward(self, batch, task):
+    def _single_sentence_forward(self, batch, task):
         out = {}
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
-        logits = classifier(sent_emb)
+        logits = classifier(sent_embs, sent_mask)
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
@@ -392,64 +347,34 @@ class MultiTaskModel(nn.Module):
         out['logits'] = logits
         return out
 
-    def _pair_classification_forward(self, batch, task):
+    def _pair_sentence_forward(self, batch, task):
         out = {}
 
         # embed the sentence
-        s1, s1_mask = self.sent_encoder(batch['input1'])
-        s2, s2_mask = self.sent_encoder(batch['input2'])
-        if hasattr(self, "pair_encoder"):
-            pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
-            classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(pair_emb)
-        else:
-            classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(s1, s2, s1_mask, s2_mask)
+        sent1, mask1 = self.sent_encoder(batch['input1'])
+        sent2, mask2 = self.sent_encoder(batch['input2'])
+        classifier = getattr(self, "%s_mdl" % task.name)
+        logits = classifier(sent1, sent2, mask1, mask2)
+        out['logits'] = logits
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
             if isinstance(task, JOCITask):
+                out['loss'] = F.mse_loss(logits, labels)
                 task.scorer1(mean_squared_error(logits, labels))
                 task.scorer2(spearmanr(logits, labels)[0])
+            elif isinstance(task, STSBTask):
+                logits = logits.squeeze(-1)
+                out['loss'] = F.mse_loss(logits, labels)
+                logits = logits.data.cpu().numpy()
+                labels = labels.data.cpu().numpy()
+                task.scorer1(pearsonr(logits, labels)[0])
+                task.scorer2(spearmanr(logits, labels)[0])
             else:
+                out['loss'] = F.cross_entropy(logits, labels)
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
-            out['loss'] = F.cross_entropy(logits, labels)
-        out['logits'] = logits
-        return out
-
-    def _pair_regression_forward(self, batch, task):
-        ''' For STS-B '''
-        out = {}
-        s1, s1_mask = self.sent_encoder(batch['input1'])
-        s2, s2_mask = self.sent_encoder(batch['input2'])
-        if hasattr(self, "pair_encoder"):
-            pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
-            classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(pair_emb)
-        else:
-            classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(s1, s2, s1_mask, s2_mask)
-
-        # pass to a task specific classifier
-        regressor = getattr(self, "%s_mdl" % task.name)
-        scores = regressor(pair_emb)  # might want to pass sent_embs
-
-        out['logits'] = scores  # maybe change the name here?
-        if 'labels' in batch:
-            labels = batch['labels']
-            out['loss'] = F.mse_loss(scores, labels)
-            if isinstance(task, STSBTask):
-                scores = scores.squeeze(-1).data.cpu().numpy()
-                labels = labels.squeeze(-1).data.cpu().numpy()
-                task.scorer1(pearsonr(scores, labels)[0])
-                task.scorer2(spearmanr(scores, labels)[0])
-            elif isinstance(task, JOCITask):
-                scores = scores.squeeze(-1).data.cpu().numpy()
-                labels = labels.squeeze(-1).data.cpu().numpy()
-                task.scorer1(mean_squared_error(scores, labels))
-                task.scorer2(spearmanr(scores, labels)[0])
         return out
 
     def _seq_gen_forward(self, batch, task):

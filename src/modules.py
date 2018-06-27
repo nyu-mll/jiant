@@ -3,7 +3,6 @@ import os
 import sys
 import json
 import logging as log
-import ipdb as pdb  # pylint: disable=unused-import
 import h5py
 
 import numpy
@@ -33,8 +32,6 @@ from allennlp.modules.layer_norm import LayerNorm
 from utils import MaskedMultiHeadSelfAttention
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
-
-from utils import combine_hidden_states
 
 
 class SentenceEncoder(Model):
@@ -93,7 +90,6 @@ class SentenceEncoder(Model):
             sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-        sent_enc.data.masked_fill_(1 - sent_mask.byte().data, -float('inf'))
         return sent_enc, sent_mask
 
 
@@ -113,7 +109,7 @@ class BiLMEncoder(SentenceEncoder):
             text_field_embedder,
             num_highway_layers,
             phrase_layer,
-            skip_embs, 
+            skip_embs,
             cove_layer,
             dropout,
             mask_lstms,
@@ -197,19 +193,101 @@ class BoWSentEncoder(Model):
         return word_embs, word_mask  # need to get # nonzero elts
 
 
+class Pooler(nn.Module):
+    ''' Do pooling, possibly with a projection beforehand '''
+    def  __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
+        super(Pooler, self).__init__()
+        self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
+        self.pool_type = pool_type
+
+    def forward(self, sequence, mask):
+        pad_mask = 1 - mask.byte().data
+        if sequence.min().item() != float('-inf'): # this will f up the loss
+            #log.warn('Negative infinity detected')
+            sequence.masked_fill(pad_mask, 0)
+        proj_seq = self.project(sequence)
+
+        if self.pool_type == 'max':
+            proj_seq = proj_seq.masked_fill(pad_mask, -float('inf'))
+            seq_emb = proj_seq.max(dim=1)[0]
+        elif self.pool_type == 'mean':
+            #proj_seq = proj_seq.masked_fill(pad_mask, 0)
+            seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
+        elif  self.pool_type == 'final':
+            idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
+            seq_emb = proj_seq.gather(dim=1, index=idxs)
+        return seq_emb
+
+    @classmethod
+    def from_params(cls, d_inp, args):
+        return cls(d_inp, d_proj=args.d_proj)
+
+class Classifier(nn.Module):
+    ''' Classifier with a linear projection before pooling '''
+    def  __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+        super(Classifier, self).__init__()
+        if cls_type == 'log_reg':
+            classifier = nn.Linear(d_inp, n_classes)
+        elif cls_type == 'mlp':
+            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+                                       nn.Tanh(), nn.LayerNorm(d_hid),
+                                       nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
+        elif cls_type == 'fancy_mlp': # what they did in Infersent
+            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+                                       nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
+                                       nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                       nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
+                                       nn.Linear(d_hid, n_classes))
+        else:
+            raise ValueError("Classifier type %s not found" % type)
+        self.classifier = classifier
+
+    def forward(self, seq_emb):
+        logits = self.classifier(seq_emb)
+        return logits
+
+    @classmethod
+    def from_params(cls, d_inp, n_classes, args):
+        return cls(d_inp, n_classes, cls_type=args.classifier,
+                   dropout=args.classifier_dropout, d_hid=args.classifier_hid_dim)
+
+class SingleClassifier(nn.Module):
+    ''' Thin wrapper around a set of modules '''
+    def __init__(self, pooler, classifier):
+        super(SingleClassifier, self).__init__()
+        self.pooler = pooler
+        self.classifier = classifier
+
+    def forward(self, sent, mask):
+        emb = self.pooler(sent, mask)
+        logits = self.classifier(emb)
+        return logits
+
+class PairClassifier(nn.Module):
+    ''' Thin wrapper around a set of modules '''
+    def __init__(self, pooler, encoder, classifier):
+        super(PairClassifier, self).__init__()
+        self.pooler = pooler
+        self.encoder = encoder
+        self.classifier = classifier
+
+    def forward(self, s1, s2, mask1, mask2):
+        emb1 = self.pooler(s1, mask1)
+        emb2 = self.pooler(s2, mask2)
+        pair_emb = self.encoder(emb1, emb2, mask1, mask2)
+        logits = self.classifier(pair_emb)
+        return logits
+
+
 class SimplePairEncoder(Model):
     ''' Given two sentence vectors u and v, model the pair as [u; v; |u-v|; u * v] '''
-
-    def __init__(self, vocab, combine_method='max'):
+    def __init__(self, vocab):
         super(SimplePairEncoder, self).__init__(vocab)
-        self.combine_method = combine_method
 
-    def forward(self, s1, s2, s1_mask, s2_mask):
+    def forward(self, sent1, sent2, mask1, mask2):
         """ See above """
-        sent_emb1 = combine_hidden_states(s1, s1_mask, self.combine_method)
-        sent_emb2 = combine_hidden_states(s2, s2_mask, self.combine_method)
-        return torch.cat([sent_emb1, sent_emb2, torch.abs(sent_emb1 - sent_emb2),
-                          sent_emb1 * sent_emb2], 1)
+        return torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1)
+
 
 
 class AttnPairEncoder(Model):

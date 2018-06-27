@@ -11,7 +11,6 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-import ipdb as pdb
 import torch
 
 import config
@@ -19,6 +18,7 @@ from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer
 from evaluate import evaluate, load_model_state, write_results, write_preds
+from utils import assert_for_log
 
 import _pickle as pkl
 
@@ -86,32 +86,22 @@ def main(cl_arguments):
     steps_log = []
 
     if not(args.load_eval_checkpoint == 'none'):
-        try:
-            assert os.path.exists(args.load_eval_checkpoint)
-        except AssertionError:
-            log.error(
-                "Error: Attempting to load model from non-existent path: [%s]" %
+        assert_for_log(os.path.exists(args.load_eval_checkpoint),
+                "Error: Attempting to load model from non-existent path: [%s]" % \
                 args.load_eval_checkpoint)
-            return 0
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
-        try:
-            assert args.train_tasks
-        except AssertionError:
-            log.error("Error: Must specify at least on training task: [%s]" % args.train_tasks)
-            return 0
+        assert_for_log(args.train_tasks != "none", 
+            "Error: Must specify at least on training task: [%s]" % args.train_tasks)
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
 
     if args.do_eval:
-        try:
-            assert args.eval_tasks
-        except AssertionError:
-            log.error("Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
-            return 0
+        assert_for_log(args.eval_tasks != "none", 
+            "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
@@ -136,16 +126,8 @@ def main(cl_arguments):
     else:
         macro_best = glob.glob(os.path.join(args.run_dir,
                                             "model_state_main_epoch_*.best_macro.th"))
-        try:
-            assert len(macro_best) > 0
-        except AssertionError:
-            log.error("No best checkpoint found to evaluate.")
-            return 0
-        try:
-            assert len(macro_best) == 1
-        except AssertionError:
-            log.error("Too many best checkpoints. Something is wrong.")
-            return 0
+        assert_for_log(len(macro_best) > 0, "No best checkpoint found to evaluate.")
+        assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
         load_model_state(model, macro_best[0], args.cuda)
 
     # Train just the task-specific components for eval tasks.
