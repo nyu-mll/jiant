@@ -20,7 +20,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
-
+from utils import assert_for_log
 
 def build_trainer(args, model, max_vals):
     '''Build a trainer'''
@@ -234,10 +234,10 @@ class SamplingMultiTaskTrainer:
             else:
                 log.info("Not loading.")
                 checkpoint_pattern = os.path.join(self._serialization_dir, "*_{}_*.th".format(phase))
-                assert len(glob.glob(checkpoint_pattern)) == 0, \
-                    "There are existing checkpoints here which will be overwritten." \
-                    "Use -m or LOAD_MODEL to load the checkpoints instead." \
-                    "If you don't want them, delete them or change your experimnent name."
+                assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
+                    "There are existing checkpoints here which will be overwritten. " \
+                    "Use -m or LOAD_MODEL to load the checkpoints instead. " \
+                    "If you don't want them, delete them or change your experimnent name.")
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -273,7 +273,8 @@ class SamplingMultiTaskTrainer:
                 total_batches_trained += 1
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task, for_training=True)
-                assert "loss" in output_dict, "Model must return a dict containing a 'loss' key"
+                assert_for_log("loss" in output_dict, 
+                    "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
                 if scaling_method == 'unit' and weighting_method == 'proportional':
                     loss /= task_info['n_tr_batches']
@@ -282,7 +283,7 @@ class SamplingMultiTaskTrainer:
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
-                assert not torch.isnan(loss).any()
+                assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
