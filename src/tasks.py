@@ -98,6 +98,7 @@ class PairRegressionTask(Task):
 
     def __init__(self, name):
         super().__init__(name)
+        self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = None
         self.val_metric = "%s_mse" % self.name
@@ -116,6 +117,7 @@ class PairOrdinalRegressionTask(Task):
 
     def __init__(self, name):
         super().__init__(name)
+        self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = Average()  # for average Spearman's rho
         self.val_metric = "%s_mse" % self.name

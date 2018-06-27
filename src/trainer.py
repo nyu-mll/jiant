@@ -8,7 +8,6 @@ import copy
 import random
 import logging as log
 import itertools
-import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.optim.lr_scheduler
@@ -226,7 +225,7 @@ class SamplingMultiTaskTrainer:
         self._g_scheduler = g_scheduler
 
         n_pass, should_stop = 0, False  # define these here b/c they might get overridden on load
-        if self._serialization_dir is not None:  # Resume from serialization path
+        if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
