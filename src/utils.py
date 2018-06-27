@@ -65,7 +65,7 @@ def load_tsv(
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
-    with codecs.open(data_file, 'r', 'utf-8') as data_fh:
+    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
