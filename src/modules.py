@@ -41,7 +41,7 @@ class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
-                 cove_layer=None, dropout=0.2, mask_lstms=True,
+                 skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
@@ -57,15 +57,9 @@ class SentenceEncoder(Model):
         d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
-        self.output_dim = phrase_layer.get_output_dim()
+        self.skip_embs = skip_embs
+        self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
-        # if d_emb != d_inp_phrase:
-        if (cove_layer is None and d_emb != d_inp_phrase) \
-                or (cove_layer is not None and d_emb + 600 != d_inp_phrase):
-            raise ConfigurationError("The output dimension of the text_field_embedder "
-                                     "must match the input dimension of "
-                                     "the phrase_encoder. Found {} and {} respectively."
-                                     .format(d_emb, d_inp_phrase))
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
         else:
@@ -95,6 +89,8 @@ class SentenceEncoder(Model):
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         sent_enc = self._dropout(sent_enc)
+        if self.skip_embs:
+            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         sent_enc.data.masked_fill_(1 - sent_mask.byte().data, -float('inf'))
@@ -106,14 +102,16 @@ class BiLMEncoder(SentenceEncoder):
     A simple wrap up for bidirectional LM training
     '''
     def __init__(self, vocab, text_field_embedder, num_highway_layers, \
-                 phrase_layer, bwd_phrase_layer, \
+                 phrase_layer, bwd_phrase_layer, skip_embs=True, \
                  cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
         super(BiLMEncoder, self).__init__(vocab, text_field_embedder, num_highway_layers, phrase_layer, \
                                           cove_layer, dropout, mask_lstms, \
                                           initializer)
         self._bwd_phrase_layer = bwd_phrase_layer
+        self.skip_embs = skip_embs
         self.output_dim += self._bwd_phrase_layer.get_output_dim()
+        self.output_dim += skip_embs * phrase_layer.get_input_dim()
         initializer(self)
 
     def _uni_directional_forward(self, sent, go_forward=True):
@@ -133,7 +131,6 @@ class BiLMEncoder(SentenceEncoder):
             sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-
         return sent_enc, sent_mask
 
     def forward(self, sent, bwd_sent=None):
@@ -145,13 +142,24 @@ class BiLMEncoder(SentenceEncoder):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
+        # TODO(Alex): bwd_sent_enc is likely flipped? shouldn't concatenate
+        # The masks should be the same though
         fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent)
         if bwd_sent is None:
-            bwd_sent_enc, bwd_sent_mask = self._uni_directional_forward(sent, False)
+            bwd_sent_enc, _ = self._uni_directional_forward(sent, False)
         else:
-            bwd_sent_enc, bwd_sent_mask = self._uni_directional_forward(bwd_sent, False)
+            bwd_sent_enc, _ = self._uni_directional_forward(bwd_sent, False)
         sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=-1)
         sent_enc = self._dropout(sent_enc)
+        if self.skip_embs:
+            sent_embs = self._highway_layer(self._text_field_embedder(sent))
+            if self._cove is not None:
+                sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
+                sent_cove_embs = self._cove(sent['words'], sent_lens)
+                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            sent_embs = self._dropout(sent_embs)
+            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+
         return sent_enc, fwd_sent_mask
 
 
