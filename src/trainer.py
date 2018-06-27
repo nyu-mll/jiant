@@ -64,7 +64,8 @@ def build_trainer(args, model, max_vals):
     train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
                            'patience': args.patience, 'grad_norm': args.max_grad_norm,
                            'max_vals': max_vals,
-                           'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
+                           'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm,
+                           'keep_all_checkpoints': args.keep_all_checkpoints})
     trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                                    copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
@@ -74,7 +75,7 @@ class SamplingMultiTaskTrainer:
     def __init__(self, model, iterator, patience=2, num_epochs=20, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False):
+                 no_tqdm=False, keep_all_checkpoints=False):
         """ 
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
@@ -123,6 +124,8 @@ class SamplingMultiTaskTrainer:
             cause problems with log files from, e.g., a docker image running on kubernetes.  If
             ``no_tqdm`` is ``True``, we will not use tqdm, and instead log batch statistics using
             ``log.info``, outputting a line at most every 10 seconds.
+        keep_all_checkpoints : If set, keep checkpoints from every validation. Otherwise, keep only
+            best and (if different) most recent.
         """
         self._model = model
         self._iterator = iterator
@@ -136,6 +139,7 @@ class SamplingMultiTaskTrainer:
         self._grad_clipping = grad_clipping
         self._lr_decay = lr_decay
         self._min_lr = min_lr
+        self._keep_all_checkpoints = keep_all_checkpoints
 
         self._task_infos = None
         self._metric_infos = None
@@ -550,13 +554,24 @@ class SamplingMultiTaskTrainer:
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _unmark_previous_best(self, phase="main"):
+    def _unmark_previous_best(self, phase, epoch):
         marked_best = glob.glob(
             os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase)))
         for file in marked_best:
-            os.rename(file, re.sub('%s$' % ".best_macro.th", ".th", file))
+            # Skip the just-written checkpoint.
+            if "_{}.".format(epoch) not in file:
+                os.rename(file, re.sub('%s$' % ".best_macro.th", ".th", file))
 
-    def _save_checkpoint(self, training_state, phase="main", new_best_macro=False):
+    def _delete_old_checkpoints(self, phase, epoch):
+        candidates = glob.glob(
+            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.th".format(phase)))
+        for file in candidates:
+            # Skip the best, because we'll need it.
+            # Skip the just-written checkpoint.
+            if ".best_macro" not in file and "_{}.".format(epoch) not in file: 
+                os.remove(file)
+
+    def _save_checkpoint(self, training_state, phase="main", new_best_macro=False, keep_all=False):
         """
         Parameters
         ----------
@@ -576,7 +591,6 @@ class SamplingMultiTaskTrainer:
                 "model_state_eval_best.th")
         else:
             if new_best_macro:
-                self._unmark_previous_best(phase)
                 best_str = ".best_macro"
             else:
                 best_str = ""
@@ -644,6 +658,12 @@ class SamplingMultiTaskTrainer:
                     "metric_state_{}_epoch_{}{}.th".format(
                         phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
+
+        if phase != "eval" and new_best_macro:
+            self._unmark_previous_best(phase, epoch)
+
+        if not self._keep_all_checkpoints:
+            self._delete_old_checkpoints(phase, epoch)
 
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=['main']):
         """
@@ -743,6 +763,7 @@ class SamplingMultiTaskTrainer:
         lr_decay = params.pop("lr_decay", None)
         min_lr = params.pop("min_lr", None)
         no_tqdm = params.pop("no_tqdm", False)
+        keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(model, iterator, patience=patience,
@@ -750,4 +771,5 @@ class SamplingMultiTaskTrainer:
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, no_tqdm=no_tqdm)
+                                        min_lr=min_lr, no_tqdm=no_tqdm, 
+                                        keep_all_checkpoints=keep_all_checkpoints)
