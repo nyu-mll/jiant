@@ -5,7 +5,6 @@ import io
 import os
 import logging as log
 from collections import defaultdict
-import ipdb as pdb
 import numpy as np
 import torch
 
@@ -369,11 +368,11 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 def process_lm_task_split(split, indexers):
     ''' Process a language modeling split '''
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers)
-               for sent in split[::-1]]
+    inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
+               for sent in split]
     trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers)
-               for sent in split[::-1]]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=indexers)
+               for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})

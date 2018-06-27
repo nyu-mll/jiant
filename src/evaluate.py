@@ -2,7 +2,6 @@
 import os
 import logging as log
 import tqdm
-import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator
@@ -45,7 +44,10 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                 assert 'targs' in batch
                 n_examples += batch['targs']['words'].nelement()
             if isinstance(task, STSBTask) or isinstance(task, JOCITask):
-                preds, _ = out['logits'].max(dim=1)
+                try:
+                    preds, _ = out['logits'].max(dim=1)
+                except:
+                    pdb.set_trace()
             else:
                 _, preds = out['logits'].max(dim=1)
             task_preds += preds.data.tolist()
