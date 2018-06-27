@@ -120,15 +120,15 @@ class PairOrdinalRegressionTask(Task):
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = Average()  # for average Spearman's rho
-        self.val_metric = "%s_mse" % self.name
-        self.val_metric_decreases = True
+        self.val_metric = "%s_1-mse" % self.name
+        self.val_metric_decreases = False
 
     def get_metrics(self, reset=False):
         mse = self.scorer1.get_metric(reset)
         spearmanr = self.scorer2.get_metric(reset)
-        return {'mse': mse,
+        return {'1-mse': 1-mse,
+                'mse': mse,
                 'spearmanr': spearmanr}
-
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
