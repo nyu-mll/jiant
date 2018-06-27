@@ -196,7 +196,7 @@ class SamplingMultiTaskTrainer:
               validation_interval, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=0, load_model=1):
+              shared_optimizer=0, load_model=1, phase="main"):
 
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
@@ -227,16 +227,16 @@ class SamplingMultiTaskTrainer:
         n_pass, should_stop = 0, False  # define these here b/c they might get overridden on load
         if self._serialization_dir is not None:  # Resume from serialization path
             if load_model and any(
-                    ["model_state_epoch_" in x for x in os.listdir(self._serialization_dir)]):
+                    ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
-                log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
+                log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
                 log.info("Not loading.")
-                checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
+                checkpoint_pattern = os.path.join(self._serialization_dir, "{}_*.th".format(phase))
                 assert len(glob.glob(checkpoint_pattern)) == 0, \
                     "There are existing checkpoints here which will be overwritten." \
-                        "Use -m or LOAD_MODEL to load the checkpoints instead." \
-                        "If you don't want them, delete them or change your experimnent name."
+                    "Use -m or LOAD_MODEL to load the checkpoints instead." \
+                    "If you don't want them, delete them or change your experimnent name."
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -347,7 +347,8 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
+                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop},
+                        phase=phase)
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -508,7 +509,7 @@ class SamplingMultiTaskTrainer:
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _save_checkpoint(self, training_state):
+    def _save_checkpoint(self, training_state, phase="main"):
         """
         Parameters
         ----------
@@ -521,7 +522,11 @@ class SamplingMultiTaskTrainer:
         TODO: Is there a reason this was removed?
         """
         epoch = training_state["epoch"]
-        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+        model_path = os.path.join(
+            self._serialization_dir,
+            "model_state_{}_epoch_{}.th".format(
+                phase,
+                epoch))
 
         model_state = self._model.state_dict()
 
@@ -536,8 +541,13 @@ class SamplingMultiTaskTrainer:
 
         torch.save(model_state, model_path)
 
-        torch.save(training_state, os.path.join(self._serialization_dir,
-                                                "training_state_epoch_{}.th".format(epoch)))
+        torch.save(
+            training_state,
+            os.path.join(
+                self._serialization_dir,
+                "training_state_{}_epoch_{}.th".format(
+                    phase,
+                    epoch)))
 
         task_states = {}
         for task_name, task_info in self._task_infos.items():
@@ -560,7 +570,7 @@ class SamplingMultiTaskTrainer:
         else:
             task_states['global']['scheduler'] = None
         torch.save(task_states, os.path.join(self._serialization_dir,
-                                             "task_state_epoch_{}.th".format(epoch)))
+                                             "task_state_{}_epoch_{}.th".format(phase, epoch)))
 
         metric_states = {}
         for metric_name, metric_info in self._metric_infos.items():
@@ -569,10 +579,28 @@ class SamplingMultiTaskTrainer:
             metric_states[metric_name]['stopped'] = metric_info['stopped']
             metric_states[metric_name]['best'] = metric_info['best']
         torch.save(metric_states, os.path.join(self._serialization_dir,
-                                               "metric_state_epoch_{}.th".format(epoch)))
+                                               "metric_state_{}_epoch_{}.th".format(phase, epoch)))
         log.info("Saved files to %s", self._serialization_dir)
 
-    def _restore_checkpoint(self):
+    def find_checkpoint_suffix_to_load(self, search_phases_in_priority_order=['main']):
+        """
+        Search for checkpoints to load, looking only for `main` training checkpoints.
+        """
+        if not self._serialization_dir:
+            raise ConfigurationError("serialization_dir not specified - cannot "
+                                     "restore a model without a directory path.")
+
+        serialization_files = os.listdir(self._serialization_dir)
+        for current_search_phase in search_phases_in_priority_order:
+            checkpoints = [
+                x for x in serialization_files if "model_state_{}_".format(current_search_phase) in x]
+            if any(checkpoints):
+                epoch_to_load = max([int(x.split("model_state_{}_epoch_".format(
+                    current_search_phase))[-1].strip(".th")) for x in checkpoints])
+                return "{}_epoch_{}.th".format(current_search_phase, epoch_to_load)
+            return None
+
+    def _restore_checkpoint(self, search_phases_in_priority_order=['main']):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -586,23 +614,20 @@ class SamplingMultiTaskTrainer:
         epoch
             The epoch at which to resume training.
         """
-        if not self._serialization_dir:
-            raise ConfigurationError("serialization_dir not specified - cannot "
-                                     "restore a model without a directory path.")
 
-        serialization_files = os.listdir(self._serialization_dir)
-        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
-                             for x in model_checkpoints])
+        suffix_to_load = self.find_checkpoint_suffix_to_load(
+            search_phases_in_priority_order=search_phases_in_priority_order)
+        assert suffix_to_load, "No checkpoint found."
+        log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
 
         model_path = os.path.join(self._serialization_dir,
-                                  "model_state_epoch_{}.th".format(epoch_to_load))
+                                  "model_state_{}".format(suffix_to_load))
         training_state_path = os.path.join(self._serialization_dir,
-                                           "training_state_epoch_{}.th".format(epoch_to_load))
+                                           "training_state_{}".format(suffix_to_load))
         task_state_path = os.path.join(self._serialization_dir,
-                                       "task_state_epoch_{}.th".format(epoch_to_load))
+                                       "task_state_{}".format(suffix_to_load))
         metric_state_path = os.path.join(self._serialization_dir,
-                                         "metric_state_epoch_{}.th".format(epoch_to_load))
+                                         "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
         self._model.load_state_dict(model_state, strict=False)

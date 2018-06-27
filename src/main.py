@@ -32,6 +32,14 @@ def main(arguments):
                         help="Config file (.conf) for model parameters.", 
                         type=str, default=DEFAULT_CONFIG_FILE)
     parser.add_argument('--overrides', help="Parameter overrides, as valid HOCON string.", type=str, default=None)
+    
+    # Control flow for main
+    parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
+    parser.add_argument(
+        '--do_eval',
+        help='1 to run eval tasks (where model can be retrained for eval task) else 0',
+        type=int,
+        default=0)
 
     args = parser.parse_args(arguments)
     args = config.params_from_file(args.config_file, args.overrides)
@@ -70,14 +78,48 @@ def main(arguments):
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
 
-    # Build model #
+    # Build or load model #
     log.info('Building model...')
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
 
-    # Train on train tasks #
-    if train_tasks and args.should_train:
+    # Check that necessary parameters are set for each step. Exit with error if not.
+    steps_log = []
+
+    if not(args.load_eval_checkpoint == 'None'):
+        try:
+            assert os.path.exists(args.load_eval_checkpoint)
+        except AssertionError:
+            log.error(
+                "Error: Attempting to load model from non-existent path: [%s]" %
+                args.load_eval_checkpoint)
+            return 0
+        steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
+
+    if args.do_train:
+        try:
+            assert args.train_tasks
+        except AssertionError:
+            log.error("Error: Must specify at least on training task: [%s]" % args.train_tasks)
+            return 0
+        steps_log.append("Training model on tasks: %s" % args.train_tasks)
+
+    if args.train_for_eval:
+        steps_log.append("Re-training model for individual eval tasks")
+
+    if args.do_eval:
+        try:
+            assert args.eval_tasks
+        except AssertionError:
+            log.error("Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
+            return 0
+        steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
+
+    log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
+    best_epochs = {}
+    if args.do_train:
+        # Train on train tasks #
         log.info("Training...")
         trainer, _, opt_params, schd_params = build_trainer(args, model,
                                                             args.max_vals)
@@ -87,33 +129,27 @@ def main(arguments):
                                     args.val_interval, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
-                                    args.shared_optimizer, args.load_model)
-    else:
-        log.info("Skipping training.")
-        best_epochs = {}
+                                    args.shared_optimizer, args.load_model, phase="main")
 
-    # Select model checkpoint from training to load
-    if args.force_load_epoch >= 0:  # force loading a particular epoch
-        epoch_to_load = args.force_load_epoch
-    elif "macro" in best_epochs:
-        epoch_to_load = best_epochs['macro']
+    # Select model checkpoint from main training run to load
+    # is not None and args.load_eval_checkpoint != "None":
+    if not(args.load_eval_checkpoint == "None"):
+        log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
+        load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
-        serialization_files = os.listdir(args.run_dir)
-        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-        if model_checkpoints:
-            epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
-                                 for x in model_checkpoints])
-        else:
-            epoch_to_load = -1
-    if epoch_to_load >= 0:
+        try:
+            assert "macro" in best_epochs
+        except AssertionError:
+            log.error("No model to evaluate.")
+            return 0
+        epoch_to_load = best_epochs['macro']
         state_path = os.path.join(args.run_dir,
-                                  "model_state_epoch_{}.th".format(epoch_to_load))
+                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
         load_model_state(model, state_path, args.cuda)
 
     # Train just the task-specific components for eval tasks
-    # TODO(Alex): currently will overwrite model checkpoints from training
-    for task in eval_tasks:
-        if args.train_for_eval:
+    if args.train_for_eval:
+        for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             trainer, _, opt_params, schd_params = build_trainer(args, model,
@@ -122,19 +158,22 @@ def main(arguments):
                                        args.eval_val_interval, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
-                                       args.shared_optimizer, args.load_model)
+                                       args.shared_optimizer, load_model=False, phase="eval")
+
             best_epoch = best_epoch[task.name]
-            layer_path = os.path.join(args.run_dir, "model_state_epoch_{}.th".format(best_epoch))
+            layer_path = os.path.join(args.run_dir, "model_state_eval_epoch_{}.th".format(best_epoch))
             load_model_state(model, layer_path, args.cuda)
 
-    # Evaluate #
-    log.info("Evaluating...")
-    val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-    if args.write_preds:
-        _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
-        write_preds(te_preds, args.run_dir)
-    write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
-                  args.run_dir.split('/')[-1])
+    if args.do_eval:
+        # Evaluate #
+        log.info("Evaluating...")
+        val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
+        if args.write_preds:
+            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
+            write_preds(te_preds, args.run_dir)
+
+        write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
+                      args.run_dir.split('/')[-1])
 
     log.info("Done!")
 
