@@ -1,6 +1,7 @@
 """ Trainer """
 
 import os
+import re
 import glob
 import time
 import copy
@@ -325,7 +326,7 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
-                all_val_metrics, should_save, new_best, task_infos, metric_infos = self._validate(
+                all_val_metrics, should_save, new_best_macro, task_infos, metric_infos = self._validate(
                     epoch, tasks, task_infos, metric_infos, iterator, g_scheduler, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
@@ -347,7 +348,7 @@ class SamplingMultiTaskTrainer:
                 if should_save:
                     self._save_checkpoint(
                         {"pass": n_pass, "epoch": epoch, "should_stop": should_stop},
-                        phase=phase)
+                        phase=phase, new_best_macro=new_best_macro)
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -437,7 +438,7 @@ class SamplingMultiTaskTrainer:
         # Track per task patience
         should_save = periodic_save  # whether to save this epoch or not.
         # Currently we save every validation in the main training runs.
-        new_best = False  # whether this epoch is a new best
+        new_best_macro = False  # whether this epoch is a new best
 
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
@@ -458,7 +459,8 @@ class SamplingMultiTaskTrainer:
                 log.info("Best model found for %s.", task)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)
                 should_save = True
-                new_best = True
+                if task == 'macro':
+                    new_best_macro = True
             if out_of_patience:
                 if periodic_save:
                     should_save = True
@@ -478,7 +480,7 @@ class SamplingMultiTaskTrainer:
                 else:
                     scheduler.step(epoch)
 
-        return all_val_metrics, should_save, new_best, task_infos, metric_infos
+        return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
 
     def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
@@ -522,7 +524,14 @@ class SamplingMultiTaskTrainer:
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _save_checkpoint(self, training_state, phase="main"):
+    def _unmark_previous_best(self, phase="main"):
+        marked_best = glob.glob(
+            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase)))
+        for file in marked_best:
+            print(file)
+            os.rename(file, re.sub('%s$' % ".best_macro.th", ".th", file))
+
+    def _save_checkpoint(self, training_state, phase="main", new_best_macro=False):
         """
         Parameters
         ----------
@@ -534,17 +543,27 @@ class SamplingMultiTaskTrainer:
             be based on some validation metric computed by your model.
         TODO: Is there a reason this was removed?
         """
+        if not self._serialization_dir:
+            raise ConfigurationError("serialization_dir not specified - cannot "
+                                     "restore a model without a directory path.")
+
+
         epoch = training_state["epoch"]
         if phase == "eval":
             model_path = os.path.join(
                 self._serialization_dir,
                 "model_state_eval_best.th")
         else:
+            if new_best_macro:
+                self._unmark_previous_best(phase)
+                best_str = ".best_macro"
+            else:
+                best_str = ""
+
             model_path = os.path.join(
                 self._serialization_dir,
-                "model_state_{}_epoch_{}.th".format(
-                    phase,
-                    epoch))
+                "model_state_{}_epoch_{}{}.th".format(
+                    phase, epoch, best_str))
 
         model_state = self._model.state_dict()
 
@@ -564,9 +583,8 @@ class SamplingMultiTaskTrainer:
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "training_state_{}_epoch_{}.th".format(
-                        phase,
-                        epoch)))
+                    "training_state_{}_epoch_{}{}.th".format(
+                    phase, epoch, best_str)))
 
             task_states = {}
             for task_name, task_info in self._task_infos.items():
@@ -589,7 +607,8 @@ class SamplingMultiTaskTrainer:
             else:
                 task_states['global']['scheduler'] = None
             torch.save(task_states, os.path.join(self._serialization_dir,
-                                                 "task_state_{}_epoch_{}.th".format(phase, epoch)))
+                                                 "task_state_{}_epoch_{}{}.th".format(
+                                                 phase, epoch, best_str)))
 
             metric_states = {}
             for metric_name, metric_info in self._metric_infos.items():
@@ -601,28 +620,32 @@ class SamplingMultiTaskTrainer:
                 metric_states,
                 os.path.join(
                     self._serialization_dir,
-                    "metric_state_{}_epoch_{}.th".format(
-                        phase,
-                        epoch)))
+                    "metric_state_{}_epoch_{}{}.th".format(
+                    phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
-    def find_checkpoint_suffix_to_load(self, search_phases_in_priority_order=['main']):
+    def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=['main']):
         """
         Search for checkpoints to load, looking only for `main` training checkpoints.
+
+        TODO: This is probably hairier than it needs to be. If you're good at string handling...
         """
         if not self._serialization_dir:
             raise ConfigurationError("serialization_dir not specified - cannot "
                                      "restore a model without a directory path.")
 
-        serialization_files = os.listdir(self._serialization_dir)
         for current_search_phase in search_phases_in_priority_order:
-            checkpoints = [
-                x for x in serialization_files if "model_state_{}_".format(current_search_phase) in x]
-            if any(checkpoints):
-                epoch_to_load = max([int(x.split("model_state_{}_epoch_".format(
-                    current_search_phase))[-1].strip(".th")) for x in checkpoints])
-                return "{}_epoch_{}.th".format(current_search_phase, epoch_to_load)
-            return None
+            max_epoch = 0
+            to_return = None
+            candidate_files = glob.glob(
+                os.path.join(self._serialization_dir, "model_state_{}_*".format(current_search_phase)))
+            for x in candidate_files:
+                epoch = int(x.split("model_state_{}_epoch_".format(
+                    current_search_phase))[-1].split(".")[0])
+                if epoch >= max_epoch:
+                    max_epoch = epoch
+                    to_return = x
+            return to_return.split("model_state_")[-1]
 
     def _restore_checkpoint(self, search_phases_in_priority_order=['main']):
         """
@@ -639,7 +662,7 @@ class SamplingMultiTaskTrainer:
             The epoch at which to resume training.
         """
 
-        suffix_to_load = self.find_checkpoint_suffix_to_load(
+        suffix_to_load = self._find_last_checkpoint_suffix(
             search_phases_in_priority_order=search_phases_in_priority_order)
         assert suffix_to_load, "No checkpoint found."
         log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
