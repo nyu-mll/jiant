@@ -85,7 +85,7 @@ def main(cl_arguments):
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
 
-    if not(args.load_eval_checkpoint == 'None'):
+    if not(args.load_eval_checkpoint == 'none'):
         try:
             assert os.path.exists(args.load_eval_checkpoint)
         except AssertionError:
@@ -129,8 +129,8 @@ def main(cl_arguments):
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    # is not None and args.load_eval_checkpoint != "None":
-    if not(args.load_eval_checkpoint == "None"):
+    # is not None and args.load_eval_checkpoint != "none":
+    if not(args.load_eval_checkpoint == "none"):
         log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:

@@ -222,7 +222,10 @@ class Classifier(Model):
     def forward(self, sequence, mask):
         b_size, seq_len, _ = sequence.size()
         tmp1 = self.project(sequence.view(b_size * seq_len, -1))
-        tmp1.view(b_size, seq_len, -1)
+        tmp2 = tmp1.view(b_size, seq_len, -1)
+        tmp3 = pool(tmp2)
+        classifier(tmp3)
+        return logits
 
 
 

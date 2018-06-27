@@ -233,7 +233,7 @@ class SamplingMultiTaskTrainer:
                 log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
                 log.info("Not loading.")
-                checkpoint_pattern = os.path.join(self._serialization_dir, "{}_*.th".format(phase))
+                checkpoint_pattern = os.path.join(self._serialization_dir, "*_{}_*.th".format(phase))
                 assert len(glob.glob(checkpoint_pattern)) == 0, \
                     "There are existing checkpoints here which will be overwritten." \
                     "Use -m or LOAD_MODEL to load the checkpoints instead." \
