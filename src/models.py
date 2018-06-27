@@ -3,7 +3,6 @@
 If you are adding a new task, you should [...]'''
 import sys
 import logging as log
-import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -206,10 +205,10 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             module = build_pair_classifier(task, d_sent, model, vocab, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, PairRegressionTask):
-            module = build_regressor(task, d_sent * 4, args)
+            module = build_pair_regressor(task, d_sent, model, vocab, args)
             setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, PairOrdinalRegressionTask):
-            regressor = build_regressor(task, d_sent * 4, args, model, vocab)
+            regressor = build_pair_regressor(task, d_sent, model, vocab, args)
             setattr(model, '%s_mdl' % task.name, regressor)
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
@@ -229,7 +228,7 @@ def build_classifier(task, d_inp, args):
     ''' Build a task specific classifier '''
     cls_type, dropout, d_hid = \
         args.classifier, args.classifier_dropout, args.classifier_hid_dim
-    if isinstance(task, STSBTask) or cls_type == 'log_reg':
+    if cls_type == 'log_reg':
         classifier = nn.Linear(d_inp, task.n_classes)
     elif cls_type == 'mlp':
         classifier = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
@@ -245,62 +244,56 @@ def build_classifier(task, d_inp, args):
 
     return classifier
 
+def build_pair_encoder(d_inp, vocab, args):
+    if args.pair_enc == 'simple':
+        pair_encoder = SimplePairEncoder(vocab, args.sent_combine_method)
+        d_inp_classifier = 4 * d_inp
+    elif args.pair_enc == 'attn':
+        d_inp_model = 2 * d_inp
+        d_hid_model = d_inp  # make it as large as the original sentence emb
+        modeling_layer = s2s_e.by_name('lstm').from_params(
+            Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
+                    'num_layers': 1, 'bidirectional': True}))
+        pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
+                                       args.sent_combine_method,
+                                       modeling_layer, dropout=args.dropout)
+        d_inp_classifier = 4 * d_hid_model
+    else:
+        raise ValueError("Pair classifier type not found!")
+    return pair_encoder, d_inp_classifier
 
 def build_pair_classifier(task, d_inp, model, vocab, args):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_encoder():
-        if args.pair_enc == 'simple':
-            pair_encoder = SimplePairEncoder(vocab, args.sent_combine_method)
-            d_inp_classifier = 4 * d_inp
-        elif args.pair_enc == 'attn':
-            d_inp_model = 2 * d_inp
-            d_hid_model = d_inp  # make it as large as the original sentence emb
-            modeling_layer = s2s_e.by_name('lstm').from_params(
-                Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
-                        'num_layers': 1, 'bidirectional': True}))
-            pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
-                                           args.sent_combine_method,
-                                           modeling_layer, dropout=args.dropout)
-            d_inp_classifier = 4 * d_hid_model
-        else:
-            raise ValueError("Pair classifier type not found!")
-        return pair_encoder, d_inp_classifier
-
     if args.shared_pair_enc:
         if not hasattr(model, "pair_encoder"):
-            pair_encoder, d_inp_classifier = build_pair_encoder()
+            pair_encoder, d_inp_classifier = build_pair_encoder(d_inp, vocab, args)
             model.pair_encoder = pair_encoder
         else:
             d_inp_classifier = 4 * d_inp if args.pair_enc == 'simple' else 4 * d_inp
         module = build_classifier(task, d_inp_classifier, args)
     else:
-        pair_encoder, d_inp_classifier = build_pair_encoder()
+        pair_encoder, d_inp_classifier = build_pair_encoder(d_inp, vocab, args)
         classifier = build_classifier(task, d_inp_classifier, args)
         module = nn.Sequential(pair_encoder, classifier)
     return module
 
 
-def build_regressor(task, d_inp, args, model=None, vocab=None):
+def build_pair_regressor(task, d_inp, model, vocab, args):
     ''' Build a task specific regressor '''
-    cls_type, dropout, d_hid = \
-        args.classifier, args.classifier_dropout, args.classifier_hid_dim
-    if isinstance(task, STSBTask) or cls_type == 'log_reg':
-        regressor = nn.Linear(d_inp, 1)
-    elif isinstance(task, JOCITask):
-        pair_encoder = SimplePairEncoder(vocab)
-        model.pair_encoder = pair_encoder
-        regressor = nn.Linear(d_inp, 1)
-    elif cls_type == 'mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, 1))
-    elif cls_type == 'fancy_mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
-    return regressor
+
+    if args.shared_pair_enc:
+        if not hasattr(model, "pair_encoder"):
+            pair_encoder, d_inp_classifier = build_pair_encoder(d_inp, vocab, args)
+            model.pair_encoder = pair_encoder
+        else:
+            d_inp_classifier = 4 * d_inp if args.pair_enc == 'simple' else 4 * d_inp
+        module = build_classifier(task, d_inp_classifier, args)
+    else:
+        pair_encoder, d_inp_classifier = build_pair_encoder(d_inp, vocab, args)
+        classifier = build_classifier(task, d_inp_classifier, args)
+        module = nn.Sequential(pair_encoder, classifier)
+    return module
 
 
 def build_lm(task, d_inp, args):
@@ -405,33 +398,26 @@ class MultiTaskModel(nn.Module):
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
-            if isinstance(task, JOCITask):
-                task.scorer1(mean_squared_error(logits, labels))
-                task.scorer2(spearmanr(logits, labels)[0])
-            else:
-                task.scorer1(logits, labels)
-                if task.scorer2 is not None:
-                    task.scorer2(logits, labels)
+            task.scorer1(logits, labels)
+            if task.scorer2 is not None:
+                task.scorer2(logits, labels)
             out['loss'] = F.cross_entropy(logits, labels)
         out['logits'] = logits
         return out
 
     def _pair_regression_forward(self, batch, task):
-        ''' For STS-B '''
         out = {}
+
+        # embed the sentence
         s1, s1_mask = self.sent_encoder(batch['input1'])
         s2, s2_mask = self.sent_encoder(batch['input2'])
         if hasattr(self, "pair_encoder"):
             pair_emb = self.pair_encoder(s1, s2, s1_mask, s2_mask)
             classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(pair_emb)
+            scores = classifier(pair_emb)
         else:
             classifier = getattr(self, "%s_mdl" % task.name)
-            logits = classifier(s1, s2, s1_mask, s2_mask)
-
-        # pass to a task specific classifier
-        regressor = getattr(self, "%s_mdl" % task.name)
-        scores = regressor(pair_emb)  # might want to pass sent_embs
+            scores = classifier(s1, s2, s1_mask, s2_mask)
 
         out['logits'] = scores  # maybe change the name here?
         if 'labels' in batch:

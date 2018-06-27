@@ -2,7 +2,6 @@
 import os
 import logging as log
 import tqdm
-import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator

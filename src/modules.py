@@ -3,7 +3,6 @@ import os
 import sys
 import json
 import logging as log
-import ipdb as pdb  # pylint: disable=unused-import
 import h5py
 
 import numpy
