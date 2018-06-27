@@ -116,7 +116,9 @@ def main(arguments):
                         default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=512)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
-    parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=1)
+    parser.add_argument('--skip_embs', help='add skip connection by concat embs to sent encoder output',
+                        type=int, default=1)
+    parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=0)
     parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=8)
     parser.add_argument('--d_proj', help='transformer projection dim', type=int, default=64)
     parser.add_argument('--d_ff', help='transformer feedforward dim', type=int, default=2048)
