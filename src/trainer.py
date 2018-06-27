@@ -1,5 +1,5 @@
 """ Trainer """
-
+import ipdb as pdb
 import os
 import re
 import glob
@@ -36,7 +36,8 @@ def build_trainer_params(args, task, max_vals):
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
-    params['max_vals'] = max_vals
+    params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
+                         hasattr(args, "%s_max_vals" % task) else max_vals
 
     return Params(params)
 

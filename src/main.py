@@ -109,8 +109,9 @@ def main(cl_arguments):
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
-        trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                            args.max_vals)
+        params = build_trainer_params(args, 'none', args.max_vals)
+        trainer, _, opt_params, schd_params = build_trainer(params, model,
+                                                            args.run_dir)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
         best_epochs = trainer.train(train_tasks, stop_metric,
