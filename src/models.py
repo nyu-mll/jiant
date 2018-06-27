@@ -70,7 +70,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                         num_attention_heads=args.n_heads)
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                        fwd, bwd, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, 
+                                       skip_embs=args.skip_embs,
                                        cove_layer=cove_emb)
         else:  # not bidirectional
             if args.sent_enc == 'rnn':
@@ -310,10 +310,7 @@ def build_lm(task, d_inp, args):
 
 
 def build_decoder(task, d_inp, vocab, embedder, args):
-    ''' Build a task specific decoder
-
-    TODO: handle different vocabs (languages)?
-    '''
+    ''' Build a task specific decoder '''
     rnn = s2s_e.by_name('lstm').from_params(
         Params({'input_size': embedder.get_output_dim(),
                 'hidden_size': args.d_hid_dec,
