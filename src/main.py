@@ -25,23 +25,20 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
 DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 
-def main(arguments):
-    ''' Train or load a model. Evaluate on some tasks. '''
+def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config_file', 
-                        help="Config file (.conf) for model parameters.", 
+    # Configuration files
+    parser.add_argument('--config_file',
+                        help="Config file (.conf) for model parameters.",
                         type=str, default=DEFAULT_CONFIG_FILE)
     parser.add_argument('--overrides', help="Parameter overrides, as valid HOCON string.", type=str, default=None)
-    
-    # Control flow for main
-    parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
-    parser.add_argument(
-        '--do_eval',
-        help='1 to run eval tasks (where model can be retrained for eval task) else 0',
-        type=int,
-        default=0)
 
-    args = parser.parse_args(arguments)
+    return parser.parse_args(cl_arguments)
+
+
+def main(cl_arguments):
+    ''' Train or load a model. Evaluate on some tasks. '''
+    args = handle_arguments(cl_arguments)
     args = config.params_from_file(args.config_file, args.overrides)
 
     # Logistics #
@@ -49,7 +46,7 @@ def main(arguments):
         os.mkdir(args.exp_dir)
     if not os.path.isdir(args.run_dir):
         os.mkdir(args.run_dir)
-    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir, 
+    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir,
                                                             args.log_file)))
     log.info("Parsed args: \n%s", args)
 
