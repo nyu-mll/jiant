@@ -101,13 +101,22 @@ class BiLMEncoder(SentenceEncoder):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM
     A simple wrap up for bidirectional LM training
     '''
-    def __init__(self, vocab, text_field_embedder, num_highway_layers, \
-                 phrase_layer, bwd_phrase_layer, skip_embs=True, \
+
+    def __init__(self, vocab, text_field_embedder, num_highway_layers,
+                 phrase_layer, bwd_phrase_layer, skip_embs=True,
                  cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
-        super(BiLMEncoder, self).__init__(vocab, text_field_embedder, num_highway_layers, phrase_layer, \
-                                          cove_layer, dropout, mask_lstms, \
-                                          initializer)
+        super(
+            BiLMEncoder,
+            self).__init__(
+            vocab,
+            text_field_embedder,
+            num_highway_layers,
+            phrase_layer,
+            cove_layer,
+            dropout,
+            mask_lstms,
+            initializer)
         self._bwd_phrase_layer = bwd_phrase_layer
         self.skip_embs = skip_embs
         self.output_dim += self._bwd_phrase_layer.get_output_dim()
@@ -474,6 +483,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                    use_positional_encoding=use_positional_encoding,
                    dropout_prob=dropout_prob)
 
+
 class ElmoCharacterEncoder(torch.nn.Module):
     """
     Compute context sensitive token representation using pretrained biLM.
@@ -512,6 +522,7 @@ class ElmoCharacterEncoder(torch.nn.Module):
                 }
             }
     """
+
     def __init__(self,
                  options_file,
                  weight_file,
@@ -529,16 +540,16 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
         # Cache the arrays for use in forward -- +1 due to masking.
         self._beginning_of_sentence_characters = torch.from_numpy(
-                numpy.array(ELMoCharacterMapper.beginning_of_sentence_characters) + 1
+            numpy.array(ELMoCharacterMapper.beginning_of_sentence_characters) + 1
         )
         self._end_of_sentence_characters = torch.from_numpy(
-                numpy.array(ELMoCharacterMapper.end_of_sentence_characters) + 1
+            numpy.array(ELMoCharacterMapper.end_of_sentence_characters) + 1
         )
 
     def get_output_dim(self):
         return self.output_dim
 
-    def forward(self, inputs): # pylint: disable=arguments-differ
+    def forward(self, inputs):  # pylint: disable=arguments-differ
         """
         Compute context insensitive token embeddings for ELMo representations.
 
@@ -560,18 +571,18 @@ class ElmoCharacterEncoder(torch.nn.Module):
         # Add BOS/EOS
         mask = ((inputs > 0).long().sum(dim=-1) > 0).long()
         character_ids_with_bos_eos, mask_with_bos_eos = add_sentence_boundary_token_ids(
-                inputs,
-                mask,
-                self._beginning_of_sentence_characters,
-                self._end_of_sentence_characters
+            inputs,
+            mask,
+            self._beginning_of_sentence_characters,
+            self._end_of_sentence_characters
         )
 
         # the character id embedding
         max_chars_per_token = self._options['char_cnn']['max_characters_per_token']
         # (batch_size * sequence_length, max_chars_per_token, embed_dim)
         character_embedding = torch.nn.functional.embedding(
-                character_ids_with_bos_eos.view(-1, max_chars_per_token),
-                self._char_embedding_weights
+            character_ids_with_bos_eos.view(-1, max_chars_per_token),
+            self._char_embedding_weights
         )
 
         # run convolutions
@@ -606,7 +617,7 @@ class ElmoCharacterEncoder(torch.nn.Module):
         # reshape to (batch_size, sequence_length, embedding_dim)
         batch_size, sequence_length, _ = character_ids_with_bos_eos.size()
 
-        return token_embedding.view(batch_size, sequence_length, -1)[:,1:-1,:]
+        return token_embedding.view(batch_size, sequence_length, -1)[:, 1:-1, :]
 
     def _load_weights(self):
         self._load_char_embedding()
@@ -619,13 +630,13 @@ class ElmoCharacterEncoder(torch.nn.Module):
             char_embed_weights = fin['char_embed'][...]
 
         weights = numpy.zeros(
-                (char_embed_weights.shape[0] + 1, char_embed_weights.shape[1]),
-                dtype='float32'
+            (char_embed_weights.shape[0] + 1, char_embed_weights.shape[1]),
+            dtype='float32'
         )
         weights[1:, :] = char_embed_weights
 
         self._char_embedding_weights = torch.nn.Parameter(
-                torch.FloatTensor(weights), requires_grad=self.requires_grad
+            torch.FloatTensor(weights), requires_grad=self.requires_grad
         )
 
     def _load_cnn_weights(self):
@@ -636,10 +647,10 @@ class ElmoCharacterEncoder(torch.nn.Module):
         convolutions = []
         for i, (width, num) in enumerate(filters):
             conv = torch.nn.Conv1d(
-                    in_channels=char_embed_dim,
-                    out_channels=num,
-                    kernel_size=width,
-                    bias=True
+                in_channels=char_embed_dim,
+                out_channels=num,
+                kernel_size=width,
+                bias=True
             )
             # load the weights
             with h5py.File(cached_path(self._weight_file), 'r') as fin:

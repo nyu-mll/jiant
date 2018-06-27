@@ -1,5 +1,6 @@
 '''Train a multi-task model using AllenNLP '''
 import argparse
+import glob
 import json
 import os
 import random
@@ -114,7 +115,6 @@ def main(cl_arguments):
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
-    best_epochs = {}
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
@@ -134,17 +134,21 @@ def main(cl_arguments):
         log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
+        macro_best = glob.glob(os.path.join(args.run_dir,
+                                            "model_state_main_epoch_*.best_macro.th"))
         try:
-            assert "macro" in best_epochs
+            assert len(macro_best) > 0
         except AssertionError:
-            log.error("No model to evaluate.")
+            log.error("No best checkpoint found to evaluate.")
             return 0
-        epoch_to_load = best_epochs['macro']
-        state_path = os.path.join(args.run_dir,
-                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
-        load_model_state(model, state_path, args.cuda)
+        try:
+            assert len(macro_best) == 1
+        except AssertionError:
+            log.error("Too many best checkpoints. Something is wrong.")
+            return 0
+        load_model_state(model, macro_best[0], args.cuda)
 
-    # Train just the task-specific components for eval tasks
+    # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
@@ -157,8 +161,10 @@ def main(cl_arguments):
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
 
+            # The best checkpoint will accumulate the best parameters for each task.
+            # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
-            layer_path = os.path.join(args.run_dir, "model_state_eval_epoch_{}.th".format(best_epoch))
+            layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             load_model_state(model, layer_path, args.cuda)
 
     if args.do_eval:
