@@ -1,6 +1,16 @@
 # JSALT: *J*iant (or *J*SALT) *S*entence *A*ggregating *L*earning *T*hing
 This repo contains the code for jiant sentence representation learning model for the 2018 JSALT Workshop.
 
+## Quick-Start on GCP
+
+If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
+
+```sh
+python src/main.py --config_file config/demo.conf
+```
+
+You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+
 ## Dependencies
 
 Make sure you have installed the packages listed in environment.yml.
@@ -25,7 +35,13 @@ For other pretraining task data, contact the person in charge.
 
 ## Running
 
-To run things, use ``src/main.py`` with flags or a script like the one in ``example_experiment_scripts/demo.sh``.
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
+```sh
+python src/main.py --config_file config/demo.conf \
+  --overrides "exp_name = my_exp, run_name = foobar"
+```
+will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
+
 Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
 
 - exp1 (e.g. training and evaluating on WikiText and all the GLUE tasks)
@@ -35,41 +51,14 @@ Because preprocessing is expensive, we often want to run multiple experiments us
 - exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
-You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively).
+You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). (Although note that on GCP these may already be set!)
 
-To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
-To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
-
-If you are using the experiment scripts, you should also put a file ``user_config.sh`` in the top level directory containing paths specific to your machine.
-
-```
-python main.py --data_dir $JIANT_DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
-```
-
-To use the shell script, run
-
-```
-./run_stuff.sh -d $JIANT_DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
-```
-
-See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.
-
+To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
+To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the option ``reload_vocab = 1``.
 
 ## Model
 
-This is a brief selection of some of the options available to control currently. Note that the commandline shortcuts are selected with no real rhyme or reason and are somewhat subject to change.
-
-Embedding options:
-
-    - ``--word_embs`` / ``-w $WORD_EMBS``: use ``$WORD_EMBS`` for word embeddings. If ``$WORD_EMBS = glove`` or ``$WORD_EMBS = fastText``, we'll read from ``WORD_EMBS_FILE``. If ``$WORD_EMBS = none``, we won't use word embeddings.
-    - ``--fastText 1``: if ``fastText = 1`` and ``$FASTTEXT_MODEL_FILE`` is set, we'll use a fastText model file to get word embeddings, which has the benefit of having no OOV.
-    - ``--char_embs`` / ``-C``: use character emeddings, learned from scratch
-    - ``--elmo`` / ``-e``: use ELMo embeddings, probably makes learning characted embeddings from scratch redundant
-
-Model options:
-
-    - ``--n_layers_enc`` / ``-L $N_LAYERS_ENC``: number of encoder layers
-    - ``--d_hid`` / ``-h $D_HID``: encoder hidden state
+To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [src/main.py](src/main.py).
 
 
 ## Trainer
