@@ -102,8 +102,8 @@ class BiLMEncoder(SentenceEncoder):
     A simple wrap up for bidirectional LM training
     '''
 
-    def __init__(self, vocab, text_field_embedder, num_highway_layers, \
-                 phrase_layer, bwd_phrase_layer, skip_embs=True, \
+    def __init__(self, vocab, text_field_embedder, num_highway_layers,
+                 phrase_layer, bwd_phrase_layer, skip_embs=True,
                  cove_layer=None, dropout=0.2, mask_lstms=True,
                  initializer=InitializerApplicator()):
         super(
