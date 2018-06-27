@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:' flag; do
+while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:RO' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -15,6 +15,7 @@ while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W
 	    F) FASTTEXT_MODEL_FILE="${OPTARG}" ;;
         e) ELMO=1 ;;
         c) COVE=1 ;;
+        O) elmo_chars_only=1 ;;
 
         q) no_tqdm=1 ;;
         t) SHOULD_TRAIN=0 ;;
@@ -31,6 +32,7 @@ while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W
         T) train_tasks="${OPTARG}" ;;
         E) eval_tasks="${OPTARG}" ;;
         H) n_layers_highway="${OPTARG}" ;;
+        R) bidirectional=0 ;;
 
         A) n_heads="${OPTARG}" ;;
         p) d_proj="${OPTARG}" ;;
@@ -82,7 +84,7 @@ ALLEN_ARGS+=( --fastText_model_file ${FASTTEXT_MODEL_FILE} )
 ALLEN_ARGS+=( --fastText ${fastText} )
 ALLEN_ARGS+=( --char_embs ${char_embs} )
 ALLEN_ARGS+=( --elmo ${ELMO} )
-ALLEN_ARGS+=( --deep_elmo ${deep_elmo} )
+ALLEN_ARGS+=( --elmo_chars_only ${elmo_chars_only} )
 ALLEN_ARGS+=( --cove ${COVE} )
 ALLEN_ARGS+=( --d_word ${d_word} )
 ALLEN_ARGS+=( --d_hid ${d_hid} )

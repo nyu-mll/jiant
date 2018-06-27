@@ -97,7 +97,7 @@ def main(arguments):
     parser.add_argument('--char_filter_sizes', help='filter sizes for char emb cnn', type=str,
                         default='2,3,4,5')
     parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
-    parser.add_argument('--deep_elmo', help='1 if use elmo post LSTM', type=int, default=0)
+    parser.add_argument('--elmo_chars_only', help='1 if only use ELMo charCNN', type=int, default=0)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
     parser.add_argument('--char_embs', help='1 if use character embs', type=int, default=0)
     parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
@@ -106,7 +106,7 @@ def main(arguments):
 
     # Model options
     parser.add_argument('--sent_enc', help='type of sent encoder to use', type=str, default='rnn',
-                        choices=['bow', 'rnn', 'transformer', 'transformer-d'])
+                        choices=['bow', 'rnn', 'transformer'])
     parser.add_argument('--sent_combine_method', help='how to aggregate hidden states of sent rnn',
                         type=str, default='max', choices=['max', 'mean', 'final'])
 

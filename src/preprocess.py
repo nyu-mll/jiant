@@ -104,18 +104,21 @@ def build_tasks(args):
     log.info("\tFinished building vocab. Using %d words, %d chars.",
              word_v_size, char_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
-    if not args.reload_vocab and os.path.exists(emb_file):
-        word_embs = pkl.load(open(emb_file, 'rb'))
-    else:
-        log.info("\tBuilding embeddings from scratch")
-        if args.fastText:
-            word_embs, _ = get_fastText_model(vocab, args.d_word,
-                                              model_file=args.fastText_model_file)
-            log.info("\tNo pickling")
+    if args.word_embs != 'none':
+        if not args.reload_vocab and os.path.exists(emb_file):
+            word_embs = pkl.load(open(emb_file, 'rb'))
         else:
-            word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-            pkl.dump(word_embs, open(emb_file, 'wb'))
-            log.info("\tSaved embeddings to %s", emb_file)
+            log.info("\tBuilding embeddings from scratch")
+            if args.fastText:
+                word_embs, _ = get_fastText_model(vocab, args.d_word,
+                                                  model_file=args.fastText_model_file)
+                log.info("\tNo pickling")
+            else:
+                word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+                pkl.dump(word_embs, open(emb_file, 'wb'))
+                log.info("\tSaved embeddings to %s", emb_file)
+    else:
+        word_embs = None
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
