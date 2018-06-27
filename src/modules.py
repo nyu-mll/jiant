@@ -113,14 +113,13 @@ class BiLMEncoder(SentenceEncoder):
             text_field_embedder,
             num_highway_layers,
             phrase_layer,
+            skip_embs, 
             cove_layer,
             dropout,
             mask_lstms,
             initializer)
         self._bwd_phrase_layer = bwd_phrase_layer
-        self.skip_embs = skip_embs
-        self.output_dim += self._bwd_phrase_layer.get_output_dim()
-        self.output_dim += skip_embs * phrase_layer.get_input_dim()
+        self.output_dim *= 2
         initializer(self)
 
     def _uni_directional_forward(self, sent, go_forward=True):
@@ -138,6 +137,9 @@ class BiLMEncoder(SentenceEncoder):
             sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         else:
             sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
+        sent_enc = self._dropout(sent_enc)
+        if self.skip_embs:
+            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
@@ -154,20 +156,11 @@ class BiLMEncoder(SentenceEncoder):
         # TODO(Alex): bwd_sent_enc is likely flipped? shouldn't concatenate
         # The masks should be the same though
         fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent)
-        if bwd_sent is None:
-            bwd_sent_enc, _ = self._uni_directional_forward(sent, False)
-        else:
+        if bwd_sent is not None:
             bwd_sent_enc, _ = self._uni_directional_forward(bwd_sent, False)
-        sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=-1)
-        sent_enc = self._dropout(sent_enc)
-        if self.skip_embs:
-            sent_embs = self._highway_layer(self._text_field_embedder(sent))
-            if self._cove is not None:
-                sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-                sent_cove_embs = self._cove(sent['words'], sent_lens)
-                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            sent_embs = self._dropout(sent_embs)
-            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+            sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=-1)
+        else:
+            sent_enc = fwd_sent_enc
 
         return sent_enc, fwd_sent_mask
 

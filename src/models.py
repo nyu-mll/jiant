@@ -70,6 +70,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                         num_attention_heads=args.n_heads)
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                        fwd, bwd, dropout=args.dropout,
+                                       skip_embs=args.skip_embs, 
                                        cove_layer=cove_emb)
         else:  # not bidirectional
             if args.sent_enc == 'rnn':
