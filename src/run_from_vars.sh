@@ -1,6 +1,6 @@
 # This is a helper bash script. Execute run_stuff.sh, not this.
 
-while getopts 'ivkmnx:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:RO' flag; do
+while getopts 'ivkmn:x:r:d:w:S:s:tvh:l:L:o:T:E:b:H:p:ecgP:qB:V:M:D:CX:G:I:N:y:K:W:F:fA:Q:G:RO' flag; do
     case "${flag}" in
         P) JIANT_PROJECT_PREFIX="${OPTARG}" ;;
         d) JIANT_DATA_DIR=${OPTARGS} ;;
@@ -89,6 +89,7 @@ ALLEN_ARGS+=( --cove ${COVE} )
 ALLEN_ARGS+=( --d_word ${d_word} )
 ALLEN_ARGS+=( --d_hid ${d_hid} )
 ALLEN_ARGS+=( --sent_enc ${sent_enc} )
+ALLEN_ARGS+=( --skip_embs ${skip_embs} )
 ALLEN_ARGS+=( --bidirectional ${bidirectional} )
 ALLEN_ARGS+=( --n_layers_enc ${N_LAYERS_ENC} )
 ALLEN_ARGS+=( --pair_enc ${PAIR_ENC} )

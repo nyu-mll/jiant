@@ -16,7 +16,7 @@ from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, \
-                                             ElmoTokenEmbedder
+    ElmoTokenEmbedder
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
@@ -71,12 +71,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                        fwd, bwd, dropout=args.dropout,
                                        cove_layer=cove_emb)
-        else: # not bidirectional
+        else:  # not bidirectional
             if args.sent_enc == 'rnn':
                 fwd = s2s_e.by_name('lstm').from_params(
                     Params({'input_size': d_emb, 'hidden_size': args.d_hid,
                             'num_layers': args.n_layers_enc, 'bidirectional': False}))
-            elif args.sent_enc =='transformer':
+            elif args.sent_enc == 'transformer':
                 fwd = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
                                                         projection_dim=args.d_proj,
@@ -84,8 +84,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                         num_layers=args.n_layers_enc,
                                                         num_attention_heads=args.n_heads)
             sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                           fwd, dropout=args.dropout,
-                                           cove_layer=cove_emb)
+                                           fwd, skip_embs=args.skip_embs,
+                                           dropout=args.dropout, cove_layer=cove_emb)
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         d_sent = d_emb
@@ -95,8 +95,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                     'num_layers': args.n_layers_enc,
                     'bidirectional': args.bidirectional}))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       sent_rnn, dropout=args.dropout,
-                                       cove_layer=cove_emb)
+                                       sent_rnn, skip_embs=args.skip_embs,
+                                       dropout=args.dropout, cove_layer=cove_emb)
         d_sent = (1 + args.bidirectional) * args.d_hid
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder(input_dim=d_emb,
@@ -107,7 +107,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                                   num_attention_heads=args.n_heads)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       cove_layer=cove_emb)
+                                       skip_embs=args.skip_embs, cove_layer=cove_emb)
+    d_sent += args.skip_embs * d_emb
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)

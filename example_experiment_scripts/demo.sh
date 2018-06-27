@@ -37,29 +37,30 @@ RELOAD_INDEX=0
 RELOAD_VOCAB=0
 
 LOAD_MODEL=0
-DO_TRAIN=0
+DO_TRAIN=1
 DO_EVAL=1
 TRAIN_FOR_EVAL=1
 
 LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
-eval_tasks='mrpc'
+eval_tasks='sst'
 
 CLASSIFIER=mlp
 d_hid_cls=64
 max_seq_len=10
 VOCAB_SIZE=30000
 
-word_embs=fastText
+word_embs='none'
 fastText=0
-char_embs=1
+char_embs=0
 d_word=300
-ELMO=0
-deep_elmo=0
+ELMO=1
+elmo_chars_only=1
 COVE=0
 
 sent_enc="rnn"
+skip_embs=1
 bidirectional=1
 d_hid=128
 PAIR_ENC="simple"
@@ -81,11 +82,11 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=16
 BPP_METHOD="percent_tr"
-BPP_BASE=100
-VAL_INTERVAL=5
-EVAL_VAL_INTERVAL=5
+BPP_BASE=10
+VAL_INTERVAL=10
+EVAL_VAL_INTERVAL=10
 MAX_VALS=10
-EVAL_MAX_VALS=20
+EVAL_MAX_VALS=5
 TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
