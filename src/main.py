@@ -81,7 +81,7 @@ def main(arguments):
     parser.add_argument(
         '--word_embs',
         help='type of word embs to use',
-        default='fastText',
+        default='none',
         choices=[
             'none',
             'scratch',
@@ -96,8 +96,8 @@ def main(arguments):
     parser.add_argument('--n_char_filters', help='n char filters', type=int, default=100)
     parser.add_argument('--char_filter_sizes', help='filter sizes for char emb cnn', type=str,
                         default='2,3,4,5')
-    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=0)
-    parser.add_argument('--elmo_chars_only', help='1 if only use ELMo charCNN', type=int, default=0)
+    parser.add_argument('--elmo', help='1 if use elmo', type=int, default=1)
+    parser.add_argument('--elmo_chars_only', help='1 if only use ELMo charCNN', type=int, default=1)
     parser.add_argument('--cove', help='1 if use cove', type=int, default=0)
     parser.add_argument('--char_embs', help='1 if use character embs', type=int, default=0)
     parser.add_argument('--dropout_embs', help='drop rate for embeddings', type=float, default=.2)
