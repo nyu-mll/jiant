@@ -63,22 +63,22 @@ To see the set of available params, see [config/defaults.conf](config/defaults.c
 
 ## Trainer
 
-The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``--bpp_base`` or `-B` of that task's training data is trained on.
-The trainer evaluates the model on the validation data after a fixed number of updates, set by (``--val_interval`` or `-V`).
-The learning rate is scheduled to decay by ``--lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``--task_patience`` (default: 1) validation checks.
+The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``bpp_base`` of that task's training data is trained on.
+The trainer evaluates the model on the validation data after a fixed number of updates, set by (``val_interval``).
+The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``task_patience`` (default: 1) validation checks.
 
-If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``/``-W``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``--scaling_method``/``-s`` if you want to weight tasks with different amounts of training data equally throughout training.
+If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training.
 
-Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``--train_tasks`` / ``-T $TRAIN_TASKS`` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``--eval_tasks`` / ``-E $EVAL_TASKS`` to specify the eval-only tasks.
+Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
 
 Other training options include:
 
-    - ``--optimizer`` / ``-o $OPTIMIZER``: use ``$OPTIMIZER`` usually just Adam
-    - ``--lr`` / ``-l $LR``: set initial learning rate to ``$LR``
-    - ``--batch_size`` / ``-b $BSIZE``: use batch size ``BSIZE``, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
-    - ``--should_train 0`` / ``-t``: skip training
-    - ``--load_model 1`` / ``-m``: start training by loading model from most recent checkpoint found in directory
-    - ``--force_load_epoch`` / ``-N $LOAD_EPOCH``: after training, force loading from ``$LOAD_EPOCH`` instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
+    - ``optimizer``: (string) anything supported by AllenNLP, but usually just 'adam'
+    - ``lr``: (float) set initial learning rate
+    - ``batch_size``: (int) batch size, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
+    - ``should_train``: set to 0 to skip training
+    - ``load_model``: set to 1 to start training by loading model from most recent checkpoint found in directory
+    - ``force_load_epoch``: (int) after training, force loading from instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
 
 NB: "epoch" is generally used to refer to the amount of data between validation checks.
 
@@ -111,7 +111,7 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
 To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
 fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-To activate fastText model within our framework, set the flag ``--fastText 1``
+To activate fastText model within our framework, set the flag ``fastText 1``
 If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic; use the pretrained vectors.
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
@@ -119,7 +119,8 @@ Download the pretrained vectors located [here](https://fasttext.cc/docs/en/engli
 ### ELMo
 
 We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
-To use ELMo, set ``--elmo`` to 1. To use ELMo without GloVe, additionally set ``--elmo_no_glove`` to 1.
+To use ELMo, set ``elmo`` to 1.
+<!-- To use ELMo without GloVe, additionally set ``elmo_no_glove`` to 1. -->
 
 ### GloVe
 
@@ -129,7 +130,7 @@ To use GloVe vectors, download and extract the relevant files and set ``word_emb
 ### CoVe
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
-To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py`` and set ``--cove`` to 1.
+To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove`` to 1.
 
 ## Annoying AllenNLP Things
 
