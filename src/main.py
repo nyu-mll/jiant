@@ -1,5 +1,6 @@
 '''Train a multi-task model using AllenNLP '''
 import os
+import glob
 import sys
 import time
 import random
@@ -116,8 +117,11 @@ def main(arguments):
                         default='simple', choices=['simple', 'attn'])
     parser.add_argument('--d_hid', help='hidden dimension size', type=int, default=512)
     parser.add_argument('--n_layers_enc', help='number of RNN layers', type=int, default=1)
-    parser.add_argument('--skip_embs', help='add skip connection by concat embs to sent encoder output',
-                        type=int, default=1)
+    parser.add_argument(
+        '--skip_embs',
+        help='add skip connection by concat embs to sent encoder output',
+        type=int,
+        default=1)
     parser.add_argument('--n_layers_highway', help='num of highway layers', type=int, default=0)
     parser.add_argument('--n_heads', help='num of transformer heads', type=int, default=8)
     parser.add_argument('--d_proj', help='transformer projection dim', type=int, default=64)
@@ -151,11 +155,13 @@ def main(arguments):
                         type=int, default=4000)
 
     # Multi-task training options
-    parser.add_argument('--val_interval', help='Number of passes between validation checks',
+    parser.add_argument('--val_interval', help='Number of passes between validation checks. '
+                        'Also serves as the number of intervals between checkpoints.',
                         type=int, default=10)
-    parser.add_argument('--max_vals', help='Maximum number of validation checks', type=int,
+    parser.add_argument('--max_vals', help='Maximum number of validation checks.', type=int,
                         default=100)
-    parser.add_argument('--bpp_base', help='Number of batches to train on per sampled task',
+    parser.add_argument('--bpp_base', help='Number of batches to train on per sampled task. '
+                        'Val interval should be at least this high.',
                         type=int, default=1)
     parser.add_argument('--weighting_method', help='Weighting method for sampling', type=str,
                         choices=['uniform', 'proportional'], default='uniform')
@@ -238,7 +244,6 @@ def main(arguments):
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
-    best_epochs = {}
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
@@ -258,17 +263,21 @@ def main(arguments):
         log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
+        macro_best = glob.glob(os.path.join(args.run_dir,
+                                            "model_state_main_epoch_*.best_macro.th"))
         try:
-            assert "macro" in best_epochs
+            assert len(macro_best) > 0
         except AssertionError:
-            log.error("No model to evaluate.")
+            log.error("No best checkpoint found to evaluate.")
             return 0
-        epoch_to_load = best_epochs['macro']
-        state_path = os.path.join(args.run_dir,
-                                  "model_state_main_epoch_{}.th".format(epoch_to_load))
-        load_model_state(model, state_path, args.cuda)
+        try:
+            assert len(macro_best) == 1
+        except AssertionError:
+            log.error("Too many best checkpoints. Something is wrong.")
+            return 0
+        load_model_state(model, macro_best[0], args.cuda)
 
-    # Train just the task-specific components for eval tasks
+    # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
@@ -281,8 +290,10 @@ def main(arguments):
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
 
+            # The best checkpoint will accumulate the best parameters for each task.
+            # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
-            layer_path = os.path.join(args.run_dir, "model_state_eval_epoch_{}.th".format(best_epoch))
+            layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             load_model_state(model, layer_path, args.cuda)
 
     if args.do_eval:
