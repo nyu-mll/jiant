@@ -259,7 +259,7 @@ def main(arguments):
         load_model_state(model, args.load_eval_checkpoint, args.cuda)
     else:
         macro_best = glob.glob(os.path.join(args.run_dir,
-                                  "model_state_main_epoch_*.best_macro.th"))
+                                            "model_state_main_epoch_*.best_macro.th"))
         try:
             assert len(macro_best) > 0
         except AssertionError:

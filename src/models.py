@@ -16,7 +16,7 @@ from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, \
-                                             ElmoTokenEmbedder
+    ElmoTokenEmbedder
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
@@ -71,12 +71,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
             sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
                                        fwd, bwd, dropout=args.dropout,
                                        cove_layer=cove_emb)
-        else: # not bidirectional
+        else:  # not bidirectional
             if args.sent_enc == 'rnn':
                 fwd = s2s_e.by_name('lstm').from_params(
                     Params({'input_size': d_emb, 'hidden_size': args.d_hid,
                             'num_layers': args.n_layers_enc, 'bidirectional': False}))
-            elif args.sent_enc =='transformer':
+            elif args.sent_enc == 'transformer':
                 fwd = MaskedStackedSelfAttentionEncoder(input_dim=d_emb,
                                                         hidden_dim=args.d_hid,
                                                         projection_dim=args.d_proj,

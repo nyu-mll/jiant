@@ -547,7 +547,6 @@ class SamplingMultiTaskTrainer:
             raise ConfigurationError("serialization_dir not specified - cannot "
                                      "restore a model without a directory path.")
 
-
         epoch = training_state["epoch"]
         if phase == "eval":
             model_path = os.path.join(
@@ -584,7 +583,7 @@ class SamplingMultiTaskTrainer:
                 os.path.join(
                     self._serialization_dir,
                     "training_state_{}_epoch_{}{}.th".format(
-                    phase, epoch, best_str)))
+                        phase, epoch, best_str)))
 
             task_states = {}
             for task_name, task_info in self._task_infos.items():
@@ -608,7 +607,7 @@ class SamplingMultiTaskTrainer:
                 task_states['global']['scheduler'] = None
             torch.save(task_states, os.path.join(self._serialization_dir,
                                                  "task_state_{}_epoch_{}{}.th".format(
-                                                 phase, epoch, best_str)))
+                                                     phase, epoch, best_str)))
 
             metric_states = {}
             for metric_name, metric_info in self._metric_infos.items():
@@ -621,7 +620,7 @@ class SamplingMultiTaskTrainer:
                 os.path.join(
                     self._serialization_dir,
                     "metric_state_{}_epoch_{}{}.th".format(
-                    phase, epoch, best_str)))
+                        phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=['main']):
@@ -638,7 +637,9 @@ class SamplingMultiTaskTrainer:
             max_epoch = 0
             to_return = None
             candidate_files = glob.glob(
-                os.path.join(self._serialization_dir, "model_state_{}_*".format(current_search_phase)))
+                os.path.join(
+                    self._serialization_dir,
+                    "model_state_{}_*".format(current_search_phase)))
             for x in candidate_files:
                 epoch = int(x.split("model_state_{}_epoch_".format(
                     current_search_phase))[-1].split(".")[0])
