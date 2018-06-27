@@ -51,15 +51,16 @@ d_hid_cls=64
 max_seq_len=10
 VOCAB_SIZE=30000
 
-word_embs=fastText
+word_embs='none'
 fastText=0
-char_embs=1
+char_embs=0
 d_word=300
-ELMO=0
-deep_elmo=0
+ELMO=1
+elmo_chars_only=0
 COVE=0
 
 sent_enc="rnn"
+skip_embs=1
 bidirectional=1
 d_hid=128
 PAIR_ENC="simple"
