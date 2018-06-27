@@ -223,8 +223,8 @@ class Pooler(nn.Module):
         return seq_emb
 
     @classmethod
-    def from_params(cls, d_inp, args):
-        return cls(d_inp, d_proj=args.d_proj)
+    def from_params(cls, d_inp, d_proj):
+        return cls(d_inp, d_proj=d_proj)
 
 class Classifier(nn.Module):
     ''' Classifier with a linear projection before pooling '''
@@ -251,9 +251,9 @@ class Classifier(nn.Module):
         return logits
 
     @classmethod
-    def from_params(cls, d_inp, n_classes, args):
-        return cls(d_inp, n_classes, cls_type=args.classifier,
-                   dropout=args.classifier_dropout, d_hid=args.classifier_hid_dim)
+    def from_params(cls, d_inp, n_classes, params):
+        return cls(d_inp, n_classes, cls_type=params["cls_type"],
+                   dropout=params["dropout"], d_hid=params["d_hid"])
 
 class SingleClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
@@ -287,16 +287,6 @@ class PairClassifier(nn.Module):
         pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
-
-
-class SimplePairEncoder(nn.Module):
-    ''' Given two sentence vectors u and v, model the pair as [u; v; |u-v|; u * v] '''
-    def __init__(self):
-        super(SimplePairEncoder, self).__init__()
-
-    def forward(self, sent1, sent2, mask1, mask2):
-        """ See above """
-        return torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1)
 
 
 class AttnPairEncoder(Model):

@@ -6,6 +6,7 @@ import os
 import random
 import sys
 import time
+import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -92,7 +93,7 @@ def main(cl_arguments):
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
-        assert_for_log(args.train_tasks != "none", 
+        assert_for_log(args.train_tasks != "none",
             "Error: Must specify at least on training task: [%s]" % args.train_tasks)
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
@@ -100,7 +101,7 @@ def main(cl_arguments):
         steps_log.append("Re-training model for individual eval tasks")
 
     if args.do_eval:
-        assert_for_log(args.eval_tasks != "none", 
+        assert_for_log(args.eval_tasks != "none",
             "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 

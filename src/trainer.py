@@ -61,9 +61,8 @@ def build_trainer(args, model, max_vals):
                               'threshold_mode': 'abs',
                               'verbose': True})
 
-    train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
-                           'patience': args.patience, 'grad_norm': args.max_grad_norm,
-                           'max_vals': max_vals,
+    train_params = Params({'cuda_device': args.cuda, 'patience': args.patience,
+                           'grad_norm': args.max_grad_norm, 'max_vals': max_vals,
                            'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
     trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
                                                    copy.deepcopy(train_params))
@@ -75,7 +74,7 @@ class SamplingMultiTaskTrainer:
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False):
-        """ 
+        """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
 
@@ -562,7 +561,7 @@ class SamplingMultiTaskTrainer:
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'main' or 'eval'.
-        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and 
+        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from main to eval training.
         """
         if not self._serialization_dir:
