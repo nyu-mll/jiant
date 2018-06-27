@@ -356,7 +356,10 @@ class MultiTaskModel(nn.Module):
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
             if isinstance(task, JOCITask):
+                logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
+                logits = logits.data.cpu().numpy()
+                labels = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits, labels))
                 task.scorer2(spearmanr(logits, labels)[0])
             elif isinstance(task, STSBTask):
