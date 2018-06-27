@@ -2,6 +2,7 @@
 
 If you are adding a new task, you should [...]'''
 import sys
+import ipdb as pdb
 import logging as log
 
 import torch
@@ -229,40 +230,34 @@ def build_single_sentence_module(task, d_inp, args):
 def build_pair_sentence_module(task, d_inp, model, vocab, args):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_encoder(d_in):
+    def build_pair_attn(d_in):
         ''' Build the pair model '''
-        if args.pair_enc == 'simple':
-            pair_encoder = SimplePairEncoder(vocab)
-            d_out = 4 * d_in
-        elif args.pair_enc == 'attn':
+        if not args.pair_attn:
+            pair_attn = None
+        else:
             d_inp_model = 2 * d_in
-            d_hid_model = d_inp  # make it as large as the original sentence emb
+            d_hid_model = int(d_inp / 2) # as large as the original d_inp
             modeling_layer = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
                         'num_layers': 1, 'bidirectional': True}))
-            pair_encoder = AttnPairEncoder(vocab, DotProductSimilarity(),
-                                           args.sent_combine_method,
-                                           modeling_layer, dropout=args.dropout)
-            d_out = 4 * d_hid_model
-        else:
-            raise ValueError("Pair classifier type not found!")
-        return pair_encoder, d_out
+            pair_attn = AttnPairEncoder(vocab, modeling_layer, dropout=args.dropout)
+        return pair_attn
 
     d_proj = args.d_proj
     pooler = Pooler.from_params(d_inp, args)
-    if args.shared_pair_enc:
-        if not hasattr(model, "pair_encoder"):
-            pair_encoder, d_inp_classifier = build_pair_encoder(d_proj)
-            model.pair_encoder = pair_encoder
+
+    if args.shared_pair_attn:
+        if not hasattr(model, "pair_attn"):
+            pair_attn = build_pair_attn(d_inp)
+            model.pair_attn = pair_attn
         else:
-            pair_encoder = model.pair_encoder
-            d_inp_classifier = 4 * d_proj if args.pair_enc == 'simple' else 4 * d_proj # not right
+            pair_attn = model.pair_attn
     else:
-        pair_encoder, d_inp_classifier = build_pair_encoder(d_proj)
+        pair_attn = build_pair_attn(d_inp)
 
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    classifier = Classifier.from_params(d_inp_classifier, n_classes, args)
-    module = PairClassifier(pooler, pair_encoder, classifier)
+    classifier = Classifier.from_params(4 * d_proj, n_classes, args)
+    module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
 
