@@ -47,12 +47,12 @@ def main(arguments):
     parser.add_argument('--reload_vocab', help='1 if force vocabulary rebuild', type=int, default=0)
 
     # Control flow for main
-    parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=0)
+    parser.add_argument('--do_train', help='1 to run train else 0', type=int, default=1)
     parser.add_argument(
         '--do_eval',
         help='1 to run eval tasks (where model can be retrained for eval task) else 0',
         type=int,
-        default=0)
+        default=1)
 
     # Tasks and task-specific modules
     parser.add_argument('--train_tasks', help='comma separated list of tasks, or "all" or "none"',
@@ -63,7 +63,7 @@ def main(arguments):
         '--train_for_eval',
         help='1 if models should be trained for the eval tasks else 0',
         type=int,
-        default=0)
+        default=1)
     parser.add_argument('--classifier', help='type of classifier to use', type=str,
                         default='log_reg', choices=['log_reg', 'mlp', 'fancy_mlp'])
     parser.add_argument('--classifier_hid_dim', help='hid dim of classifier', type=int, default=512)
