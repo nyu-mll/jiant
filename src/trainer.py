@@ -1,5 +1,5 @@
 """ Trainer """
-
+import ipdb as pdb
 import os
 import re
 import glob
@@ -21,8 +21,28 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
+def build_trainer_params(args, task, max_vals):
+    ''' Build trainer parameters, possibly loading task specific parameters '''
+    def get_task_attr(attr_name):
+        return getattr(args, "%s_%s" % (task, attr_name)) if \
+                hasattr(args, "%s_%s" % (task, attr_name)) else \
+                getattr(args, attr_name)
+    params = {}
+    train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
+                  'task_patience', 'patience', 'scheduler_threshold']
+    # we want to pass to the build_train()
+    extra_opts = ['sent_enc', 'd_hid', 'cuda', 'max_grad_norm', 'min_lr', 'no_tqdm']
+    for attr in train_opts:
+        params[attr] = get_task_attr(attr)
+    for attr in extra_opts:
+        params[attr] = getattr(args, attr)
+    params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
+                         hasattr(args, "%s_max_vals" % task) else max_vals
 
-def build_trainer(args, model, max_vals):
+    return Params(params)
+
+
+def build_trainer(params, model, run_dir):
     '''Build a trainer.
 
     Parameters
@@ -36,37 +56,39 @@ def build_trainer(args, model, max_vals):
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
-    iterator = BasicIterator(args.batch_size)
+    iterator = BasicIterator(params['batch_size'])
     # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
-    #                          batch_size=args.batch_size)
+    #                          batch_size=params['batch_size'])
 
-    if args.optimizer == 'adam':
+    if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
-        opt_params = Params({'type': args.optimizer, 'lr': args.lr,
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 1e-5, 'amsgrad': True})
     else:
-        opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
+                             'weight_decay': 1e-5})
 
-    if 'transformer' in args.sent_enc:
+    if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
-                              'model_size': args.d_hid,
+                              'model_size': params['d_hid'],
                               'warmup_steps': 4000,
                               'factor': 1.0})
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
                               'mode': 'max',
-                              'factor': args.lr_decay_factor,
-                              'patience': args.task_patience,
-                              'threshold': args.scheduler_threshold,
+                              'factor': params['lr_decay_factor'],
+                              'patience': params['task_patience'],
+                              'threshold': params['scheduler_threshold'],
                               'threshold_mode': 'abs',
                               'verbose': True})
 
-    train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
-                           'patience': args.patience, 'grad_norm': args.max_grad_norm,
-                           'max_vals': max_vals,
-                           'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm,
-                           'keep_all_checkpoints': args.keep_all_checkpoints})
-    trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
+    train_params = Params({'cuda_device': params['cuda'],
+                           'patience': params['patience'],
+                           'grad_norm': params['max_grad_norm'],
+                           'max_vals': params['max_vals'],
+                           'lr_decay': .99, 'min_lr': params['min_lr'],
+                           'no_tqdm': params['no_tqdm']})
+    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, iterator,
                                                    copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
@@ -76,7 +98,7 @@ class SamplingMultiTaskTrainer:
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False, keep_all_checkpoints=False):
-        """ 
+        """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
 
@@ -568,7 +590,7 @@ class SamplingMultiTaskTrainer:
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if ".best_macro" not in file and "_{}.".format(epoch) not in file: 
+            if ".best_macro" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
 
     def _save_checkpoint(self, training_state, phase="main", new_best_macro=False, keep_all=False):
@@ -577,7 +599,7 @@ class SamplingMultiTaskTrainer:
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'main' or 'eval'.
-        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and 
+        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from main to eval training.
         """
         if not self._serialization_dir:
@@ -771,5 +793,5 @@ class SamplingMultiTaskTrainer:
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, no_tqdm=no_tqdm, 
+                                        min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints)
