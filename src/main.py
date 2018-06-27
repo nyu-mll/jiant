@@ -17,7 +17,7 @@ import torch
 import config
 from preprocess import build_tasks
 from models import build_model
-from trainer import build_trainer
+from trainer import build_trainer, build_trainer_params
 from evaluate import evaluate, load_model_state, write_results, write_preds
 from utils import assert_for_log
 
@@ -136,8 +136,9 @@ def main(cl_arguments):
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-            trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                                args.eval_max_vals)
+            params = build_trainer_params(args, task.name, args.eval_max_vals)
+            trainer, _, opt_params, schd_params = build_trainer(params, model,
+                                                                args.run_dir)
             best_epoch = trainer.train([task], task.val_metric,
                                        args.eval_val_interval, 1,
                                        args.weighting_method, args.scaling_method,
