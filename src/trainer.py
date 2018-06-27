@@ -21,8 +21,21 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
+
 def build_trainer(args, model, max_vals):
-    '''Build a trainer'''
+    '''Build a trainer.
+
+    Parameters
+    ----------
+    args: A trainer config object.
+    model: A module with trainable parameters.
+    max_vals: The upper bound on training steps, specified in number of validation runs.
+
+    Returns
+    -------
+    A trainer object, a trainer config object, an optimizer config object,
+        and a scheduler config object.
+    '''
     iterator = BasicIterator(args.batch_size)
     # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
     #                          batch_size=args.batch_size)
@@ -57,27 +70,16 @@ def build_trainer(args, model, max_vals):
     return trainer, train_params, opt_params, schd_params
 
 
-def get_task_order(method, tasks, iterator):
-    '''Get order to train tasks on'''
-    if method == 'given':
-        task_order = range(len(tasks))
-    elif 'random' in method:
-        task_order = [i for i in range(len(tasks))]
-        random.shuffle(task_order)
-    else:
-        task_sizes = [(idx, iterator.get_num_batches(task.train_data))
-                      for idx, task in enumerate(tasks)]
-        task_sizes.sort(key=lambda x: x[1], reverse=bool(method == 'large_to_small'))
-        task_order = [task_idx for task_idx, _ in task_sizes]
-    return task_order
-
-
 class SamplingMultiTaskTrainer:
     def __init__(self, model, iterator, patience=2, num_epochs=20, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False):
-        """ Parameters
+        """ 
+        The training coordinator. Unusually complicated to handle MTL with tasks of
+        diverse sizes.
+
+        Parameters
         ----------
         model : ``Model``, required.
             An AllenNLP model to be optimized. Pytorch Modules can also be optimized if
@@ -196,7 +198,30 @@ class SamplingMultiTaskTrainer:
               validation_interval, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=0, load_model=1, phase="main"):
+              shared_optimizer=1, load_model=1, phase="main"):
+        """
+        The main training loop.
+
+        Parameters
+        ----------
+        tasks: A list of task objects to train on.
+        stop_metric: The metric to use for early stopping.
+        validation_interval: How many passes between evaluations.
+        n_batches_per_pass: How many training steps per task per pass.
+        weighting_method: How to sample which task to use.
+        scaling_method: How to scale gradients.
+        train_params: Trainer config object.
+        optimizer_params: Optimizer config object.
+        scheduler_params: Scheduler config object.
+        shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
+        load_model: Whether to restore and continue training if a checkpoint is found.
+        phase: Usually 'main' or 'eval'.
+
+        Returns
+        -------
+        Validation results
+        """
+
 
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
@@ -232,11 +257,12 @@ class SamplingMultiTaskTrainer:
                 log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
                 log.info("Not loading.")
-                checkpoint_pattern = os.path.join(self._serialization_dir, "*_{}_*.th".format(phase))
+                checkpoint_pattern = os.path.join(
+                    self._serialization_dir, "*_{}_*.th".format(phase))
                 assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
-                    "There are existing checkpoints here which will be overwritten. " \
-                    "Use -m or LOAD_MODEL to load the checkpoints instead. " \
-                    "If you don't want them, delete them or change your experimnent name.")
+                               "There are existing checkpoints here which will be overwritten. "
+                               "Use -m or LOAD_MODEL to load the checkpoints instead. "
+                               "If you don't want them, delete them or change your experimnent name.")
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -272,8 +298,8 @@ class SamplingMultiTaskTrainer:
                 total_batches_trained += 1
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task, for_training=True)
-                assert_for_log("loss" in output_dict, 
-                    "Model must return a dict containing a 'loss' key")
+                assert_for_log("loss" in output_dict,
+                               "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
                 if scaling_method == 'unit' and weighting_method == 'proportional':
                     loss /= task_info['n_tr_batches']
@@ -534,13 +560,10 @@ class SamplingMultiTaskTrainer:
         """
         Parameters
         ----------
-        epoch , required.
-            The epoch of training.
-        is_best, optional (default = None)
-            A flag which causes the model weights at the given epoch to
-            be copied to a "best.th" file. The value of this flag should
-            be based on some validation metric computed by your model.
-        TODO: Is there a reason this was removed?
+        training_state: An object containing trainer state (step number, etc.), to be saved.
+        phase: Usually 'main' or 'eval'.
+        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and 
+            potentially used later when switching from main to eval training.
         """
         if not self._serialization_dir:
             raise ConfigurationError("serialization_dir not specified - cannot "
