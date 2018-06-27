@@ -4,6 +4,7 @@ import sys
 import json
 import logging as log
 import h5py
+import ipdb as pdb
 
 import numpy
 import torch
@@ -16,7 +17,8 @@ from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
 from allennlp.models.model import Model
-from allennlp.modules import Highway, MatrixAttention
+from allennlp.modules import Highway
+from allennlp.modules.matrix_attention import DotProductMatrixAttention
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
 from allennlp.nn.util import remove_sentence_boundaries, add_sentence_boundary_token_ids, get_device_of
@@ -201,6 +203,8 @@ class Pooler(nn.Module):
         self.pool_type = pool_type
 
     def forward(self, sequence, mask):
+        if len(mask.size()) < 3:
+            mask = mask.unsqueeze(dim=-1)
         pad_mask = 1 - mask.byte().data
         if sequence.min().item() != float('-inf'): # this will f up the loss
             #log.warn('Negative infinity detected')
@@ -263,31 +267,36 @@ class SingleClassifier(nn.Module):
         logits = self.classifier(emb)
         return logits
 
+
 class PairClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
-    def __init__(self, pooler, encoder, classifier):
+    def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
         self.pooler = pooler
-        self.encoder = encoder
         self.classifier = classifier
+        self.attn = attn
 
     def forward(self, s1, s2, mask1, mask2):
+        if len(mask1) > 2:
+            mask1 = mask1.squeeze(-1)
+            mask2 = mask2.squeeze(-1)
+        if self.attn is not None:
+            s1, s2 = self.attn(s1, s2, mask1, mask2)
         emb1 = self.pooler(s1, mask1)
         emb2 = self.pooler(s2, mask2)
-        pair_emb = self.encoder(emb1, emb2, mask1, mask2)
+        pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
 
 
-class SimplePairEncoder(Model):
+class SimplePairEncoder(nn.Module):
     ''' Given two sentence vectors u and v, model the pair as [u; v; |u-v|; u * v] '''
-    def __init__(self, vocab):
-        super(SimplePairEncoder, self).__init__(vocab)
+    def __init__(self):
+        super(SimplePairEncoder, self).__init__()
 
     def forward(self, sent1, sent2, mask1, mask2):
         """ See above """
         return torch.cat([sent1, sent2, torch.abs(sent1 - sent2), sent1 * sent2], 1)
-
 
 
 class AttnPairEncoder(Model):
@@ -318,43 +327,24 @@ class AttnPairEncoder(Model):
         If provided, will be used to calculate the regularization penalty during training.
     """
 
-    def __init__(self, vocab, attention_similarity_function, modeling_layer,
-                 combine_method='max',
-                 dropout=0.2, mask_lstms=True, initializer=InitializerApplicator()):
+    def __init__(self, vocab, modeling_layer, dropout=0.2, mask_lstms=True,
+                 initializer=InitializerApplicator()):
         super(AttnPairEncoder, self).__init__(vocab)
 
-        self._matrix_attention = MatrixAttention(attention_similarity_function)
+        self._matrix_attention = DotProductMatrixAttention()
         self._modeling_layer = modeling_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
-        self.combine_method = combine_method
 
         d_out_model = modeling_layer.get_output_dim()
         self.output_dim = d_out_model
 
-        if dropout > 0:
-            self._dropout = torch.nn.Dropout(p=dropout)
-        else:
-            self._dropout = lambda x: x
+        self._dropout = torch.nn.Dropout(p=dropout) if dropout > 0 else lambda x: x
         self._mask_lstms = mask_lstms
 
         initializer(self)
 
     def forward(self, s1, s2, s1_mask, s2_mask):  # pylint: disable=arguments-differ
-        """
-        Parameters
-        ----------
-        s1 : Dict[str, torch.LongTensor]
-            From a ``TextField``.
-        s2 : Dict[str, torch.LongTensor]
-            From a ``TextField``.
-
-        Returns
-        -------
-        pair_rep : torch.FloatTensor?
-            Tensor representing the final output of the BiDAF model
-            to be plugged into the next module
-
-        """
+        """ """
         # Similarity matrix
         # Shape: (batch_size, s2_length, s1_length)
         similarity_mat = self._matrix_attention(s2, s1)
@@ -377,15 +367,17 @@ class AttnPairEncoder(Model):
 
         modeled_s1 = self._dropout(self._modeling_layer(s1_w_context, s1_mask))
         modeled_s2 = self._dropout(self._modeling_layer(s2_w_context, s2_mask))
+        return modeled_s1, modeled_s2
+
+        '''
         modeled_s1.data.masked_fill_(1 - s1_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
         modeled_s2.data.masked_fill_(1 - s2_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
-        #s1_attn = modeled_s1.max(dim=1)[0]
-        #s2_attn = modeled_s2.max(dim=1)[0]
-        s1_attn = combine_hidden_states(modeled_s1, s1_mask, self.combine_method)
-        s2_attn = combine_hidden_states(modeled_s2, s2_mask, self.combine_method)
+        s1_attn = modeled_s1.max(dim=1)[0]
+        s2_attn = modeled_s2.max(dim=1)[0]
 
         return torch.cat([s1_attn, s2_attn, torch.abs(s1_attn - s2_attn),
                           s1_attn * s2_attn], 1)
+        '''
 
     @classmethod
     def from_params(cls, vocab, params):
