@@ -6,6 +6,7 @@ import os
 import random
 import sys
 import time
+import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -16,7 +17,7 @@ import torch
 import config
 from preprocess import build_tasks
 from models import build_model
-from trainer import build_trainer
+from trainer import build_trainer, build_trainer_params
 from evaluate import evaluate, load_model_state, write_results, write_preds
 from utils import assert_for_log
 
@@ -92,7 +93,7 @@ def main(cl_arguments):
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
-        assert_for_log(args.train_tasks != "none", 
+        assert_for_log(args.train_tasks != "none",
             "Error: Must specify at least on training task: [%s]" % args.train_tasks)
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
@@ -100,7 +101,7 @@ def main(cl_arguments):
         steps_log.append("Re-training model for individual eval tasks")
 
     if args.do_eval:
-        assert_for_log(args.eval_tasks != "none", 
+        assert_for_log(args.eval_tasks != "none",
             "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
@@ -108,8 +109,9 @@ def main(cl_arguments):
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
-        trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                            args.max_vals)
+        params = build_trainer_params(args, 'none', args.max_vals)
+        trainer, _, opt_params, schd_params = build_trainer(params, model,
+                                                            args.run_dir)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
         best_epochs = trainer.train(train_tasks, stop_metric,
@@ -135,8 +137,9 @@ def main(cl_arguments):
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-            trainer, _, opt_params, schd_params = build_trainer(args, model,
-                                                                args.eval_max_vals)
+            params = build_trainer_params(args, task.name, args.eval_max_vals)
+            trainer, _, opt_params, schd_params = build_trainer(params, model,
+                                                                args.run_dir)
             best_epoch = trainer.train([task], task.val_metric,
                                        args.eval_val_interval, 1,
                                        args.weighting_method, args.scaling_method,

@@ -122,6 +122,7 @@ def build_tasks(args):
     # 4) Index tasks using vocab, using previous preprocessing if available.
     preproc_file = os.path.join(args.exp_dir, args.preproc_file)
     if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
+        log.info("\tLoading preprocessed data (this may be slow) from %s", preproc_file)
         preproc = pkl.load(open(preproc_file, 'rb'))
         save_preproc = 0
     else:
