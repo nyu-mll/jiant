@@ -44,7 +44,7 @@ TRAIN_FOR_EVAL=1
 LOAD_EVAL_CHECKPOINT='None'
 
 train_tasks='sst'
-eval_tasks='mrpc'
+eval_tasks='sst'
 
 CLASSIFIER=mlp
 d_hid_cls=64
@@ -57,6 +57,7 @@ char_embs=1
 d_word=300
 ELMO=0
 deep_elmo=0
+elmo_chars_only=0
 COVE=0
 
 sent_enc="rnn"
@@ -81,11 +82,11 @@ WEIGHT_DECAY=0.0
 SCHED_THRESH=0.0
 BATCH_SIZE=16
 BPP_METHOD="percent_tr"
-BPP_BASE=100
-VAL_INTERVAL=5
-EVAL_VAL_INTERVAL=5
+BPP_BASE=10
+VAL_INTERVAL=10
+EVAL_VAL_INTERVAL=10
 MAX_VALS=10
-EVAL_MAX_VALS=20
+EVAL_MAX_VALS=5
 TASK_ORDERING="random"
 weighting_method="uniform"
 scaling_method='none'
