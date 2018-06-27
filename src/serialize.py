@@ -33,15 +33,38 @@ def _deserialize(fd):
         example = pkl.loads(blob)
         yield example
 
-def read_records(filename):
+class RepeatableIterator(object):
+    """Repeatable iterator class."""
+    
+    def __init__(self, iter_fn):
+        """Create a repeatable iterator.
+        
+        Args:
+          iter_fn: callable with no arguments, creates an iterator
+        """
+        self._iter_fn = iter_fn
+        self._counter = 0
+        
+    def get_counter(self):
+        return self._counter
+        
+    def __iter__(self):
+        self._counter += 1
+        return self._iter_fn().__iter__()
+
+
+def read_records(filename, repeatable=False):
 	"""Streaming read records from file.
 
 	Args:
       filename: path to file of b64-encoded pickles, one per line
+      repeatable: if true, returns a RepeatableIterator that can read the file 
+        multiple times.
 
-	Yields:
-      deserialized Python objects
+	Returns:
+      iterable, possible repeatable, yielding deserialized Python objects
     """
 	with open(filename, 'rb') as fd:
-		return _deserialize(fd)
+        iter_fn = lambda: _deserialize(fd)
+        return RepeatableIterator(iter_fn) if repeatable else iter_fn()
 
