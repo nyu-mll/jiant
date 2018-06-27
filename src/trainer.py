@@ -529,7 +529,6 @@ class SamplingMultiTaskTrainer:
         marked_best = glob.glob(
             os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase)))
         for file in marked_best:
-            print(file)
             os.rename(file, re.sub('%s$' % ".best_macro.th", ".th", file))
 
     def _save_checkpoint(self, training_state, phase="main", new_best_macro=False):
