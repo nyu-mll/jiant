@@ -3,7 +3,6 @@
 If you are adding a new task, you should [...]'''
 import sys
 import logging as log
-import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
 import torch.nn as nn
@@ -265,28 +264,6 @@ def build_pair_sentence_module(task, d_inp, model, vocab, args):
     classifier = Classifier.from_params(d_inp_classifier, n_classes, args)
     module = PairClassifier(pooler, pair_encoder, classifier)
     return module
-
-
-def build_regressor(task, d_inp, args, model=None, vocab=None):
-    ''' Build a task specific regressor '''
-    cls_type, dropout, d_hid = \
-        args.classifier, args.classifier_dropout, args.classifier_hid_dim
-    if isinstance(task, STSBTask) or cls_type == 'log_reg':
-        regressor = nn.Linear(d_inp, 1)
-    elif isinstance(task, JOCITask):
-        pair_encoder = SimplePairEncoder(vocab)
-        model.pair_encoder = pair_encoder
-        regressor = nn.Linear(d_inp, 1)
-    elif cls_type == 'mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, 1))
-    elif cls_type == 'fancy_mlp':
-        regressor = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(d_inp, d_hid),
-                                  nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                  nn.Linear(d_hid, d_hid), nn.Tanh(), nn.LayerNorm(d_hid),
-                                  nn.Dropout(p=dropout), nn.Linear(d_hid, 1))
-    return regressor
 
 
 def build_lm(task, d_inp, args):
