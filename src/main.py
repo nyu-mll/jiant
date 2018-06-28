@@ -15,6 +15,8 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import torch
 
 import config
+import gcp
+
 from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer, build_trainer_params
@@ -31,30 +33,31 @@ DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file',
-                        help="Config file (.conf) for model parameters.",
-                        type=str, default=DEFAULT_CONFIG_FILE)
-    parser.add_argument(
-        '--overrides',
-        help="Parameter overrides, as valid HOCON string.",
-        type=str,
-        default=None)
+    parser.add_argument('--config_file', type=str, default=DEFAULT_CONFIG_FILE,
+                        help="Config file (.conf) for model parameters.")
+    parser.add_argument('--overrides', type=str, default=None,
+                        help="Parameter overrides, as valid HOCON string.")
+
+    parser.add_argument('--remote_log', action="store_true",
+                        help="If true, enable remote logging on GCP.")
 
     return parser.parse_args(cl_arguments)
 
-
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
-    args = handle_arguments(cl_arguments)
-    args = config.params_from_file(args.config_file, args.overrides)
+    cl_args = handle_arguments(cl_arguments)
+    args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
     if not os.path.isdir(args.exp_dir):
         os.mkdir(args.exp_dir)
     if not os.path.isdir(args.run_dir):
         os.mkdir(args.run_dir)
-    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir,
-                                                            args.log_file)))
+    local_log_path = os.path.join(args.run_dir, args.log_file)
+    log.getLogger().addHandler(log.FileHandler(local_log_path))
+    if cl_args.remote_log:
+        gcp.configure_remote_logging(args.remote_log_name)
+
     log.info("Parsed args: \n%s", args)
 
     config_file = os.path.join(args.run_dir, "params.conf")
@@ -64,16 +67,19 @@ def main(cl_arguments):
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
+    log.info("Using random seed %d", seed)
     if args.cuda >= 0:
-        log.info("Using GPU %d", args.cuda)
         try:
+            if not torch.cuda.is_available():
+                raise EnvironmentError("CUDA is not available, or not detected"
+                                       " by PyTorch.")
+            log.info("Using GPU %d", args.cuda)
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
         except Exception:
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
-    log.info("Using random seed %d", seed)
 
     # Prepare data #
     log.info("Loading tasks...")
@@ -171,4 +177,10 @@ def main(cl_arguments):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    try:
+        main(sys.argv[1:])
+    except:
+        # Make sure we log the trace for any crashes before exiting.
+        log.exception("Fatal error in main():")
+        sys.exit(1)
+    sys.exit(0)
