@@ -99,7 +99,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
-        assert_for_log(False, No valid sentence encoder specified.)
+        assert_for_log(False, "No valid sentence encoder specified.")
 
     d_sent += args.skip_embs * d_emb
 
