@@ -6,6 +6,7 @@ import logging as log
 
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef, mean_squared_error
@@ -94,6 +95,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
     if args.cuda >= 0:
         model = model.cuda()
     log.info(model)
+    param_count = 0
+    for name, param in model.named_parameters():
+        param_count += np.prod(param.size())
+    log.info("Total number of parameters (including non-trained ones): {}".format(param_count))
     return model
 
 
