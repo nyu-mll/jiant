@@ -66,10 +66,10 @@ def build_trainer(params, model, run_dir):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 1e-5, 'amsgrad': True})
+                             'weight_decay': 0, 'amsgrad': True})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 1e-5})
+                             'weight_decay': 0})
 
     if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
