@@ -2,6 +2,7 @@
 import ipdb as pdb
 import os
 import re
+import math
 import glob
 import time
 import copy
@@ -203,8 +204,8 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-            task_info['n_tr_batches'] = task.n_tr_examples / iterator._batch_size
-            task_info['n_val_batches'] = task.n_val_examples / iterator._batch_size
+            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
+            task_info['n_val_batches'] = math.ceil( task.n_val_examples / iterator._batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -447,7 +448,7 @@ class SamplingMultiTaskTrainer:
             n_examples = 0.0
             task_info = task_infos[task.name]
             val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
-            n_val_batches = iterator.get_num_batches(task.val_data)
+            n_val_batches = task_infos[task.name]['n_val_batches']
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
@@ -469,7 +470,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            #assert batch_num == n_val_batches
+            assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
