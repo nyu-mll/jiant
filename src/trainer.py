@@ -21,12 +21,13 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
+
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
     def get_task_attr(attr_name):
         return getattr(args, "%s_%s" % (task, attr_name)) if \
-                hasattr(args, "%s_%s" % (task, attr_name)) else \
-                getattr(args, attr_name)
+            hasattr(args, "%s_%s" % (task, attr_name)) else \
+            getattr(args, attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
@@ -37,9 +38,9 @@ def build_trainer_params(args, task, max_vals, val_interval):
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
     params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
-                         hasattr(args, "%s_max_vals" % task) else max_vals
+        hasattr(args, "%s_max_vals" % task) else max_vals
     params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
-                            hasattr(args, "%s_val_interval" % task) else val_interval
+        hasattr(args, "%s_val_interval" % task) else val_interval
 
     return Params(params)
 
@@ -248,7 +249,6 @@ class SamplingMultiTaskTrainer:
         -------
         Validation results
         """
-
 
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
