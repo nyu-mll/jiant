@@ -8,12 +8,11 @@
 # Default environment variables for JSALT code. May be overwritten by user.
 # See https://github.com/jsalt18-sentence-repl/jiant for more.
 
-export JSALT_SHARE_DIR="/usr/share/jsalt"
-
+export JSALT_SHARE_DIR="/media/jan/DATA/Projects/Research/Paul/DATA_FOR_JSALT"
 export JIANT_DATA_DIR="$JSALT_SHARE_DIR/glue_data"
 
 # Default experiment directory
-export JIANT_PROJECT_PREFIX="$HOME/exp"
+export JIANT_PROJECT_PREFIX="$JSALT_SHARE_DIR/exp"
 
 export GLOVE_EMBS_FILE="$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
 export FASTTEXT_EMBS_FILE="$JSALT_SHARE_DIR/fasttext/crawl-300d-2M.vec"
