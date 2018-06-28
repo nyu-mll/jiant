@@ -15,6 +15,8 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import torch
 
 import config
+import gcp
+
 from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer, build_trainer_params
@@ -30,31 +32,38 @@ DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file',
-                        help="Config file (.conf) for model parameters.",
-                        type=str, default=DEFAULT_CONFIG_FILE)
-    parser.add_argument('--overrides', help="Parameter overrides, as valid HOCON string.", type=str, default=None)
+    parser.add_argument('--config_file', type=str, default=DEFAULT_CONFIG_FILE,
+                        help="Config file (.conf) for model parameters.")
+    parser.add_argument('--overrides', type=str, default=None,
+                        help="Parameter overrides, as valid HOCON string.")
+
+    parser.add_argument('--remote_log', action="store_true",
+                        help="If true, enable remote logging on GCP.")
 
     return parser.parse_args(cl_arguments)
 
-
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
-    args = handle_arguments(cl_arguments)
-    args = config.params_from_file(args.config_file, args.overrides)
+    cl_args = handle_arguments(cl_arguments)
+    args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
     if not os.path.isdir(args.exp_dir):
         os.mkdir(args.exp_dir)
     if not os.path.isdir(args.run_dir):
         os.mkdir(args.run_dir)
-    log.getLogger().addHandler(log.FileHandler(os.path.join(args.run_dir,
-                                                            args.log_file)))
+    local_log_path = os.path.join(args.run_dir, args.log_file)
+    log.getLogger().addHandler(log.FileHandler(local_log_path))
+    if cl_args.remote_log:
+        gcp.configure_remote_logging(args.remote_log_name)
+
     log.info("Parsed args: \n%s", args)
 
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
+
+    #  sys.exit(1)  # DEBUG
 
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
