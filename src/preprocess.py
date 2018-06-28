@@ -164,8 +164,9 @@ def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
 
 
 def get_task_generator(task_name, preproc_dir):
-    train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"))
-    val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"))
+    train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
+    val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
+                                 repeatable=True)
     test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
     return train_generator, val_generator, test_generator
 
