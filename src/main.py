@@ -63,21 +63,22 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    #  sys.exit(1)  # DEBUG
-
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
+    log.info("Using random seed %d", seed)
     if args.cuda >= 0:
-        log.info("Using GPU %d", args.cuda)
         try:
+            if not torch.cuda.is_available():
+                raise EnvironmentError("CUDA is not available, or not detected"
+                                       " by PyTorch.")
+            log.info("Using GPU %d", args.cuda)
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
         except Exception:
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
-    log.info("Using random seed %d", seed)
 
     # Prepare data #
     log.info("Loading tasks...")
@@ -175,4 +176,8 @@ def main(cl_arguments):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except:
+        # Make sure we log the trace for any crashes before exiting.
+        log.exception("Fatal error in main():")
