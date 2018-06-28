@@ -9,7 +9,8 @@ import os
 import math
 import logging as log
 # import ipdb as pdb
-
+import json
+import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
 from utils import load_tsv, process_sentence, truncate
@@ -752,3 +753,29 @@ class DisSentWikiFullTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading DisSent data.")
+
+class WeakGroundedTask(PairClassificationTask):
+    ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
+
+    def __init__(self, path, max_seq_len, n_classes, name="weakgrounded"):
+        ''' Do stuff '''
+        super(WeakGroundedTask, self).__init__(name, n_classes)
+        
+        ''' Process the dataset located at path.  '''
+        ''' positive = captions of the same image, negative = captions of different images '''
+        targ_map = {'negative': 0, 'positive': 1}
+        targ_map = {'0': 0, '1': 1}
+
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.n_classes = 2
+        log.info("\tFinished loading MSCOCO data.")

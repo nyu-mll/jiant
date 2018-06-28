@@ -30,7 +30,8 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     LanguageModelingTask, PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
-    JOCITask, PairOrdinalRegressionTask
+    JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
+    GroundedTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -53,7 +54,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
-             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
+             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
+             'weakgrounded': (WeakGroundedTask, 'mscoco/datasets/processed/temp/sent_pairs/'),
+             'grounded': (GroundedTask, 'mscoco/datasets/images/temp/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -311,6 +314,8 @@ def process_task(task, token_indexer, vocab):
             split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):
             pass
+        elif isinstance(task, GroundedTask):
+            split = process_grounded_task_split(split_text, token_indexer, is_pair=False, classification=True)
         elif isinstance(task, RankingTask):
             pass
         else:
@@ -319,6 +324,25 @@ def process_task(task, token_indexer, vocab):
             instance.index_fields(vocab)
         setattr(task, '%s_data' % split_name, split)
     return
+
+def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
+    '''
+    Convert a dataset of sentences into padded sequences of indices.
+
+    Args:
+        - split (list[list[str]]): list of inputs (possibly pair) and outputs
+        - pair_input (int)
+        - tok2idx (dict)
+
+    Returns:
+    '''
+    inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    labels = [NumericField(l) for l in split[1]]
+    ids = [NumericField(l) for l in split[2]]
+    instances = [Instance({"input1": input1, "labels": label, "ids": ids}) for (input1, label, ids) in
+                         zip(inputs1, labels, ids)]
+    
+    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
 
 
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):

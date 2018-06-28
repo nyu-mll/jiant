@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+from torch.autograd import Variable
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef, mean_squared_error
 
@@ -26,11 +27,12 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask
+    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
+    GroundedTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
-    SingleClassifier, PairClassifier
+    SingleClassifier, PairClassifier, CNNEncoder
 
 # Elmo stuff
 ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
@@ -317,6 +319,8 @@ class MultiTaskModel(nn.Module):
             out = self._lm_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task)
+        elif isinstance(task, GroundedTask):
+            out = self._grounded_classification_forward(batch, task)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task)
 
@@ -424,6 +428,41 @@ class MultiTaskModel(nn.Module):
         task.scorer1(out['loss'].item())
         return out
 
+    def _grounded_classification_forward(self, batch, task):
+        out = {}; d_1, d_2 = 1024, 2048;
+
+        # embed the sentence, embed the image, map and classify
+        sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
+        image_map = nn.Linear(d_1, d_2); sent_transform = image_map(sent_emb)
+        ids = batch['ids'].squeeze(-1); ids = list(ids.data.numpy());
+        labels = batch['labels'].squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
+        
+        seq, true = [], []
+        for i in range(len(ids)):
+            img_id, label = ids[i], labels[i]
+            init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
+            seq.append(torch.tensor(init_emb, dtype=torch.float)); true.append(label)
+        img_emb = torch.stack(seq, dim=0);
+        '''
+        cos = nn.SmoothL1Loss()        
+        cos = nn.MSELoss()        
+        cos = nn.L1Loss()
+        out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
+        '''
+        cos = nn.CosineEmbeddingLoss(); flags = Variable(torch.ones(len(labels)))
+        out['loss'] = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float), flags)
+        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        
+        classifier = nn.Linear(len(labels), len(labels))
+        out['logits'] = classifier(sim)
+
+        preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
+        acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
+        task.scorer1.__call__(np.sum(acc)/len(acc))
+
+        return out
+    
     def _ranking_forward(self, batch, task):
         ''' For caption and image ranking '''
         raise NotImplementedError
