@@ -22,7 +22,8 @@ except BaseException:
 
 import _pickle as pkl
 
-from serialize import write_records, read_records
+#  from serialize import write_records, read_records
+import serialize
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
     PairRegressionTask, SequenceGenerationTask, RankingTask, \
@@ -65,6 +66,50 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
 
+def _get_serialized_record_path(task_name, split, preproc_dir):
+    serialized_record_path = os.path.join(preproc_dir, 
+                                          "{:s}__{:s}_data".format(task_name, split))
+    return serialized_record_path
+
+def _get_instance_generator(task_name, split, preproc_dir):
+    """Get a lazy generator for the given task and split.
+    
+    Args:
+        task_name: (string), task name
+        split: (string), split name ('train', 'val', or 'test')
+        preproc_dir: (string) path to preprocessing dir
+
+    Returns:
+        serialize.RepeatableIterator yielding Instance objects
+    """
+    filename = _get_serialized_record_path(task_name, split, preproc_dir)
+    return serialize.read_records(filename, repeatable=True)
+
+def _serialize_task(task_name, split_dict, preproc_dir):
+    """Serialize splits for the given task.
+
+    Args:
+        task_name: (string), task name
+        split_dict: dict(string -> list(Instance))
+        preproc_dir: (string) path to preprocessing dir
+    """
+    for split in split_dict:
+        filename = _get_serialized_record_path(task_name, split, preproc_dir)
+        serialize.write_records(split_dict[split], filename)
+
+def del_field_tokens(instances):
+    ''' Save memory by deleting the tokens that will no longer be used.
+    
+    Args:
+        instances: iterable of Instance. Modified in-place.
+    '''
+    for instance in instances:
+        if 'input1' in instance.fields:
+            field = instance.fields['input1']
+            del field.tokens
+        if 'input2' in instance.fields:
+            field = instance.fields['input2']
+            del field.tokens
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -136,19 +181,21 @@ def build_tasks(args):
             preproc_file_names.append(file.split("__")[0])
         preproc_file_names = set(preproc_file_names)
     for task in tasks:
-        if task.name in preproc_file_names:
-            train, val, test = get_task_generator(task.name, preproc_dir)  # expects that every dataset with have train, val, test
-            task.train_data = train
-            task.val_data = val
-            task.test_data = test
-
-            log.info("\tLoaded indexed data for %s from %s", task.name, preproc_dir)
-        else:
+        if not task.name in preproc_file_names:
             log.info("\tIndexing task %s from scratch", task.name)
-            train_val_test_dict = process_task(task, token_indexer, vocab)
-            del_field_tokens(train_val_test_dict)
-            serialize_instances_for_task(task, train_val_test_dict, preproc_dir)
+            split_dict = process_task(task, token_indexer, vocab)
+            for instances in split_dict.values():
+                del_field_tokens(instances)
+            #  del_field_tokens(split_dict)
+            _serialize_task(task.name, split_dict, preproc_dir)
             log.info("\tSaved data to %s", preproc_dir)
+
+        # Replace lists of instances with lazy generators from disk.
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.val_data =   _get_instance_generator(task.name, "val", preproc_dir)
+        task.test_data =  _get_instance_generator(task.name, "test", preproc_dir)
+        log.info("\tLoaded indexed data for %s from %s", task.name, preproc_dir)
+
     log.info("\tFinished indexing tasks")
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
@@ -158,21 +205,21 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
-    for task_type in train_val_test_dict:
-        file_name = task.name + "__" + task_type
-        file_path = os.path.join(preproc_dir, file_name)
-        write_records(train_val_test_dict[task_type], file_path)
-        task_type_iterator = read_records(file_path)
-        setattr(task, task_type, task_type_iterator)
+#  def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
+#      for task_type in train_val_test_dict:
+#          file_name = task.name + "__" + task_type
+#          file_path = os.path.join(preproc_dir, file_name)
+#          write_records(train_val_test_dict[task_type], file_path)
+#          task_type_iterator = read_records(file_path)
+#          setattr(task, task_type, task_type_iterator)
 
 
-def get_task_generator(task_name, preproc_dir):
-    train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
-    val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
-                                 repeatable=True)
-    test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
-    return train_generator, val_generator, test_generator
+#  def get_task_generator(task_name, preproc_dir):
+#      train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
+#      val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
+#                                   repeatable=True)
+#      test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
+#      return train_generator, val_generator, test_generator
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
@@ -264,18 +311,18 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     return vocab
 
 
-def del_field_tokens(train_val_test_dict):
-    ''' Save memory by deleting the tokens that will no longer be used '''
-    all_instances = []
-    for task_type in train_val_test_dict:
-        all_instances += train_val_test_dict[task_type]
-    for instance in all_instances:
-        if 'input1' in instance.fields:
-            field = instance.fields['input1']
-            del field.tokens
-        if 'input2' in instance.fields:
-            field = instance.fields['input2']
-            del field.tokens
+#  def del_field_tokens(train_val_test_dict):
+#      ''' Save memory by deleting the tokens that will no longer be used '''
+#      all_instances = []
+#      for task_type in train_val_test_dict:
+#          all_instances += train_val_test_dict[task_type]
+#      for instance in all_instances:
+#          if 'input1' in instance.fields:
+#              field = instance.fields['input1']
+#              del field.tokens
+#          if 'input2' in instance.fields:
+#              field = instance.fields['input2']
+#              del field.tokens
 
 
 def get_embeddings(vocab, vec_file, d_word):
@@ -325,7 +372,7 @@ def process_task(task, token_indexer, vocab):
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
     These instances are then indexed using the vocab
     '''
-    train_val_test_dict = {}
+    split_dict = {}
     for split_name in ['train', 'val', 'test']:
         split_text = getattr(task, '%s_data_text' % split_name)
         if isinstance(task, SingleClassificationTask):
@@ -350,8 +397,8 @@ def process_task(task, token_indexer, vocab):
             raise ValueError("Preprocessing procedure not found for %s" % task.name)
         for instance in split:
             instance.index_fields(vocab)
-        train_val_test_dict['%s_data' % split_name] = split
-    return train_val_test_dict
+        split_dict[split_name] = split
+    return split_dict
 
 def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
     '''
