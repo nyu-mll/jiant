@@ -251,7 +251,7 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
         return pair_attn
 
     d_proj = params["d_proj"]
-    pooler = Pooler.from_params(d_inp, d_proj, project=False)
+    pooler = Pooler.from_params(d_inp, d_proj)
 
     if params["shared_pair_attn"]:
         if not hasattr(model, "pair_attn"):
