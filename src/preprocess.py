@@ -3,6 +3,7 @@
 To add new tasks, add task-specific preprocessing functions to process_task()'''
 import io
 import os
+import ipdb as pdb
 import logging as log
 from collections import defaultdict
 import numpy as np
@@ -21,6 +22,8 @@ except BaseException:
 
 import _pickle as pkl
 
+from serialize import write_records, read_records
+
 from tasks import SingleClassificationTask, PairClassificationTask, \
     PairRegressionTask, SequenceGenerationTask, RankingTask, \
     CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
@@ -30,7 +33,8 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     LanguageModelingTask, PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
-    JOCITask, PairOrdinalRegressionTask
+    JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
+    GroundedTask
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -53,7 +57,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
-             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/')
+             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
+             'weakgrounded': (WeakGroundedTask, 'mscoco/datasets/processed/temp/sent_pairs/'),
+             'grounded': (GroundedTask, 'mscoco/datasets/images/temp/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -69,6 +75,7 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
+
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     if not os.path.isdir(prepreproc_dir):
         os.mkdir(prepreproc_dir)
@@ -120,37 +127,52 @@ def build_tasks(args):
         word_embs = None
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
-    preproc_file = os.path.join(args.exp_dir, args.preproc_file)
-    if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
-        log.info("\tLoading preprocessed data (this may be slow) from %s", preproc_file)
-        preproc = pkl.load(open(preproc_file, 'rb'))
-        save_preproc = 0
-    else:
-        preproc = {}
+    preproc_dir = os.path.join(args.exp_dir, "preproc")
+    if not os.path.isdir(preproc_dir):
+        os.mkdir(preproc_dir)
+    preproc_file_names = []
+    if not args.reload_vocab and not args.reload_indexing:
+        for file in os.listdir(preproc_dir):
+            preproc_file_names.append(file.split("__")[0])
+        preproc_file_names = set(preproc_file_names)
     for task in tasks:
-        if task.name in preproc:
-            train, val, test = preproc[task.name]
+        if task.name in preproc_file_names:
+            train, val, test = get_task_generator(task.name, preproc_dir)  # expects that every dataset with have train, val, test
             task.train_data = train
             task.val_data = val
             task.test_data = test
-            log.info("\tLoaded indexed data for %s from %s", task.name, preproc_file)
+
+            log.info("\tLoaded indexed data for %s from %s", task.name, preproc_dir)
         else:
             log.info("\tIndexing task %s from scratch", task.name)
-            process_task(task, token_indexer, vocab)
-            del_field_tokens(task)
-            preproc[task.name] = (task.train_data, task.val_data, task.test_data)
-            save_preproc = 1
+            train_val_test_dict = process_task(task, token_indexer, vocab)
+            del_field_tokens(train_val_test_dict)
+            serialize_instances_for_task(task, train_val_test_dict, preproc_dir)
+            log.info("\tSaved data to %s", preproc_dir)
     log.info("\tFinished indexing tasks")
-    if save_preproc:  # save preprocessing again because we processed something from scratch
-        pkl.dump(preproc, open(preproc_file, 'wb'))
-        log.info("\tSaved data to %s", preproc_file)
-    del preproc
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
+
+
+def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
+    for task_type in train_val_test_dict:
+        file_name = task.name + "__" + task_type
+        file_path = os.path.join(preproc_dir, file_name)
+        write_records(train_val_test_dict[task_type], file_path)
+        task_type_iterator = read_records(file_path)
+        setattr(task, task_type, task_type_iterator)
+
+
+def get_task_generator(task_name, preproc_dir):
+    train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
+    val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
+                                 repeatable=True)
+    test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
+    return train_generator, val_generator, test_generator
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
@@ -191,6 +213,12 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
+
+    for task in tasks: # hacky
+        task.n_tr_examples = len(task.train_data_text[0])
+        task.n_val_examples = len(task.val_data_text[0])
+        task.n_te_examples = len(task.test_data_text[0])
+
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
 
@@ -236,9 +264,11 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     return vocab
 
 
-def del_field_tokens(task):
+def del_field_tokens(train_val_test_dict):
     ''' Save memory by deleting the tokens that will no longer be used '''
-    all_instances = task.train_data + task.val_data + task.test_data
+    all_instances = []
+    for task_type in train_val_test_dict:
+        all_instances += train_val_test_dict[task_type]
     for instance in all_instances:
         if 'input1' in instance.fields:
             field = instance.fields['input1']
@@ -295,6 +325,7 @@ def process_task(task, token_indexer, vocab):
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
     These instances are then indexed using the vocab
     '''
+    train_val_test_dict = {}
     for split_name in ['train', 'val', 'test']:
         split_text = getattr(task, '%s_data_text' % split_name)
         if isinstance(task, SingleClassificationTask):
@@ -311,14 +342,35 @@ def process_task(task, token_indexer, vocab):
             split = process_lm_task_split(split_text, token_indexer)
         elif isinstance(task, SequenceGenerationTask):
             pass
+        elif isinstance(task, GroundedTask):
+            split = process_grounded_task_split(split_text, token_indexer, is_pair=False, classification=True)
         elif isinstance(task, RankingTask):
             pass
         else:
             raise ValueError("Preprocessing procedure not found for %s" % task.name)
         for instance in split:
             instance.index_fields(vocab)
-        setattr(task, '%s_data' % split_name, split)
-    return
+        train_val_test_dict['%s_data' % split_name] = split
+    return train_val_test_dict
+
+def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
+    '''
+    Convert a dataset of sentences into padded sequences of indices.
+
+    Args:
+        - split (list[list[str]]): list of inputs (possibly pair) and outputs
+        - pair_input (int)
+        - tok2idx (dict)
+
+    Returns:
+    '''
+    inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    labels = [NumericField(l) for l in split[1]]
+    ids = [NumericField(l) for l in split[2]]
+    instances = [Instance({"input1": input1, "labels": label, "ids": ids}) for (input1, label, ids) in
+                         zip(inputs1, labels, ids)]
+    
+    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
 
 
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
