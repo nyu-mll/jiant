@@ -203,13 +203,14 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             raise ValueError("Module not found for %s" % task.name)
     return
 
+
 def get_task_specific_params(args, task):
     params = {}
 
     def get_task_attr(attr_name):
         return getattr(args, "%s_%s" % (task, attr_name)) if \
-                hasattr(args, "%s_%s" % (task, attr_name)) else \
-                getattr(args, attr_name)
+            hasattr(args, "%s_%s" % (task, attr_name)) else \
+            getattr(args, attr_name)
 
     params['cls_type'] = get_task_attr("classifier")
     params['d_hid'] = get_task_attr("classifier_hid_dim")
@@ -241,7 +242,7 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
             pair_attn = None
         else:
             d_inp_model = 2 * d_in
-            d_hid_model = int(d_inp / 2) # as large as the original d_inp
+            d_hid_model = int(d_inp / 2)  # as large as the original d_inp
             modeling_layer = s2s_e.by_name('lstm').from_params(
                 Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
                         'num_layers': 1, 'bidirectional': True}))

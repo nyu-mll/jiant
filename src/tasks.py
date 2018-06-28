@@ -126,9 +126,10 @@ class PairOrdinalRegressionTask(Task):
     def get_metrics(self, reset=False):
         mse = self.scorer1.get_metric(reset)
         spearmanr = self.scorer2.get_metric(reset)
-        return {'1-mse': 1-mse,
+        return {'1-mse': 1 - mse,
                 'mse': mse,
                 'spearmanr': spearmanr}
+
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
