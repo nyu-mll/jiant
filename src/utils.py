@@ -855,6 +855,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
                    output_projection_dim=output_projection_dim,
                    attention_dropout_prob=attention_dropout_prob)
 
+
 def assert_for_log(condition, error_message):
     if not condition:
         logger.error(error_message)

@@ -46,7 +46,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             if isinstance(task, STSBTask) or isinstance(task, JOCITask):
                 try:
                     preds, _ = out['logits'].max(dim=1)
-                except:
+                except BaseException:
                     pdb.set_trace()
             else:
                 _, preds = out['logits'].max(dim=1)

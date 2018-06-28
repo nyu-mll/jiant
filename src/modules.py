@@ -13,6 +13,11 @@ import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef
 
+import torch.utils.data
+import torch.utils.data.distributed
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
@@ -35,6 +40,9 @@ from utils import MaskedMultiHeadSelfAttention
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
 
+from cnns.alexnet import alexnet
+from cnns.resnet import resnet101
+from cnns.inception import inception_v3
 
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
@@ -197,7 +205,8 @@ class BoWSentEncoder(Model):
 
 class Pooler(nn.Module):
     ''' Do pooling, possibly with a projection beforehand '''
-    def  __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
+
+    def __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
         super(Pooler, self).__init__()
         self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
         self.pool_type = pool_type
@@ -206,7 +215,7 @@ class Pooler(nn.Module):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
         pad_mask = 1 - mask.byte().data
-        if sequence.min().item() != float('-inf'): # this will f up the loss
+        if sequence.min().item() != float('-inf'):  # this will f up the loss
             #log.warn('Negative infinity detected')
             sequence.masked_fill(pad_mask, 0)
         proj_seq = self.project(sequence)
@@ -217,18 +226,20 @@ class Pooler(nn.Module):
         elif self.pool_type == 'mean':
             #proj_seq = proj_seq.masked_fill(pad_mask, 0)
             seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
-        elif  self.pool_type == 'final':
+        elif self.pool_type == 'final':
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
             seq_emb = proj_seq.gather(dim=1, index=idxs)
         return seq_emb
 
     @classmethod
-    def from_params(cls, d_inp, d_proj):
-        return cls(d_inp, d_proj=d_proj)
+    def from_params(cls, d_inp, d_proj, project=True):
+        return cls(d_inp, d_proj=d_proj, project=project)
+
 
 class Classifier(nn.Module):
     ''' Classifier with a linear projection before pooling '''
-    def  __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+
+    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
@@ -236,7 +247,7 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp': # what they did in Infersent
+        elif cls_type == 'fancy_mlp':  # what they did in Infersent
             classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
@@ -255,8 +266,10 @@ class Classifier(nn.Module):
         return cls(d_inp, n_classes, cls_type=params["cls_type"],
                    dropout=params["dropout"], d_hid=params["d_hid"])
 
+
 class SingleClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
+
     def __init__(self, pooler, classifier):
         super(SingleClassifier, self).__init__()
         self.pooler = pooler
@@ -270,6 +283,7 @@ class SingleClassifier(nn.Module):
 
 class PairClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
+
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
         self.pooler = pooler
@@ -767,3 +781,56 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
             self._projection.weight.requires_grad = self.requires_grad
             self._projection.bias.requires_grad = self.requires_grad
+
+class CNNEncoder(Model):
+    ''' Given an image, get image features from last layer of specified CNN '''
+
+    def __init__(self, model_name, path, model=None):
+        super(CNNEncoder, self).__init__(model_name)
+        self.model_name = model_name
+        self.model = self._load_model(model_name)
+        self.feat_dict = self._load_features(path, 'train')
+        self.feat_dict.update(self._load_features(path, 'val'))
+        self.feat_dict.update(self._load_features(path, 'test'))
+        
+    def _load_model(self, model_name):
+        if model_name == 'alexnet':
+            model = alexnet(pretrained=True)
+        elif model_name == 'inception':
+            model = inception_v3(pretrained=True)
+        elif model_name == 'resnet':
+            model = resnet101(pretrained=True)
+        return model
+
+    def _load_features(self, path, dataset):
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+        train_dataset = datasets.ImageFolder(
+            path + dataset,
+            transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+        train_loader = torch.utils.data.DataLoader(
+                train_dataset)
+
+        classes = [d for d in os.listdir(train_dataset.root) if os.path.isdir(os.path.join(train_dataset.root, d))]
+        class_to_idx = {classes[i]: i for i in range(len(classes))}
+        rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
+
+        feat_dict = {}
+        for i, (input, target) in enumerate(train_loader):
+            x = self.model.forward(input)
+            feat_dict[rev_class[i]] = x.data
+        print(dataset + ' CNN features loaded!')
+        return feat_dict
+    
+    def forward(self, img_id):
+        """
+        Args:
+            - img_id that maps image -> sentence pairs in respective datasets.
+        """
+        # already computed tensor from pretrained
+        return self.feat_dict[str(img_id)]

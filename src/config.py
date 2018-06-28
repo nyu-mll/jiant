@@ -14,6 +14,7 @@ import json
 
 import hocon_writer
 
+
 class Params(object):
     """Params handler object.
 
@@ -56,7 +57,7 @@ class Params(object):
     def __init__(self, **kw):
         """Create from a list of key-value pairs."""
         self._known_keys = set()
-        for k,v in kw.items():
+        for k, v in kw.items():
             self[k] = v
 
     def get(self, k, default):
@@ -67,8 +68,8 @@ class Params(object):
 
     def as_dict(self):
         """Recursively convert to a plain dict."""
-        convert = lambda v: v.as_dict() if isinstance(v, Params) else v
-        return {k:convert(self[k]) for k in self.keys()}
+        def convert(v): return v.as_dict() if isinstance(v, Params) else v
+        return {k: convert(self[k]) for k in self.keys()}
 
     def __repr__(self):
         return self.as_dict().__repr__()
@@ -80,6 +81,8 @@ class Params(object):
 # 1) read config file into pyhocon.ConfigTree
 # 2) merge overrides into the ConfigTree
 # 3) validate specific parameters with custom logic
+
+
 def params_from_file(config_file, overrides=None):
     with open(config_file) as fd:
         config_string = fd.read()
@@ -91,8 +94,8 @@ def params_from_file(config_file, overrides=None):
     config = pyhocon.ConfigFactory.parse_string(config_string, basedir=basedir)
     return Params.clone(config)
 
+
 def write_params(params, config_file):
     config = pyhocon.ConfigFactory.from_dict(params.as_dict())
     with open(config_file, 'w') as fd:
         fd.write(hocon_writer.HOCONConverter.to_hocon(config, indent=2))
-

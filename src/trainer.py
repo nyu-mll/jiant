@@ -2,6 +2,7 @@
 import ipdb as pdb
 import os
 import re
+import math
 import glob
 import time
 import copy
@@ -21,12 +22,13 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
+
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
     def get_task_attr(attr_name):
         return getattr(args, "%s_%s" % (task, attr_name)) if \
-                hasattr(args, "%s_%s" % (task, attr_name)) else \
-                getattr(args, attr_name)
+            hasattr(args, "%s_%s" % (task, attr_name)) else \
+            getattr(args, attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
@@ -37,9 +39,9 @@ def build_trainer_params(args, task, max_vals, val_interval):
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
     params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
-                         hasattr(args, "%s_max_vals" % task) else max_vals
+        hasattr(args, "%s_max_vals" % task) else max_vals
     params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
-                            hasattr(args, "%s_val_interval" % task) else val_interval
+        hasattr(args, "%s_val_interval" % task) else val_interval
 
     return Params(params)
 
@@ -65,10 +67,10 @@ def build_trainer(params, model, run_dir):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 1e-5, 'amsgrad': True})
+                             'weight_decay': 0, 'amsgrad': True})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 1e-5})
+                             'weight_decay': 0})
 
     if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
@@ -202,7 +204,8 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-            task_info['n_tr_batches'] = iterator.get_num_batches(task.train_data)
+            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
+            task_info['n_val_batches'] = math.ceil( task.n_val_examples / iterator._batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -248,7 +251,6 @@ class SamplingMultiTaskTrainer:
         -------
         Validation results
         """
-
 
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
@@ -446,7 +448,7 @@ class SamplingMultiTaskTrainer:
             n_examples = 0.0
             task_info = task_infos[task.name]
             val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
-            n_val_batches = iterator.get_num_batches(task.val_data)
+            n_val_batches = task_infos[task.name]['n_val_batches']
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
@@ -468,13 +470,13 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches
+            assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= n_val_batches
+            all_val_metrics["%s_loss" % task.name] /= batch_num # n_val_batches
             all_val_metrics["micro_avg"] += \
                 all_val_metrics[task.val_metric] * n_examples
             all_val_metrics["macro_avg"] += \
