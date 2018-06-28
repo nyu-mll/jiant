@@ -31,7 +31,8 @@ class HOCONConverter(object):
                 for key, item in config.items():
                     bet_lines.append('{indent}"{key}": {value}'.format(
                         indent=''.rjust((level + 1) * indent, ' '),
-                        key=key.strip('"'),  # for dotted keys enclosed with "" to not be interpreted as nested key
+                        # for dotted keys enclosed with "" to not be interpreted as nested key
+                        key=key.strip('"'),
                         value=cls.to_json(item, compact, indent, level + 1))
                     )
                 lines += ',\n'.join(bet_lines)
@@ -102,8 +103,16 @@ class HOCONConverter(object):
                 lines += '[\n'
                 bet_lines = []
                 for item in config:
-                    bet_lines.append('{indent}{value}'.format(indent=''.rjust(level * indent, ' '),
-                                                              value=cls.to_hocon(item, compact, indent, level + 1)))
+                    bet_lines.append(
+                        '{indent}{value}'.format(
+                            indent=''.rjust(
+                                level * indent,
+                                ' '),
+                            value=cls.to_hocon(
+                                item,
+                                compact,
+                                indent,
+                                level + 1)))
                 lines += '\n'.join(bet_lines)
                 lines += '\n{indent}]'.format(indent=''.rjust((level - 1) * indent, ' '))
         elif isinstance(config, basestring):
@@ -112,7 +121,7 @@ class HOCONConverter(object):
             else:
                 lines = '"{value}"'.format(value=config.replace('\n', '\\n').replace('"', '\\"'))
         elif isinstance(config, float):
-            # don't use scientific notation (e.g. 1e-5) because pyhocon will 
+            # don't use scientific notation (e.g. 1e-5) because pyhocon will
             # misinterpret it as a string.
             lines = "{:f}".format(config)
         else:
@@ -143,7 +152,8 @@ class HOCONConverter(object):
                 for key, item in config.items():
                     bet_lines.append('{indent}{key}: {value}'.format(
                         indent=''.rjust(level * indent, ' '),
-                        key=key.strip('"'),  # for dotted keys enclosed with "" to not be interpreted as nested key,
+                        # for dotted keys enclosed with "" to not be interpreted as nested key,
+                        key=key.strip('"'),
                         value=cls.to_yaml(item, compact, indent, level + 1))
                     )
                 lines += '\n'.join(bet_lines)
@@ -155,8 +165,8 @@ class HOCONConverter(object):
                 lines += '\n'
                 bet_lines = []
                 for item in config_list:
-                    bet_lines.append('{indent}- {value}'.format(indent=''.rjust(level * indent, ' '),
-                                                                value=cls.to_yaml(item, compact, indent, level + 1)))
+                    bet_lines.append('{indent}- {value}'.format(indent=''.rjust(level *
+                                                                                indent, ' '), value=cls.to_yaml(item, compact, indent, level + 1)))
                 lines += '\n'.join(bet_lines)
         elif isinstance(config, basestring):
             # if it contains a \n then it's multiline
@@ -184,18 +194,33 @@ class HOCONConverter(object):
         """
 
         def escape_value(value):
-            return value.replace('=', '\\=').replace('!', '\\!').replace('#', '\\#').replace('\n', '\\\n')
+            return value.replace(
+                '=',
+                '\\=').replace(
+                '!',
+                '\\!').replace(
+                '#',
+                '\\#').replace(
+                '\n',
+                '\\\n')
 
         stripped_key_stack = [key.strip('"') for key in key_stack]
         lines = []
         if isinstance(config, ConfigTree):
             for key, item in config.items():
                 if item is not None:
-                    lines.append(cls.to_properties(item, compact, indent, stripped_key_stack + [key]))
+                    lines.append(
+                        cls.to_properties(
+                            item,
+                            compact,
+                            indent,
+                            stripped_key_stack +
+                            [key]))
         elif isinstance(config, list):
             for index, item in enumerate(config):
                 if item is not None:
-                    lines.append(cls.to_properties(item, compact, indent, stripped_key_stack + [str(index)]))
+                    lines.append(cls.to_properties(item, compact, indent,
+                                                   stripped_key_stack + [str(index)]))
         elif isinstance(config, basestring):
             lines.append('.'.join(stripped_key_stack) + ' = ' + escape_value(config))
         elif config is True:
@@ -220,11 +245,18 @@ class HOCONConverter(object):
         if output_format in converters:
             return converters[output_format](config, compact, indent)
         else:
-            raise Exception("Invalid format '{format}'. Format must be 'json', 'properties', 'yaml' or 'hocon'".format(
-                format=output_format))
+            raise Exception(
+                "Invalid format '{format}'. Format must be 'json', 'properties', 'yaml' or 'hocon'".format(
+                    format=output_format))
 
     @classmethod
-    def convert_from_file(cls, input_file=None, output_file=None, output_format='json', indent=2, compact=False):
+    def convert_from_file(
+            cls,
+            input_file=None,
+            output_file=None,
+            output_format='json',
+            indent=2,
+            compact=False):
         """Convert to json, properties or yaml
         :param input_file: input file, if not specified stdin
         :param output_file: output file, if not specified stdout
@@ -244,4 +276,3 @@ class HOCONConverter(object):
         else:
             with open(output_file, "w") as fd:
                 fd.write(res)
-

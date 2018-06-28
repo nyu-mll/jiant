@@ -197,7 +197,8 @@ class BoWSentEncoder(Model):
 
 class Pooler(nn.Module):
     ''' Do pooling, possibly with a projection beforehand '''
-    def  __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
+
+    def __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
         super(Pooler, self).__init__()
         self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
         self.pool_type = pool_type
@@ -206,7 +207,7 @@ class Pooler(nn.Module):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
         pad_mask = 1 - mask.byte().data
-        if sequence.min().item() != float('-inf'): # this will f up the loss
+        if sequence.min().item() != float('-inf'):  # this will f up the loss
             #log.warn('Negative infinity detected')
             sequence.masked_fill(pad_mask, 0)
         proj_seq = self.project(sequence)
@@ -217,7 +218,7 @@ class Pooler(nn.Module):
         elif self.pool_type == 'mean':
             #proj_seq = proj_seq.masked_fill(pad_mask, 0)
             seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
-        elif  self.pool_type == 'final':
+        elif self.pool_type == 'final':
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
             seq_emb = proj_seq.gather(dim=1, index=idxs)
         return seq_emb
@@ -226,9 +227,11 @@ class Pooler(nn.Module):
     def from_params(cls, d_inp, d_proj):
         return cls(d_inp, d_proj=d_proj)
 
+
 class Classifier(nn.Module):
     ''' Classifier with a linear projection before pooling '''
-    def  __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+
+    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
@@ -236,7 +239,7 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp': # what they did in Infersent
+        elif cls_type == 'fancy_mlp':  # what they did in Infersent
             classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
@@ -255,8 +258,10 @@ class Classifier(nn.Module):
         return cls(d_inp, n_classes, cls_type=params["cls_type"],
                    dropout=params["dropout"], d_hid=params["d_hid"])
 
+
 class SingleClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
+
     def __init__(self, pooler, classifier):
         super(SingleClassifier, self).__init__()
         self.pooler = pooler
@@ -270,6 +275,7 @@ class SingleClassifier(nn.Module):
 
 class PairClassifier(nn.Module):
     ''' Thin wrapper around a set of modules '''
+
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
         self.pooler = pooler

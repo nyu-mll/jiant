@@ -29,6 +29,7 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
 DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 
+
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
@@ -98,13 +99,13 @@ def main(cl_arguments):
 
     if not(args.load_eval_checkpoint == 'none'):
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
-                "Error: Attempting to load model from non-existent path: [%s]" % \
-                args.load_eval_checkpoint)
+                       "Error: Attempting to load model from non-existent path: [%s]" %
+                       args.load_eval_checkpoint)
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
         assert_for_log(args.train_tasks != "none",
-            "Error: Must specify at least on training task: [%s]" % args.train_tasks)
+                       "Error: Must specify at least on training task: [%s]" % args.train_tasks)
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
     if args.train_for_eval:
@@ -112,7 +113,7 @@ def main(cl_arguments):
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
-            "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
+                       "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
