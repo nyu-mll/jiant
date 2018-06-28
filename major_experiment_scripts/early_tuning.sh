@@ -19,3 +19,5 @@ python main.py --config ../config/defaults.conf --overrides "exp_name = base_rnn
 python main.py --config ../config/defaults.conf --overrides "exp_name = base_rnn_elmo, sent_enc = rnn, d_hid = 1500, n_layers_enc = 2, skip_embs = 0, elmo_chars_only = 0"
 python main.py --config ../config/defaults.conf --overrides "exp_name = base_transformer_elmo, sent_enc = transformer, d_hid = 768, n_layers_enc = 12, skip_embs = 0, n_heads = 12, elmo_chars_only = 0"
 
+python main.py --config ../config/defaults.conf --overrides "exp_name = base_transformer_skip_elmo, sent_enc = transformer, d_hid = 768, n_layers_enc = 12, skip_embs = 1, n_heads = 12, elmo_chars_only = 0"
+python main.py --config ../config/defaults.conf --overrides "exp_name = base_rnn_skip_elmo, sent_enc = rnn, d_hid = 1500, n_layers_enc = 2, skip_embs = 1, elmo_chars_only = 0"
