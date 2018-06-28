@@ -69,6 +69,7 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
+
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     if not os.path.isdir(prepreproc_dir):
         os.mkdir(prepreproc_dir)
@@ -120,36 +121,44 @@ def build_tasks(args):
         word_embs = None
 
     # 4) Index tasks using vocab, using previous preprocessing if available.
-    preproc_file = os.path.join(args.exp_dir, args.preproc_file)
-    if os.path.exists(preproc_file) and not args.reload_vocab and not args.reload_indexing:
-        preproc = pkl.load(open(preproc_file, 'rb'))
-        save_preproc = 0
-    else:
-        preproc = {}
+    preproc_dir = os.path.join(args.exp_dir, "preproc")
+    if not os.path.isdir(preproc_dir):
+        os.mkdir(preproc_dir)
+    preproc_file_names = []
+    if not args.reload_vocab and not args.reload_indexing:
+        for file in os.listdir(preproc_dir):
+            preproc_file_names.append(file)
     for task in tasks:
-        if task.name in preproc:
-            train, val, test = preproc[task.name]
+        if task.name in preproc_files:
+            train, val, test = get_task_generator(task.name)
             task.train_data = train
             task.val_data = val
             task.test_data = test
             log.info("\tLoaded indexed data for %s from %s", task.name, preproc_file)
         else:
             log.info("\tIndexing task %s from scratch", task.name)
-            process_task(task, token_indexer, vocab)
-            del_field_tokens(task)
-            preproc[task.name] = (task.train_data, task.val_data, task.test_data)
-            save_preproc = 1
+            train_val_test_dict = process_task(task, token_indexer, vocab)
+            del_field_tokens(train_val_test_dict)
+            serialize_instances_for_task(task, train_val_test_dict, )
+            log.info("\tSaved data to %s", preproc_file)
     log.info("\tFinished indexing tasks")
-    if save_preproc:  # save preprocessing again because we processed something from scratch
-        pkl.dump(preproc, open(preproc_file, 'wb'))
-        log.info("\tSaved data to %s", preproc_file)
-    del preproc
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
+
+
+def serialize_instances_for_task(task, train_val_test_dict):
+    pass
+
+
+def get_task_generator(task_name):
+    train_generator = []
+    val_generator = []
+    test_generator = []
+    return train_generator, val_generator, test_generator
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
@@ -294,6 +303,7 @@ def process_task(task, token_indexer, vocab):
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
     These instances are then indexed using the vocab
     '''
+    train_val_test_dict = {}
     for split_name in ['train', 'val', 'test']:
         split_text = getattr(task, '%s_data_text' % split_name)
         if isinstance(task, SingleClassificationTask):
@@ -316,7 +326,7 @@ def process_task(task, token_indexer, vocab):
             raise ValueError("Preprocessing procedure not found for %s" % task.name)
         for instance in split:
             instance.index_fields(vocab)
-        setattr(task, '%s_data' % split_name, split)
+        train_val_test_dict['%s_data' % split_name] = split
     return
 
 
