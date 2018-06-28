@@ -65,4 +65,3 @@ def read_records(filename, repeatable=False):
                 example = pkl.loads(blob)
                 yield example
     return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()
-

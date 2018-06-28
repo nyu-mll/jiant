@@ -3,6 +3,7 @@
 To add new tasks, add task-specific preprocessing functions to process_task()'''
 import io
 import os
+import ipdb as pdb
 import logging as log
 from collections import defaultdict
 import numpy as np
@@ -209,6 +210,12 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
+
+    for task in tasks: # hacky
+        task.n_tr_examples = len(task.train_data_text[0])
+        task.n_val_examples = len(task.val_data_text[0])
+        task.n_te_examples = len(task.test_data_text[0])
+
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
 

@@ -202,7 +202,8 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-            task_info['n_tr_batches'] = iterator.get_num_batches(task.train_data)
+            task_info['n_tr_batches'] = task.n_tr_examples / iterator._batch_size
+            task_info['n_val_batches'] = task.n_val_examples / iterator._batch_size
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -474,7 +475,7 @@ class SamplingMultiTaskTrainer:
             task_metrics = task.get_metrics(reset=True)
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= n_val_batches
+            all_val_metrics["%s_loss" % task.name] /= batch_num # n_val_batches
             all_val_metrics["micro_avg"] += \
                 all_val_metrics[task.val_metric] * n_examples
             all_val_metrics["macro_avg"] += \
