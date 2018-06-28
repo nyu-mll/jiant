@@ -21,7 +21,7 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
-def build_trainer_params(args, task, max_vals):
+def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
     def get_task_attr(attr_name):
         return getattr(args, "%s_%s" % (task, attr_name)) if \
@@ -38,6 +38,8 @@ def build_trainer_params(args, task, max_vals):
         params[attr] = getattr(args, attr)
     params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
                          hasattr(args, "%s_max_vals" % task) else max_vals
+    params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
+                            hasattr(args, "%s_val_interval" % task) else val_interval
 
     return Params(params)
 
@@ -85,6 +87,7 @@ def build_trainer(params, model, run_dir):
     train_params = Params({'cuda_device': params['cuda'],
                            'patience': params['patience'],
                            'grad_norm': params['max_grad_norm'],
+                           'val_interval': params['val_interval'],
                            'max_vals': params['max_vals'],
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'no_tqdm': params['no_tqdm']})
@@ -94,7 +97,7 @@ def build_trainer(params, model, run_dir):
 
 
 class SamplingMultiTaskTrainer:
-    def __init__(self, model, iterator, patience=2, num_epochs=20, max_vals=50,
+    def __init__(self, model, iterator, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False, keep_all_checkpoints=False):
@@ -120,8 +123,6 @@ class SamplingMultiTaskTrainer:
             and whether to serialize an ``is_best`` model each epoch. The metric name
             must be prepended with either "+" or "-", which specifies whether the metric
             is an increasing or decreasing function.
-        num_epochs , optional (default = 20)
-            Number of training epochs.
         serialization_dir , optional (default=None)
             Path to directory for saving and loading model files. Models will not be saved if
             this parameter is not passed.
@@ -153,8 +154,8 @@ class SamplingMultiTaskTrainer:
         self._iterator = iterator
 
         self._patience = patience
-        self._num_epochs = num_epochs
         self._max_vals = max_vals
+        self._val_interval = val_interval
         self._serialization_dir = serialization_dir
         self._cuda_device = cuda_device
         self._grad_norm = grad_norm
@@ -221,7 +222,7 @@ class SamplingMultiTaskTrainer:
         return task_infos, metric_infos
 
     def train(self, tasks, stop_metric,
-              validation_interval, n_batches_per_pass,
+              n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
               shared_optimizer=1, load_model=1, phase="main"):
@@ -262,7 +263,7 @@ class SamplingMultiTaskTrainer:
             log.info("Scaling losses to the smallest task")
         elif scaling_method == 'unit':
             log.info("Dividing losses by number of training batches")
-
+        validation_interval = self._val_interval
         iterator = self._iterator
         task_infos, metric_infos = self._setup_training(tasks, train_params, optimizer_params,
                                                         scheduler_params, iterator)
@@ -777,7 +778,7 @@ class SamplingMultiTaskTrainer:
         ''' Generator trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
-        num_epochs = params.pop("num_epochs", 20)
+        val_interval = params.pop("val_interval", 100)
         max_vals = params.pop("max_vals", 50)
         cuda_device = params.pop("cuda_device", -1)
         grad_norm = params.pop("grad_norm", None)
@@ -789,7 +790,7 @@ class SamplingMultiTaskTrainer:
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(model, iterator, patience=patience,
-                                        num_epochs=num_epochs, max_vals=max_vals,
+                                        val_interval=val_interval, max_vals=max_vals,
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
