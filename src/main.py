@@ -109,13 +109,12 @@ def main(cl_arguments):
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
-        params = build_trainer_params(args, 'none', args.max_vals)
+        params = build_trainer_params(args, 'none', args.max_vals, args.val_interval)
         trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                             args.run_dir)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
-        best_epochs = trainer.train(train_tasks, stop_metric,
-                                    args.val_interval, args.bpp_base,
+        best_epochs = trainer.train(train_tasks, stop_metric, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
                                     args.shared_optimizer, args.load_model, phase="main")
@@ -137,11 +136,11 @@ def main(cl_arguments):
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-            params = build_trainer_params(args, task.name, args.eval_max_vals)
+            params = build_trainer_params(args, task.name, args.eval_max_vals,
+                                          args.eval_val_interval)
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir)
-            best_epoch = trainer.train([task], task.val_metric,
-                                       args.eval_val_interval, 1,
+            best_epoch = trainer.train([task], task.val_metric, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
