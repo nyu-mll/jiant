@@ -27,12 +27,6 @@ def write_records(examples, filename, flush_every=10000):
     with open(filename, 'wb') as fd:
         _serialize(examples, fd, flush_every)
 
-def _deserialize(fd):
-    for line in fd:
-        blob = base64.b64decode(line)
-        example = pkl.loads(blob)
-        yield example
-
 class RepeatableIterator(object):
     """Repeatable iterator class."""
 
@@ -64,7 +58,11 @@ def read_records(filename, repeatable=False):
     Returns:
       iterable, possible repeatable, yielding deserialized Python objects
     """
-    with open(filename, 'rb') as fd:
-        iter_fn = lambda: _deserialize(fd)
-        return RepeatableIterator(iter_fn) if repeatable else iter_fn()
+    def _iter_fn():
+        with open(filename, 'rb') as fd:
+            for line in fd:
+                blob = base64.b64decode(line)
+                example = pkl.loads(blob)
+                yield example
+    return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()
 
