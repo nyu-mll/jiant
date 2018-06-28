@@ -22,6 +22,9 @@ export FASTTEXT_MODEL_FILE="."  # not yet supported
 
 export PATH_TO_COVE="$JSALT_SHARE_DIR/cove"
 
+# pre-downloaded ELMo models
+export ELMO_SRC_DIR="$JSALT_SHARE_DIR/elmo"
+
 ##
 # Example of custom paths for a local installation:
 # export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT

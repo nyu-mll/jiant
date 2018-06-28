@@ -3,6 +3,7 @@ import sys
 import copy
 import ipdb as pdb
 import logging as log
+import os
 
 import torch
 import torch.nn as nn
@@ -35,8 +36,15 @@ from modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder
 
 # Elmo stuff
-ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"  # pylint: disable=line-too-long
+# Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
+ELMO_OPT_NAME = "elmo_2x4096_512_2048cnn_2xhighway_options.json"
+ELMO_WEIGHTS_NAME = "elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
+                "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/")
+ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
+ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
+#  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
+#  ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"  # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):
@@ -159,6 +167,9 @@ def build_embeddings(args, vocab, pretrained_embs=None):
 
     # Handle elmo
     if args.elmo:
+        log.info("Loading ELMo from files:")
+        log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
+        log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
             #elmo_embedder = elmo_embedder._elmo._elmo_lstm._token_embedder
