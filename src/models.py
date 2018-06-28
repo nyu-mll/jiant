@@ -34,6 +34,7 @@ from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
+from utils import assert_for_log
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -97,6 +98,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
+    else:
+        assert_for_log(False, "No valid sentence encoder specified.")
+
     d_sent += args.skip_embs * d_emb
 
     # Build model and classifiers
@@ -106,9 +110,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
         model = model.cuda()
     log.info(model)
     param_count = 0
+    trainable_param_count = 0
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
-    log.info("Total number of parameters (including non-trained ones): {}".format(param_count))
+        if param.requires_grad:
+            trainable_param_count += np.prod(param.size())         
+    log.info("Total number of parameters: {}".format(param_count))
+    log.info("Number of trainable parameters: {}".format(trainable_param_count))
     return model
 
 
@@ -231,9 +239,11 @@ def get_task_specific_params(args, task):
     params['shared_pair_attn'] = args.shared_pair_attn
     if args.shared_pair_attn:
         params['attn'] = args.pair_attn
+        params['d_hid_attn'] = args.d_hid_attn
         params['dropout'] = args.classifier_dropout
     else:
         params['attn'] = get_task_attr("pair_attn")
+        params['d_hid_attn'] = get_task_attr("d_hid_attn")
         params['dropout'] = get_task_attr("classifier_dropout")
 
     return Params(params)
@@ -249,34 +259,37 @@ def build_single_sentence_module(task, d_inp, params):
 def build_pair_sentence_module(task, d_inp, model, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_attn(d_in, use_attn):
+    def build_pair_attn(d_in, use_attn, d_hid_attn):
         ''' Build the pair model '''
         if not use_attn:
             pair_attn = None
         else:
             d_inp_model = 2 * d_in
-            d_hid_model = int(d_inp / 2)  # as large as the original d_inp
             modeling_layer = s2s_e.by_name('lstm').from_params(
-                Params({'input_size': d_inp_model, 'hidden_size': d_hid_model,
+                Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
                         'num_layers': 1, 'bidirectional': True}))
             pair_attn = AttnPairEncoder(vocab, modeling_layer,
                                         dropout=params["dropout"])
         return pair_attn
 
-    d_proj = params["d_proj"]
-    pooler = Pooler.from_params(d_inp, d_proj)
+    if params["attn"]:
+        pooler = Pooler.from_params(params["d_hid_attn"], params["d_hid_attn"], project=False)
+        d_out = params["d_hid_attn"] * 2
+    else:
+        pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
+        d_out = params["d_proj"]
 
     if params["shared_pair_attn"]:
         if not hasattr(model, "pair_attn"):
-            pair_attn = build_pair_attn(d_inp, params["attn"])
+            pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
     else:
-        pair_attn = build_pair_attn(d_inp, params["attn"])
+        pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
 
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    classifier = Classifier.from_params(4 * d_proj, n_classes, params)
+    classifier = Classifier.from_params(4 * d_out, n_classes, params)
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
