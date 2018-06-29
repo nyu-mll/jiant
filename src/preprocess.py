@@ -198,6 +198,8 @@ def build_tasks(args):
             split_dict = process_task(task, token_indexer)
             # Index instances and stream to disk.
             for split, instance_list in split_dict.items():
+                log.info("\tTask '%s', split '%s': %d examples",
+                         task.name, split, len(instance_list))
                 record_file = _get_serialized_record_path(task.name, split, preproc_dir)
                 serialize.write_records(
                     _indexed_instance_generator(instance_list, vocab), record_file)
