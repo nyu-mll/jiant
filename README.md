@@ -1,6 +1,16 @@
 # JSALT: *J*iant (or *J*SALT) *S*entence *A*ggregating *L*earning *T*hing
 This repo contains the code for jiant sentence representation learning model for the 2018 JSALT Workshop.
 
+## Quick-Start on GCP
+
+If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
+
+```sh
+python src/main.py --config_file config/demo.conf
+```
+
+You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+
 ## Dependencies
 
 Make sure you have installed the packages listed in environment.yml.
@@ -25,7 +35,13 @@ For other pretraining task data, contact the person in charge.
 
 ## Running
 
-To run things, use ``src/main.py`` with flags or a script like the one in ``example_experiment_scripts/demo.sh``.
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
+```sh
+python src/main.py --config_file config/demo.conf \
+  --overrides "exp_name = my_exp, run_name = foobar"
+```
+will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
+
 Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
 
 - exp1 (e.g. training and evaluating on WikiText and all the GLUE tasks)
@@ -35,61 +51,34 @@ Because preprocessing is expensive, we often want to run multiple experiments us
 - exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
-You should also be sure to set ``--data_dir`` and  ``--word_embs_file`` to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively).
+You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). (Although note that on GCP these may already be set!)
 
-To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the flag ``--reload_tasks 1``.
-To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the flag ``--reload_vocab 1``.
-
-If you are using the experiment scripts, you should also put a file ``user_config.sh`` in the top level directory containing paths specific to your machine.
-
-```
-python main.py --data_dir $JIANT_DATA_DIR --exp_dir $EXP_DIR --run_dir $RUN_DIR --train_tasks all --word_embs_file $PATH_TO_VECS
-```
-
-To use the shell script, run
-
-```
-./run_stuff.sh -d $JIANT_DATA_DIR -n $EXP_DIR -r $RUN_DIR -T tasks -w $PATH_TO_VECS
-```
-
-See ``main.py`` or ``run_stuff.sh`` for options and shortcuts. A shell script was originally needed to submit to a job manager.
-
+To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
+To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the option ``reload_vocab = 1``.
 
 ## Model
 
-This is a brief selection of some of the options available to control currently. Note that the commandline shortcuts are selected with no real rhyme or reason and are somewhat subject to change.
-
-Embedding options:
-
-    - ``--word_embs`` / ``-w $WORD_EMBS``: use ``$WORD_EMBS`` for word embeddings. If ``$WORD_EMBS = glove`` or ``$WORD_EMBS = fastText``, we'll read from ``WORD_EMBS_FILE``. If ``$WORD_EMBS = none``, we won't use word embeddings.
-    - ``--fastText 1``: if ``fastText = 1`` and ``$FASTTEXT_MODEL_FILE`` is set, we'll use a fastText model file to get word embeddings, which has the benefit of having no OOV.
-    - ``--char_embs`` / ``-C``: use character emeddings, learned from scratch
-    - ``--elmo`` / ``-e``: use ELMo embeddings, probably makes learning characted embeddings from scratch redundant
-
-Model options:
-
-    - ``--n_layers_enc`` / ``-L $N_LAYERS_ENC``: number of encoder layers
-    - ``--d_hid`` / ``-h $D_HID``: encoder hidden state
+To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [src/main.py](src/main.py).
 
 
 ## Trainer
 
-The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``--bpp_base`` or `-B` of that task's training data is trained on.
-The trainer evaluates the model on the validation data after a fixed number of updates, set by (``--val_interval`` or `-V`).
-The learning rate is scheduled to decay by ``--lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``--task_patience`` (default: 1) validation checks.
+The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``bpp_base`` of that task's training data is trained on.
+The trainer evaluates the model on the validation data after a fixed number of updates, set by (``val_interval``).
+The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``task_patience`` (default: 1) validation checks.
 
-If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``/``-W``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``--scaling_method``/``-s`` if you want to weight tasks with different amounts of training data equally throughout training.
+If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training.
 
-Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``--train_tasks`` / ``-T $TRAIN_TASKS`` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``--eval_tasks`` / ``-E $EVAL_TASKS`` to specify the eval-only tasks.
+Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
 
 Other training options include:
 
-    - ``--optimizer`` / ``-o $OPTIMIZER``: use ``$OPTIMIZER`` usually just Adam
-    - ``--lr`` / ``-l $LR``: set initial learning rate to ``$LR``
-    - ``--batch_size`` / ``-b $BSIZE``: use batch size ``BSIZE``, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
-    - ``--should_train 0`` / ``-t``: skip training
-    - ``--load_model 1`` / ``-m``: start training by loading model from most recent checkpoint found in directory
-    - ``--force_load_epoch`` / ``-N $LOAD_EPOCH``: after training, force loading from ``$LOAD_EPOCH`` instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
+    - ``optimizer``: (string) anything supported by AllenNLP, but usually just 'adam'
+    - ``lr``: (float) set initial learning rate
+    - ``batch_size``: (int) batch size, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
+    - ``should_train``: set to 0 to skip training
+    - ``load_model``: set to 1 to start training by loading model from most recent checkpoint found in directory
+    - ``force_load_epoch``: (int) after training, force loading from instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
 
 NB: "epoch" is generally used to refer to the amount of data between validation checks.
 
@@ -122,7 +111,7 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
 To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
 fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-To activate fastText model within our framework, set the flag ``--fastText 1``
+To activate fastText model within our framework, set the flag ``fastText 1``
 If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic; use the pretrained vectors.
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
@@ -130,7 +119,8 @@ Download the pretrained vectors located [here](https://fasttext.cc/docs/en/engli
 ### ELMo
 
 We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
-To use ELMo, set ``--elmo`` to 1. To use ELMo without GloVe, additionally set ``--elmo_no_glove`` to 1.
+To use ELMo, set ``elmo`` to 1.
+<!-- To use ELMo without GloVe, additionally set ``elmo_no_glove`` to 1. -->
 
 ### GloVe
 
@@ -140,7 +130,7 @@ To use GloVe vectors, download and extract the relevant files and set ``word_emb
 ### CoVe
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
-To use CoVe, clone the repo and fill in ``PATH_TO_COVE`` in ``src/models.py`` and set ``--cove`` to 1.
+To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove`` to 1.
 
 ## Annoying AllenNLP Things
 

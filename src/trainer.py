@@ -1,16 +1,17 @@
 """ Trainer """
-
+import ipdb as pdb
 import os
+import re
+import math
 import glob
 import time
 import copy
 import random
 import logging as log
 import itertools
-import ipdb as pdb  # pylint: disable=unused-import
 
 import torch
-import torch.optim.lr_scheduler
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils.clip_grad import clip_grad_norm_
 
 from allennlp.common import Params
@@ -19,65 +20,98 @@ from allennlp.data.iterators import BasicIterator, BucketIterator
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
+from utils import assert_for_log
 
 
-def build_trainer(args, model, max_vals):
-    '''Build a trainer'''
-    iterator = BasicIterator(args.batch_size)
+def build_trainer_params(args, task, max_vals, val_interval):
+    ''' Build trainer parameters, possibly loading task specific parameters '''
+    def get_task_attr(attr_name):
+        return getattr(args, "%s_%s" % (task, attr_name)) if \
+            hasattr(args, "%s_%s" % (task, attr_name)) else \
+            getattr(args, attr_name)
+    params = {}
+    train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
+                  'task_patience', 'patience', 'scheduler_threshold']
+    # we want to pass to the build_train()
+    extra_opts = ['sent_enc', 'd_hid', 'warmup',
+                  'max_grad_norm', 'min_lr',
+                  'no_tqdm', 'cuda']
+    for attr in train_opts:
+        params[attr] = get_task_attr(attr)
+    for attr in extra_opts:
+        params[attr] = getattr(args, attr)
+    params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
+        hasattr(args, "%s_max_vals" % task) else max_vals
+    params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
+        hasattr(args, "%s_val_interval" % task) else val_interval
+
+    return Params(params)
+
+
+def build_trainer(params, model, run_dir, metric_should_decrease=True):
+    '''Build a trainer.
+
+    Parameters
+    ----------
+    args: A trainer config object.
+    model: A module with trainable parameters.
+    max_vals: The upper bound on training steps, specified in number of validation runs.
+
+    Returns
+    -------
+    A trainer object, a trainer config object, an optimizer config object,
+        and a scheduler config object.
+    '''
+    iterator = BasicIterator(params['batch_size'])
     # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
-    #                          batch_size=args.batch_size)
+    #                          batch_size=params['batch_size'])
 
-    if args.optimizer == 'adam':
+    if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
-        opt_params = Params({'type': args.optimizer, 'lr': args.lr,
-                             'weight_decay': 1e-5, 'amsgrad': True})
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
+                             'weight_decay': 0, 'amsgrad': True})
     else:
-        opt_params = Params({'type': args.optimizer, 'lr': args.lr, 'weight_decay': 1e-5})
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
+                             'weight_decay': 0})
 
-    if args.sent_enc == 'transformer':
+    if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
-                              'model_size': 100,
-                              'warmup_steps': 4000,
+                              'model_size': params['d_hid'],
+                              'warmup_steps': params['warmup'],
                               'factor': 1.0})
+        log.info('\tUsing noam scheduler with warmup %d!' % params['warmup'])
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
-                              'mode': 'max',
-                              'factor': args.lr_decay_factor,
-                              'patience': args.task_patience,
-                              'threshold': args.scheduler_threshold,
+                              'mode': 'min' if metric_should_decrease else 'max',
+                              'factor': params['lr_decay_factor'],
+                              'patience': params['task_patience'],
+                              'threshold': params['scheduler_threshold'],
                               'threshold_mode': 'abs',
                               'verbose': True})
+        log.info('\tUsing ReduceLROnPlateau scheduler!')
 
-    train_params = Params({'num_epochs': args.n_epochs, 'cuda_device': args.cuda,
-                           'patience': args.patience, 'grad_norm': args.max_grad_norm,
-                           'max_vals': max_vals,
-                           'lr_decay': .99, 'min_lr': args.min_lr, 'no_tqdm': args.no_tqdm})
-    trainer = SamplingMultiTaskTrainer.from_params(model, args.run_dir, iterator,
+    train_params = Params({'cuda_device': params['cuda'],
+                           'patience': params['patience'],
+                           'grad_norm': params['max_grad_norm'],
+                           'val_interval': params['val_interval'],
+                           'max_vals': params['max_vals'],
+                           'lr_decay': .99, 'min_lr': params['min_lr'],
+                           'no_tqdm': params['no_tqdm']})
+    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, iterator,
                                                    copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
 
-def get_task_order(method, tasks, iterator):
-    '''Get order to train tasks on'''
-    if method == 'given':
-        task_order = range(len(tasks))
-    elif 'random' in method:
-        task_order = [i for i in range(len(tasks))]
-        random.shuffle(task_order)
-    else:
-        task_sizes = [(idx, iterator.get_num_batches(task.train_data))
-                      for idx, task in enumerate(tasks)]
-        task_sizes.sort(key=lambda x: x[1], reverse=bool(method == 'large_to_small'))
-        task_order = [task_idx for task_idx, _ in task_sizes]
-    return task_order
-
-
 class SamplingMultiTaskTrainer:
-    def __init__(self, model, iterator, patience=2, num_epochs=20, max_vals=50,
+    def __init__(self, model, iterator, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False):
-        """ Parameters
+                 no_tqdm=False, keep_all_checkpoints=False):
+        """
+        The training coordinator. Unusually complicated to handle MTL with tasks of
+        diverse sizes.
+
+        Parameters
         ----------
         model : ``Model``, required.
             An AllenNLP model to be optimized. Pytorch Modules can also be optimized if
@@ -95,8 +129,6 @@ class SamplingMultiTaskTrainer:
             and whether to serialize an ``is_best`` model each epoch. The metric name
             must be prepended with either "+" or "-", which specifies whether the metric
             is an increasing or decreasing function.
-        num_epochs , optional (default = 20)
-            Number of training epochs.
         serialization_dir , optional (default=None)
             Path to directory for saving and loading model files. Models will not be saved if
             this parameter is not passed.
@@ -121,19 +153,22 @@ class SamplingMultiTaskTrainer:
             cause problems with log files from, e.g., a docker image running on kubernetes.  If
             ``no_tqdm`` is ``True``, we will not use tqdm, and instead log batch statistics using
             ``log.info``, outputting a line at most every 10 seconds.
+        keep_all_checkpoints : If set, keep checkpoints from every validation. Otherwise, keep only
+            best and (if different) most recent.
         """
         self._model = model
         self._iterator = iterator
 
         self._patience = patience
-        self._num_epochs = num_epochs
         self._max_vals = max_vals
+        self._val_interval = val_interval
         self._serialization_dir = serialization_dir
         self._cuda_device = cuda_device
         self._grad_norm = grad_norm
         self._grad_clipping = grad_clipping
         self._lr_decay = lr_decay
         self._min_lr = min_lr
+        self._keep_all_checkpoints = keep_all_checkpoints
 
         self._task_infos = None
         self._metric_infos = None
@@ -173,7 +208,8 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-            task_info['n_tr_batches'] = iterator.get_num_batches(task.train_data)
+            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
+            task_info['n_val_batches'] = math.ceil( task.n_val_examples / iterator._batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -193,10 +229,32 @@ class SamplingMultiTaskTrainer:
         return task_infos, metric_infos
 
     def train(self, tasks, stop_metric,
-              validation_interval, n_batches_per_pass,
+              n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=0, load_model=1):
+              shared_optimizer=1, load_model=1, phase="main"):
+        """
+        The main training loop.
+
+        Parameters
+        ----------
+        tasks: A list of task objects to train on.
+        stop_metric: The metric to use for early stopping.
+        validation_interval: How many passes between evaluations.
+        n_batches_per_pass: How many training steps per task per pass.
+        weighting_method: How to sample which task to use.
+        scaling_method: How to scale gradients.
+        train_params: Trainer config object.
+        optimizer_params: Optimizer config object.
+        scheduler_params: Scheduler config object.
+        shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
+        load_model: Whether to restore and continue training if a checkpoint is found.
+        phase: Usually 'main' or 'eval'.
+
+        Returns
+        -------
+        Validation results
+        """
 
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
@@ -211,7 +269,7 @@ class SamplingMultiTaskTrainer:
             log.info("Scaling losses to the smallest task")
         elif scaling_method == 'unit':
             log.info("Dividing losses by number of training batches")
-
+        validation_interval = self._val_interval
         iterator = self._iterator
         task_infos, metric_infos = self._setup_training(tasks, train_params, optimizer_params,
                                                         scheduler_params, iterator)
@@ -225,16 +283,19 @@ class SamplingMultiTaskTrainer:
         self._g_scheduler = g_scheduler
 
         n_pass, should_stop = 0, False  # define these here b/c they might get overridden on load
-        if self._serialization_dir is not None:  # Resume from serialization path
+        if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
             if load_model and any(
-                    ["model_state_epoch_" in x for x in os.listdir(self._serialization_dir)]):
+                    ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
-                log.info("Loaded model from checkpoint. Starting at pass %d", n_pass)
+                log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
-                log.info("Not loading. Deleting any existing checkpoints.")
-                checkpoint_pattern = os.path.join(self._serialization_dir, "*.th")
-                for f in glob.glob(checkpoint_pattern):
-                    os.remove(f)
+                log.info("Not loading.")
+                checkpoint_pattern = os.path.join(
+                    self._serialization_dir, "*_{}_*.th".format(phase))
+                assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
+                               "There are existing checkpoints here which will be overwritten. "
+                               "Use -m or LOAD_MODEL to load the checkpoints instead. "
+                               "If you don't want them, delete them or change your experimnent name.")
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -262,6 +323,7 @@ class SamplingMultiTaskTrainer:
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
+            scheduler = g_scheduler if shared_optimizer else task_info['scheduler']
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
@@ -270,7 +332,8 @@ class SamplingMultiTaskTrainer:
                 total_batches_trained += 1
                 optimizer.zero_grad()
                 output_dict = self._forward(batch, task=task, for_training=True)
-                assert "loss" in output_dict, "Model must return a dict containing a 'loss' key"
+                assert_for_log("loss" in output_dict,
+                               "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
                 if scaling_method == 'unit' and weighting_method == 'proportional':
                     loss /= task_info['n_tr_batches']
@@ -279,15 +342,19 @@ class SamplingMultiTaskTrainer:
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
-                assert not torch.isnan(loss).any()
+                assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
                 if self._grad_norm:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
-
                 n_pass += 1  # update per batch
+
+                # step scheduler if it's not ReduceLROnPlateau
+                if not isinstance(scheduler, ReduceLROnPlateau):
+                    #scheduler.step(n_pass)
+                    scheduler.step_batch(n_pass)
 
             # Update training progress on that task
             task_info['n_batches_since_val'] = n_batches_since_val
@@ -324,12 +391,12 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
-                all_val_metrics, should_save, task_infos, metric_infos = \
-                    self._validate(epoch, tasks, task_infos, metric_infos, iterator, g_scheduler)
+                all_val_metrics, should_save, new_best_macro, task_infos, metric_infos = self._validate(
+                    epoch, tasks, task_infos, metric_infos, iterator, g_scheduler, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
-                should_stop, task_infos, metric_infos = \
-                    self._check_stop(epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
+                should_stop, task_infos, metric_infos = self._check_stop(
+                    epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results
                 for name, value in all_val_metrics.items():
@@ -338,6 +405,10 @@ class SamplingMultiTaskTrainer:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
 
+                lrs = self._get_lr()
+                for name, value in lrs.items():
+                    log.info("%s: %.6f", name, value)
+
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
                 all_tr_metrics = {}
@@ -345,7 +416,8 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop})
+                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop},
+                        phase=phase, new_best_macro=new_best_macro)
 
         log.info('Stopped training after %d validation checks', n_pass / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
@@ -369,7 +441,15 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(self, epoch, tasks, task_infos, metric_infos, iterator, g_scheduler):
+    def _validate(
+            self,
+            epoch,
+            tasks,
+            task_infos,
+            metric_infos,
+            iterator,
+            g_scheduler,
+            periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
@@ -382,7 +462,7 @@ class SamplingMultiTaskTrainer:
             n_examples = 0.0
             task_info = task_infos[task.name]
             val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
-            n_val_batches = iterator.get_num_batches(task.val_data)
+            n_val_batches = task_infos[task.name]['n_val_batches']
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
@@ -404,13 +484,13 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches
+            assert batch_num == n_val_batches, pdb.set_trace()
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= n_val_batches
+            all_val_metrics["%s_loss" % task.name] /= batch_num # n_val_batches
             all_val_metrics["micro_avg"] += \
                 all_val_metrics[task.val_metric] * n_examples
             all_val_metrics["macro_avg"] += \
@@ -425,7 +505,10 @@ class SamplingMultiTaskTrainer:
         all_val_metrics['macro_avg'] /= len(tasks)
 
         # Track per task patience
-        should_save = False  # whether to save this epoch or not
+        should_save = periodic_save  # whether to save this epoch or not.
+        # Currently we save every validation in the main training runs.
+        new_best_macro = False  # whether this epoch is a new best
+
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
@@ -445,24 +528,36 @@ class SamplingMultiTaskTrainer:
                 log.info("Best model found for %s.", task)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)
                 should_save = True
+                if task == 'macro':
+                    new_best_macro = True
             if out_of_patience:
+                if periodic_save:
+                    should_save = True
                 metric_infos[metric]['stopped'] = True
                 log.info("Out of patience. Stopped tracking %s", task)
 
-            if hasattr(task, 'name') and g_scheduler is None:  # might be "is not None"?
+            # Get scheduler, using global scheduler if exists and task is macro
+            # micro has no scheduler updates
+            if hasattr(task, 'name') and g_scheduler is None:
                 scheduler = task_infos[task.name]['scheduler']
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
             elif g_scheduler is not None and task == 'macro':
                 scheduler = g_scheduler
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
+            else:
+                scheduler = None
+            if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+                scheduler.step(this_epoch_metric, epoch)
 
-        return all_val_metrics, should_save, task_infos, metric_infos
+        return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
+
+    def _get_lr(self):
+        if self._g_optimizer is not None:
+            lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
+        else:
+            lrs = {}
+            for task, task_info in self._task_infos.items():
+                lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
+        return lrs
+
 
     def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
@@ -506,20 +601,51 @@ class SamplingMultiTaskTrainer:
         # pylint: disable=no-self-use
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
-    def _save_checkpoint(self, training_state):
+    def _unmark_previous_best(self, phase, epoch):
+        marked_best = glob.glob(
+            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase)))
+        for file in marked_best:
+            # Skip the just-written checkpoint.
+            if "_{}.".format(epoch) not in file:
+                os.rename(file, re.sub('%s$' % ".best_macro.th", ".th", file))
+
+    def _delete_old_checkpoints(self, phase, epoch):
+        candidates = glob.glob(
+            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.th".format(phase)))
+        for file in candidates:
+            # Skip the best, because we'll need it.
+            # Skip the just-written checkpoint.
+            if ".best_macro" not in file and "_{}.".format(epoch) not in file:
+                os.remove(file)
+
+    def _save_checkpoint(self, training_state, phase="main", new_best_macro=False, keep_all=False):
         """
         Parameters
         ----------
-        epoch , required.
-            The epoch of training.
-        is_best, optional (default = None)
-            A flag which causes the model weights at the given epoch to
-            be copied to a "best.th" file. The value of this flag should
-            be based on some validation metric computed by your model.
-        TODO: Is there a reason this was removed?
+        training_state: An object containing trainer state (step number, etc.), to be saved.
+        phase: Usually 'main' or 'eval'.
+        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
+            potentially used later when switching from main to eval training.
         """
+        if not self._serialization_dir:
+            raise ConfigurationError("serialization_dir not specified - cannot "
+                                     "restore a model without a directory path.")
+
         epoch = training_state["epoch"]
-        model_path = os.path.join(self._serialization_dir, "model_state_epoch_{}.th".format(epoch))
+        if phase == "eval":
+            model_path = os.path.join(
+                self._serialization_dir,
+                "model_state_eval_best.th")
+        else:
+            if new_best_macro:
+                best_str = ".best_macro"
+            else:
+                best_str = ""
+
+            model_path = os.path.join(
+                self._serialization_dir,
+                "model_state_{}_epoch_{}{}.th".format(
+                    phase, epoch, best_str))
 
         model_state = self._model.state_dict()
 
@@ -534,43 +660,84 @@ class SamplingMultiTaskTrainer:
 
         torch.save(model_state, model_path)
 
-        torch.save(training_state, os.path.join(self._serialization_dir,
-                                                "training_state_epoch_{}.th".format(epoch)))
+        if phase != "eval":
+            torch.save(
+                training_state,
+                os.path.join(
+                    self._serialization_dir,
+                    "training_state_{}_epoch_{}{}.th".format(
+                        phase, epoch, best_str)))
 
-        task_states = {}
-        for task_name, task_info in self._task_infos.items():
-            task_states[task_name] = {}
-            task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
-            task_states[task_name]['stopped'] = task_info['stopped']
-            task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-            sched = task_info['scheduler']
-            sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-            #'cooldown_counter': sched.cooldown_counter}
-            task_states[task_name]['scheduler'] = sched_params
-        task_states['global'] = {}
-        task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
-            self._g_optimizer is not None else None
-        if self._g_scheduler is not None:
-            sched = self._g_scheduler
-            sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-            #'cooldown_counter': sched.cooldown_counter}
-            task_states['global']['scheduler'] = sched_params
-        else:
-            task_states['global']['scheduler'] = None
-        torch.save(task_states, os.path.join(self._serialization_dir,
-                                             "task_state_epoch_{}.th".format(epoch)))
+            task_states = {}
+            for task_name, task_info in self._task_infos.items():
+                task_states[task_name] = {}
+                task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
+                task_states[task_name]['stopped'] = task_info['stopped']
+                task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
+                sched = task_info['scheduler']
+                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                #'cooldown_counter': sched.cooldown_counter}
+                task_states[task_name]['scheduler'] = sched_params
+            task_states['global'] = {}
+            task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
+                self._g_optimizer is not None else None
+            if self._g_scheduler is not None:
+                sched = self._g_scheduler
+                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                #'cooldown_counter': sched.cooldown_counter}
+                task_states['global']['scheduler'] = sched_params
+            else:
+                task_states['global']['scheduler'] = None
+            torch.save(task_states, os.path.join(self._serialization_dir,
+                                                 "task_state_{}_epoch_{}{}.th".format(
+                                                     phase, epoch, best_str)))
 
-        metric_states = {}
-        for metric_name, metric_info in self._metric_infos.items():
-            metric_states[metric_name] = {}
-            metric_states[metric_name]['hist'] = metric_info['hist']
-            metric_states[metric_name]['stopped'] = metric_info['stopped']
-            metric_states[metric_name]['best'] = metric_info['best']
-        torch.save(metric_states, os.path.join(self._serialization_dir,
-                                               "metric_state_epoch_{}.th".format(epoch)))
+            metric_states = {}
+            for metric_name, metric_info in self._metric_infos.items():
+                metric_states[metric_name] = {}
+                metric_states[metric_name]['hist'] = metric_info['hist']
+                metric_states[metric_name]['stopped'] = metric_info['stopped']
+                metric_states[metric_name]['best'] = metric_info['best']
+            torch.save(
+                metric_states,
+                os.path.join(
+                    self._serialization_dir,
+                    "metric_state_{}_epoch_{}{}.th".format(
+                        phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
-    def _restore_checkpoint(self):
+        if phase != "eval" and new_best_macro:
+            self._unmark_previous_best(phase, epoch)
+
+        if not self._keep_all_checkpoints:
+            self._delete_old_checkpoints(phase, epoch)
+
+    def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=['main']):
+        """
+        Search for checkpoints to load, looking only for `main` training checkpoints.
+
+        TODO: This is probably hairier than it needs to be. If you're good at string handling...
+        """
+        if not self._serialization_dir:
+            raise ConfigurationError("serialization_dir not specified - cannot "
+                                     "restore a model without a directory path.")
+
+        for current_search_phase in search_phases_in_priority_order:
+            max_epoch = 0
+            to_return = None
+            candidate_files = glob.glob(
+                os.path.join(
+                    self._serialization_dir,
+                    "model_state_{}_*".format(current_search_phase)))
+            for x in candidate_files:
+                epoch = int(x.split("model_state_{}_epoch_".format(
+                    current_search_phase))[-1].split(".")[0])
+                if epoch >= max_epoch:
+                    max_epoch = epoch
+                    to_return = x
+            return to_return.split("model_state_")[-1]
+
+    def _restore_checkpoint(self, search_phases_in_priority_order=['main']):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -584,23 +751,20 @@ class SamplingMultiTaskTrainer:
         epoch
             The epoch at which to resume training.
         """
-        if not self._serialization_dir:
-            raise ConfigurationError("serialization_dir not specified - cannot "
-                                     "restore a model without a directory path.")
 
-        serialization_files = os.listdir(self._serialization_dir)
-        model_checkpoints = [x for x in serialization_files if "model_state_epoch" in x]
-        epoch_to_load = max([int(x.split("model_state_epoch_")[-1].strip(".th"))
-                             for x in model_checkpoints])
+        suffix_to_load = self._find_last_checkpoint_suffix(
+            search_phases_in_priority_order=search_phases_in_priority_order)
+        assert suffix_to_load, "No checkpoint found."
+        log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
 
         model_path = os.path.join(self._serialization_dir,
-                                  "model_state_epoch_{}.th".format(epoch_to_load))
+                                  "model_state_{}".format(suffix_to_load))
         training_state_path = os.path.join(self._serialization_dir,
-                                           "training_state_epoch_{}.th".format(epoch_to_load))
+                                           "training_state_{}".format(suffix_to_load))
         task_state_path = os.path.join(self._serialization_dir,
-                                       "task_state_epoch_{}.th".format(epoch_to_load))
+                                       "task_state_{}".format(suffix_to_load))
         metric_state_path = os.path.join(self._serialization_dir,
-                                         "metric_state_epoch_{}.th".format(epoch_to_load))
+                                         "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
         self._model.load_state_dict(model_state, strict=False)
@@ -638,7 +802,7 @@ class SamplingMultiTaskTrainer:
         ''' Generator trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
-        num_epochs = params.pop("num_epochs", 20)
+        val_interval = params.pop("val_interval", 100)
         max_vals = params.pop("max_vals", 50)
         cuda_device = params.pop("cuda_device", -1)
         grad_norm = params.pop("grad_norm", None)
@@ -646,11 +810,13 @@ class SamplingMultiTaskTrainer:
         lr_decay = params.pop("lr_decay", None)
         min_lr = params.pop("min_lr", None)
         no_tqdm = params.pop("no_tqdm", False)
+        keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(model, iterator, patience=patience,
-                                        num_epochs=num_epochs, max_vals=max_vals,
+                                        val_interval=val_interval, max_vals=max_vals,
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, no_tqdm=no_tqdm)
+                                        min_lr=min_lr, no_tqdm=no_tqdm,
+                                        keep_all_checkpoints=keep_all_checkpoints)

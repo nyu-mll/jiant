@@ -21,12 +21,22 @@ fi
 
 if [[ $INSTANCE_TYPE == "cpu" || $INSTANCE_TYPE == "workstation" ]]; then
   TEMPLATE="cpu-workstation-template"
+elif [[ $INSTANCE_TYPE == "cpu-mini" ]]; then
+  TEMPLATE="cpu-workstation-template-mini"
+elif [[ $INSTANCE_TYPE == "gpu-1l" ]]; then
+  TEMPLATE="gpu-worker-template-1large"
 elif [[ $INSTANCE_TYPE == "gpu-1" ]]; then
   TEMPLATE="gpu-worker-template-1"
 elif [[ $INSTANCE_TYPE == "gpu-2" ]]; then
   TEMPLATE="gpu-worker-template-2"
 elif [[ $INSTANCE_TYPE == "gpu-4" ]]; then
   TEMPLATE="gpu-worker-template-4"
+elif [[ $INSTANCE_TYPE == "gpu-k1" ]]; then
+  TEMPLATE="gpu-worker-template-k1"
+elif [[ $INSTANCE_TYPE == "gpu-k2" ]]; then
+  TEMPLATE="gpu-worker-template-k2"
+elif [[ $INSTANCE_TYPE == "gpu-k4" ]]; then
+  TEMPLATE="gpu-worker-template-k4"
 else
   echo "Unsupported instance type '$INSTANCE_TYPE'"
   exit 1

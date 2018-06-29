@@ -2,12 +2,11 @@
 import os
 import logging as log
 import tqdm
-# import ipdb as pdb
 
 import torch
 from allennlp.data.iterators import BasicIterator
 from utils import device_mapping
-from tasks import STSBTask
+from tasks import STSBTask, JOCITask
 
 
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
@@ -44,8 +43,11 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             else:
                 assert 'targs' in batch
                 n_examples += batch['targs']['words'].nelement()
-            if isinstance(task, STSBTask):
-                preds, _ = out['logits'].max(dim=1)
+            if isinstance(task, STSBTask) or isinstance(task, JOCITask):
+                try:
+                    preds, _ = out['logits'].max(dim=1)
+                except BaseException:
+                    pdb.set_trace()
             else:
                 _, preds = out['logits'].max(dim=1)
             task_preds += preds.data.tolist()
@@ -128,3 +130,4 @@ def load_model_state(model, state_path, gpu_id):
     ''' Helper function to load a model state '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
     model.load_state_dict(model_state, strict=False)
+    log.info("Loaded model state from %s", state_path)

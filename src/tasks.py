@@ -9,7 +9,8 @@ import os
 import math
 import logging as log
 # import ipdb as pdb
-
+import json
+import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 
 from utils import load_tsv, process_sentence, truncate
@@ -86,11 +87,19 @@ class PairClassificationTask(Task):
         return {'accuracy': acc}
 
 
+class NLIProbingTask(PairClassificationTask):
+    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
+
+    def __init__(self, name, n_classes):
+        super().__init__(name)
+
+
 class PairRegressionTask(Task):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name):
         super().__init__(name)
+        self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = None
         self.val_metric = "%s_mse" % self.name
@@ -100,6 +109,27 @@ class PairRegressionTask(Task):
         '''Get metrics specific to the task'''
         mse = self.scorer1.get_metric(reset)
         return {'mse': mse}
+
+
+class PairOrdinalRegressionTask(Task):
+    ''' Generic sentence pair ordinal regression.
+        Currently just doing regression but added new class
+        in case we find a good way to implement ordinal regression with NN'''
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.n_classes = 1
+        self.scorer1 = Average()  # for average MSE
+        self.scorer2 = Average()  # for average Spearman's rho
+        self.val_metric = "%s_1-mse" % self.name
+        self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        mse = self.scorer1.get_metric(reset)
+        spearmanr = self.scorer2.get_metric(reset)
+        return {'1-mse': 1 - mse,
+                'mse': mse,
+                'spearmanr': spearmanr}
 
 
 class SequenceGenerationTask(Task):
@@ -343,7 +373,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 class MultiNLIFictionTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-fiction"):
         '''MNLI'''
         super(
             MultiNLIFictionTask,
@@ -351,21 +381,21 @@ class MultiNLIFictionTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="fiction",
-            name="mnli-fiction")
+            name=name)
 
 
 class MultiNLISlateTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-slate"):
         '''MNLI'''
-        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name="mnli-slate")
+        super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name=name)
 
 
 class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-government"):
         '''MNLI'''
         super(
             MultiNLIGovernmentTask,
@@ -373,26 +403,26 @@ class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="government",
-            name="mnli-government")
+            name=name)
 
 
 class MultiNLITelephoneTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-telephone"):
         '''MNLI'''
         super(
             MultiNLITelephoneTask,
             self).__init__(
             path,
             genre="telephone",
-            name="mnli-telephone")
+            name=name)
 
 
 class MultiNLITravelTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, name="mnli"):
+    def __init__(self, path, max_seq_len, name="mnli-travel"):
         '''MNLI'''
         super(
             MultiNLITravelTask,
@@ -400,7 +430,7 @@ class MultiNLITravelTask(MultiNLISingleGenreTask):
             path,
             max_seq_len,
             genre="travel",
-            name="mnli-travel")
+            name=name)
 
 
 class MRPCTask(PairClassificationTask):
@@ -609,6 +639,28 @@ class WNLITask(PairClassificationTask):
         log.info("\tFinished loading Winograd.")
 
 
+class JOCITask(PairOrdinalRegressionTask):
+    '''Class for JOCI ordinal regression task'''
+
+    def __init__(self, path, max_seq_len, name="joci"):
+        super(JOCITask, self).__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading JOCI data.")
+
+
 class PDTBTask(PairClassificationTask):
     ''' Task class for discourse relation prediction using PDTB'''
 
@@ -632,7 +684,6 @@ class PDTBTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
-
 
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
@@ -663,3 +714,206 @@ class MTTask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
+class DisSentBWBSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with the Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="dissentbwb"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'bwb.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiSingleTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwiki"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.single_sent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiFullTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwikifull"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+class WeakGroundedTask(PairClassificationTask):
+    ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
+
+    def __init__(self, path, max_seq_len, n_classes, name="weakgrounded"):
+        ''' Do stuff '''
+        super(WeakGroundedTask, self).__init__(name, n_classes)
+        
+        ''' Process the dataset located at path.  '''
+        ''' positive = captions of the same image, negative = captions of different images '''
+        targ_map = {'negative': 0, 'positive': 1}
+        targ_map = {'0': 0, '1': 1}
+
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
+                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.n_classes = 2
+        log.info("\tFinished loading MSCOCO data.")
+
+class GroundedTask(Task):
+    ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
+    ''' Defined new metric function from AllenNLP Average '''
+    ''' Specify metric name as 'cos_sim' or 'abs_diff' '''
+    
+    def __init__(self, path, max_seq_len, name="grounded"):
+        ''' Do stuff '''
+        super(GroundedTask, self).__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_metric" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + \
+            self.val_data_text[0]
+        self.ids = self.train_data_text[1] + \
+                   self.val_data_text[1]
+
+        print('self.ids!'); print(self.ids)
+        self.path = path
+        self.img_encoder = CNNEncoder(model_name='resnet', path=path)
+
+    def _compute_metric(self, metric_name, tensor1, tensor2):
+        '''Metrics for similarity in image space'''
+
+        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
+        
+        if metric_name is 'abs_diff':
+            metric = np.mean(np1-np2)
+        elif metric_name is 'cos_sim':
+            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
+        else:
+            print('Undefined metric name!')
+            metric = 0
+            
+        return metric
+    
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metric = self.scorer1.get_metric(reset)
+        
+        return {'metric': metric}
+    
+    def load_data(self, path, max_seq_len):
+        '''Map sentences to image ids (keep track of sentence ids just in case)'''
+
+        # changed for temp
+        train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
+        val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
+        test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
+        
+        f = open(os.path.join(path, "train.json"), 'r')
+        for line in f: tr_dict = json.loads(line)
+        f = open(os.path.join(path, "val.json"), 'r')
+        for line in f: val_dict = json.loads(line)
+        f = open(os.path.join(path, "test.json"), 'r')
+        for line in f: te_dict = json.loads(line)
+
+        train, val, test = ([], [], []), ([], [], []), ([], [], [])
+        for img_id in train_ids:
+            for caption_id in tr_dict[img_id]['captions']:
+                train[0].append(tr_dict[img_id]['captions'][caption_id])
+                train[1].append(1); train[2].append(int(img_id))
+                #train[2].append(caption_id)
+        for img_id in val_ids:
+            for caption_id in val_dict[img_id]['captions']:
+                val[0].append(val_dict[img_id]['captions'][caption_id])
+                val[1].append(1); val[2].append(int(img_id))
+                #val[2].append(caption_id)
+        for img_id in test_ids:
+            for caption_id in te_dict[img_id]['captions']:
+                test[0].append(te_dict[img_id]['captions'][caption_id])
+                test[1].append(1); test[2].append(int(img_id))
+                #test[2].append(caption_id)
+
+        for img_id in train_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(train_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = tr_dict[train_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]
+            train[0].append(caption); train[1].append(0); train[2].append(int(img_id))
+
+        for img_id in val_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]            
+            val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
+
+        for img_id in test_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(test_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]
+            test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
+                
+        self.tr_data = train; self.val_data = val; self.te_data = test
+        self.train_data_text = train
+        self.val_data_text = val
+        self.test_data_text = test
+
+        log.info("\tFinished loading MSCOCO data.")
