@@ -651,13 +651,9 @@ class SamplingMultiTaskTrainer:
 
         # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
-        keys_to_skip = []
-        for key in model_state:
-            if 'token_embedder_words' in key:
-                keys_to_skip.append(key)
+        keys_to_skip = [key for key in model_state if dont_save(key)]
         for key in keys_to_skip:
             del model_state[key]
-
         torch.save(model_state, model_path)
 
         if phase != "eval":
@@ -673,11 +669,12 @@ class SamplingMultiTaskTrainer:
                 task_states[task_name] = {}
                 task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
                 task_states[task_name]['stopped'] = task_info['stopped']
-                task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-                sched = task_info['scheduler']
-                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                #'cooldown_counter': sched.cooldown_counter}
-                task_states[task_name]['scheduler'] = sched_params
+                if self._g_optimizer is None:
+                    task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
+                    sched = task_info['scheduler']
+                    sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                    #'cooldown_counter': sched.cooldown_counter}
+                    task_states[task_name]['scheduler'] = sched_params
             task_states['global'] = {}
             task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
@@ -774,9 +771,10 @@ class SamplingMultiTaskTrainer:
             if task_name == 'global':
                 continue
             self._task_infos[task_name]['total_batches_trained'] = task_state['total_batches_trained']
-            self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
-            for param, val in task_state['scheduler'].items():
-                setattr(self._task_infos[task_name]['scheduler'], param, val)
+            if 'optimizer' in task_state:
+                self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
+                for param, val in task_state['scheduler'].items():
+                    setattr(self._task_infos[task_name]['scheduler'], param, val)
             self._task_infos[task_name]['stopped'] = task_state['stopped']
             generator = self._task_infos[task_name]['tr_generator']
             for _ in itertools.islice(generator, task_state['total_batches_trained'] %
@@ -820,3 +818,7 @@ class SamplingMultiTaskTrainer:
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints)
+
+def dont_save(key):
+    ''' Filter out strings with some bad words '''
+    return 'elmo' in key or 'text_field_embedder' in key
