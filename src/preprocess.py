@@ -120,7 +120,6 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     if not os.path.isdir(prepreproc_dir):
         os.mkdir(prepreproc_dir)
@@ -184,10 +183,11 @@ def build_tasks(args):
         if not task.name in preproc_file_names:
             log.info("\tIndexing task %s from scratch", task.name)
             split_dict = process_task(task, token_indexer, vocab)
+            # Strip token fields to save memory.
             for instances in split_dict.values():
                 for instance in instances:
                     del_field_tokens(instance)
-            #  del_field_tokens(split_dict)
+            # Save task data to disk as record file.
             _serialize_task(task.name, split_dict, preproc_dir)
             log.info("\tSaved data to %s", preproc_dir)
 
@@ -204,23 +204,6 @@ def build_tasks(args):
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
-
-#  def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
-#      for task_type in train_val_test_dict:
-#          file_name = task.name + "__" + task_type
-#          file_path = os.path.join(preproc_dir, file_name)
-#          write_records(train_val_test_dict[task_type], file_path)
-#          task_type_iterator = read_records(file_path, repeatable=True)
-#          setattr(task, task_type, task_type_iterator)
-
-
-#  def get_task_generator(task_name, preproc_dir):
-#      train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
-#      val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
-#                                   repeatable=True)
-#      test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"),
-#                                    repeatable=True)
-#      return train_generator, val_generator, test_generator
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
