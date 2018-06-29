@@ -64,6 +64,10 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
+    git_branch_name = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
+    git_sha = os.popen('git rev-parse HEAD').read().strip()
+    log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
+
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)

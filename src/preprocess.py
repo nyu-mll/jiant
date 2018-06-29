@@ -1,6 +1,7 @@
 '''Preprocessing functions and pipeline
 
-To add new tasks, add task-specific preprocessing functions to process_task()'''
+To add new tasks, add task-specific preprocessing functions to
+process_task_split()'''
 import io
 import os
 import copy
@@ -69,6 +70,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
+
+ALL_SPLITS = ['train', 'val', 'test']
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
@@ -192,13 +195,16 @@ def build_tasks(args):
     if not args.reload_vocab and not args.reload_indexing:
         for file in os.listdir(preproc_dir):
             preproc_file_names.add(file.split("__")[0])
+
     for task in tasks:
         if not task.name in preproc_file_names:
             log.info("\tTask '%s': indexing from scratch", task.name)
-            split_dict = process_task(task, token_indexer)
             # Index instances and stream to disk.
-            for split, instance_list in split_dict.items():
-                log.info("\tTask '%s', split '%s': %d examples",
+            for split in ALL_SPLITS:
+                log.info("\tTask '%s', split '%s': processing to tokens",
+                         task.name, split)
+                instance_list = process_task_split(task, split, token_indexer)
+                log.info("\tTask '%s', split '%s': %d examples to index",
                          task.name, split, len(instance_list))
                 record_file = _get_serialized_record_path(task.name, split, preproc_dir)
                 serialize.write_records(
@@ -355,39 +361,46 @@ def get_fastText_model(vocab, d_word, model_file=None):
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
 
-
-def process_task(task, token_indexer):
+def process_task_split(task, split, token_indexer):
     '''
-    Convert a task's splits into AllenNLP fields then index the splits using vocab.
+    Convert a task split into AllenNLP fields.
     Different tasks have different formats and fields, so process_task routes tasks
     to the corresponding processing based on the task type. These task specific processing
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
+
+    Args:
+        task: Task object
+        split: (string) split name
+        token_indexer: token indexer
+
+    Returns:
+        list(Instance) of AllenNLP instances, not indexed.
     '''
-    split_dict = {}
-    for split_name in ['train', 'val', 'test']:
-        split_text = getattr(task, '%s_data_text' % split_name)
-        if isinstance(task, SingleClassificationTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=False)
-        elif isinstance(task, PairClassificationTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True)
-        elif isinstance(task, PairRegressionTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
-                                                   classification=False)
-        elif isinstance(task, PairOrdinalRegressionTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
-                                                   classification=False)
-        elif isinstance(task, LanguageModelingTask):
-            split = process_lm_task_split(split_text, token_indexer)
-        elif isinstance(task, SequenceGenerationTask):
-            pass
-        elif isinstance(task, GroundedTask):
-            split = process_grounded_task_split(split_text, token_indexer, is_pair=False, classification=True)
-        elif isinstance(task, RankingTask):
-            pass
-        else:
-            raise ValueError("Preprocessing procedure not found for %s" % task.name)
-        split_dict[split_name] = split
-    return split_dict
+    split_text = getattr(task, '%s_data_text' % split)
+    if isinstance(task, SingleClassificationTask):
+        instances = process_single_pair_task_split(split_text,
+                                                   token_indexer, is_pair=False)
+    elif isinstance(task, PairClassificationTask):
+        instances = process_single_pair_task_split(split_text,
+                                                   token_indexer, is_pair=True)
+    elif isinstance(task, PairRegressionTask):
+        instances = process_single_pair_task_split(split_text, token_indexer,
+                                                   is_pair=True, classification=False)
+    elif isinstance(task, PairOrdinalRegressionTask):
+        instances = process_single_pair_task_split(split_text, token_indexer,
+                                                   is_pair=True, classification=False)
+    elif isinstance(task, LanguageModelingTask):
+        instances = process_lm_task_split(split_text, token_indexer)
+    elif isinstance(task, SequenceGenerationTask):
+        pass
+    elif isinstance(task, GroundedTask):
+        instances = process_grounded_task_split(split_text, token_indexer,
+                                                is_pair=False, classification=True)
+    elif isinstance(task, RankingTask):
+        pass
+    else:
+        raise ValueError("Preprocessing procedure not found for %s" % task.name)
+    return instances
 
 def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
     '''
