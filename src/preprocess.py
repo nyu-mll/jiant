@@ -97,19 +97,18 @@ def _serialize_task(task_name, split_dict, preproc_dir):
         filename = _get_serialized_record_path(task_name, split, preproc_dir)
         serialize.write_records(split_dict[split], filename)
 
-def del_field_tokens(instances):
+def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
     
     Args:
-        instances: iterable of Instance. Modified in-place.
+        instance: AllenNLP Instance. Modified in-place.
     '''
-    for instance in instances:
-        if 'input1' in instance.fields:
-            field = instance.fields['input1']
-            del field.tokens
-        if 'input2' in instance.fields:
-            field = instance.fields['input2']
-            del field.tokens
+    if 'input1' in instance.fields:
+        field = instance.fields['input1']
+        del field.tokens
+    if 'input2' in instance.fields:
+        field = instance.fields['input2']
+        del field.tokens
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -185,7 +184,8 @@ def build_tasks(args):
             log.info("\tIndexing task %s from scratch", task.name)
             split_dict = process_task(task, token_indexer, vocab)
             for instances in split_dict.values():
-                del_field_tokens(instances)
+                for instance in instances:
+                    del_field_tokens(instance)
             #  del_field_tokens(split_dict)
             _serialize_task(task.name, split_dict, preproc_dir)
             log.info("\tSaved data to %s", preproc_dir)
@@ -204,13 +204,12 @@ def build_tasks(args):
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
 
-
 #  def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
 #      for task_type in train_val_test_dict:
 #          file_name = task.name + "__" + task_type
 #          file_path = os.path.join(preproc_dir, file_name)
 #          write_records(train_val_test_dict[task_type], file_path)
-#          task_type_iterator = read_records(file_path)
+#          task_type_iterator = read_records(file_path, repeatable=True)
 #          setattr(task, task_type, task_type_iterator)
 
 
@@ -218,7 +217,8 @@ def build_tasks(args):
 #      train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
 #      val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
 #                                   repeatable=True)
-#      test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
+#      test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"),
+#                                    repeatable=True)
 #      return train_generator, val_generator, test_generator
 
 
@@ -416,7 +416,7 @@ def process_grounded_task_split(split, indexers, is_pair=True, classification=Tr
     ids = [NumericField(l) for l in split[2]]
     instances = [Instance({"input1": input1, "labels": label, "ids": ids}) for (input1, label, ids) in
                          zip(inputs1, labels, ids)]
-    
+
     return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
 
 
