@@ -457,10 +457,9 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence, embed the image, map and classify
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
-        image_map = nn.Linear(d_1, d_2); sent_transform = image_map(sent_emb)
-        ids = batch['ids'].squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
+        image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
+        ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
+        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
         
         seq, true = [], []
         for i in range(len(ids)):
