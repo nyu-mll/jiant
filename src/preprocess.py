@@ -37,6 +37,9 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask
 
+ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
+                  'mnli', 'qnli', 'rte', 'wnli']
+
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
@@ -68,13 +71,13 @@ SPECIALS = [SOS_TOK, EOS_TOK]
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
-    serialized_record_path = os.path.join(preproc_dir, 
+    serialized_record_path = os.path.join(preproc_dir,
                                           "{:s}__{:s}_data".format(task_name, split))
     return serialized_record_path
 
 def _get_instance_generator(task_name, split, preproc_dir):
     """Get a lazy generator for the given task and split.
-    
+
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
@@ -100,7 +103,7 @@ def _serialize_task(task_name, split_dict, preproc_dir):
 
 def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
-    
+
     Args:
         instance: AllenNLP Instance. Modified in-place.
     '''
@@ -174,11 +177,10 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     if not os.path.isdir(preproc_dir):
         os.mkdir(preproc_dir)
-    preproc_file_names = []
+    preproc_file_names = set()
     if not args.reload_vocab and not args.reload_indexing:
         for file in os.listdir(preproc_dir):
-            preproc_file_names.append(file.split("__")[0])
-        preproc_file_names = set(preproc_file_names)
+            preproc_file_names.add(file.split("__")[0])
     for task in tasks:
         if not task.name in preproc_file_names:
             log.info("\tIndexing task %s from scratch", task.name)
@@ -195,7 +197,7 @@ def build_tasks(args):
         task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
         task.val_data =   _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data =  _get_instance_generator(task.name, "test", preproc_dir)
-        log.info("\tLoaded indexed data for %s from %s", task.name, preproc_dir)
+        log.info("\tLoaded indexed data for task='%s' from %s", task.name, preproc_dir)
 
     log.info("\tFinished indexing tasks")
 
@@ -205,22 +207,20 @@ def build_tasks(args):
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
 
+def _parse_task_list_arg(task_list):
+    '''Parse task list argument into a list of task names.'''
+    if task_list == 'glue':
+        return ALL_GLUE_TASKS
+    elif task_list == 'none':
+        return []
+    else:
+        return task_list.split(',')
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
               scratch_path=None, load_pkl=1):
     ''' Load tasks '''
-    def parse_tasks(task_list):
-        '''parse string of tasks'''
-        if task_list == 'glue':
-            tasks = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']
-        elif task_list == 'none':
-            tasks = []
-        else:
-            tasks = task_list.split(',')
-        return tasks
-
-    train_task_names = parse_tasks(train_tasks)
-    eval_task_names = parse_tasks(eval_tasks)
+    train_task_names = _parse_task_list_arg(train_tasks)
+    eval_task_names  = _parse_task_list_arg(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
 
     assert path is not None
@@ -246,9 +246,9 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         tasks.append(task)
 
     for task in tasks: # hacky
-        task.n_tr_examples = len(task.train_data_text[0])
+        task.n_tr_examples  = len(task.train_data_text[0])
         task.n_val_examples = len(task.val_data_text[0])
-        task.n_te_examples = len(task.test_data_text[0])
+        task.n_te_examples  = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -293,20 +293,6 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     for char, _ in chars_by_freq[:max_v_sizes['char']]:
         vocab.add_token_to_namespace(char, 'chars')
     return vocab
-
-
-#  def del_field_tokens(train_val_test_dict):
-#      ''' Save memory by deleting the tokens that will no longer be used '''
-#      all_instances = []
-#      for task_type in train_val_test_dict:
-#          all_instances += train_val_test_dict[task_type]
-#      for instance in all_instances:
-#          if 'input1' in instance.fields:
-#              field = instance.fields['input1']
-#              del field.tokens
-#          if 'input2' in instance.fields:
-#              field = instance.fields['input2']
-#              del field.tokens
 
 
 def get_embeddings(vocab, vec_file, d_word):
