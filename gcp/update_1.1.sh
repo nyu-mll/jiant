@@ -16,6 +16,6 @@ sudo mv -f /tmp/elmo /usr/share/jsalt
 ls -l /usr/share/jsalt/elmo
 
 # Copy updated paths file to /etc/profile.d
-sudo cp $(dirname $0)/../path_config.sh /etc/profile.d/jsalt_paths.sh
+sudo cp $(dirname $0)/config/jsalt_paths.sh /etc/profile.d/
 
 echo 'Updated! At next login, you should have $ELMO_SRC_DIR set to point to downloaded ELMo models.'
