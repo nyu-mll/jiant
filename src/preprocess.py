@@ -37,7 +37,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask
+    GroundedTask, MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -61,6 +61,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
+             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
@@ -391,6 +392,8 @@ def process_task_split(task, split, token_indexer):
                                                    is_pair=True, classification=False)
     elif isinstance(task, LanguageModelingTask):
         instances = process_lm_task_split(split_text, token_indexer)
+    elif isinstance(task, MTTask):
+        instances = process_mt_task_split(split_text, token_indexer)
     elif isinstance(task, SequenceGenerationTask):
         pass
     elif isinstance(task, GroundedTask):
@@ -479,4 +482,11 @@ def process_lm_task_split(split, indexers):
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    return instances
+
+def process_mt_task_split(split, indexers):
+    ''' Process a machine translation split '''
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
     return instances
