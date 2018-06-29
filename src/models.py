@@ -218,7 +218,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        elif isinstance(task, RankingTask):
+        elif isinstance(task, GroundedTask):
             pass
         else:
             raise ValueError("Module not found for %s" % task.name)
@@ -457,10 +457,9 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence, embed the image, map and classify
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
-        image_map = nn.Linear(d_1, d_2); sent_transform = image_map(sent_emb)
-        ids = batch['ids'].squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
+        image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
+        ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
+        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
         
         seq, true = [], []
         for i in range(len(ids)):
