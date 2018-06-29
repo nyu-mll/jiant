@@ -3,6 +3,7 @@
 To add new tasks, add task-specific preprocessing functions to process_task()'''
 import io
 import os
+import copy
 import ipdb as pdb
 import logging as log
 from collections import defaultdict
@@ -87,19 +88,28 @@ def _get_instance_generator(task_name, split, preproc_dir):
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
+    assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
     return serialize.read_records(filename, repeatable=True)
 
-def _serialize_task(task_name, split_dict, preproc_dir):
-    """Serialize splits for the given task.
+def _indexed_instance_generator(instance_list, vocab):
+    """Yield indexed copies of the given instances.
+
+    TODO(iftenney): multiprocess the $%^& out of this.
 
     Args:
-        task_name: (string), task name
-        split_dict: dict(string -> list(Instance))
-        preproc_dir: (string) path to preprocessing dir
+        instance_list: list(Instance) of examples
+        vocab: Vocabulary for use in indexing
+
+    Yields:
+        Instance with indexed fields.
     """
-    for split in split_dict:
-        filename = _get_serialized_record_path(task_name, split, preproc_dir)
-        serialize.write_records(split_dict[split], filename)
+    for orig_instance in instance_list:
+        instance = copy.deepcopy(orig_instance)
+        instance.index_fields(vocab)
+        # Strip token fields to save memory and disk.
+        del_field_tokens(instance)
+        yield instance
+
 
 def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
@@ -186,16 +196,16 @@ def build_tasks(args):
         if not task.name in preproc_file_names:
             log.info("\tTask '%s': indexing from scratch", task.name)
             split_dict = process_task(task, token_indexer)
-            # Index all instances.
-            for instance_list in split_dict.values():
-                for instance in instance_list:
-                    instance.index_fields(vocab)
-                    # Strip token fields to save memory.
-                    del_field_tokens(instance)
-            # Save task data to disk as record file.
-            _serialize_task(task.name, split_dict, preproc_dir)
-            log.info("\tTask '%s': saved data to %s", task.name, preproc_dir)
-            # Delete in-memory data - we'll stream from disk later.
+            # Index instances and stream to disk.
+            for split, instance_list in split_dict.items():
+                log.info("\tTask '%s', split '%s': %d examples",
+                         task.name, split, len(instance_list))
+                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+                serialize.write_records(
+                    _indexed_instance_generator(instance_list, vocab), record_file)
+                log.info("\tTask '%s': saved split '%s' to %s",
+                         task.name, split, record_file)
+            # Delete in-memory data - we'll lazy-load from disk later.
             task.train_data = None
             task.val_data   = None
             task.test_data  = None
