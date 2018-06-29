@@ -185,10 +185,12 @@ def build_tasks(args):
     for task in tasks:
         if not task.name in preproc_file_names:
             log.info("\tTask '%s': indexing from scratch", task.name)
-            split_dict = process_task(task, token_indexer, vocab)
-            # Strip token fields to save memory.
-            for instances in split_dict.values():
-                for instance in instances:
+            split_dict = process_task(task, token_indexer)
+            # Index all instances.
+            for instance_list in split_dict.values():
+                for instance in instance_list:
+                    instance.index_fields(vocab)
+                    # Strip token fields to save memory.
                     del_field_tokens(instance)
             # Save task data to disk as record file.
             _serialize_task(task.name, split_dict, preproc_dir)
@@ -344,13 +346,12 @@ def get_fastText_model(vocab, d_word, model_file=None):
     return embeddings, model
 
 
-def process_task(task, token_indexer, vocab):
+def process_task(task, token_indexer):
     '''
     Convert a task's splits into AllenNLP fields then index the splits using vocab.
     Different tasks have different formats and fields, so process_task routes tasks
     to the corresponding processing based on the task type. These task specific processing
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
-    These instances are then indexed using the vocab
     '''
     split_dict = {}
     for split_name in ['train', 'val', 'test']:
@@ -375,8 +376,6 @@ def process_task(task, token_indexer, vocab):
             pass
         else:
             raise ValueError("Preprocessing procedure not found for %s" % task.name)
-        for instance in split:
-            instance.index_fields(vocab)
         split_dict[split_name] = split
     return split_dict
 
