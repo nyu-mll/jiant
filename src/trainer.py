@@ -46,7 +46,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     return Params(params)
 
 
-def build_trainer(params, model, run_dir):
+def build_trainer(params, model, run_dir, metric_should_decrease=True):
     '''Build a trainer.
 
     Parameters
@@ -79,7 +79,7 @@ def build_trainer(params, model, run_dir):
                               'factor': 1.0})
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
-                              'mode': 'max',
+                              'mode': 'min' if metric_should_decrease else 'max',
                               'factor': params['lr_decay_factor'],
                               'patience': params['task_patience'],
                               'threshold': params['scheduler_threshold'],
@@ -395,6 +395,10 @@ class SamplingMultiTaskTrainer:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
 
+                lrs = self._get_lr()
+                for name, value in lrs.items():
+                    log.info("%s: %.6f", name, value)
+
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
                 all_tr_metrics = {}
@@ -536,6 +540,16 @@ class SamplingMultiTaskTrainer:
                     scheduler.step(epoch)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
+
+    def _get_lr(self):
+        if self._g_optimizer is not None:
+            lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
+        else:
+            lrs = {}
+            for task, task_info in self._task_infos.items():
+                lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
+        return lrs
+
 
     def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''

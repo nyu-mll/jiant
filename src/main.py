@@ -121,10 +121,12 @@ def main(cl_arguments):
         # Train on train tasks #
         log.info("Training...")
         params = build_trainer_params(args, 'none', args.max_vals, args.val_interval)
-        trainer, _, opt_params, schd_params = build_trainer(params, model,
-                                                            args.run_dir)
-        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
+        should_decrease = train_tasks[0].val_metric_decreases if len(train_tasks) == 1 else False
+        trainer, _, opt_params, schd_params = build_trainer(params, model,
+                                                            args.run_dir,
+                                                            should_decrease)
+        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         best_epochs = trainer.train(train_tasks, stop_metric, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
@@ -150,7 +152,8 @@ def main(cl_arguments):
             params = build_trainer_params(args, task.name, args.eval_max_vals,
                                           args.eval_val_interval)
             trainer, _, opt_params, schd_params = build_trainer(params, model,
-                                                                args.run_dir)
+                                                                args.run_dir,
+                                                                task.val_metric_decreases)
             best_epoch = trainer.train([task], task.val_metric, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
