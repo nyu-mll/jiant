@@ -67,6 +67,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
+    """Get the canonical path for a serialized task split."""
     serialized_record_path = os.path.join(preproc_dir, 
                                           "{:s}__{:s}_data".format(task_name, split))
     return serialized_record_path
