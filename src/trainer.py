@@ -197,11 +197,11 @@ class SamplingMultiTaskTrainer:
         if len(metric_history) > patience:
             if should_decrease:
                 overall_best = max(metric_history)
-                recent_best = max(metric_history[-patience:])
+                recent_best = max(metric_history[-(patience + 1):])
                 out_of_patience = recent_best < overall_best 
             else:
                 overall_best = min(metric_history)
-                recent_best = min(metric_history[-patience:])
+                recent_best = min(metric_history[-(patience + 1):])
                 out_of_patience = recent_best > overall_best
 
         return best_so_far, out_of_patience
