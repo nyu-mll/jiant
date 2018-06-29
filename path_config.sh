@@ -1,18 +1,23 @@
 #!/bin/bash
 
+# DO NOT COMMIT CHANGES TO THIS FILE! Make a local copy and follow the
+# instructions below.
+
 # Copy this to /etc/profile.d/ to auto-set environment vars on login.
-# Or, customize this and run immediately before the training binary:
-# source ../path_config.sh; python main.py --config ../config/demo.conf \
+# Or, make a copy of this, customize, and run immediately before the training
+# binary:
+# cp path_config.sh ~/my_path_config.sh
+# source ~/my_path_config.sh; python main.py --config ../config/demo.conf \
 #   --overrides "do_train = 0"
 
 # Default environment variables for JSALT code. May be overwritten by user.
 # See https://github.com/jsalt18-sentence-repl/jiant for more.
 
-export JSALT_SHARE_DIR="/media/jan/DATA/Projects/Research/Paul/DATA_FOR_JSALT"
+export JSALT_SHARE_DIR="/usr/share/jsalt"
 export JIANT_DATA_DIR="$JSALT_SHARE_DIR/glue_data"
 
 # Default experiment directory
-export JIANT_PROJECT_PREFIX="$JSALT_SHARE_DIR/exp"
+export JIANT_PROJECT_PREFIX="$HOME/exp"
 
 export GLOVE_EMBS_FILE="$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
 export FASTTEXT_EMBS_FILE="$JSALT_SHARE_DIR/fasttext/crawl-300d-2M.vec"

@@ -11,7 +11,7 @@ import logging as log
 import itertools
 
 import torch
-import torch.optim.lr_scheduler
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils.clip_grad import clip_grad_norm_
 
 from allennlp.common import Params
@@ -33,7 +33,9 @@ def build_trainer_params(args, task, max_vals, val_interval):
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
     # we want to pass to the build_train()
-    extra_opts = ['sent_enc', 'd_hid', 'cuda', 'max_grad_norm', 'min_lr', 'no_tqdm']
+    extra_opts = ['sent_enc', 'd_hid', 'warmup',
+                  'max_grad_norm', 'min_lr',
+                  'no_tqdm', 'cuda']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
@@ -46,7 +48,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     return Params(params)
 
 
-def build_trainer(params, model, run_dir):
+def build_trainer(params, model, run_dir, metric_should_decrease=True):
     '''Build a trainer.
 
     Parameters
@@ -75,16 +77,18 @@ def build_trainer(params, model, run_dir):
     if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
                               'model_size': params['d_hid'],
-                              'warmup_steps': 4000,
+                              'warmup_steps': params['warmup'],
                               'factor': 1.0})
+        log.info('\tUsing noam scheduler with warmup %d!' % params['warmup'])
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
-                              'mode': 'max',
+                              'mode': 'min' if metric_should_decrease else 'max',
                               'factor': params['lr_decay_factor'],
                               'patience': params['task_patience'],
                               'threshold': params['scheduler_threshold'],
                               'threshold_mode': 'abs',
                               'verbose': True})
+        log.info('\tUsing ReduceLROnPlateau scheduler!')
 
     train_params = Params({'cuda_device': params['cuda'],
                            'patience': params['patience'],
@@ -319,6 +323,7 @@ class SamplingMultiTaskTrainer:
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
+            scheduler = g_scheduler if shared_optimizer else task_info['scheduler']
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
@@ -345,6 +350,11 @@ class SamplingMultiTaskTrainer:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
                 n_pass += 1  # update per batch
+
+                # step scheduler if it's not ReduceLROnPlateau
+                if not isinstance(scheduler, ReduceLROnPlateau):
+                    #scheduler.step(n_pass)
+                    scheduler.step_batch(n_pass)
 
             # Update training progress on that task
             task_info['n_batches_since_val'] = n_batches_since_val
@@ -394,6 +404,10 @@ class SamplingMultiTaskTrainer:
                     if name in all_tr_metrics:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
+
+                lrs = self._get_lr()
+                for name, value in lrs.items():
+                    log.info("%s: %.6f", name, value)
 
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
@@ -522,20 +536,28 @@ class SamplingMultiTaskTrainer:
                 metric_infos[metric]['stopped'] = True
                 log.info("Out of patience. Stopped tracking %s", task)
 
-            if hasattr(task, 'name') and g_scheduler is None:  # might be "is not None"?
+            # Get scheduler, using global scheduler if exists and task is macro
+            # micro has no scheduler updates
+            if hasattr(task, 'name') and g_scheduler is None:
                 scheduler = task_infos[task.name]['scheduler']
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
             elif g_scheduler is not None and task == 'macro':
                 scheduler = g_scheduler
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
+            else:
+                scheduler = None
+            if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+                scheduler.step(this_epoch_metric, epoch)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
+
+    def _get_lr(self):
+        if self._g_optimizer is not None:
+            lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
+        else:
+            lrs = {}
+            for task, task_info in self._task_infos.items():
+                lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
+        return lrs
+
 
     def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
@@ -629,13 +651,9 @@ class SamplingMultiTaskTrainer:
 
         # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
-        keys_to_skip = []
-        for key in model_state:
-            if 'token_embedder_words' in key:
-                keys_to_skip.append(key)
+        keys_to_skip = [key for key in model_state if dont_save(key)]
         for key in keys_to_skip:
             del model_state[key]
-
         torch.save(model_state, model_path)
 
         if phase != "eval":
@@ -651,11 +669,12 @@ class SamplingMultiTaskTrainer:
                 task_states[task_name] = {}
                 task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
                 task_states[task_name]['stopped'] = task_info['stopped']
-                task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-                sched = task_info['scheduler']
-                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                #'cooldown_counter': sched.cooldown_counter}
-                task_states[task_name]['scheduler'] = sched_params
+                if self._g_optimizer is None:
+                    task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
+                    sched = task_info['scheduler']
+                    sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                    #'cooldown_counter': sched.cooldown_counter}
+                    task_states[task_name]['scheduler'] = sched_params
             task_states['global'] = {}
             task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
@@ -752,9 +771,10 @@ class SamplingMultiTaskTrainer:
             if task_name == 'global':
                 continue
             self._task_infos[task_name]['total_batches_trained'] = task_state['total_batches_trained']
-            self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
-            for param, val in task_state['scheduler'].items():
-                setattr(self._task_infos[task_name]['scheduler'], param, val)
+            if 'optimizer' in task_state:
+                self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
+                for param, val in task_state['scheduler'].items():
+                    setattr(self._task_infos[task_name]['scheduler'], param, val)
             self._task_infos[task_name]['stopped'] = task_state['stopped']
             generator = self._task_infos[task_name]['tr_generator']
             for _ in itertools.islice(generator, task_state['total_batches_trained'] %
@@ -798,3 +818,7 @@ class SamplingMultiTaskTrainer:
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints)
+
+def dont_save(key):
+    ''' Filter out strings with some bad words '''
+    return 'elmo' in key or 'text_field_embedder' in key
