@@ -11,7 +11,7 @@ import logging as log
 import itertools
 
 import torch
-import torch.optim.lr_scheduler
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils.clip_grad import clip_grad_norm_
 
 from allennlp.common import Params
@@ -33,7 +33,9 @@ def build_trainer_params(args, task, max_vals, val_interval):
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
     # we want to pass to the build_train()
-    extra_opts = ['sent_enc', 'd_hid', 'cuda', 'max_grad_norm', 'min_lr', 'no_tqdm']
+    extra_opts = ['sent_enc', 'd_hid', 'warmup',
+                  'max_grad_norm', 'min_lr',
+                  'no_tqdm', 'cuda']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
@@ -75,8 +77,9 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     if 'transformer' in params['sent_enc']:
         schd_params = Params({'type': 'noam',
                               'model_size': params['d_hid'],
-                              'warmup_steps': 4000,
+                              'warmup_steps': params['warmup'],
                               'factor': 1.0})
+        log.info('\tUsing noam scheduler with warmup %d!' % params['warmup'])
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
                               'mode': 'min' if metric_should_decrease else 'max',
@@ -85,6 +88,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                               'threshold': params['scheduler_threshold'],
                               'threshold_mode': 'abs',
                               'verbose': True})
+        log.info('\tUsing ReduceLROnPlateau scheduler!')
 
     train_params = Params({'cuda_device': params['cuda'],
                            'patience': params['patience'],
@@ -319,6 +323,7 @@ class SamplingMultiTaskTrainer:
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
+            scheduler = g_scheduler if shared_optimizer else task_info['scheduler']
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
@@ -345,6 +350,11 @@ class SamplingMultiTaskTrainer:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
                 n_pass += 1  # update per batch
+
+                # step scheduler if it's not ReduceLROnPlateau
+                if not isinstance(scheduler, ReduceLROnPlateau):
+                    #scheduler.step(n_pass)
+                    scheduler.step_batch(n_pass)
 
             # Update training progress on that task
             task_info['n_batches_since_val'] = n_batches_since_val
@@ -526,18 +536,16 @@ class SamplingMultiTaskTrainer:
                 metric_infos[metric]['stopped'] = True
                 log.info("Out of patience. Stopped tracking %s", task)
 
-            if hasattr(task, 'name') and g_scheduler is None:  # might be "is not None"?
+            # Get scheduler, using global scheduler if exists and task is macro
+            # micro has no scheduler updates
+            if hasattr(task, 'name') and g_scheduler is None:
                 scheduler = task_infos[task.name]['scheduler']
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
             elif g_scheduler is not None and task == 'macro':
                 scheduler = g_scheduler
-                if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    scheduler.step(this_epoch_metric, epoch)
-                else:
-                    scheduler.step(epoch)
+            else:
+                scheduler = None
+            if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+                scheduler.step(this_epoch_metric, epoch)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
 
