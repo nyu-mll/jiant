@@ -3,6 +3,7 @@ import argparse
 import glob
 import json
 import os
+import subprocess
 import random
 import sys
 import time
@@ -64,10 +65,15 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    git_branch_name = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
-    git_sha = os.popen('git rev-parse HEAD').read().strip()
-    log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-
+    try:
+      log.info("Waiting on git info....")
+      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
+    except subprocess.TimeoutExpired:
+      git_branch_name.kill()
+      log.warn("Git info not found. Moving right along...") 
+      
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
