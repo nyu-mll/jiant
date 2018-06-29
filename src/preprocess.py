@@ -120,6 +120,7 @@ def build_tasks(args):
     2) building / loading the vocabulary
     3) building / loading the word vectors
     4) indexing each task's data
+    5) initializing lazy loaders (streaming iterators)
     '''
 
     # 1) create / load tasks
@@ -173,7 +174,7 @@ def build_tasks(args):
     else:
         word_embs = None
 
-    # 4) Index tasks using vocab, using previous preprocessing if available.
+    # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     if not os.path.isdir(preproc_dir):
         os.mkdir(preproc_dir)
@@ -183,7 +184,7 @@ def build_tasks(args):
             preproc_file_names.add(file.split("__")[0])
     for task in tasks:
         if not task.name in preproc_file_names:
-            log.info("\tIndexing task %s from scratch", task.name)
+            log.info("\tTask '%s': indexing from scratch", task.name)
             split_dict = process_task(task, token_indexer, vocab)
             # Strip token fields to save memory.
             for instances in split_dict.values():
@@ -191,15 +192,24 @@ def build_tasks(args):
                     del_field_tokens(instance)
             # Save task data to disk as record file.
             _serialize_task(task.name, split_dict, preproc_dir)
-            log.info("\tSaved data to %s", preproc_dir)
+            log.info("\tTask '%s': saved data to %s", task.name, preproc_dir)
+            # Delete in-memory data - we'll stream from disk later.
+            task.train_data = None
+            task.val_data   = None
+            task.test_data  = None
+            log.info("\tTask '%s': cleared in-memory data.", task.name)
 
+    log.info("\tFinished indexing tasks")
+
+    # 5) Initialize tasks with data iterators.
+    for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
         task.val_data =   _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data =  _get_instance_generator(task.name, "test", preproc_dir)
-        log.info("\tLoaded indexed data for task='%s' from %s", task.name, preproc_dir)
-
-    log.info("\tFinished indexing tasks")
+        log.info("\tLazy-loading indexed data for task='%s' from %s",
+                 task.name, preproc_dir)
+    log.info("All tasks initialized with data iterators.")
 
     train_tasks = [task for task in tasks if task.name in train_task_names]
     eval_tasks = [task for task in tasks if task.name in eval_task_names]
