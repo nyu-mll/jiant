@@ -218,7 +218,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        elif isinstance(task, RankingTask):
+        elif isinstance(task, GroundedTask):
             pass
         else:
             raise ValueError("Module not found for %s" % task.name)
