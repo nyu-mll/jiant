@@ -163,7 +163,7 @@ def serialize_instances_for_task(task, train_val_test_dict, preproc_dir):
         file_name = task.name + "__" + task_type
         file_path = os.path.join(preproc_dir, file_name)
         write_records(train_val_test_dict[task_type], file_path)
-        task_type_iterator = read_records(file_path)
+        task_type_iterator = read_records(file_path, repeatable=True)
         setattr(task, task_type, task_type_iterator)
 
 
@@ -171,7 +171,8 @@ def get_task_generator(task_name, preproc_dir):
     train_generator = read_records(os.path.join(preproc_dir, task_name + "__train_data"), repeatable=True)
     val_generator = read_records(os.path.join(preproc_dir, task_name + "__val_data"),
                                  repeatable=True)
-    test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"))
+    test_generator = read_records(os.path.join(preproc_dir, task_name + "__test_data"),
+                                  repeatable=True)
     return train_generator, val_generator, test_generator
 
 
@@ -369,7 +370,7 @@ def process_grounded_task_split(split, indexers, is_pair=True, classification=Tr
     ids = [NumericField(l) for l in split[2]]
     instances = [Instance({"input1": input1, "labels": label, "ids": ids}) for (input1, label, ids) in
                          zip(inputs1, labels, ids)]
-    
+
     return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
 
 

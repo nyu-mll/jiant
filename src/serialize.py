@@ -27,6 +27,7 @@ def write_records(examples, filename, flush_every=10000):
     with open(filename, 'wb') as fd:
         _serialize(examples, fd, flush_every)
 
+
 class RepeatableIterator(object):
     """Repeatable iterator class."""
 
