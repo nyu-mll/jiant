@@ -16,6 +16,7 @@ import torch
 
 import config
 import gcp
+import utils
 
 from preprocess import build_tasks
 from models import build_model
@@ -49,10 +50,9 @@ def main(cl_arguments):
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
-    if not os.path.isdir(args.exp_dir):
-        os.mkdir(args.exp_dir)
-    if not os.path.isdir(args.run_dir):
-        os.mkdir(args.run_dir)
+    utils.maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
+    utils.maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
+    utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
     if cl_args.remote_log:

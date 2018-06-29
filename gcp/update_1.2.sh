@@ -14,13 +14,15 @@ sudo apt-get -y install nfs-common autofs
 sudo cp -f $(dirname $0)/config/auto.master /etc
 sudo cp $(dirname $0)/config/auto.nfs /etc
 # Reload autofs daemon and check mount
-sudo /etc/init.d/autofs reload
+sudo /etc/init.d/autofs restart
 echo "Checking NFS mount at /nfs/jsalt. You should see files:"
-ls /nfs/jsalt
+ls -l /nfs/jsalt
+echo ""
 
 # Copy updated paths file to /etc/profile.d
-sudo cp $(dirname $0)/jsalt_paths.sh /etc/profile.d/
+sudo cp $(dirname $0)/config/jsalt_paths.sh /etc/profile.d/
 
+set +x
 echo 'Updated! Be sure to re-start shells or type:'
 echo '  source /etc/profile.d/jsalt_paths.sh'
 echo 'to set updated environment variables in each shell you have open.'
