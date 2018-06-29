@@ -2,6 +2,7 @@
 Assorted utilities for working with neural networks in AllenNLP.
 """
 
+import os
 import pdb
 from typing import Dict, List, Optional, Union
 import random
@@ -32,6 +33,10 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+def maybe_make_dir(dirname):
+    """Make a directory if it doesn't exist."""
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence '''
