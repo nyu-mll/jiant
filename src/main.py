@@ -85,6 +85,11 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
+    assert_for_log(not (len(train_tasks) > 1 and \
+        any(train_task.val_metric_decreases for train_task in train_tasks)),
+        "Attempting multitask training with a mix of increasing and decreasing metrics. "
+        "This is not currently supported. (We haven't set it up yet.)")
+
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
 
