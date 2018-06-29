@@ -20,7 +20,7 @@ ls -l /nfs/jsalt
 echo ""
 
 # Copy updated paths file to /etc/profile.d
-sudo cp $(dirname $0)/config/jsalt_paths.sh /etc/profile.d/
+sudo cp -f $(dirname $0)/config/jsalt_paths.1.2.sh /etc/profile.d/jsalt_paths.sh
 
 set +x
 echo 'Updated! Be sure to re-start shells or type:'
