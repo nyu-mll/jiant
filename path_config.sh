@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# DO NOT COMMIT CHANGES TO THIS FILE! Make a local copy and follow the
+# instructions below.
+
 # Copy this to /etc/profile.d/ to auto-set environment vars on login.
 # Or, customize this and run immediately before the training binary:
 # source ../path_config.sh; python main.py --config ../config/demo.conf \
@@ -8,7 +11,7 @@
 # Default environment variables for JSALT code. May be overwritten by user.
 # See https://github.com/jsalt18-sentence-repl/jiant for more.
 
-export JSALT_SHARE_DIR="/media/jan/DATA/Projects/Research/Paul/DATA_FOR_JSALT"
+export JSALT_SHARE_DIR="/usr/share/jsalt"
 export JIANT_DATA_DIR="$JSALT_SHARE_DIR/glue_data"
 
 # Default experiment directory
