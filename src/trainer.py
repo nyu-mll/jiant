@@ -352,7 +352,7 @@ class SamplingMultiTaskTrainer:
                 n_pass += 1  # update per batch
 
                 # step scheduler if it's not ReduceLROnPlateau
-                if not isinstance(scheduler, ReduceLROnPlateau):
+                if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                     #scheduler.step(n_pass)
                     scheduler.step_batch(n_pass)
 
@@ -544,7 +544,7 @@ class SamplingMultiTaskTrainer:
                 scheduler = g_scheduler
             else:
                 scheduler = None
-            if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+            if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 scheduler.step(this_epoch_metric, epoch)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
