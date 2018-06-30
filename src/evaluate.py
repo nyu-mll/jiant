@@ -137,12 +137,10 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     skip_task_models: If set, load only the task-independent parameters.
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
-    print(model_state)
     if skip_task_models:
         keys_to_skip = [key for key in model_state if "_mdl" in key]
         for key in keys_to_skip:
             del model_state[key]
-    print(model_state)
 
     model.load_state_dict(model_state, strict=False)
     log.info("Loaded model state from %s", state_path)
