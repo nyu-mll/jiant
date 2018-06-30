@@ -7,7 +7,6 @@ import subprocess
 import random
 import sys
 import time
-import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',

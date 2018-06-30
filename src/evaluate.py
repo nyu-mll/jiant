@@ -47,7 +47,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                 try:
                     preds, _ = out['logits'].max(dim=1)
                 except BaseException:
-                    pdb.set_trace()
+                    pass
             else:
                 _, preds = out['logits'].max(dim=1)
             task_preds += preds.data.tolist()

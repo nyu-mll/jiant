@@ -1,5 +1,4 @@
 """ Trainer """
-import ipdb as pdb
 import os
 import re
 import math
@@ -485,7 +484,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches, pdb.set_trace()
+            assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)

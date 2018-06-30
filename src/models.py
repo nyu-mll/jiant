@@ -1,7 +1,6 @@
 '''Core model and functions for building it.'''
 import sys, math
 import copy
-import ipdb as pdb
 import logging as log
 import os
 
