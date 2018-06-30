@@ -177,7 +177,7 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda, args.skip_task_models)
+            load_model_state(model, layer_path, args.cuda, skip_task_models=False)
 
     if args.do_eval:
         # Evaluate #
