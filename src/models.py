@@ -67,6 +67,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     if sum([isinstance(task, LanguageModelingTask) for task in tasks]):
         if args.bidirectional:
+            rnn_params['bidirectional'] = False
             if args.sent_enc == 'rnn':
                 fwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
                 bwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
@@ -100,9 +101,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-
+    
     d_sent += args.skip_embs * d_emb
-
+    
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
@@ -439,9 +440,9 @@ class MultiTaskModel(nn.Module):
     def _lm_forward(self, batch, task):
         ''' For language modeling? '''
         out = {}
-        b_size, seq_len = batch['input']['words'].size()
+        b_size, seq_len = batch['targs']['words'].size()    
         sent_encoder = self.sent_encoder
-
+        
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
