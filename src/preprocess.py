@@ -274,9 +274,14 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         tasks.append(task)
 
     for task in tasks: # hacky
-        task.n_tr_examples  = len(task.train_data_text[0])
-        task.n_val_examples = len(task.val_data_text[0])
-        task.n_te_examples  = len(task.test_data_text[0])
+        if isinstance(task, LanguageModelingTask): # should be true to seq task?
+            task.n_tr_examples  = len(task.train_data_text)
+            task.n_val_examples = len(task.val_data_text)
+            task.n_te_examples  = len(task.test_data_text)
+        else:
+            task.n_tr_examples  = len(task.train_data_text[0])
+            task.n_val_examples = len(task.val_data_text[0])
+            task.n_te_examples  = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
