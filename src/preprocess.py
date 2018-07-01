@@ -474,13 +474,18 @@ def process_lm_task_split(split, indexers):
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
                for sent in split]
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=indexers)
+    if "chars" not in indexers:
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+    else:
+        targs_indexers = indexers
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
                for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
     return instances
 
 def process_mt_task_split(split, indexers):
