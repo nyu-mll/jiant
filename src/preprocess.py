@@ -1,9 +1,10 @@
 '''Preprocessing functions and pipeline
 
-To add new tasks, add task-specific preprocessing functions to process_task()'''
+To add new tasks, add task-specific preprocessing functions to
+process_task_split()'''
 import io
 import os
-import ipdb as pdb
+import copy
 import logging as log
 from collections import defaultdict
 import numpy as np
@@ -35,7 +36,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask
+    GroundedTask, MTTask, BWBLMTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -58,7 +59,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
+             'bwb': (BWBLMTask, 'BWB/'), 
              'pdtb': (PDTBTask, 'PDTB/'),
+             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
@@ -68,6 +71,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
+
+ALL_SPLITS = ['train', 'val', 'test']
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
@@ -87,19 +92,28 @@ def _get_instance_generator(task_name, split, preproc_dir):
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
+    assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
     return serialize.read_records(filename, repeatable=True)
 
-def _serialize_task(task_name, split_dict, preproc_dir):
-    """Serialize splits for the given task.
+def _indexed_instance_generator(instance_list, vocab):
+    """Yield indexed copies of the given instances.
+
+    TODO(iftenney): multiprocess the $%^& out of this.
 
     Args:
-        task_name: (string), task name
-        split_dict: dict(string -> list(Instance))
-        preproc_dir: (string) path to preprocessing dir
+        instance_list: list(Instance) of examples
+        vocab: Vocabulary for use in indexing
+
+    Yields:
+        Instance with indexed fields.
     """
-    for split in split_dict:
-        filename = _get_serialized_record_path(task_name, split, preproc_dir)
-        serialize.write_records(split_dict[split], filename)
+    for orig_instance in instance_list:
+        instance = copy.deepcopy(orig_instance)
+        instance.index_fields(vocab)
+        # Strip token fields to save memory and disk.
+        del_field_tokens(instance)
+        yield instance
+
 
 def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
@@ -182,20 +196,23 @@ def build_tasks(args):
     if not args.reload_vocab and not args.reload_indexing:
         for file in os.listdir(preproc_dir):
             preproc_file_names.add(file.split("__")[0])
+
     for task in tasks:
         if not task.name in preproc_file_names:
             log.info("\tTask '%s': indexing from scratch", task.name)
-            split_dict = process_task(task, token_indexer)
-            # Index all instances.
-            for instance_list in split_dict.values():
-                for instance in instance_list:
-                    instance.index_fields(vocab)
-                    # Strip token fields to save memory.
-                    del_field_tokens(instance)
-            # Save task data to disk as record file.
-            _serialize_task(task.name, split_dict, preproc_dir)
-            log.info("\tTask '%s': saved data to %s", task.name, preproc_dir)
-            # Delete in-memory data - we'll stream from disk later.
+            # Index instances and stream to disk.
+            for split in ALL_SPLITS:
+                log.info("\tTask '%s', split '%s': processing to tokens",
+                         task.name, split)
+                instance_list = process_task_split(task, split, token_indexer)
+                log.info("\tTask '%s', split '%s': %d examples to index",
+                         task.name, split, len(instance_list))
+                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+                serialize.write_records(
+                    _indexed_instance_generator(instance_list, vocab), record_file)
+                log.info("\tTask '%s': saved split '%s' to %s",
+                         task.name, split, record_file)
+            # Delete in-memory data - we'll lazy-load from disk later.
             task.train_data = None
             task.val_data   = None
             task.test_data  = None
@@ -258,9 +275,14 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         tasks.append(task)
 
     for task in tasks: # hacky
-        task.n_tr_examples  = len(task.train_data_text[0])
-        task.n_val_examples = len(task.val_data_text[0])
-        task.n_te_examples  = len(task.test_data_text[0])
+        if isinstance(task, LanguageModelingTask): # should be true to seq task?
+            task.n_tr_examples  = len(task.train_data_text)
+            task.n_val_examples = len(task.val_data_text)
+            task.n_te_examples  = len(task.test_data_text)
+        else:
+            task.n_tr_examples  = len(task.train_data_text[0])
+            task.n_val_examples = len(task.val_data_text[0])
+            task.n_te_examples  = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -345,39 +367,48 @@ def get_fastText_model(vocab, d_word, model_file=None):
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
 
-
-def process_task(task, token_indexer):
+def process_task_split(task, split, token_indexer):
     '''
-    Convert a task's splits into AllenNLP fields then index the splits using vocab.
+    Convert a task split into AllenNLP fields.
     Different tasks have different formats and fields, so process_task routes tasks
     to the corresponding processing based on the task type. These task specific processing
     functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
+
+    Args:
+        task: Task object
+        split: (string) split name
+        token_indexer: token indexer
+
+    Returns:
+        list(Instance) of AllenNLP instances, not indexed.
     '''
-    split_dict = {}
-    for split_name in ['train', 'val', 'test']:
-        split_text = getattr(task, '%s_data_text' % split_name)
-        if isinstance(task, SingleClassificationTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=False)
-        elif isinstance(task, PairClassificationTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True)
-        elif isinstance(task, PairRegressionTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
-                                                   classification=False)
-        elif isinstance(task, PairOrdinalRegressionTask):
-            split = process_single_pair_task_split(split_text, token_indexer, is_pair=True,
-                                                   classification=False)
-        elif isinstance(task, LanguageModelingTask):
-            split = process_lm_task_split(split_text, token_indexer)
-        elif isinstance(task, SequenceGenerationTask):
-            pass
-        elif isinstance(task, GroundedTask):
-            split = process_grounded_task_split(split_text, token_indexer, is_pair=False, classification=True)
-        elif isinstance(task, RankingTask):
-            pass
-        else:
-            raise ValueError("Preprocessing procedure not found for %s" % task.name)
-        split_dict[split_name] = split
-    return split_dict
+    split_text = getattr(task, '%s_data_text' % split)
+    if isinstance(task, SingleClassificationTask):
+        instances = process_single_pair_task_split(split_text,
+                                                   token_indexer, is_pair=False)
+    elif isinstance(task, PairClassificationTask):
+        instances = process_single_pair_task_split(split_text,
+                                                   token_indexer, is_pair=True)
+    elif isinstance(task, PairRegressionTask):
+        instances = process_single_pair_task_split(split_text, token_indexer,
+                                                   is_pair=True, classification=False)
+    elif isinstance(task, PairOrdinalRegressionTask):
+        instances = process_single_pair_task_split(split_text, token_indexer,
+                                                   is_pair=True, classification=False)
+    elif isinstance(task, LanguageModelingTask):
+        instances = process_lm_task_split(split_text, token_indexer)
+    elif isinstance(task, MTTask):
+        instances = process_mt_task_split(split_text, token_indexer)
+    elif isinstance(task, SequenceGenerationTask):
+        pass
+    elif isinstance(task, GroundedTask):
+        instances = process_grounded_task_split(split_text, token_indexer,
+                                                is_pair=False, classification=True)
+    elif isinstance(task, RankingTask):
+        pass
+    else:
+        raise ValueError("Preprocessing procedure not found for %s" % task.name)
+    return instances
 
 def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
     '''
@@ -449,11 +480,23 @@ def process_lm_task_split(split, indexers):
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
                for sent in split]
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=indexers)
+    if "chars" not in indexers:
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+    else:
+        targs_indexers = indexers
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
                for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
+    return instances
+
+def process_mt_task_split(split, indexers):
+    ''' Process a machine translation split '''
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
     return instances

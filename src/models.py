@@ -1,7 +1,6 @@
 '''Core model and functions for building it.'''
-import sys
+import sys, math
 import copy
-import ipdb as pdb
 import logging as log
 import os
 
@@ -29,12 +28,13 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask
+    GroundedTask, MTTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
 from utils import assert_for_log
+from seq2seq_decoder import Seq2SeqDecoder
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -67,6 +67,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     if sum([isinstance(task, LanguageModelingTask) for task in tasks]):
         if args.bidirectional:
+            rnn_params['bidirectional'] = False
             if args.sent_enc == 'rnn':
                 fwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
                 bwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
@@ -100,9 +101,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-
+    
     d_sent += args.skip_embs * d_emb
-
+    
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
@@ -214,11 +215,21 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, MTTask):
+            decoder = Seq2SeqDecoder.from_params(vocab,
+                Params({'input_dim': d_sent,
+                        'target_embedding_dim': 300,
+                        'max_decoding_steps': 200,
+                        'target_namespace': 'tokens',
+                        'attention': 'bilinear',
+                        'dropout': args.dropout,
+                        'scheduled_sampling_ratio': 0.0}))
+            setattr(model, '%s_decoder' % task.name, decoder)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        elif isinstance(task, RankingTask):
+        elif isinstance(task, GroundedTask):
             pass
         else:
             raise ValueError("Module not found for %s" % task.name)
@@ -416,6 +427,12 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
 
+        if isinstance(task, MTTask):
+            decoder = getattr(self, "%s_decoder" % task.name)
+            out = decoder.forward(sent, sent_mask, batch['targs'])
+            task.scorer1(math.exp(out['loss'].item()))
+            return out
+
         if 'targs' in batch:
             pass
         return out
@@ -423,9 +440,9 @@ class MultiTaskModel(nn.Module):
     def _lm_forward(self, batch, task):
         ''' For language modeling? '''
         out = {}
-        b_size, seq_len = batch['input']['words'].size()
+        b_size, seq_len = batch['targs']['words'].size()    
         sent_encoder = self.sent_encoder
-
+        
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -456,18 +473,21 @@ class MultiTaskModel(nn.Module):
         out = {}; d_1, d_2 = 1024, 2048;
 
         # embed the sentence, embed the image, map and classify
-        sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        sent_emb = combine_hidden_states(sent_embs, sent_mask, self.combine_method)
-        image_map = nn.Linear(d_1, d_2); sent_transform = image_map(sent_emb)
-        ids = batch['ids'].squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
-        
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
+        ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
+        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
+    
         seq, true = [], []
         for i in range(len(ids)):
             img_id, label = ids[i], labels[i]
             init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
             seq.append(torch.tensor(init_emb, dtype=torch.float)); true.append(label)
         img_emb = torch.stack(seq, dim=0);
+
+        batch_size = len(labels)
+        sent_transform = sent_transform.view(batch_size, -1)
+        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda(); sent_transform = image_map(sent_transform)
         '''
         cos = nn.SmoothL1Loss()        
         cos = nn.MSELoss()        
@@ -477,9 +497,10 @@ class MultiTaskModel(nn.Module):
         cos = nn.CosineEmbeddingLoss(); flags = Variable(torch.ones(len(labels)))
         out['loss'] = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float), flags)
         cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        
+        sim = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float))
         classifier = nn.Linear(len(labels), len(labels))
-        out['logits'] = classifier(sim)
+        logits = classifier(sim)
+        out['logits'] = logits
 
         preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
         acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]

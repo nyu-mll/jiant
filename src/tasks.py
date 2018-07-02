@@ -8,7 +8,6 @@
 import os
 import math
 import logging as log
-# import ipdb as pdb
 import json
 import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
@@ -218,6 +217,11 @@ class WikiText103LMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
 
+class BWBLMTask(WikiTextLMTask):
+    ''' Language modeling task on Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="bwb"):
+        super().__init__(path, max_seq_len, name)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -685,6 +689,35 @@ class PDTBTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
 
+class MTTask(SequenceGenerationTask):
+    '''Machine Translation Task'''
+    def __init__(self, path, max_seq_len, name='MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                         self.train_data_text[2] + self.val_data_text[2]
+
+
+    def load_data(self, path, max_seq_len):
+        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))
+        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+                                      s1_idx=0, s2_idx=None, targ_idx=1,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
+                                       s1_idx=0, s2_idx=None, targ_idx=1,
+                                       targ_fn=lambda t: t.split(' '))
+        log.info("\tFinished loading MT data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''

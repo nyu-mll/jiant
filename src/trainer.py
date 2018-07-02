@@ -1,5 +1,4 @@
 """ Trainer """
-import ipdb as pdb
 import os
 import re
 import math
@@ -180,8 +179,8 @@ class SamplingMultiTaskTrainer:
         if self._cuda_device >= 0:
             self._model = self._model.cuda(self._cuda_device)
         if serialization_dir is not None:
-            self._tensorboard_train_log = SummaryWriter(os.path.join(serialization_dir, "log_TB/r5", "train"))
-            self._tensorboard_validation_log = SummaryWriter(os.path.join(serialization_dir, "log_TB/r5", "validation"))
+            self._tensorboard_train_log = SummaryWriter(os.path.join(serialization_dir, "log_TB", "train"))
+            self._tensorboard_validation_log = SummaryWriter(os.path.join(serialization_dir, "log_TB", "validation"))
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
@@ -198,11 +197,12 @@ class SamplingMultiTaskTrainer:
             best_so_far = False
 
         out_of_patience = False
-        if len(metric_history) > patience:
-            if should_decrease:
-                out_of_patience = max(metric_history[-patience:]) <= cur_score
-            else:
-                out_of_patience = min(metric_history[-patience:]) >= cur_score
+        if should_decrease:
+            index_of_last_improvement = metric_history.index(min(metric_history))
+            out_of_patience = index_of_last_improvement <= len(metric_history) - (patience + 1)
+        else:
+            index_of_last_improvement = metric_history.index(max(metric_history))
+            out_of_patience = index_of_last_improvement <= len(metric_history) - (patience + 1)
 
         return best_so_far, out_of_patience
 
@@ -298,8 +298,8 @@ class SamplingMultiTaskTrainer:
                     self._serialization_dir, "*_{}_*.th".format(phase))
                 assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
                                "There are existing checkpoints here which will be overwritten. "
-                               "Use -m or LOAD_MODEL to load the checkpoints instead. "
-                               "If you don't want them, delete them or change your experimnent name.")
+                               "Use load_model = 1 to load the checkpoints instead. "
+                               "If you don't want them, delete them or change your experiment name.")
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -356,7 +356,7 @@ class SamplingMultiTaskTrainer:
                 n_pass += 1  # update per batch
 
                 # step scheduler if it's not ReduceLROnPlateau
-                if not isinstance(scheduler, ReduceLROnPlateau):
+                if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                     #scheduler.step(n_pass)
                     scheduler.step_batch(n_pass)
 
@@ -501,7 +501,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += batch['labels'].size()[0]
                 elif 'targs' in batch:
                     n_examples += batch['targs']['words'].nelement()
-            assert batch_num == n_val_batches, pdb.set_trace()
+            assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
             task_metrics = task.get_metrics(reset=True)
@@ -561,7 +561,7 @@ class SamplingMultiTaskTrainer:
                 scheduler = g_scheduler
             else:
                 scheduler = None
-            if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+            if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 scheduler.step(this_epoch_metric, epoch)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
@@ -668,13 +668,9 @@ class SamplingMultiTaskTrainer:
 
         # Don't save embeddings here.
         # TODO: There has to be a prettier way to do this.
-        keys_to_skip = []
-        for key in model_state:
-            if 'token_embedder_words' in key:
-                keys_to_skip.append(key)
+        keys_to_skip = [key for key in model_state if dont_save(key)]
         for key in keys_to_skip:
             del model_state[key]
-
         torch.save(model_state, model_path)
 
         if phase != "eval":
@@ -690,11 +686,12 @@ class SamplingMultiTaskTrainer:
                 task_states[task_name] = {}
                 task_states[task_name]['total_batches_trained'] = task_info['total_batches_trained']
                 task_states[task_name]['stopped'] = task_info['stopped']
-                task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-                sched = task_info['scheduler']
-                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                #'cooldown_counter': sched.cooldown_counter}
-                task_states[task_name]['scheduler'] = sched_params
+                if self._g_optimizer is None:
+                    task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
+                    sched = task_info['scheduler']
+                    sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
+                    #'cooldown_counter': sched.cooldown_counter}
+                    task_states[task_name]['scheduler'] = sched_params
             task_states['global'] = {}
             task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
@@ -791,9 +788,10 @@ class SamplingMultiTaskTrainer:
             if task_name == 'global':
                 continue
             self._task_infos[task_name]['total_batches_trained'] = task_state['total_batches_trained']
-            self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
-            for param, val in task_state['scheduler'].items():
-                setattr(self._task_infos[task_name]['scheduler'], param, val)
+            if 'optimizer' in task_state:
+                self._task_infos[task_name]['optimizer'].load_state_dict(task_state['optimizer'])
+                for param, val in task_state['scheduler'].items():
+                    setattr(self._task_infos[task_name]['scheduler'], param, val)
             self._task_infos[task_name]['stopped'] = task_state['stopped']
             generator = self._task_infos[task_name]['tr_generator']
             for _ in itertools.islice(generator, task_state['total_batches_trained'] %
@@ -865,3 +863,7 @@ class SamplingMultiTaskTrainer:
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints)
+
+def dont_save(key):
+    ''' Filter out strings with some bad words '''
+    return 'elmo' in key or 'text_field_embedder' in key
