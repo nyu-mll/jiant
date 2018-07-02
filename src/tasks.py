@@ -217,6 +217,11 @@ class WikiText103LMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
 
+class BWBLMTask(WikiTextLMTask):
+    ''' Language modeling task on Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="bwb"):
+        super().__init__(path, max_seq_len, name)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
