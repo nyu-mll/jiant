@@ -21,10 +21,12 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 
+
 class Seq2SeqDecoder(Model):
     """
     This is a slightly modified version of AllenNLP SimpleSeq2Seq class
     """
+
     def __init__(self,
                  vocab: Vocabulary,
                  input_dim: int,
@@ -47,7 +49,7 @@ class Seq2SeqDecoder(Model):
         # hidden state of the decoder with that of the final hidden states of the encoder. Also, if
         # we're using attention with ``DotProductSimilarity``, this is needed.
         self._decoder_output_dim = input_dim
-        #target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
+        # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
         self._target_embedder = Embedding(num_classes, target_embedding_dim)
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(input_dim, input_dim)
@@ -63,8 +65,8 @@ class Seq2SeqDecoder(Model):
 
     @overrides
     def forward(self,  # type: ignore
-                encoder_outputs, # type: ignore
-                source_mask, # type: ignore
+                encoder_outputs,  # type: ignore
+                source_mask,  # type: ignore
                 target_tokens: Dict[str, torch.LongTensor] = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
@@ -83,8 +85,8 @@ class Seq2SeqDecoder(Model):
         batch_size, _, _ = encoder_outputs.size()
         #source_mask = get_text_field_mask(source_tokens)
         #encoder_outputs = self._encoder(embedded_input, source_mask)
-        #final_encoder_output = encoder_outputs[:, -1]  # (batch_size, encoder_output_dim)
-        if target_tokens != None:
+        # final_encoder_output = encoder_outputs[:, -1]  # (batch_size, encoder_output_dim)
+        if target_tokens is not None:
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             # The last input from the target is either padding or the end symbol. Either way, we
@@ -102,14 +104,15 @@ class Seq2SeqDecoder(Model):
         encoder_outputs.data.masked_fill_(1 - source_mask.byte().data, 0.0)
         for timestep in range(num_decoding_steps):
             # Fixme
-            #if self.training and torch.rand(1).item() >= self._scheduled_sampling_ratio:
+            # if self.training and torch.rand(1).item() >= self._scheduled_sampling_ratio:
             if torch.rand(1).item() >= self._scheduled_sampling_ratio:
                 input_choices = targets[:, timestep]
             else:
                 if timestep == 0:
                     # For the first timestep, when we do not have targets, we input start symbols.
                     # (batch_size,)
-                    input_choices = source_mask.new_full((batch_size,), fill_value=self._start_index)
+                    input_choices = source_mask.new_full(
+                        (batch_size,), fill_value=self._start_index)
                 else:
                     input_choices = last_predictions
             decoder_input = self._prepare_decode_step_input(input_choices, decoder_hidden,
@@ -122,10 +125,10 @@ class Seq2SeqDecoder(Model):
             step_logits.append(output_projections.unsqueeze(1))
             #class_probabilities = F.softmax(output_projections, dim=-1)
             #_, predicted_classes = torch.max(class_probabilities, 1)
-            #step_probabilities.append(class_probabilities.unsqueeze(1))
+            # step_probabilities.append(class_probabilities.unsqueeze(1))
             #last_predictions = predicted_classes
             # (batch_size, 1)
-            #step_predictions.append(last_predictions.unsqueeze(1))
+            # step_predictions.append(last_predictions.unsqueeze(1))
         # step_logits is a list containing tensors of shape (batch_size, 1, num_classes)
         # This is (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
@@ -141,11 +144,12 @@ class Seq2SeqDecoder(Model):
             # TODO: Define metrics
         return output_dict
 
-    def _prepare_decode_step_input(self,
-                                   input_indices: torch.LongTensor,
-                                   decoder_hidden_state: torch.LongTensor = None,
-                                   encoder_outputs: torch.LongTensor = None,
-                                   encoder_outputs_mask: torch.LongTensor = None) -> torch.LongTensor:
+    def _prepare_decode_step_input(
+            self,
+            input_indices: torch.LongTensor,
+            decoder_hidden_state: torch.LongTensor = None,
+            encoder_outputs: torch.LongTensor = None,
+            encoder_outputs_mask: torch.LongTensor = None) -> torch.LongTensor:
         """
         Given the input indices for the current timestep of the decoder, and all the encoder
         outputs, compute the input at the current timestep.  Note: This method is agnostic to
@@ -181,7 +185,8 @@ class Seq2SeqDecoder(Model):
             encoder_outputs_mask = encoder_outputs_mask.float()
             encoder_outputs_mask = encoder_outputs_mask[:, :, 0]
             # (batch_size, input_sequence_length)
-            input_weights = self._decoder_attention(decoder_hidden_state, encoder_outputs, encoder_outputs_mask)
+            input_weights = self._decoder_attention(
+                decoder_hidden_state, encoder_outputs, encoder_outputs_mask)
             # (batch_size, encoder_output_dim)
             attended_input = weighted_sum(encoder_outputs, input_weights)
             # (batch_size, encoder_output_dim + target_embedding_dim)
@@ -256,9 +261,9 @@ class Seq2SeqDecoder(Model):
         # default similarity function.
         attention = params.pop("attention", "none")
         #attention_function_type = params.pop("attention_function", None)
-        #if attention_function_type is not None:
+        # if attention_function_type is not None:
         #    attention_function = SimilarityFunction.from_params(attention_function_type)
-        #else:
+        # else:
         #    attention_function = None
         dropout = params.pop_float("dropout", 0.0)
         scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
