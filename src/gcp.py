@@ -1,5 +1,6 @@
 # Helpers for accessing GCP services
 
+import os
 import logging as log  # python standard logging
 
 
@@ -15,6 +16,11 @@ def get_instance_id():
 
 
 def configure_remote_logging(log_name):
+    # Avoid deadlock situation with subprocess. See:
+    # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4992
+    # and https://github.com/grpc/grpc/issues/14056#issuecomment-370962039
+    os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "0"
+
     # Set up cloud logging
     from google.cloud import logging as cloud_logging
     from google.cloud.logging.handlers import CloudLoggingHandler
