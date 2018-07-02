@@ -65,8 +65,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
-             'weakgrounded': (WeakGroundedTask, 'mscoco-temp/weakgrounded/'),
-             'grounded': (GroundedTask, 'mscoco-temp/grounded/'),
+             'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
+             'grounded': (GroundedTask, 'mscoco/grounded/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
