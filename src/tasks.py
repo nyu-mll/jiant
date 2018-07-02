@@ -840,12 +840,6 @@ class GroundedTask(Task):
             self.val_data_text[0]
         self.ids = self.train_data_text[1] + \
             self.val_data_text[1]
-
-<<<<<<< HEAD
-=======
-        print('self.ids!')
-        print(self.ids)
->>>>>>> df1cc15fe1d4aaa2fbd7395ffe85302ed7351db3
         self.path = path
         self.img_encoder = None
         #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
