@@ -29,7 +29,7 @@ class Seq2SeqDecoder(Model):
                  vocab: Vocabulary,
                  input_dim: int,
                  max_decoding_steps: int,
-                 target_namespace: str = "tokens",
+                 target_namespace: str = "targets",
                  target_embedding_dim: int = None,
                  attention: str = "none",
                  dropout: float = 0.0,
@@ -42,7 +42,7 @@ class Seq2SeqDecoder(Model):
         # end symbol as a way to indicate the end of the decoded sequence.
         self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
         self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
-        num_classes = self.vocab.get_vocab_size('tokens')
+        num_classes = self.vocab.get_vocab_size('targets')
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
         # hidden state of the decoder with that of the final hidden states of the encoder. Also, if
         # we're using attention with ``DotProductSimilarity``, this is needed.
@@ -250,7 +250,7 @@ class Seq2SeqDecoder(Model):
     def from_params(cls, vocab, params: Params) -> 'SimpleSeq2Seq':
         input_dim = params.pop("input_dim")
         max_decoding_steps = params.pop("max_decoding_steps")
-        target_namespace = params.pop("target_namespace", "tokens")
+        target_namespace = params.pop("target_namespace", "targets")
         target_embedding_dim = params.pop("target_embedding_dim")
         # If no attention function is specified, we should not use attention, not attention with
         # default similarity function.

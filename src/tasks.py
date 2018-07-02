@@ -694,9 +694,8 @@ class MTTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
-                         self.train_data_text[2] + self.val_data_text[2]
-
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
 
     def load_data(self, path, max_seq_len):
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,

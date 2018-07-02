@@ -424,7 +424,7 @@ class MultiTaskModel(nn.Module):
     def _seq_gen_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        b_size, seq_len = batch['inputs']['words'].size()
+        #b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
 
         if isinstance(task, MTTask):
