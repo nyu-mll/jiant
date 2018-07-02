@@ -1,4 +1,3 @@
-import ipdb as pdb
 import numpy as np
 from overrides import overrides
 from allennlp.training.metrics.metric import Metric
