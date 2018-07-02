@@ -29,7 +29,6 @@ import _pickle as pkl
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
 
-
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
@@ -40,6 +39,12 @@ def handle_arguments(cl_arguments):
 
     parser.add_argument('--remote_log', '-r', action="store_true",
                         help="If true, enable remote logging on GCP.")
+
+    parser.add_argument('--tensorboard', '-t', action="store_true",
+                        help="If true, will run Tensorboard server in a "
+                        "subprocess, serving on the port given by "
+                        "--tensorboard_port.")
+    parser.add_argument('--tensorboard_port', type=int, default=6006)
 
     return parser.parse_args(cl_arguments)
 
@@ -58,6 +63,19 @@ def _try_logging_git_info():
         log.exception(e)
         log.warn("Git info not found. Moving right along...")
 
+def _run_background_tensorboard(logdir, port):
+    """Run a TensorBoard server in the background."""
+    import atexit
+    tb_args = ["tensorboard", "--logdir", logdir,
+               "--port", str(port)]
+    log.info("Starting TensorBoard server on port %d ...", port)
+    tb_process = subprocess.Popen(tb_args)
+    log.info("TensorBoard process: %d", tb_process.pid)
+
+    def _kill_tb_child():
+        log.info("Shutting down TensorBoard server on port %d ...", port)
+        tb_process.terminate()
+    atexit.register(_kill_tb_child)
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -139,6 +157,11 @@ def main(cl_arguments):
                        "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
+    # Start Tensorboard if requested
+    if cl_args.tensorboard:
+        tb_logdir = os.path.join(args.run_dir, "tensorboard")
+        _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
+
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
     if args.do_train:
         # Train on train tasks #
@@ -198,6 +221,7 @@ def main(cl_arguments):
 
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
+
 
     log.info("Done!")
 
