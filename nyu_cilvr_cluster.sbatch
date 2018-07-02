@@ -11,8 +11,7 @@
 echo $SLURM_JOBID - `hostname` - $JIANT_FLAGS >> ~/jiant_machine_assignments.txt
 
 # Run.
+conda activate jiant
 cd ~/jiant/src
 source ../user_config.sh
 python main.py --overrides "project_dir = $JIANT_PROJECT_PREFIX, $JIANT_OVERRIDES"
-
-wait 
