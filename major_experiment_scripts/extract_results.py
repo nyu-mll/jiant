@@ -4,7 +4,7 @@ import datetime
 
 
 if len(sys.argv) < 2:
-  print "Usage: python extract_results.py log.log"
+  print("Usage: python extract_results.py log.log")
   exit(0)
 
 col_order = ['date', 'train_task', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1']
