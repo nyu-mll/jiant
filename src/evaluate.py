@@ -127,7 +127,7 @@ def write_results(results, results_file, run_name):
 
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False):
-    ''' Helper function to load a model state 
+    ''' Helper function to load a model state
 
     Parameters
     ----------

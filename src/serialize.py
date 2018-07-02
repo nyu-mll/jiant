@@ -7,6 +7,7 @@
 import _pickle as pkl
 import base64
 
+
 def _serialize(examples, fd, flush_every):
     for i, example in enumerate(examples):
         blob = pkl.dumps(example)
@@ -15,6 +16,7 @@ def _serialize(examples, fd, flush_every):
         fd.write(b"\n")
         if (i + 1) % flush_every == 0 and hasattr(fd, 'flush'):
             fd.flush()
+
 
 def write_records(examples, filename, flush_every=10000):
     """Streaming read records from file.

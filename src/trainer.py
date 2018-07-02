@@ -352,7 +352,7 @@ class SamplingMultiTaskTrainer:
 
                 # step scheduler if it's not ReduceLROnPlateau
                 if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                    #scheduler.step(n_pass)
+                    # scheduler.step(n_pass)
                     scheduler.step_batch(n_pass)
 
             # Update training progress on that task
@@ -462,7 +462,13 @@ class SamplingMultiTaskTrainer:
             task_info = task_infos[task.name]
             # TODO: Make this an explicit parameter rather than hard-coding.
             max_data_points = min(task.n_val_examples, 5000)
-            val_generator = BasicIterator(iterator._batch_size, instances_per_epoch = max_data_points)(task.val_data, num_epochs=1, shuffle=False, cuda_device=self._cuda_device)
+            val_generator = BasicIterator(
+                iterator._batch_size,
+                instances_per_epoch=max_data_points)(
+                task.val_data,
+                num_epochs=1,
+                shuffle=False,
+                cuda_device=self._cuda_device)
             n_val_batches = math.ceil(max_data_points / iterator._batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
@@ -491,7 +497,7 @@ class SamplingMultiTaskTrainer:
             task_metrics = task.get_metrics(reset=True)
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= batch_num # n_val_batches
+            all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
             all_val_metrics["micro_avg"] += \
                 all_val_metrics[task.val_metric] * n_examples
             all_val_metrics["macro_avg"] += \
@@ -558,7 +564,6 @@ class SamplingMultiTaskTrainer:
             for task, task_info in self._task_infos.items():
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
-
 
     def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
         ''' Check to see if should stop '''
@@ -819,6 +824,7 @@ class SamplingMultiTaskTrainer:
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints)
+
 
 def dont_save(key):
     ''' Filter out strings with some bad words '''
