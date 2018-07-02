@@ -43,6 +43,7 @@ from cnns.alexnet import alexnet
 from cnns.resnet import resnet101
 from cnns.inception import inception_v3
 
+
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
 
@@ -781,6 +782,7 @@ class ElmoCharacterEncoder(torch.nn.Module):
             self._projection.weight.requires_grad = self.requires_grad
             self._projection.bias.requires_grad = self.requires_grad
 
+
 class CNNEncoder(Model):
     ''' Given an image, get image features from last layer of specified CNN '''
 
@@ -791,7 +793,7 @@ class CNNEncoder(Model):
         self.feat_dict = self._load_features(path, 'train')
         self.feat_dict.update(self._load_features(path, 'val'))
         self.feat_dict.update(self._load_features(path, 'test'))
-        
+
     def _load_model(self, model_name):
         if model_name == 'alexnet':
             model = alexnet(pretrained=True)
@@ -803,7 +805,7 @@ class CNNEncoder(Model):
 
     def _load_features(self, path, dataset):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+                                         std=[0.229, 0.224, 0.225])
         train_dataset = datasets.ImageFolder(
             path + dataset,
             transforms.Compose([
@@ -813,9 +815,14 @@ class CNNEncoder(Model):
                 normalize,
             ]))
         train_loader = torch.utils.data.DataLoader(
-                train_dataset)
+            train_dataset)
 
-        classes = [d for d in os.listdir(train_dataset.root) if os.path.isdir(os.path.join(train_dataset.root, d))]
+        classes = [
+            d for d in os.listdir(
+                train_dataset.root) if os.path.isdir(
+                os.path.join(
+                    train_dataset.root,
+                    d))]
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
 
@@ -825,7 +832,7 @@ class CNNEncoder(Model):
             feat_dict[rev_class[i]] = x.data
         print(dataset + ' CNN features loaded!')
         return feat_dict
-    
+
     def forward(self, img_id):
         """
         Args:
