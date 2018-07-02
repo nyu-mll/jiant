@@ -11,6 +11,7 @@ import logging as log
 import json
 import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
+from allennlp_mods.correlation import Correlation
 
 from utils import load_tsv, process_sentence, truncate
 
@@ -119,7 +120,7 @@ class PairOrdinalRegressionTask(Task):
         super().__init__(name)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
-        self.scorer2 = Average()  # for average Spearman's rho
+        self.scorer2 = Correlation('spearman')
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
 
@@ -256,7 +257,8 @@ class CoLATask(SingleClassificationTask):
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
-        self.scorer1 = Average()
+        #self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
 
     def load_data(self, path, max_seq_len):
@@ -480,8 +482,10 @@ class STSBTask(PairRegressionTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        self.scorer1 = Average()
-        self.scorer2 = Average()
+        #self.scorer1 = Average()
+        #self.scorer2 = Average()
+        self.scorer1 = Correlation("pearson")
+        self.scorer2 = Correlation("spearman")
         self.val_metric = "%s_corr" % self.name
         self.val_metric_decreases = False
 
@@ -792,7 +796,7 @@ class WeakGroundedTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, n_classes, name="weakgrounded"):
         ''' Do stuff '''
         super(WeakGroundedTask, self).__init__(name, n_classes)
-        
+
         ''' Process the dataset located at path.  '''
         ''' positive = captions of the same image, negative = captions of different images '''
         targ_map = {'negative': 0, 'positive': 1}
@@ -816,7 +820,7 @@ class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
     ''' Specify metric name as 'cos_sim' or 'abs_diff' '''
-    
+
     def __init__(self, path, max_seq_len, name="grounded"):
         ''' Do stuff '''
         super(GroundedTask, self).__init__(name)
@@ -839,7 +843,7 @@ class GroundedTask(Task):
         '''Metrics for similarity in image space'''
 
         np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
-        
+
         if metric_name is 'abs_diff':
             metric = np.mean(np1-np2)
         elif metric_name is 'cos_sim':
@@ -847,15 +851,15 @@ class GroundedTask(Task):
         else:
             print('Undefined metric name!')
             metric = 0
-            
+
         return metric
-    
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
-        
+
         return {'metric': metric}
-    
+
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
 
@@ -863,7 +867,7 @@ class GroundedTask(Task):
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
-        
+
         f = open(os.path.join(path, "train.json"), 'r')
         for line in f: tr_dict = json.loads(line)
         f = open(os.path.join(path, "val.json"), 'r')
@@ -903,7 +907,7 @@ class GroundedTask(Task):
                 rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
             caption_id = np.random.randint(5, size=(1,1))[0][0]
             captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]            
+            caption = captions[caption_ids[caption_id]]
             val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
 
         for img_id in test_ids:
@@ -914,7 +918,7 @@ class GroundedTask(Task):
             captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
             test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-                
+
         self.tr_data = train; self.val_data = val; self.te_data = test
         self.train_data_text = train
         self.val_data_text = val
