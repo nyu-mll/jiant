@@ -6,8 +6,6 @@
 #SBATCH --mem=8000
 #SBATCH -t24:00:00
 #SBATCH --constraint=gpu_12gb
-#SBATCH --error=~/logs/slurm-%A_%a.out
-#SBATCH --out=~/logs/slurm-%A_%a.out
 
 # Log what we're running and where.
 echo $SLURM_JOBID - `hostname` - $JIANT_FLAGS >> ~/jiant_machine_assignments.txt
