@@ -295,7 +295,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
             if not os.path.isdir(task_scratch_path):
-                os.mkdir(task_scratch_path)
+                utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
