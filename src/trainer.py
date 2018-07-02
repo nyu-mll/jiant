@@ -20,6 +20,7 @@ from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
+
 from tensorboardX import SummaryWriter
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -177,9 +178,14 @@ class SamplingMultiTaskTrainer:
         self._summary_interval = 100  # num batches between log to tensorboard
         if self._cuda_device >= 0:
             self._model = self._model.cuda(self._cuda_device)
-        if serialization_dir is not None:
-            self._tensorboard_train_log = SummaryWriter(os.path.join(serialization_dir, "log_TB", "train"))
-            self._tensorboard_validation_log = SummaryWriter(os.path.join(serialization_dir, "log_TB", "validation"))
+
+        self._TB_dir = None
+        if self._serialization_dir is not None:
+            self._TB_dir = os.path.join(self._serialization_dir, "tensorboard")
+            self._TB_train_log = SummaryWriter(
+                os.path.join(self._TB_dir, "train"))
+            self._TB_validation_log = SummaryWriter(
+                os.path.join(self._TB_dir, "val"))
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
@@ -368,9 +374,8 @@ class SamplingMultiTaskTrainer:
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
 
-                #log to tensorboard
-
-                if self._serialization_dir is not None:
+                # log to tensorboard
+                if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
                     task_metrics_to_TB["loss"] = \
                                 float(task_info['loss'] / n_batches_since_val)
@@ -417,7 +422,7 @@ class SamplingMultiTaskTrainer:
                     if name in all_tr_metrics:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
-                if self._serialization_dir is not None:
+                if self._TB_dir is not None:
                         self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
 
                 lrs = self._get_lr()
@@ -829,7 +834,7 @@ class SamplingMultiTaskTrainer:
         for name in metric_names:
             train_metric = train_metrics.get(name)
             name = task_name + '/' + task_name + '_' + name
-            self._tensorboard_train_log.add_scalar(name, train_metric, epoch)
+            self._TB_train_log.add_scalar(name, train_metric, epoch)
 
 
     def _metrics_to_tensorboard_val(self,
@@ -843,7 +848,7 @@ class SamplingMultiTaskTrainer:
         for name in metric_names:
             val_metric = val_metrics.get(name)
             name = name.split('_')[0]+ '/' +  name
-            self._tensorboard_validation_log.add_scalar(name, val_metric, epoch)
+            self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
     def from_params(cls, model, serialization_dir, iterator, params):
