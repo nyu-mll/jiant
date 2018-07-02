@@ -9,8 +9,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef, mean_squared_error
+from sklearn.metrics import mean_squared_error
 
 from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
@@ -101,9 +100,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-    
+
     d_sent += args.skip_embs * d_emb
-    
+
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
@@ -115,7 +114,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
-            trainable_param_count += np.prod(param.size())         
+            trainable_param_count += np.prod(param.size())
     log.info("Total number of parameters: {}".format(param_count))
     log.info("Number of trainable parameters: {}".format(trainable_param_count))
     return model
@@ -230,7 +229,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, GroundedTask):
-            pass
+            task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -380,7 +379,7 @@ class MultiTaskModel(nn.Module):
                 task.scorer2(logits, labels)
                 labels = labels.data.cpu().numpy()
                 _, preds = logits.max(dim=1)
-                task.scorer1(matthews_corrcoef(labels, preds.data.cpu().numpy()))
+                task.scorer1(labels, preds.data.cpu().numpy())
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
@@ -406,14 +405,14 @@ class MultiTaskModel(nn.Module):
                 logits = logits.data.cpu().numpy()
                 labels = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits, labels))
-                task.scorer2(spearmanr(logits, labels)[0])
+                task.scorer2(logits, labels)
             elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
                 logits = logits.data.cpu().numpy()
                 labels = labels.data.cpu().numpy()
-                task.scorer1(pearsonr(logits, labels)[0])
-                task.scorer2(spearmanr(logits, labels)[0])
+                task.scorer1(logits, labels)
+                task.scorer2(logits, labels)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
                 task.scorer1(logits, labels)
@@ -440,9 +439,9 @@ class MultiTaskModel(nn.Module):
     def _lm_forward(self, batch, task):
         ''' For language modeling? '''
         out = {}
-        b_size, seq_len = batch['targs']['words'].size()    
+        b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        
+
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -476,8 +475,8 @@ class MultiTaskModel(nn.Module):
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
         image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
-    
+        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]
+
         seq, true = [], []
         for i in range(len(ids)):
             img_id, label = ids[i], labels[i]
@@ -489,8 +488,8 @@ class MultiTaskModel(nn.Module):
         sent_transform = sent_transform.view(batch_size, -1)
         image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda(); sent_transform = image_map(sent_transform)
         '''
-        cos = nn.SmoothL1Loss()        
-        cos = nn.MSELoss()        
+        cos = nn.SmoothL1Loss()
+        cos = nn.MSELoss()
         cos = nn.L1Loss()
         out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
         '''
@@ -507,7 +506,7 @@ class MultiTaskModel(nn.Module):
         task.scorer1.__call__(np.sum(acc)/len(acc))
 
         return out
-    
+
     def _ranking_forward(self, batch, task):
         ''' For caption and image ranking '''
         raise NotImplementedError
