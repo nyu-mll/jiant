@@ -832,7 +832,8 @@ class GroundedTask(Task):
 
         print('self.ids!'); print(self.ids)
         self.path = path
-        self.img_encoder = CNNEncoder(model_name='resnet', path=path)
+        self.img_encoder = None
+        #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
