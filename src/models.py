@@ -229,7 +229,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, GroundedTask):
-            pass
+            task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
