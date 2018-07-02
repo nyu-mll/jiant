@@ -3,10 +3,10 @@ import argparse
 import glob
 import json
 import os
+import subprocess
 import random
 import sys
 import time
-import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -16,6 +16,7 @@ import torch
 
 import config
 import gcp
+import utils
 
 from preprocess import build_tasks
 from models import build_model
@@ -49,10 +50,9 @@ def main(cl_arguments):
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
-    if not os.path.isdir(args.exp_dir):
-        os.mkdir(args.exp_dir)
-    if not os.path.isdir(args.run_dir):
-        os.mkdir(args.run_dir)
+    utils.maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
+    utils.maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
+    utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
     if cl_args.remote_log:
@@ -64,6 +64,15 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
+    try:
+      log.info("Waiting on git info....")
+      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
+    except subprocess.TimeoutExpired:
+      git_branch_name.kill()
+      log.warn("Git info not found. Moving right along...") 
+      
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
@@ -141,13 +150,13 @@ def main(cl_arguments):
     # is not None and args.load_eval_checkpoint != "none":
     if not(args.load_eval_checkpoint == "none"):
         log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, args.cuda)
+        load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models)
     else:
         macro_best = glob.glob(os.path.join(args.run_dir,
                                             "model_state_main_epoch_*.best_macro.th"))
         assert_for_log(len(macro_best) > 0, "No best checkpoint found to evaluate.")
         assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-        load_model_state(model, macro_best[0], args.cuda)
+        load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
@@ -168,7 +177,7 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda)
+            load_model_state(model, layer_path, args.cuda, skip_task_models=False)
 
     if args.do_eval:
         # Evaluate #

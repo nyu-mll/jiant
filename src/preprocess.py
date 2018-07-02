@@ -5,7 +5,6 @@ process_task_split()'''
 import io
 import os
 import copy
-import ipdb as pdb
 import logging as log
 from collections import defaultdict
 import numpy as np
@@ -37,7 +36,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask
+    GroundedTask, MTTask, BWBLMTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -60,6 +59,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
+             'bwb': (BWBLMTask, 'BWB/'), 
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
@@ -278,9 +278,14 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         tasks.append(task)
 
     for task in tasks: # hacky
-        task.n_tr_examples  = len(task.train_data_text[0])
-        task.n_val_examples = len(task.val_data_text[0])
-        task.n_te_examples  = len(task.test_data_text[0])
+        if isinstance(task, LanguageModelingTask): # should be true to seq task?
+            task.n_tr_examples  = len(task.train_data_text)
+            task.n_val_examples = len(task.val_data_text)
+            task.n_te_examples  = len(task.test_data_text)
+        else:
+            task.n_tr_examples  = len(task.train_data_text[0])
+            task.n_val_examples = len(task.val_data_text[0])
+            task.n_te_examples  = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -489,13 +494,18 @@ def process_lm_task_split(split, indexers):
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
                for sent in split]
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=indexers)
+    if "chars" not in indexers:
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+    else:
+        targs_indexers = indexers
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
                for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
     return instances
 
 def process_mt_task_split(split, token_indexer, target_indexer):

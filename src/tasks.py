@@ -8,7 +8,6 @@
 import os
 import math
 import logging as log
-# import ipdb as pdb
 import json
 import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
@@ -218,6 +217,11 @@ class WikiText103LMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
 
+class BWBLMTask(WikiTextLMTask):
+    ''' Language modeling task on Billion Word Benchmark'''
+
+    def __init__(self, path, max_seq_len, name="bwb"):
+        super().__init__(path, max_seq_len, name)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''

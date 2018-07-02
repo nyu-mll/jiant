@@ -2,7 +2,7 @@
 Assorted utilities for working with neural networks in AllenNLP.
 """
 
-import pdb
+import os
 from typing import Dict, List, Optional, Union
 import random
 import logging
@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+def maybe_make_dir(dirname):
+    """Make a directory if it doesn't exist."""
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence '''
@@ -65,7 +69,7 @@ def load_tsv(
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
-    with codecs.open(data_file, 'r', 'utf-8') as data_fh:
+    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
@@ -857,6 +861,4 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 
 def assert_for_log(condition, error_message):
-    if not condition:
-        logger.error(error_message)
-        raise AssertionError
+    assert condition, error_message
