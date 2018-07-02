@@ -64,14 +64,14 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    try:
-      log.info("Waiting on git info....")
-      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-    except subprocess.TimeoutExpired:
-      git_branch_name.kill()
-      log.warn("Git info not found. Moving right along...") 
+#    try:
+#      log.info("Waiting on git info....")
+#      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+#      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
+#      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
+#    except subprocess.TimeoutExpired:
+#      git_branch_name.kill()
+#      log.warn("Git info not found. Moving right along...") 
       
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
