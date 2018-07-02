@@ -210,7 +210,7 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    global_preproc_dir = args.global_preproc_dir
+    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
     for task in tasks:
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
