@@ -209,7 +209,6 @@ class SamplingMultiTaskTrainer:
             task_info = task_infos[task.name]
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
-            task_info['n_val_batches'] = min(5000, math.ceil( task.n_val_examples / iterator._batch_size))
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
