@@ -21,6 +21,7 @@ from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
 
+from tensorboardX import SummaryWriter
 
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
@@ -177,6 +178,14 @@ class SamplingMultiTaskTrainer:
         self._summary_interval = 100  # num batches between log to tensorboard
         if self._cuda_device >= 0:
             self._model = self._model.cuda(self._cuda_device)
+
+        self._TB_dir = None
+        if self._serialization_dir is not None:
+            self._TB_dir = os.path.join(self._serialization_dir, "tensorboard")
+            self._TB_train_log = SummaryWriter(
+                os.path.join(self._TB_dir, "train"))
+            self._TB_validation_log = SummaryWriter(
+                os.path.join(self._TB_dir, "val"))
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
@@ -360,13 +369,23 @@ class SamplingMultiTaskTrainer:
             task_info['total_batches_trained'] = total_batches_trained
             task_info['loss'] = tr_loss
 
-            # Intermediate log
+
+            # Intermediate log to logger and tensorboard
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
+
+                # log to tensorboard
+                if self._TB_dir is not None:
+                    task_metrics_to_TB = task_metrics.copy()
+                    task_metrics_to_TB["loss"] = \
+                                float(task_info['loss'] / n_batches_since_val)
+                    self._metrics_to_tensorboard_tr(n_pass, task_metrics_to_TB, task.name)
+
                 task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
+
                 task_info['last_log'] = time.time()
 
             # Validation
@@ -397,12 +416,14 @@ class SamplingMultiTaskTrainer:
                 should_stop, task_infos, metric_infos = self._check_stop(
                     epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
-                # Log results
+                # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
                     if name in all_tr_metrics:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
+                if self._TB_dir is not None:
+                        self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
 
                 lrs = self._get_lr()
                 for name, value in lrs.items():
@@ -800,6 +821,34 @@ class SamplingMultiTaskTrainer:
 
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]
+
+    def _metrics_to_tensorboard_tr(self,
+                                    epoch: int,
+                                    train_metrics: dict,
+                                    task_name: str) -> None:
+        """
+        Sends all of the train metrics to tensorboard
+        """
+        metric_names = train_metrics.keys()
+
+        for name in metric_names:
+            train_metric = train_metrics.get(name)
+            name = task_name + '/' + task_name + '_' + name
+            self._TB_train_log.add_scalar(name, train_metric, epoch)
+
+
+    def _metrics_to_tensorboard_val(self,
+                                epoch: int,
+                                val_metrics: dict) -> None:
+        """
+        Sends all of the val metrics to tensorboard
+        """
+        metric_names = val_metrics.keys()
+
+        for name in metric_names:
+            val_metric = val_metrics.get(name)
+            name = name.split('_')[0]+ '/' +  name
+            self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
     def from_params(cls, model, serialization_dir, iterator, params):
