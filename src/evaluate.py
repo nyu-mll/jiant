@@ -47,7 +47,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                 try:
                     preds, _ = out['logits'].max(dim=1)
                 except BaseException:
-                    pdb.set_trace()
+                    pass
             else:
                 _, preds = out['logits'].max(dim=1)
             task_preds += preds.data.tolist()
@@ -126,8 +126,21 @@ def write_results(results, results_file, run_name):
     log.info(all_metrics_str)
 
 
-def load_model_state(model, state_path, gpu_id):
-    ''' Helper function to load a model state '''
+def load_model_state(model, state_path, gpu_id, skip_task_models=False):
+    ''' Helper function to load a model state 
+
+    Parameters
+    ----------
+    model: The model object to populate with loaded parameters.
+    state_path: The path to a model_state checkpoint.
+    gpu_id: The GPU to use. -1 for no GPU.
+    skip_task_models: If set, load only the task-independent parameters.
+    '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    if skip_task_models:
+        keys_to_skip = [key for key in model_state if "_mdl" in key]
+        for key in keys_to_skip:
+            del model_state[key]
+
     model.load_state_dict(model_state, strict=False)
     log.info("Loaded model state from %s", state_path)
