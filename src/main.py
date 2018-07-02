@@ -28,21 +28,35 @@ import _pickle as pkl
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
-DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file', type=str, default=DEFAULT_CONFIG_FILE,
+    parser.add_argument('--config_file', '-c', type=str, required=True,
                         help="Config file (.conf) for model parameters.")
-    parser.add_argument('--overrides', type=str, default=None,
+    parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 
-    parser.add_argument('--remote_log', action="store_true",
+    parser.add_argument('--remote_log', '-r', action="store_true",
                         help="If true, enable remote logging on GCP.")
 
     return parser.parse_args(cl_arguments)
+
+def _try_logging_git_info():
+    try:
+        log.info("Waiting on git info....")
+        c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_branch_name = c.stdout.decode().strip()
+        log.info("Git branch: %s", git_branch_name)
+        c = subprocess.run(["git", "rev-parse", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_sha = c.stdout.decode().strip()
+        log.info("Git SHA: %s", git_sha)
+    except subprocess.TimeoutExpired as e:
+        log.exception(e)
+        log.warn("Git info not found. Moving right along...")
 
 
 def main(cl_arguments):
@@ -56,31 +70,17 @@ def main(cl_arguments):
     utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
+
     if cl_args.remote_log:
         gcp.configure_remote_logging(args.remote_log_name)
+
+    _try_logging_git_info()
 
     log.info("Parsed args: \n%s", args)
 
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
-
-    try:
-        log.info("Waiting on git info....")
-        git_branch_name = subprocess.check_output(
-            'git rev-parse --abbrev-ref HEAD',
-            stderr=subprocess.STDOUT,
-            timeout=10,
-            shell=True)
-        git_sha = subprocess.check_output(
-            'git rev-parse HEAD',
-            stderr=subprocess.STDOUT,
-            timeout=10,
-            shell=True)
-        log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-    except subprocess.TimeoutExpired:
-        git_branch_name.kill()
-        log.warn("Git info not found. Moving right along...")
 
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
