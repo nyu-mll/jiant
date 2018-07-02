@@ -7,7 +7,6 @@ import subprocess
 import random
 import sys
 import time
-import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -151,13 +150,13 @@ def main(cl_arguments):
     # is not None and args.load_eval_checkpoint != "none":
     if not(args.load_eval_checkpoint == "none"):
         log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, args.cuda)
+        load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models)
     else:
         macro_best = glob.glob(os.path.join(args.run_dir,
                                             "model_state_main_epoch_*.best_macro.th"))
         assert_for_log(len(macro_best) > 0, "No best checkpoint found to evaluate.")
         assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-        load_model_state(model, macro_best[0], args.cuda)
+        load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
@@ -178,7 +177,7 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda)
+            load_model_state(model, layer_path, args.cuda, skip_task_models=False)
 
     if args.do_eval:
         # Evaluate #

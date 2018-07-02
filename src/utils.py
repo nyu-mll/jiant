@@ -3,7 +3,6 @@ Assorted utilities for working with neural networks in AllenNLP.
 """
 
 import os
-import pdb
 from typing import Dict, List, Optional, Union
 import random
 import logging

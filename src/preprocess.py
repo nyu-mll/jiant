@@ -5,7 +5,6 @@ process_task_split()'''
 import io
 import os
 import copy
-import ipdb as pdb
 import logging as log
 from collections import defaultdict
 import numpy as np
@@ -24,8 +23,8 @@ except BaseException:
 
 import _pickle as pkl
 
-#  from serialize import write_records, read_records
 import serialize
+import utils
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
     PairRegressionTask, SequenceGenerationTask, RankingTask, \
@@ -37,7 +36,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask
+    GroundedTask, MTTask, BWBLMTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -60,6 +59,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
+             'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
@@ -128,6 +128,26 @@ def del_field_tokens(instance):
         field = instance.fields['input2']
         del field.tokens
 
+
+def _index_split(task, split, token_indexer, vocab, record_file):
+    """Index instances and stream to disk.
+
+    Args:
+        task: Task instance
+        split: (string), 'train', 'val', or 'test'
+        token_indexer: dict of token indexers
+        vocab: Vocabulary instance
+        record_file: (string) file to write serialized Instances to
+    """
+    log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
+    log.info("%s: indexing from scratch", log_prefix)
+    log.info("%s: processing to tokens", log_prefix)
+    instance_list = process_task_split(task, split, token_indexer)
+    log.info("%s: %d examples to index", log_prefix, len(instance_list))
+    serialize.write_records(
+        _indexed_instance_generator(instance_list, vocab), record_file)
+    log.info("%s: saved instances to %s", log_prefix, record_file)
+
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
     1) creating / loading the tasks
@@ -139,8 +159,7 @@ def build_tasks(args):
 
     # 1) create / load tasks
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
-    if not os.path.isdir(prepreproc_dir):
-        os.mkdir(prepreproc_dir)
+    utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
@@ -190,33 +209,34 @@ def build_tasks(args):
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
-    if not os.path.isdir(preproc_dir):
-        os.mkdir(preproc_dir)
-    preproc_file_names = set()
-    if not args.reload_vocab and not args.reload_indexing:
-        for file in os.listdir(preproc_dir):
-            preproc_file_names.add(file.split("__")[0])
-
+    utils.maybe_make_dir(preproc_dir)
+    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
     for task in tasks:
-        if not task.name in preproc_file_names:
-            log.info("\tTask '%s': indexing from scratch", task.name)
-            # Index instances and stream to disk.
-            for split in ALL_SPLITS:
-                log.info("\tTask '%s', split '%s': processing to tokens",
-                         task.name, split)
-                instance_list = process_task_split(task, split, token_indexer)
-                log.info("\tTask '%s', split '%s': %d examples to index",
-                         task.name, split, len(instance_list))
-                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-                serialize.write_records(
-                    _indexed_instance_generator(instance_list, vocab), record_file)
-                log.info("\tTask '%s': saved split '%s' to %s",
-                         task.name, split, record_file)
-            # Delete in-memory data - we'll lazy-load from disk later.
-            task.train_data = None
-            task.val_data   = None
-            task.test_data  = None
-            log.info("\tTask '%s': cleared in-memory data.", task.name)
+        for split in ALL_SPLITS:
+            log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
+            # Try in local preproc dir.
+            record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+            if os.path.exists(record_file):
+                log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
+                continue
+            # Try in global preproc dir; if found, make a symlink.
+            global_record_file = _get_serialized_record_path(task.name, split,
+                                                             global_preproc_dir)
+            if os.path.exists(global_record_file):
+                log.info("%s: found (global) preprocessed copy in %s",
+                         log_prefix, global_record_file)
+                os.symlink(global_record_file, record_file)
+                log.info("\tCreated symlink: %s -> %s", record_file,
+                         global_record_file)
+                continue
+            # If all else fails, reindex from scratch.
+            _index_split(task, split, token_indexer, vocab, record_file)
+
+        # Delete in-memory data - we'll lazy-load from disk later.
+        task.train_data = None
+        task.val_data   = None
+        task.test_data  = None
+        log.info("\tTask '%s': cleared in-memory data.", task.name)
 
     log.info("\tFinished indexing tasks")
 
@@ -275,9 +295,14 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         tasks.append(task)
 
     for task in tasks: # hacky
-        task.n_tr_examples  = len(task.train_data_text[0])
-        task.n_val_examples = len(task.val_data_text[0])
-        task.n_te_examples  = len(task.test_data_text[0])
+        if isinstance(task, LanguageModelingTask): # should be true to seq task?
+            task.n_tr_examples  = len(task.train_data_text)
+            task.n_val_examples = len(task.val_data_text)
+            task.n_te_examples  = len(task.test_data_text)
+        else:
+            task.n_tr_examples  = len(task.train_data_text[0])
+            task.n_val_examples = len(task.val_data_text[0])
+            task.n_te_examples  = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -475,13 +500,18 @@ def process_lm_task_split(split, indexers):
     inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
     inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
                for sent in split]
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=indexers) for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=indexers)
+    if "chars" not in indexers:
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+    else:
+        targs_indexers = indexers
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers) for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
                for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
     #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
     instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
                  for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
     return instances
 
 def process_mt_task_split(split, indexers):
