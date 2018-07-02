@@ -461,12 +461,10 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             n_examples = 0.0
             task_info = task_infos[task.name]
-            # Quick and dirty evaluation: Evaluate on no more than 5000 examples.
-            print(task.n_val_examples)
+            # TODO: Make this an explicit parameter rather than hard-coding.
             max_data_points = min(task.n_val_examples, 5000)
-            print(max_data_points)
-            generator = iterator(task.val_data[0:max_data_points], num_epochs=1, shuffle=False, cuda_device=self._cuda_device)
-            n_val_batches = task_infos[task.name]['n_val_batches']
+            val_generator = BasicIterator(iterator._batch_size, instances_per_epoch = max_data_points)(task.val_data, num_epochs=1, shuffle=True, cuda_device=self._cuda_device)
+            n_val_batches = math.ceil(max_data_points / iterator._batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
