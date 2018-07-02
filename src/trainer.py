@@ -18,7 +18,6 @@ from allennlp.common.checks import ConfigurationError
 from allennlp.data.iterators import BasicIterator, BucketIterator
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
-from allennlp.training.trainer import TensorboardWriter
 from utils import device_mapping
 from utils import assert_for_log
 from tensorboardX import SummaryWriter
