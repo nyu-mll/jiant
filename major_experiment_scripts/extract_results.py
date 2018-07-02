@@ -7,7 +7,7 @@ if len(sys.argv) < 2:
   print("Usage: python extract_results.py log.log")
   exit(0)
 
-col_order = ['date', 'train_task', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1']
+col_order = ['date', 'train_tasks', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1']
 
 cols = {c : '' for c in col_order}
 
@@ -54,7 +54,7 @@ with open(sys.argv[1]) as f:
         assert (elmo == el), "Error! Multiple elmo flags set, but settings don't match: %s vs. %s"%(elmo, el)
       elmo = el
 
-cols['train_task'] = train_tasks
+cols['train_tasks'] = train_tasks
 cols['dropout'] = dropout
 cols['elmo'] = 'Y' if elmo == '0' else 'N'
 

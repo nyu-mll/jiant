@@ -39,6 +39,10 @@ elif [[ $INSTANCE_TYPE == "gpu-k2" ]]; then
   TEMPLATE="gpu-worker-template-k2"
 elif [[ $INSTANCE_TYPE == "gpu-k4" ]]; then
   TEMPLATE="gpu-worker-template-k4"
+elif [[ $INSTANCE_TYPE == "gpu-v1" ]]; then
+  TEMPLATE="gpu-worker-template-v1"
+elif [[ $INSTANCE_TYPE == "gpu-v1large" ]]; then
+  TEMPLATE="gpu-worker-template-v1large"
 else
   echo "Unsupported instance type '$INSTANCE_TYPE'"
   exit 1
