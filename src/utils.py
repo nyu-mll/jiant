@@ -33,6 +33,18 @@ TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
+def get_batch_utilization(batch_field, pad_idx=0):
+    ''' Get ratio of batch elements that are padding
+
+    Batch should be field, i.e. a dictionary of inputs'''
+    if 'elmo' in batch_field:
+        idxs = batch_field['elmo']
+        pad_ratio = idxs.eq(pad_idx).sum().item() / idxs.nelement()
+    else:
+        raise NotImplementedError
+    return 1 - pad_ratio
+
+
 def maybe_make_dir(dirname):
     """Make a directory if it doesn't exist."""
     os.makedirs(dirname, exist_ok=True)
