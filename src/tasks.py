@@ -11,6 +11,7 @@ import logging as log
 import json
 import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
+from allennlp_mods.correlation import Correlation
 
 from utils import load_tsv, process_sentence, truncate
 
@@ -119,7 +120,7 @@ class PairOrdinalRegressionTask(Task):
         super().__init__(name)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
-        self.scorer2 = Average()  # for average Spearman's rho
+        self.scorer2 = Correlation('spearman')
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
 
@@ -217,11 +218,13 @@ class WikiText103LMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
 
+
 class BWBLMTask(WikiTextLMTask):
     ''' Language modeling task on Billion Word Benchmark'''
 
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
+
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -256,7 +259,8 @@ class CoLATask(SingleClassificationTask):
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
-        self.scorer1 = Average()
+        #self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
 
     def load_data(self, path, max_seq_len):
@@ -480,8 +484,10 @@ class STSBTask(PairRegressionTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        self.scorer1 = Average()
-        self.scorer2 = Average()
+        #self.scorer1 = Average()
+        #self.scorer2 = Average()
+        self.scorer1 = Correlation("pearson")
+        self.scorer2 = Correlation("spearman")
         self.val_metric = "%s_corr" % self.name
         self.val_metric_decreases = False
 
@@ -689,8 +695,10 @@ class PDTBTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading PDTB data.")
 
+
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
+
     def __init__(self, path, max_seq_len, name='MTTask'):
         super().__init__(name)
         self.scorer1 = Average()
@@ -699,8 +707,7 @@ class MTTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
-                         self.train_data_text[2] + self.val_data_text[2]
-
+            self.train_data_text[2] + self.val_data_text[2]
 
     def load_data(self, path, max_seq_len):
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
@@ -718,6 +725,7 @@ class MTTask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
@@ -787,13 +795,14 @@ class DisSentWikiFullTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading DisSent data.")
 
+
 class WeakGroundedTask(PairClassificationTask):
     ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
 
     def __init__(self, path, max_seq_len, n_classes, name="weakgrounded"):
         ''' Do stuff '''
         super(WeakGroundedTask, self).__init__(name, n_classes)
-        
+
         ''' Process the dataset located at path.  '''
         ''' positive = captions of the same image, negative = captions of different images '''
         targ_map = {'negative': 0, 'positive': 1}
@@ -802,7 +811,7 @@ class WeakGroundedTask(PairClassificationTask):
         tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
         te_data = load_tsv(os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
 
@@ -813,11 +822,12 @@ class WeakGroundedTask(PairClassificationTask):
         self.n_classes = 2
         log.info("\tFinished loading MSCOCO data.")
 
+
 class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
     ''' Specify metric name as 'cos_sim' or 'abs_diff' '''
-    
+
     def __init__(self, path, max_seq_len, name="grounded"):
         ''' Do stuff '''
         super(GroundedTask, self).__init__(name)
@@ -829,33 +839,32 @@ class GroundedTask(Task):
         self.sentences = self.train_data_text[0] + \
             self.val_data_text[0]
         self.ids = self.train_data_text[1] + \
-                   self.val_data_text[1]
-
-        print('self.ids!'); print(self.ids)
+            self.val_data_text[1]
         self.path = path
-        self.img_encoder = CNNEncoder(model_name='resnet', path=path)
+        self.img_encoder = None
+        #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
 
         np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
-        
+
         if metric_name is 'abs_diff':
-            metric = np.mean(np1-np2)
+            metric = np.mean(np1 - np2)
         elif metric_name is 'cos_sim':
             metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
         else:
             print('Undefined metric name!')
             metric = 0
-            
+
         return metric
-    
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
-        
+
         return {'metric': metric}
-    
+
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
 
@@ -863,59 +872,76 @@ class GroundedTask(Task):
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
-        
+
         f = open(os.path.join(path, "train.json"), 'r')
-        for line in f: tr_dict = json.loads(line)
+        for line in f:
+            tr_dict = json.loads(line)
         f = open(os.path.join(path, "val.json"), 'r')
-        for line in f: val_dict = json.loads(line)
+        for line in f:
+            val_dict = json.loads(line)
         f = open(os.path.join(path, "test.json"), 'r')
-        for line in f: te_dict = json.loads(line)
+        for line in f:
+            te_dict = json.loads(line)
 
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
         for img_id in train_ids:
             for caption_id in tr_dict[img_id]['captions']:
                 train[0].append(tr_dict[img_id]['captions'][caption_id])
-                train[1].append(1); train[2].append(int(img_id))
-                #train[2].append(caption_id)
+                train[1].append(1)
+                train[2].append(int(img_id))
+                # train[2].append(caption_id)
         for img_id in val_ids:
             for caption_id in val_dict[img_id]['captions']:
                 val[0].append(val_dict[img_id]['captions'][caption_id])
-                val[1].append(1); val[2].append(int(img_id))
-                #val[2].append(caption_id)
+                val[1].append(1)
+                val[2].append(int(img_id))
+                # val[2].append(caption_id)
         for img_id in test_ids:
             for caption_id in te_dict[img_id]['captions']:
                 test[0].append(te_dict[img_id]['captions'][caption_id])
-                test[1].append(1); test[2].append(int(img_id))
-                #test[2].append(caption_id)
+                test[1].append(1)
+                test[2].append(int(img_id))
+                # test[2].append(caption_id)
 
         for img_id in train_ids:
             rand_id = img_id
             while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+                rand_id = np.random.randint(len(train_ids), size=(1, 1))[0][0]
+            caption_id = np.random.randint(5, size=(1, 1))[0][0]
+            captions = tr_dict[train_ids[rand_id]]['captions']
+            caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
-            train[0].append(caption); train[1].append(0); train[2].append(int(img_id))
+            train[0].append(caption)
+            train[1].append(0)
+            train[2].append(int(img_id))
 
         for img_id in val_ids:
             rand_id = img_id
             while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]            
-            val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
+                rand_id = np.random.randint(len(val_ids), size=(1, 1))[0][0]
+            caption_id = np.random.randint(5, size=(1, 1))[0][0]
+            captions = val_dict[val_ids[rand_id]]['captions']
+            caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]
+            val[0].append(caption)
+            val[1].append(0)
+            val[2].append(int(img_id))
 
         for img_id in test_ids:
             rand_id = img_id
             while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+                rand_id = np.random.randint(len(test_ids), size=(1, 1))[0][0]
+            caption_id = np.random.randint(5, size=(1, 1))[0][0]
+            captions = te_dict[test_ids[rand_id]]['captions']
+            caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
-            test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-                
-        self.tr_data = train; self.val_data = val; self.te_data = test
+            test[0].append(caption)
+            test[1].append(0)
+            test[2].append(int(img_id))
+
+        self.tr_data = train
+        self.val_data = val
+        self.te_data = test
         self.train_data_text = train
         self.val_data_text = val
         self.test_data_text = test

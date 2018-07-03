@@ -1,5 +1,6 @@
 '''Core model and functions for building it.'''
-import sys, math
+import sys
+import math
 import copy
 import logging as log
 import os
@@ -9,8 +10,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef, mean_squared_error
+from sklearn.metrics import mean_squared_error
 
 from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
@@ -45,7 +45,9 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 #  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-#  ELMO_WEIGHTS_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"  # pylint: disable=line-too-long
+# ELMO_WEIGHTS_PATH =
+# "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+# # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):
@@ -101,9 +103,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-    
+
     d_sent += args.skip_embs * d_emb
-    
+
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
@@ -115,7 +117,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
-            trainable_param_count += np.prod(param.size())         
+            trainable_param_count += np.prod(param.size())
     log.info("Total number of parameters: {}".format(param_count))
     log.info("Number of trainable parameters: {}".format(trainable_param_count))
     return model
@@ -217,20 +219,20 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, MTTask):
             decoder = Seq2SeqDecoder.from_params(vocab,
-                Params({'input_dim': d_sent,
-                        'target_embedding_dim': 300,
-                        'max_decoding_steps': 200,
-                        'target_namespace': 'tokens',
-                        'attention': 'bilinear',
-                        'dropout': args.dropout,
-                        'scheduled_sampling_ratio': 0.0}))
+                                                 Params({'input_dim': d_sent,
+                                                         'target_embedding_dim': 300,
+                                                         'max_decoding_steps': 200,
+                                                         'target_namespace': 'tokens',
+                                                         'attention': 'bilinear',
+                                                         'dropout': args.dropout,
+                                                         'scheduled_sampling_ratio': 0.0}))
             setattr(model, '%s_decoder' % task.name, decoder)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, GroundedTask):
-            pass
+            task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -380,7 +382,7 @@ class MultiTaskModel(nn.Module):
                 task.scorer2(logits, labels)
                 labels = labels.data.cpu().numpy()
                 _, preds = logits.max(dim=1)
-                task.scorer1(matthews_corrcoef(labels, preds.data.cpu().numpy()))
+                task.scorer1(labels, preds.data.cpu().numpy())
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
@@ -406,14 +408,14 @@ class MultiTaskModel(nn.Module):
                 logits = logits.data.cpu().numpy()
                 labels = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits, labels))
-                task.scorer2(spearmanr(logits, labels)[0])
+                task.scorer2(logits, labels)
             elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
                 logits = logits.data.cpu().numpy()
                 labels = labels.data.cpu().numpy()
-                task.scorer1(pearsonr(logits, labels)[0])
-                task.scorer2(spearmanr(logits, labels)[0])
+                task.scorer1(logits, labels)
+                task.scorer2(logits, labels)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
                 task.scorer1(logits, labels)
@@ -440,9 +442,9 @@ class MultiTaskModel(nn.Module):
     def _lm_forward(self, batch, task):
         ''' For language modeling? '''
         out = {}
-        b_size, seq_len = batch['targs']['words'].size()    
+        b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        
+
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -470,44 +472,60 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _grounded_classification_forward(self, batch, task):
-        out = {}; d_1, d_2 = 1024, 2048;
+        out = {}
+        d_1, d_2 = 1024, 2048
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
-        ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
-    
+        image_map = nn.Linear(d_1, d_2).cuda()
+        sent_transform = image_map(sent_emb)
+        ids = batch['ids'].cpu().squeeze(-1)
+        ids = list(ids.data.numpy())
+        labels = batch['labels'].cpu().squeeze(-1)
+        labels = [int(item) for item in labels.data.numpy()]
+
         seq, true = [], []
         for i in range(len(ids)):
             img_id, label = ids[i], labels[i]
             init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
-            seq.append(torch.tensor(init_emb, dtype=torch.float)); true.append(label)
-        img_emb = torch.stack(seq, dim=0);
+            seq.append(torch.tensor(init_emb, dtype=torch.float))
+            true.append(label)
+        img_emb = torch.stack(seq, dim=0)
 
         batch_size = len(labels)
         sent_transform = sent_transform.view(batch_size, -1)
-        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda(); sent_transform = image_map(sent_transform)
+        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda()
+        sent_transform = image_map(sent_transform)
         '''
-        cos = nn.SmoothL1Loss()        
-        cos = nn.MSELoss()        
+        cos = nn.SmoothL1Loss()
+        cos = nn.MSELoss()
         cos = nn.L1Loss()
         out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
         '''
-        cos = nn.CosineEmbeddingLoss(); flags = Variable(torch.ones(len(labels)))
-        out['loss'] = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float), flags)
+        cos = nn.CosineEmbeddingLoss()
+        flags = Variable(torch.ones(len(labels)))
+        out['loss'] = cos(
+            torch.tensor(
+                sent_transform, dtype=torch.float), torch.tensor(
+                img_emb, dtype=torch.float), flags)
         cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        sim = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float))
+        sim = cos(
+            torch.tensor(
+                sent_transform,
+                dtype=torch.float),
+            torch.tensor(
+                img_emb,
+                dtype=torch.float))
         classifier = nn.Linear(len(labels), len(labels))
         logits = classifier(sim)
         out['logits'] = logits
 
         preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
         acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
-        task.scorer1.__call__(np.sum(acc)/len(acc))
+        task.scorer1.__call__(np.sum(acc) / len(acc))
 
         return out
-    
+
     def _ranking_forward(self, batch, task):
         ''' For caption and image ranking '''
         raise NotImplementedError

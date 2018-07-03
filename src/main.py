@@ -28,21 +28,54 @@ import _pickle as pkl
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
-DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
-
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file', type=str, default=DEFAULT_CONFIG_FILE,
+    parser.add_argument('--config_file', '-c', type=str, required=True,
                         help="Config file (.conf) for model parameters.")
-    parser.add_argument('--overrides', type=str, default=None,
+    parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 
-    parser.add_argument('--remote_log', action="store_true",
+    parser.add_argument('--remote_log', '-r', action="store_true",
                         help="If true, enable remote logging on GCP.")
 
+    parser.add_argument('--tensorboard', '-t', action="store_true",
+                        help="If true, will run Tensorboard server in a "
+                        "subprocess, serving on the port given by "
+                        "--tensorboard_port.")
+    parser.add_argument('--tensorboard_port', type=int, default=6006)
+
     return parser.parse_args(cl_arguments)
+
+def _try_logging_git_info():
+    try:
+        log.info("Waiting on git info....")
+        c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_branch_name = c.stdout.decode().strip()
+        log.info("Git branch: %s", git_branch_name)
+        c = subprocess.run(["git", "rev-parse", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_sha = c.stdout.decode().strip()
+        log.info("Git SHA: %s", git_sha)
+    except subprocess.TimeoutExpired as e:
+        log.exception(e)
+        log.warn("Git info not found. Moving right along...")
+
+def _run_background_tensorboard(logdir, port):
+    """Run a TensorBoard server in the background."""
+    import atexit
+    tb_args = ["tensorboard", "--logdir", logdir,
+               "--port", str(port)]
+    log.info("Starting TensorBoard server on port %d ...", port)
+    tb_process = subprocess.Popen(tb_args)
+    log.info("TensorBoard process: %d", tb_process.pid)
+
+    def _kill_tb_child():
+        log.info("Shutting down TensorBoard server on port %d ...", port)
+        tb_process.terminate()
+    atexit.register(_kill_tb_child)
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -55,8 +88,11 @@ def main(cl_arguments):
     utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
+
     if cl_args.remote_log:
         gcp.configure_remote_logging(args.remote_log_name)
+
+    _try_logging_git_info()
 
     log.info("Parsed args: \n%s", args)
 
@@ -64,15 +100,6 @@ def main(cl_arguments):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    try:
-      log.info("Waiting on git info....")
-      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-    except subprocess.TimeoutExpired:
-      git_branch_name.kill()
-      log.warn("Git info not found. Moving right along...") 
-      
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
@@ -94,10 +121,10 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    assert_for_log(not (len(train_tasks) > 1 and \
-        any(train_task.val_metric_decreases for train_task in train_tasks)),
-        "Attempting multitask training with a mix of increasing and decreasing metrics. "
-        "This is not currently supported. (We haven't set it up yet.)")
+    assert_for_log(not (len(train_tasks) > 1 and
+                        any(train_task.val_metric_decreases for train_task in train_tasks)),
+                   "Attempting multitask training with a mix of increasing and decreasing metrics. "
+                   "This is not currently supported. (We haven't set it up yet.)")
 
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
@@ -129,6 +156,11 @@ def main(cl_arguments):
         assert_for_log(args.eval_tasks != "none",
                        "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
+
+    # Start Tensorboard if requested
+    if cl_args.tensorboard:
+        tb_logdir = os.path.join(args.run_dir, "tensorboard")
+        _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
     log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
     if args.do_train:
@@ -190,13 +222,14 @@ def main(cl_arguments):
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
 
+
     log.info("Done!")
 
 
 if __name__ == '__main__':
     try:
         main(sys.argv[1:])
-    except:
+    except BaseException:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
         sys.exit(1)

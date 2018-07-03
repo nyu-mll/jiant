@@ -1,18 +1,26 @@
 # Helpers for accessing GCP services
 
+import os
 import logging as log  # python standard logging
+
 
 def get_instance_id():
     # https://stackoverflow.com/questions/31688646/get-the-name-or-id-of-the-current-google-compute-instance
     import requests
     metadata_server = "http://metadata/computeMetadata/v1/instance/"
-    metadata_flavor = {'Metadata-Flavor' : 'Google'}
-    gce_id = requests.get(metadata_server + 'id', headers = metadata_flavor).text
+    metadata_flavor = {'Metadata-Flavor': 'Google'}
+    gce_id = requests.get(metadata_server + 'id', headers=metadata_flavor).text
     return gce_id
     #  gce_name = requests.get(metadata_server + 'hostname', headers = metadata_flavor).text
     #  gce_machine_type = requests.get(metadata_server + 'machine-type', headers = metadata_flavor).text
 
+
 def configure_remote_logging(log_name):
+    # Avoid deadlock situation with subprocess. See:
+    # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4992
+    # and https://github.com/grpc/grpc/issues/14056#issuecomment-370962039
+    os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "0"
+
     # Set up cloud logging
     from google.cloud import logging as cloud_logging
     from google.cloud.logging.handlers import CloudLoggingHandler
@@ -20,7 +28,7 @@ def configure_remote_logging(log_name):
     logging_client = cloud_logging.Client()
     instance_id = get_instance_id()
     log_resource = Resource("gce_instance", {"instance_id": instance_id})
-    log.info("Configuring remote logging to %s with log name '%s'", 
+    log.info("Configuring remote logging to %s with log name '%s'",
              str(log_resource), log_name)
     cloud_handler = CloudLoggingHandler(logging_client, name=log_name,
                                         resource=log_resource)
