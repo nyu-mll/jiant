@@ -275,8 +275,18 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks uniformly")
         elif weighting_method == 'proportional':
             log.info("Sampling tasks proportional to number of training batches")
-        elif weighting_method == 'proportional_log':
+        elif weighting_method == 'proportional_log_batch':
             log.info("Sampling tasks proportional to log number of training batches")
+        elif weighting_method == 'proportional_log_example':
+            log.info("Sampling tasks proportional to log number of training examples")
+        elif weighting_method == 'inverse_example':
+            log.info("Sampling tasks inverse to number of training examples")
+        elif weighting_method == 'inverse_batch':
+            log.info("Sampling tasks inverse to number of training batches")
+        elif weighting_method == 'inverse_log_example':
+            log.info("Sampling tasks inverse to log number of training examples")
+        elif weighting_method == 'inverse_log_batch':
+            log.info("Sampling tasks inverse to log number of training batches")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -319,16 +329,30 @@ class SamplingMultiTaskTrainer():
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
+        # debugging print([task.name for task in tasks],[task.n_tr_examples for task in tasks],
+        # [task_infos[task.name]['n_tr_batches'] for task in tasks])
+
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
-        elif weighting_method == 'proportional_log': # haven't written loss scaling
+
+        elif weighting_method == 'proportional_log_batch': # log(training batch)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
-            max_weight = max(sample_weights)
-            min_weight = min(sample_weights)
+        elif weighting_method == 'proportional_log_example': # log(training example)
+            sample_weights = [math.log(task.n_tr_examples) for task in tasks]
+
+        elif weighting_method == 'inverse_example': # 1/training example
+            sample_weights = [(1/task.n_tr_examples) for task in tasks]
+        elif weighting_method == 'inverse_batch': # 1/training batch
+            sample_weights = [(1/task_infos[task.name]['n_tr_batches']) for task in tasks]
+        elif weighting_method == 'inverse_log_example': # 1/log(training example)
+            sample_weights = [(1/math.log(task.n_tr_examples)) for task in tasks]
+        elif weighting_method == 'inverse_log_batch': # 1/log(training batch)
+            sample_weights = [(1/math.log(task_infos[task.name]['n_tr_batches'])) for task in tasks]
+
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
