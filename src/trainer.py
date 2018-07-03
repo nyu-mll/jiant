@@ -12,20 +12,21 @@ import itertools
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils.clip_grad import clip_grad_norm_
+from tensorboardX import SummaryWriter # pylint: disable=import-error
 
-from allennlp.common import Params
-from allennlp.common.checks import ConfigurationError
-from allennlp.data.iterators import BasicIterator, BucketIterator
-from allennlp.training.learning_rate_schedulers import LearningRateScheduler
-from allennlp.training.optimizers import Optimizer
-from utils import device_mapping
-from utils import assert_for_log
+from allennlp.common import Params # pylint: disable=import-error
+from allennlp.common.checks import ConfigurationError # pylint: disable=import-error
+from allennlp.data.iterators import BasicIterator, BucketIterator # pylint: disable=import-error
+from allennlp.training.learning_rate_schedulers import LearningRateScheduler # pylint: disable=import-error
+from allennlp.training.optimizers import Optimizer # pylint: disable=import-error
+from utils import device_mapping, assert_for_log # pylint: disable=import-error
 
-from tensorboardX import SummaryWriter
 
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
+
     def get_task_attr(attr_name):
+        ''' Hacky way to get task specific attributes '''
         return getattr(args, "%s_%s" % (task, attr_name)) if \
             hasattr(args, "%s_%s" % (task, attr_name)) else \
             getattr(args, attr_name)
@@ -35,7 +36,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr',
-                  'no_tqdm', 'cuda']
+                  'batch_size', 'no_tqdm', 'cuda']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
@@ -62,9 +63,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
-    iterator = BasicIterator(params['batch_size'])
-    #iterator = BucketIterator(sorting_keys=[("input1", "num_tokens")],
-    #                          batch_size=params['batch_size'])
 
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
@@ -79,7 +77,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                               'model_size': params['d_hid'],
                               'warmup_steps': params['warmup'],
                               'factor': 1.0})
-        log.info('\tUsing noam scheduler with warmup %d!' % params['warmup'])
+        log.info('\tUsing noam scheduler with warmup %d!', params['warmup'])
     else:
         schd_params = Params({'type': 'reduce_on_plateau',
                               'mode': 'min' if metric_should_decrease else 'max',
@@ -91,20 +89,18 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         log.info('\tUsing ReduceLROnPlateau scheduler!')
 
     train_params = Params({'cuda_device': params['cuda'],
-
                            'patience': params['patience'],
                            'grad_norm': params['max_grad_norm'],
                            'val_interval': params['val_interval'],
                            'max_vals': params['max_vals'],
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'no_tqdm': params['no_tqdm']})
-    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, iterator,
-                                                   copy.deepcopy(train_params))
+    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir, copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
 
-class SamplingMultiTaskTrainer:
-    def __init__(self, model, iterator, patience=2, val_interval=100, max_vals=50,
+class SamplingMultiTaskTrainer():
+    def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False, keep_all_checkpoints=False):
@@ -121,8 +117,6 @@ class SamplingMultiTaskTrainer:
         optimizer : ``torch.nn.Optimizer``, required.
             An instance of a Pytorch Optimizer, instantiated with the parameters of the
             model to be optimized.
-        iterator : ``DataIterator``, required.
-            A method for iterating over a ``Dataset``, yielding padded indexed batches.
         patience , optional (default=2)
             Number of epochs to be patient before early stopping.
         val_metric , optional (default="loss")
@@ -158,7 +152,6 @@ class SamplingMultiTaskTrainer:
             best and (if different) most recent.
         """
         self._model = model
-        self._iterator = iterator
 
         self._patience = patience
         self._max_vals = max_vals
@@ -212,29 +205,27 @@ class SamplingMultiTaskTrainer:
 
         return best_so_far, out_of_patience
 
-    def _setup_training(self, tasks, train_params, optimizer_params, scheduler_params, iterator):
+    def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params):
         # Task bookkeeping
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
 
             # Adding task-specific smart iterator to speed up training
-            '''
-            batch_size = iterator._batch_size
-            pad_key_dict = [instance.get_padding_lengths() for instance in task.train_data][0]
+            instance = [i for i in itertools.islice(task.train_data, 1)][0]
+            pad_dict = instance.get_padding_lengths()
             sorting_keys = []
-            for k1 in pad_key_dict:
-                if len(pad_key_dict) != 0:
-                    for k2 in pad_key_dict[k1]:
-                        sorting_keys.append((k1, k2))
+            for field in pad_dict:
+                for pad_field in pad_dict[field]:
+                    sorting_keys.append((field, pad_field))
             iterator = BucketIterator(sorting_keys=sorting_keys,
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
-            '''
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
+
             task_info['iterator'] = iterator
-            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
+            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -254,7 +245,7 @@ class SamplingMultiTaskTrainer:
         return task_infos, metric_infos
 
     def train(self, tasks, stop_metric,
-              n_batches_per_pass,
+              batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
               shared_optimizer=1, load_model=1, phase="main"):
@@ -280,7 +271,6 @@ class SamplingMultiTaskTrainer:
         -------
         Validation results
         """
-
         if weighting_method == 'uniform':
             log.info("Sampling tasks uniformly")
         elif weighting_method == 'proportional':
@@ -297,9 +287,8 @@ class SamplingMultiTaskTrainer:
         elif scaling_method == 'unit':
             log.info("Dividing losses by number of training batches")
         validation_interval = self._val_interval
-        iterator = self._iterator
-        task_infos, metric_infos = self._setup_training(tasks, train_params, optimizer_params,
-                                                        scheduler_params, iterator)
+        task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
+                                                        optimizer_params, scheduler_params)
         if shared_optimizer:
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
@@ -442,22 +431,20 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro, task_infos, metric_infos = self._validate(
-                    epoch, tasks, task_infos, metric_infos, iterator, g_scheduler, periodic_save=(phase != "eval"))
+                    epoch, tasks, batch_size, task_infos, metric_infos, g_scheduler, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
                 should_stop, task_infos, metric_infos = self._check_stop(
                     epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results to logger and tensorboard
-
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
                     if name in all_tr_metrics:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
                 if self._TB_dir is not None:
-                        self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
-
+                    self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
@@ -465,7 +452,7 @@ class SamplingMultiTaskTrainer:
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
                 all_tr_metrics = {}
-                samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+                samples = random.choices(tasks, weights=sample_weights, k=validation_interval) # pylint: disable=no-member
 
                 if should_save:
                     self._save_checkpoint(
@@ -498,9 +485,9 @@ class SamplingMultiTaskTrainer:
             self,
             epoch,
             tasks,
+            batch_size,
             task_infos,
             metric_infos,
-            iterator,
             g_scheduler,
             periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
@@ -514,16 +501,11 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             n_examples = 0.0
             task_info = task_infos[task.name]
-            # TODO: Make this an explicit parameter rather than hard-coding.
             max_data_points = min(task.n_val_examples, 5000)
-            val_generator = BasicIterator(
-                iterator._batch_size,
-                instances_per_epoch=max_data_points)(
-                task.val_data,
-                num_epochs=1,
-                shuffle=False,
-                cuda_device=self._cuda_device)
-            n_val_batches = math.ceil(max_data_points / iterator._batch_size)
+            val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
+                                          task.val_data, num_epochs=1, shuffle=False,
+                                          cuda_device=self._cuda_device)
+            n_val_batches = math.ceil(max_data_points / batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
             batch_num = 0
             for batch in val_generator:
@@ -858,10 +840,7 @@ class SamplingMultiTaskTrainer:
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]
 
-    def _metrics_to_tensorboard_tr(self,
-                                    epoch: int,
-                                    train_metrics: dict,
-                                    task_name: str) -> None:
+    def _metrics_to_tensorboard_tr(self, epoch, train_metrics, task_name):
         """
         Sends all of the train metrics to tensorboard
         """
@@ -873,9 +852,7 @@ class SamplingMultiTaskTrainer:
             self._TB_train_log.add_scalar(name, train_metric, epoch)
 
 
-    def _metrics_to_tensorboard_val(self,
-                                epoch: int,
-                                val_metrics: dict) -> None:
+    def _metrics_to_tensorboard_val(self, epoch, val_metrics):
         """
         Sends all of the val metrics to tensorboard
         """
@@ -887,7 +864,7 @@ class SamplingMultiTaskTrainer:
             self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
-    def from_params(cls, model, serialization_dir, iterator, params):
+    def from_params(cls, model, serialization_dir, params):
         ''' Generator trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
@@ -902,7 +879,7 @@ class SamplingMultiTaskTrainer:
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
 
         params.assert_empty(cls.__name__)
-        return SamplingMultiTaskTrainer(model, iterator, patience=patience,
+        return SamplingMultiTaskTrainer(model, patience=patience,
                                         val_interval=val_interval, max_vals=max_vals,
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
