@@ -317,6 +317,10 @@ class SamplingMultiTaskTrainer:
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
+        elif weighting_method == 'proportional_log':
+            sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
+            max_weight = max(sample_weights)
+            min_weight = min(sample_weights)
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
