@@ -325,7 +325,6 @@ class SamplingMultiTaskTrainer:
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
-        # haven't written loss scaling for methods below
         elif weighting_method == 'proportional_log_batch': # log(training batches)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'proportional_log_example': # log(training examples)
