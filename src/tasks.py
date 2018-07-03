@@ -727,6 +727,34 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+class WikiInsertionsTask(MTTask):
+    '''Task which predicts a span to insert at a given index'''
+    def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
+        super().__init__(path, max_seq_len, name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+
+    def load_data(self, path, max_seq_len):
+        self.train_data_text = load_tsv(os.path.join(path, 'train_small.tsv'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
+                                        targ_fn=lambda t: t.split(' '))
+        self.val_data_text = load_tsv(os.path.join(path, 'dev_small.tsv'), max_seq_len,
+                                      s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'test_small.tsv'), max_seq_len,
+                                       s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
+                                       targ_fn=lambda t: t.split(' '))
+        log.info("\tFinished loading WikiInsertions data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
