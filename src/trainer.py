@@ -212,17 +212,18 @@ class SamplingMultiTaskTrainer():
             task_info = task_infos[task.name]
 
             # Adding task-specific smart iterator to speed up training
-            pad_key_dict = [instance.get_padding_lengths() for instance in task.train_data][0]
+            instance = [i for i in itertools.islice(task.train_data, 1)][0]
+            pad_dict = instance.get_padding_lengths()
             sorting_keys = []
-            for k1 in pad_key_dict:
-                if len(pad_key_dict) != 0:
-                    for k2 in pad_key_dict[k1]:
-                        sorting_keys.append((k1, k2))
+            for field in pad_dict:
+                for pad_field in pad_dict[field]:
+                    sorting_keys.append((field, pad_field))
             iterator = BucketIterator(sorting_keys=sorting_keys,
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
+
             task_info['iterator'] = iterator
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
             task_info['tr_generator'] = tr_generator
@@ -445,7 +446,7 @@ class SamplingMultiTaskTrainer():
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
                 all_tr_metrics = {}
-                samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+                samples = random.choices(tasks, weights=sample_weights, k=validation_interval) # pylint: disable=no-member
 
                 if should_save:
                     self._save_checkpoint(
