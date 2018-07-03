@@ -275,6 +275,8 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks uniformly")
         elif weighting_method == 'proportional':
             log.info("Sampling tasks proportional to number of training batches")
+        elif weighting_method == 'proportional_log':
+            log.info("Sampling tasks proportional to log number of training batches")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -323,7 +325,11 @@ class SamplingMultiTaskTrainer():
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
-        samples = random.choices(tasks, weights=sample_weights, k=validation_interval) # pylint: disable=no-member
+        elif weighting_method == 'proportional_log': # haven't written loss scaling
+            sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
+            max_weight = max(sample_weights)
+            min_weight = min(sample_weights)
+        samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
@@ -582,7 +588,10 @@ class SamplingMultiTaskTrainer():
             else:
                 scheduler = None
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+                log.info("Advancing scheduler.")
                 scheduler.step(this_epoch_metric, epoch)
+                log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
+                log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
 
