@@ -948,3 +948,44 @@ class GroundedTask(Task):
         self.test_data_text = test
 
         log.info("\tFinished loading MSCOCO data.")
+
+
+class TaggingTask(Task):
+    ''' Generic tagging, one tag per word '''
+
+    def __init__(self, name, num_tags):
+        super().__init__(name)
+        self.num_tags = num_tags
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+
+    def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
+        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
+                                         sos_tok, eos_tok), self.train_data_text[1]]
+        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
+                                       sos_tok, eos_tok), self.val_data_text[1]]
+        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
+                                        sos_tok, eos_tok), self.test_data_text[1]]
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
+
+class POSTaggingTask(TaggingTask):
+	def __init__(self, name, num_tags):
+		super().__init__(name, num_tags)
+
+class CCGTaggingTask(TaggingTask):
+	def __init__(self, name, num_tags):
+		super().__init__(name, num_tags)
+
+
+
+
+
+
+
+
