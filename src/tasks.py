@@ -423,6 +423,7 @@ class MultiNLITelephoneTask(MultiNLISingleGenreTask):
             MultiNLITelephoneTask,
             self).__init__(
             path,
+            max_seq_len,
             genre="telephone",
             name=name)
 
