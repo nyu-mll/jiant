@@ -22,6 +22,9 @@ from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
+from allennlp.training.metrics import Average
+
+from utils import get_batch_utilization
 
 from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -335,6 +338,7 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.combine_method = args.sent_combine_method
         self.vocab = vocab
+        self.utilization = Average() if args.track_batch_utilization else None
 
     def forward(self, task, batch):
         '''
@@ -347,6 +351,8 @@ class MultiTaskModel(nn.Module):
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
+        if 'input1' in batch and self.utilization is not None:
+            self.utilization(get_batch_utilization(batch['input1']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
