@@ -216,18 +216,21 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
+    reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
             # Try in local preproc dir.
             record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-            if (os.path.isfile(record_file) or os.path.islink(record_file)) and not args.reload_indexing:
+            if (os.path.isfile(record_file) or os.path.islink(record_file)) and \
+                    not (args.reload_indexing and task.name in reindex_tasks):
                 log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
                 continue
             # Try in global preproc dir; if found, make a symlink.
             global_record_file = _get_serialized_record_path(task.name, split,
                                                              global_preproc_dir)
-            if os.path.exists(global_record_file) and not args.reload_indexing:
+            if os.path.exists(global_record_file) and not \
+                    (args.reload_indexing and task.name in reindex_tasks):
                 log.info("%s: found (global) preprocessed copy in %s",
                          log_prefix, global_record_file)
                 os.symlink(global_record_file, record_file)
