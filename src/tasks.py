@@ -975,12 +975,46 @@ class TaggingTask(Task):
         return {'accuracy': acc}
 
 class POSTaggingTask(TaggingTask):
-	def __init__(self, name, num_tags):
-		super().__init__(name, num_tags)
+	def __init__(self, path, max_seq_len, name="pos"):
+		super().__init__(name, 45) # 45 tags
+		self.load_data(path, max_seq_len)
+	        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1)
+        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
 
 class CCGTaggingTask(TaggingTask):
-	def __init__(self, name, num_tags):
-		super().__init__(name, num_tags)
+	def __init__(self, path, max_seq_length, name="ccg"):
+		super().__init__(name, 1363) # 1363 tags
+		self.load_data(path, max_seq_len)
+	        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1)
+        val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'ccg_1363.test'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
 
 
 
