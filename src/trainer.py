@@ -313,6 +313,9 @@ class SamplingMultiTaskTrainer:
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
+        # debugging
+        print([task.name for task in tasks], [task_infos[task.name]['n_tr_batches'] for task in tasks])
+
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
