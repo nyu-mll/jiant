@@ -289,6 +289,14 @@ class SamplingMultiTaskTrainer:
             log.info("Sampling tasks proportional to log number of training batches")
         elif weighting_method == 'proportional_log_example':
             log.info("Sampling tasks proportional to log number of training examples")
+        elif weighting_method == 'inverse_example':
+            log.info("Sampling tasks inverse to number of training examples")
+        elif weighting_method == 'inverse_batch':
+            log.info("Sampling tasks inverse to number of training batches")
+        elif weighting_method == 'inverse_log_example':
+            log.info("Sampling tasks inverse to log number of training examples")
+        elif weighting_method == 'inverse_log_batch':
+            log.info("Sampling tasks inverse to log number of training batches")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -332,9 +340,8 @@ class SamplingMultiTaskTrainer:
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
-        # debugging
-        print([task.name for task in tasks],[task.n_tr_examples for task in tasks],
-        [task_infos[task.name]['n_tr_batches'] for task in tasks])
+        # debugging print([task.name for task in tasks],[task.n_tr_examples for task in tasks],
+        # [task_infos[task.name]['n_tr_batches'] for task in tasks])
 
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
