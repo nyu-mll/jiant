@@ -268,8 +268,10 @@ class SamplingMultiTaskTrainer:
             log.info("Sampling tasks uniformly")
         elif weighting_method == 'proportional':
             log.info("Sampling tasks proportional to number of training batches")
-        elif weighting_method == 'proportional_log':
+        elif weighting_method == 'proportional_log_batch':
             log.info("Sampling tasks proportional to log number of training batches")
+        elif weighting_method == 'proportional_log_pt':
+            log.info("Sampling tasks proportional to log number of training data points")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -322,10 +324,12 @@ class SamplingMultiTaskTrainer:
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
-        elif weighting_method == 'proportional_log': # haven't written loss scaling
+        # haven't written loss scaling for methods below
+        elif weighting_method == 'proportional_log_batch': # log(training batches)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
-            max_weight = max(sample_weights)
-            min_weight = min(sample_weights)
+        elif weighting_method == 'proportional_log_pt': # log(training data points)
+            sample_weights = [math.log(task_infos[task.name]['n_tr_batches'] * batch_size) for task in tasks]
+
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
