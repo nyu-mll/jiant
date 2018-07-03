@@ -734,10 +734,10 @@ class WikiInsertionsTask(MTTask):
         self.train_data_text = load_tsv(os.path.join(path, 'train_small.tsv'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
                                         targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+        self.val_data_text = load_tsv(os.path.join(path, 'dev_small.tsv'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
                                       targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+        self.test_data_text = load_tsv(os.path.join(path, 'test_small.tsv'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
                                        targ_fn=lambda t: t.split(' '))
         log.info("\tFinished loading WikiInsertions data.")

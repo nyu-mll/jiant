@@ -28,7 +28,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             dataset = task.test_data
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         generator_tqdm = tqdm.tqdm(generator, total=iterator.get_num_batches(dataset), disable=True)
-        for batch in generator_tqdm:
+        for i, batch in enumerate(generator_tqdm):
+            log.info("processing batch %d...."%i)
             tensor_batch = batch
             if 'idx' in tensor_batch:
                 task_idxs += tensor_batch['idx'].data.tolist()
@@ -72,6 +73,7 @@ def write_preds(all_preds, pred_dir):
     ''' Write predictions to files in pred_dir
 
     We write special code to handle various GLUE tasks. '''
+    print(all_preds)
     for task, preds in all_preds.items():
         if task not in ['cola', 'sst', 'qqp', 'mrpc', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']:
             continue
