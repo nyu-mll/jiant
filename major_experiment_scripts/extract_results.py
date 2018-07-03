@@ -2,6 +2,7 @@ import re
 import sys
 import datetime
 
+# Pro tip: To copy the results of this script from the terminal in Mac OS, use command-alt-shift-c. That'll copy the tabs as tabs, not spaces.
 
 if len(sys.argv) < 2:
   print("Usage: python extract_results.py log.log")
@@ -24,6 +25,7 @@ for path in sys.argv[1:]:
     train_tasks = None
     dropout = None
     elmo = None
+    print(path)
 
     with open(path) as f:
       for line in f:
@@ -66,7 +68,6 @@ for path in sys.argv[1:]:
       metric, value = mv.split(':')
       cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
 
-    print(path)
     print('\t'.join(col_order))
     print('\t'.join([cols[c] for c in col_order]))
   except BaseException as e:
