@@ -63,7 +63,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         and a scheduler config object.
     '''
     iterator = BasicIterator(params['batch_size'])
-    # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
+    #iterator = BucketIterator(sorting_keys=[("input1", "num_tokens")],
     #                          batch_size=params['batch_size'])
 
     if params['optimizer'] == 'adam':
@@ -91,6 +91,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         log.info('\tUsing ReduceLROnPlateau scheduler!')
 
     train_params = Params({'cuda_device': params['cuda'],
+
                            'patience': params['patience'],
                            'grad_norm': params['max_grad_norm'],
                            'val_interval': params['val_interval'],
@@ -216,7 +217,23 @@ class SamplingMultiTaskTrainer:
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
+
+            # Adding task-specific smart iterator to speed up training
+            '''
+            batch_size = iterator._batch_size
+            pad_key_dict = [instance.get_padding_lengths() for instance in task.train_data][0]
+            sorting_keys = []
+            for k1 in pad_key_dict:
+                if len(pad_key_dict) != 0:
+                    for k2 in pad_key_dict[k1]:
+                        sorting_keys.append((k1, k2))
+            iterator = BucketIterator(sorting_keys=sorting_keys,
+                                      max_instances_in_memory=10000,
+                                      batch_size=batch_size,
+                                      biggest_batch_first=True)
+            '''
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
+            task_info['iterator'] = iterator
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
@@ -394,6 +411,11 @@ class SamplingMultiTaskTrainer:
 
                 task_info['last_log'] = time.time()
 
+                if self._model.utilization is not None:
+                    batch_util = self._model.utilization.get_metric()
+                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+
+
             # Validation
             if n_pass % (validation_interval) == 0:
                 epoch = int(n_pass / validation_interval)
@@ -413,6 +435,10 @@ class SamplingMultiTaskTrainer:
                     log.info("%s: trained on %d batches, %.3f epochs", task.name,
                              n_batches_since_val, n_batches_since_val / task_info['n_tr_batches'])
 
+                if self._model.utilization is not None:
+                    batch_util = self._model.utilization.get_metric(reset=True)
+                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro, task_infos, metric_infos = self._validate(
@@ -423,6 +449,7 @@ class SamplingMultiTaskTrainer:
                     epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
                 # Log results to logger and tensorboard
+
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
                     if name in all_tr_metrics:
@@ -579,7 +606,10 @@ class SamplingMultiTaskTrainer:
             else:
                 scheduler = None
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+                log.info("Advancing scheduler.")
                 scheduler.step(this_epoch_metric, epoch)
+                log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
+                log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
 
