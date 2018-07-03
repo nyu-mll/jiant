@@ -427,6 +427,8 @@ def process_task_split(task, split, token_indexer):
                                                    is_pair=True, classification=False)
     elif isinstance(task, LanguageModelingTask):
         instances = process_lm_task_split(split_text, token_indexer)
+    elif isinstance(task, TaggingTask):
+    	instances = process_tagging_task_split(split_text, token_indexer)
     elif isinstance(task, MTTask):
         instances = process_mt_task_split(split_text, token_indexer)
     elif isinstance(task, SequenceGenerationTask):
@@ -533,3 +535,16 @@ def process_mt_task_split(split, indexers):
     targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
     instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
     return instances
+
+
+def process_tagging_task_split(split, indexers):
+    ''' Process a tagging task '''
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    # Might be better as LabelField? I don't know what these things mean
+    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
+    return instances
+
+
+
+
