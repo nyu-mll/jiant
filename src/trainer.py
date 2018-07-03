@@ -325,12 +325,18 @@ class SamplingMultiTaskTrainer:
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
+
         elif weighting_method == 'proportional_log_batch': # log(training batches)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'proportional_log_example': # log(training examples)
             sample_weights = [math.log(task.n_tr_examples) for task in tasks]
+
         elif weighting_method == 'proportional_inverse_example': # 1/training examples
             sample_weights = [(1/task.n_tr_examples) for task in tasks]
+        elif weighting_method == 'proportional_inverse_log_example': # 1/log(training examples)
+            sample_weights = [(1/math.log(task.n_tr_examples)) for task in tasks]
+        elif weighting_method == 'proportional_inverse_log_batch': # 1/log(training examples)
+            sample_weights = [(1/math.log(task_infos[task.name]['n_tr_batches'])) for task in tasks]
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
