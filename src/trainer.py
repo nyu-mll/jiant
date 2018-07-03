@@ -316,7 +316,8 @@ class SamplingMultiTaskTrainer:
                     parameter.register_hook(clip_function)
 
         # debugging
-        print([task.name for task in tasks], [task_infos[task.name]['n_tr_batches'] for task in tasks])
+        print([task.name for task in tasks],[task.n_tr_examples for task in tasks],
+        [task_infos[task.name]['n_tr_batches'] for task in tasks])
 
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
