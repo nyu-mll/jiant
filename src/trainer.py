@@ -219,6 +219,7 @@ class SamplingMultiTaskTrainer:
             task_info = task_infos[task.name]
 
             # Adding task-specific smart iterator to speed up training
+            '''
             batch_size = iterator._batch_size
             pad_key_dict = [instance.get_padding_lengths() for instance in task.train_data][0]
             sorting_keys = []
@@ -230,6 +231,7 @@ class SamplingMultiTaskTrainer:
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
+            '''
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
             task_info['iterator'] = iterator
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
