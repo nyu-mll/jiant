@@ -7,7 +7,6 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from utils import device_mapping
 from tasks import STSBTask, JOCITask
-import ipdb
 
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
@@ -29,7 +28,6 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         generator_tqdm = tqdm.tqdm(generator, total=iterator.get_num_batches(dataset), disable=True)
         for i, batch in enumerate(generator_tqdm):
-            ipdb.set_trace()
             tensor_batch = batch
             if 'idx' in tensor_batch:
                 task_idxs += tensor_batch['idx'].data.tolist()
@@ -68,18 +66,12 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 
     return all_metrics, all_preds
 
-def write_generated_seqs(all_preds, pred_dir, vocab):
-  ipdb.set_trace()
-
-def write_preds(all_preds, pred_dir, vocab):
+def write_preds(all_preds, pred_dir):
     ''' Write predictions to files in pred_dir
 
     We write special code to handle various GLUE tasks. '''
-    ipdb.set_trace() 
     for task, preds in all_preds.items():
-        if task in ['wikiins']:
-          write_generated_seqs(preds, pred_dir, vocab)
-        elif task not in ['cola', 'sst', 'qqp', 'mrpc', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']:
+        if task not in ['cola', 'sst', 'qqp', 'mrpc', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']:
             continue
         if isinstance(preds[1][0], list):
             preds = [[p for p in preds[0]], [p[0] for p in preds[1]]]
