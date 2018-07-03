@@ -62,7 +62,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         and a scheduler config object.
     '''
     iterator = BasicIterator(params['batch_size'])
-    # iterator = BucketIterator(sorting_keys=[("sentence1", "num_tokens")],
+    #iterator = BucketIterator(sorting_keys=[("input1", "num_tokens")],
     #                          batch_size=params['batch_size'])
 
     if params['optimizer'] == 'adam':
@@ -90,6 +90,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         log.info('\tUsing ReduceLROnPlateau scheduler!')
 
     train_params = Params({'cuda_device': params['cuda'],
+                   
                            'patience': params['patience'],
                            'grad_norm': params['max_grad_norm'],
                            'val_interval': params['val_interval'],
@@ -207,6 +208,16 @@ class SamplingMultiTaskTrainer:
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
+            # Adding task-specific smart iterator to speed up training
+            batch_size = iterator._batch_size
+            pad_key_dict = [instance.get_padding_lengths() for instance in task.train_data][0] #Not sure how to get just the first element, because no  __next__() on task.train_data, which is an RepeatableIterable object
+            sorting_keys = []
+            for k1 in pad_key_dict:
+                if len(pad_key_dict) != 0:
+                    for k2 in pad_key_dict[k1]:
+                        sorting_keys.append((k1, k2))
+            iterator = BucketIterator(sorting_keys=sorting_keys, batch_size=batch_size)
+            task_info['iterator'] = iterator
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
             task_info['n_val_batches'] = math.ceil( task.n_val_examples / iterator._batch_size)
@@ -398,7 +409,7 @@ class SamplingMultiTaskTrainer:
                 should_stop, task_infos, metric_infos = self._check_stop(
                     epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
 
-                # Log results
+                # Log result
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
                     if name in all_tr_metrics:
@@ -461,6 +472,7 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             n_examples = 0.0
             task_info = task_infos[task.name]
+            iterator = task_info["iterator"]
             val_generator = iterator(task.val_data, num_epochs=1, cuda_device=self._cuda_device)
             n_val_batches = task_infos[task.name]['n_val_batches']
             all_val_metrics["%s_loss" % task.name] = 0.0
