@@ -9,20 +9,21 @@ if len(sys.argv) < 2:
 
 col_order = ['date', 'train_tasks', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1']
 
-cols = {c : '' for c in col_order}
 
 today = datetime.datetime.now()
-cols['date'] =  today.strftime("%m/%d/%Y")
 
 # looking at all lines is overkill, but just in case we change the format later, 
 # or if there is more junk after the eval line
-results_line = None
-found_eval = False
-train_tasks = None
-dropout = None
-elmo = None
 
 for path in sys.argv[1:]:
+  cols = {c : '' for c in col_order}
+  cols['date'] =  today.strftime("%m/%d/%Y")
+  results_line = None
+  found_eval = False
+  train_tasks = None
+  dropout = None
+  elmo = None
+
   with open(path) as f:
     for line in f:
       line = line.strip()
