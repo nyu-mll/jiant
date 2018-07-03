@@ -21,47 +21,50 @@ found_eval = False
 train_tasks = None
 dropout = None
 elmo = None
-with open(sys.argv[1]) as f:
-  for line in f:
-    line = line.strip()
 
-    if line == 'Evaluating...':
-      found_eval = True
-    else:
-      if found_eval:
-        assert (results_line is None), "Error! Multiple GLUE evals in this log\n"
-        results_line = line.strip()
-      found_eval = False
+for path in sys.argv[1:]:
+  with open(path) as f:
+    for line in f:
+      line = line.strip()
 
-    train_m = re.match('Training model on tasks: (.*)', line)
-    if train_m:
-      task = train_m.groups()[0]
-      if train_tasks is not None:
-        assert (task == train_tasks), "Error! Multiple starts to training tasks, but tasks don't match: %s vs. %s"%(train_tasks, task)
-      train_tasks = task
+      if line == 'Evaluating...':
+        found_eval = True
+      else:
+        if found_eval:
+          assert (results_line is None), "Error! Multiple GLUE evals in this log\n"
+          results_line = line.strip()
+        found_eval = False
 
-    do_m = re.match('"dropout": (.*),', line)
-    if do_m:
-      do = do_m.groups()[0]
-      if dropout is not None:
-        assert (dropout == do), "Error! Multiple dropouts set, but dropouts don't match: %s vs. %s"%(dropout, do)
-      dropout = do
+      train_m = re.match('Training model on tasks: (.*)', line)
+      if train_m:
+        task = train_m.groups()[0]
+        if train_tasks is not None:
+          assert (task == train_tasks), "Error! Multiple starts to training tasks, but tasks don't match: %s vs. %s"%(train_tasks, task)
+        train_tasks = task
 
-    el_m = re.match('"elmo_chars_only": (.*),', line)
-    if el_m:
-      el = el_m.groups()[0]
-      if elmo is not None:
-        assert (elmo == el), "Error! Multiple elmo flags set, but settings don't match: %s vs. %s"%(elmo, el)
-      elmo = el
+      do_m = re.match('"dropout": (.*),', line)
+      if do_m:
+        do = do_m.groups()[0]
+        if dropout is not None:
+          assert (dropout == do), "Error! Multiple dropouts set, but dropouts don't match: %s vs. %s"%(dropout, do)
+        dropout = do
 
-cols['train_tasks'] = train_tasks
-cols['dropout'] = dropout
-cols['elmo'] = 'Y' if elmo == '0' else 'N'
+      el_m = re.match('"elmo_chars_only": (.*),', line)
+      if el_m:
+        el = el_m.groups()[0]
+        if elmo is not None:
+          assert (elmo == el), "Error! Multiple elmo flags set, but settings don't match: %s vs. %s"%(elmo, el)
+        elmo = el
 
-for mv in results_line.strip().split(','):
-  metric, value = mv.split(':')
-  cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
+  cols['train_tasks'] = train_tasks
+  cols['dropout'] = dropout
+  cols['elmo'] = 'Y' if elmo == '0' else 'N'
 
-print('\t'.join(col_order))
-print('\t'.join([cols[c] for c in col_order]))
+  for mv in results_line.strip().split(','):
+    metric, value = mv.split(':')
+    cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
+
+  print(path)
+  print('\t'.join(col_order))
+  print('\t'.join([cols[c] for c in col_order]))
 
