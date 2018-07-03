@@ -23,8 +23,8 @@ except BaseException:
 
 import _pickle as pkl
 
-#  from serialize import write_records, read_records
 import serialize
+import utils
 
 from tasks import SingleClassificationTask, PairClassificationTask, \
     PairRegressionTask, SequenceGenerationTask, RankingTask, \
@@ -59,15 +59,15 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'joci': (JOCITask, 'JOCI/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'bwb': (BWBLMTask, 'BWB/'), 
+             'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
-             'weakgrounded': (WeakGroundedTask, 'mscoco-temp/weakgrounded/'),
-             'grounded': (GroundedTask, 'mscoco-temp/grounded/'),
+             'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
+             'grounded': (GroundedTask, 'mscoco/grounded/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -75,11 +75,13 @@ SPECIALS = [SOS_TOK, EOS_TOK]
 
 ALL_SPLITS = ['train', 'val', 'test']
 
+
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
     serialized_record_path = os.path.join(preproc_dir,
                                           "{:s}__{:s}_data".format(task_name, split))
     return serialized_record_path
+
 
 def _get_instance_generator(task_name, split, preproc_dir):
     """Get a lazy generator for the given task and split.
@@ -95,6 +97,7 @@ def _get_instance_generator(task_name, split, preproc_dir):
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
     return serialize.read_records(filename, repeatable=True)
+
 
 def _indexed_instance_generator(instance_list, vocab):
     """Yield indexed copies of the given instances.
@@ -129,6 +132,27 @@ def del_field_tokens(instance):
         field = instance.fields['input2']
         del field.tokens
 
+
+def _index_split(task, split, token_indexer, target_indexer, vocab, record_file):
+    """Index instances and stream to disk.
+
+    Args:
+        task: Task instance
+        split: (string), 'train', 'val', or 'test'
+        token_indexer: dict of token indexers
+        vocab: Vocabulary instance
+        record_file: (string) file to write serialized Instances to
+    """
+    log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
+    log.info("%s: indexing from scratch", log_prefix)
+    log.info("%s: processing to tokens", log_prefix)
+    instance_list = process_task_split(task, split, token_indexer, target_indexer)
+    log.info("%s: %d examples to index", log_prefix, len(instance_list))
+    serialize.write_records(
+        _indexed_instance_generator(instance_list, vocab), record_file)
+    log.info("%s: saved instances to %s", log_prefix, record_file)
+
+
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
     1) creating / loading the tasks
@@ -140,8 +164,7 @@ def build_tasks(args):
 
     # 1) create / load tasks
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
-    if not os.path.isdir(prepreproc_dir):
-        os.mkdir(prepreproc_dir)
+    utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
@@ -194,33 +217,34 @@ def build_tasks(args):
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
-    if not os.path.isdir(preproc_dir):
-        os.mkdir(preproc_dir)
-    preproc_file_names = set()
-    if not args.reload_vocab and not args.reload_indexing:
-        for file in os.listdir(preproc_dir):
-            preproc_file_names.add(file.split("__")[0])
-
+    utils.maybe_make_dir(preproc_dir)
+    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
     for task in tasks:
-        if not task.name in preproc_file_names:
-            log.info("\tTask '%s': indexing from scratch", task.name)
-            # Index instances and stream to disk.
-            for split in ALL_SPLITS:
-                log.info("\tTask '%s', split '%s': processing to tokens",
-                         task.name, split)
-                instance_list = process_task_split(task, split, token_indexer, target_indexer)
-                log.info("\tTask '%s', split '%s': %d examples to index",
-                         task.name, split, len(instance_list))
-                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-                serialize.write_records(
-                    _indexed_instance_generator(instance_list, vocab), record_file)
-                log.info("\tTask '%s': saved split '%s' to %s",
-                         task.name, split, record_file)
-            # Delete in-memory data - we'll lazy-load from disk later.
-            task.train_data = None
-            task.val_data   = None
-            task.test_data  = None
-            log.info("\tTask '%s': cleared in-memory data.", task.name)
+        for split in ALL_SPLITS:
+            log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
+            # Try in local preproc dir.
+            record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+            if os.path.exists(record_file):
+                log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
+                continue
+            # Try in global preproc dir; if found, make a symlink.
+            global_record_file = _get_serialized_record_path(task.name, split,
+                                                             global_preproc_dir)
+            if os.path.exists(global_record_file):
+                log.info("%s: found (global) preprocessed copy in %s",
+                         log_prefix, global_record_file)
+                os.symlink(global_record_file, record_file)
+                log.info("\tCreated symlink: %s -> %s", record_file,
+                         global_record_file)
+                continue
+            # If all else fails, reindex from scratch.
+            _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
+
+        # Delete in-memory data - we'll lazy-load from disk later.
+        task.train_data = None
+        task.val_data = None
+        task.test_data = None
+        log.info("\tTask '%s': cleared in-memory data.", task.name)
 
     log.info("\tFinished indexing tasks")
 
@@ -228,8 +252,8 @@ def build_tasks(args):
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
-        task.val_data =   _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data =  _get_instance_generator(task.name, "test", preproc_dir)
+        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
+        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
@@ -240,6 +264,7 @@ def build_tasks(args):
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
 
+
 def _parse_task_list_arg(task_list):
     '''Parse task list argument into a list of task names.'''
     if task_list == 'glue':
@@ -249,11 +274,12 @@ def _parse_task_list_arg(task_list):
     else:
         return task_list.split(',')
 
+
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
               scratch_path=None, load_pkl=1):
     ''' Load tasks '''
     train_task_names = _parse_task_list_arg(train_tasks)
-    eval_task_names  = _parse_task_list_arg(eval_tasks)
+    eval_task_names = _parse_task_list_arg(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
 
     assert path is not None
@@ -278,15 +304,15 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
 
-    for task in tasks: # hacky
-        if isinstance(task, LanguageModelingTask): # should be true to seq task?
-            task.n_tr_examples  = len(task.train_data_text)
+    for task in tasks:  # hacky
+        if isinstance(task, LanguageModelingTask):  # should be true to seq task?
+            task.n_tr_examples = len(task.train_data_text)
             task.n_val_examples = len(task.val_data_text)
-            task.n_te_examples  = len(task.test_data_text)
+            task.n_te_examples = len(task.test_data_text)
         else:
-            task.n_tr_examples  = len(task.train_data_text[0])
+            task.n_tr_examples = len(task.train_data_text[0])
             task.n_val_examples = len(task.val_data_text[0])
-            task.n_te_examples  = len(task.test_data_text[0])
+            task.n_te_examples = len(task.test_data_text[0])
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
@@ -425,6 +451,7 @@ def process_task_split(task, split, token_indexer, target_indexer=None):
         raise ValueError("Preprocessing procedure not found for %s" % task.name)
     return instances
 
+
 def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
     '''
     Convert a dataset of sentences into padded sequences of indices.
@@ -439,8 +466,8 @@ def process_grounded_task_split(split, indexers, is_pair=True, classification=Tr
     inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
     labels = [NumericField(l) for l in split[1]]
     ids = [NumericField(l) for l in split[2]]
-    instances = [Instance({"input1": input1, "labels": label, "ids": ids}) for (input1, label, ids) in
-                         zip(inputs1, labels, ids)]
+    instances = [Instance({"input1": input1, "labels": label, "ids": ids})
+                 for (input1, label, ids) in zip(inputs1, labels, ids)]
 
     return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
 
@@ -499,7 +526,8 @@ def process_lm_task_split(split, indexers):
         targs_indexers = {"words": SingleIdTokenIndexer()}
     else:
         targs_indexers = indexers
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers) for sent in split]
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
+               for sent in split]
     trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
                for sent in split]
     # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})

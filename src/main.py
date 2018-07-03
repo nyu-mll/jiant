@@ -44,6 +44,7 @@ def handle_arguments(cl_arguments):
 
     return parser.parse_args(cl_arguments)
 
+
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     cl_args = handle_arguments(cl_arguments)
@@ -63,16 +64,24 @@ def main(cl_arguments):
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
-
-#    try:
-#      log.info("Waiting on git info....")
-#      git_branch_name = subprocess.check_output('git rev-parse --abbrev-ref HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-#      git_sha = subprocess.check_output('git rev-parse HEAD', stderr=subprocess.STDOUT, timeout=10, shell=True)
-#      log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-#    except subprocess.TimeoutExpired:
-#      git_branch_name.kill()
-#      log.warn("Git info not found. Moving right along...") 
       
+#    try:
+#        log.info("Waiting on git info....")
+#        git_branch_name = subprocess.check_output(
+#            'git rev-parse --abbrev-ref HEAD',
+#            stderr=subprocess.STDOUT,
+#            timeout=10,
+#            shell=True)
+#        git_sha = subprocess.check_output(
+#            'git rev-parse HEAD',
+#            stderr=subprocess.STDOUT,
+#            timeout=10,
+#            shell=True)
+#        log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
+#    except subprocess.TimeoutExpired:
+#        git_branch_name.kill()
+#        log.warn("Git info not found. Moving right along...")
+
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
@@ -94,10 +103,10 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    assert_for_log(not (len(train_tasks) > 1 and \
-        any(train_task.val_metric_decreases for train_task in train_tasks)),
-        "Attempting multitask training with a mix of increasing and decreasing metrics. "
-        "This is not currently supported. (We haven't set it up yet.)")
+    assert_for_log(not (len(train_tasks) > 1 and
+                        any(train_task.val_metric_decreases for train_task in train_tasks)),
+                   "Attempting multitask training with a mix of increasing and decreasing metrics. "
+                   "This is not currently supported. (We haven't set it up yet.)")
 
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
@@ -196,7 +205,7 @@ def main(cl_arguments):
 if __name__ == '__main__':
     try:
         main(sys.argv[1:])
-    except:
+    except BaseException:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
         sys.exit(1)
