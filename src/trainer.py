@@ -230,10 +230,8 @@ class SamplingMultiTaskTrainer:
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
-
-            task_info['iterator'] = iterator
-            print(type(iterator))
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
+            task_info['iterator'] = iterator
             task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / iterator._batch_size)
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
@@ -600,7 +598,10 @@ class SamplingMultiTaskTrainer:
             else:
                 scheduler = None
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+                log.info("Advancing scheduler.")
                 scheduler.step(this_epoch_metric, epoch)
+                log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
+                log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
         return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
 
