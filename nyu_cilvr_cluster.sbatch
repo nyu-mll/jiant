@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=8000
 #SBATCH -t24:00:00
-#SBATCH --constraint=gpu_12gb
+#SBATCH --constraint=gpu_12gb,pascal
 
 # Log what we're running and where.
 echo $SLURM_JOBID - `hostname` - $JIANT_FLAGS >> ~/jiant_machine_assignments.txt
