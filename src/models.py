@@ -366,7 +366,6 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_classification_forward(batch, task)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task)
-
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -484,8 +483,8 @@ class MultiTaskModel(nn.Module):
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
         image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
-    
+        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]
+
         seq, true = [], []
         for i in range(len(ids)):
             img_id, label = ids[i], labels[i]
@@ -498,8 +497,8 @@ class MultiTaskModel(nn.Module):
         image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda(); sent_transform = image_map(sent_transform)
 
         '''
-        cos = nn.SmoothL1Loss()        
-        cos = nn.MSELoss()        
+        cos = nn.SmoothL1Loss()
+        cos = nn.MSELoss()
         cos = nn.L1Loss()
         out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
         '''

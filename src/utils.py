@@ -32,6 +32,25 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+def load_model_state(model, state_path, gpu_id, skip_task_models=False):
+    ''' Helper function to load a model state
+
+    Parameters
+    ----------
+    model: The model object to populate with loaded parameters.
+    state_path: The path to a model_state checkpoint.
+    gpu_id: The GPU to use. -1 for no GPU.
+    skip_task_models: If set, load only the task-independent parameters.
+    '''
+    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    if skip_task_models:
+        keys_to_skip = [key for key in model_state if "_mdl" in key]
+        for key in keys_to_skip:
+            del model_state[key]
+
+    model.load_state_dict(model_state, strict=False)
+    logging.info("Loaded model state from %s", state_path)
+
 
 def get_batch_utilization(batch_field, pad_idx=0):
     ''' Get ratio of batch elements that are padding

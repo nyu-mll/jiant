@@ -93,8 +93,12 @@ class NLIProbingTask(PairClassificationTask):
     def __init__(self, name, n_classes):
         super().__init__(name)
 
+class RegressionTask(Task):
+    ''' General regression task '''
+    def __init__(self, name):
+        super().__init__(name)
 
-class PairRegressionTask(Task):
+class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name):
@@ -111,7 +115,7 @@ class PairRegressionTask(Task):
         return {'mse': mse}
 
 
-class PairOrdinalRegressionTask(Task):
+class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
         in case we find a good way to implement ordinal regression with NN'''
