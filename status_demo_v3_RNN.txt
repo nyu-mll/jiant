@@ -1,0 +1,729 @@
+06/27 06:06:19 PM: fastText library not found!
+06/27 06:06:19 PM: Parsed args: 
+{
+  "batch_size": 16,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 32,
+  "cove": 0,
+  "cuda": 0,
+  "d_char": 100,
+  "d_ff": 2048,
+  "d_hid": 128,
+  "d_hid_dec": 300,
+  "d_proj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 10,
+  "eval_tasks": "mrpc",
+  "eval_val_interval": 10,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/",
+  "exp_name": "jsalt_demo_sst_RNN",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "force_load_epoch": -1,
+  "load_eval_checkpoint": "none",
+  "load_model": 0,
+  "log_file": "log.log",
+  "lr": 0.001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 10,
+  "max_vals": 10,
+  "max_word_v_size": 5000,
+  "min_lr": 1e-06,
+  "n_char_filters": 100,
+  "n_epochs": 10000,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 1,
+  "n_layers_highway": 0,
+  "no_tqdm": 1,
+  "optimizer": "adam",
+  "pair_enc": "simple",
+  "patience": 10,
+  "preproc_file": "preproc.pkl",
+  "random_seed": 42,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 1,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst",
+  "run_name": "sst",
+  "scaling_method": "none",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "rnn",
+  "shared_optimizer": 1,
+  "shared_pair_enc": 1,
+  "skip_embs": 1,
+  "task_classifier_dropout": 0.2,
+  "task_classifier_hid_dim": 256,
+  "task_lr": 0.001,
+  "task_pair_enc": "simple",
+  "task_patience": 5,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 10,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "uniform",
+  "word_embs": "glove",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/27 06:06:19 PM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/params.conf
+06/27 06:06:19 PM: Using GPU 0
+06/27 06:06:19 PM: Using random seed 42
+06/27 06:06:19 PM: Loading tasks...
+06/27 06:06:19 PM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/
+06/27 06:06:19 PM: 	Creating task sst from scratch
+06/27 06:06:26 PM: 	Finished loading SST data.
+06/27 06:06:26 PM: 	Creating task mrpc from scratch
+06/27 06:06:29 PM: 	Finished loading MRPC data.
+06/27 06:06:29 PM: 	Finished loading tasks: sst mrpc.
+06/27 06:06:29 PM: 	Building vocab from scratch
+06/27 06:06:29 PM: 	Finished counting words
+06/27 06:06:29 PM: 	Saved vocab to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/vocab
+06/27 06:06:29 PM: 	Finished building vocab. Using 5002 words, 107 chars.
+06/27 06:06:29 PM: 	Building embeddings from scratch
+06/27 06:06:37 PM: 	Finished loading embeddings
+06/27 06:06:38 PM: 	Saved embeddings to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/embs.pkl
+06/27 06:06:38 PM: 	Indexing task sst from scratch
+06/27 06:06:46 PM: Your label namespace was 'idxs'. We recommend you use a namespace ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by default to your vocabulary.  See documentation for `non_padded_namespaces` parameter in Vocabulary.
+06/27 06:06:46 PM: 	Indexing task mrpc from scratch
+06/27 06:06:48 PM: 	Finished indexing tasks
+06/27 06:06:50 PM: 	Saved data to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/preproc.pkl
+06/27 06:06:50 PM: 	  Training on sst
+06/27 06:06:50 PM: 	  Evaluating on mrpc
+06/27 06:06:50 PM: 	Finished loading tasks in 31.213s
+06/27 06:06:50 PM: Building model...
+06/27 06:06:50 PM: 	Using word embeddings from /usr/share/jsalt/glove/glove.840B.300d.txt
+06/27 06:06:50 PM: 	Not using character embeddings!
+06/27 06:06:50 PM: 	Using ELMo character CNN only!
+06/27 06:06:55 PM: batch_first = True
+06/27 06:06:55 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:06:55 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:06:55 PM: input_size = 812
+06/27 06:06:55 PM: hidden_size = 128
+06/27 06:06:55 PM: num_layers = 1
+06/27 06:06:55 PM: bidirectional = 1
+06/27 06:06:55 PM: batch_first = True
+06/27 06:06:55 PM: Initializing parameters
+06/27 06:06:55 PM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/27 06:06:55 PM:    _phrase_layer._module.bias_hh_l0
+06/27 06:06:55 PM:    _phrase_layer._module.bias_hh_l0_reverse
+06/27 06:06:55 PM:    _phrase_layer._module.bias_ih_l0
+06/27 06:06:55 PM:    _phrase_layer._module.bias_ih_l0_reverse
+06/27 06:06:55 PM:    _phrase_layer._module.weight_hh_l0
+06/27 06:06:55 PM:    _phrase_layer._module.weight_hh_l0_reverse
+06/27 06:06:55 PM:    _phrase_layer._module.weight_ih_l0
+06/27 06:06:55 PM:    _phrase_layer._module.weight_ih_l0_reverse
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/27 06:06:55 PM:    _text_field_embedder.token_embedder_words.weight
+06/27 06:06:59 PM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_words): Embedding()
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList()
+      )
+    )
+    (_phrase_layer): PytorchSeq2SeqWrapper(
+      (_module): LSTM(812, 128, batch_first=True, bidirectional=1)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): Sequential(
+    (0): Dropout(p=0.2)
+    (1): Linear(in_features=1068, out_features=32, bias=True)
+    (2): Tanh()
+    (3): LayerNorm(torch.Size([32]), eps=1e-05, elementwise_affine=True)
+    (4): Dropout(p=0.2)
+    (5): Linear(in_features=32, out_features=2, bias=True)
+  )
+  (pair_encoder): SimplePairEncoder()
+  (mrpc_mdl): Sequential(
+    (0): Dropout(p=0.2)
+    (1): Linear(in_features=4272, out_features=32, bias=True)
+    (2): Tanh()
+    (3): LayerNorm(torch.Size([32]), eps=1e-05, elementwise_affine=True)
+    (4): Dropout(p=0.2)
+    (5): Linear(in_features=32, out_features=2, bias=True)
+  )
+)
+06/27 06:06:59 PM: 	Finished building model in 8.482s
+06/27 06:06:59 PM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: mrpc
+06/27 06:06:59 PM: Training...
+06/27 06:06:59 PM: patience = 10
+06/27 06:06:59 PM: num_epochs = 10000
+06/27 06:06:59 PM: max_vals = 10
+06/27 06:06:59 PM: cuda_device = 0
+06/27 06:06:59 PM: grad_norm = 5.0
+06/27 06:06:59 PM: grad_clipping = None
+06/27 06:06:59 PM: lr_decay = 0.99
+06/27 06:06:59 PM: min_lr = 1e-06
+06/27 06:06:59 PM: no_tqdm = 1
+06/27 06:06:59 PM: Sampling tasks uniformly
+06/27 06:06:59 PM: type = adam
+06/27 06:06:59 PM: parameter_groups = None
+06/27 06:06:59 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:06:59 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:06:59 PM: lr = 0.001
+06/27 06:06:59 PM: weight_decay = 1e-05
+06/27 06:06:59 PM: amsgrad = True
+06/27 06:06:59 PM: type = reduce_on_plateau
+06/27 06:06:59 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:06:59 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:06:59 PM: mode = max
+06/27 06:06:59 PM: factor = 0.5
+06/27 06:06:59 PM: patience = 5
+06/27 06:06:59 PM: threshold = 0.0001
+06/27 06:06:59 PM: threshold_mode = abs
+06/27 06:06:59 PM: verbose = True
+06/27 06:06:59 PM: type = adam
+06/27 06:06:59 PM: parameter_groups = None
+06/27 06:06:59 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:06:59 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:06:59 PM: lr = 0.001
+06/27 06:06:59 PM: weight_decay = 1e-05
+06/27 06:06:59 PM: amsgrad = True
+06/27 06:06:59 PM: type = reduce_on_plateau
+06/27 06:06:59 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:06:59 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:06:59 PM: mode = max
+06/27 06:06:59 PM: factor = 0.5
+06/27 06:06:59 PM: patience = 5
+06/27 06:06:59 PM: threshold = 0.0001
+06/27 06:06:59 PM: threshold_mode = abs
+06/27 06:06:59 PM: verbose = True
+06/27 06:06:59 PM: Not loading.
+06/27 06:06:59 PM: Beginning training. Stopping metric: sst_accuracy
+06/27 06:06:59 PM: ***** Pass 10 / Epoch 1 *****
+06/27 06:06:59 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:06:59 PM: Validating...
+06/27 06:07:00 PM: Best model found for sst.
+06/27 06:07:00 PM: Best model found for micro.
+06/27 06:07:00 PM: Best model found for macro.
+06/27 06:07:00 PM: Statistic: sst_loss
+06/27 06:07:00 PM: 	training: 0.807022
+06/27 06:07:00 PM: 	validation: 0.710392
+06/27 06:07:00 PM: Statistic: macro_avg
+06/27 06:07:00 PM: 	validation: 0.509174
+06/27 06:07:00 PM: Statistic: micro_avg
+06/27 06:07:00 PM: 	validation: 0.509174
+06/27 06:07:00 PM: Statistic: sst_accuracy
+06/27 06:07:00 PM: 	training: 0.481250
+06/27 06:07:00 PM: 	validation: 0.509174
+06/27 06:07:00 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:01 PM: ***** Pass 20 / Epoch 2 *****
+06/27 06:07:01 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:01 PM: Validating...
+06/27 06:07:02 PM: Statistic: sst_loss
+06/27 06:07:02 PM: 	training: 0.733455
+06/27 06:07:02 PM: 	validation: 0.693310
+06/27 06:07:02 PM: Statistic: macro_avg
+06/27 06:07:02 PM: 	validation: 0.509174
+06/27 06:07:02 PM: Statistic: micro_avg
+06/27 06:07:02 PM: 	validation: 0.509174
+06/27 06:07:02 PM: Statistic: sst_accuracy
+06/27 06:07:02 PM: 	training: 0.506250
+06/27 06:07:02 PM: 	validation: 0.509174
+06/27 06:07:02 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:02 PM: ***** Pass 30 / Epoch 3 *****
+06/27 06:07:02 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:02 PM: Validating...
+06/27 06:07:03 PM: Statistic: sst_loss
+06/27 06:07:03 PM: 	training: 0.671172
+06/27 06:07:03 PM: 	validation: 0.718337
+06/27 06:07:03 PM: Statistic: macro_avg
+06/27 06:07:03 PM: 	validation: 0.509174
+06/27 06:07:03 PM: Statistic: micro_avg
+06/27 06:07:03 PM: 	validation: 0.509174
+06/27 06:07:03 PM: Statistic: sst_accuracy
+06/27 06:07:03 PM: 	training: 0.612500
+06/27 06:07:03 PM: 	validation: 0.509174
+06/27 06:07:03 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:03 PM: ***** Pass 40 / Epoch 4 *****
+06/27 06:07:03 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:03 PM: Validating...
+06/27 06:07:04 PM: Statistic: sst_loss
+06/27 06:07:04 PM: 	training: 0.752325
+06/27 06:07:04 PM: 	validation: 0.698636
+06/27 06:07:04 PM: Statistic: macro_avg
+06/27 06:07:04 PM: 	validation: 0.509174
+06/27 06:07:04 PM: Statistic: micro_avg
+06/27 06:07:04 PM: 	validation: 0.509174
+06/27 06:07:04 PM: Statistic: sst_accuracy
+06/27 06:07:04 PM: 	training: 0.506250
+06/27 06:07:04 PM: 	validation: 0.509174
+06/27 06:07:04 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:05 PM: ***** Pass 50 / Epoch 5 *****
+06/27 06:07:05 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:05 PM: Validating...
+06/27 06:07:06 PM: Best model found for sst.
+06/27 06:07:06 PM: Best model found for micro.
+06/27 06:07:06 PM: Best model found for macro.
+06/27 06:07:06 PM: Statistic: sst_loss
+06/27 06:07:06 PM: 	training: 0.704734
+06/27 06:07:06 PM: 	validation: 0.688522
+06/27 06:07:06 PM: Statistic: macro_avg
+06/27 06:07:06 PM: 	validation: 0.564220
+06/27 06:07:06 PM: Statistic: micro_avg
+06/27 06:07:06 PM: 	validation: 0.564220
+06/27 06:07:06 PM: Statistic: sst_accuracy
+06/27 06:07:06 PM: 	training: 0.518750
+06/27 06:07:06 PM: 	validation: 0.564220
+06/27 06:07:06 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:06 PM: ***** Pass 60 / Epoch 6 *****
+06/27 06:07:06 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:06 PM: Validating...
+06/27 06:07:07 PM: Best model found for sst.
+06/27 06:07:07 PM: Best model found for micro.
+06/27 06:07:07 PM: Best model found for macro.
+06/27 06:07:07 PM: Statistic: sst_loss
+06/27 06:07:07 PM: 	training: 0.713008
+06/27 06:07:07 PM: 	validation: 0.684345
+06/27 06:07:07 PM: Statistic: macro_avg
+06/27 06:07:07 PM: 	validation: 0.572248
+06/27 06:07:07 PM: Statistic: micro_avg
+06/27 06:07:07 PM: 	validation: 0.572248
+06/27 06:07:07 PM: Statistic: sst_accuracy
+06/27 06:07:07 PM: 	training: 0.525000
+06/27 06:07:07 PM: 	validation: 0.572248
+06/27 06:07:07 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:07 PM: ***** Pass 70 / Epoch 7 *****
+06/27 06:07:07 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:07 PM: Validating...
+06/27 06:07:08 PM: Statistic: sst_loss
+06/27 06:07:08 PM: 	training: 0.690699
+06/27 06:07:08 PM: 	validation: 0.697192
+06/27 06:07:08 PM: Statistic: macro_avg
+06/27 06:07:08 PM: 	validation: 0.509174
+06/27 06:07:08 PM: Statistic: micro_avg
+06/27 06:07:08 PM: 	validation: 0.509174
+06/27 06:07:08 PM: Statistic: sst_accuracy
+06/27 06:07:08 PM: 	training: 0.531250
+06/27 06:07:08 PM: 	validation: 0.509174
+06/27 06:07:08 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:09 PM: ***** Pass 80 / Epoch 8 *****
+06/27 06:07:09 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:09 PM: Validating...
+06/27 06:07:09 PM: Batch 5/55: accuracy: 0.4750, sst_loss: 0.7038 ||
+06/27 06:07:10 PM: Statistic: sst_loss
+06/27 06:07:10 PM: 	training: 0.692171
+06/27 06:07:10 PM: 	validation: 0.687276
+06/27 06:07:10 PM: Statistic: macro_avg
+06/27 06:07:10 PM: 	validation: 0.511468
+06/27 06:07:10 PM: Statistic: micro_avg
+06/27 06:07:10 PM: 	validation: 0.511468
+06/27 06:07:10 PM: Statistic: sst_accuracy
+06/27 06:07:10 PM: 	training: 0.568750
+06/27 06:07:10 PM: 	validation: 0.511468
+06/27 06:07:10 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:10 PM: ***** Pass 90 / Epoch 9 *****
+06/27 06:07:10 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:10 PM: Validating...
+06/27 06:07:11 PM: Statistic: sst_loss
+06/27 06:07:11 PM: 	training: 0.687681
+06/27 06:07:11 PM: 	validation: 0.674653
+06/27 06:07:11 PM: Statistic: macro_avg
+06/27 06:07:11 PM: 	validation: 0.522936
+06/27 06:07:11 PM: Statistic: micro_avg
+06/27 06:07:11 PM: 	validation: 0.522936
+06/27 06:07:11 PM: Statistic: sst_accuracy
+06/27 06:07:11 PM: 	training: 0.568750
+06/27 06:07:11 PM: 	validation: 0.522936
+06/27 06:07:11 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:12 PM: ***** Pass 100 / Epoch 10 *****
+06/27 06:07:12 PM: sst: trained on 10 batches, 0.002 epochs
+06/27 06:07:12 PM: Validating...
+06/27 06:07:13 PM: Maximum number of validations hit. Stopping training.
+06/27 06:07:13 PM: Statistic: sst_loss
+06/27 06:07:13 PM: 	training: 0.658210
+06/27 06:07:13 PM: 	validation: 0.664210
+06/27 06:07:13 PM: Statistic: macro_avg
+06/27 06:07:13 PM: 	validation: 0.548165
+06/27 06:07:13 PM: Statistic: micro_avg
+06/27 06:07:13 PM: 	validation: 0.548165
+06/27 06:07:13 PM: Statistic: sst_accuracy
+06/27 06:07:13 PM: 	training: 0.618750
+06/27 06:07:13 PM: 	validation: 0.548165
+06/27 06:07:13 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:13 PM: Stopped training after 10 validation checks
+06/27 06:07:13 PM: Trained sst for 100 batches or 0.024 epochs
+06/27 06:07:13 PM: ***** VALIDATION RESULTS *****
+06/27 06:07:13 PM: sst_accuracy, 6, sst_loss: 0.68434, macro_avg: 0.57225, micro_avg: 0.57225, sst_accuracy: 0.57225
+06/27 06:07:13 PM: micro_avg, 6, sst_loss: 0.68434, macro_avg: 0.57225, micro_avg: 0.57225, sst_accuracy: 0.57225
+06/27 06:07:13 PM: macro_avg, 6, sst_loss: 0.68434, macro_avg: 0.57225, micro_avg: 0.57225, sst_accuracy: 0.57225
+06/27 06:07:13 PM: Loaded model state from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/model_state_main_epoch_6.best_macro.th
+06/27 06:07:13 PM: patience = 10
+06/27 06:07:13 PM: num_epochs = 10000
+06/27 06:07:13 PM: max_vals = 10
+06/27 06:07:13 PM: cuda_device = 0
+06/27 06:07:13 PM: grad_norm = 5.0
+06/27 06:07:13 PM: grad_clipping = None
+06/27 06:07:13 PM: lr_decay = 0.99
+06/27 06:07:13 PM: min_lr = 1e-06
+06/27 06:07:13 PM: no_tqdm = 1
+06/27 06:07:13 PM: Sampling tasks uniformly
+06/27 06:07:13 PM: type = adam
+06/27 06:07:13 PM: parameter_groups = None
+06/27 06:07:13 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:07:13 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:07:13 PM: lr = 0.001
+06/27 06:07:13 PM: weight_decay = 1e-05
+06/27 06:07:13 PM: amsgrad = True
+06/27 06:07:13 PM: type = reduce_on_plateau
+06/27 06:07:13 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:07:13 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:07:13 PM: mode = max
+06/27 06:07:13 PM: factor = 0.5
+06/27 06:07:13 PM: patience = 5
+06/27 06:07:13 PM: threshold = 0.0001
+06/27 06:07:13 PM: threshold_mode = abs
+06/27 06:07:13 PM: verbose = True
+06/27 06:07:13 PM: type = adam
+06/27 06:07:13 PM: parameter_groups = None
+06/27 06:07:13 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:07:13 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:07:13 PM: lr = 0.001
+06/27 06:07:13 PM: weight_decay = 1e-05
+06/27 06:07:13 PM: amsgrad = True
+06/27 06:07:13 PM: type = reduce_on_plateau
+06/27 06:07:13 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:07:13 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:07:13 PM: mode = max
+06/27 06:07:13 PM: factor = 0.5
+06/27 06:07:13 PM: patience = 5
+06/27 06:07:13 PM: threshold = 0.0001
+06/27 06:07:13 PM: threshold_mode = abs
+06/27 06:07:13 PM: verbose = True
+06/27 06:07:13 PM: Not loading.
+06/27 06:07:13 PM: Beginning training. Stopping metric: mrpc_acc_f1
+06/27 06:07:13 PM: ***** Pass 10 / Epoch 1 *****
+06/27 06:07:13 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:13 PM: Validating...
+06/27 06:07:14 PM: Best model found for mrpc.
+06/27 06:07:14 PM: Best model found for micro.
+06/27 06:07:14 PM: Best model found for macro.
+06/27 06:07:14 PM: Statistic: mrpc_loss
+06/27 06:07:14 PM: 	training: 0.920385
+06/27 06:07:14 PM: 	validation: 0.765069
+06/27 06:07:14 PM: Statistic: macro_avg
+06/27 06:07:14 PM: 	validation: 0.748025
+06/27 06:07:14 PM: Statistic: micro_avg
+06/27 06:07:14 PM: 	validation: 0.748025
+06/27 06:07:14 PM: Statistic: mrpc_acc_f1
+06/27 06:07:14 PM: 	training: 0.728977
+06/27 06:07:14 PM: 	validation: 0.748025
+06/27 06:07:14 PM: Statistic: mrpc_accuracy
+06/27 06:07:14 PM: 	training: 0.662500
+06/27 06:07:14 PM: 	validation: 0.683824
+06/27 06:07:14 PM: Statistic: mrpc_f1
+06/27 06:07:14 PM: 	training: 0.795455
+06/27 06:07:14 PM: 	validation: 0.812227
+06/27 06:07:14 PM: Statistic: mrpc_precision
+06/27 06:07:14 PM: 	training: 0.690789
+06/27 06:07:14 PM: 	validation: 0.683824
+06/27 06:07:14 PM: Statistic: mrpc_recall
+06/27 06:07:14 PM: 	training: 0.937500
+06/27 06:07:14 PM: 	validation: 1.000000
+06/27 06:07:14 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst
+06/27 06:07:15 PM: ***** Pass 20 / Epoch 2 *****
+06/27 06:07:15 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:15 PM: Validating...
+06/27 06:07:16 PM: Statistic: mrpc_loss
+06/27 06:07:16 PM: 	training: 0.712949
+06/27 06:07:16 PM: 	validation: 0.671614
+06/27 06:07:16 PM: Statistic: macro_avg
+06/27 06:07:16 PM: 	validation: 0.748025
+06/27 06:07:16 PM: Statistic: micro_avg
+06/27 06:07:16 PM: 	validation: 0.748025
+06/27 06:07:16 PM: Statistic: mrpc_acc_f1
+06/27 06:07:16 PM: 	training: 0.751157
+06/27 06:07:16 PM: 	validation: 0.748025
+06/27 06:07:16 PM: Statistic: mrpc_accuracy
+06/27 06:07:16 PM: 	training: 0.687500
+06/27 06:07:16 PM: 	validation: 0.683824
+06/27 06:07:16 PM: Statistic: mrpc_f1
+06/27 06:07:16 PM: 	training: 0.814815
+06/27 06:07:16 PM: 	validation: 0.812227
+06/27 06:07:16 PM: Statistic: mrpc_precision
+06/27 06:07:16 PM: 	training: 0.687500
+06/27 06:07:16 PM: 	validation: 0.683824
+06/27 06:07:16 PM: Statistic: mrpc_recall
+06/27 06:07:16 PM: 	training: 1.000000
+06/27 06:07:16 PM: 	validation: 1.000000
+06/27 06:07:16 PM: ***** Pass 30 / Epoch 3 *****
+06/27 06:07:16 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:16 PM: Validating...
+06/27 06:07:17 PM: Statistic: mrpc_loss
+06/27 06:07:17 PM: 	training: 0.643695
+06/27 06:07:17 PM: 	validation: 0.634546
+06/27 06:07:17 PM: Statistic: macro_avg
+06/27 06:07:17 PM: 	validation: 0.748025
+06/27 06:07:17 PM: Statistic: micro_avg
+06/27 06:07:17 PM: 	validation: 0.748025
+06/27 06:07:17 PM: Statistic: mrpc_acc_f1
+06/27 06:07:17 PM: 	training: 0.756469
+06/27 06:07:17 PM: 	validation: 0.748025
+06/27 06:07:17 PM: Statistic: mrpc_accuracy
+06/27 06:07:17 PM: 	training: 0.693750
+06/27 06:07:17 PM: 	validation: 0.683824
+06/27 06:07:17 PM: Statistic: mrpc_f1
+06/27 06:07:17 PM: 	training: 0.819188
+06/27 06:07:17 PM: 	validation: 0.812227
+06/27 06:07:17 PM: Statistic: mrpc_precision
+06/27 06:07:17 PM: 	training: 0.693750
+06/27 06:07:17 PM: 	validation: 0.683824
+06/27 06:07:17 PM: Statistic: mrpc_recall
+06/27 06:07:17 PM: 	training: 1.000000
+06/27 06:07:17 PM: 	validation: 1.000000
+06/27 06:07:17 PM: ***** Pass 40 / Epoch 4 *****
+06/27 06:07:17 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:17 PM: Validating...
+06/27 06:07:18 PM: Statistic: mrpc_loss
+06/27 06:07:18 PM: 	training: 0.605330
+06/27 06:07:18 PM: 	validation: 0.623366
+06/27 06:07:18 PM: Statistic: macro_avg
+06/27 06:07:18 PM: 	validation: 0.748025
+06/27 06:07:18 PM: Statistic: micro_avg
+06/27 06:07:18 PM: 	validation: 0.748025
+06/27 06:07:18 PM: Statistic: mrpc_acc_f1
+06/27 06:07:18 PM: 	training: 0.772308
+06/27 06:07:18 PM: 	validation: 0.748025
+06/27 06:07:18 PM: Statistic: mrpc_accuracy
+06/27 06:07:18 PM: 	training: 0.712500
+06/27 06:07:18 PM: 	validation: 0.683824
+06/27 06:07:18 PM: Statistic: mrpc_f1
+06/27 06:07:18 PM: 	training: 0.832117
+06/27 06:07:18 PM: 	validation: 0.812227
+06/27 06:07:18 PM: Statistic: mrpc_precision
+06/27 06:07:18 PM: 	training: 0.716981
+06/27 06:07:18 PM: 	validation: 0.683824
+06/27 06:07:18 PM: Statistic: mrpc_recall
+06/27 06:07:18 PM: 	training: 0.991304
+06/27 06:07:18 PM: 	validation: 1.000000
+06/27 06:07:19 PM: ***** Pass 50 / Epoch 5 *****
+06/27 06:07:19 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:19 PM: Validating...
+06/27 06:07:19 PM: Statistic: mrpc_loss
+06/27 06:07:19 PM: 	training: 0.669874
+06/27 06:07:19 PM: 	validation: 0.624842
+06/27 06:07:19 PM: Statistic: macro_avg
+06/27 06:07:19 PM: 	validation: 0.748025
+06/27 06:07:19 PM: Statistic: micro_avg
+06/27 06:07:19 PM: 	validation: 0.748025
+06/27 06:07:19 PM: Statistic: mrpc_acc_f1
+06/27 06:07:19 PM: 	training: 0.712680
+06/27 06:07:19 PM: 	validation: 0.748025
+06/27 06:07:19 PM: Statistic: mrpc_accuracy
+06/27 06:07:19 PM: 	training: 0.643750
+06/27 06:07:19 PM: 	validation: 0.683824
+06/27 06:07:19 PM: Statistic: mrpc_f1
+06/27 06:07:19 PM: 	training: 0.781609
+06/27 06:07:19 PM: 	validation: 0.812227
+06/27 06:07:19 PM: Statistic: mrpc_precision
+06/27 06:07:19 PM: 	training: 0.645570
+06/27 06:07:19 PM: 	validation: 0.683824
+06/27 06:07:19 PM: Statistic: mrpc_recall
+06/27 06:07:19 PM: 	training: 0.990291
+06/27 06:07:19 PM: 	validation: 1.000000
+06/27 06:07:20 PM: ***** Pass 60 / Epoch 6 *****
+06/27 06:07:20 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:20 PM: Validating...
+06/27 06:07:21 PM: Statistic: mrpc_loss
+06/27 06:07:21 PM: 	training: 0.636931
+06/27 06:07:21 PM: 	validation: 0.623703
+06/27 06:07:21 PM: Statistic: macro_avg
+06/27 06:07:21 PM: 	validation: 0.748025
+06/27 06:07:21 PM: Statistic: micro_avg
+06/27 06:07:21 PM: 	validation: 0.748025
+06/27 06:07:21 PM: Statistic: mrpc_acc_f1
+06/27 06:07:21 PM: 	training: 0.749053
+06/27 06:07:21 PM: 	validation: 0.748025
+06/27 06:07:21 PM: Statistic: mrpc_accuracy
+06/27 06:07:21 PM: 	training: 0.687500
+06/27 06:07:21 PM: 	validation: 0.683824
+06/27 06:07:21 PM: Statistic: mrpc_f1
+06/27 06:07:21 PM: 	training: 0.810606
+06/27 06:07:21 PM: 	validation: 0.812227
+06/27 06:07:21 PM: Statistic: mrpc_precision
+06/27 06:07:21 PM: 	training: 0.681529
+06/27 06:07:21 PM: 	validation: 0.683824
+06/27 06:07:21 PM: Statistic: mrpc_recall
+06/27 06:07:21 PM: 	training: 1.000000
+06/27 06:07:21 PM: 	validation: 1.000000
+06/27 06:07:21 PM: ***** Pass 70 / Epoch 7 *****
+06/27 06:07:21 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:21 PM: Validating...
+06/27 06:07:22 PM: Statistic: mrpc_loss
+06/27 06:07:22 PM: 	training: 0.638624
+06/27 06:07:22 PM: 	validation: 0.623410
+06/27 06:07:22 PM: Statistic: macro_avg
+06/27 06:07:22 PM: 	validation: 0.748025
+06/27 06:07:22 PM: Statistic: micro_avg
+06/27 06:07:22 PM: 	validation: 0.748025
+06/27 06:07:22 PM: Statistic: mrpc_acc_f1
+06/27 06:07:22 PM: 	training: 0.723562
+06/27 06:07:22 PM: 	validation: 0.748025
+06/27 06:07:22 PM: Statistic: mrpc_accuracy
+06/27 06:07:22 PM: 	training: 0.656250
+06/27 06:07:22 PM: 	validation: 0.683824
+06/27 06:07:22 PM: Statistic: mrpc_f1
+06/27 06:07:22 PM: 	training: 0.790875
+06/27 06:07:22 PM: 	validation: 0.812227
+06/27 06:07:22 PM: Statistic: mrpc_precision
+06/27 06:07:22 PM: 	training: 0.662420
+06/27 06:07:22 PM: 	validation: 0.683824
+06/27 06:07:22 PM: Statistic: mrpc_recall
+06/27 06:07:22 PM: 	training: 0.981132
+06/27 06:07:22 PM: 	validation: 1.000000
+06/27 06:07:23 PM: ***** Pass 80 / Epoch 8 *****
+06/27 06:07:23 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:23 PM: Validating...
+06/27 06:07:23 PM: Batch 8/26: acc_f1: 0.8036, accuracy: 0.7500, f1: 0.8571, precision: 0.7500, recall: 1.0000, mrpc_loss: 0.5749 ||
+06/27 06:07:23 PM: Statistic: mrpc_loss
+06/27 06:07:23 PM: 	training: 0.624277
+06/27 06:07:23 PM: 	validation: 0.626667
+06/27 06:07:23 PM: Statistic: macro_avg
+06/27 06:07:23 PM: 	validation: 0.748025
+06/27 06:07:23 PM: Statistic: micro_avg
+06/27 06:07:23 PM: 	validation: 0.748025
+06/27 06:07:23 PM: Statistic: mrpc_acc_f1
+06/27 06:07:23 PM: 	training: 0.761111
+06/27 06:07:23 PM: 	validation: 0.748025
+06/27 06:07:23 PM: Statistic: mrpc_accuracy
+06/27 06:07:23 PM: 	training: 0.700000
+06/27 06:07:23 PM: 	validation: 0.683824
+06/27 06:07:23 PM: Statistic: mrpc_f1
+06/27 06:07:23 PM: 	training: 0.822222
+06/27 06:07:23 PM: 	validation: 0.812227
+06/27 06:07:23 PM: Statistic: mrpc_precision
+06/27 06:07:23 PM: 	training: 0.702532
+06/27 06:07:23 PM: 	validation: 0.683824
+06/27 06:07:23 PM: Statistic: mrpc_recall
+06/27 06:07:23 PM: 	training: 0.991071
+06/27 06:07:23 PM: 	validation: 1.000000
+06/27 06:07:24 PM: ***** Pass 90 / Epoch 9 *****
+06/27 06:07:24 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:24 PM: Validating...
+06/27 06:07:25 PM: Statistic: mrpc_loss
+06/27 06:07:25 PM: 	training: 0.658006
+06/27 06:07:25 PM: 	validation: 0.624932
+06/27 06:07:25 PM: Statistic: macro_avg
+06/27 06:07:25 PM: 	validation: 0.748025
+06/27 06:07:25 PM: Statistic: micro_avg
+06/27 06:07:25 PM: 	validation: 0.748025
+06/27 06:07:25 PM: Statistic: mrpc_acc_f1
+06/27 06:07:25 PM: 	training: 0.728977
+06/27 06:07:25 PM: 	validation: 0.748025
+06/27 06:07:25 PM: Statistic: mrpc_accuracy
+06/27 06:07:25 PM: 	training: 0.662500
+06/27 06:07:25 PM: 	validation: 0.683824
+06/27 06:07:25 PM: Statistic: mrpc_f1
+06/27 06:07:25 PM: 	training: 0.795455
+06/27 06:07:25 PM: 	validation: 0.812227
+06/27 06:07:25 PM: Statistic: mrpc_precision
+06/27 06:07:25 PM: 	training: 0.664557
+06/27 06:07:25 PM: 	validation: 0.683824
+06/27 06:07:25 PM: Statistic: mrpc_recall
+06/27 06:07:25 PM: 	training: 0.990566
+06/27 06:07:25 PM: 	validation: 1.000000
+06/27 06:07:25 PM: ***** Pass 100 / Epoch 10 *****
+06/27 06:07:25 PM: mrpc: trained on 10 batches, 0.043 epochs
+06/27 06:07:25 PM: Validating...
+06/27 06:07:26 PM: Maximum number of validations hit. Stopping training.
+06/27 06:07:26 PM: Statistic: mrpc_loss
+06/27 06:07:26 PM: 	training: 0.657341
+06/27 06:07:26 PM: 	validation: 0.625081
+06/27 06:07:26 PM: Statistic: macro_avg
+06/27 06:07:26 PM: 	validation: 0.748025
+06/27 06:07:26 PM: Statistic: micro_avg
+06/27 06:07:26 PM: 	validation: 0.748025
+06/27 06:07:26 PM: Statistic: mrpc_acc_f1
+06/27 06:07:26 PM: 	training: 0.718939
+06/27 06:07:26 PM: 	validation: 0.748025
+06/27 06:07:26 PM: Statistic: mrpc_accuracy
+06/27 06:07:26 PM: 	training: 0.650000
+06/27 06:07:26 PM: 	validation: 0.683824
+06/27 06:07:26 PM: Statistic: mrpc_f1
+06/27 06:07:26 PM: 	training: 0.787879
+06/27 06:07:26 PM: 	validation: 0.812227
+06/27 06:07:26 PM: Statistic: mrpc_precision
+06/27 06:07:26 PM: 	training: 0.662420
+06/27 06:07:26 PM: 	validation: 0.683824
+06/27 06:07:26 PM: Statistic: mrpc_recall
+06/27 06:07:26 PM: 	training: 0.971963
+06/27 06:07:26 PM: 	validation: 1.000000
+06/27 06:07:26 PM: Stopped training after 10 validation checks
+06/27 06:07:26 PM: Trained mrpc for 100 batches or 0.435 epochs
+06/27 06:07:26 PM: ***** VALIDATION RESULTS *****
+06/27 06:07:26 PM: mrpc_acc_f1, 1, mrpc_loss: 0.76507, macro_avg: 0.74803, micro_avg: 0.74803, mrpc_acc_f1: 0.74803, mrpc_accuracy: 0.68382, mrpc_f1: 0.81223, mrpc_precision: 0.68382, mrpc_recall: 1.00000
+06/27 06:07:26 PM: micro_avg, 1, mrpc_loss: 0.76507, macro_avg: 0.74803, micro_avg: 0.74803, mrpc_acc_f1: 0.74803, mrpc_accuracy: 0.68382, mrpc_f1: 0.81223, mrpc_precision: 0.68382, mrpc_recall: 1.00000
+06/27 06:07:26 PM: macro_avg, 1, mrpc_loss: 0.76507, macro_avg: 0.74803, micro_avg: 0.74803, mrpc_acc_f1: 0.74803, mrpc_accuracy: 0.68382, mrpc_f1: 0.81223, mrpc_precision: 0.68382, mrpc_recall: 1.00000
+06/27 06:07:26 PM: Loaded model state from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/model_state_eval_best.th
+06/27 06:07:26 PM: Evaluating...
+06/27 06:07:28 PM: micro_accuracy: 0.628, macro_accuracy: 0.660, sst_accuracy: 0.572, mrpc_acc_f1: 0.748, mrpc_accuracy: 0.684, mrpc_f1: 0.812, mrpc_precision: 0.684, mrpc_recall: 1.000
+06/27 06:07:28 PM: Done!
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/model_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/metric_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/task_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/training_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/training_state_main_epoch_5.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/metric_state_main_epoch_5.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/task_state_main_epoch_5.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN/sst/model_state_main_epoch_5.best_macro.th

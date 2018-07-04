@@ -1,0 +1,1199 @@
+06/27 06:41:06 PM: fastText library not found!
+06/27 06:41:06 PM: Parsed args: 
+{
+  "batch_size": 64,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 256,
+  "cove": 0,
+  "cuda": 0,
+  "d_char": 100,
+  "d_ff": 2048,
+  "d_hid": 512,
+  "d_hid_dec": 300,
+  "d_proj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 100,
+  "eval_tasks": "sst",
+  "eval_val_interval": 1000,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/",
+  "exp_name": "jsalt_demo_sst_RNN_default_conf_SingleTask",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "load_eval_checkpoint": "none",
+  "load_model": 1,
+  "log_file": "log.log",
+  "lr": 0.001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 40,
+  "max_vals": 100,
+  "max_word_v_size": 30000,
+  "min_lr": 1e-06,
+  "n_char_filters": 100,
+  "n_epochs": 10000,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 2,
+  "n_layers_highway": 1,
+  "no_tqdm": 1,
+  "optimizer": "adam",
+  "pair_enc": "simple",
+  "patience": 10,
+  "preproc_file": "preproc.pkl",
+  "random_seed": 19,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 0,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst",
+  "run_name": "sst",
+  "scaling_method": "none",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "rnn",
+  "shared_optimizer": 1,
+  "shared_pair_enc": 1,
+  "skip_embs": 1,
+  "task_classifier_dropout": 0.2,
+  "task_classifier_hid_dim": 256,
+  "task_lr": 0.001,
+  "task_pair_enc": "simple",
+  "task_patience": 5,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 500,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "proportional",
+  "word_embs": "none",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/27 06:41:06 PM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst/params.conf
+06/27 06:41:06 PM: Using GPU 0
+06/27 06:41:06 PM: Using random seed 19
+06/27 06:41:06 PM: Loading tasks...
+06/27 06:41:06 PM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/
+06/27 06:41:06 PM: 	Creating task sst from scratch
+06/27 06:41:13 PM: 	Finished loading SST data.
+06/27 06:41:13 PM: 	Finished loading tasks: sst.
+06/27 06:41:13 PM: 	Building vocab from scratch
+06/27 06:41:14 PM: 	Finished counting words
+06/27 06:41:14 PM: 	Saved vocab to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/vocab
+06/27 06:41:14 PM: 	Finished building vocab. Using 15707 words, 74 chars.
+06/27 06:41:14 PM: 	Indexing task sst from scratch
+06/27 06:41:25 PM: Your label namespace was 'idxs'. We recommend you use a namespace ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by default to your vocabulary.  See documentation for `non_padded_namespaces` parameter in Vocabulary.
+06/27 06:41:25 PM: 	Finished indexing tasks
+06/27 06:41:27 PM: 	Saved data to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/preproc.pkl
+06/27 06:41:27 PM: 	  Training on sst
+06/27 06:41:27 PM: 	  Evaluating on sst
+06/27 06:41:27 PM: 	Finished loading tasks in 21.097s
+06/27 06:41:27 PM: Building model...
+06/27 06:41:27 PM: 	Not using word embeddings!
+06/27 06:41:27 PM: 	Not using character embeddings!
+06/27 06:41:27 PM: 	Using ELMo character CNN only!
+06/27 06:41:33 PM: batch_first = True
+06/27 06:41:33 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:41:33 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:41:33 PM: input_size = 512
+06/27 06:41:33 PM: hidden_size = 512
+06/27 06:41:33 PM: num_layers = 2
+06/27 06:41:33 PM: bidirectional = 1
+06/27 06:41:33 PM: batch_first = True
+06/27 06:41:33 PM: Initializing parameters
+06/27 06:41:33 PM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/27 06:41:33 PM:    _highway_layer._module._layers.0.bias
+06/27 06:41:33 PM:    _highway_layer._module._layers.0.weight
+06/27 06:41:33 PM:    _phrase_layer._module.bias_hh_l0
+06/27 06:41:33 PM:    _phrase_layer._module.bias_hh_l0_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.bias_hh_l1
+06/27 06:41:33 PM:    _phrase_layer._module.bias_hh_l1_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.bias_ih_l0
+06/27 06:41:33 PM:    _phrase_layer._module.bias_ih_l0_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.bias_ih_l1
+06/27 06:41:33 PM:    _phrase_layer._module.bias_ih_l1_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.weight_hh_l0
+06/27 06:41:33 PM:    _phrase_layer._module.weight_hh_l0_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.weight_hh_l1
+06/27 06:41:33 PM:    _phrase_layer._module.weight_hh_l1_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.weight_ih_l0
+06/27 06:41:33 PM:    _phrase_layer._module.weight_ih_l0_reverse
+06/27 06:41:33 PM:    _phrase_layer._module.weight_ih_l1
+06/27 06:41:33 PM:    _phrase_layer._module.weight_ih_l1_reverse
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/27 06:41:33 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/27 06:41:37 PM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=1024, bias=True)
+        )
+      )
+    )
+    (_phrase_layer): PytorchSeq2SeqWrapper(
+      (_module): LSTM(512, 512, num_layers=2, batch_first=True, bidirectional=1)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): Sequential(
+    (0): Dropout(p=0.2)
+    (1): Linear(in_features=1536, out_features=256, bias=True)
+    (2): Tanh()
+    (3): LayerNorm(torch.Size([256]), eps=1e-05, elementwise_affine=True)
+    (4): Dropout(p=0.2)
+    (5): Linear(in_features=256, out_features=2, bias=True)
+  )
+)
+06/27 06:41:37 PM: 	Finished building model in 9.543s
+06/27 06:41:37 PM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: sst
+06/27 06:41:37 PM: Training...
+06/27 06:41:37 PM: patience = 10
+06/27 06:41:37 PM: num_epochs = 10000
+06/27 06:41:37 PM: max_vals = 100
+06/27 06:41:37 PM: cuda_device = 0
+06/27 06:41:37 PM: grad_norm = 5.0
+06/27 06:41:37 PM: grad_clipping = None
+06/27 06:41:37 PM: lr_decay = 0.99
+06/27 06:41:37 PM: min_lr = 1e-06
+06/27 06:41:37 PM: no_tqdm = 1
+06/27 06:41:37 PM: Sampling tasks proportional to number of training batches
+06/27 06:41:37 PM: type = adam
+06/27 06:41:37 PM: parameter_groups = None
+06/27 06:41:37 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:41:37 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:41:37 PM: lr = 0.001
+06/27 06:41:37 PM: weight_decay = 1e-05
+06/27 06:41:37 PM: amsgrad = True
+06/27 06:41:37 PM: type = reduce_on_plateau
+06/27 06:41:37 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:41:37 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:41:37 PM: mode = max
+06/27 06:41:37 PM: factor = 0.5
+06/27 06:41:37 PM: patience = 5
+06/27 06:41:37 PM: threshold = 0.0001
+06/27 06:41:37 PM: threshold_mode = abs
+06/27 06:41:37 PM: verbose = True
+06/27 06:41:37 PM: type = adam
+06/27 06:41:37 PM: parameter_groups = None
+06/27 06:41:37 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:41:37 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:41:37 PM: lr = 0.001
+06/27 06:41:37 PM: weight_decay = 1e-05
+06/27 06:41:37 PM: amsgrad = True
+06/27 06:41:37 PM: type = reduce_on_plateau
+06/27 06:41:37 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/27 06:41:37 PM: CURRENTLY DEFINED PARAMETERS: 
+06/27 06:41:37 PM: mode = max
+06/27 06:41:37 PM: factor = 0.5
+06/27 06:41:37 PM: patience = 5
+06/27 06:41:37 PM: threshold = 0.0001
+06/27 06:41:37 PM: threshold_mode = abs
+06/27 06:41:37 PM: verbose = True
+06/27 06:41:37 PM: Not loading.
+06/27 06:41:37 PM: Beginning training. Stopping metric: sst_accuracy
+06/27 06:41:47 PM: Update 41: task sst, batch 41 (41): accuracy: 0.6105, sst_loss: 0.8018 ||
+06/27 06:41:57 PM: Update 81: task sst, batch 81 (81): accuracy: 0.7045, sst_loss: 0.6141 ||
+06/27 06:42:07 PM: Update 122: task sst, batch 122 (122): accuracy: 0.7499, sst_loss: 0.5324 ||
+06/27 06:42:17 PM: Update 162: task sst, batch 162 (162): accuracy: 0.7740, sst_loss: 0.4904 ||
+06/27 06:42:27 PM: Update 203: task sst, batch 203 (203): accuracy: 0.7910, sst_loss: 0.4580 ||
+06/27 06:42:38 PM: Update 244: task sst, batch 244 (244): accuracy: 0.8037, sst_loss: 0.4331 ||
+06/27 06:42:48 PM: Update 284: task sst, batch 284 (284): accuracy: 0.8127, sst_loss: 0.4186 ||
+06/27 06:42:58 PM: Update 324: task sst, batch 324 (324): accuracy: 0.8197, sst_loss: 0.4056 ||
+06/27 06:43:08 PM: Update 364: task sst, batch 364 (364): accuracy: 0.8256, sst_loss: 0.3929 ||
+06/27 06:43:18 PM: Update 405: task sst, batch 405 (405): accuracy: 0.8306, sst_loss: 0.3839 ||
+06/27 06:43:28 PM: Update 446: task sst, batch 446 (446): accuracy: 0.8354, sst_loss: 0.3740 ||
+06/27 06:43:38 PM: Update 486: task sst, batch 486 (486): accuracy: 0.8399, sst_loss: 0.3648 ||
+06/27 06:43:42 PM: ***** Pass 500 / Epoch 1 *****
+06/27 06:43:42 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:43:42 PM: Validating...
+06/27 06:43:44 PM: Best model found for sst.
+06/27 06:43:44 PM: Best model found for micro.
+06/27 06:43:44 PM: Best model found for macro.
+06/27 06:43:44 PM: Statistic: sst_loss
+06/27 06:43:44 PM: 	training: 0.362434
+06/27 06:43:44 PM: 	validation: 0.332778
+06/27 06:43:44 PM: Statistic: macro_avg
+06/27 06:43:44 PM: 	validation: 0.868119
+06/27 06:43:44 PM: Statistic: micro_avg
+06/27 06:43:44 PM: 	validation: 0.868119
+06/27 06:43:44 PM: Statistic: sst_accuracy
+06/27 06:43:44 PM: 	training: 0.841063
+06/27 06:43:44 PM: 	validation: 0.868119
+06/27 06:43:45 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:43:48 PM: Update 514: task sst, batch 14 (514): accuracy: 0.8906, sst_loss: 0.2761 ||
+06/27 06:43:59 PM: Update 555: task sst, batch 55 (555): accuracy: 0.8895, sst_loss: 0.2732 ||
+06/27 06:44:09 PM: Update 595: task sst, batch 95 (595): accuracy: 0.8875, sst_loss: 0.2748 ||
+06/27 06:44:19 PM: Update 637: task sst, batch 137 (637): accuracy: 0.8889, sst_loss: 0.2713 ||
+06/27 06:44:29 PM: Update 678: task sst, batch 178 (678): accuracy: 0.8925, sst_loss: 0.2660 ||
+06/27 06:44:39 PM: Update 718: task sst, batch 218 (718): accuracy: 0.8923, sst_loss: 0.2666 ||
+06/27 06:44:50 PM: Update 759: task sst, batch 259 (759): accuracy: 0.8929, sst_loss: 0.2656 ||
+06/27 06:45:00 PM: Update 800: task sst, batch 300 (800): accuracy: 0.8945, sst_loss: 0.2616 ||
+06/27 06:45:10 PM: Update 840: task sst, batch 340 (840): accuracy: 0.8961, sst_loss: 0.2567 ||
+06/27 06:45:20 PM: Update 880: task sst, batch 380 (880): accuracy: 0.8958, sst_loss: 0.2577 ||
+06/27 06:45:30 PM: Update 920: task sst, batch 420 (920): accuracy: 0.8974, sst_loss: 0.2551 ||
+06/27 06:45:40 PM: Update 961: task sst, batch 461 (961): accuracy: 0.8980, sst_loss: 0.2544 ||
+06/27 06:45:50 PM: ***** Pass 1000 / Epoch 2 *****
+06/27 06:45:50 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:45:50 PM: Validating...
+06/27 06:45:50 PM: Batch 3/14: accuracy: 0.8750, sst_loss: 0.3578 ||
+06/27 06:45:52 PM: Statistic: sst_loss
+06/27 06:45:52 PM: 	training: 0.251571
+06/27 06:45:52 PM: 	validation: 0.348414
+06/27 06:45:52 PM: Statistic: macro_avg
+06/27 06:45:52 PM: 	validation: 0.865826
+06/27 06:45:52 PM: Statistic: micro_avg
+06/27 06:45:52 PM: 	validation: 0.865826
+06/27 06:45:52 PM: Statistic: sst_accuracy
+06/27 06:45:52 PM: 	training: 0.899594
+06/27 06:45:52 PM: 	validation: 0.865826
+06/27 06:45:53 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:46:00 PM: Update 1031: task sst, batch 31 (1031): accuracy: 0.9108, sst_loss: 0.2281 ||
+06/27 06:46:11 PM: Update 1072: task sst, batch 72 (1072): accuracy: 0.9148, sst_loss: 0.2229 ||
+06/27 06:46:21 PM: Update 1113: task sst, batch 113 (1113): accuracy: 0.9214, sst_loss: 0.2072 ||
+06/27 06:46:31 PM: Update 1154: task sst, batch 154 (1154): accuracy: 0.9230, sst_loss: 0.2012 ||
+06/27 06:46:41 PM: Update 1195: task sst, batch 195 (1195): accuracy: 0.9206, sst_loss: 0.2045 ||
+06/27 06:46:51 PM: Update 1237: task sst, batch 237 (1237): accuracy: 0.9213, sst_loss: 0.2043 ||
+06/27 06:47:01 PM: Update 1277: task sst, batch 277 (1277): accuracy: 0.9222, sst_loss: 0.2028 ||
+06/27 06:47:11 PM: Update 1318: task sst, batch 318 (1318): accuracy: 0.9219, sst_loss: 0.2022 ||
+06/27 06:47:21 PM: Update 1359: task sst, batch 359 (1359): accuracy: 0.9222, sst_loss: 0.2014 ||
+06/27 06:47:32 PM: Update 1400: task sst, batch 400 (1400): accuracy: 0.9229, sst_loss: 0.1997 ||
+06/27 06:47:42 PM: Update 1441: task sst, batch 441 (1441): accuracy: 0.9238, sst_loss: 0.1993 ||
+06/27 06:47:52 PM: Update 1482: task sst, batch 482 (1482): accuracy: 0.9240, sst_loss: 0.1986 ||
+06/27 06:47:56 PM: ***** Pass 1500 / Epoch 3 *****
+06/27 06:47:56 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:47:56 PM: Validating...
+06/27 06:47:59 PM: Best model found for sst.
+06/27 06:47:59 PM: Best model found for micro.
+06/27 06:47:59 PM: Best model found for macro.
+06/27 06:47:59 PM: Statistic: sst_loss
+06/27 06:47:59 PM: 	training: 0.197594
+06/27 06:47:59 PM: 	validation: 0.312383
+06/27 06:47:59 PM: Statistic: macro_avg
+06/27 06:47:59 PM: 	validation: 0.879587
+06/27 06:47:59 PM: Statistic: micro_avg
+06/27 06:47:59 PM: 	validation: 0.879587
+06/27 06:47:59 PM: Statistic: sst_accuracy
+06/27 06:47:59 PM: 	training: 0.924649
+06/27 06:47:59 PM: 	validation: 0.879587
+06/27 06:47:59 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:48:02 PM: Update 1511: task sst, batch 11 (1511): accuracy: 0.9432, sst_loss: 0.1523 ||
+06/27 06:48:12 PM: Update 1552: task sst, batch 52 (1552): accuracy: 0.9282, sst_loss: 0.1880 ||
+06/27 06:48:22 PM: Update 1593: task sst, batch 93 (1593): accuracy: 0.9269, sst_loss: 0.1845 ||
+06/27 06:48:32 PM: Update 1633: task sst, batch 133 (1633): accuracy: 0.9275, sst_loss: 0.1875 ||
+06/27 06:48:42 PM: Update 1672: task sst, batch 172 (1672): accuracy: 0.9299, sst_loss: 0.1836 ||
+06/27 06:48:53 PM: Update 1713: task sst, batch 213 (1713): accuracy: 0.9299, sst_loss: 0.1836 ||
+06/27 06:49:03 PM: Update 1754: task sst, batch 254 (1754): accuracy: 0.9306, sst_loss: 0.1827 ||
+06/27 06:49:13 PM: Update 1794: task sst, batch 294 (1794): accuracy: 0.9317, sst_loss: 0.1818 ||
+06/27 06:49:23 PM: Update 1834: task sst, batch 334 (1834): accuracy: 0.9327, sst_loss: 0.1805 ||
+06/27 06:49:33 PM: Update 1875: task sst, batch 375 (1875): accuracy: 0.9326, sst_loss: 0.1804 ||
+06/27 06:49:43 PM: Update 1915: task sst, batch 415 (1915): accuracy: 0.9323, sst_loss: 0.1812 ||
+06/27 06:49:53 PM: Update 1955: task sst, batch 455 (1955): accuracy: 0.9330, sst_loss: 0.1803 ||
+06/27 06:50:03 PM: Update 1995: task sst, batch 495 (1995): accuracy: 0.9326, sst_loss: 0.1805 ||
+06/27 06:50:05 PM: ***** Pass 2000 / Epoch 4 *****
+06/27 06:50:05 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:50:05 PM: Validating...
+06/27 06:50:07 PM: Best model found for sst.
+06/27 06:50:07 PM: Best model found for micro.
+06/27 06:50:07 PM: Best model found for macro.
+06/27 06:50:07 PM: Statistic: sst_loss
+06/27 06:50:07 PM: 	training: 0.181272
+06/27 06:50:07 PM: 	validation: 0.302167
+06/27 06:50:07 PM: Statistic: macro_avg
+06/27 06:50:07 PM: 	validation: 0.881881
+06/27 06:50:07 PM: Statistic: micro_avg
+06/27 06:50:07 PM: 	validation: 0.881881
+06/27 06:50:07 PM: Statistic: sst_accuracy
+06/27 06:50:07 PM: 	training: 0.932219
+06/27 06:50:07 PM: 	validation: 0.881881
+06/27 06:50:08 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:50:13 PM: Update 2023: task sst, batch 23 (2023): accuracy: 0.9341, sst_loss: 0.1781 ||
+06/27 06:50:24 PM: Update 2063: task sst, batch 63 (2063): accuracy: 0.9318, sst_loss: 0.1883 ||
+06/27 06:50:34 PM: Update 2104: task sst, batch 104 (2104): accuracy: 0.9342, sst_loss: 0.1841 ||
+06/27 06:50:44 PM: Update 2145: task sst, batch 145 (2145): accuracy: 0.9381, sst_loss: 0.1730 ||
+06/27 06:50:54 PM: Update 2177: task sst, batch 177 (2177): accuracy: 0.9389, sst_loss: 0.1677 ||
+06/27 06:51:04 PM: Update 2198: task sst, batch 198 (2198): accuracy: 0.9409, sst_loss: 0.1651 ||
+06/27 06:51:15 PM: Update 2219: task sst, batch 219 (2219): accuracy: 0.9419, sst_loss: 0.1627 ||
+06/27 06:51:25 PM: Update 2239: task sst, batch 239 (2239): accuracy: 0.9422, sst_loss: 0.1619 ||
+06/27 06:51:35 PM: Update 2259: task sst, batch 259 (2259): accuracy: 0.9424, sst_loss: 0.1611 ||
+06/27 06:51:45 PM: Update 2279: task sst, batch 279 (2279): accuracy: 0.9433, sst_loss: 0.1587 ||
+06/27 06:51:56 PM: Update 2300: task sst, batch 300 (2300): accuracy: 0.9433, sst_loss: 0.1578 ||
+06/27 06:52:06 PM: Update 2320: task sst, batch 320 (2320): accuracy: 0.9437, sst_loss: 0.1567 ||
+06/27 06:52:16 PM: Update 2340: task sst, batch 340 (2340): accuracy: 0.9440, sst_loss: 0.1556 ||
+06/27 06:52:26 PM: Update 2360: task sst, batch 360 (2360): accuracy: 0.9443, sst_loss: 0.1545 ||
+06/27 06:52:36 PM: Update 2380: task sst, batch 380 (2380): accuracy: 0.9441, sst_loss: 0.1545 ||
+06/27 06:52:47 PM: Update 2400: task sst, batch 400 (2400): accuracy: 0.9440, sst_loss: 0.1542 ||
+06/27 06:52:57 PM: Update 2420: task sst, batch 420 (2420): accuracy: 0.9444, sst_loss: 0.1532 ||
+06/27 06:53:07 PM: Update 2440: task sst, batch 440 (2440): accuracy: 0.9446, sst_loss: 0.1526 ||
+06/27 06:53:18 PM: Update 2461: task sst, batch 461 (2461): accuracy: 0.9449, sst_loss: 0.1520 ||
+06/27 06:53:28 PM: Update 2481: task sst, batch 481 (2481): accuracy: 0.9455, sst_loss: 0.1511 ||
+06/27 06:53:38 PM: ***** Pass 2500 / Epoch 5 *****
+06/27 06:53:38 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:53:38 PM: Validating...
+06/27 06:53:38 PM: Batch 1/14: accuracy: 0.8438, sst_loss: 0.4139 ||
+06/27 06:53:44 PM: Best model found for sst.
+06/27 06:53:44 PM: Best model found for micro.
+06/27 06:53:44 PM: Best model found for macro.
+06/27 06:53:44 PM: Statistic: sst_loss
+06/27 06:53:44 PM: 	training: 0.150398
+06/27 06:53:44 PM: 	validation: 0.270463
+06/27 06:53:44 PM: Statistic: macro_avg
+06/27 06:53:44 PM: 	validation: 0.893349
+06/27 06:53:44 PM: Statistic: micro_avg
+06/27 06:53:44 PM: 	validation: 0.893349
+06/27 06:53:44 PM: Statistic: sst_accuracy
+06/27 06:53:44 PM: 	training: 0.945614
+06/27 06:53:44 PM: 	validation: 0.893349
+06/27 06:53:44 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:53:49 PM: Update 2509: task sst, batch 9 (2509): accuracy: 0.9427, sst_loss: 0.1666 ||
+06/27 06:53:59 PM: Update 2529: task sst, batch 29 (2529): accuracy: 0.9504, sst_loss: 0.1436 ||
+06/27 06:54:09 PM: Update 2549: task sst, batch 49 (2549): accuracy: 0.9483, sst_loss: 0.1479 ||
+06/27 06:54:19 PM: Update 2569: task sst, batch 69 (2569): accuracy: 0.9468, sst_loss: 0.1526 ||
+06/27 06:54:30 PM: Update 2589: task sst, batch 89 (2589): accuracy: 0.9475, sst_loss: 0.1498 ||
+06/27 06:54:40 PM: Update 2609: task sst, batch 109 (2609): accuracy: 0.9485, sst_loss: 0.1460 ||
+06/27 06:54:50 PM: Update 2630: task sst, batch 130 (2630): accuracy: 0.9480, sst_loss: 0.1472 ||
+06/27 06:55:00 PM: Update 2650: task sst, batch 150 (2650): accuracy: 0.9466, sst_loss: 0.1489 ||
+06/27 06:55:10 PM: Update 2670: task sst, batch 170 (2670): accuracy: 0.9467, sst_loss: 0.1476 ||
+06/27 06:55:21 PM: Update 2691: task sst, batch 191 (2691): accuracy: 0.9473, sst_loss: 0.1474 ||
+06/27 06:55:31 PM: Update 2711: task sst, batch 211 (2711): accuracy: 0.9463, sst_loss: 0.1482 ||
+06/27 06:55:41 PM: Update 2731: task sst, batch 231 (2731): accuracy: 0.9472, sst_loss: 0.1465 ||
+06/27 06:55:51 PM: Update 2751: task sst, batch 251 (2751): accuracy: 0.9473, sst_loss: 0.1468 ||
+06/27 06:56:01 PM: Update 2771: task sst, batch 271 (2771): accuracy: 0.9472, sst_loss: 0.1476 ||
+06/27 06:56:12 PM: Update 2791: task sst, batch 291 (2791): accuracy: 0.9476, sst_loss: 0.1472 ||
+06/27 06:56:22 PM: Update 2812: task sst, batch 312 (2812): accuracy: 0.9475, sst_loss: 0.1474 ||
+06/27 06:56:32 PM: Update 2832: task sst, batch 332 (2832): accuracy: 0.9467, sst_loss: 0.1494 ||
+06/27 06:56:43 PM: Update 2853: task sst, batch 353 (2853): accuracy: 0.9468, sst_loss: 0.1493 ||
+06/27 06:56:53 PM: Update 2873: task sst, batch 373 (2873): accuracy: 0.9470, sst_loss: 0.1500 ||
+06/27 06:57:03 PM: Update 2894: task sst, batch 394 (2894): accuracy: 0.9466, sst_loss: 0.1501 ||
+06/27 06:57:13 PM: Update 2914: task sst, batch 414 (2914): accuracy: 0.9463, sst_loss: 0.1503 ||
+06/27 06:57:24 PM: Update 2935: task sst, batch 435 (2935): accuracy: 0.9462, sst_loss: 0.1507 ||
+06/27 06:57:34 PM: Update 2954: task sst, batch 454 (2954): accuracy: 0.9464, sst_loss: 0.1503 ||
+06/27 06:57:44 PM: Update 2974: task sst, batch 474 (2974): accuracy: 0.9463, sst_loss: 0.1509 ||
+06/27 06:57:54 PM: Update 2994: task sst, batch 494 (2994): accuracy: 0.9462, sst_loss: 0.1508 ||
+06/27 06:57:57 PM: ***** Pass 3000 / Epoch 6 *****
+06/27 06:57:57 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 06:57:57 PM: Validating...
+06/27 06:58:03 PM: Statistic: sst_loss
+06/27 06:58:03 PM: 	training: 0.150490
+06/27 06:58:03 PM: 	validation: 0.278792
+06/27 06:58:03 PM: Statistic: macro_avg
+06/27 06:58:03 PM: 	validation: 0.885321
+06/27 06:58:03 PM: Statistic: micro_avg
+06/27 06:58:03 PM: 	validation: 0.885321
+06/27 06:58:03 PM: Statistic: sst_accuracy
+06/27 06:58:03 PM: 	training: 0.946187
+06/27 06:58:03 PM: 	validation: 0.885321
+06/27 06:58:04 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 06:58:05 PM: Update 3002: task sst, batch 2 (3002): accuracy: 0.9531, sst_loss: 0.1291 ||
+06/27 06:58:15 PM: Update 3022: task sst, batch 22 (3022): accuracy: 0.9581, sst_loss: 0.1168 ||
+06/27 06:58:25 PM: Update 3042: task sst, batch 42 (3042): accuracy: 0.9539, sst_loss: 0.1303 ||
+06/27 06:58:35 PM: Update 3062: task sst, batch 62 (3062): accuracy: 0.9506, sst_loss: 0.1395 ||
+06/27 06:58:45 PM: Update 3082: task sst, batch 82 (3082): accuracy: 0.9480, sst_loss: 0.1448 ||
+06/27 06:58:55 PM: Update 3103: task sst, batch 103 (3103): accuracy: 0.9502, sst_loss: 0.1381 ||
+06/27 06:59:05 PM: Update 3123: task sst, batch 123 (3123): accuracy: 0.9512, sst_loss: 0.1363 ||
+06/27 06:59:16 PM: Update 3144: task sst, batch 144 (3144): accuracy: 0.9513, sst_loss: 0.1357 ||
+06/27 06:59:26 PM: Update 3165: task sst, batch 165 (3165): accuracy: 0.9506, sst_loss: 0.1359 ||
+06/27 06:59:36 PM: Update 3185: task sst, batch 185 (3185): accuracy: 0.9527, sst_loss: 0.1306 ||
+06/27 06:59:47 PM: Update 3205: task sst, batch 205 (3205): accuracy: 0.9537, sst_loss: 0.1297 ||
+06/27 06:59:57 PM: Update 3225: task sst, batch 225 (3225): accuracy: 0.9544, sst_loss: 0.1284 ||
+06/27 07:00:07 PM: Update 3245: task sst, batch 245 (3245): accuracy: 0.9547, sst_loss: 0.1278 ||
+06/27 07:00:18 PM: Update 3266: task sst, batch 266 (3266): accuracy: 0.9557, sst_loss: 0.1252 ||
+06/27 07:00:28 PM: Update 3287: task sst, batch 287 (3287): accuracy: 0.9561, sst_loss: 0.1249 ||
+06/27 07:00:38 PM: Update 3307: task sst, batch 307 (3307): accuracy: 0.9562, sst_loss: 0.1247 ||
+06/27 07:00:48 PM: Update 3327: task sst, batch 327 (3327): accuracy: 0.9563, sst_loss: 0.1242 ||
+06/27 07:00:59 PM: Update 3348: task sst, batch 348 (3348): accuracy: 0.9570, sst_loss: 0.1224 ||
+06/27 07:01:09 PM: Update 3368: task sst, batch 368 (3368): accuracy: 0.9565, sst_loss: 0.1240 ||
+06/27 07:01:19 PM: Update 3388: task sst, batch 388 (3388): accuracy: 0.9561, sst_loss: 0.1237 ||
+06/27 07:01:30 PM: Update 3409: task sst, batch 409 (3409): accuracy: 0.9559, sst_loss: 0.1232 ||
+06/27 07:01:40 PM: Update 3429: task sst, batch 429 (3429): accuracy: 0.9560, sst_loss: 0.1230 ||
+06/27 07:01:50 PM: Update 3449: task sst, batch 449 (3449): accuracy: 0.9561, sst_loss: 0.1233 ||
+06/27 07:02:01 PM: Update 3469: task sst, batch 469 (3469): accuracy: 0.9563, sst_loss: 0.1227 ||
+06/27 07:02:11 PM: Update 3489: task sst, batch 489 (3489): accuracy: 0.9565, sst_loss: 0.1222 ||
+06/27 07:02:16 PM: ***** Pass 3500 / Epoch 7 *****
+06/27 07:02:16 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:02:16 PM: Validating...
+06/27 07:02:21 PM: Batch 11/14: accuracy: 0.8636, sst_loss: 0.3336 ||
+06/27 07:02:22 PM: Statistic: sst_loss
+06/27 07:02:22 PM: 	training: 0.121852
+06/27 07:02:22 PM: 	validation: 0.331931
+06/27 07:02:22 PM: Statistic: macro_avg
+06/27 07:02:22 PM: 	validation: 0.864679
+06/27 07:02:22 PM: Statistic: micro_avg
+06/27 07:02:22 PM: 	validation: 0.864679
+06/27 07:02:22 PM: Statistic: sst_accuracy
+06/27 07:02:22 PM: 	training: 0.956535
+06/27 07:02:22 PM: 	validation: 0.864679
+06/27 07:02:22 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:02:31 PM: Update 3518: task sst, batch 18 (3518): accuracy: 0.9488, sst_loss: 0.1554 ||
+06/27 07:02:41 PM: Update 3538: task sst, batch 38 (3538): accuracy: 0.9527, sst_loss: 0.1443 ||
+06/27 07:02:52 PM: Update 3559: task sst, batch 59 (3559): accuracy: 0.9571, sst_loss: 0.1299 ||
+06/27 07:03:02 PM: Update 3579: task sst, batch 79 (3579): accuracy: 0.9598, sst_loss: 0.1210 ||
+06/27 07:03:12 PM: Update 3599: task sst, batch 99 (3599): accuracy: 0.9585, sst_loss: 0.1224 ||
+06/27 07:03:22 PM: Update 3619: task sst, batch 119 (3619): accuracy: 0.9597, sst_loss: 0.1200 ||
+06/27 07:03:33 PM: Update 3639: task sst, batch 139 (3639): accuracy: 0.9587, sst_loss: 0.1239 ||
+06/27 07:03:43 PM: Update 3659: task sst, batch 159 (3659): accuracy: 0.9570, sst_loss: 0.1278 ||
+06/27 07:03:53 PM: Update 3679: task sst, batch 179 (3679): accuracy: 0.9559, sst_loss: 0.1283 ||
+06/27 07:04:03 PM: Update 3700: task sst, batch 200 (3700): accuracy: 0.9553, sst_loss: 0.1287 ||
+06/27 07:04:14 PM: Update 3720: task sst, batch 220 (3720): accuracy: 0.9557, sst_loss: 0.1278 ||
+06/27 07:04:24 PM: Update 3741: task sst, batch 241 (3741): accuracy: 0.9561, sst_loss: 0.1269 ||
+06/27 07:04:34 PM: Update 3761: task sst, batch 261 (3761): accuracy: 0.9562, sst_loss: 0.1277 ||
+06/27 07:04:44 PM: Update 3782: task sst, batch 282 (3782): accuracy: 0.9562, sst_loss: 0.1278 ||
+06/27 07:04:55 PM: Update 3802: task sst, batch 302 (3802): accuracy: 0.9555, sst_loss: 0.1290 ||
+06/27 07:05:05 PM: Update 3823: task sst, batch 323 (3823): accuracy: 0.9557, sst_loss: 0.1287 ||
+06/27 07:05:16 PM: Update 3843: task sst, batch 343 (3843): accuracy: 0.9554, sst_loss: 0.1292 ||
+06/27 07:05:26 PM: Update 3863: task sst, batch 363 (3863): accuracy: 0.9551, sst_loss: 0.1300 ||
+06/27 07:05:37 PM: Update 3884: task sst, batch 384 (3884): accuracy: 0.9552, sst_loss: 0.1301 ||
+06/27 07:05:47 PM: Update 3904: task sst, batch 404 (3904): accuracy: 0.9553, sst_loss: 0.1295 ||
+06/27 07:05:57 PM: Update 3924: task sst, batch 424 (3924): accuracy: 0.9550, sst_loss: 0.1298 ||
+06/27 07:06:07 PM: Update 3944: task sst, batch 444 (3944): accuracy: 0.9548, sst_loss: 0.1305 ||
+06/27 07:06:17 PM: Update 3964: task sst, batch 464 (3964): accuracy: 0.9549, sst_loss: 0.1299 ||
+06/27 07:06:27 PM: Update 3984: task sst, batch 484 (3984): accuracy: 0.9548, sst_loss: 0.1299 ||
+06/27 07:06:35 PM: ***** Pass 4000 / Epoch 8 *****
+06/27 07:06:35 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:06:35 PM: Validating...
+06/27 07:06:38 PM: Batch 5/14: accuracy: 0.9062, sst_loss: 0.2780 ||
+06/27 07:06:41 PM: Statistic: sst_loss
+06/27 07:06:41 PM: 	training: 0.129236
+06/27 07:06:41 PM: 	validation: 0.311256
+06/27 07:06:41 PM: Statistic: macro_avg
+06/27 07:06:41 PM: 	validation: 0.891055
+06/27 07:06:41 PM: Statistic: micro_avg
+06/27 07:06:41 PM: 	validation: 0.891055
+06/27 07:06:41 PM: Statistic: sst_accuracy
+06/27 07:06:41 PM: 	training: 0.955156
+06/27 07:06:41 PM: 	validation: 0.891055
+06/27 07:06:41 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:06:48 PM: Update 4013: task sst, batch 13 (4013): accuracy: 0.9447, sst_loss: 0.1546 ||
+06/27 07:06:58 PM: Update 4033: task sst, batch 33 (4033): accuracy: 0.9536, sst_loss: 0.1339 ||
+06/27 07:07:08 PM: Update 4054: task sst, batch 54 (4054): accuracy: 0.9549, sst_loss: 0.1271 ||
+06/27 07:07:18 PM: Update 4074: task sst, batch 74 (4074): accuracy: 0.9554, sst_loss: 0.1255 ||
+06/27 07:07:29 PM: Update 4094: task sst, batch 94 (4094): accuracy: 0.9560, sst_loss: 0.1249 ||
+06/27 07:07:39 PM: Update 4114: task sst, batch 114 (4114): accuracy: 0.9549, sst_loss: 0.1279 ||
+06/27 07:07:49 PM: Update 4135: task sst, batch 135 (4135): accuracy: 0.9549, sst_loss: 0.1283 ||
+06/27 07:07:59 PM: Update 4155: task sst, batch 155 (4155): accuracy: 0.9553, sst_loss: 0.1264 ||
+06/27 07:08:09 PM: Update 4175: task sst, batch 175 (4175): accuracy: 0.9558, sst_loss: 0.1252 ||
+06/27 07:08:20 PM: Update 4195: task sst, batch 195 (4195): accuracy: 0.9559, sst_loss: 0.1241 ||
+06/27 07:08:30 PM: Update 4216: task sst, batch 216 (4216): accuracy: 0.9561, sst_loss: 0.1232 ||
+06/27 07:08:40 PM: Update 4236: task sst, batch 236 (4236): accuracy: 0.9571, sst_loss: 0.1209 ||
+06/27 07:08:51 PM: Update 4256: task sst, batch 256 (4256): accuracy: 0.9584, sst_loss: 0.1174 ||
+06/27 07:09:01 PM: Update 4276: task sst, batch 276 (4276): accuracy: 0.9595, sst_loss: 0.1146 ||
+06/27 07:09:11 PM: Update 4296: task sst, batch 296 (4296): accuracy: 0.9598, sst_loss: 0.1136 ||
+06/27 07:09:21 PM: Update 4316: task sst, batch 316 (4316): accuracy: 0.9605, sst_loss: 0.1128 ||
+06/27 07:09:32 PM: Update 4336: task sst, batch 336 (4336): accuracy: 0.9610, sst_loss: 0.1120 ||
+06/27 07:09:42 PM: Update 4356: task sst, batch 356 (4356): accuracy: 0.9610, sst_loss: 0.1115 ||
+06/27 07:09:52 PM: Update 4376: task sst, batch 376 (4376): accuracy: 0.9612, sst_loss: 0.1114 ||
+06/27 07:10:02 PM: Update 4396: task sst, batch 396 (4396): accuracy: 0.9608, sst_loss: 0.1119 ||
+06/27 07:10:13 PM: Update 4417: task sst, batch 417 (4417): accuracy: 0.9606, sst_loss: 0.1117 ||
+06/27 07:10:23 PM: Update 4438: task sst, batch 438 (4438): accuracy: 0.9610, sst_loss: 0.1108 ||
+06/27 07:10:33 PM: Update 4458: task sst, batch 458 (4458): accuracy: 0.9613, sst_loss: 0.1103 ||
+06/27 07:10:43 PM: Update 4478: task sst, batch 478 (4478): accuracy: 0.9615, sst_loss: 0.1099 ||
+06/27 07:10:54 PM: Update 4498: task sst, batch 498 (4498): accuracy: 0.9611, sst_loss: 0.1101 ||
+06/27 07:10:55 PM: ***** Pass 4500 / Epoch 9 *****
+06/27 07:10:55 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:10:55 PM: Validating...
+06/27 07:11:01 PM: Statistic: sst_loss
+06/27 07:11:01 PM: 	training: 0.110179
+06/27 07:11:01 PM: 	validation: 0.311194
+06/27 07:11:01 PM: Statistic: macro_avg
+06/27 07:11:01 PM: 	validation: 0.885321
+06/27 07:11:01 PM: Statistic: micro_avg
+06/27 07:11:01 PM: 	validation: 0.885321
+06/27 07:11:01 PM: Statistic: sst_accuracy
+06/27 07:11:01 PM: 	training: 0.961104
+06/27 07:11:01 PM: 	validation: 0.885321
+06/27 07:11:01 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:11:04 PM: Update 4506: task sst, batch 6 (4506): accuracy: 0.9635, sst_loss: 0.1080 ||
+06/27 07:11:14 PM: Update 4526: task sst, batch 26 (4526): accuracy: 0.9663, sst_loss: 0.1002 ||
+06/27 07:11:24 PM: Update 4546: task sst, batch 46 (4546): accuracy: 0.9613, sst_loss: 0.1033 ||
+06/27 07:11:34 PM: Update 4566: task sst, batch 66 (4566): accuracy: 0.9647, sst_loss: 0.0987 ||
+06/27 07:11:44 PM: Update 4586: task sst, batch 86 (4586): accuracy: 0.9631, sst_loss: 0.1040 ||
+06/27 07:11:55 PM: Update 4606: task sst, batch 106 (4606): accuracy: 0.9639, sst_loss: 0.1026 ||
+06/27 07:12:05 PM: Update 4626: task sst, batch 126 (4626): accuracy: 0.9638, sst_loss: 0.1025 ||
+06/27 07:12:15 PM: Update 4647: task sst, batch 147 (4647): accuracy: 0.9641, sst_loss: 0.1023 ||
+06/27 07:12:25 PM: Update 4667: task sst, batch 167 (4667): accuracy: 0.9643, sst_loss: 0.1024 ||
+06/27 07:12:36 PM: Update 4687: task sst, batch 187 (4687): accuracy: 0.9626, sst_loss: 0.1048 ||
+06/27 07:12:46 PM: Update 4707: task sst, batch 207 (4707): accuracy: 0.9616, sst_loss: 0.1059 ||
+06/27 07:12:56 PM: Update 4726: task sst, batch 226 (4726): accuracy: 0.9621, sst_loss: 0.1058 ||
+06/27 07:13:06 PM: Update 4746: task sst, batch 246 (4746): accuracy: 0.9626, sst_loss: 0.1046 ||
+06/27 07:13:16 PM: Update 4766: task sst, batch 266 (4766): accuracy: 0.9631, sst_loss: 0.1035 ||
+06/27 07:13:26 PM: Update 4786: task sst, batch 286 (4786): accuracy: 0.9628, sst_loss: 0.1044 ||
+06/27 07:13:37 PM: Update 4806: task sst, batch 306 (4806): accuracy: 0.9626, sst_loss: 0.1051 ||
+06/27 07:13:47 PM: Update 4827: task sst, batch 327 (4827): accuracy: 0.9624, sst_loss: 0.1054 ||
+06/27 07:13:57 PM: Update 4847: task sst, batch 347 (4847): accuracy: 0.9623, sst_loss: 0.1064 ||
+06/27 07:14:08 PM: Update 4867: task sst, batch 367 (4867): accuracy: 0.9623, sst_loss: 0.1065 ||
+06/27 07:14:18 PM: Update 4887: task sst, batch 387 (4887): accuracy: 0.9624, sst_loss: 0.1070 ||
+06/27 07:14:28 PM: Update 4907: task sst, batch 407 (4907): accuracy: 0.9622, sst_loss: 0.1079 ||
+06/27 07:14:38 PM: Update 4927: task sst, batch 427 (4927): accuracy: 0.9621, sst_loss: 0.1079 ||
+06/27 07:14:48 PM: Update 4947: task sst, batch 447 (4947): accuracy: 0.9621, sst_loss: 0.1076 ||
+06/27 07:14:58 PM: Update 4967: task sst, batch 467 (4967): accuracy: 0.9620, sst_loss: 0.1080 ||
+06/27 07:15:08 PM: Update 4987: task sst, batch 487 (4987): accuracy: 0.9619, sst_loss: 0.1083 ||
+06/27 07:15:15 PM: ***** Pass 5000 / Epoch 10 *****
+06/27 07:15:15 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:15:15 PM: Validating...
+06/27 07:15:18 PM: Batch 8/14: accuracy: 0.8965, sst_loss: 0.2742 ||
+06/27 07:15:21 PM: Statistic: sst_loss
+06/27 07:15:21 PM: 	training: 0.108510
+06/27 07:15:21 PM: 	validation: 0.306929
+06/27 07:15:21 PM: Statistic: macro_avg
+06/27 07:15:21 PM: 	validation: 0.886468
+06/27 07:15:21 PM: Statistic: micro_avg
+06/27 07:15:21 PM: 	validation: 0.886468
+06/27 07:15:21 PM: Statistic: sst_accuracy
+06/27 07:15:21 PM: 	training: 0.961844
+06/27 07:15:21 PM: 	validation: 0.886468
+06/27 07:15:21 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:15:29 PM: Update 5015: task sst, batch 15 (5015): accuracy: 0.9646, sst_loss: 0.1085 ||
+06/27 07:15:39 PM: Update 5035: task sst, batch 35 (5035): accuracy: 0.9612, sst_loss: 0.1125 ||
+06/27 07:15:50 PM: Update 5056: task sst, batch 56 (5056): accuracy: 0.9629, sst_loss: 0.1105 ||
+06/27 07:16:00 PM: Update 5077: task sst, batch 77 (5077): accuracy: 0.9614, sst_loss: 0.1129 ||
+06/27 07:16:10 PM: Update 5097: task sst, batch 97 (5097): accuracy: 0.9613, sst_loss: 0.1139 ||
+06/27 07:16:21 PM: Update 5117: task sst, batch 117 (5117): accuracy: 0.9621, sst_loss: 0.1127 ||
+06/27 07:16:31 PM: Update 5137: task sst, batch 137 (5137): accuracy: 0.9622, sst_loss: 0.1100 ||
+06/27 07:16:41 PM: Update 5157: task sst, batch 157 (5157): accuracy: 0.9617, sst_loss: 0.1101 ||
+06/27 07:16:51 PM: Update 5177: task sst, batch 177 (5177): accuracy: 0.9625, sst_loss: 0.1080 ||
+06/27 07:17:02 PM: Update 5198: task sst, batch 198 (5198): accuracy: 0.9629, sst_loss: 0.1074 ||
+06/27 07:17:12 PM: Update 5219: task sst, batch 219 (5219): accuracy: 0.9628, sst_loss: 0.1085 ||
+06/27 07:17:22 PM: Update 5239: task sst, batch 239 (5239): accuracy: 0.9624, sst_loss: 0.1094 ||
+06/27 07:17:33 PM: Update 5260: task sst, batch 260 (5260): accuracy: 0.9623, sst_loss: 0.1095 ||
+06/27 07:17:43 PM: Update 5280: task sst, batch 280 (5280): accuracy: 0.9630, sst_loss: 0.1072 ||
+06/27 07:17:53 PM: Update 5300: task sst, batch 300 (5300): accuracy: 0.9638, sst_loss: 0.1051 ||
+06/27 07:18:03 PM: Update 5320: task sst, batch 320 (5320): accuracy: 0.9646, sst_loss: 0.1026 ||
+06/27 07:18:13 PM: Update 5340: task sst, batch 340 (5340): accuracy: 0.9648, sst_loss: 0.1019 ||
+06/27 07:18:24 PM: Update 5360: task sst, batch 360 (5360): accuracy: 0.9655, sst_loss: 0.1002 ||
+06/27 07:18:34 PM: Update 5380: task sst, batch 380 (5380): accuracy: 0.9658, sst_loss: 0.0997 ||
+06/27 07:18:44 PM: Update 5401: task sst, batch 401 (5401): accuracy: 0.9662, sst_loss: 0.0985 ||
+06/27 07:18:54 PM: Update 5421: task sst, batch 421 (5421): accuracy: 0.9665, sst_loss: 0.0980 ||
+06/27 07:19:05 PM: Update 5441: task sst, batch 441 (5441): accuracy: 0.9668, sst_loss: 0.0974 ||
+06/27 07:19:15 PM: Update 5461: task sst, batch 461 (5461): accuracy: 0.9665, sst_loss: 0.0980 ||
+06/27 07:19:25 PM: Update 5481: task sst, batch 481 (5481): accuracy: 0.9665, sst_loss: 0.0974 ||
+06/27 07:19:35 PM: ***** Pass 5500 / Epoch 11 *****
+06/27 07:19:35 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:19:35 PM: Validating...
+06/27 07:19:35 PM: Batch 2/14: accuracy: 0.8906, sst_loss: 0.3475 ||
+06/27 07:19:40 PM: Statistic: sst_loss
+06/27 07:19:40 PM: 	training: 0.097154
+06/27 07:19:40 PM: 	validation: 0.370118
+06/27 07:19:40 PM: Statistic: macro_avg
+06/27 07:19:40 PM: 	validation: 0.888761
+06/27 07:19:40 PM: Statistic: micro_avg
+06/27 07:19:40 PM: 	validation: 0.888761
+06/27 07:19:40 PM: Statistic: sst_accuracy
+06/27 07:19:40 PM: 	training: 0.966549
+06/27 07:19:40 PM: 	validation: 0.888761
+06/27 07:19:41 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:19:45 PM: Update 5509: task sst, batch 9 (5509): accuracy: 0.9618, sst_loss: 0.0998 ||
+06/27 07:19:55 PM: Update 5529: task sst, batch 29 (5529): accuracy: 0.9617, sst_loss: 0.0976 ||
+06/27 07:20:06 PM: Update 5549: task sst, batch 49 (5549): accuracy: 0.9697, sst_loss: 0.0852 ||
+06/27 07:20:16 PM: Update 5569: task sst, batch 69 (5569): accuracy: 0.9688, sst_loss: 0.0844 ||
+06/27 07:20:26 PM: Update 5590: task sst, batch 90 (5590): accuracy: 0.9693, sst_loss: 0.0867 ||
+06/27 07:20:36 PM: Update 5610: task sst, batch 110 (5610): accuracy: 0.9692, sst_loss: 0.0884 ||
+06/27 07:20:47 PM: Update 5631: task sst, batch 131 (5631): accuracy: 0.9692, sst_loss: 0.0893 ||
+06/27 07:20:57 PM: Update 5651: task sst, batch 151 (5651): accuracy: 0.9698, sst_loss: 0.0882 ||
+06/27 07:21:07 PM: Update 5671: task sst, batch 171 (5671): accuracy: 0.9692, sst_loss: 0.0896 ||
+06/27 07:21:18 PM: Update 5691: task sst, batch 191 (5691): accuracy: 0.9694, sst_loss: 0.0880 ||
+06/27 07:21:28 PM: Update 5711: task sst, batch 211 (5711): accuracy: 0.9682, sst_loss: 0.0907 ||
+06/27 07:21:38 PM: Update 5731: task sst, batch 231 (5731): accuracy: 0.9681, sst_loss: 0.0927 ||
+06/27 07:21:48 PM: Update 5752: task sst, batch 252 (5752): accuracy: 0.9676, sst_loss: 0.0937 ||
+06/27 07:21:59 PM: Update 5772: task sst, batch 272 (5772): accuracy: 0.9674, sst_loss: 0.0933 ||
+06/27 07:22:09 PM: Update 5792: task sst, batch 292 (5792): accuracy: 0.9675, sst_loss: 0.0933 ||
+06/27 07:22:19 PM: Update 5812: task sst, batch 312 (5812): accuracy: 0.9677, sst_loss: 0.0928 ||
+06/27 07:22:29 PM: Update 5832: task sst, batch 332 (5832): accuracy: 0.9675, sst_loss: 0.0935 ||
+06/27 07:22:39 PM: Update 5852: task sst, batch 352 (5852): accuracy: 0.9667, sst_loss: 0.0946 ||
+06/27 07:22:50 PM: Update 5873: task sst, batch 373 (5873): accuracy: 0.9667, sst_loss: 0.0947 ||
+06/27 07:23:00 PM: Update 5893: task sst, batch 393 (5893): accuracy: 0.9668, sst_loss: 0.0940 ||
+06/27 07:23:10 PM: Update 5913: task sst, batch 413 (5913): accuracy: 0.9670, sst_loss: 0.0939 ||
+06/27 07:23:20 PM: Update 5933: task sst, batch 433 (5933): accuracy: 0.9665, sst_loss: 0.0945 ||
+06/27 07:23:30 PM: Update 5952: task sst, batch 452 (5952): accuracy: 0.9666, sst_loss: 0.0940 ||
+06/27 07:23:40 PM: Update 5972: task sst, batch 472 (5972): accuracy: 0.9664, sst_loss: 0.0944 ||
+06/27 07:23:51 PM: Update 5992: task sst, batch 492 (5992): accuracy: 0.9669, sst_loss: 0.0938 ||
+06/27 07:23:55 PM: ***** Pass 6000 / Epoch 12 *****
+06/27 07:23:55 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:23:55 PM: Validating...
+06/27 07:24:01 PM: Statistic: sst_loss
+06/27 07:24:01 PM: 	training: 0.093574
+06/27 07:24:01 PM: 	validation: 0.320289
+06/27 07:24:01 PM: Statistic: macro_avg
+06/27 07:24:01 PM: 	validation: 0.880734
+06/27 07:24:01 PM: Statistic: micro_avg
+06/27 07:24:01 PM: 	validation: 0.880734
+06/27 07:24:01 PM: Statistic: sst_accuracy
+06/27 07:24:01 PM: 	training: 0.966906
+06/27 07:24:01 PM: 	validation: 0.880734
+06/27 07:24:01 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:24:01 PM: Update 6001: task sst, batch 1 (6001): accuracy: 0.9844, sst_loss: 0.0475 ||
+06/27 07:24:12 PM: Update 6022: task sst, batch 22 (6022): accuracy: 0.9709, sst_loss: 0.0989 ||
+06/27 07:24:22 PM: Update 6043: task sst, batch 43 (6043): accuracy: 0.9680, sst_loss: 0.0972 ||
+06/27 07:24:33 PM: Update 6063: task sst, batch 63 (6063): accuracy: 0.9707, sst_loss: 0.0921 ||
+06/27 07:24:43 PM: Update 6083: task sst, batch 83 (6083): accuracy: 0.9701, sst_loss: 0.0942 ||
+06/27 07:24:53 PM: Update 6103: task sst, batch 103 (6103): accuracy: 0.9675, sst_loss: 0.0995 ||
+06/27 07:25:03 PM: Update 6124: task sst, batch 124 (6124): accuracy: 0.9677, sst_loss: 0.0983 ||
+06/27 07:25:13 PM: Update 6144: task sst, batch 144 (6144): accuracy: 0.9671, sst_loss: 0.0995 ||
+06/27 07:25:24 PM: Update 6164: task sst, batch 164 (6164): accuracy: 0.9674, sst_loss: 0.0980 ||
+06/27 07:25:34 PM: Update 6184: task sst, batch 184 (6184): accuracy: 0.9675, sst_loss: 0.0987 ||
+06/27 07:25:44 PM: Update 6204: task sst, batch 204 (6204): accuracy: 0.9672, sst_loss: 0.0986 ||
+06/27 07:25:54 PM: Update 6224: task sst, batch 224 (6224): accuracy: 0.9670, sst_loss: 0.0994 ||
+06/27 07:26:04 PM: Update 6244: task sst, batch 244 (6244): accuracy: 0.9670, sst_loss: 0.0990 ||
+06/27 07:26:14 PM: Update 6264: task sst, batch 264 (6264): accuracy: 0.9672, sst_loss: 0.0984 ||
+06/27 07:26:25 PM: Update 6285: task sst, batch 285 (6285): accuracy: 0.9671, sst_loss: 0.0986 ||
+06/27 07:26:35 PM: Update 6305: task sst, batch 305 (6305): accuracy: 0.9666, sst_loss: 0.0990 ||
+06/27 07:26:45 PM: Update 6326: task sst, batch 326 (6326): accuracy: 0.9671, sst_loss: 0.0984 ||
+06/27 07:26:55 PM: Update 6347: task sst, batch 347 (6347): accuracy: 0.9681, sst_loss: 0.0960 ||
+06/27 07:27:05 PM: Update 6368: task sst, batch 368 (6368): accuracy: 0.9687, sst_loss: 0.0939 ||
+06/27 07:27:16 PM: Update 6389: task sst, batch 389 (6389): accuracy: 0.9690, sst_loss: 0.0930 ||
+06/27 07:27:26 PM: Update 6409: task sst, batch 409 (6409): accuracy: 0.9697, sst_loss: 0.0909 ||
+06/27 07:27:37 PM: Update 6430: task sst, batch 430 (6430): accuracy: 0.9695, sst_loss: 0.0917 ||
+06/27 07:27:47 PM: Update 6450: task sst, batch 450 (6450): accuracy: 0.9699, sst_loss: 0.0907 ||
+06/27 07:27:57 PM: Update 6471: task sst, batch 471 (6471): accuracy: 0.9699, sst_loss: 0.0907 ||
+06/27 07:28:07 PM: Update 6491: task sst, batch 491 (6491): accuracy: 0.9699, sst_loss: 0.0906 ||
+06/27 07:28:12 PM: ***** Pass 6500 / Epoch 13 *****
+06/27 07:28:12 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:28:12 PM: Validating...
+06/27 07:28:17 PM: Batch 13/14: accuracy: 0.8966, sst_loss: 0.3079 ||
+06/27 07:28:18 PM: Best model found for sst.
+06/27 07:28:18 PM: Best model found for micro.
+06/27 07:28:18 PM: Best model found for macro.
+06/27 07:28:18 PM: Statistic: sst_loss
+06/27 07:28:18 PM: 	training: 0.090382
+06/27 07:28:18 PM: 	validation: 0.317975
+06/27 07:28:18 PM: Statistic: macro_avg
+06/27 07:28:18 PM: 	validation: 0.895642
+06/27 07:28:18 PM: Statistic: micro_avg
+06/27 07:28:18 PM: 	validation: 0.895642
+06/27 07:28:18 PM: Statistic: sst_accuracy
+06/27 07:28:18 PM: 	training: 0.970022
+06/27 07:28:18 PM: 	validation: 0.895642
+06/27 07:28:18 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:28:28 PM: Update 6519: task sst, batch 19 (6519): accuracy: 0.9704, sst_loss: 0.0756 ||
+06/27 07:28:38 PM: Update 6539: task sst, batch 39 (6539): accuracy: 0.9708, sst_loss: 0.0845 ||
+06/27 07:28:48 PM: Update 6560: task sst, batch 60 (6560): accuracy: 0.9703, sst_loss: 0.0888 ||
+06/27 07:28:59 PM: Update 6580: task sst, batch 80 (6580): accuracy: 0.9717, sst_loss: 0.0871 ||
+06/27 07:29:09 PM: Update 6600: task sst, batch 100 (6600): accuracy: 0.9714, sst_loss: 0.0834 ||
+06/27 07:29:19 PM: Update 6620: task sst, batch 120 (6620): accuracy: 0.9714, sst_loss: 0.0827 ||
+06/27 07:29:29 PM: Update 6640: task sst, batch 140 (6640): accuracy: 0.9714, sst_loss: 0.0806 ||
+06/27 07:29:39 PM: Update 6660: task sst, batch 160 (6660): accuracy: 0.9719, sst_loss: 0.0806 ||
+06/27 07:29:49 PM: Update 6680: task sst, batch 180 (6680): accuracy: 0.9720, sst_loss: 0.0796 ||
+06/27 07:30:00 PM: Update 6700: task sst, batch 200 (6700): accuracy: 0.9722, sst_loss: 0.0793 ||
+06/27 07:30:10 PM: Update 6720: task sst, batch 220 (6720): accuracy: 0.9712, sst_loss: 0.0818 ||
+06/27 07:30:20 PM: Update 6739: task sst, batch 239 (6739): accuracy: 0.9706, sst_loss: 0.0828 ||
+06/27 07:30:30 PM: Update 6759: task sst, batch 259 (6759): accuracy: 0.9706, sst_loss: 0.0830 ||
+06/27 07:30:40 PM: Update 6779: task sst, batch 279 (6779): accuracy: 0.9707, sst_loss: 0.0824 ||
+06/27 07:30:51 PM: Update 6799: task sst, batch 299 (6799): accuracy: 0.9709, sst_loss: 0.0820 ||
+06/27 07:31:01 PM: Update 6819: task sst, batch 319 (6819): accuracy: 0.9707, sst_loss: 0.0836 ||
+06/27 07:31:11 PM: Update 6839: task sst, batch 339 (6839): accuracy: 0.9710, sst_loss: 0.0830 ||
+06/27 07:31:21 PM: Update 6859: task sst, batch 359 (6859): accuracy: 0.9710, sst_loss: 0.0829 ||
+06/27 07:31:32 PM: Update 6879: task sst, batch 379 (6879): accuracy: 0.9706, sst_loss: 0.0840 ||
+06/27 07:31:42 PM: Update 6899: task sst, batch 399 (6899): accuracy: 0.9706, sst_loss: 0.0838 ||
+06/27 07:31:52 PM: Update 6919: task sst, batch 419 (6919): accuracy: 0.9706, sst_loss: 0.0841 ||
+06/27 07:32:02 PM: Update 6939: task sst, batch 439 (6939): accuracy: 0.9707, sst_loss: 0.0838 ||
+06/27 07:32:13 PM: Update 6959: task sst, batch 459 (6959): accuracy: 0.9703, sst_loss: 0.0841 ||
+06/27 07:32:23 PM: Update 6979: task sst, batch 479 (6979): accuracy: 0.9700, sst_loss: 0.0843 ||
+06/27 07:32:33 PM: Update 6999: task sst, batch 499 (6999): accuracy: 0.9701, sst_loss: 0.0841 ||
+06/27 07:32:34 PM: ***** Pass 7000 / Epoch 14 *****
+06/27 07:32:34 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:32:34 PM: Validating...
+06/27 07:32:39 PM: Statistic: sst_loss
+06/27 07:32:39 PM: 	training: 0.084169
+06/27 07:32:39 PM: 	validation: 0.376648
+06/27 07:32:39 PM: Statistic: macro_avg
+06/27 07:32:39 PM: 	validation: 0.868119
+06/27 07:32:39 PM: Statistic: micro_avg
+06/27 07:32:39 PM: 	validation: 0.868119
+06/27 07:32:39 PM: Statistic: sst_accuracy
+06/27 07:32:39 PM: 	training: 0.970094
+06/27 07:32:39 PM: 	validation: 0.868119
+06/27 07:32:39 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:32:43 PM: Update 7007: task sst, batch 7 (7007): accuracy: 0.9643, sst_loss: 0.0785 ||
+06/27 07:32:53 PM: Update 7027: task sst, batch 27 (7027): accuracy: 0.9693, sst_loss: 0.0868 ||
+06/27 07:33:03 PM: Update 7047: task sst, batch 47 (7047): accuracy: 0.9721, sst_loss: 0.0768 ||
+06/27 07:33:14 PM: Update 7067: task sst, batch 67 (7067): accuracy: 0.9704, sst_loss: 0.0812 ||
+06/27 07:33:24 PM: Update 7087: task sst, batch 87 (7087): accuracy: 0.9709, sst_loss: 0.0831 ||
+06/27 07:33:34 PM: Update 7107: task sst, batch 107 (7107): accuracy: 0.9701, sst_loss: 0.0857 ||
+06/27 07:33:45 PM: Update 7127: task sst, batch 127 (7127): accuracy: 0.9685, sst_loss: 0.0876 ||
+06/27 07:33:55 PM: Update 7147: task sst, batch 147 (7147): accuracy: 0.9688, sst_loss: 0.0866 ||
+06/27 07:34:05 PM: Update 7167: task sst, batch 167 (7167): accuracy: 0.9685, sst_loss: 0.0863 ||
+06/27 07:34:15 PM: Update 7187: task sst, batch 187 (7187): accuracy: 0.9688, sst_loss: 0.0840 ||
+06/27 07:34:25 PM: Update 7207: task sst, batch 207 (7207): accuracy: 0.9691, sst_loss: 0.0849 ||
+06/27 07:34:35 PM: Update 7227: task sst, batch 227 (7227): accuracy: 0.9692, sst_loss: 0.0852 ||
+06/27 07:34:45 PM: Update 7247: task sst, batch 247 (7247): accuracy: 0.9693, sst_loss: 0.0844 ||
+06/27 07:34:55 PM: Update 7267: task sst, batch 267 (7267): accuracy: 0.9695, sst_loss: 0.0843 ||
+06/27 07:35:06 PM: Update 7287: task sst, batch 287 (7287): accuracy: 0.9694, sst_loss: 0.0840 ||
+06/27 07:35:16 PM: Update 7308: task sst, batch 308 (7308): accuracy: 0.9692, sst_loss: 0.0853 ||
+06/27 07:35:26 PM: Update 7328: task sst, batch 328 (7328): accuracy: 0.9684, sst_loss: 0.0866 ||
+06/27 07:35:36 PM: Update 7348: task sst, batch 348 (7348): accuracy: 0.9685, sst_loss: 0.0863 ||
+06/27 07:35:46 PM: Update 7368: task sst, batch 368 (7368): accuracy: 0.9685, sst_loss: 0.0860 ||
+06/27 07:35:56 PM: Update 7388: task sst, batch 388 (7388): accuracy: 0.9692, sst_loss: 0.0839 ||
+06/27 07:36:07 PM: Update 7408: task sst, batch 408 (7408): accuracy: 0.9697, sst_loss: 0.0826 ||
+06/27 07:36:17 PM: Update 7428: task sst, batch 428 (7428): accuracy: 0.9699, sst_loss: 0.0817 ||
+06/27 07:36:27 PM: Update 7448: task sst, batch 448 (7448): accuracy: 0.9702, sst_loss: 0.0812 ||
+06/27 07:36:38 PM: Update 7468: task sst, batch 468 (7468): accuracy: 0.9703, sst_loss: 0.0810 ||
+06/27 07:36:48 PM: Update 7488: task sst, batch 488 (7488): accuracy: 0.9706, sst_loss: 0.0806 ||
+06/27 07:36:54 PM: ***** Pass 7500 / Epoch 15 *****
+06/27 07:36:54 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:36:54 PM: Validating...
+06/27 07:36:58 PM: Batch 10/14: accuracy: 0.8938, sst_loss: 0.3245 ||
+06/27 07:36:59 PM: Statistic: sst_loss
+06/27 07:36:59 PM: 	training: 0.080412
+06/27 07:36:59 PM: 	validation: 0.333088
+06/27 07:36:59 PM: Statistic: macro_avg
+06/27 07:36:59 PM: 	validation: 0.885321
+06/27 07:36:59 PM: Statistic: micro_avg
+06/27 07:36:59 PM: 	validation: 0.885321
+06/27 07:36:59 PM: Statistic: sst_accuracy
+06/27 07:36:59 PM: 	training: 0.970460
+06/27 07:36:59 PM: 	validation: 0.885321
+06/27 07:37:00 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:37:08 PM: Update 7517: task sst, batch 17 (7517): accuracy: 0.9789, sst_loss: 0.0650 ||
+06/27 07:37:19 PM: Update 7538: task sst, batch 38 (7538): accuracy: 0.9799, sst_loss: 0.0626 ||
+06/27 07:37:29 PM: Update 7558: task sst, batch 58 (7558): accuracy: 0.9760, sst_loss: 0.0691 ||
+06/27 07:37:39 PM: Update 7579: task sst, batch 79 (7579): accuracy: 0.9761, sst_loss: 0.0693 ||
+06/27 07:37:49 PM: Update 7599: task sst, batch 99 (7599): accuracy: 0.9754, sst_loss: 0.0697 ||
+06/27 07:37:59 PM: Update 7619: task sst, batch 119 (7619): accuracy: 0.9754, sst_loss: 0.0689 ||
+06/27 07:38:10 PM: Update 7639: task sst, batch 139 (7639): accuracy: 0.9756, sst_loss: 0.0671 ||
+06/27 07:38:20 PM: Update 7659: task sst, batch 159 (7659): accuracy: 0.9753, sst_loss: 0.0691 ||
+06/27 07:38:30 PM: Update 7679: task sst, batch 179 (7679): accuracy: 0.9756, sst_loss: 0.0684 ||
+06/27 07:38:40 PM: Update 7700: task sst, batch 200 (7700): accuracy: 0.9759, sst_loss: 0.0668 ||
+06/27 07:38:50 PM: Update 7720: task sst, batch 220 (7720): accuracy: 0.9756, sst_loss: 0.0671 ||
+06/27 07:39:01 PM: Update 7740: task sst, batch 240 (7740): accuracy: 0.9758, sst_loss: 0.0660 ||
+06/27 07:39:11 PM: Update 7760: task sst, batch 260 (7760): accuracy: 0.9759, sst_loss: 0.0669 ||
+06/27 07:39:21 PM: Update 7780: task sst, batch 280 (7780): accuracy: 0.9760, sst_loss: 0.0670 ||
+06/27 07:39:32 PM: Update 7800: task sst, batch 300 (7800): accuracy: 0.9764, sst_loss: 0.0662 ||
+06/27 07:39:42 PM: Update 7820: task sst, batch 320 (7820): accuracy: 0.9760, sst_loss: 0.0672 ||
+06/27 07:39:52 PM: Update 7841: task sst, batch 341 (7841): accuracy: 0.9758, sst_loss: 0.0683 ||
+06/27 07:40:03 PM: Update 7861: task sst, batch 361 (7861): accuracy: 0.9758, sst_loss: 0.0690 ||
+06/27 07:40:13 PM: Update 7881: task sst, batch 381 (7881): accuracy: 0.9758, sst_loss: 0.0686 ||
+06/27 07:40:23 PM: Update 7902: task sst, batch 402 (7902): accuracy: 0.9757, sst_loss: 0.0688 ||
+06/27 07:40:34 PM: Update 7922: task sst, batch 422 (7922): accuracy: 0.9757, sst_loss: 0.0690 ||
+06/27 07:40:44 PM: Update 7942: task sst, batch 442 (7942): accuracy: 0.9755, sst_loss: 0.0695 ||
+06/27 07:40:55 PM: Update 7962: task sst, batch 462 (7962): accuracy: 0.9750, sst_loss: 0.0698 ||
+06/27 07:41:05 PM: Update 7983: task sst, batch 483 (7983): accuracy: 0.9748, sst_loss: 0.0704 ||
+06/27 07:41:14 PM: ***** Pass 8000 / Epoch 16 *****
+06/27 07:41:14 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:41:14 PM: Validating...
+06/27 07:41:15 PM: Batch 4/14: accuracy: 0.8945, sst_loss: 0.2989 ||
+06/27 07:41:19 PM: Statistic: sst_loss
+06/27 07:41:19 PM: 	training: 0.070369
+06/27 07:41:19 PM: 	validation: 0.361848
+06/27 07:41:19 PM: Statistic: macro_avg
+06/27 07:41:19 PM: 	validation: 0.883028
+06/27 07:41:19 PM: Statistic: micro_avg
+06/27 07:41:19 PM: 	validation: 0.883028
+06/27 07:41:19 PM: Statistic: sst_accuracy
+06/27 07:41:19 PM: 	training: 0.974906
+06/27 07:41:19 PM: 	validation: 0.883028
+06/27 07:41:20 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:41:25 PM: Update 8011: task sst, batch 11 (8011): accuracy: 0.9631, sst_loss: 0.1124 ||
+06/27 07:41:36 PM: Update 8031: task sst, batch 31 (8031): accuracy: 0.9682, sst_loss: 0.0933 ||
+06/27 07:41:46 PM: Update 8051: task sst, batch 51 (8051): accuracy: 0.9694, sst_loss: 0.0874 ||
+06/27 07:41:56 PM: Update 8072: task sst, batch 72 (8072): accuracy: 0.9698, sst_loss: 0.0840 ||
+06/27 07:42:06 PM: Update 8092: task sst, batch 92 (8092): accuracy: 0.9701, sst_loss: 0.0822 ||
+06/27 07:42:17 PM: Update 8113: task sst, batch 113 (8113): accuracy: 0.9707, sst_loss: 0.0843 ||
+06/27 07:42:27 PM: Update 8133: task sst, batch 133 (8133): accuracy: 0.9695, sst_loss: 0.0850 ||
+06/27 07:42:37 PM: Update 8154: task sst, batch 154 (8154): accuracy: 0.9705, sst_loss: 0.0833 ||
+06/27 07:42:48 PM: Update 8174: task sst, batch 174 (8174): accuracy: 0.9708, sst_loss: 0.0832 ||
+06/27 07:42:58 PM: Update 8195: task sst, batch 195 (8195): accuracy: 0.9708, sst_loss: 0.0826 ||
+06/27 07:43:09 PM: Update 8216: task sst, batch 216 (8216): accuracy: 0.9711, sst_loss: 0.0817 ||
+06/27 07:43:19 PM: Update 8236: task sst, batch 236 (8236): accuracy: 0.9711, sst_loss: 0.0814 ||
+06/27 07:43:29 PM: Update 8257: task sst, batch 257 (8257): accuracy: 0.9706, sst_loss: 0.0824 ||
+06/27 07:43:39 PM: Update 8277: task sst, batch 277 (8277): accuracy: 0.9707, sst_loss: 0.0821 ||
+06/27 07:43:50 PM: Update 8297: task sst, batch 297 (8297): accuracy: 0.9712, sst_loss: 0.0811 ||
+06/27 07:44:00 PM: Update 8317: task sst, batch 317 (8317): accuracy: 0.9708, sst_loss: 0.0823 ||
+06/27 07:44:10 PM: Update 8338: task sst, batch 338 (8338): accuracy: 0.9707, sst_loss: 0.0825 ||
+06/27 07:44:21 PM: Update 8358: task sst, batch 358 (8358): accuracy: 0.9706, sst_loss: 0.0822 ||
+06/27 07:44:31 PM: Update 8378: task sst, batch 378 (8378): accuracy: 0.9709, sst_loss: 0.0818 ||
+06/27 07:44:41 PM: Update 8398: task sst, batch 398 (8398): accuracy: 0.9708, sst_loss: 0.0818 ||
+06/27 07:44:51 PM: Update 8418: task sst, batch 418 (8418): accuracy: 0.9709, sst_loss: 0.0820 ||
+06/27 07:45:01 PM: Update 8438: task sst, batch 438 (8438): accuracy: 0.9710, sst_loss: 0.0815 ||
+06/27 07:45:11 PM: Update 8458: task sst, batch 458 (8458): accuracy: 0.9713, sst_loss: 0.0806 ||
+06/27 07:45:21 PM: Update 8478: task sst, batch 478 (8478): accuracy: 0.9719, sst_loss: 0.0789 ||
+06/27 07:45:32 PM: Update 8498: task sst, batch 498 (8498): accuracy: 0.9721, sst_loss: 0.0789 ||
+06/27 07:45:33 PM: ***** Pass 8500 / Epoch 17 *****
+06/27 07:45:33 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:45:33 PM: Validating...
+06/27 07:45:39 PM: Statistic: sst_loss
+06/27 07:45:39 PM: 	training: 0.078813
+06/27 07:45:39 PM: 	validation: 0.346400
+06/27 07:45:39 PM: Statistic: macro_avg
+06/27 07:45:39 PM: 	validation: 0.872706
+06/27 07:45:39 PM: Statistic: micro_avg
+06/27 07:45:39 PM: 	validation: 0.872706
+06/27 07:45:39 PM: Statistic: sst_accuracy
+06/27 07:45:39 PM: 	training: 0.972087
+06/27 07:45:39 PM: 	validation: 0.872706
+06/27 07:45:39 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:45:42 PM: Update 8506: task sst, batch 6 (8506): accuracy: 0.9688, sst_loss: 0.0960 ||
+06/27 07:45:52 PM: Update 8527: task sst, batch 27 (8527): accuracy: 0.9740, sst_loss: 0.0742 ||
+06/27 07:46:02 PM: Update 8547: task sst, batch 47 (8547): accuracy: 0.9751, sst_loss: 0.0677 ||
+06/27 07:46:13 PM: Update 8567: task sst, batch 67 (8567): accuracy: 0.9739, sst_loss: 0.0707 ||
+06/27 07:46:23 PM: Update 8587: task sst, batch 87 (8587): accuracy: 0.9741, sst_loss: 0.0705 ||
+06/27 07:46:33 PM: Update 8607: task sst, batch 107 (8607): accuracy: 0.9749, sst_loss: 0.0689 ||
+06/27 07:46:43 PM: Update 8628: task sst, batch 128 (8628): accuracy: 0.9744, sst_loss: 0.0681 ||
+06/27 07:46:54 PM: Update 8648: task sst, batch 148 (8648): accuracy: 0.9754, sst_loss: 0.0668 ||
+06/27 07:47:04 PM: Update 8669: task sst, batch 169 (8669): accuracy: 0.9761, sst_loss: 0.0659 ||
+06/27 07:47:14 PM: Update 8689: task sst, batch 189 (8689): accuracy: 0.9753, sst_loss: 0.0672 ||
+06/27 07:47:25 PM: Update 8709: task sst, batch 209 (8709): accuracy: 0.9753, sst_loss: 0.0672 ||
+06/27 07:47:35 PM: Update 8729: task sst, batch 229 (8729): accuracy: 0.9750, sst_loss: 0.0680 ||
+06/27 07:47:45 PM: Update 8749: task sst, batch 249 (8749): accuracy: 0.9754, sst_loss: 0.0662 ||
+06/27 07:47:56 PM: Update 8769: task sst, batch 269 (8769): accuracy: 0.9754, sst_loss: 0.0667 ||
+06/27 07:48:06 PM: Update 8789: task sst, batch 289 (8789): accuracy: 0.9755, sst_loss: 0.0664 ||
+06/27 07:48:16 PM: Update 8810: task sst, batch 310 (8810): accuracy: 0.9761, sst_loss: 0.0659 ||
+06/27 07:48:27 PM: Update 8830: task sst, batch 330 (8830): accuracy: 0.9762, sst_loss: 0.0665 ||
+06/27 07:48:37 PM: Update 8851: task sst, batch 351 (8851): accuracy: 0.9759, sst_loss: 0.0672 ||
+06/27 07:48:47 PM: Update 8871: task sst, batch 371 (8871): accuracy: 0.9757, sst_loss: 0.0668 ||
+06/27 07:48:58 PM: Update 8891: task sst, batch 391 (8891): accuracy: 0.9761, sst_loss: 0.0667 ||
+06/27 07:49:08 PM: Update 8912: task sst, batch 412 (8912): accuracy: 0.9757, sst_loss: 0.0676 ||
+06/27 07:49:18 PM: Update 8932: task sst, batch 432 (8932): accuracy: 0.9758, sst_loss: 0.0672 ||
+06/27 07:49:28 PM: Update 8952: task sst, batch 452 (8952): accuracy: 0.9757, sst_loss: 0.0676 ||
+06/27 07:49:38 PM: Update 8972: task sst, batch 472 (8972): accuracy: 0.9756, sst_loss: 0.0677 ||
+06/27 07:49:49 PM: Update 8993: task sst, batch 493 (8993): accuracy: 0.9756, sst_loss: 0.0680 ||
+06/27 07:49:52 PM: ***** Pass 9000 / Epoch 18 *****
+06/27 07:49:52 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:49:52 PM: Validating...
+06/27 07:49:58 PM: Statistic: sst_loss
+06/27 07:49:58 PM: 	training: 0.067550
+06/27 07:49:58 PM: 	validation: 0.346210
+06/27 07:49:58 PM: Statistic: macro_avg
+06/27 07:49:58 PM: 	validation: 0.879587
+06/27 07:49:58 PM: Statistic: micro_avg
+06/27 07:49:58 PM: 	validation: 0.879587
+06/27 07:49:58 PM: Statistic: sst_accuracy
+06/27 07:49:58 PM: 	training: 0.975812
+06/27 07:49:58 PM: 	validation: 0.879587
+06/27 07:49:58 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:49:59 PM: Update 9001: task sst, batch 1 (9001): accuracy: 0.9688, sst_loss: 0.0561 ||
+06/27 07:50:09 PM: Update 9021: task sst, batch 21 (9021): accuracy: 0.9732, sst_loss: 0.0763 ||
+06/27 07:50:20 PM: Update 9041: task sst, batch 41 (9041): accuracy: 0.9779, sst_loss: 0.0634 ||
+06/27 07:50:30 PM: Update 9061: task sst, batch 61 (9061): accuracy: 0.9790, sst_loss: 0.0604 ||
+06/27 07:50:40 PM: Update 9081: task sst, batch 81 (9081): accuracy: 0.9759, sst_loss: 0.0687 ||
+06/27 07:50:50 PM: Update 9101: task sst, batch 101 (9101): accuracy: 0.9742, sst_loss: 0.0724 ||
+06/27 07:51:00 PM: Update 9122: task sst, batch 122 (9122): accuracy: 0.9740, sst_loss: 0.0730 ||
+06/27 07:51:11 PM: Update 9142: task sst, batch 142 (9142): accuracy: 0.9739, sst_loss: 0.0712 ||
+06/27 07:51:21 PM: Update 9162: task sst, batch 162 (9162): accuracy: 0.9731, sst_loss: 0.0724 ||
+06/27 07:51:31 PM: Update 9182: task sst, batch 182 (9182): accuracy: 0.9736, sst_loss: 0.0708 ||
+06/27 07:51:41 PM: Update 9202: task sst, batch 202 (9202): accuracy: 0.9737, sst_loss: 0.0702 ||
+06/27 07:51:51 PM: Update 9222: task sst, batch 222 (9222): accuracy: 0.9733, sst_loss: 0.0710 ||
+06/27 07:52:02 PM: Update 9242: task sst, batch 242 (9242): accuracy: 0.9736, sst_loss: 0.0702 ||
+06/27 07:52:12 PM: Update 9262: task sst, batch 262 (9262): accuracy: 0.9736, sst_loss: 0.0706 ||
+06/27 07:52:22 PM: Update 9282: task sst, batch 282 (9282): accuracy: 0.9731, sst_loss: 0.0713 ||
+06/27 07:52:32 PM: Update 9302: task sst, batch 302 (9302): accuracy: 0.9733, sst_loss: 0.0719 ||
+06/27 07:52:42 PM: Update 9322: task sst, batch 322 (9322): accuracy: 0.9733, sst_loss: 0.0712 ||
+06/27 07:52:52 PM: Update 9342: task sst, batch 342 (9342): accuracy: 0.9735, sst_loss: 0.0709 ||
+06/27 07:53:03 PM: Update 9362: task sst, batch 362 (9362): accuracy: 0.9735, sst_loss: 0.0710 ||
+06/27 07:53:13 PM: Update 9382: task sst, batch 382 (9382): accuracy: 0.9735, sst_loss: 0.0713 ||
+06/27 07:53:23 PM: Update 9402: task sst, batch 402 (9402): accuracy: 0.9733, sst_loss: 0.0721 ||
+06/27 07:53:33 PM: Update 9422: task sst, batch 422 (9422): accuracy: 0.9732, sst_loss: 0.0722 ||
+06/27 07:53:43 PM: Update 9442: task sst, batch 442 (9442): accuracy: 0.9732, sst_loss: 0.0723 ||
+06/27 07:53:54 PM: Update 9462: task sst, batch 462 (9462): accuracy: 0.9733, sst_loss: 0.0720 ||
+06/27 07:54:04 PM: Update 9483: task sst, batch 483 (9483): accuracy: 0.9734, sst_loss: 0.0720 ||
+06/27 07:54:13 PM: ***** Pass 9500 / Epoch 19 *****
+06/27 07:54:13 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:54:13 PM: Validating...
+06/27 07:54:14 PM: Batch 3/14: accuracy: 0.9010, sst_loss: 0.3394 ||
+06/27 07:54:19 PM: Statistic: sst_loss
+06/27 07:54:19 PM: 	training: 0.071724
+06/27 07:54:19 PM: 	validation: 0.394323
+06/27 07:54:19 PM: Statistic: macro_avg
+06/27 07:54:19 PM: 	validation: 0.875000
+06/27 07:54:19 PM: Statistic: micro_avg
+06/27 07:54:19 PM: 	validation: 0.875000
+06/27 07:54:19 PM: Statistic: sst_accuracy
+06/27 07:54:19 PM: 	training: 0.973402
+06/27 07:54:19 PM: 	validation: 0.875000
+06/27 07:54:19 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:54:25 PM: Update 9511: task sst, batch 11 (9511): accuracy: 0.9801, sst_loss: 0.0517 ||
+06/27 07:54:35 PM: Update 9532: task sst, batch 32 (9532): accuracy: 0.9819, sst_loss: 0.0553 ||
+06/27 07:54:45 PM: Update 9552: task sst, batch 52 (9552): accuracy: 0.9832, sst_loss: 0.0518 ||
+06/27 07:54:55 PM: Update 9572: task sst, batch 72 (9572): accuracy: 0.9807, sst_loss: 0.0557 ||
+06/27 07:55:06 PM: Update 9592: task sst, batch 92 (9592): accuracy: 0.9791, sst_loss: 0.0594 ||
+06/27 07:55:16 PM: Update 9612: task sst, batch 112 (9612): accuracy: 0.9805, sst_loss: 0.0555 ||
+06/27 07:55:26 PM: Update 9632: task sst, batch 132 (9632): accuracy: 0.9811, sst_loss: 0.0549 ||
+06/27 07:55:36 PM: Update 9652: task sst, batch 152 (9652): accuracy: 0.9814, sst_loss: 0.0547 ||
+06/27 07:55:46 PM: Update 9672: task sst, batch 172 (9672): accuracy: 0.9815, sst_loss: 0.0541 ||
+06/27 07:55:57 PM: Update 9692: task sst, batch 192 (9692): accuracy: 0.9808, sst_loss: 0.0554 ||
+06/27 07:56:07 PM: Update 9713: task sst, batch 213 (9713): accuracy: 0.9799, sst_loss: 0.0569 ||
+06/27 07:56:17 PM: Update 9734: task sst, batch 234 (9734): accuracy: 0.9803, sst_loss: 0.0562 ||
+06/27 07:56:28 PM: Update 9754: task sst, batch 254 (9754): accuracy: 0.9801, sst_loss: 0.0561 ||
+06/27 07:56:38 PM: Update 9774: task sst, batch 274 (9774): accuracy: 0.9800, sst_loss: 0.0566 ||
+06/27 07:56:48 PM: Update 9794: task sst, batch 294 (9794): accuracy: 0.9804, sst_loss: 0.0553 ||
+06/27 07:56:58 PM: Update 9814: task sst, batch 314 (9814): accuracy: 0.9800, sst_loss: 0.0560 ||
+06/27 07:57:08 PM: Update 9834: task sst, batch 334 (9834): accuracy: 0.9796, sst_loss: 0.0571 ||
+06/27 07:57:19 PM: Update 9855: task sst, batch 355 (9855): accuracy: 0.9795, sst_loss: 0.0576 ||
+06/27 07:57:29 PM: Update 9875: task sst, batch 375 (9875): accuracy: 0.9794, sst_loss: 0.0578 ||
+06/27 07:57:39 PM: Update 9895: task sst, batch 395 (9895): accuracy: 0.9794, sst_loss: 0.0572 ||
+06/27 07:57:49 PM: Update 9915: task sst, batch 415 (9915): accuracy: 0.9792, sst_loss: 0.0573 ||
+06/27 07:57:59 PM: Update 9935: task sst, batch 435 (9935): accuracy: 0.9793, sst_loss: 0.0570 ||
+06/27 07:58:10 PM: Update 9955: task sst, batch 455 (9955): accuracy: 0.9795, sst_loss: 0.0566 ||
+06/27 07:58:20 PM: Update 9975: task sst, batch 475 (9975): accuracy: 0.9792, sst_loss: 0.0573 ||
+06/27 07:58:30 PM: Update 9996: task sst, batch 496 (9996): accuracy: 0.9792, sst_loss: 0.0576 ||
+06/27 07:58:33 PM: ***** Pass 10000 / Epoch 20 *****
+06/27 07:58:33 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 07:58:33 PM: Validating...
+06/27 07:58:38 PM: Statistic: sst_loss
+06/27 07:58:38 PM: 	training: 0.057552
+06/27 07:58:38 PM: 	validation: 0.403434
+06/27 07:58:38 PM: Statistic: macro_avg
+06/27 07:58:38 PM: 	validation: 0.880734
+06/27 07:58:38 PM: Statistic: micro_avg
+06/27 07:58:38 PM: 	validation: 0.880734
+06/27 07:58:38 PM: Statistic: sst_accuracy
+06/27 07:58:38 PM: 	training: 0.979313
+06/27 07:58:38 PM: 	validation: 0.880734
+06/27 07:58:39 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 07:58:41 PM: Update 10004: task sst, batch 4 (10004): accuracy: 0.9648, sst_loss: 0.0910 ||
+06/27 07:58:51 PM: Update 10025: task sst, batch 25 (10025): accuracy: 0.9744, sst_loss: 0.0707 ||
+06/27 07:59:01 PM: Update 10045: task sst, batch 45 (10045): accuracy: 0.9753, sst_loss: 0.0709 ||
+06/27 07:59:11 PM: Update 10065: task sst, batch 65 (10065): accuracy: 0.9764, sst_loss: 0.0687 ||
+06/27 07:59:21 PM: Update 10085: task sst, batch 85 (10085): accuracy: 0.9767, sst_loss: 0.0655 ||
+06/27 07:59:32 PM: Update 10105: task sst, batch 105 (10105): accuracy: 0.9768, sst_loss: 0.0657 ||
+06/27 07:59:42 PM: Update 10125: task sst, batch 125 (10125): accuracy: 0.9768, sst_loss: 0.0652 ||
+06/27 07:59:52 PM: Update 10146: task sst, batch 146 (10146): accuracy: 0.9766, sst_loss: 0.0663 ||
+06/27 08:00:02 PM: Update 10166: task sst, batch 166 (10166): accuracy: 0.9756, sst_loss: 0.0668 ||
+06/27 08:00:12 PM: Update 10186: task sst, batch 186 (10186): accuracy: 0.9756, sst_loss: 0.0667 ||
+06/27 08:00:23 PM: Update 10206: task sst, batch 206 (10206): accuracy: 0.9762, sst_loss: 0.0657 ||
+06/27 08:00:33 PM: Update 10226: task sst, batch 226 (10226): accuracy: 0.9756, sst_loss: 0.0662 ||
+06/27 08:00:43 PM: Update 10246: task sst, batch 246 (10246): accuracy: 0.9753, sst_loss: 0.0670 ||
+06/27 08:00:53 PM: Update 10266: task sst, batch 266 (10266): accuracy: 0.9754, sst_loss: 0.0674 ||
+06/27 08:01:03 PM: Update 10286: task sst, batch 286 (10286): accuracy: 0.9757, sst_loss: 0.0664 ||
+06/27 08:01:14 PM: Update 10306: task sst, batch 306 (10306): accuracy: 0.9754, sst_loss: 0.0668 ||
+06/27 08:01:24 PM: Update 10326: task sst, batch 326 (10326): accuracy: 0.9753, sst_loss: 0.0669 ||
+06/27 08:01:34 PM: Update 10346: task sst, batch 346 (10346): accuracy: 0.9753, sst_loss: 0.0674 ||
+06/27 08:01:44 PM: Update 10366: task sst, batch 366 (10366): accuracy: 0.9749, sst_loss: 0.0679 ||
+06/27 08:01:54 PM: Update 10386: task sst, batch 386 (10386): accuracy: 0.9749, sst_loss: 0.0681 ||
+06/27 08:02:05 PM: Update 10406: task sst, batch 406 (10406): accuracy: 0.9750, sst_loss: 0.0683 ||
+06/27 08:02:15 PM: Update 10426: task sst, batch 426 (10426): accuracy: 0.9749, sst_loss: 0.0685 ||
+06/27 08:02:25 PM: Update 10446: task sst, batch 446 (10446): accuracy: 0.9747, sst_loss: 0.0692 ||
+06/27 08:02:35 PM: Update 10466: task sst, batch 466 (10466): accuracy: 0.9747, sst_loss: 0.0698 ||
+06/27 08:02:45 PM: Update 10487: task sst, batch 487 (10487): accuracy: 0.9740, sst_loss: 0.0713 ||
+06/27 08:02:52 PM: ***** Pass 10500 / Epoch 21 *****
+06/27 08:02:52 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 08:02:52 PM: Validating...
+06/27 08:02:55 PM: Batch 8/14: accuracy: 0.8691, sst_loss: 0.3664 ||
+06/27 08:02:58 PM: Statistic: sst_loss
+06/27 08:02:58 PM: 	training: 0.071120
+06/27 08:02:58 PM: 	validation: 0.344101
+06/27 08:02:58 PM: Statistic: macro_avg
+06/27 08:02:58 PM: 	validation: 0.881881
+06/27 08:02:58 PM: Statistic: micro_avg
+06/27 08:02:58 PM: 	validation: 0.881881
+06/27 08:02:58 PM: Statistic: sst_accuracy
+06/27 08:02:58 PM: 	training: 0.974187
+06/27 08:02:58 PM: 	validation: 0.881881
+06/27 08:02:58 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 08:03:06 PM: Update 10515: task sst, batch 15 (10515): accuracy: 0.9781, sst_loss: 0.0649 ||
+06/27 08:03:16 PM: Update 10535: task sst, batch 35 (10535): accuracy: 0.9768, sst_loss: 0.0764 ||
+06/27 08:03:26 PM: Update 10555: task sst, batch 55 (10555): accuracy: 0.9799, sst_loss: 0.0659 ||
+06/27 08:03:36 PM: Update 10576: task sst, batch 76 (10576): accuracy: 0.9805, sst_loss: 0.0616 ||
+06/27 08:03:47 PM: Update 10596: task sst, batch 96 (10596): accuracy: 0.9803, sst_loss: 0.0600 ||
+06/27 08:03:57 PM: Update 10616: task sst, batch 116 (10616): accuracy: 0.9801, sst_loss: 0.0584 ||
+06/27 08:04:07 PM: Update 10636: task sst, batch 136 (10636): accuracy: 0.9811, sst_loss: 0.0569 ||
+06/27 08:04:17 PM: Update 10656: task sst, batch 156 (10656): accuracy: 0.9819, sst_loss: 0.0553 ||
+06/27 08:04:27 PM: Update 10676: task sst, batch 176 (10676): accuracy: 0.9818, sst_loss: 0.0552 ||
+06/27 08:04:38 PM: Update 10696: task sst, batch 196 (10696): accuracy: 0.9818, sst_loss: 0.0554 ||
+06/27 08:04:48 PM: Update 10717: task sst, batch 217 (10717): accuracy: 0.9814, sst_loss: 0.0554 ||
+06/27 08:04:58 PM: Update 10737: task sst, batch 237 (10737): accuracy: 0.9811, sst_loss: 0.0556 ||
+06/27 08:05:08 PM: Update 10757: task sst, batch 257 (10757): accuracy: 0.9812, sst_loss: 0.0555 ||
+06/27 08:05:19 PM: Update 10778: task sst, batch 278 (10778): accuracy: 0.9816, sst_loss: 0.0549 ||
+06/27 08:05:29 PM: Update 10798: task sst, batch 298 (10798): accuracy: 0.9814, sst_loss: 0.0549 ||
+06/27 08:05:39 PM: Update 10819: task sst, batch 319 (10819): accuracy: 0.9812, sst_loss: 0.0550 ||
+06/27 08:05:49 PM: Update 10839: task sst, batch 339 (10839): accuracy: 0.9817, sst_loss: 0.0542 ||
+06/27 08:06:00 PM: Update 10859: task sst, batch 359 (10859): accuracy: 0.9818, sst_loss: 0.0538 ||
+06/27 08:06:10 PM: Update 10879: task sst, batch 379 (10879): accuracy: 0.9820, sst_loss: 0.0536 ||
+06/27 08:06:20 PM: Update 10899: task sst, batch 399 (10899): accuracy: 0.9814, sst_loss: 0.0556 ||
+06/27 08:06:30 PM: Update 10920: task sst, batch 420 (10920): accuracy: 0.9811, sst_loss: 0.0559 ||
+06/27 08:06:41 PM: Update 10940: task sst, batch 440 (10940): accuracy: 0.9807, sst_loss: 0.0567 ||
+06/27 08:06:51 PM: Update 10960: task sst, batch 460 (10960): accuracy: 0.9803, sst_loss: 0.0573 ||
+06/27 08:07:01 PM: Update 10980: task sst, batch 480 (10980): accuracy: 0.9802, sst_loss: 0.0575 ||
+06/27 08:07:11 PM: ***** Pass 11000 / Epoch 22 *****
+06/27 08:07:11 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 08:07:11 PM: Validating...
+06/27 08:07:11 PM: Batch 1/14: accuracy: 0.8594, sst_loss: 0.5134 ||
+06/27 08:07:17 PM: Statistic: sst_loss
+06/27 08:07:17 PM: 	training: 0.057555
+06/27 08:07:17 PM: 	validation: 0.387294
+06/27 08:07:17 PM: Statistic: macro_avg
+06/27 08:07:17 PM: 	validation: 0.879587
+06/27 08:07:17 PM: Statistic: micro_avg
+06/27 08:07:17 PM: 	validation: 0.879587
+06/27 08:07:17 PM: Statistic: sst_accuracy
+06/27 08:07:17 PM: 	training: 0.980317
+06/27 08:07:17 PM: 	validation: 0.879587
+06/27 08:07:17 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 08:07:22 PM: Update 11009: task sst, batch 9 (11009): accuracy: 0.9740, sst_loss: 0.0781 ||
+06/27 08:07:32 PM: Update 11029: task sst, batch 29 (11029): accuracy: 0.9811, sst_loss: 0.0556 ||
+06/27 08:07:42 PM: Update 11050: task sst, batch 50 (11050): accuracy: 0.9803, sst_loss: 0.0559 ||
+06/27 08:07:53 PM: Update 11070: task sst, batch 70 (11070): accuracy: 0.9804, sst_loss: 0.0554 ||
+06/27 08:08:03 PM: Update 11090: task sst, batch 90 (11090): accuracy: 0.9792, sst_loss: 0.0574 ||
+06/27 08:08:13 PM: Update 11110: task sst, batch 110 (11110): accuracy: 0.9793, sst_loss: 0.0563 ||
+06/27 08:08:23 PM: Update 11130: task sst, batch 130 (11130): accuracy: 0.9776, sst_loss: 0.0575 ||
+06/27 08:08:34 PM: Update 11151: task sst, batch 151 (11151): accuracy: 0.9772, sst_loss: 0.0577 ||
+06/27 08:08:44 PM: Update 11171: task sst, batch 171 (11171): accuracy: 0.9773, sst_loss: 0.0584 ||
+06/27 08:08:54 PM: Update 11191: task sst, batch 191 (11191): accuracy: 0.9770, sst_loss: 0.0593 ||
+06/27 08:09:04 PM: Update 11211: task sst, batch 211 (11211): accuracy: 0.9774, sst_loss: 0.0587 ||
+06/27 08:09:15 PM: Update 11231: task sst, batch 231 (11231): accuracy: 0.9770, sst_loss: 0.0591 ||
+06/27 08:09:25 PM: Update 11252: task sst, batch 252 (11252): accuracy: 0.9772, sst_loss: 0.0587 ||
+06/27 08:09:35 PM: Update 11272: task sst, batch 272 (11272): accuracy: 0.9772, sst_loss: 0.0590 ||
+06/27 08:09:46 PM: Update 11293: task sst, batch 293 (11293): accuracy: 0.9765, sst_loss: 0.0604 ||
+06/27 08:09:56 PM: Update 11313: task sst, batch 313 (11313): accuracy: 0.9761, sst_loss: 0.0617 ||
+06/27 08:10:06 PM: Update 11333: task sst, batch 333 (11333): accuracy: 0.9759, sst_loss: 0.0622 ||
+06/27 08:10:16 PM: Update 11353: task sst, batch 353 (11353): accuracy: 0.9761, sst_loss: 0.0615 ||
+06/27 08:10:26 PM: Update 11373: task sst, batch 373 (11373): accuracy: 0.9759, sst_loss: 0.0620 ||
+06/27 08:10:37 PM: Update 11393: task sst, batch 393 (11393): accuracy: 0.9759, sst_loss: 0.0622 ||
+06/27 08:10:47 PM: Update 11413: task sst, batch 413 (11413): accuracy: 0.9757, sst_loss: 0.0626 ||
+06/27 08:10:57 PM: Update 11433: task sst, batch 433 (11433): accuracy: 0.9757, sst_loss: 0.0628 ||
+06/27 08:11:08 PM: Update 11453: task sst, batch 453 (11453): accuracy: 0.9761, sst_loss: 0.0620 ||
+06/27 08:11:18 PM: Update 11473: task sst, batch 473 (11473): accuracy: 0.9762, sst_loss: 0.0617 ||
+06/27 08:11:28 PM: Update 11493: task sst, batch 493 (11493): accuracy: 0.9765, sst_loss: 0.0615 ||
+06/27 08:11:32 PM: ***** Pass 11500 / Epoch 23 *****
+06/27 08:11:32 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 08:11:32 PM: Validating...
+06/27 08:11:37 PM: Statistic: sst_loss
+06/27 08:11:37 PM: 	training: 0.061771
+06/27 08:11:37 PM: 	validation: 0.376818
+06/27 08:11:37 PM: Statistic: macro_avg
+06/27 08:11:37 PM: 	validation: 0.876147
+06/27 08:11:37 PM: Statistic: micro_avg
+06/27 08:11:37 PM: 	validation: 0.876147
+06/27 08:11:37 PM: Statistic: sst_accuracy
+06/27 08:11:37 PM: 	training: 0.976375
+06/27 08:11:37 PM: 	validation: 0.876147
+06/27 08:11:38 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 08:11:38 PM: Update 11501: task sst, batch 1 (11501): accuracy: 1.0000, sst_loss: 0.0244 ||
+06/27 08:11:48 PM: Update 11521: task sst, batch 21 (11521): accuracy: 0.9836, sst_loss: 0.0538 ||
+06/27 08:11:58 PM: Update 11541: task sst, batch 41 (11541): accuracy: 0.9802, sst_loss: 0.0562 ||
+06/27 08:12:09 PM: Update 11561: task sst, batch 61 (11561): accuracy: 0.9782, sst_loss: 0.0633 ||
+06/27 08:12:19 PM: Update 11582: task sst, batch 82 (11582): accuracy: 0.9777, sst_loss: 0.0612 ||
+06/27 08:12:29 PM: Update 11603: task sst, batch 103 (11603): accuracy: 0.9792, sst_loss: 0.0564 ||
+06/27 08:12:40 PM: Update 11624: task sst, batch 124 (11624): accuracy: 0.9805, sst_loss: 0.0536 ||
+06/27 08:12:50 PM: Update 11644: task sst, batch 144 (11644): accuracy: 0.9806, sst_loss: 0.0531 ||
+06/27 08:13:00 PM: Update 11664: task sst, batch 164 (11664): accuracy: 0.9811, sst_loss: 0.0521 ||
+06/27 08:13:11 PM: Update 11684: task sst, batch 184 (11684): accuracy: 0.9816, sst_loss: 0.0504 ||
+06/27 08:13:21 PM: Update 11704: task sst, batch 204 (11704): accuracy: 0.9817, sst_loss: 0.0504 ||
+06/27 08:13:31 PM: Update 11724: task sst, batch 224 (11724): accuracy: 0.9809, sst_loss: 0.0517 ||
+06/27 08:13:41 PM: Update 11744: task sst, batch 244 (11744): accuracy: 0.9812, sst_loss: 0.0514 ||
+06/27 08:13:52 PM: Update 11764: task sst, batch 264 (11764): accuracy: 0.9814, sst_loss: 0.0509 ||
+06/27 08:14:02 PM: Update 11784: task sst, batch 284 (11784): accuracy: 0.9816, sst_loss: 0.0499 ||
+06/27 08:14:12 PM: Update 11804: task sst, batch 304 (11804): accuracy: 0.9815, sst_loss: 0.0501 ||
+06/27 08:14:22 PM: Update 11824: task sst, batch 324 (11824): accuracy: 0.9812, sst_loss: 0.0505 ||
+06/27 08:14:33 PM: Update 11844: task sst, batch 344 (11844): accuracy: 0.9809, sst_loss: 0.0504 ||
+06/27 08:14:43 PM: Update 11864: task sst, batch 364 (11864): accuracy: 0.9807, sst_loss: 0.0509 ||
+06/27 08:14:53 PM: Update 11884: task sst, batch 384 (11884): accuracy: 0.9811, sst_loss: 0.0498 ||
+06/27 08:15:03 PM: Update 11905: task sst, batch 405 (11905): accuracy: 0.9810, sst_loss: 0.0502 ||
+06/27 08:15:14 PM: Update 11925: task sst, batch 425 (11925): accuracy: 0.9807, sst_loss: 0.0509 ||
+06/27 08:15:24 PM: Update 11945: task sst, batch 445 (11945): accuracy: 0.9804, sst_loss: 0.0514 ||
+06/27 08:15:34 PM: Update 11966: task sst, batch 466 (11966): accuracy: 0.9805, sst_loss: 0.0512 ||
+06/27 08:15:44 PM: Update 11986: task sst, batch 486 (11986): accuracy: 0.9802, sst_loss: 0.0513 ||
+06/27 08:15:52 PM: ***** Pass 12000 / Epoch 24 *****
+06/27 08:15:52 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 08:15:52 PM: Validating...
+06/27 08:15:55 PM: Batch 8/14: accuracy: 0.8945, sst_loss: 0.2761 ||
+06/27 08:15:57 PM: Statistic: sst_loss
+06/27 08:15:57 PM: 	training: 0.051935
+06/27 08:15:57 PM: 	validation: 0.353032
+06/27 08:15:57 PM: Statistic: macro_avg
+06/27 08:15:57 PM: 	validation: 0.876147
+06/27 08:15:57 PM: Statistic: micro_avg
+06/27 08:15:57 PM: 	validation: 0.876147
+06/27 08:15:57 PM: Statistic: sst_accuracy
+06/27 08:15:57 PM: 	training: 0.979942
+06/27 08:15:57 PM: 	validation: 0.876147
+06/27 08:15:58 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 08:16:05 PM: Update 12015: task sst, batch 15 (12015): accuracy: 0.9792, sst_loss: 0.0580 ||
+06/27 08:16:15 PM: Update 12035: task sst, batch 35 (12035): accuracy: 0.9754, sst_loss: 0.0651 ||
+06/27 08:16:26 PM: Update 12055: task sst, batch 55 (12055): accuracy: 0.9753, sst_loss: 0.0632 ||
+06/27 08:16:36 PM: Update 12076: task sst, batch 76 (12076): accuracy: 0.9745, sst_loss: 0.0659 ||
+06/27 08:16:46 PM: Update 12096: task sst, batch 96 (12096): accuracy: 0.9756, sst_loss: 0.0645 ||
+06/27 08:16:57 PM: Update 12117: task sst, batch 117 (12117): accuracy: 0.9773, sst_loss: 0.0605 ||
+06/27 08:17:07 PM: Update 12137: task sst, batch 137 (12137): accuracy: 0.9786, sst_loss: 0.0569 ||
+06/27 08:17:17 PM: Update 12157: task sst, batch 157 (12157): accuracy: 0.9794, sst_loss: 0.0555 ||
+06/27 08:17:27 PM: Update 12177: task sst, batch 177 (12177): accuracy: 0.9789, sst_loss: 0.0559 ||
+06/27 08:17:37 PM: Update 12197: task sst, batch 197 (12197): accuracy: 0.9791, sst_loss: 0.0559 ||
+06/27 08:17:47 PM: Update 12217: task sst, batch 217 (12217): accuracy: 0.9793, sst_loss: 0.0560 ||
+06/27 08:17:58 PM: Update 12237: task sst, batch 237 (12237): accuracy: 0.9796, sst_loss: 0.0553 ||
+06/27 08:18:08 PM: Update 12257: task sst, batch 257 (12257): accuracy: 0.9793, sst_loss: 0.0562 ||
+06/27 08:18:18 PM: Update 12278: task sst, batch 278 (12278): accuracy: 0.9791, sst_loss: 0.0571 ||
+06/27 08:18:28 PM: Update 12299: task sst, batch 299 (12299): accuracy: 0.9788, sst_loss: 0.0574 ||
+06/27 08:18:39 PM: Update 12319: task sst, batch 319 (12319): accuracy: 0.9787, sst_loss: 0.0576 ||
+06/27 08:18:49 PM: Update 12339: task sst, batch 339 (12339): accuracy: 0.9788, sst_loss: 0.0587 ||
+06/27 08:18:59 PM: Update 12359: task sst, batch 359 (12359): accuracy: 0.9782, sst_loss: 0.0607 ||
+06/27 08:19:09 PM: Update 12379: task sst, batch 379 (12379): accuracy: 0.9779, sst_loss: 0.0607 ||
+06/27 08:19:20 PM: Update 12399: task sst, batch 399 (12399): accuracy: 0.9780, sst_loss: 0.0606 ||
+06/27 08:19:30 PM: Update 12419: task sst, batch 419 (12419): accuracy: 0.9781, sst_loss: 0.0602 ||
+06/27 08:19:40 PM: Update 12439: task sst, batch 439 (12439): accuracy: 0.9779, sst_loss: 0.0604 ||
+06/27 08:19:50 PM: Update 12459: task sst, batch 459 (12459): accuracy: 0.9781, sst_loss: 0.0599 ||
+06/27 08:20:01 PM: Update 12479: task sst, batch 479 (12479): accuracy: 0.9779, sst_loss: 0.0599 ||
+06/27 08:20:11 PM: Update 12499: task sst, batch 499 (12499): accuracy: 0.9776, sst_loss: 0.0604 ||
+06/27 08:20:11 PM: ***** Pass 12500 / Epoch 25 *****
+06/27 08:20:11 PM: sst: trained on 500 batches, 0.475 epochs
+06/27 08:20:11 PM: Validating...
+06/27 08:20:17 PM: Statistic: sst_loss
+06/27 08:20:17 PM: 	training: 0.060374
+06/27 08:20:17 PM: 	validation: 0.351368
+06/27 08:20:17 PM: Statistic: macro_avg
+06/27 08:20:17 PM: 	validation: 0.883028
+06/27 08:20:17 PM: Statistic: micro_avg
+06/27 08:20:17 PM: 	validation: 0.883028
+06/27 08:20:17 PM: Statistic: sst_accuracy
+06/27 08:20:17 PM: 	training: 0.977688
+06/27 08:20:17 PM: 	validation: 0.883028
+06/27 08:20:17 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_RNN_default_conf_SingleTask/sst
+06/27 08:20:21 PM: Update 12507: task sst, batch 7 (12507): accuracy: 0.9754, sst_loss: 0.0819 ||
+06/27 08:20:31 PM: Update 12527: task sst, batch 27 (12527): accuracy: 0.9821, sst_loss: 0.0624 ||
+06/27 08:20:41 PM: Update 12547: task sst, batch 47 (12547): accuracy: 0.9797, sst_loss: 0.0649 ||
+06/27 08:20:51 PM: Update 12567: task sst, batch 67 (12567): accuracy: 0.9797, sst_loss: 0.0603 ||
+06/27 08:21:02 PM: Update 12587: task sst, batch 87 (12587): accuracy: 0.9781, sst_loss: 0.0626 ||
+06/27 08:21:12 PM: Update 12607: task sst, batch 107 (12607): accuracy: 0.9775, sst_loss: 0.0621 ||
+06/27 08:21:22 PM: Update 12628: task sst, batch 128 (12628): accuracy: 0.9778, sst_loss: 0.0610 ||
+06/27 08:21:33 PM: Update 12649: task sst, batch 149 (12649): accuracy: 0.9783, sst_loss: 0.0601 ||
+06/27 08:21:43 PM: Update 12669: task sst, batch 169 (12669): accuracy: 0.9797, sst_loss: 0.0564 ||

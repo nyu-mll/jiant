@@ -24,7 +24,7 @@ from torch.nn import init
 from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
-
+import time
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 

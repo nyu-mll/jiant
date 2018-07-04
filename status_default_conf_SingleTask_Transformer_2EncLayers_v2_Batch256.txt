@@ -1,0 +1,2051 @@
+06/29 03:45:41 PM: fastText library not found!
+06/29 03:45:41 PM: Parsed args: 
+{
+  "batch_size": 256,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 512,
+  "cola_classifier_dropout": 0.2,
+  "cola_classifier_hid_dim": 512,
+  "cola_lr": 0.0001,
+  "cola_max_vals": 25,
+  "cola_val_interval": 100,
+  "cove": 0,
+  "cuda": 1,
+  "d_char": 100,
+  "d_ff": 2048,
+  "d_hid": 512,
+  "d_hid_attn": 512,
+  "d_hid_dec": 300,
+  "d_proj": 512,
+  "d_tproj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 50,
+  "eval_tasks": "sst",
+  "eval_val_interval": 500,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/",
+  "exp_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "keep_all_checkpoints": 0,
+  "load_eval_checkpoint": "none",
+  "load_model": 1,
+  "log_file": "log.log",
+  "lr": 0.0001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 40,
+  "max_vals": 25,
+  "max_word_v_size": 30000,
+  "min_lr": 1e-06,
+  "mnli_classifier_dropout": 0.2,
+  "mnli_classifier_hid_dim": 512,
+  "mnli_lr": 0.0001,
+  "mnli_max_vals": 15,
+  "mnli_pair_attn": 1,
+  "mnli_val_interval": 10000,
+  "mrpc_classifier_dropout": 0.4,
+  "mrpc_classifier_hid_dim": 128,
+  "mrpc_lr": 0.0001,
+  "mrpc_max_vals": 50,
+  "mrpc_pair_attn": 0,
+  "mrpc_val_interval": 100,
+  "n_char_filters": 100,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 2,
+  "n_layers_highway": 0,
+  "no_tqdm": 1,
+  "optimizer": "adam",
+  "pair_attn": 1,
+  "patience": 5,
+  "preproc_file": "preproc.pkl",
+  "qnli_classifier_dropout": 0.2,
+  "qnli_classifier_hid_dim": 512,
+  "qnli_lr": 0.0001,
+  "qnli_max_vals": 25,
+  "qnli_pair_attn": 1,
+  "qnli_val_interval": 10000,
+  "qqp_classifier_dropout": 0.2,
+  "qqp_classifier_hid_dim": 512,
+  "qqp_lr": 0.0001,
+  "qqp_max_vals": 15,
+  "qqp_pair_attn": 1,
+  "qqp_val_interval": 10000,
+  "random_seed": 19,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 0,
+  "remote_log_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256__sst",
+  "rte_classifier_dropout": 0.4,
+  "rte_classifier_hid_dim": 128,
+  "rte_lr": 0.0001,
+  "rte_max_vals": 50,
+  "rte_pair_attn": 0,
+  "rte_val_interval": 100,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/sst",
+  "run_name": "sst",
+  "scaling_method": "max",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "transformer",
+  "shared_optimizer": 1,
+  "shared_pair_attn": 0,
+  "skip_embs": 1,
+  "sst_classifier_dropout": 0.2,
+  "sst_classifier_hid_dim": 512,
+  "sst_lr": 0.0001,
+  "sst_max_vals": 25,
+  "sst_val_interval": 500,
+  "sts-b_classifier_dropout": 0.4,
+  "sts-b_classifier_hid_dim": 128,
+  "sts-b_lr": 0.0001,
+  "sts-b_max_vals": 50,
+  "sts-b_pair_attn": 0,
+  "sts-b_val_interval": 100,
+  "task_patience": 2,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 5000,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "proportional",
+  "wnli_classifier_dropout": 0.4,
+  "wnli_classifier_hid_dim": 128,
+  "wnli_lr": 0.0001,
+  "wnli_max_vals": 50,
+  "wnli_pair_attn": 0,
+  "wnli_val_interval": 100,
+  "word_embs": "none",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/29 03:45:41 PM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/sst/params.conf
+06/29 03:45:41 PM: Using random seed 19
+06/29 03:45:41 PM: Using GPU 1
+06/29 03:45:41 PM: Loading tasks...
+06/29 03:45:41 PM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/
+06/29 03:45:41 PM: 	Creating task sst from scratch
+06/29 03:45:48 PM: 	Finished loading SST data.
+06/29 03:45:49 PM: 	Finished loading tasks: sst.
+06/29 03:45:49 PM: 	Building vocab from scratch
+06/29 03:45:49 PM: 	Finished counting words
+06/29 03:45:49 PM: 	Saved vocab to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/vocab
+06/29 03:45:49 PM: 	Finished building vocab. Using 15707 words, 74 chars.
+06/29 03:45:49 PM: 	Task 'sst': indexing from scratch
+06/29 03:45:53 PM: Your label namespace was 'idxs'. We recommend you use a namespace ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by default to your vocabulary.  See documentation for `non_padded_namespaces` parameter in Vocabulary.
+06/29 03:46:01 PM: 	Task 'sst': saved data to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/preproc
+06/29 03:46:01 PM: 	Task 'sst': cleared in-memory data.
+06/29 03:46:01 PM: 	Finished indexing tasks
+06/29 03:46:01 PM: 	Lazy-loading indexed data for task='sst' from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/preproc
+06/29 03:46:01 PM: All tasks initialized with data iterators.
+06/29 03:46:01 PM: 	  Training on sst
+06/29 03:46:01 PM: 	  Evaluating on sst
+06/29 03:46:02 PM: 	Finished loading tasks in 20.716s
+06/29 03:46:02 PM: Building model...
+06/29 03:46:02 PM: 	Not using word embeddings!
+06/29 03:46:02 PM: 	Not using character embeddings!
+06/29 03:46:02 PM: Loading ELMo from files:
+06/29 03:46:02 PM: ELMO_OPT_PATH = https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json
+06/29 03:46:02 PM: ELMO_WEIGHTS_PATH = https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5
+06/29 03:46:02 PM: 	Using ELMo character CNN only!
+06/29 03:46:06 PM: input_dim = 512
+06/29 03:46:06 PM: hidden_dim = 512
+06/29 03:46:06 PM: projection_dim = 64
+06/29 03:46:06 PM: feedforward_hidden_dim = 2048
+06/29 03:46:06 PM: num_layers = 2
+06/29 03:46:06 PM: num_attention_heads = 8
+06/29 03:46:06 PM: use_positional_encoding = True
+06/29 03:46:06 PM: dropout_prob = 0.1
+06/29 03:46:06 PM: residual_dropout_prob = 0.2
+06/29 03:46:06 PM: attention_dropout_prob = 0.1
+06/29 03:46:06 PM: Initializing parameters
+06/29 03:46:06 PM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/29 03:46:06 PM:    _phrase_layer.feedforward_0._linear_layers.0.bias
+06/29 03:46:06 PM:    _phrase_layer.feedforward_0._linear_layers.0.weight
+06/29 03:46:06 PM:    _phrase_layer.feedforward_0._linear_layers.1.bias
+06/29 03:46:06 PM:    _phrase_layer.feedforward_0._linear_layers.1.weight
+06/29 03:46:06 PM:    _phrase_layer.feedforward_1._linear_layers.0.bias
+06/29 03:46:06 PM:    _phrase_layer.feedforward_1._linear_layers.0.weight
+06/29 03:46:06 PM:    _phrase_layer.feedforward_1._linear_layers.1.bias
+06/29 03:46:06 PM:    _phrase_layer.feedforward_1._linear_layers.1.weight
+06/29 03:46:06 PM:    _phrase_layer.feedforward_layer_norm_0.beta
+06/29 03:46:06 PM:    _phrase_layer.feedforward_layer_norm_0.gamma
+06/29 03:46:06 PM:    _phrase_layer.feedforward_layer_norm_1.beta
+06/29 03:46:06 PM:    _phrase_layer.feedforward_layer_norm_1.gamma
+06/29 03:46:06 PM:    _phrase_layer.layer_norm_0.beta
+06/29 03:46:06 PM:    _phrase_layer.layer_norm_0.gamma
+06/29 03:46:06 PM:    _phrase_layer.layer_norm_1.beta
+06/29 03:46:06 PM:    _phrase_layer.layer_norm_1.gamma
+06/29 03:46:06 PM:    _phrase_layer.self_attention_0._combined_projection.bias
+06/29 03:46:06 PM:    _phrase_layer.self_attention_0._combined_projection.weight
+06/29 03:46:06 PM:    _phrase_layer.self_attention_0._output_projection.bias
+06/29 03:46:06 PM:    _phrase_layer.self_attention_0._output_projection.weight
+06/29 03:46:06 PM:    _phrase_layer.self_attention_1._combined_projection.bias
+06/29 03:46:06 PM:    _phrase_layer.self_attention_1._combined_projection.weight
+06/29 03:46:06 PM:    _phrase_layer.self_attention_1._output_projection.bias
+06/29 03:46:06 PM:    _phrase_layer.self_attention_1._output_projection.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/29 03:46:06 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/29 03:46:11 PM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList()
+      )
+    )
+    (_phrase_layer): StackedSelfAttentionEncoder(
+      (feedforward_0): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_0): LayerNorm()
+      (self_attention_0): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_0): LayerNorm()
+      (feedforward_1): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_1): LayerNorm()
+      (self_attention_1): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_1): LayerNorm()
+      (dropout): Dropout(p=0.2)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): SingleClassifier(
+    (pooler): Pooler(
+      (project): Linear(in_features=1024, out_features=512, bias=True)
+    )
+    (classifier): Classifier(
+      (classifier): Sequential(
+        (0): Dropout(p=0.2)
+        (1): Linear(in_features=512, out_features=512, bias=True)
+        (2): Tanh()
+        (3): LayerNorm(torch.Size([512]), eps=1e-05, elementwise_affine=True)
+        (4): Dropout(p=0.2)
+        (5): Linear(in_features=512, out_features=2, bias=True)
+      )
+    )
+  )
+)
+06/29 03:46:11 PM: Total number of parameters: 23294434
+06/29 03:46:11 PM: Number of trainable parameters: 5256578
+06/29 03:46:11 PM: 	Finished building model in 8.757s
+06/29 03:46:11 PM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: sst
+06/29 03:46:11 PM: Training...
+06/29 03:46:11 PM: 	Using noam scheduler with warmup 4000!
+06/29 03:46:11 PM: patience = 5
+06/29 03:46:11 PM: val_interval = 5000
+06/29 03:46:11 PM: max_vals = 25
+06/29 03:46:11 PM: cuda_device = 1
+06/29 03:46:11 PM: grad_norm = 5.0
+06/29 03:46:11 PM: grad_clipping = None
+06/29 03:46:11 PM: lr_decay = 0.99
+06/29 03:46:11 PM: min_lr = 1e-06
+06/29 03:46:11 PM: no_tqdm = 1
+06/29 03:46:11 PM: keep_all_checkpoints = False
+06/29 03:46:11 PM: Sampling tasks proportional to number of training batches
+06/29 03:46:11 PM: Scaling losses to largest task
+06/29 03:46:11 PM: type = adam
+06/29 03:46:11 PM: parameter_groups = None
+06/29 03:46:11 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:46:11 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:46:11 PM: lr = 0.0001
+06/29 03:46:11 PM: weight_decay = 0
+06/29 03:46:11 PM: amsgrad = True
+06/29 03:46:11 PM: type = noam
+06/29 03:46:11 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:46:11 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:46:11 PM: model_size = 512
+06/29 03:46:11 PM: warmup_steps = 4000
+06/29 03:46:11 PM: factor = 1.0
+06/29 03:46:11 PM: type = adam
+06/29 03:46:11 PM: parameter_groups = None
+06/29 03:46:11 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:46:11 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:46:11 PM: lr = 0.0001
+06/29 03:46:11 PM: weight_decay = 0
+06/29 03:46:11 PM: amsgrad = True
+06/29 03:46:11 PM: type = noam
+06/29 03:46:11 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:46:11 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:46:11 PM: model_size = 512
+06/29 03:46:11 PM: warmup_steps = 4000
+06/29 03:46:11 PM: factor = 1.0
+06/29 03:46:11 PM: Not loading.
+06/29 03:46:11 PM: Beginning training. Stopping metric: sst_accuracy
+06/29 03:46:21 PM: Update 12: task sst, batch 12 (12): accuracy: 0.5465, sst_loss: 0.9022 ||
+06/29 03:46:32 PM: Update 24: task sst, batch 24 (24): accuracy: 0.5384, sst_loss: 0.8570 ||
+06/29 03:46:43 PM: Update 36: task sst, batch 36 (36): accuracy: 0.5245, sst_loss: 0.8170 ||
+06/29 03:46:53 PM: Update 47: task sst, batch 47 (47): accuracy: 0.5209, sst_loss: 0.7964 ||
+06/29 03:47:03 PM: Update 58: task sst, batch 58 (58): accuracy: 0.5234, sst_loss: 0.7839 ||
+06/29 03:47:14 PM: Update 70: task sst, batch 70 (70): accuracy: 0.5255, sst_loss: 0.7711 ||
+06/29 03:47:25 PM: Update 82: task sst, batch 82 (82): accuracy: 0.5307, sst_loss: 0.7611 ||
+06/29 03:47:36 PM: Update 94: task sst, batch 94 (94): accuracy: 0.5347, sst_loss: 0.7528 ||
+06/29 03:47:47 PM: Update 106: task sst, batch 106 (106): accuracy: 0.5378, sst_loss: 0.7456 ||
+06/29 03:47:57 PM: Update 118: task sst, batch 118 (118): accuracy: 0.5413, sst_loss: 0.7392 ||
+06/29 03:48:08 PM: Update 130: task sst, batch 130 (130): accuracy: 0.5451, sst_loss: 0.7326 ||
+06/29 03:48:19 PM: Update 142: task sst, batch 142 (142): accuracy: 0.5517, sst_loss: 0.7255 ||
+06/29 03:48:30 PM: Update 154: task sst, batch 154 (154): accuracy: 0.5584, sst_loss: 0.7186 ||
+06/29 03:48:41 PM: Update 166: task sst, batch 166 (166): accuracy: 0.5647, sst_loss: 0.7116 ||
+06/29 03:48:52 PM: Update 178: task sst, batch 178 (178): accuracy: 0.5717, sst_loss: 0.7037 ||
+06/29 03:49:02 PM: Update 190: task sst, batch 190 (190): accuracy: 0.5795, sst_loss: 0.6950 ||
+06/29 03:49:13 PM: Update 202: task sst, batch 202 (202): accuracy: 0.5873, sst_loss: 0.6860 ||
+06/29 03:49:24 PM: Update 214: task sst, batch 214 (214): accuracy: 0.5958, sst_loss: 0.6763 ||
+06/29 03:49:35 PM: Update 226: task sst, batch 226 (226): accuracy: 0.6048, sst_loss: 0.6659 ||
+06/29 03:49:46 PM: Update 238: task sst, batch 238 (238): accuracy: 0.6122, sst_loss: 0.6579 ||
+06/29 03:49:56 PM: Update 249: task sst, batch 249 (249): accuracy: 0.6192, sst_loss: 0.6498 ||
+06/29 03:50:07 PM: Update 261: task sst, batch 261 (261): accuracy: 0.6265, sst_loss: 0.6419 ||
+06/29 03:50:17 PM: Update 274: task sst, batch 274 (274): accuracy: 0.6347, sst_loss: 0.6317 ||
+06/29 03:50:28 PM: Update 286: task sst, batch 286 (286): accuracy: 0.6412, sst_loss: 0.6237 ||
+06/29 03:50:38 PM: Update 297: task sst, batch 297 (297): accuracy: 0.6474, sst_loss: 0.6160 ||
+06/29 03:50:48 PM: Update 308: task sst, batch 308 (308): accuracy: 0.6536, sst_loss: 0.6088 ||
+06/29 03:50:58 PM: Update 319: task sst, batch 319 (319): accuracy: 0.6587, sst_loss: 0.6024 ||
+06/29 03:51:09 PM: Update 330: task sst, batch 330 (330): accuracy: 0.6635, sst_loss: 0.5964 ||
+06/29 03:51:19 PM: Update 342: task sst, batch 342 (342): accuracy: 0.6683, sst_loss: 0.5906 ||
+06/29 03:51:29 PM: Update 353: task sst, batch 353 (353): accuracy: 0.6733, sst_loss: 0.5845 ||
+06/29 03:51:40 PM: Update 365: task sst, batch 365 (365): accuracy: 0.6780, sst_loss: 0.5783 ||
+06/29 03:51:50 PM: Update 376: task sst, batch 376 (376): accuracy: 0.6825, sst_loss: 0.5725 ||
+06/29 03:52:01 PM: Update 388: task sst, batch 388 (388): accuracy: 0.6869, sst_loss: 0.5667 ||
+06/29 03:52:11 PM: Update 399: task sst, batch 399 (399): accuracy: 0.6902, sst_loss: 0.5624 ||
+06/29 03:52:22 PM: Update 411: task sst, batch 411 (411): accuracy: 0.6941, sst_loss: 0.5574 ||
+06/29 03:52:33 PM: Update 423: task sst, batch 423 (423): accuracy: 0.6978, sst_loss: 0.5526 ||
+06/29 03:52:43 PM: Update 435: task sst, batch 435 (435): accuracy: 0.7019, sst_loss: 0.5474 ||
+06/29 03:52:53 PM: Update 446: task sst, batch 446 (446): accuracy: 0.7053, sst_loss: 0.5429 ||
+06/29 03:53:03 PM: Update 457: task sst, batch 457 (457): accuracy: 0.7083, sst_loss: 0.5385 ||
+06/29 03:53:13 PM: Update 468: task sst, batch 468 (468): accuracy: 0.7114, sst_loss: 0.5346 ||
+06/29 03:53:24 PM: Update 480: task sst, batch 480 (480): accuracy: 0.7144, sst_loss: 0.5307 ||
+06/29 03:53:35 PM: Update 492: task sst, batch 492 (492): accuracy: 0.7171, sst_loss: 0.5270 ||
+06/29 03:53:46 PM: Update 504: task sst, batch 504 (504): accuracy: 0.7197, sst_loss: 0.5234 ||
+06/29 03:53:57 PM: Update 516: task sst, batch 516 (516): accuracy: 0.7223, sst_loss: 0.5200 ||
+06/29 03:54:08 PM: Update 529: task sst, batch 529 (529): accuracy: 0.7250, sst_loss: 0.5163 ||
+06/29 03:54:18 PM: Update 541: task sst, batch 541 (541): accuracy: 0.7276, sst_loss: 0.5127 ||
+06/29 03:54:29 PM: Update 553: task sst, batch 553 (553): accuracy: 0.7299, sst_loss: 0.5096 ||
+06/29 03:54:39 PM: Update 564: task sst, batch 564 (564): accuracy: 0.7323, sst_loss: 0.5064 ||
+06/29 03:54:49 PM: Update 575: task sst, batch 575 (575): accuracy: 0.7343, sst_loss: 0.5037 ||
+06/29 03:54:59 PM: Update 586: task sst, batch 586 (586): accuracy: 0.7362, sst_loss: 0.5012 ||
+06/29 03:55:10 PM: Update 598: task sst, batch 598 (598): accuracy: 0.7382, sst_loss: 0.4987 ||
+06/29 03:55:21 PM: Update 610: task sst, batch 610 (610): accuracy: 0.7401, sst_loss: 0.4965 ||
+06/29 03:55:32 PM: Update 622: task sst, batch 622 (622): accuracy: 0.7423, sst_loss: 0.4935 ||
+06/29 03:55:43 PM: Update 634: task sst, batch 634 (634): accuracy: 0.7443, sst_loss: 0.4906 ||
+06/29 03:55:53 PM: Update 646: task sst, batch 646 (646): accuracy: 0.7464, sst_loss: 0.4876 ||
+06/29 03:56:04 PM: Update 658: task sst, batch 658 (658): accuracy: 0.7484, sst_loss: 0.4850 ||
+06/29 03:56:15 PM: Update 670: task sst, batch 670 (670): accuracy: 0.7500, sst_loss: 0.4828 ||
+06/29 03:56:26 PM: Update 682: task sst, batch 682 (682): accuracy: 0.7517, sst_loss: 0.4804 ||
+06/29 03:56:37 PM: Update 694: task sst, batch 694 (694): accuracy: 0.7535, sst_loss: 0.4778 ||
+06/29 03:56:47 PM: Update 706: task sst, batch 706 (706): accuracy: 0.7554, sst_loss: 0.4749 ||
+06/29 03:56:58 PM: Update 718: task sst, batch 718 (718): accuracy: 0.7572, sst_loss: 0.4724 ||
+06/29 03:57:09 PM: Update 730: task sst, batch 730 (730): accuracy: 0.7588, sst_loss: 0.4702 ||
+06/29 03:57:20 PM: Update 742: task sst, batch 742 (742): accuracy: 0.7602, sst_loss: 0.4681 ||
+06/29 03:57:31 PM: Update 754: task sst, batch 754 (754): accuracy: 0.7617, sst_loss: 0.4661 ||
+06/29 03:57:41 PM: Update 766: task sst, batch 766 (766): accuracy: 0.7632, sst_loss: 0.4641 ||
+06/29 03:57:52 PM: Update 778: task sst, batch 778 (778): accuracy: 0.7645, sst_loss: 0.4621 ||
+06/29 03:58:03 PM: Update 790: task sst, batch 790 (790): accuracy: 0.7660, sst_loss: 0.4601 ||
+06/29 03:58:14 PM: Update 803: task sst, batch 803 (803): accuracy: 0.7675, sst_loss: 0.4578 ||
+06/29 03:58:25 PM: Update 815: task sst, batch 815 (815): accuracy: 0.7689, sst_loss: 0.4561 ||
+06/29 03:58:36 PM: Update 827: task sst, batch 827 (827): accuracy: 0.7703, sst_loss: 0.4538 ||
+06/29 03:58:47 PM: Update 839: task sst, batch 839 (839): accuracy: 0.7715, sst_loss: 0.4520 ||
+06/29 03:58:57 PM: Update 850: task sst, batch 850 (850): accuracy: 0.7726, sst_loss: 0.4504 ||
+06/29 03:59:07 PM: Update 862: task sst, batch 862 (862): accuracy: 0.7739, sst_loss: 0.4485 ||
+06/29 03:59:18 PM: Update 874: task sst, batch 874 (874): accuracy: 0.7750, sst_loss: 0.4470 ||
+06/29 03:59:29 PM: Update 886: task sst, batch 886 (886): accuracy: 0.7763, sst_loss: 0.4453 ||
+06/29 03:59:40 PM: Update 898: task sst, batch 898 (898): accuracy: 0.7774, sst_loss: 0.4436 ||
+06/29 03:59:51 PM: Update 910: task sst, batch 910 (910): accuracy: 0.7788, sst_loss: 0.4416 ||
+06/29 04:00:01 PM: Update 922: task sst, batch 922 (922): accuracy: 0.7799, sst_loss: 0.4399 ||
+06/29 04:00:12 PM: Update 934: task sst, batch 934 (934): accuracy: 0.7808, sst_loss: 0.4387 ||
+06/29 04:00:23 PM: Update 946: task sst, batch 946 (946): accuracy: 0.7819, sst_loss: 0.4370 ||
+06/29 04:00:34 PM: Update 958: task sst, batch 958 (958): accuracy: 0.7831, sst_loss: 0.4352 ||
+06/29 04:00:45 PM: Update 970: task sst, batch 970 (970): accuracy: 0.7843, sst_loss: 0.4331 ||
+06/29 04:00:56 PM: Update 982: task sst, batch 982 (982): accuracy: 0.7854, sst_loss: 0.4314 ||
+06/29 04:01:06 PM: Update 994: task sst, batch 994 (994): accuracy: 0.7865, sst_loss: 0.4297 ||
+06/29 04:01:17 PM: Update 1006: task sst, batch 1006 (1006): accuracy: 0.7873, sst_loss: 0.4283 ||
+06/29 04:01:28 PM: Update 1018: task sst, batch 1018 (1018): accuracy: 0.7883, sst_loss: 0.4269 ||
+06/29 04:01:39 PM: Update 1030: task sst, batch 1030 (1030): accuracy: 0.7893, sst_loss: 0.4253 ||
+06/29 04:01:50 PM: Update 1042: task sst, batch 1042 (1042): accuracy: 0.7902, sst_loss: 0.4239 ||
+06/29 04:02:01 PM: Update 1054: task sst, batch 1054 (1054): accuracy: 0.7912, sst_loss: 0.4224 ||
+06/29 04:02:11 PM: Update 1067: task sst, batch 1067 (1067): accuracy: 0.7921, sst_loss: 0.4209 ||
+06/29 04:02:22 PM: Update 1079: task sst, batch 1079 (1079): accuracy: 0.7928, sst_loss: 0.4198 ||
+06/29 04:02:33 PM: Update 1091: task sst, batch 1091 (1091): accuracy: 0.7937, sst_loss: 0.4184 ||
+06/29 04:02:44 PM: Update 1103: task sst, batch 1103 (1103): accuracy: 0.7945, sst_loss: 0.4172 ||
+06/29 04:02:55 PM: Update 1115: task sst, batch 1115 (1115): accuracy: 0.7953, sst_loss: 0.4160 ||
+06/29 04:03:06 PM: Update 1127: task sst, batch 1127 (1127): accuracy: 0.7961, sst_loss: 0.4148 ||
+06/29 04:03:17 PM: Update 1139: task sst, batch 1139 (1139): accuracy: 0.7969, sst_loss: 0.4137 ||
+06/29 04:03:27 PM: Update 1151: task sst, batch 1151 (1151): accuracy: 0.7977, sst_loss: 0.4124 ||
+06/29 04:03:38 PM: Update 1163: task sst, batch 1163 (1163): accuracy: 0.7986, sst_loss: 0.4111 ||
+06/29 04:03:49 PM: Update 1175: task sst, batch 1175 (1175): accuracy: 0.7994, sst_loss: 0.4098 ||
+06/29 04:04:00 PM: Update 1187: task sst, batch 1187 (1187): accuracy: 0.8004, sst_loss: 0.4082 ||
+06/29 04:04:11 PM: Update 1199: task sst, batch 1199 (1199): accuracy: 0.8012, sst_loss: 0.4071 ||
+06/29 04:04:21 PM: Update 1210: task sst, batch 1210 (1210): accuracy: 0.8019, sst_loss: 0.4058 ||
+06/29 04:04:31 PM: Update 1222: task sst, batch 1222 (1222): accuracy: 0.8028, sst_loss: 0.4045 ||
+06/29 04:04:42 PM: Update 1234: task sst, batch 1234 (1234): accuracy: 0.8036, sst_loss: 0.4030 ||
+06/29 04:04:53 PM: Update 1246: task sst, batch 1246 (1246): accuracy: 0.8044, sst_loss: 0.4016 ||
+06/29 04:05:04 PM: Update 1258: task sst, batch 1258 (1258): accuracy: 0.8053, sst_loss: 0.4003 ||
+06/29 04:05:15 PM: Update 1270: task sst, batch 1270 (1270): accuracy: 0.8060, sst_loss: 0.3991 ||
+06/29 04:05:26 PM: Update 1282: task sst, batch 1282 (1282): accuracy: 0.8067, sst_loss: 0.3980 ||
+06/29 04:05:36 PM: Update 1294: task sst, batch 1294 (1294): accuracy: 0.8074, sst_loss: 0.3968 ||
+06/29 04:05:47 PM: Update 1306: task sst, batch 1306 (1306): accuracy: 0.8082, sst_loss: 0.3954 ||
+06/29 04:05:58 PM: Update 1318: task sst, batch 1318 (1318): accuracy: 0.8090, sst_loss: 0.3942 ||
+06/29 04:06:09 PM: Update 1331: task sst, batch 1331 (1331): accuracy: 0.8097, sst_loss: 0.3928 ||
+06/29 04:06:20 PM: Update 1343: task sst, batch 1343 (1343): accuracy: 0.8104, sst_loss: 0.3917 ||
+06/29 04:06:31 PM: Update 1355: task sst, batch 1355 (1355): accuracy: 0.8112, sst_loss: 0.3905 ||
+06/29 04:06:42 PM: Update 1367: task sst, batch 1367 (1367): accuracy: 0.8119, sst_loss: 0.3893 ||
+06/29 04:06:53 PM: Update 1379: task sst, batch 1379 (1379): accuracy: 0.8127, sst_loss: 0.3881 ||
+06/29 04:07:03 PM: Update 1391: task sst, batch 1391 (1391): accuracy: 0.8133, sst_loss: 0.3871 ||
+06/29 04:07:14 PM: Update 1403: task sst, batch 1403 (1403): accuracy: 0.8139, sst_loss: 0.3860 ||
+06/29 04:07:25 PM: Update 1415: task sst, batch 1415 (1415): accuracy: 0.8147, sst_loss: 0.3849 ||
+06/29 04:07:36 PM: Update 1427: task sst, batch 1427 (1427): accuracy: 0.8153, sst_loss: 0.3839 ||
+06/29 04:07:47 PM: Update 1439: task sst, batch 1439 (1439): accuracy: 0.8160, sst_loss: 0.3828 ||
+06/29 04:07:58 PM: Update 1451: task sst, batch 1451 (1451): accuracy: 0.8168, sst_loss: 0.3816 ||
+06/29 04:08:08 PM: Update 1463: task sst, batch 1463 (1463): accuracy: 0.8173, sst_loss: 0.3807 ||
+06/29 04:08:19 PM: Update 1475: task sst, batch 1475 (1475): accuracy: 0.8180, sst_loss: 0.3795 ||
+06/29 04:08:30 PM: Update 1487: task sst, batch 1487 (1487): accuracy: 0.8187, sst_loss: 0.3784 ||
+06/29 04:08:41 PM: Update 1499: task sst, batch 1499 (1499): accuracy: 0.8194, sst_loss: 0.3772 ||
+06/29 04:08:52 PM: Update 1511: task sst, batch 1511 (1511): accuracy: 0.8200, sst_loss: 0.3760 ||
+06/29 04:09:02 PM: Update 1522: task sst, batch 1522 (1522): accuracy: 0.8206, sst_loss: 0.3750 ||
+06/29 04:09:13 PM: Update 1534: task sst, batch 1534 (1534): accuracy: 0.8212, sst_loss: 0.3741 ||
+06/29 04:09:23 PM: Update 1546: task sst, batch 1546 (1546): accuracy: 0.8217, sst_loss: 0.3732 ||
+06/29 04:09:34 PM: Update 1558: task sst, batch 1558 (1558): accuracy: 0.8224, sst_loss: 0.3723 ||
+06/29 04:09:45 PM: Update 1570: task sst, batch 1570 (1570): accuracy: 0.8230, sst_loss: 0.3712 ||
+06/29 04:09:56 PM: Update 1582: task sst, batch 1582 (1582): accuracy: 0.8236, sst_loss: 0.3701 ||
+06/29 04:10:07 PM: Update 1595: task sst, batch 1595 (1595): accuracy: 0.8242, sst_loss: 0.3690 ||
+06/29 04:10:18 PM: Update 1607: task sst, batch 1607 (1607): accuracy: 0.8247, sst_loss: 0.3682 ||
+06/29 04:10:28 PM: Update 1619: task sst, batch 1619 (1619): accuracy: 0.8253, sst_loss: 0.3673 ||
+06/29 04:10:39 PM: Update 1631: task sst, batch 1631 (1631): accuracy: 0.8258, sst_loss: 0.3664 ||
+06/29 04:10:50 PM: Update 1643: task sst, batch 1643 (1643): accuracy: 0.8263, sst_loss: 0.3655 ||
+06/29 04:11:01 PM: Update 1655: task sst, batch 1655 (1655): accuracy: 0.8267, sst_loss: 0.3647 ||
+06/29 04:11:12 PM: Update 1667: task sst, batch 1667 (1667): accuracy: 0.8273, sst_loss: 0.3638 ||
+06/29 04:11:23 PM: Update 1679: task sst, batch 1679 (1679): accuracy: 0.8278, sst_loss: 0.3628 ||
+06/29 04:11:34 PM: Update 1691: task sst, batch 1691 (1691): accuracy: 0.8284, sst_loss: 0.3619 ||
+06/29 04:11:44 PM: Update 1703: task sst, batch 1703 (1703): accuracy: 0.8290, sst_loss: 0.3609 ||
+06/29 04:11:55 PM: Update 1715: task sst, batch 1715 (1715): accuracy: 0.8295, sst_loss: 0.3599 ||
+06/29 04:12:06 PM: Update 1727: task sst, batch 1727 (1727): accuracy: 0.8300, sst_loss: 0.3592 ||
+06/29 04:12:17 PM: Update 1739: task sst, batch 1739 (1739): accuracy: 0.8306, sst_loss: 0.3582 ||
+06/29 04:12:28 PM: Update 1751: task sst, batch 1751 (1751): accuracy: 0.8311, sst_loss: 0.3572 ||
+06/29 04:12:38 PM: Update 1763: task sst, batch 1763 (1763): accuracy: 0.8317, sst_loss: 0.3562 ||
+06/29 04:12:49 PM: Update 1775: task sst, batch 1775 (1775): accuracy: 0.8322, sst_loss: 0.3553 ||
+06/29 04:13:00 PM: Update 1787: task sst, batch 1787 (1787): accuracy: 0.8327, sst_loss: 0.3544 ||
+06/29 04:13:11 PM: Update 1799: task sst, batch 1799 (1799): accuracy: 0.8332, sst_loss: 0.3535 ||
+06/29 04:13:22 PM: Update 1811: task sst, batch 1811 (1811): accuracy: 0.8337, sst_loss: 0.3527 ||
+06/29 04:13:33 PM: Update 1823: task sst, batch 1823 (1823): accuracy: 0.8343, sst_loss: 0.3517 ||
+06/29 04:13:43 PM: Update 1835: task sst, batch 1835 (1835): accuracy: 0.8348, sst_loss: 0.3509 ||
+06/29 04:13:54 PM: Update 1847: task sst, batch 1847 (1847): accuracy: 0.8353, sst_loss: 0.3500 ||
+06/29 04:14:05 PM: Update 1860: task sst, batch 1860 (1860): accuracy: 0.8358, sst_loss: 0.3491 ||
+06/29 04:14:16 PM: Update 1872: task sst, batch 1872 (1872): accuracy: 0.8361, sst_loss: 0.3484 ||
+06/29 04:14:27 PM: Update 1884: task sst, batch 1884 (1884): accuracy: 0.8366, sst_loss: 0.3476 ||
+06/29 04:14:38 PM: Update 1896: task sst, batch 1896 (1896): accuracy: 0.8371, sst_loss: 0.3467 ||
+06/29 04:14:48 PM: Update 1907: task sst, batch 1907 (1907): accuracy: 0.8376, sst_loss: 0.3460 ||
+06/29 04:14:59 PM: Update 1919: task sst, batch 1919 (1919): accuracy: 0.8381, sst_loss: 0.3452 ||
+06/29 04:15:09 PM: Update 1931: task sst, batch 1931 (1931): accuracy: 0.8385, sst_loss: 0.3444 ||
+06/29 04:15:20 PM: Update 1943: task sst, batch 1943 (1943): accuracy: 0.8390, sst_loss: 0.3436 ||
+06/29 04:15:31 PM: Update 1955: task sst, batch 1955 (1955): accuracy: 0.8394, sst_loss: 0.3428 ||
+06/29 04:15:42 PM: Update 1967: task sst, batch 1967 (1967): accuracy: 0.8399, sst_loss: 0.3420 ||
+06/29 04:15:53 PM: Update 1979: task sst, batch 1979 (1979): accuracy: 0.8404, sst_loss: 0.3411 ||
+06/29 04:16:03 PM: Update 1991: task sst, batch 1991 (1991): accuracy: 0.8409, sst_loss: 0.3404 ||
+06/29 04:16:14 PM: Update 2003: task sst, batch 2003 (2003): accuracy: 0.8414, sst_loss: 0.3395 ||
+06/29 04:16:25 PM: Update 2015: task sst, batch 2015 (2015): accuracy: 0.8418, sst_loss: 0.3386 ||
+06/29 04:16:36 PM: Update 2027: task sst, batch 2027 (2027): accuracy: 0.8423, sst_loss: 0.3378 ||
+06/29 04:16:47 PM: Update 2039: task sst, batch 2039 (2039): accuracy: 0.8427, sst_loss: 0.3370 ||
+06/29 04:16:58 PM: Update 2051: task sst, batch 2051 (2051): accuracy: 0.8431, sst_loss: 0.3363 ||
+06/29 04:17:08 PM: Update 2063: task sst, batch 2063 (2063): accuracy: 0.8435, sst_loss: 0.3356 ||
+06/29 04:17:19 PM: Update 2075: task sst, batch 2075 (2075): accuracy: 0.8439, sst_loss: 0.3350 ||
+06/29 04:17:30 PM: Update 2087: task sst, batch 2087 (2087): accuracy: 0.8444, sst_loss: 0.3342 ||
+06/29 04:17:41 PM: Update 2099: task sst, batch 2099 (2099): accuracy: 0.8448, sst_loss: 0.3334 ||
+06/29 04:17:52 PM: Update 2111: task sst, batch 2111 (2111): accuracy: 0.8453, sst_loss: 0.3326 ||
+06/29 04:18:02 PM: Update 2124: task sst, batch 2124 (2124): accuracy: 0.8457, sst_loss: 0.3317 ||
+06/29 04:18:13 PM: Update 2136: task sst, batch 2136 (2136): accuracy: 0.8462, sst_loss: 0.3310 ||
+06/29 04:18:24 PM: Update 2148: task sst, batch 2148 (2148): accuracy: 0.8466, sst_loss: 0.3303 ||
+06/29 04:18:35 PM: Update 2160: task sst, batch 2160 (2160): accuracy: 0.8470, sst_loss: 0.3295 ||
+06/29 04:18:46 PM: Update 2172: task sst, batch 2172 (2172): accuracy: 0.8474, sst_loss: 0.3288 ||
+06/29 04:18:57 PM: Update 2184: task sst, batch 2184 (2184): accuracy: 0.8478, sst_loss: 0.3281 ||
+06/29 04:19:08 PM: Update 2196: task sst, batch 2196 (2196): accuracy: 0.8482, sst_loss: 0.3274 ||
+06/29 04:19:18 PM: Update 2208: task sst, batch 2208 (2208): accuracy: 0.8487, sst_loss: 0.3266 ||
+06/29 04:19:29 PM: Update 2220: task sst, batch 2220 (2220): accuracy: 0.8491, sst_loss: 0.3258 ||
+06/29 04:19:40 PM: Update 2232: task sst, batch 2232 (2232): accuracy: 0.8495, sst_loss: 0.3250 ||
+06/29 04:19:50 PM: Update 2243: task sst, batch 2243 (2243): accuracy: 0.8499, sst_loss: 0.3243 ||
+06/29 04:20:01 PM: Update 2255: task sst, batch 2255 (2255): accuracy: 0.8503, sst_loss: 0.3236 ||
+06/29 04:20:12 PM: Update 2267: task sst, batch 2267 (2267): accuracy: 0.8508, sst_loss: 0.3228 ||
+06/29 04:20:22 PM: Update 2279: task sst, batch 2279 (2279): accuracy: 0.8512, sst_loss: 0.3219 ||
+06/29 04:20:33 PM: Update 2291: task sst, batch 2291 (2291): accuracy: 0.8516, sst_loss: 0.3212 ||
+06/29 04:20:44 PM: Update 2303: task sst, batch 2303 (2303): accuracy: 0.8520, sst_loss: 0.3205 ||
+06/29 04:20:55 PM: Update 2315: task sst, batch 2315 (2315): accuracy: 0.8524, sst_loss: 0.3199 ||
+06/29 04:21:06 PM: Update 2327: task sst, batch 2327 (2327): accuracy: 0.8527, sst_loss: 0.3192 ||
+06/29 04:21:17 PM: Update 2339: task sst, batch 2339 (2339): accuracy: 0.8531, sst_loss: 0.3186 ||
+06/29 04:21:27 PM: Update 2351: task sst, batch 2351 (2351): accuracy: 0.8534, sst_loss: 0.3179 ||
+06/29 04:21:38 PM: Update 2363: task sst, batch 2363 (2363): accuracy: 0.8538, sst_loss: 0.3173 ||
+06/29 04:21:49 PM: Update 2375: task sst, batch 2375 (2375): accuracy: 0.8542, sst_loss: 0.3166 ||
+06/29 04:22:00 PM: Update 2388: task sst, batch 2388 (2388): accuracy: 0.8545, sst_loss: 0.3158 ||
+06/29 04:22:11 PM: Update 2400: task sst, batch 2400 (2400): accuracy: 0.8549, sst_loss: 0.3153 ||
+06/29 04:22:22 PM: Update 2412: task sst, batch 2412 (2412): accuracy: 0.8552, sst_loss: 0.3146 ||
+06/29 04:22:33 PM: Update 2424: task sst, batch 2424 (2424): accuracy: 0.8556, sst_loss: 0.3140 ||
+06/29 04:22:44 PM: Update 2436: task sst, batch 2436 (2436): accuracy: 0.8559, sst_loss: 0.3133 ||
+06/29 04:22:54 PM: Update 2448: task sst, batch 2448 (2448): accuracy: 0.8562, sst_loss: 0.3128 ||
+06/29 04:23:05 PM: Update 2460: task sst, batch 2460 (2460): accuracy: 0.8566, sst_loss: 0.3122 ||
+06/29 04:23:16 PM: Update 2472: task sst, batch 2472 (2472): accuracy: 0.8570, sst_loss: 0.3115 ||
+06/29 04:23:27 PM: Update 2484: task sst, batch 2484 (2484): accuracy: 0.8574, sst_loss: 0.3108 ||
+06/29 04:23:38 PM: Update 2496: task sst, batch 2496 (2496): accuracy: 0.8577, sst_loss: 0.3102 ||
+06/29 04:23:48 PM: Update 2508: task sst, batch 2508 (2508): accuracy: 0.8581, sst_loss: 0.3096 ||
+06/29 04:23:59 PM: Update 2520: task sst, batch 2520 (2520): accuracy: 0.8584, sst_loss: 0.3090 ||
+06/29 04:24:10 PM: Update 2532: task sst, batch 2532 (2532): accuracy: 0.8588, sst_loss: 0.3082 ||
+06/29 04:24:21 PM: Update 2544: task sst, batch 2544 (2544): accuracy: 0.8592, sst_loss: 0.3075 ||
+06/29 04:24:32 PM: Update 2556: task sst, batch 2556 (2556): accuracy: 0.8596, sst_loss: 0.3068 ||
+06/29 04:24:42 PM: Update 2568: task sst, batch 2568 (2568): accuracy: 0.8600, sst_loss: 0.3060 ||
+06/29 04:24:53 PM: Update 2580: task sst, batch 2580 (2580): accuracy: 0.8603, sst_loss: 0.3054 ||
+06/29 04:25:04 PM: Update 2592: task sst, batch 2592 (2592): accuracy: 0.8606, sst_loss: 0.3048 ||
+06/29 04:25:15 PM: Update 2604: task sst, batch 2604 (2604): accuracy: 0.8610, sst_loss: 0.3042 ||
+06/29 04:25:26 PM: Update 2616: task sst, batch 2616 (2616): accuracy: 0.8613, sst_loss: 0.3035 ||
+06/29 04:25:37 PM: Update 2628: task sst, batch 2628 (2628): accuracy: 0.8616, sst_loss: 0.3029 ||
+06/29 04:25:47 PM: Update 2641: task sst, batch 2641 (2641): accuracy: 0.8620, sst_loss: 0.3022 ||
+06/29 04:25:58 PM: Update 2653: task sst, batch 2653 (2653): accuracy: 0.8623, sst_loss: 0.3016 ||
+06/29 04:26:09 PM: Update 2665: task sst, batch 2665 (2665): accuracy: 0.8626, sst_loss: 0.3010 ||
+06/29 04:26:20 PM: Update 2677: task sst, batch 2677 (2677): accuracy: 0.8629, sst_loss: 0.3004 ||
+06/29 04:26:30 PM: Update 2688: task sst, batch 2688 (2688): accuracy: 0.8632, sst_loss: 0.2999 ||
+06/29 04:26:41 PM: Update 2700: task sst, batch 2700 (2700): accuracy: 0.8636, sst_loss: 0.2993 ||
+06/29 04:26:52 PM: Update 2712: task sst, batch 2712 (2712): accuracy: 0.8639, sst_loss: 0.2987 ||
+06/29 04:27:03 PM: Update 2724: task sst, batch 2724 (2724): accuracy: 0.8641, sst_loss: 0.2982 ||
+06/29 04:27:13 PM: Update 2736: task sst, batch 2736 (2736): accuracy: 0.8644, sst_loss: 0.2977 ||
+06/29 04:27:24 PM: Update 2748: task sst, batch 2748 (2748): accuracy: 0.8647, sst_loss: 0.2971 ||
+06/29 04:27:35 PM: Update 2760: task sst, batch 2760 (2760): accuracy: 0.8650, sst_loss: 0.2966 ||
+06/29 04:27:46 PM: Update 2772: task sst, batch 2772 (2772): accuracy: 0.8653, sst_loss: 0.2961 ||
+06/29 04:27:57 PM: Update 2784: task sst, batch 2784 (2784): accuracy: 0.8656, sst_loss: 0.2955 ||
+06/29 04:28:07 PM: Update 2796: task sst, batch 2796 (2796): accuracy: 0.8659, sst_loss: 0.2949 ||
+06/29 04:28:18 PM: Update 2808: task sst, batch 2808 (2808): accuracy: 0.8662, sst_loss: 0.2943 ||
+06/29 04:28:29 PM: Update 2820: task sst, batch 2820 (2820): accuracy: 0.8666, sst_loss: 0.2936 ||
+06/29 04:28:40 PM: Update 2832: task sst, batch 2832 (2832): accuracy: 0.8669, sst_loss: 0.2931 ||
+06/29 04:28:51 PM: Update 2844: task sst, batch 2844 (2844): accuracy: 0.8672, sst_loss: 0.2925 ||
+06/29 04:29:02 PM: Update 2856: task sst, batch 2856 (2856): accuracy: 0.8675, sst_loss: 0.2920 ||
+06/29 04:29:12 PM: Update 2868: task sst, batch 2868 (2868): accuracy: 0.8678, sst_loss: 0.2915 ||
+06/29 04:29:23 PM: Update 2880: task sst, batch 2880 (2880): accuracy: 0.8681, sst_loss: 0.2908 ||
+06/29 04:29:34 PM: Update 2892: task sst, batch 2892 (2892): accuracy: 0.8684, sst_loss: 0.2903 ||
+06/29 04:29:45 PM: Update 2905: task sst, batch 2905 (2905): accuracy: 0.8687, sst_loss: 0.2897 ||
+06/29 04:29:56 PM: Update 2917: task sst, batch 2917 (2917): accuracy: 0.8690, sst_loss: 0.2891 ||
+06/29 04:30:07 PM: Update 2929: task sst, batch 2929 (2929): accuracy: 0.8693, sst_loss: 0.2885 ||
+06/29 04:30:17 PM: Update 2941: task sst, batch 2941 (2941): accuracy: 0.8696, sst_loss: 0.2879 ||
+06/29 04:30:28 PM: Update 2953: task sst, batch 2953 (2953): accuracy: 0.8699, sst_loss: 0.2874 ||
+06/29 04:30:39 PM: Update 2965: task sst, batch 2965 (2965): accuracy: 0.8702, sst_loss: 0.2868 ||
+06/29 04:30:50 PM: Update 2977: task sst, batch 2977 (2977): accuracy: 0.8704, sst_loss: 0.2864 ||
+06/29 04:31:01 PM: Update 2989: task sst, batch 2989 (2989): accuracy: 0.8707, sst_loss: 0.2859 ||
+06/29 04:31:12 PM: Update 3001: task sst, batch 3001 (3001): accuracy: 0.8710, sst_loss: 0.2853 ||
+06/29 04:31:22 PM: Update 3013: task sst, batch 3013 (3013): accuracy: 0.8712, sst_loss: 0.2850 ||
+06/29 04:31:33 PM: Update 3025: task sst, batch 3025 (3025): accuracy: 0.8714, sst_loss: 0.2845 ||
+06/29 04:31:43 PM: Update 3036: task sst, batch 3036 (3036): accuracy: 0.8717, sst_loss: 0.2840 ||
+06/29 04:31:54 PM: Update 3048: task sst, batch 3048 (3048): accuracy: 0.8720, sst_loss: 0.2836 ||
+06/29 04:32:05 PM: Update 3060: task sst, batch 3060 (3060): accuracy: 0.8723, sst_loss: 0.2829 ||
+06/29 04:32:16 PM: Update 3072: task sst, batch 3072 (3072): accuracy: 0.8726, sst_loss: 0.2824 ||
+06/29 04:32:27 PM: Update 3084: task sst, batch 3084 (3084): accuracy: 0.8728, sst_loss: 0.2819 ||
+06/29 04:32:37 PM: Update 3096: task sst, batch 3096 (3096): accuracy: 0.8731, sst_loss: 0.2813 ||
+06/29 04:32:48 PM: Update 3108: task sst, batch 3108 (3108): accuracy: 0.8734, sst_loss: 0.2808 ||
+06/29 04:32:59 PM: Update 3120: task sst, batch 3120 (3120): accuracy: 0.8737, sst_loss: 0.2803 ||
+06/29 04:33:10 PM: Update 3132: task sst, batch 3132 (3132): accuracy: 0.8739, sst_loss: 0.2799 ||
+06/29 04:33:21 PM: Update 3144: task sst, batch 3144 (3144): accuracy: 0.8742, sst_loss: 0.2793 ||
+06/29 04:33:32 PM: Update 3156: task sst, batch 3156 (3156): accuracy: 0.8745, sst_loss: 0.2788 ||
+06/29 04:33:42 PM: Update 3169: task sst, batch 3169 (3169): accuracy: 0.8748, sst_loss: 0.2782 ||
+06/29 04:33:53 PM: Update 3181: task sst, batch 3181 (3181): accuracy: 0.8750, sst_loss: 0.2776 ||
+06/29 04:34:04 PM: Update 3193: task sst, batch 3193 (3193): accuracy: 0.8753, sst_loss: 0.2771 ||
+06/29 04:34:15 PM: Update 3205: task sst, batch 3205 (3205): accuracy: 0.8756, sst_loss: 0.2766 ||
+06/29 04:34:26 PM: Update 3217: task sst, batch 3217 (3217): accuracy: 0.8758, sst_loss: 0.2761 ||
+06/29 04:34:37 PM: Update 3229: task sst, batch 3229 (3229): accuracy: 0.8760, sst_loss: 0.2757 ||
+06/29 04:34:48 PM: Update 3241: task sst, batch 3241 (3241): accuracy: 0.8762, sst_loss: 0.2753 ||
+06/29 04:34:58 PM: Update 3253: task sst, batch 3253 (3253): accuracy: 0.8765, sst_loss: 0.2749 ||
+06/29 04:35:09 PM: Update 3265: task sst, batch 3265 (3265): accuracy: 0.8767, sst_loss: 0.2744 ||
+06/29 04:35:20 PM: Update 3277: task sst, batch 3277 (3277): accuracy: 0.8770, sst_loss: 0.2739 ||
+06/29 04:35:31 PM: Update 3289: task sst, batch 3289 (3289): accuracy: 0.8772, sst_loss: 0.2735 ||
+06/29 04:35:42 PM: Update 3301: task sst, batch 3301 (3301): accuracy: 0.8775, sst_loss: 0.2730 ||
+06/29 04:35:53 PM: Update 3313: task sst, batch 3313 (3313): accuracy: 0.8777, sst_loss: 0.2726 ||
+06/29 04:36:03 PM: Update 3325: task sst, batch 3325 (3325): accuracy: 0.8779, sst_loss: 0.2721 ||
+06/29 04:36:14 PM: Update 3337: task sst, batch 3337 (3337): accuracy: 0.8782, sst_loss: 0.2716 ||
+06/29 04:36:25 PM: Update 3349: task sst, batch 3349 (3349): accuracy: 0.8784, sst_loss: 0.2710 ||
+06/29 04:36:36 PM: Update 3361: task sst, batch 3361 (3361): accuracy: 0.8787, sst_loss: 0.2705 ||
+06/29 04:36:46 PM: Update 3372: task sst, batch 3372 (3372): accuracy: 0.8789, sst_loss: 0.2701 ||
+06/29 04:36:57 PM: Update 3384: task sst, batch 3384 (3384): accuracy: 0.8792, sst_loss: 0.2697 ||
+06/29 04:37:07 PM: Update 3396: task sst, batch 3396 (3396): accuracy: 0.8794, sst_loss: 0.2692 ||
+06/29 04:37:18 PM: Update 3408: task sst, batch 3408 (3408): accuracy: 0.8796, sst_loss: 0.2688 ||
+06/29 04:37:29 PM: Update 3420: task sst, batch 3420 (3420): accuracy: 0.8799, sst_loss: 0.2683 ||
+06/29 04:37:40 PM: Update 3433: task sst, batch 3433 (3433): accuracy: 0.8801, sst_loss: 0.2678 ||
+06/29 04:37:51 PM: Update 3445: task sst, batch 3445 (3445): accuracy: 0.8803, sst_loss: 0.2673 ||
+06/29 04:38:02 PM: Update 3457: task sst, batch 3457 (3457): accuracy: 0.8806, sst_loss: 0.2670 ||
+06/29 04:38:12 PM: Update 3469: task sst, batch 3469 (3469): accuracy: 0.8808, sst_loss: 0.2666 ||
+06/29 04:38:23 PM: Update 3481: task sst, batch 3481 (3481): accuracy: 0.8810, sst_loss: 0.2661 ||
+06/29 04:38:34 PM: Update 3493: task sst, batch 3493 (3493): accuracy: 0.8812, sst_loss: 0.2657 ||
+06/29 04:38:45 PM: Update 3505: task sst, batch 3505 (3505): accuracy: 0.8814, sst_loss: 0.2654 ||
+06/29 04:38:56 PM: Update 3517: task sst, batch 3517 (3517): accuracy: 0.8816, sst_loss: 0.2650 ||
+06/29 04:39:07 PM: Update 3529: task sst, batch 3529 (3529): accuracy: 0.8818, sst_loss: 0.2646 ||
+06/29 04:39:18 PM: Update 3541: task sst, batch 3541 (3541): accuracy: 0.8820, sst_loss: 0.2642 ||
+06/29 04:39:28 PM: Update 3553: task sst, batch 3553 (3553): accuracy: 0.8823, sst_loss: 0.2637 ||
+06/29 04:39:39 PM: Update 3565: task sst, batch 3565 (3565): accuracy: 0.8825, sst_loss: 0.2633 ||
+06/29 04:39:50 PM: Update 3577: task sst, batch 3577 (3577): accuracy: 0.8827, sst_loss: 0.2629 ||
+06/29 04:40:01 PM: Update 3589: task sst, batch 3589 (3589): accuracy: 0.8830, sst_loss: 0.2624 ||
+06/29 04:40:12 PM: Update 3601: task sst, batch 3601 (3601): accuracy: 0.8832, sst_loss: 0.2620 ||
+06/29 04:40:23 PM: Update 3613: task sst, batch 3613 (3613): accuracy: 0.8834, sst_loss: 0.2615 ||
+06/29 04:40:33 PM: Update 3625: task sst, batch 3625 (3625): accuracy: 0.8836, sst_loss: 0.2611 ||
+06/29 04:40:43 PM: Update 3636: task sst, batch 3636 (3636): accuracy: 0.8839, sst_loss: 0.2607 ||
+06/29 04:40:54 PM: Update 3648: task sst, batch 3648 (3648): accuracy: 0.8841, sst_loss: 0.2603 ||
+06/29 04:41:05 PM: Update 3660: task sst, batch 3660 (3660): accuracy: 0.8842, sst_loss: 0.2599 ||
+06/29 04:41:16 PM: Update 3672: task sst, batch 3672 (3672): accuracy: 0.8844, sst_loss: 0.2595 ||
+06/29 04:41:27 PM: Update 3684: task sst, batch 3684 (3684): accuracy: 0.8846, sst_loss: 0.2591 ||
+06/29 04:41:38 PM: Update 3697: task sst, batch 3697 (3697): accuracy: 0.8849, sst_loss: 0.2586 ||
+06/29 04:41:48 PM: Update 3709: task sst, batch 3709 (3709): accuracy: 0.8851, sst_loss: 0.2581 ||
+06/29 04:41:59 PM: Update 3721: task sst, batch 3721 (3721): accuracy: 0.8853, sst_loss: 0.2577 ||
+06/29 04:42:10 PM: Update 3733: task sst, batch 3733 (3733): accuracy: 0.8855, sst_loss: 0.2573 ||
+06/29 04:42:21 PM: Update 3745: task sst, batch 3745 (3745): accuracy: 0.8858, sst_loss: 0.2569 ||
+06/29 04:42:32 PM: Update 3757: task sst, batch 3757 (3757): accuracy: 0.8860, sst_loss: 0.2565 ||
+06/29 04:42:43 PM: Update 3769: task sst, batch 3769 (3769): accuracy: 0.8861, sst_loss: 0.2561 ||
+06/29 04:42:54 PM: Update 3781: task sst, batch 3781 (3781): accuracy: 0.8863, sst_loss: 0.2558 ||
+06/29 04:43:04 PM: Update 3793: task sst, batch 3793 (3793): accuracy: 0.8865, sst_loss: 0.2553 ||
+06/29 04:43:15 PM: Update 3805: task sst, batch 3805 (3805): accuracy: 0.8868, sst_loss: 0.2549 ||
+06/29 04:43:26 PM: Update 3817: task sst, batch 3817 (3817): accuracy: 0.8870, sst_loss: 0.2545 ||
+06/29 04:43:37 PM: Update 3829: task sst, batch 3829 (3829): accuracy: 0.8872, sst_loss: 0.2540 ||
+06/29 04:43:48 PM: Update 3841: task sst, batch 3841 (3841): accuracy: 0.8874, sst_loss: 0.2537 ||
+06/29 04:43:59 PM: Update 3853: task sst, batch 3853 (3853): accuracy: 0.8876, sst_loss: 0.2533 ||
+06/29 04:44:09 PM: Update 3865: task sst, batch 3865 (3865): accuracy: 0.8878, sst_loss: 0.2528 ||
+06/29 04:44:20 PM: Update 3877: task sst, batch 3877 (3877): accuracy: 0.8880, sst_loss: 0.2524 ||
+06/29 04:44:31 PM: Update 3889: task sst, batch 3889 (3889): accuracy: 0.8882, sst_loss: 0.2520 ||
+06/29 04:44:41 PM: Update 3900: task sst, batch 3900 (3900): accuracy: 0.8884, sst_loss: 0.2517 ||
+06/29 04:44:52 PM: Update 3912: task sst, batch 3912 (3912): accuracy: 0.8886, sst_loss: 0.2513 ||
+06/29 04:45:03 PM: Update 3924: task sst, batch 3924 (3924): accuracy: 0.8888, sst_loss: 0.2510 ||
+06/29 04:45:13 PM: Update 3936: task sst, batch 3936 (3936): accuracy: 0.8890, sst_loss: 0.2506 ||
+06/29 04:45:24 PM: Update 3948: task sst, batch 3948 (3948): accuracy: 0.8892, sst_loss: 0.2502 ||
+06/29 04:45:35 PM: Update 3961: task sst, batch 3961 (3961): accuracy: 0.8894, sst_loss: 0.2498 ||
+06/29 04:45:46 PM: Update 3973: task sst, batch 3973 (3973): accuracy: 0.8896, sst_loss: 0.2493 ||
+06/29 04:45:57 PM: Update 3985: task sst, batch 3985 (3985): accuracy: 0.8898, sst_loss: 0.2490 ||
+06/29 04:46:08 PM: Update 3997: task sst, batch 3997 (3997): accuracy: 0.8900, sst_loss: 0.2486 ||
+06/29 04:46:19 PM: Update 4009: task sst, batch 4009 (4009): accuracy: 0.8902, sst_loss: 0.2482 ||
+06/29 04:46:30 PM: Update 4021: task sst, batch 4021 (4021): accuracy: 0.8903, sst_loss: 0.2479 ||
+06/29 04:46:40 PM: Update 4033: task sst, batch 4033 (4033): accuracy: 0.8905, sst_loss: 0.2476 ||
+06/29 04:46:51 PM: Update 4045: task sst, batch 4045 (4045): accuracy: 0.8907, sst_loss: 0.2473 ||
+06/29 04:47:02 PM: Update 4057: task sst, batch 4057 (4057): accuracy: 0.8909, sst_loss: 0.2468 ||
+06/29 04:47:13 PM: Update 4069: task sst, batch 4069 (4069): accuracy: 0.8911, sst_loss: 0.2464 ||
+06/29 04:47:24 PM: Update 4081: task sst, batch 4081 (4081): accuracy: 0.8913, sst_loss: 0.2461 ||
+06/29 04:47:35 PM: Update 4093: task sst, batch 4093 (4093): accuracy: 0.8914, sst_loss: 0.2457 ||
+06/29 04:47:45 PM: Update 4105: task sst, batch 4105 (4105): accuracy: 0.8916, sst_loss: 0.2453 ||
+06/29 04:47:56 PM: Update 4117: task sst, batch 4117 (4117): accuracy: 0.8918, sst_loss: 0.2450 ||
+06/29 04:48:07 PM: Update 4129: task sst, batch 4129 (4129): accuracy: 0.8920, sst_loss: 0.2447 ||
+06/29 04:48:18 PM: Update 4141: task sst, batch 4141 (4141): accuracy: 0.8921, sst_loss: 0.2443 ||
+06/29 04:48:29 PM: Update 4153: task sst, batch 4153 (4153): accuracy: 0.8923, sst_loss: 0.2439 ||
+06/29 04:48:39 PM: Update 4164: task sst, batch 4164 (4164): accuracy: 0.8925, sst_loss: 0.2435 ||
+06/29 04:48:49 PM: Update 4176: task sst, batch 4176 (4176): accuracy: 0.8927, sst_loss: 0.2432 ||
+06/29 04:49:00 PM: Update 4188: task sst, batch 4188 (4188): accuracy: 0.8929, sst_loss: 0.2428 ||
+06/29 04:49:11 PM: Update 4200: task sst, batch 4200 (4200): accuracy: 0.8930, sst_loss: 0.2425 ||
+06/29 04:49:22 PM: Update 4212: task sst, batch 4212 (4212): accuracy: 0.8932, sst_loss: 0.2421 ||
+06/29 04:49:33 PM: Update 4225: task sst, batch 4225 (4225): accuracy: 0.8934, sst_loss: 0.2417 ||
+06/29 04:49:44 PM: Update 4237: task sst, batch 4237 (4237): accuracy: 0.8936, sst_loss: 0.2413 ||
+06/29 04:49:54 PM: Update 4249: task sst, batch 4249 (4249): accuracy: 0.8938, sst_loss: 0.2410 ||
+06/29 04:50:05 PM: Update 4261: task sst, batch 4261 (4261): accuracy: 0.8939, sst_loss: 0.2407 ||
+06/29 04:50:16 PM: Update 4273: task sst, batch 4273 (4273): accuracy: 0.8941, sst_loss: 0.2404 ||
+06/29 04:50:27 PM: Update 4285: task sst, batch 4285 (4285): accuracy: 0.8942, sst_loss: 0.2401 ||
+06/29 04:50:38 PM: Update 4297: task sst, batch 4297 (4297): accuracy: 0.8944, sst_loss: 0.2398 ||
+06/29 04:50:49 PM: Update 4309: task sst, batch 4309 (4309): accuracy: 0.8945, sst_loss: 0.2395 ||
+06/29 04:51:00 PM: Update 4321: task sst, batch 4321 (4321): accuracy: 0.8947, sst_loss: 0.2392 ||
+06/29 04:51:10 PM: Update 4333: task sst, batch 4333 (4333): accuracy: 0.8949, sst_loss: 0.2388 ||
+06/29 04:51:21 PM: Update 4345: task sst, batch 4345 (4345): accuracy: 0.8951, sst_loss: 0.2385 ||
+06/29 04:51:32 PM: Update 4357: task sst, batch 4357 (4357): accuracy: 0.8952, sst_loss: 0.2381 ||
+06/29 04:51:43 PM: Update 4369: task sst, batch 4369 (4369): accuracy: 0.8954, sst_loss: 0.2378 ||
+06/29 04:51:54 PM: Update 4381: task sst, batch 4381 (4381): accuracy: 0.8956, sst_loss: 0.2374 ||
+06/29 04:52:05 PM: Update 4393: task sst, batch 4393 (4393): accuracy: 0.8958, sst_loss: 0.2371 ||
+06/29 04:52:15 PM: Update 4405: task sst, batch 4405 (4405): accuracy: 0.8959, sst_loss: 0.2367 ||
+06/29 04:52:26 PM: Update 4417: task sst, batch 4417 (4417): accuracy: 0.8961, sst_loss: 0.2363 ||
+06/29 04:52:36 PM: Update 4428: task sst, batch 4428 (4428): accuracy: 0.8963, sst_loss: 0.2360 ||
+06/29 04:52:47 PM: Update 4440: task sst, batch 4440 (4440): accuracy: 0.8964, sst_loss: 0.2357 ||
+06/29 04:52:58 PM: Update 4452: task sst, batch 4452 (4452): accuracy: 0.8966, sst_loss: 0.2354 ||
+06/29 04:53:09 PM: Update 4464: task sst, batch 4464 (4464): accuracy: 0.8968, sst_loss: 0.2350 ||
+06/29 04:53:20 PM: Update 4476: task sst, batch 4476 (4476): accuracy: 0.8969, sst_loss: 0.2348 ||
+06/29 04:53:30 PM: Update 4489: task sst, batch 4489 (4489): accuracy: 0.8970, sst_loss: 0.2344 ||
+06/29 04:53:41 PM: Update 4501: task sst, batch 4501 (4501): accuracy: 0.8972, sst_loss: 0.2341 ||
+06/29 04:53:52 PM: Update 4513: task sst, batch 4513 (4513): accuracy: 0.8974, sst_loss: 0.2337 ||
+06/29 04:54:03 PM: Update 4525: task sst, batch 4525 (4525): accuracy: 0.8975, sst_loss: 0.2334 ||
+06/29 04:54:14 PM: Update 4537: task sst, batch 4537 (4537): accuracy: 0.8977, sst_loss: 0.2331 ||
+06/29 04:54:25 PM: Update 4549: task sst, batch 4549 (4549): accuracy: 0.8979, sst_loss: 0.2327 ||
+06/29 04:54:36 PM: Update 4561: task sst, batch 4561 (4561): accuracy: 0.8980, sst_loss: 0.2324 ||
+06/29 04:54:46 PM: Update 4573: task sst, batch 4573 (4573): accuracy: 0.8981, sst_loss: 0.2322 ||
+06/29 04:54:57 PM: Update 4585: task sst, batch 4585 (4585): accuracy: 0.8983, sst_loss: 0.2319 ||
+06/29 04:55:08 PM: Update 4597: task sst, batch 4597 (4597): accuracy: 0.8984, sst_loss: 0.2316 ||
+06/29 04:55:19 PM: Update 4609: task sst, batch 4609 (4609): accuracy: 0.8986, sst_loss: 0.2313 ||
+06/29 04:55:30 PM: Update 4621: task sst, batch 4621 (4621): accuracy: 0.8988, sst_loss: 0.2310 ||
+06/29 04:55:40 PM: Update 4633: task sst, batch 4633 (4633): accuracy: 0.8989, sst_loss: 0.2307 ||
+06/29 04:55:51 PM: Update 4645: task sst, batch 4645 (4645): accuracy: 0.8991, sst_loss: 0.2303 ||
+06/29 04:56:02 PM: Update 4657: task sst, batch 4657 (4657): accuracy: 0.8993, sst_loss: 0.2299 ||
+06/29 04:56:13 PM: Update 4669: task sst, batch 4669 (4669): accuracy: 0.8994, sst_loss: 0.2296 ||
+06/29 04:56:24 PM: Update 4681: task sst, batch 4681 (4681): accuracy: 0.8996, sst_loss: 0.2293 ||
+06/29 04:56:34 PM: Update 4692: task sst, batch 4692 (4692): accuracy: 0.8997, sst_loss: 0.2290 ||
+06/29 04:56:45 PM: Update 4704: task sst, batch 4704 (4704): accuracy: 0.8999, sst_loss: 0.2287 ||
+06/29 04:56:55 PM: Update 4716: task sst, batch 4716 (4716): accuracy: 0.9000, sst_loss: 0.2284 ||
+06/29 04:57:06 PM: Update 4728: task sst, batch 4728 (4728): accuracy: 0.9002, sst_loss: 0.2280 ||
+06/29 04:57:17 PM: Update 4740: task sst, batch 4740 (4740): accuracy: 0.9003, sst_loss: 0.2277 ||
+06/29 04:57:28 PM: Update 4753: task sst, batch 4753 (4753): accuracy: 0.9005, sst_loss: 0.2274 ||
+06/29 04:57:39 PM: Update 4765: task sst, batch 4765 (4765): accuracy: 0.9006, sst_loss: 0.2270 ||
+06/29 04:57:50 PM: Update 4777: task sst, batch 4777 (4777): accuracy: 0.9008, sst_loss: 0.2267 ||
+06/29 04:58:00 PM: Update 4789: task sst, batch 4789 (4789): accuracy: 0.9009, sst_loss: 0.2264 ||
+06/29 04:58:11 PM: Update 4801: task sst, batch 4801 (4801): accuracy: 0.9011, sst_loss: 0.2261 ||
+06/29 04:58:22 PM: Update 4813: task sst, batch 4813 (4813): accuracy: 0.9012, sst_loss: 0.2257 ||
+06/29 04:58:33 PM: Update 4825: task sst, batch 4825 (4825): accuracy: 0.9014, sst_loss: 0.2254 ||
+06/29 04:58:44 PM: Update 4837: task sst, batch 4837 (4837): accuracy: 0.9015, sst_loss: 0.2251 ||
+06/29 04:58:55 PM: Update 4849: task sst, batch 4849 (4849): accuracy: 0.9017, sst_loss: 0.2248 ||
+06/29 04:59:06 PM: Update 4861: task sst, batch 4861 (4861): accuracy: 0.9018, sst_loss: 0.2246 ||
+06/29 04:59:16 PM: Update 4873: task sst, batch 4873 (4873): accuracy: 0.9020, sst_loss: 0.2242 ||
+06/29 04:59:27 PM: Update 4885: task sst, batch 4885 (4885): accuracy: 0.9021, sst_loss: 0.2239 ||
+06/29 04:59:38 PM: Update 4897: task sst, batch 4897 (4897): accuracy: 0.9023, sst_loss: 0.2236 ||
+06/29 04:59:49 PM: Update 4909: task sst, batch 4909 (4909): accuracy: 0.9025, sst_loss: 0.2233 ||
+06/29 05:00:00 PM: Update 4921: task sst, batch 4921 (4921): accuracy: 0.9026, sst_loss: 0.2230 ||
+06/29 05:00:11 PM: Update 4933: task sst, batch 4933 (4933): accuracy: 0.9027, sst_loss: 0.2227 ||
+06/29 05:00:21 PM: Update 4945: task sst, batch 4945 (4945): accuracy: 0.9029, sst_loss: 0.2224 ||
+06/29 05:00:31 PM: Update 4956: task sst, batch 4956 (4956): accuracy: 0.9031, sst_loss: 0.2220 ||
+06/29 05:00:42 PM: Update 4968: task sst, batch 4968 (4968): accuracy: 0.9032, sst_loss: 0.2218 ||
+06/29 05:00:53 PM: Update 4980: task sst, batch 4980 (4980): accuracy: 0.9033, sst_loss: 0.2215 ||
+06/29 05:01:04 PM: Update 4992: task sst, batch 4992 (4992): accuracy: 0.9035, sst_loss: 0.2212 ||
+06/29 05:01:11 PM: ***** Pass 5000 / Epoch 1 *****
+06/29 05:01:11 PM: sst: trained on 5000 batches, 18.939 epochs
+06/29 05:01:11 PM: Validating...
+06/29 05:01:14 PM: Best model found for sst.
+06/29 05:01:14 PM: Best model found for micro.
+06/29 05:01:14 PM: Best model found for macro.
+06/29 05:01:14 PM: Statistic: sst_loss
+06/29 05:01:14 PM: 	training: 0.220968
+06/29 05:01:14 PM: 	validation: 0.528336
+06/29 05:01:14 PM: Statistic: macro_avg
+06/29 05:01:14 PM: 	validation: 0.849771
+06/29 05:01:14 PM: Statistic: micro_avg
+06/29 05:01:14 PM: 	validation: 0.849771
+06/29 05:01:14 PM: Statistic: sst_accuracy
+06/29 05:01:14 PM: 	training: 0.903580
+06/29 05:01:14 PM: 	validation: 0.849771
+06/29 05:01:14 PM: global_lr: 0.000625
+06/29 05:01:14 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/sst
+06/29 05:01:15 PM: Update 5001: task sst, batch 1 (5001): accuracy: 0.9766, sst_loss: 0.0725 ||
+06/29 05:01:25 PM: Update 5013: task sst, batch 13 (5013): accuracy: 0.9700, sst_loss: 0.0802 ||
+06/29 05:01:36 PM: Update 5026: task sst, batch 26 (5026): accuracy: 0.9693, sst_loss: 0.0791 ||
+06/29 05:01:47 PM: Update 5038: task sst, batch 38 (5038): accuracy: 0.9687, sst_loss: 0.0830 ||
+06/29 05:01:58 PM: Update 5050: task sst, batch 50 (5050): accuracy: 0.9692, sst_loss: 0.0825 ||
+06/29 05:02:09 PM: Update 5062: task sst, batch 62 (5062): accuracy: 0.9691, sst_loss: 0.0836 ||
+06/29 05:02:19 PM: Update 5073: task sst, batch 73 (5073): accuracy: 0.9689, sst_loss: 0.0845 ||
+06/29 05:02:30 PM: Update 5085: task sst, batch 85 (5085): accuracy: 0.9679, sst_loss: 0.0864 ||
+06/29 05:02:41 PM: Update 5097: task sst, batch 97 (5097): accuracy: 0.9669, sst_loss: 0.0885 ||
+06/29 05:02:52 PM: Update 5109: task sst, batch 109 (5109): accuracy: 0.9669, sst_loss: 0.0892 ||
+06/29 05:03:02 PM: Update 5121: task sst, batch 121 (5121): accuracy: 0.9668, sst_loss: 0.0891 ||
+06/29 05:03:13 PM: Update 5133: task sst, batch 133 (5133): accuracy: 0.9666, sst_loss: 0.0899 ||
+06/29 05:03:24 PM: Update 5145: task sst, batch 145 (5145): accuracy: 0.9665, sst_loss: 0.0903 ||
+06/29 05:03:35 PM: Update 5157: task sst, batch 157 (5157): accuracy: 0.9666, sst_loss: 0.0903 ||
+06/29 05:03:46 PM: Update 5169: task sst, batch 169 (5169): accuracy: 0.9670, sst_loss: 0.0893 ||
+06/29 05:03:57 PM: Update 5181: task sst, batch 181 (5181): accuracy: 0.9669, sst_loss: 0.0893 ||
+06/29 05:04:07 PM: Update 5193: task sst, batch 193 (5193): accuracy: 0.9670, sst_loss: 0.0888 ||
+06/29 05:04:18 PM: Update 5205: task sst, batch 205 (5205): accuracy: 0.9671, sst_loss: 0.0884 ||
+06/29 05:04:29 PM: Update 5217: task sst, batch 217 (5217): accuracy: 0.9671, sst_loss: 0.0883 ||
+06/29 05:04:40 PM: Update 5229: task sst, batch 229 (5229): accuracy: 0.9669, sst_loss: 0.0884 ||
+06/29 05:04:51 PM: Update 5241: task sst, batch 241 (5241): accuracy: 0.9669, sst_loss: 0.0890 ||
+06/29 05:05:02 PM: Update 5253: task sst, batch 253 (5253): accuracy: 0.9668, sst_loss: 0.0889 ||
+06/29 05:05:13 PM: Update 5265: task sst, batch 265 (5265): accuracy: 0.9668, sst_loss: 0.0887 ||
+06/29 05:05:23 PM: Update 5277: task sst, batch 277 (5277): accuracy: 0.9665, sst_loss: 0.0893 ||
+06/29 05:05:34 PM: Update 5290: task sst, batch 290 (5290): accuracy: 0.9666, sst_loss: 0.0890 ||
+06/29 05:05:45 PM: Update 5302: task sst, batch 302 (5302): accuracy: 0.9666, sst_loss: 0.0889 ||
+06/29 05:05:56 PM: Update 5314: task sst, batch 314 (5314): accuracy: 0.9669, sst_loss: 0.0885 ||
+06/29 05:06:07 PM: Update 5326: task sst, batch 326 (5326): accuracy: 0.9671, sst_loss: 0.0881 ||
+06/29 05:06:17 PM: Update 5337: task sst, batch 337 (5337): accuracy: 0.9671, sst_loss: 0.0878 ||
+06/29 05:06:28 PM: Update 5349: task sst, batch 349 (5349): accuracy: 0.9670, sst_loss: 0.0879 ||
+06/29 05:06:39 PM: Update 5361: task sst, batch 361 (5361): accuracy: 0.9667, sst_loss: 0.0885 ||
+06/29 05:06:49 PM: Update 5373: task sst, batch 373 (5373): accuracy: 0.9667, sst_loss: 0.0889 ||
+06/29 05:07:00 PM: Update 5385: task sst, batch 385 (5385): accuracy: 0.9667, sst_loss: 0.0888 ||
+06/29 05:07:11 PM: Update 5397: task sst, batch 397 (5397): accuracy: 0.9667, sst_loss: 0.0888 ||
+06/29 05:07:22 PM: Update 5409: task sst, batch 409 (5409): accuracy: 0.9668, sst_loss: 0.0888 ||
+06/29 05:07:33 PM: Update 5421: task sst, batch 421 (5421): accuracy: 0.9667, sst_loss: 0.0890 ||
+06/29 05:07:44 PM: Update 5433: task sst, batch 433 (5433): accuracy: 0.9667, sst_loss: 0.0888 ||
+06/29 05:07:54 PM: Update 5445: task sst, batch 445 (5445): accuracy: 0.9669, sst_loss: 0.0884 ||
+06/29 05:08:05 PM: Update 5457: task sst, batch 457 (5457): accuracy: 0.9672, sst_loss: 0.0878 ||
+06/29 05:08:16 PM: Update 5469: task sst, batch 469 (5469): accuracy: 0.9672, sst_loss: 0.0876 ||
+06/29 05:08:27 PM: Update 5481: task sst, batch 481 (5481): accuracy: 0.9674, sst_loss: 0.0872 ||
+06/29 05:08:38 PM: Update 5493: task sst, batch 493 (5493): accuracy: 0.9675, sst_loss: 0.0868 ||
+06/29 05:08:49 PM: Update 5505: task sst, batch 505 (5505): accuracy: 0.9675, sst_loss: 0.0867 ||
+06/29 05:09:00 PM: Update 5517: task sst, batch 517 (5517): accuracy: 0.9675, sst_loss: 0.0866 ||
+06/29 05:09:10 PM: Update 5529: task sst, batch 529 (5529): accuracy: 0.9676, sst_loss: 0.0864 ||
+06/29 05:09:21 PM: Update 5541: task sst, batch 541 (5541): accuracy: 0.9675, sst_loss: 0.0864 ||
+06/29 05:09:32 PM: Update 5554: task sst, batch 554 (5554): accuracy: 0.9677, sst_loss: 0.0861 ||
+06/29 05:09:43 PM: Update 5566: task sst, batch 566 (5566): accuracy: 0.9678, sst_loss: 0.0858 ||
+06/29 05:09:54 PM: Update 5578: task sst, batch 578 (5578): accuracy: 0.9679, sst_loss: 0.0856 ||
+06/29 05:10:05 PM: Update 5590: task sst, batch 590 (5590): accuracy: 0.9680, sst_loss: 0.0855 ||
+06/29 05:10:16 PM: Update 5602: task sst, batch 602 (5602): accuracy: 0.9681, sst_loss: 0.0853 ||
+06/29 05:10:27 PM: Update 5614: task sst, batch 614 (5614): accuracy: 0.9680, sst_loss: 0.0854 ||
+06/29 05:10:37 PM: Update 5626: task sst, batch 626 (5626): accuracy: 0.9678, sst_loss: 0.0858 ||
+06/29 05:10:48 PM: Update 5638: task sst, batch 638 (5638): accuracy: 0.9678, sst_loss: 0.0857 ||
+06/29 05:10:59 PM: Update 5650: task sst, batch 650 (5650): accuracy: 0.9680, sst_loss: 0.0854 ||
+06/29 05:11:10 PM: Update 5662: task sst, batch 662 (5662): accuracy: 0.9679, sst_loss: 0.0855 ||
+06/29 05:11:20 PM: Update 5673: task sst, batch 673 (5673): accuracy: 0.9678, sst_loss: 0.0857 ||
+06/29 05:11:31 PM: Update 5685: task sst, batch 685 (5685): accuracy: 0.9679, sst_loss: 0.0855 ||
+06/29 05:11:41 PM: Update 5697: task sst, batch 697 (5697): accuracy: 0.9680, sst_loss: 0.0852 ||
+06/29 05:11:52 PM: Update 5709: task sst, batch 709 (5709): accuracy: 0.9681, sst_loss: 0.0848 ||
+06/29 05:12:03 PM: Update 5721: task sst, batch 721 (5721): accuracy: 0.9682, sst_loss: 0.0846 ||
+06/29 05:12:14 PM: Update 5733: task sst, batch 733 (5733): accuracy: 0.9682, sst_loss: 0.0845 ||
+06/29 05:12:25 PM: Update 5745: task sst, batch 745 (5745): accuracy: 0.9683, sst_loss: 0.0842 ||
+06/29 05:12:36 PM: Update 5757: task sst, batch 757 (5757): accuracy: 0.9683, sst_loss: 0.0842 ||
+06/29 05:12:46 PM: Update 5769: task sst, batch 769 (5769): accuracy: 0.9683, sst_loss: 0.0840 ||
+06/29 05:12:57 PM: Update 5781: task sst, batch 781 (5781): accuracy: 0.9684, sst_loss: 0.0840 ||
+06/29 05:13:08 PM: Update 5793: task sst, batch 793 (5793): accuracy: 0.9684, sst_loss: 0.0838 ||
+06/29 05:13:19 PM: Update 5805: task sst, batch 805 (5805): accuracy: 0.9684, sst_loss: 0.0837 ||
+06/29 05:13:30 PM: Update 5818: task sst, batch 818 (5818): accuracy: 0.9685, sst_loss: 0.0835 ||
+06/29 05:13:41 PM: Update 5830: task sst, batch 830 (5830): accuracy: 0.9686, sst_loss: 0.0833 ||
+06/29 05:13:52 PM: Update 5842: task sst, batch 842 (5842): accuracy: 0.9687, sst_loss: 0.0830 ||
+06/29 05:14:03 PM: Update 5854: task sst, batch 854 (5854): accuracy: 0.9688, sst_loss: 0.0827 ||
+06/29 05:14:14 PM: Update 5866: task sst, batch 866 (5866): accuracy: 0.9689, sst_loss: 0.0826 ||
+06/29 05:14:24 PM: Update 5878: task sst, batch 878 (5878): accuracy: 0.9689, sst_loss: 0.0824 ||
+06/29 05:14:35 PM: Update 5890: task sst, batch 890 (5890): accuracy: 0.9690, sst_loss: 0.0824 ||
+06/29 05:14:46 PM: Update 5902: task sst, batch 902 (5902): accuracy: 0.9690, sst_loss: 0.0822 ||
+06/29 05:14:57 PM: Update 5914: task sst, batch 914 (5914): accuracy: 0.9691, sst_loss: 0.0820 ||
+06/29 05:15:08 PM: Update 5926: task sst, batch 926 (5926): accuracy: 0.9692, sst_loss: 0.0818 ||
+06/29 05:15:18 PM: Update 5937: task sst, batch 937 (5937): accuracy: 0.9692, sst_loss: 0.0818 ||
+06/29 05:15:28 PM: Update 5949: task sst, batch 949 (5949): accuracy: 0.9692, sst_loss: 0.0816 ||
+06/29 05:15:39 PM: Update 5961: task sst, batch 961 (5961): accuracy: 0.9693, sst_loss: 0.0815 ||
+06/29 05:15:50 PM: Update 5973: task sst, batch 973 (5973): accuracy: 0.9694, sst_loss: 0.0812 ||
+06/29 05:16:01 PM: Update 5985: task sst, batch 985 (5985): accuracy: 0.9694, sst_loss: 0.0810 ||
+06/29 05:16:12 PM: Update 5997: task sst, batch 997 (5997): accuracy: 0.9695, sst_loss: 0.0808 ||
+06/29 05:16:23 PM: Update 6009: task sst, batch 1009 (6009): accuracy: 0.9695, sst_loss: 0.0808 ||
+06/29 05:16:33 PM: Update 6021: task sst, batch 1021 (6021): accuracy: 0.9696, sst_loss: 0.0806 ||
+06/29 05:16:44 PM: Update 6033: task sst, batch 1033 (6033): accuracy: 0.9697, sst_loss: 0.0806 ||
+06/29 05:16:55 PM: Update 6045: task sst, batch 1045 (6045): accuracy: 0.9697, sst_loss: 0.0804 ||
+06/29 05:17:06 PM: Update 6057: task sst, batch 1057 (6057): accuracy: 0.9698, sst_loss: 0.0802 ||
+06/29 05:17:17 PM: Update 6069: task sst, batch 1069 (6069): accuracy: 0.9699, sst_loss: 0.0801 ||
+06/29 05:17:28 PM: Update 6082: task sst, batch 1082 (6082): accuracy: 0.9700, sst_loss: 0.0799 ||
+06/29 05:17:38 PM: Update 6094: task sst, batch 1094 (6094): accuracy: 0.9700, sst_loss: 0.0798 ||
+06/29 05:17:49 PM: Update 6106: task sst, batch 1106 (6106): accuracy: 0.9700, sst_loss: 0.0797 ||
+06/29 05:18:00 PM: Update 6118: task sst, batch 1118 (6118): accuracy: 0.9700, sst_loss: 0.0797 ||
+06/29 05:18:11 PM: Update 6130: task sst, batch 1130 (6130): accuracy: 0.9701, sst_loss: 0.0795 ||
+06/29 05:18:22 PM: Update 6142: task sst, batch 1142 (6142): accuracy: 0.9701, sst_loss: 0.0794 ||
+06/29 05:18:33 PM: Update 6154: task sst, batch 1154 (6154): accuracy: 0.9701, sst_loss: 0.0793 ||
+06/29 05:18:44 PM: Update 6166: task sst, batch 1166 (6166): accuracy: 0.9702, sst_loss: 0.0793 ||
+06/29 05:18:55 PM: Update 6178: task sst, batch 1178 (6178): accuracy: 0.9702, sst_loss: 0.0791 ||
+06/29 05:19:05 PM: Update 6190: task sst, batch 1190 (6190): accuracy: 0.9703, sst_loss: 0.0790 ||
+06/29 05:19:16 PM: Update 6202: task sst, batch 1202 (6202): accuracy: 0.9703, sst_loss: 0.0789 ||
+06/29 05:19:27 PM: Update 6214: task sst, batch 1214 (6214): accuracy: 0.9703, sst_loss: 0.0789 ||
+06/29 05:19:37 PM: Update 6225: task sst, batch 1225 (6225): accuracy: 0.9704, sst_loss: 0.0788 ||
+06/29 05:19:48 PM: Update 6237: task sst, batch 1237 (6237): accuracy: 0.9704, sst_loss: 0.0786 ||
+06/29 05:19:59 PM: Update 6249: task sst, batch 1249 (6249): accuracy: 0.9705, sst_loss: 0.0784 ||
+06/29 05:20:09 PM: Update 6261: task sst, batch 1261 (6261): accuracy: 0.9706, sst_loss: 0.0782 ||
+06/29 05:20:20 PM: Update 6273: task sst, batch 1273 (6273): accuracy: 0.9706, sst_loss: 0.0782 ||
+06/29 05:20:31 PM: Update 6285: task sst, batch 1285 (6285): accuracy: 0.9707, sst_loss: 0.0781 ||
+06/29 05:20:42 PM: Update 6297: task sst, batch 1297 (6297): accuracy: 0.9706, sst_loss: 0.0781 ||
+06/29 05:20:53 PM: Update 6309: task sst, batch 1309 (6309): accuracy: 0.9706, sst_loss: 0.0780 ||
+06/29 05:21:04 PM: Update 6321: task sst, batch 1321 (6321): accuracy: 0.9707, sst_loss: 0.0779 ||
+06/29 05:21:14 PM: Update 6333: task sst, batch 1333 (6333): accuracy: 0.9708, sst_loss: 0.0777 ||
+06/29 05:21:25 PM: Update 6346: task sst, batch 1346 (6346): accuracy: 0.9709, sst_loss: 0.0774 ||
+06/29 05:21:36 PM: Update 6358: task sst, batch 1358 (6358): accuracy: 0.9709, sst_loss: 0.0773 ||
+06/29 05:21:47 PM: Update 6370: task sst, batch 1370 (6370): accuracy: 0.9710, sst_loss: 0.0771 ||
+06/29 05:21:58 PM: Update 6382: task sst, batch 1382 (6382): accuracy: 0.9710, sst_loss: 0.0770 ||
+06/29 05:22:09 PM: Update 6394: task sst, batch 1394 (6394): accuracy: 0.9710, sst_loss: 0.0771 ||
+06/29 05:22:20 PM: Update 6406: task sst, batch 1406 (6406): accuracy: 0.9710, sst_loss: 0.0772 ||
+06/29 05:22:31 PM: Update 6418: task sst, batch 1418 (6418): accuracy: 0.9710, sst_loss: 0.0772 ||
+06/29 05:22:41 PM: Update 6430: task sst, batch 1430 (6430): accuracy: 0.9710, sst_loss: 0.0771 ||
+06/29 05:22:52 PM: Update 6442: task sst, batch 1442 (6442): accuracy: 0.9711, sst_loss: 0.0769 ||
+06/29 05:23:03 PM: Update 6454: task sst, batch 1454 (6454): accuracy: 0.9711, sst_loss: 0.0769 ||
+06/29 05:23:14 PM: Update 6466: task sst, batch 1466 (6466): accuracy: 0.9711, sst_loss: 0.0768 ||
+06/29 05:23:25 PM: Update 6478: task sst, batch 1478 (6478): accuracy: 0.9711, sst_loss: 0.0767 ||
+06/29 05:23:36 PM: Update 6490: task sst, batch 1490 (6490): accuracy: 0.9712, sst_loss: 0.0766 ||
+06/29 05:23:46 PM: Update 6502: task sst, batch 1502 (6502): accuracy: 0.9712, sst_loss: 0.0765 ||
+06/29 05:23:57 PM: Update 6514: task sst, batch 1514 (6514): accuracy: 0.9713, sst_loss: 0.0763 ||
+06/29 05:24:08 PM: Update 6526: task sst, batch 1526 (6526): accuracy: 0.9714, sst_loss: 0.0761 ||
+06/29 05:24:18 PM: Update 6537: task sst, batch 1537 (6537): accuracy: 0.9715, sst_loss: 0.0759 ||
+06/29 05:24:29 PM: Update 6549: task sst, batch 1549 (6549): accuracy: 0.9715, sst_loss: 0.0758 ||
+06/29 05:24:40 PM: Update 6561: task sst, batch 1561 (6561): accuracy: 0.9715, sst_loss: 0.0758 ||
+06/29 05:24:50 PM: Update 6573: task sst, batch 1573 (6573): accuracy: 0.9715, sst_loss: 0.0759 ||
+06/29 05:25:01 PM: Update 6585: task sst, batch 1585 (6585): accuracy: 0.9716, sst_loss: 0.0757 ||
+06/29 05:25:12 PM: Update 6597: task sst, batch 1597 (6597): accuracy: 0.9716, sst_loss: 0.0756 ||
+06/29 05:25:23 PM: Update 6610: task sst, batch 1610 (6610): accuracy: 0.9717, sst_loss: 0.0753 ||
+06/29 05:25:34 PM: Update 6622: task sst, batch 1622 (6622): accuracy: 0.9717, sst_loss: 0.0752 ||
+06/29 05:25:45 PM: Update 6634: task sst, batch 1634 (6634): accuracy: 0.9718, sst_loss: 0.0751 ||
+06/29 05:25:55 PM: Update 6646: task sst, batch 1646 (6646): accuracy: 0.9718, sst_loss: 0.0750 ||
+06/29 05:26:06 PM: Update 6658: task sst, batch 1658 (6658): accuracy: 0.9719, sst_loss: 0.0749 ||
+06/29 05:26:17 PM: Update 6670: task sst, batch 1670 (6670): accuracy: 0.9719, sst_loss: 0.0748 ||
+06/29 05:26:28 PM: Update 6682: task sst, batch 1682 (6682): accuracy: 0.9719, sst_loss: 0.0747 ||
+06/29 05:26:39 PM: Update 6694: task sst, batch 1694 (6694): accuracy: 0.9720, sst_loss: 0.0746 ||
+06/29 05:26:50 PM: Update 6706: task sst, batch 1706 (6706): accuracy: 0.9720, sst_loss: 0.0745 ||
+06/29 05:27:00 PM: Update 6718: task sst, batch 1718 (6718): accuracy: 0.9720, sst_loss: 0.0744 ||
+06/29 05:27:11 PM: Update 6730: task sst, batch 1730 (6730): accuracy: 0.9721, sst_loss: 0.0743 ||
+06/29 05:27:22 PM: Update 6742: task sst, batch 1742 (6742): accuracy: 0.9721, sst_loss: 0.0743 ||
+06/29 05:27:33 PM: Update 6754: task sst, batch 1754 (6754): accuracy: 0.9721, sst_loss: 0.0742 ||
+06/29 05:27:44 PM: Update 6766: task sst, batch 1766 (6766): accuracy: 0.9722, sst_loss: 0.0740 ||
+06/29 05:27:55 PM: Update 6778: task sst, batch 1778 (6778): accuracy: 0.9722, sst_loss: 0.0739 ||
+06/29 05:28:05 PM: Update 6790: task sst, batch 1790 (6790): accuracy: 0.9723, sst_loss: 0.0737 ||
+06/29 05:28:16 PM: Update 6802: task sst, batch 1802 (6802): accuracy: 0.9723, sst_loss: 0.0736 ||
+06/29 05:28:27 PM: Update 6814: task sst, batch 1814 (6814): accuracy: 0.9724, sst_loss: 0.0735 ||
+06/29 05:28:38 PM: Update 6826: task sst, batch 1826 (6826): accuracy: 0.9723, sst_loss: 0.0736 ||
+06/29 05:28:49 PM: Update 6838: task sst, batch 1838 (6838): accuracy: 0.9724, sst_loss: 0.0735 ||
+06/29 05:28:59 PM: Update 6849: task sst, batch 1849 (6849): accuracy: 0.9724, sst_loss: 0.0734 ||
+06/29 05:29:09 PM: Update 6861: task sst, batch 1861 (6861): accuracy: 0.9725, sst_loss: 0.0733 ||
+06/29 05:29:20 PM: Update 6874: task sst, batch 1874 (6874): accuracy: 0.9725, sst_loss: 0.0731 ||
+06/29 05:29:31 PM: Update 6886: task sst, batch 1886 (6886): accuracy: 0.9726, sst_loss: 0.0730 ||
+06/29 05:29:42 PM: Update 6898: task sst, batch 1898 (6898): accuracy: 0.9726, sst_loss: 0.0729 ||
+06/29 05:29:53 PM: Update 6910: task sst, batch 1910 (6910): accuracy: 0.9726, sst_loss: 0.0729 ||
+06/29 05:30:04 PM: Update 6922: task sst, batch 1922 (6922): accuracy: 0.9727, sst_loss: 0.0728 ||
+06/29 05:30:15 PM: Update 6934: task sst, batch 1934 (6934): accuracy: 0.9727, sst_loss: 0.0728 ||
+06/29 05:30:25 PM: Update 6946: task sst, batch 1946 (6946): accuracy: 0.9727, sst_loss: 0.0728 ||
+06/29 05:30:36 PM: Update 6958: task sst, batch 1958 (6958): accuracy: 0.9727, sst_loss: 0.0727 ||
+06/29 05:30:47 PM: Update 6970: task sst, batch 1970 (6970): accuracy: 0.9728, sst_loss: 0.0725 ||
+06/29 05:30:58 PM: Update 6982: task sst, batch 1982 (6982): accuracy: 0.9728, sst_loss: 0.0724 ||
+06/29 05:31:09 PM: Update 6994: task sst, batch 1994 (6994): accuracy: 0.9729, sst_loss: 0.0723 ||
+06/29 05:31:19 PM: Update 7006: task sst, batch 2006 (7006): accuracy: 0.9729, sst_loss: 0.0722 ||
+06/29 05:31:30 PM: Update 7018: task sst, batch 2018 (7018): accuracy: 0.9730, sst_loss: 0.0721 ||
+06/29 05:31:41 PM: Update 7030: task sst, batch 2030 (7030): accuracy: 0.9730, sst_loss: 0.0720 ||
+06/29 05:31:52 PM: Update 7042: task sst, batch 2042 (7042): accuracy: 0.9730, sst_loss: 0.0719 ||
+06/29 05:32:03 PM: Update 7054: task sst, batch 2054 (7054): accuracy: 0.9731, sst_loss: 0.0718 ||
+06/29 05:32:14 PM: Update 7066: task sst, batch 2066 (7066): accuracy: 0.9731, sst_loss: 0.0717 ||
+06/29 05:32:24 PM: Update 7078: task sst, batch 2078 (7078): accuracy: 0.9731, sst_loss: 0.0717 ||
+06/29 05:32:35 PM: Update 7090: task sst, batch 2090 (7090): accuracy: 0.9732, sst_loss: 0.0716 ||
+06/29 05:32:46 PM: Update 7102: task sst, batch 2102 (7102): accuracy: 0.9732, sst_loss: 0.0715 ||
+06/29 05:32:57 PM: Update 7114: task sst, batch 2114 (7114): accuracy: 0.9732, sst_loss: 0.0715 ||
+06/29 05:33:08 PM: Update 7126: task sst, batch 2126 (7126): accuracy: 0.9733, sst_loss: 0.0713 ||
+06/29 05:33:18 PM: Update 7139: task sst, batch 2139 (7139): accuracy: 0.9733, sst_loss: 0.0712 ||
+06/29 05:33:29 PM: Update 7151: task sst, batch 2151 (7151): accuracy: 0.9733, sst_loss: 0.0711 ||
+06/29 05:33:40 PM: Update 7163: task sst, batch 2163 (7163): accuracy: 0.9734, sst_loss: 0.0709 ||
+06/29 05:33:51 PM: Update 7175: task sst, batch 2175 (7175): accuracy: 0.9734, sst_loss: 0.0709 ||
+06/29 05:34:01 PM: Update 7186: task sst, batch 2186 (7186): accuracy: 0.9735, sst_loss: 0.0708 ||
+06/29 05:34:12 PM: Update 7198: task sst, batch 2198 (7198): accuracy: 0.9735, sst_loss: 0.0707 ||
+06/29 05:34:23 PM: Update 7210: task sst, batch 2210 (7210): accuracy: 0.9735, sst_loss: 0.0707 ||
+06/29 05:34:33 PM: Update 7222: task sst, batch 2222 (7222): accuracy: 0.9735, sst_loss: 0.0705 ||
+06/29 05:34:44 PM: Update 7234: task sst, batch 2234 (7234): accuracy: 0.9736, sst_loss: 0.0705 ||
+06/29 05:34:55 PM: Update 7246: task sst, batch 2246 (7246): accuracy: 0.9736, sst_loss: 0.0704 ||
+06/29 05:35:06 PM: Update 7258: task sst, batch 2258 (7258): accuracy: 0.9736, sst_loss: 0.0703 ||
+06/29 05:35:17 PM: Update 7270: task sst, batch 2270 (7270): accuracy: 0.9737, sst_loss: 0.0702 ||
+06/29 05:35:28 PM: Update 7282: task sst, batch 2282 (7282): accuracy: 0.9737, sst_loss: 0.0701 ||
+06/29 05:35:38 PM: Update 7294: task sst, batch 2294 (7294): accuracy: 0.9738, sst_loss: 0.0700 ||
+06/29 05:35:49 PM: Update 7306: task sst, batch 2306 (7306): accuracy: 0.9738, sst_loss: 0.0699 ||
+06/29 05:36:00 PM: Update 7318: task sst, batch 2318 (7318): accuracy: 0.9738, sst_loss: 0.0699 ||
+06/29 05:36:11 PM: Update 7330: task sst, batch 2330 (7330): accuracy: 0.9739, sst_loss: 0.0697 ||
+06/29 05:36:22 PM: Update 7342: task sst, batch 2342 (7342): accuracy: 0.9739, sst_loss: 0.0696 ||
+06/29 05:36:32 PM: Update 7354: task sst, batch 2354 (7354): accuracy: 0.9739, sst_loss: 0.0696 ||
+06/29 05:36:43 PM: Update 7366: task sst, batch 2366 (7366): accuracy: 0.9739, sst_loss: 0.0696 ||
+06/29 05:36:54 PM: Update 7378: task sst, batch 2378 (7378): accuracy: 0.9739, sst_loss: 0.0695 ||
+06/29 05:37:05 PM: Update 7390: task sst, batch 2390 (7390): accuracy: 0.9740, sst_loss: 0.0694 ||
+06/29 05:37:16 PM: Update 7403: task sst, batch 2403 (7403): accuracy: 0.9740, sst_loss: 0.0693 ||
+06/29 05:37:27 PM: Update 7415: task sst, batch 2415 (7415): accuracy: 0.9741, sst_loss: 0.0692 ||
+06/29 05:37:38 PM: Update 7427: task sst, batch 2427 (7427): accuracy: 0.9741, sst_loss: 0.0691 ||
+06/29 05:37:48 PM: Update 7439: task sst, batch 2439 (7439): accuracy: 0.9742, sst_loss: 0.0689 ||
+06/29 05:37:58 PM: Update 7450: task sst, batch 2450 (7450): accuracy: 0.9742, sst_loss: 0.0689 ||
+06/29 05:38:09 PM: Update 7462: task sst, batch 2462 (7462): accuracy: 0.9742, sst_loss: 0.0688 ||
+06/29 05:38:20 PM: Update 7474: task sst, batch 2474 (7474): accuracy: 0.9742, sst_loss: 0.0688 ||
+06/29 05:38:31 PM: Update 7486: task sst, batch 2486 (7486): accuracy: 0.9743, sst_loss: 0.0687 ||
+06/29 05:38:42 PM: Update 7498: task sst, batch 2498 (7498): accuracy: 0.9743, sst_loss: 0.0686 ||
+06/29 05:38:52 PM: Update 7510: task sst, batch 2510 (7510): accuracy: 0.9743, sst_loss: 0.0685 ||
+06/29 05:39:03 PM: Update 7522: task sst, batch 2522 (7522): accuracy: 0.9744, sst_loss: 0.0684 ||
+06/29 05:39:14 PM: Update 7534: task sst, batch 2534 (7534): accuracy: 0.9744, sst_loss: 0.0684 ||
+06/29 05:39:25 PM: Update 7546: task sst, batch 2546 (7546): accuracy: 0.9744, sst_loss: 0.0683 ||
+06/29 05:39:36 PM: Update 7558: task sst, batch 2558 (7558): accuracy: 0.9744, sst_loss: 0.0682 ||
+06/29 05:39:47 PM: Update 7570: task sst, batch 2570 (7570): accuracy: 0.9745, sst_loss: 0.0681 ||
+06/29 05:39:57 PM: Update 7582: task sst, batch 2582 (7582): accuracy: 0.9745, sst_loss: 0.0680 ||
+06/29 05:40:08 PM: Update 7594: task sst, batch 2594 (7594): accuracy: 0.9746, sst_loss: 0.0679 ||
+06/29 05:40:19 PM: Update 7606: task sst, batch 2606 (7606): accuracy: 0.9746, sst_loss: 0.0679 ||
+06/29 05:40:30 PM: Update 7618: task sst, batch 2618 (7618): accuracy: 0.9746, sst_loss: 0.0679 ||
+06/29 05:40:41 PM: Update 7630: task sst, batch 2630 (7630): accuracy: 0.9746, sst_loss: 0.0678 ||
+06/29 05:40:52 PM: Update 7642: task sst, batch 2642 (7642): accuracy: 0.9746, sst_loss: 0.0677 ||
+06/29 05:41:02 PM: Update 7654: task sst, batch 2654 (7654): accuracy: 0.9747, sst_loss: 0.0676 ||
+06/29 05:41:13 PM: Update 7667: task sst, batch 2667 (7667): accuracy: 0.9747, sst_loss: 0.0675 ||
+06/29 05:41:24 PM: Update 7679: task sst, batch 2679 (7679): accuracy: 0.9748, sst_loss: 0.0674 ||
+06/29 05:41:35 PM: Update 7691: task sst, batch 2691 (7691): accuracy: 0.9748, sst_loss: 0.0673 ||
+06/29 05:41:46 PM: Update 7703: task sst, batch 2703 (7703): accuracy: 0.9748, sst_loss: 0.0672 ||
+06/29 05:41:56 PM: Update 7714: task sst, batch 2714 (7714): accuracy: 0.9749, sst_loss: 0.0672 ||
+06/29 05:42:07 PM: Update 7726: task sst, batch 2726 (7726): accuracy: 0.9749, sst_loss: 0.0671 ||
+06/29 05:42:17 PM: Update 7738: task sst, batch 2738 (7738): accuracy: 0.9749, sst_loss: 0.0671 ||
+06/29 05:42:28 PM: Update 7750: task sst, batch 2750 (7750): accuracy: 0.9749, sst_loss: 0.0670 ||
+06/29 05:42:39 PM: Update 7762: task sst, batch 2762 (7762): accuracy: 0.9750, sst_loss: 0.0668 ||
+06/29 05:42:50 PM: Update 7774: task sst, batch 2774 (7774): accuracy: 0.9750, sst_loss: 0.0668 ||
+06/29 05:43:01 PM: Update 7786: task sst, batch 2786 (7786): accuracy: 0.9750, sst_loss: 0.0667 ||
+06/29 05:43:11 PM: Update 7798: task sst, batch 2798 (7798): accuracy: 0.9750, sst_loss: 0.0667 ||
+06/29 05:43:22 PM: Update 7810: task sst, batch 2810 (7810): accuracy: 0.9750, sst_loss: 0.0666 ||
+06/29 05:43:33 PM: Update 7822: task sst, batch 2822 (7822): accuracy: 0.9751, sst_loss: 0.0665 ||
+06/29 05:43:44 PM: Update 7834: task sst, batch 2834 (7834): accuracy: 0.9751, sst_loss: 0.0664 ||
+06/29 05:43:55 PM: Update 7846: task sst, batch 2846 (7846): accuracy: 0.9752, sst_loss: 0.0663 ||
+06/29 05:44:06 PM: Update 7858: task sst, batch 2858 (7858): accuracy: 0.9752, sst_loss: 0.0662 ||
+06/29 05:44:16 PM: Update 7870: task sst, batch 2870 (7870): accuracy: 0.9753, sst_loss: 0.0661 ||
+06/29 05:44:27 PM: Update 7882: task sst, batch 2882 (7882): accuracy: 0.9752, sst_loss: 0.0661 ||
+06/29 05:44:38 PM: Update 7894: task sst, batch 2894 (7894): accuracy: 0.9753, sst_loss: 0.0661 ||
+06/29 05:44:49 PM: Update 7906: task sst, batch 2906 (7906): accuracy: 0.9753, sst_loss: 0.0660 ||
+06/29 05:44:59 PM: Update 7918: task sst, batch 2918 (7918): accuracy: 0.9753, sst_loss: 0.0660 ||
+06/29 05:45:10 PM: Update 7931: task sst, batch 2931 (7931): accuracy: 0.9754, sst_loss: 0.0658 ||
+06/29 05:45:21 PM: Update 7943: task sst, batch 2943 (7943): accuracy: 0.9754, sst_loss: 0.0658 ||
+06/29 05:45:32 PM: Update 7955: task sst, batch 2955 (7955): accuracy: 0.9754, sst_loss: 0.0658 ||
+06/29 05:45:43 PM: Update 7967: task sst, batch 2967 (7967): accuracy: 0.9754, sst_loss: 0.0657 ||
+06/29 05:45:54 PM: Update 7979: task sst, batch 2979 (7979): accuracy: 0.9754, sst_loss: 0.0657 ||
+06/29 05:46:05 PM: Update 7991: task sst, batch 2991 (7991): accuracy: 0.9755, sst_loss: 0.0656 ||
+06/29 05:46:15 PM: Update 8003: task sst, batch 3003 (8003): accuracy: 0.9755, sst_loss: 0.0656 ||
+06/29 05:46:26 PM: Update 8015: task sst, batch 3015 (8015): accuracy: 0.9755, sst_loss: 0.0655 ||
+06/29 05:46:37 PM: Update 8027: task sst, batch 3027 (8027): accuracy: 0.9755, sst_loss: 0.0654 ||
+06/29 05:46:48 PM: Update 8039: task sst, batch 3039 (8039): accuracy: 0.9756, sst_loss: 0.0653 ||
+06/29 05:46:59 PM: Update 8051: task sst, batch 3051 (8051): accuracy: 0.9756, sst_loss: 0.0653 ||
+06/29 05:47:09 PM: Update 8063: task sst, batch 3063 (8063): accuracy: 0.9756, sst_loss: 0.0652 ||
+06/29 05:47:19 PM: Update 8074: task sst, batch 3074 (8074): accuracy: 0.9756, sst_loss: 0.0651 ||
+06/29 05:47:30 PM: Update 8086: task sst, batch 3086 (8086): accuracy: 0.9757, sst_loss: 0.0650 ||
+06/29 05:47:41 PM: Update 8098: task sst, batch 3098 (8098): accuracy: 0.9757, sst_loss: 0.0649 ||
+06/29 05:47:52 PM: Update 8110: task sst, batch 3110 (8110): accuracy: 0.9758, sst_loss: 0.0648 ||
+06/29 05:48:03 PM: Update 8122: task sst, batch 3122 (8122): accuracy: 0.9758, sst_loss: 0.0647 ||
+06/29 05:48:13 PM: Update 8134: task sst, batch 3134 (8134): accuracy: 0.9758, sst_loss: 0.0647 ||
+06/29 05:48:24 PM: Update 8146: task sst, batch 3146 (8146): accuracy: 0.9758, sst_loss: 0.0646 ||
+06/29 05:48:35 PM: Update 8158: task sst, batch 3158 (8158): accuracy: 0.9758, sst_loss: 0.0646 ||
+06/29 05:48:46 PM: Update 8170: task sst, batch 3170 (8170): accuracy: 0.9759, sst_loss: 0.0645 ||
+06/29 05:48:57 PM: Update 8182: task sst, batch 3182 (8182): accuracy: 0.9759, sst_loss: 0.0645 ||
+06/29 05:49:07 PM: Update 8195: task sst, batch 3195 (8195): accuracy: 0.9759, sst_loss: 0.0644 ||
+06/29 05:49:18 PM: Update 8207: task sst, batch 3207 (8207): accuracy: 0.9759, sst_loss: 0.0644 ||
+06/29 05:49:29 PM: Update 8219: task sst, batch 3219 (8219): accuracy: 0.9760, sst_loss: 0.0643 ||
+06/29 05:49:40 PM: Update 8231: task sst, batch 3231 (8231): accuracy: 0.9760, sst_loss: 0.0642 ||
+06/29 05:49:51 PM: Update 8243: task sst, batch 3243 (8243): accuracy: 0.9760, sst_loss: 0.0642 ||
+06/29 05:50:02 PM: Update 8255: task sst, batch 3255 (8255): accuracy: 0.9760, sst_loss: 0.0641 ||
+06/29 05:50:13 PM: Update 8267: task sst, batch 3267 (8267): accuracy: 0.9761, sst_loss: 0.0640 ||
+06/29 05:50:23 PM: Update 8279: task sst, batch 3279 (8279): accuracy: 0.9761, sst_loss: 0.0640 ||
+06/29 05:50:34 PM: Update 8291: task sst, batch 3291 (8291): accuracy: 0.9761, sst_loss: 0.0639 ||
+06/29 05:50:45 PM: Update 8303: task sst, batch 3303 (8303): accuracy: 0.9761, sst_loss: 0.0638 ||
+06/29 05:50:56 PM: Update 8315: task sst, batch 3315 (8315): accuracy: 0.9762, sst_loss: 0.0637 ||
+06/29 05:51:07 PM: Update 8327: task sst, batch 3327 (8327): accuracy: 0.9762, sst_loss: 0.0637 ||
+06/29 05:51:17 PM: Update 8338: task sst, batch 3338 (8338): accuracy: 0.9762, sst_loss: 0.0636 ||
+06/29 05:51:27 PM: Update 8350: task sst, batch 3350 (8350): accuracy: 0.9762, sst_loss: 0.0635 ||
+06/29 05:51:38 PM: Update 8362: task sst, batch 3362 (8362): accuracy: 0.9763, sst_loss: 0.0634 ||
+06/29 05:51:49 PM: Update 8374: task sst, batch 3374 (8374): accuracy: 0.9763, sst_loss: 0.0633 ||
+06/29 05:52:00 PM: Update 8386: task sst, batch 3386 (8386): accuracy: 0.9764, sst_loss: 0.0632 ||
+06/29 05:52:11 PM: Update 8398: task sst, batch 3398 (8398): accuracy: 0.9764, sst_loss: 0.0631 ||
+06/29 05:52:21 PM: Update 8410: task sst, batch 3410 (8410): accuracy: 0.9764, sst_loss: 0.0631 ||
+06/29 05:52:32 PM: Update 8422: task sst, batch 3422 (8422): accuracy: 0.9764, sst_loss: 0.0630 ||
+06/29 05:52:43 PM: Update 8434: task sst, batch 3434 (8434): accuracy: 0.9764, sst_loss: 0.0630 ||
+06/29 05:52:54 PM: Update 8446: task sst, batch 3446 (8446): accuracy: 0.9765, sst_loss: 0.0629 ||
+06/29 05:53:05 PM: Update 8459: task sst, batch 3459 (8459): accuracy: 0.9765, sst_loss: 0.0628 ||
+06/29 05:53:16 PM: Update 8471: task sst, batch 3471 (8471): accuracy: 0.9766, sst_loss: 0.0627 ||
+06/29 05:53:26 PM: Update 8483: task sst, batch 3483 (8483): accuracy: 0.9766, sst_loss: 0.0626 ||
+06/29 05:53:37 PM: Update 8495: task sst, batch 3495 (8495): accuracy: 0.9766, sst_loss: 0.0626 ||
+06/29 05:53:48 PM: Update 8507: task sst, batch 3507 (8507): accuracy: 0.9766, sst_loss: 0.0626 ||
+06/29 05:53:59 PM: Update 8519: task sst, batch 3519 (8519): accuracy: 0.9766, sst_loss: 0.0625 ||
+06/29 05:54:10 PM: Update 8531: task sst, batch 3531 (8531): accuracy: 0.9766, sst_loss: 0.0625 ||
+06/29 05:54:21 PM: Update 8543: task sst, batch 3543 (8543): accuracy: 0.9767, sst_loss: 0.0624 ||
+06/29 05:54:31 PM: Update 8555: task sst, batch 3555 (8555): accuracy: 0.9767, sst_loss: 0.0623 ||
+06/29 05:54:42 PM: Update 8567: task sst, batch 3567 (8567): accuracy: 0.9768, sst_loss: 0.0622 ||
+06/29 05:54:53 PM: Update 8579: task sst, batch 3579 (8579): accuracy: 0.9768, sst_loss: 0.0621 ||
+06/29 05:55:04 PM: Update 8591: task sst, batch 3591 (8591): accuracy: 0.9768, sst_loss: 0.0621 ||
+06/29 05:55:15 PM: Update 8603: task sst, batch 3603 (8603): accuracy: 0.9768, sst_loss: 0.0620 ||
+06/29 05:55:25 PM: Update 8615: task sst, batch 3615 (8615): accuracy: 0.9769, sst_loss: 0.0619 ||
+06/29 05:55:36 PM: Update 8627: task sst, batch 3627 (8627): accuracy: 0.9769, sst_loss: 0.0618 ||
+06/29 05:55:47 PM: Update 8639: task sst, batch 3639 (8639): accuracy: 0.9769, sst_loss: 0.0618 ||
+06/29 05:55:58 PM: Update 8651: task sst, batch 3651 (8651): accuracy: 0.9769, sst_loss: 0.0617 ||
+06/29 05:56:09 PM: Update 8663: task sst, batch 3663 (8663): accuracy: 0.9770, sst_loss: 0.0616 ||
+06/29 05:56:20 PM: Update 8675: task sst, batch 3675 (8675): accuracy: 0.9770, sst_loss: 0.0616 ||
+06/29 05:56:30 PM: Update 8687: task sst, batch 3687 (8687): accuracy: 0.9770, sst_loss: 0.0615 ||
+06/29 05:56:41 PM: Update 8699: task sst, batch 3699 (8699): accuracy: 0.9770, sst_loss: 0.0615 ||
+06/29 05:56:52 PM: Update 8711: task sst, batch 3711 (8711): accuracy: 0.9770, sst_loss: 0.0614 ||
+06/29 05:57:03 PM: Update 8724: task sst, batch 3724 (8724): accuracy: 0.9771, sst_loss: 0.0613 ||
+06/29 05:57:14 PM: Update 8736: task sst, batch 3736 (8736): accuracy: 0.9771, sst_loss: 0.0612 ||
+06/29 05:57:25 PM: Update 8748: task sst, batch 3748 (8748): accuracy: 0.9771, sst_loss: 0.0611 ||
+06/29 05:57:35 PM: Update 8760: task sst, batch 3760 (8760): accuracy: 0.9772, sst_loss: 0.0611 ||
+06/29 05:57:45 PM: Update 8771: task sst, batch 3771 (8771): accuracy: 0.9772, sst_loss: 0.0610 ||
+06/29 05:57:56 PM: Update 8783: task sst, batch 3783 (8783): accuracy: 0.9772, sst_loss: 0.0610 ||
+06/29 05:58:07 PM: Update 8795: task sst, batch 3795 (8795): accuracy: 0.9772, sst_loss: 0.0609 ||
+06/29 05:58:18 PM: Update 8807: task sst, batch 3807 (8807): accuracy: 0.9773, sst_loss: 0.0608 ||
+06/29 05:58:29 PM: Update 8819: task sst, batch 3819 (8819): accuracy: 0.9773, sst_loss: 0.0608 ||
+06/29 05:58:39 PM: Update 8831: task sst, batch 3831 (8831): accuracy: 0.9773, sst_loss: 0.0607 ||
+06/29 05:58:50 PM: Update 8843: task sst, batch 3843 (8843): accuracy: 0.9773, sst_loss: 0.0606 ||
+06/29 05:59:01 PM: Update 8855: task sst, batch 3855 (8855): accuracy: 0.9773, sst_loss: 0.0606 ||
+06/29 05:59:12 PM: Update 8867: task sst, batch 3867 (8867): accuracy: 0.9774, sst_loss: 0.0605 ||
+06/29 05:59:23 PM: Update 8879: task sst, batch 3879 (8879): accuracy: 0.9774, sst_loss: 0.0604 ||
+06/29 05:59:33 PM: Update 8891: task sst, batch 3891 (8891): accuracy: 0.9774, sst_loss: 0.0604 ||
+06/29 05:59:44 PM: Update 8903: task sst, batch 3903 (8903): accuracy: 0.9775, sst_loss: 0.0603 ||
+06/29 05:59:55 PM: Update 8915: task sst, batch 3915 (8915): accuracy: 0.9775, sst_loss: 0.0602 ||
+06/29 06:00:06 PM: Update 8927: task sst, batch 3927 (8927): accuracy: 0.9775, sst_loss: 0.0601 ||
+06/29 06:00:17 PM: Update 8939: task sst, batch 3939 (8939): accuracy: 0.9775, sst_loss: 0.0601 ||
+06/29 06:00:28 PM: Update 8951: task sst, batch 3951 (8951): accuracy: 0.9776, sst_loss: 0.0600 ||
+06/29 06:00:38 PM: Update 8963: task sst, batch 3963 (8963): accuracy: 0.9776, sst_loss: 0.0599 ||
+06/29 06:00:49 PM: Update 8975: task sst, batch 3975 (8975): accuracy: 0.9776, sst_loss: 0.0599 ||
+06/29 06:01:00 PM: Update 8988: task sst, batch 3988 (8988): accuracy: 0.9776, sst_loss: 0.0598 ||
+06/29 06:01:11 PM: Update 9000: task sst, batch 4000 (9000): accuracy: 0.9777, sst_loss: 0.0597 ||
+06/29 06:01:22 PM: Update 9012: task sst, batch 4012 (9012): accuracy: 0.9777, sst_loss: 0.0597 ||
+06/29 06:01:33 PM: Update 9024: task sst, batch 4024 (9024): accuracy: 0.9777, sst_loss: 0.0596 ||
+06/29 06:01:44 PM: Update 9036: task sst, batch 4036 (9036): accuracy: 0.9777, sst_loss: 0.0596 ||
+06/29 06:01:54 PM: Update 9048: task sst, batch 4048 (9048): accuracy: 0.9777, sst_loss: 0.0596 ||
+06/29 06:02:05 PM: Update 9060: task sst, batch 4060 (9060): accuracy: 0.9777, sst_loss: 0.0595 ||
+06/29 06:02:16 PM: Update 9072: task sst, batch 4072 (9072): accuracy: 0.9778, sst_loss: 0.0595 ||
+06/29 06:02:27 PM: Update 9084: task sst, batch 4084 (9084): accuracy: 0.9778, sst_loss: 0.0594 ||
+06/29 06:02:37 PM: Update 9096: task sst, batch 4096 (9096): accuracy: 0.9778, sst_loss: 0.0594 ||
+06/29 06:02:48 PM: Update 9108: task sst, batch 4108 (9108): accuracy: 0.9778, sst_loss: 0.0593 ||
+06/29 06:02:59 PM: Update 9120: task sst, batch 4120 (9120): accuracy: 0.9778, sst_loss: 0.0593 ||
+06/29 06:03:10 PM: Update 9132: task sst, batch 4132 (9132): accuracy: 0.9779, sst_loss: 0.0592 ||
+06/29 06:03:21 PM: Update 9144: task sst, batch 4144 (9144): accuracy: 0.9779, sst_loss: 0.0591 ||
+06/29 06:03:31 PM: Update 9156: task sst, batch 4156 (9156): accuracy: 0.9779, sst_loss: 0.0590 ||
+06/29 06:03:42 PM: Update 9168: task sst, batch 4168 (9168): accuracy: 0.9779, sst_loss: 0.0590 ||
+06/29 06:03:52 PM: Update 9179: task sst, batch 4179 (9179): accuracy: 0.9780, sst_loss: 0.0589 ||
+06/29 06:04:03 PM: Update 9191: task sst, batch 4191 (9191): accuracy: 0.9780, sst_loss: 0.0588 ||
+06/29 06:04:14 PM: Update 9203: task sst, batch 4203 (9203): accuracy: 0.9780, sst_loss: 0.0588 ||
+06/29 06:04:25 PM: Update 9215: task sst, batch 4215 (9215): accuracy: 0.9780, sst_loss: 0.0587 ||
+06/29 06:04:36 PM: Update 9227: task sst, batch 4227 (9227): accuracy: 0.9781, sst_loss: 0.0587 ||
+06/29 06:04:46 PM: Update 9239: task sst, batch 4239 (9239): accuracy: 0.9781, sst_loss: 0.0586 ||
+06/29 06:04:57 PM: Update 9252: task sst, batch 4252 (9252): accuracy: 0.9781, sst_loss: 0.0585 ||
+06/29 06:05:08 PM: Update 9264: task sst, batch 4264 (9264): accuracy: 0.9782, sst_loss: 0.0584 ||
+06/29 06:05:19 PM: Update 9276: task sst, batch 4276 (9276): accuracy: 0.9782, sst_loss: 0.0584 ||
+06/29 06:05:30 PM: Update 9288: task sst, batch 4288 (9288): accuracy: 0.9782, sst_loss: 0.0583 ||
+06/29 06:05:41 PM: Update 9300: task sst, batch 4300 (9300): accuracy: 0.9782, sst_loss: 0.0582 ||
+06/29 06:05:52 PM: Update 9312: task sst, batch 4312 (9312): accuracy: 0.9782, sst_loss: 0.0582 ||
+06/29 06:06:02 PM: Update 9324: task sst, batch 4324 (9324): accuracy: 0.9783, sst_loss: 0.0581 ||
+06/29 06:06:13 PM: Update 9336: task sst, batch 4336 (9336): accuracy: 0.9783, sst_loss: 0.0581 ||
+06/29 06:06:24 PM: Update 9348: task sst, batch 4348 (9348): accuracy: 0.9783, sst_loss: 0.0580 ||
+06/29 06:06:35 PM: Update 9360: task sst, batch 4360 (9360): accuracy: 0.9783, sst_loss: 0.0579 ||
+06/29 06:06:45 PM: Update 9372: task sst, batch 4372 (9372): accuracy: 0.9784, sst_loss: 0.0579 ||
+06/29 06:06:56 PM: Update 9384: task sst, batch 4384 (9384): accuracy: 0.9784, sst_loss: 0.0578 ||
+06/29 06:07:07 PM: Update 9396: task sst, batch 4396 (9396): accuracy: 0.9784, sst_loss: 0.0577 ||
+06/29 06:07:18 PM: Update 9408: task sst, batch 4408 (9408): accuracy: 0.9784, sst_loss: 0.0577 ||
+06/29 06:07:29 PM: Update 9420: task sst, batch 4420 (9420): accuracy: 0.9784, sst_loss: 0.0576 ||
+06/29 06:07:39 PM: Update 9432: task sst, batch 4432 (9432): accuracy: 0.9785, sst_loss: 0.0575 ||
+06/29 06:07:50 PM: Update 9444: task sst, batch 4444 (9444): accuracy: 0.9785, sst_loss: 0.0575 ||
+06/29 06:08:01 PM: Update 9456: task sst, batch 4456 (9456): accuracy: 0.9785, sst_loss: 0.0574 ||
+06/29 06:08:12 PM: Update 9468: task sst, batch 4468 (9468): accuracy: 0.9785, sst_loss: 0.0574 ||
+06/29 06:08:23 PM: Update 9480: task sst, batch 4480 (9480): accuracy: 0.9786, sst_loss: 0.0573 ||
+06/29 06:08:34 PM: Update 9492: task sst, batch 4492 (9492): accuracy: 0.9786, sst_loss: 0.0573 ||
+06/29 06:08:44 PM: Update 9505: task sst, batch 4505 (9505): accuracy: 0.9786, sst_loss: 0.0572 ||
+06/29 06:08:55 PM: Update 9517: task sst, batch 4517 (9517): accuracy: 0.9786, sst_loss: 0.0571 ||
+06/29 06:09:06 PM: Update 9529: task sst, batch 4529 (9529): accuracy: 0.9787, sst_loss: 0.0570 ||
+06/29 06:09:17 PM: Update 9541: task sst, batch 4541 (9541): accuracy: 0.9787, sst_loss: 0.0570 ||
+06/29 06:09:27 PM: Update 9552: task sst, batch 4552 (9552): accuracy: 0.9787, sst_loss: 0.0569 ||
+06/29 06:09:38 PM: Update 9564: task sst, batch 4564 (9564): accuracy: 0.9787, sst_loss: 0.0569 ||
+06/29 06:09:49 PM: Update 9576: task sst, batch 4576 (9576): accuracy: 0.9787, sst_loss: 0.0568 ||
+06/29 06:09:59 PM: Update 9588: task sst, batch 4588 (9588): accuracy: 0.9788, sst_loss: 0.0568 ||
+06/29 06:10:10 PM: Update 9600: task sst, batch 4600 (9600): accuracy: 0.9788, sst_loss: 0.0568 ||
+06/29 06:10:21 PM: Update 9612: task sst, batch 4612 (9612): accuracy: 0.9788, sst_loss: 0.0567 ||
+06/29 06:10:32 PM: Update 9624: task sst, batch 4624 (9624): accuracy: 0.9788, sst_loss: 0.0566 ||
+06/29 06:10:43 PM: Update 9636: task sst, batch 4636 (9636): accuracy: 0.9788, sst_loss: 0.0566 ||
+06/29 06:10:54 PM: Update 9648: task sst, batch 4648 (9648): accuracy: 0.9789, sst_loss: 0.0565 ||
+06/29 06:11:04 PM: Update 9660: task sst, batch 4660 (9660): accuracy: 0.9789, sst_loss: 0.0565 ||
+06/29 06:11:15 PM: Update 9672: task sst, batch 4672 (9672): accuracy: 0.9789, sst_loss: 0.0564 ||
+06/29 06:11:26 PM: Update 9684: task sst, batch 4684 (9684): accuracy: 0.9789, sst_loss: 0.0564 ||
+06/29 06:11:37 PM: Update 9696: task sst, batch 4696 (9696): accuracy: 0.9789, sst_loss: 0.0563 ||
+06/29 06:11:48 PM: Update 9708: task sst, batch 4708 (9708): accuracy: 0.9790, sst_loss: 0.0562 ||
+06/29 06:11:58 PM: Update 9720: task sst, batch 4720 (9720): accuracy: 0.9790, sst_loss: 0.0562 ||
+06/29 06:12:09 PM: Update 9732: task sst, batch 4732 (9732): accuracy: 0.9790, sst_loss: 0.0561 ||
+06/29 06:12:20 PM: Update 9744: task sst, batch 4744 (9744): accuracy: 0.9790, sst_loss: 0.0561 ||
+06/29 06:12:31 PM: Update 9756: task sst, batch 4756 (9756): accuracy: 0.9791, sst_loss: 0.0560 ||
+06/29 06:12:42 PM: Update 9769: task sst, batch 4769 (9769): accuracy: 0.9791, sst_loss: 0.0560 ||
+06/29 06:12:52 PM: Update 9781: task sst, batch 4781 (9781): accuracy: 0.9791, sst_loss: 0.0559 ||
+06/29 06:13:03 PM: Update 9793: task sst, batch 4793 (9793): accuracy: 0.9791, sst_loss: 0.0559 ||
+06/29 06:13:14 PM: Update 9805: task sst, batch 4805 (9805): accuracy: 0.9791, sst_loss: 0.0558 ||
+06/29 06:13:25 PM: Update 9817: task sst, batch 4817 (9817): accuracy: 0.9791, sst_loss: 0.0557 ||
+06/29 06:13:36 PM: Update 9829: task sst, batch 4829 (9829): accuracy: 0.9792, sst_loss: 0.0557 ||
+06/29 06:13:47 PM: Update 9841: task sst, batch 4841 (9841): accuracy: 0.9792, sst_loss: 0.0557 ||
+06/29 06:13:58 PM: Update 9853: task sst, batch 4853 (9853): accuracy: 0.9792, sst_loss: 0.0556 ||
+06/29 06:14:08 PM: Update 9865: task sst, batch 4865 (9865): accuracy: 0.9792, sst_loss: 0.0556 ||
+06/29 06:14:19 PM: Update 9877: task sst, batch 4877 (9877): accuracy: 0.9792, sst_loss: 0.0555 ||
+06/29 06:14:30 PM: Update 9889: task sst, batch 4889 (9889): accuracy: 0.9792, sst_loss: 0.0554 ||
+06/29 06:14:41 PM: Update 9901: task sst, batch 4901 (9901): accuracy: 0.9793, sst_loss: 0.0554 ||
+06/29 06:14:52 PM: Update 9913: task sst, batch 4913 (9913): accuracy: 0.9793, sst_loss: 0.0554 ||
+06/29 06:15:02 PM: Update 9925: task sst, batch 4925 (9925): accuracy: 0.9793, sst_loss: 0.0553 ||
+06/29 06:15:13 PM: Update 9937: task sst, batch 4937 (9937): accuracy: 0.9793, sst_loss: 0.0553 ||
+06/29 06:15:24 PM: Update 9949: task sst, batch 4949 (9949): accuracy: 0.9793, sst_loss: 0.0552 ||
+06/29 06:15:35 PM: Update 9961: task sst, batch 4961 (9961): accuracy: 0.9793, sst_loss: 0.0552 ||
+06/29 06:15:45 PM: Update 9972: task sst, batch 4972 (9972): accuracy: 0.9794, sst_loss: 0.0551 ||
+06/29 06:15:56 PM: Update 9984: task sst, batch 4984 (9984): accuracy: 0.9794, sst_loss: 0.0551 ||
+06/29 06:16:06 PM: Update 9996: task sst, batch 4996 (9996): accuracy: 0.9794, sst_loss: 0.0551 ||
+06/29 06:16:10 PM: ***** Pass 10000 / Epoch 2 *****
+06/29 06:16:10 PM: sst: trained on 5000 batches, 18.939 epochs
+06/29 06:16:10 PM: Validating...
+06/29 06:16:12 PM: Statistic: sst_loss
+06/29 06:16:12 PM: 	training: 0.055047
+06/29 06:16:12 PM: 	validation: 0.704319
+06/29 06:16:12 PM: Statistic: macro_avg
+06/29 06:16:12 PM: 	validation: 0.847477
+06/29 06:16:12 PM: Statistic: micro_avg
+06/29 06:16:12 PM: 	validation: 0.847477
+06/29 06:16:12 PM: Statistic: sst_accuracy
+06/29 06:16:12 PM: 	training: 0.979395
+06/29 06:16:12 PM: 	validation: 0.847477
+06/29 06:16:12 PM: global_lr: 0.000442
+06/29 06:16:13 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/sst
+06/29 06:16:17 PM: Update 10005: task sst, batch 5 (10005): accuracy: 0.9859, sst_loss: 0.0384 ||
+06/29 06:16:27 PM: Update 10016: task sst, batch 16 (10016): accuracy: 0.9861, sst_loss: 0.0393 ||
+06/29 06:16:38 PM: Update 10028: task sst, batch 28 (10028): accuracy: 0.9870, sst_loss: 0.0363 ||
+06/29 06:16:49 PM: Update 10041: task sst, batch 41 (10041): accuracy: 0.9863, sst_loss: 0.0368 ||
+06/29 06:17:00 PM: Update 10053: task sst, batch 53 (10053): accuracy: 0.9864, sst_loss: 0.0359 ||
+06/29 06:17:10 PM: Update 10065: task sst, batch 65 (10065): accuracy: 0.9871, sst_loss: 0.0348 ||
+06/29 06:17:21 PM: Update 10077: task sst, batch 77 (10077): accuracy: 0.9869, sst_loss: 0.0353 ||
+06/29 06:17:32 PM: Update 10089: task sst, batch 89 (10089): accuracy: 0.9868, sst_loss: 0.0356 ||
+06/29 06:17:43 PM: Update 10101: task sst, batch 101 (10101): accuracy: 0.9865, sst_loss: 0.0365 ||
+06/29 06:17:54 PM: Update 10113: task sst, batch 113 (10113): accuracy: 0.9865, sst_loss: 0.0367 ||
+06/29 06:18:05 PM: Update 10125: task sst, batch 125 (10125): accuracy: 0.9866, sst_loss: 0.0363 ||
+06/29 06:18:15 PM: Update 10137: task sst, batch 137 (10137): accuracy: 0.9867, sst_loss: 0.0359 ||
+06/29 06:18:26 PM: Update 10149: task sst, batch 149 (10149): accuracy: 0.9868, sst_loss: 0.0358 ||
+06/29 06:18:37 PM: Update 10161: task sst, batch 161 (10161): accuracy: 0.9869, sst_loss: 0.0354 ||
+06/29 06:18:48 PM: Update 10173: task sst, batch 173 (10173): accuracy: 0.9869, sst_loss: 0.0356 ||
+06/29 06:18:59 PM: Update 10185: task sst, batch 185 (10185): accuracy: 0.9869, sst_loss: 0.0356 ||
+06/29 06:19:10 PM: Update 10197: task sst, batch 197 (10197): accuracy: 0.9870, sst_loss: 0.0355 ||
+06/29 06:19:20 PM: Update 10209: task sst, batch 209 (10209): accuracy: 0.9871, sst_loss: 0.0352 ||
+06/29 06:19:31 PM: Update 10221: task sst, batch 221 (10221): accuracy: 0.9872, sst_loss: 0.0348 ||
+06/29 06:19:41 PM: Update 10232: task sst, batch 232 (10232): accuracy: 0.9874, sst_loss: 0.0342 ||
+06/29 06:19:52 PM: Update 10244: task sst, batch 244 (10244): accuracy: 0.9875, sst_loss: 0.0341 ||
+06/29 06:20:03 PM: Update 10256: task sst, batch 256 (10256): accuracy: 0.9874, sst_loss: 0.0342 ||
+06/29 06:20:14 PM: Update 10268: task sst, batch 268 (10268): accuracy: 0.9873, sst_loss: 0.0342 ||
+06/29 06:20:24 PM: Update 10280: task sst, batch 280 (10280): accuracy: 0.9875, sst_loss: 0.0340 ||
+06/29 06:20:35 PM: Update 10292: task sst, batch 292 (10292): accuracy: 0.9875, sst_loss: 0.0339 ||
+06/29 06:20:46 PM: Update 10305: task sst, batch 305 (10305): accuracy: 0.9875, sst_loss: 0.0337 ||
+06/29 06:20:57 PM: Update 10317: task sst, batch 317 (10317): accuracy: 0.9874, sst_loss: 0.0338 ||
+06/29 06:21:08 PM: Update 10329: task sst, batch 329 (10329): accuracy: 0.9873, sst_loss: 0.0340 ||
+06/29 06:21:19 PM: Update 10341: task sst, batch 341 (10341): accuracy: 0.9874, sst_loss: 0.0338 ||
+06/29 06:21:30 PM: Update 10353: task sst, batch 353 (10353): accuracy: 0.9873, sst_loss: 0.0339 ||
+06/29 06:21:40 PM: Update 10365: task sst, batch 365 (10365): accuracy: 0.9874, sst_loss: 0.0339 ||
+06/29 06:21:51 PM: Update 10377: task sst, batch 377 (10377): accuracy: 0.9874, sst_loss: 0.0339 ||
+06/29 06:22:02 PM: Update 10389: task sst, batch 389 (10389): accuracy: 0.9873, sst_loss: 0.0339 ||
+06/29 06:22:13 PM: Update 10401: task sst, batch 401 (10401): accuracy: 0.9874, sst_loss: 0.0337 ||
+06/29 06:22:24 PM: Update 10413: task sst, batch 413 (10413): accuracy: 0.9874, sst_loss: 0.0336 ||
+06/29 06:22:34 PM: Update 10425: task sst, batch 425 (10425): accuracy: 0.9875, sst_loss: 0.0334 ||
+06/29 06:22:45 PM: Update 10437: task sst, batch 437 (10437): accuracy: 0.9876, sst_loss: 0.0332 ||
+06/29 06:22:55 PM: Update 10448: task sst, batch 448 (10448): accuracy: 0.9876, sst_loss: 0.0332 ||
+06/29 06:23:06 PM: Update 10460: task sst, batch 460 (10460): accuracy: 0.9876, sst_loss: 0.0331 ||
+06/29 06:23:17 PM: Update 10472: task sst, batch 472 (10472): accuracy: 0.9876, sst_loss: 0.0330 ||
+06/29 06:23:28 PM: Update 10484: task sst, batch 484 (10484): accuracy: 0.9877, sst_loss: 0.0329 ||
+06/29 06:23:38 PM: Update 10496: task sst, batch 496 (10496): accuracy: 0.9878, sst_loss: 0.0327 ||
+06/29 06:23:49 PM: Update 10508: task sst, batch 508 (10508): accuracy: 0.9878, sst_loss: 0.0326 ||
+06/29 06:24:00 PM: Update 10520: task sst, batch 520 (10520): accuracy: 0.9878, sst_loss: 0.0326 ||
+06/29 06:24:11 PM: Update 10532: task sst, batch 532 (10532): accuracy: 0.9878, sst_loss: 0.0326 ||
+06/29 06:24:22 PM: Update 10544: task sst, batch 544 (10544): accuracy: 0.9878, sst_loss: 0.0327 ||
+06/29 06:24:32 PM: Update 10556: task sst, batch 556 (10556): accuracy: 0.9879, sst_loss: 0.0325 ||
+06/29 06:24:43 PM: Update 10569: task sst, batch 569 (10569): accuracy: 0.9879, sst_loss: 0.0325 ||
+06/29 06:24:54 PM: Update 10581: task sst, batch 581 (10581): accuracy: 0.9879, sst_loss: 0.0324 ||
+06/29 06:25:05 PM: Update 10593: task sst, batch 593 (10593): accuracy: 0.9879, sst_loss: 0.0324 ||
+06/29 06:25:16 PM: Update 10605: task sst, batch 605 (10605): accuracy: 0.9878, sst_loss: 0.0324 ||
+06/29 06:25:27 PM: Update 10617: task sst, batch 617 (10617): accuracy: 0.9878, sst_loss: 0.0324 ||
+06/29 06:25:38 PM: Update 10629: task sst, batch 629 (10629): accuracy: 0.9878, sst_loss: 0.0325 ||
+06/29 06:25:48 PM: Update 10641: task sst, batch 641 (10641): accuracy: 0.9878, sst_loss: 0.0323 ||
+06/29 06:25:59 PM: Update 10653: task sst, batch 653 (10653): accuracy: 0.9879, sst_loss: 0.0323 ||
+06/29 06:26:10 PM: Update 10665: task sst, batch 665 (10665): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:26:21 PM: Update 10677: task sst, batch 677 (10677): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:26:32 PM: Update 10689: task sst, batch 689 (10689): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:26:42 PM: Update 10701: task sst, batch 701 (10701): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:26:53 PM: Update 10713: task sst, batch 713 (10713): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:27:04 PM: Update 10725: task sst, batch 725 (10725): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:27:15 PM: Update 10737: task sst, batch 737 (10737): accuracy: 0.9879, sst_loss: 0.0322 ||
+06/29 06:27:26 PM: Update 10749: task sst, batch 749 (10749): accuracy: 0.9880, sst_loss: 0.0321 ||
+06/29 06:27:37 PM: Update 10761: task sst, batch 761 (10761): accuracy: 0.9880, sst_loss: 0.0320 ||
+06/29 06:27:48 PM: Update 10773: task sst, batch 773 (10773): accuracy: 0.9880, sst_loss: 0.0320 ||
+06/29 06:27:58 PM: Update 10785: task sst, batch 785 (10785): accuracy: 0.9879, sst_loss: 0.0319 ||
+06/29 06:28:09 PM: Update 10797: task sst, batch 797 (10797): accuracy: 0.9879, sst_loss: 0.0320 ||
+06/29 06:28:19 PM: Update 10808: task sst, batch 808 (10808): accuracy: 0.9879, sst_loss: 0.0320 ||
+06/29 06:28:30 PM: Update 10820: task sst, batch 820 (10820): accuracy: 0.9879, sst_loss: 0.0320 ||
+06/29 06:28:41 PM: Update 10833: task sst, batch 833 (10833): accuracy: 0.9880, sst_loss: 0.0319 ||
+06/29 06:28:51 PM: Update 10845: task sst, batch 845 (10845): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:29:02 PM: Update 10857: task sst, batch 857 (10857): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:29:13 PM: Update 10869: task sst, batch 869 (10869): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:29:24 PM: Update 10881: task sst, batch 881 (10881): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:29:35 PM: Update 10893: task sst, batch 893 (10893): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:29:46 PM: Update 10905: task sst, batch 905 (10905): accuracy: 0.9880, sst_loss: 0.0319 ||
+06/29 06:29:56 PM: Update 10917: task sst, batch 917 (10917): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:30:07 PM: Update 10929: task sst, batch 929 (10929): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:30:18 PM: Update 10941: task sst, batch 941 (10941): accuracy: 0.9880, sst_loss: 0.0319 ||
+06/29 06:30:29 PM: Update 10953: task sst, batch 953 (10953): accuracy: 0.9880, sst_loss: 0.0319 ||
+06/29 06:30:40 PM: Update 10965: task sst, batch 965 (10965): accuracy: 0.9880, sst_loss: 0.0319 ||
+06/29 06:30:51 PM: Update 10977: task sst, batch 977 (10977): accuracy: 0.9880, sst_loss: 0.0318 ||
+06/29 06:31:01 PM: Update 10989: task sst, batch 989 (10989): accuracy: 0.9881, sst_loss: 0.0317 ||
+06/29 06:31:12 PM: Update 11001: task sst, batch 1001 (11001): accuracy: 0.9881, sst_loss: 0.0316 ||
+06/29 06:31:23 PM: Update 11013: task sst, batch 1013 (11013): accuracy: 0.9881, sst_loss: 0.0315 ||
+06/29 06:31:34 PM: Update 11025: task sst, batch 1025 (11025): accuracy: 0.9882, sst_loss: 0.0314 ||
+06/29 06:31:45 PM: Update 11037: task sst, batch 1037 (11037): accuracy: 0.9882, sst_loss: 0.0313 ||
+06/29 06:31:55 PM: Update 11049: task sst, batch 1049 (11049): accuracy: 0.9882, sst_loss: 0.0313 ||
+06/29 06:32:06 PM: Update 11061: task sst, batch 1061 (11061): accuracy: 0.9882, sst_loss: 0.0313 ||
+06/29 06:32:17 PM: Update 11073: task sst, batch 1073 (11073): accuracy: 0.9882, sst_loss: 0.0314 ||
+06/29 06:32:28 PM: Update 11085: task sst, batch 1085 (11085): accuracy: 0.9882, sst_loss: 0.0313 ||
+06/29 06:32:39 PM: Update 11098: task sst, batch 1098 (11098): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:32:50 PM: Update 11110: task sst, batch 1110 (11110): accuracy: 0.9882, sst_loss: 0.0313 ||
+06/29 06:33:00 PM: Update 11122: task sst, batch 1122 (11122): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:33:11 PM: Update 11134: task sst, batch 1134 (11134): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:33:21 PM: Update 11145: task sst, batch 1145 (11145): accuracy: 0.9883, sst_loss: 0.0311 ||
+06/29 06:33:32 PM: Update 11157: task sst, batch 1157 (11157): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:33:43 PM: Update 11169: task sst, batch 1169 (11169): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:33:54 PM: Update 11181: task sst, batch 1181 (11181): accuracy: 0.9882, sst_loss: 0.0312 ||
+06/29 06:34:04 PM: Update 11193: task sst, batch 1193 (11193): accuracy: 0.9883, sst_loss: 0.0311 ||
+06/29 06:34:15 PM: Update 11205: task sst, batch 1205 (11205): accuracy: 0.9883, sst_loss: 0.0312 ||
+06/29 06:34:26 PM: Update 11217: task sst, batch 1217 (11217): accuracy: 0.9883, sst_loss: 0.0311 ||
+06/29 06:34:37 PM: Update 11229: task sst, batch 1229 (11229): accuracy: 0.9883, sst_loss: 0.0312 ||
+06/29 06:34:48 PM: Update 11241: task sst, batch 1241 (11241): accuracy: 0.9883, sst_loss: 0.0311 ||
+06/29 06:34:59 PM: Update 11253: task sst, batch 1253 (11253): accuracy: 0.9883, sst_loss: 0.0311 ||
+06/29 06:35:09 PM: Update 11265: task sst, batch 1265 (11265): accuracy: 0.9883, sst_loss: 0.0310 ||
+06/29 06:35:20 PM: Update 11277: task sst, batch 1277 (11277): accuracy: 0.9883, sst_loss: 0.0310 ||
+06/29 06:35:31 PM: Update 11289: task sst, batch 1289 (11289): accuracy: 0.9883, sst_loss: 0.0309 ||
+06/29 06:35:42 PM: Update 11301: task sst, batch 1301 (11301): accuracy: 0.9884, sst_loss: 0.0309 ||
+06/29 06:35:53 PM: Update 11313: task sst, batch 1313 (11313): accuracy: 0.9883, sst_loss: 0.0309 ||
+06/29 06:36:03 PM: Update 11325: task sst, batch 1325 (11325): accuracy: 0.9883, sst_loss: 0.0309 ||
+06/29 06:36:14 PM: Update 11337: task sst, batch 1337 (11337): accuracy: 0.9883, sst_loss: 0.0309 ||
+06/29 06:36:25 PM: Update 11349: task sst, batch 1349 (11349): accuracy: 0.9884, sst_loss: 0.0308 ||
+06/29 06:36:36 PM: Update 11362: task sst, batch 1362 (11362): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:36:47 PM: Update 11374: task sst, batch 1374 (11374): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:36:58 PM: Update 11386: task sst, batch 1386 (11386): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:37:09 PM: Update 11398: task sst, batch 1398 (11398): accuracy: 0.9884, sst_loss: 0.0306 ||
+06/29 06:37:19 PM: Update 11409: task sst, batch 1409 (11409): accuracy: 0.9884, sst_loss: 0.0306 ||
+06/29 06:37:29 PM: Update 11421: task sst, batch 1421 (11421): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:37:40 PM: Update 11433: task sst, batch 1433 (11433): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:37:51 PM: Update 11445: task sst, batch 1445 (11445): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:38:02 PM: Update 11457: task sst, batch 1457 (11457): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:38:13 PM: Update 11469: task sst, batch 1469 (11469): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:38:23 PM: Update 11481: task sst, batch 1481 (11481): accuracy: 0.9884, sst_loss: 0.0307 ||
+06/29 06:38:34 PM: Update 11493: task sst, batch 1493 (11493): accuracy: 0.9884, sst_loss: 0.0306 ||
+06/29 06:38:45 PM: Update 11505: task sst, batch 1505 (11505): accuracy: 0.9885, sst_loss: 0.0306 ||
+06/29 06:38:56 PM: Update 11517: task sst, batch 1517 (11517): accuracy: 0.9885, sst_loss: 0.0306 ||
+06/29 06:39:07 PM: Update 11529: task sst, batch 1529 (11529): accuracy: 0.9885, sst_loss: 0.0306 ||
+06/29 06:39:17 PM: Update 11541: task sst, batch 1541 (11541): accuracy: 0.9885, sst_loss: 0.0305 ||
+06/29 06:39:28 PM: Update 11553: task sst, batch 1553 (11553): accuracy: 0.9886, sst_loss: 0.0304 ||
+06/29 06:39:39 PM: Update 11565: task sst, batch 1565 (11565): accuracy: 0.9886, sst_loss: 0.0304 ||
+06/29 06:39:50 PM: Update 11577: task sst, batch 1577 (11577): accuracy: 0.9886, sst_loss: 0.0303 ||
+06/29 06:40:01 PM: Update 11589: task sst, batch 1589 (11589): accuracy: 0.9886, sst_loss: 0.0303 ||
+06/29 06:40:12 PM: Update 11601: task sst, batch 1601 (11601): accuracy: 0.9886, sst_loss: 0.0303 ||
+06/29 06:40:22 PM: Update 11613: task sst, batch 1613 (11613): accuracy: 0.9887, sst_loss: 0.0302 ||
+06/29 06:40:33 PM: Update 11626: task sst, batch 1626 (11626): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:40:44 PM: Update 11638: task sst, batch 1638 (11638): accuracy: 0.9887, sst_loss: 0.0302 ||
+06/29 06:40:55 PM: Update 11650: task sst, batch 1650 (11650): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:41:06 PM: Update 11662: task sst, batch 1662 (11662): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:41:16 PM: Update 11673: task sst, batch 1673 (11673): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:41:27 PM: Update 11685: task sst, batch 1685 (11685): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:41:38 PM: Update 11697: task sst, batch 1697 (11697): accuracy: 0.9887, sst_loss: 0.0301 ||
+06/29 06:41:48 PM: Update 11709: task sst, batch 1709 (11709): accuracy: 0.9887, sst_loss: 0.0300 ||
+06/29 06:41:59 PM: Update 11721: task sst, batch 1721 (11721): accuracy: 0.9888, sst_loss: 0.0300 ||
+06/29 06:42:10 PM: Update 11733: task sst, batch 1733 (11733): accuracy: 0.9887, sst_loss: 0.0300 ||
+06/29 06:42:21 PM: Update 11745: task sst, batch 1745 (11745): accuracy: 0.9887, sst_loss: 0.0300 ||
+06/29 06:42:32 PM: Update 11757: task sst, batch 1757 (11757): accuracy: 0.9887, sst_loss: 0.0300 ||
+06/29 06:42:42 PM: Update 11769: task sst, batch 1769 (11769): accuracy: 0.9887, sst_loss: 0.0300 ||
+06/29 06:42:53 PM: Update 11781: task sst, batch 1781 (11781): accuracy: 0.9888, sst_loss: 0.0300 ||
+06/29 06:43:04 PM: Update 11793: task sst, batch 1793 (11793): accuracy: 0.9888, sst_loss: 0.0299 ||
+06/29 06:43:15 PM: Update 11805: task sst, batch 1805 (11805): accuracy: 0.9888, sst_loss: 0.0299 ||
+06/29 06:43:26 PM: Update 11817: task sst, batch 1817 (11817): accuracy: 0.9888, sst_loss: 0.0299 ||
+06/29 06:43:37 PM: Update 11829: task sst, batch 1829 (11829): accuracy: 0.9888, sst_loss: 0.0299 ||
+06/29 06:43:47 PM: Update 11841: task sst, batch 1841 (11841): accuracy: 0.9888, sst_loss: 0.0298 ||
+06/29 06:43:58 PM: Update 11853: task sst, batch 1853 (11853): accuracy: 0.9888, sst_loss: 0.0298 ||
+06/29 06:44:09 PM: Update 11865: task sst, batch 1865 (11865): accuracy: 0.9888, sst_loss: 0.0298 ||
+06/29 06:44:20 PM: Update 11877: task sst, batch 1877 (11877): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:44:30 PM: Update 11890: task sst, batch 1890 (11890): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:44:41 PM: Update 11902: task sst, batch 1902 (11902): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:44:52 PM: Update 11914: task sst, batch 1914 (11914): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:45:03 PM: Update 11926: task sst, batch 1926 (11926): accuracy: 0.9888, sst_loss: 0.0297 ||
+06/29 06:45:14 PM: Update 11938: task sst, batch 1938 (11938): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:45:25 PM: Update 11950: task sst, batch 1950 (11950): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:45:36 PM: Update 11962: task sst, batch 1962 (11962): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:45:46 PM: Update 11974: task sst, batch 1974 (11974): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:45:57 PM: Update 11986: task sst, batch 1986 (11986): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:46:08 PM: Update 11998: task sst, batch 1998 (11998): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:46:18 PM: Update 12009: task sst, batch 2009 (12009): accuracy: 0.9889, sst_loss: 0.0297 ||
+06/29 06:46:29 PM: Update 12021: task sst, batch 2021 (12021): accuracy: 0.9889, sst_loss: 0.0296 ||
+06/29 06:46:40 PM: Update 12033: task sst, batch 2033 (12033): accuracy: 0.9889, sst_loss: 0.0296 ||
+06/29 06:46:50 PM: Update 12045: task sst, batch 2045 (12045): accuracy: 0.9889, sst_loss: 0.0295 ||
+06/29 06:47:01 PM: Update 12057: task sst, batch 2057 (12057): accuracy: 0.9889, sst_loss: 0.0295 ||
+06/29 06:47:12 PM: Update 12069: task sst, batch 2069 (12069): accuracy: 0.9890, sst_loss: 0.0295 ||
+06/29 06:47:23 PM: Update 12081: task sst, batch 2081 (12081): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:47:34 PM: Update 12093: task sst, batch 2093 (12093): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:47:44 PM: Update 12105: task sst, batch 2105 (12105): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:47:55 PM: Update 12117: task sst, batch 2117 (12117): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:48:06 PM: Update 12129: task sst, batch 2129 (12129): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:48:17 PM: Update 12141: task sst, batch 2141 (12141): accuracy: 0.9890, sst_loss: 0.0294 ||
+06/29 06:48:28 PM: Update 12154: task sst, batch 2154 (12154): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:48:38 PM: Update 12166: task sst, batch 2166 (12166): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:48:49 PM: Update 12178: task sst, batch 2178 (12178): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:49:00 PM: Update 12190: task sst, batch 2190 (12190): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:49:11 PM: Update 12202: task sst, batch 2202 (12202): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:49:22 PM: Update 12214: task sst, batch 2214 (12214): accuracy: 0.9890, sst_loss: 0.0293 ||
+06/29 06:49:33 PM: Update 12226: task sst, batch 2226 (12226): accuracy: 0.9890, sst_loss: 0.0292 ||
+06/29 06:49:44 PM: Update 12238: task sst, batch 2238 (12238): accuracy: 0.9890, sst_loss: 0.0292 ||
+06/29 06:49:54 PM: Update 12250: task sst, batch 2250 (12250): accuracy: 0.9891, sst_loss: 0.0292 ||
+06/29 06:50:05 PM: Update 12262: task sst, batch 2262 (12262): accuracy: 0.9891, sst_loss: 0.0292 ||
+06/29 06:50:15 PM: Update 12273: task sst, batch 2273 (12273): accuracy: 0.9891, sst_loss: 0.0292 ||
+06/29 06:50:26 PM: Update 12285: task sst, batch 2285 (12285): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:50:37 PM: Update 12297: task sst, batch 2297 (12297): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:50:48 PM: Update 12309: task sst, batch 2309 (12309): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:50:58 PM: Update 12321: task sst, batch 2321 (12321): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:51:09 PM: Update 12333: task sst, batch 2333 (12333): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:51:20 PM: Update 12345: task sst, batch 2345 (12345): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:51:31 PM: Update 12357: task sst, batch 2357 (12357): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:51:42 PM: Update 12369: task sst, batch 2369 (12369): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:51:52 PM: Update 12381: task sst, batch 2381 (12381): accuracy: 0.9891, sst_loss: 0.0291 ||
+06/29 06:52:03 PM: Update 12393: task sst, batch 2393 (12393): accuracy: 0.9891, sst_loss: 0.0290 ||
+06/29 06:52:14 PM: Update 12405: task sst, batch 2405 (12405): accuracy: 0.9892, sst_loss: 0.0290 ||
+06/29 06:52:25 PM: Update 12418: task sst, batch 2418 (12418): accuracy: 0.9892, sst_loss: 0.0290 ||
+06/29 06:52:36 PM: Update 12430: task sst, batch 2430 (12430): accuracy: 0.9892, sst_loss: 0.0290 ||
+06/29 06:52:47 PM: Update 12442: task sst, batch 2442 (12442): accuracy: 0.9892, sst_loss: 0.0290 ||
+06/29 06:52:58 PM: Update 12454: task sst, batch 2454 (12454): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:53:08 PM: Update 12466: task sst, batch 2466 (12466): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:53:19 PM: Update 12478: task sst, batch 2478 (12478): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:53:30 PM: Update 12490: task sst, batch 2490 (12490): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:53:41 PM: Update 12502: task sst, batch 2502 (12502): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:53:52 PM: Update 12514: task sst, batch 2514 (12514): accuracy: 0.9892, sst_loss: 0.0289 ||
+06/29 06:54:02 PM: Update 12526: task sst, batch 2526 (12526): accuracy: 0.9892, sst_loss: 0.0288 ||
+06/29 06:54:13 PM: Update 12538: task sst, batch 2538 (12538): accuracy: 0.9892, sst_loss: 0.0288 ||
+06/29 06:54:24 PM: Update 12550: task sst, batch 2550 (12550): accuracy: 0.9892, sst_loss: 0.0288 ||
+06/29 06:54:35 PM: Update 12562: task sst, batch 2562 (12562): accuracy: 0.9892, sst_loss: 0.0288 ||
+06/29 06:54:46 PM: Update 12574: task sst, batch 2574 (12574): accuracy: 0.9892, sst_loss: 0.0287 ||
+06/29 06:54:57 PM: Update 12586: task sst, batch 2586 (12586): accuracy: 0.9893, sst_loss: 0.0287 ||
+06/29 06:55:07 PM: Update 12598: task sst, batch 2598 (12598): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:55:17 PM: Update 12609: task sst, batch 2609 (12609): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:55:28 PM: Update 12621: task sst, batch 2621 (12621): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:55:39 PM: Update 12633: task sst, batch 2633 (12633): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:55:50 PM: Update 12645: task sst, batch 2645 (12645): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:56:01 PM: Update 12657: task sst, batch 2657 (12657): accuracy: 0.9893, sst_loss: 0.0286 ||
+06/29 06:56:11 PM: Update 12669: task sst, batch 2669 (12669): accuracy: 0.9893, sst_loss: 0.0285 ||
+06/29 06:56:22 PM: Update 12682: task sst, batch 2682 (12682): accuracy: 0.9893, sst_loss: 0.0285 ||
+06/29 06:56:33 PM: Update 12694: task sst, batch 2694 (12694): accuracy: 0.9894, sst_loss: 0.0285 ||
+06/29 06:56:44 PM: Update 12706: task sst, batch 2706 (12706): accuracy: 0.9894, sst_loss: 0.0285 ||
+06/29 06:56:55 PM: Update 12718: task sst, batch 2718 (12718): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:57:06 PM: Update 12730: task sst, batch 2730 (12730): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:57:17 PM: Update 12742: task sst, batch 2742 (12742): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:57:28 PM: Update 12754: task sst, batch 2754 (12754): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:57:38 PM: Update 12766: task sst, batch 2766 (12766): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:57:49 PM: Update 12778: task sst, batch 2778 (12778): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:58:00 PM: Update 12790: task sst, batch 2790 (12790): accuracy: 0.9894, sst_loss: 0.0284 ||
+06/29 06:58:11 PM: Update 12802: task sst, batch 2802 (12802): accuracy: 0.9894, sst_loss: 0.0283 ||
+06/29 06:58:22 PM: Update 12814: task sst, batch 2814 (12814): accuracy: 0.9894, sst_loss: 0.0283 ||
+06/29 06:58:33 PM: Update 12826: task sst, batch 2826 (12826): accuracy: 0.9894, sst_loss: 0.0283 ||
+06/29 06:58:43 PM: Update 12838: task sst, batch 2838 (12838): accuracy: 0.9894, sst_loss: 0.0283 ||
+06/29 06:58:54 PM: Update 12850: task sst, batch 2850 (12850): accuracy: 0.9895, sst_loss: 0.0283 ||
+06/29 06:59:05 PM: Update 12862: task sst, batch 2862 (12862): accuracy: 0.9895, sst_loss: 0.0282 ||
+06/29 06:59:15 PM: Update 12873: task sst, batch 2873 (12873): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 06:59:26 PM: Update 12885: task sst, batch 2885 (12885): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 06:59:36 PM: Update 12897: task sst, batch 2897 (12897): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 06:59:47 PM: Update 12909: task sst, batch 2909 (12909): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 06:59:58 PM: Update 12921: task sst, batch 2921 (12921): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 07:00:09 PM: Update 12933: task sst, batch 2933 (12933): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 07:00:20 PM: Update 12946: task sst, batch 2946 (12946): accuracy: 0.9895, sst_loss: 0.0281 ||
+06/29 07:00:31 PM: Update 12958: task sst, batch 2958 (12958): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:00:41 PM: Update 12970: task sst, batch 2970 (12970): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:00:52 PM: Update 12982: task sst, batch 2982 (12982): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:01:03 PM: Update 12994: task sst, batch 2994 (12994): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:01:14 PM: Update 13006: task sst, batch 3006 (13006): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:01:25 PM: Update 13018: task sst, batch 3018 (13018): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:01:36 PM: Update 13030: task sst, batch 3030 (13030): accuracy: 0.9895, sst_loss: 0.0280 ||
+06/29 07:01:47 PM: Update 13042: task sst, batch 3042 (13042): accuracy: 0.9895, sst_loss: 0.0279 ||
+06/29 07:01:57 PM: Update 13054: task sst, batch 3054 (13054): accuracy: 0.9895, sst_loss: 0.0279 ||
+06/29 07:02:08 PM: Update 13066: task sst, batch 3066 (13066): accuracy: 0.9896, sst_loss: 0.0279 ||
+06/29 07:02:19 PM: Update 13078: task sst, batch 3078 (13078): accuracy: 0.9896, sst_loss: 0.0279 ||
+06/29 07:02:30 PM: Update 13090: task sst, batch 3090 (13090): accuracy: 0.9896, sst_loss: 0.0279 ||
+06/29 07:02:41 PM: Update 13102: task sst, batch 3102 (13102): accuracy: 0.9896, sst_loss: 0.0278 ||
+06/29 07:02:51 PM: Update 13114: task sst, batch 3114 (13114): accuracy: 0.9896, sst_loss: 0.0278 ||
+06/29 07:03:02 PM: Update 13126: task sst, batch 3126 (13126): accuracy: 0.9896, sst_loss: 0.0277 ||
+06/29 07:03:13 PM: Update 13138: task sst, batch 3138 (13138): accuracy: 0.9896, sst_loss: 0.0277 ||
+06/29 07:03:24 PM: Update 13150: task sst, batch 3150 (13150): accuracy: 0.9896, sst_loss: 0.0277 ||
+06/29 07:03:35 PM: Update 13162: task sst, batch 3162 (13162): accuracy: 0.9896, sst_loss: 0.0276 ||
+06/29 07:03:46 PM: Update 13174: task sst, batch 3174 (13174): accuracy: 0.9897, sst_loss: 0.0276 ||
+06/29 07:03:56 PM: Update 13185: task sst, batch 3185 (13185): accuracy: 0.9897, sst_loss: 0.0276 ||
+06/29 07:04:06 PM: Update 13197: task sst, batch 3197 (13197): accuracy: 0.9897, sst_loss: 0.0276 ||
+06/29 07:04:17 PM: Update 13210: task sst, batch 3210 (13210): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:04:28 PM: Update 13222: task sst, batch 3222 (13222): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:04:39 PM: Update 13234: task sst, batch 3234 (13234): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:04:50 PM: Update 13246: task sst, batch 3246 (13246): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:05:01 PM: Update 13258: task sst, batch 3258 (13258): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:05:12 PM: Update 13270: task sst, batch 3270 (13270): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:05:22 PM: Update 13282: task sst, batch 3282 (13282): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:05:33 PM: Update 13294: task sst, batch 3294 (13294): accuracy: 0.9897, sst_loss: 0.0275 ||
+06/29 07:05:44 PM: Update 13306: task sst, batch 3306 (13306): accuracy: 0.9897, sst_loss: 0.0274 ||
+06/29 07:05:55 PM: Update 13318: task sst, batch 3318 (13318): accuracy: 0.9897, sst_loss: 0.0274 ||
+06/29 07:06:06 PM: Update 13330: task sst, batch 3330 (13330): accuracy: 0.9897, sst_loss: 0.0274 ||
+06/29 07:06:16 PM: Update 13342: task sst, batch 3342 (13342): accuracy: 0.9897, sst_loss: 0.0274 ||
+06/29 07:06:27 PM: Update 13354: task sst, batch 3354 (13354): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:06:38 PM: Update 13366: task sst, batch 3366 (13366): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:06:49 PM: Update 13378: task sst, batch 3378 (13378): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:00 PM: Update 13390: task sst, batch 3390 (13390): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:11 PM: Update 13402: task sst, batch 3402 (13402): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:21 PM: Update 13414: task sst, batch 3414 (13414): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:32 PM: Update 13426: task sst, batch 3426 (13426): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:43 PM: Update 13438: task sst, batch 3438 (13438): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:07:54 PM: Update 13450: task sst, batch 3450 (13450): accuracy: 0.9897, sst_loss: 0.0273 ||
+06/29 07:08:05 PM: Update 13462: task sst, batch 3462 (13462): accuracy: 0.9898, sst_loss: 0.0273 ||
+06/29 07:08:15 PM: Update 13475: task sst, batch 3475 (13475): accuracy: 0.9898, sst_loss: 0.0272 ||
+06/29 07:08:26 PM: Update 13487: task sst, batch 3487 (13487): accuracy: 0.9898, sst_loss: 0.0272 ||
+06/29 07:08:37 PM: Update 13499: task sst, batch 3499 (13499): accuracy: 0.9898, sst_loss: 0.0272 ||
+06/29 07:08:48 PM: Update 13511: task sst, batch 3511 (13511): accuracy: 0.9898, sst_loss: 0.0272 ||
+06/29 07:08:58 PM: Update 13522: task sst, batch 3522 (13522): accuracy: 0.9898, sst_loss: 0.0272 ||
+06/29 07:09:09 PM: Update 13534: task sst, batch 3534 (13534): accuracy: 0.9898, sst_loss: 0.0271 ||
+06/29 07:09:20 PM: Update 13546: task sst, batch 3546 (13546): accuracy: 0.9898, sst_loss: 0.0271 ||
+06/29 07:09:31 PM: Update 13558: task sst, batch 3558 (13558): accuracy: 0.9898, sst_loss: 0.0271 ||
+06/29 07:09:41 PM: Update 13570: task sst, batch 3570 (13570): accuracy: 0.9898, sst_loss: 0.0271 ||
+06/29 07:09:52 PM: Update 13582: task sst, batch 3582 (13582): accuracy: 0.9898, sst_loss: 0.0271 ||
+06/29 07:10:03 PM: Update 13594: task sst, batch 3594 (13594): accuracy: 0.9898, sst_loss: 0.0270 ||
+06/29 07:10:14 PM: Update 13606: task sst, batch 3606 (13606): accuracy: 0.9898, sst_loss: 0.0270 ||
+06/29 07:10:25 PM: Update 13618: task sst, batch 3618 (13618): accuracy: 0.9898, sst_loss: 0.0270 ||
+06/29 07:10:35 PM: Update 13630: task sst, batch 3630 (13630): accuracy: 0.9898, sst_loss: 0.0270 ||
+06/29 07:10:46 PM: Update 13642: task sst, batch 3642 (13642): accuracy: 0.9898, sst_loss: 0.0270 ||
+06/29 07:10:57 PM: Update 13654: task sst, batch 3654 (13654): accuracy: 0.9899, sst_loss: 0.0270 ||
+06/29 07:11:08 PM: Update 13666: task sst, batch 3666 (13666): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:11:19 PM: Update 13678: task sst, batch 3678 (13678): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:11:30 PM: Update 13690: task sst, batch 3690 (13690): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:11:40 PM: Update 13702: task sst, batch 3702 (13702): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:11:51 PM: Update 13714: task sst, batch 3714 (13714): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:12:02 PM: Update 13726: task sst, batch 3726 (13726): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:12:13 PM: Update 13739: task sst, batch 3739 (13739): accuracy: 0.9899, sst_loss: 0.0269 ||
+06/29 07:12:24 PM: Update 13751: task sst, batch 3751 (13751): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:12:35 PM: Update 13763: task sst, batch 3763 (13763): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:12:45 PM: Update 13775: task sst, batch 3775 (13775): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:12:55 PM: Update 13786: task sst, batch 3786 (13786): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:13:06 PM: Update 13798: task sst, batch 3798 (13798): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:13:17 PM: Update 13810: task sst, batch 3810 (13810): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:13:28 PM: Update 13822: task sst, batch 3822 (13822): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:13:39 PM: Update 13834: task sst, batch 3834 (13834): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:13:49 PM: Update 13846: task sst, batch 3846 (13846): accuracy: 0.9899, sst_loss: 0.0268 ||
+06/29 07:14:00 PM: Update 13858: task sst, batch 3858 (13858): accuracy: 0.9899, sst_loss: 0.0267 ||
+06/29 07:14:11 PM: Update 13870: task sst, batch 3870 (13870): accuracy: 0.9899, sst_loss: 0.0267 ||
+06/29 07:14:22 PM: Update 13882: task sst, batch 3882 (13882): accuracy: 0.9899, sst_loss: 0.0267 ||
+06/29 07:14:33 PM: Update 13894: task sst, batch 3894 (13894): accuracy: 0.9900, sst_loss: 0.0266 ||
+06/29 07:14:44 PM: Update 13906: task sst, batch 3906 (13906): accuracy: 0.9900, sst_loss: 0.0266 ||
+06/29 07:14:54 PM: Update 13918: task sst, batch 3918 (13918): accuracy: 0.9900, sst_loss: 0.0266 ||
+06/29 07:15:05 PM: Update 13930: task sst, batch 3930 (13930): accuracy: 0.9900, sst_loss: 0.0265 ||
+06/29 07:15:16 PM: Update 13942: task sst, batch 3942 (13942): accuracy: 0.9900, sst_loss: 0.0265 ||
+06/29 07:15:27 PM: Update 13954: task sst, batch 3954 (13954): accuracy: 0.9900, sst_loss: 0.0265 ||
+06/29 07:15:38 PM: Update 13966: task sst, batch 3966 (13966): accuracy: 0.9900, sst_loss: 0.0265 ||
+06/29 07:15:48 PM: Update 13978: task sst, batch 3978 (13978): accuracy: 0.9900, sst_loss: 0.0265 ||
+06/29 07:15:59 PM: Update 13990: task sst, batch 3990 (13990): accuracy: 0.9900, sst_loss: 0.0264 ||
+06/29 07:16:10 PM: Update 14003: task sst, batch 4003 (14003): accuracy: 0.9900, sst_loss: 0.0264 ||
+06/29 07:16:21 PM: Update 14015: task sst, batch 4015 (14015): accuracy: 0.9901, sst_loss: 0.0264 ||
+06/29 07:16:32 PM: Update 14027: task sst, batch 4027 (14027): accuracy: 0.9901, sst_loss: 0.0264 ||
+06/29 07:16:43 PM: Update 14039: task sst, batch 4039 (14039): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:16:54 PM: Update 14051: task sst, batch 4051 (14051): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:04 PM: Update 14063: task sst, batch 4063 (14063): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:15 PM: Update 14075: task sst, batch 4075 (14075): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:26 PM: Update 14087: task sst, batch 4087 (14087): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:37 PM: Update 14099: task sst, batch 4099 (14099): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:47 PM: Update 14111: task sst, batch 4111 (14111): accuracy: 0.9901, sst_loss: 0.0263 ||
+06/29 07:17:58 PM: Update 14123: task sst, batch 4123 (14123): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:18:09 PM: Update 14135: task sst, batch 4135 (14135): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:18:20 PM: Update 14147: task sst, batch 4147 (14147): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:18:31 PM: Update 14159: task sst, batch 4159 (14159): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:18:41 PM: Update 14171: task sst, batch 4171 (14171): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:18:52 PM: Update 14183: task sst, batch 4183 (14183): accuracy: 0.9901, sst_loss: 0.0262 ||
+06/29 07:19:02 PM: Update 14194: task sst, batch 4194 (14194): accuracy: 0.9902, sst_loss: 0.0261 ||
+06/29 07:19:13 PM: Update 14206: task sst, batch 4206 (14206): accuracy: 0.9902, sst_loss: 0.0261 ||
+06/29 07:19:24 PM: Update 14218: task sst, batch 4218 (14218): accuracy: 0.9902, sst_loss: 0.0261 ||
+06/29 07:19:35 PM: Update 14230: task sst, batch 4230 (14230): accuracy: 0.9902, sst_loss: 0.0261 ||
+06/29 07:19:46 PM: Update 14242: task sst, batch 4242 (14242): accuracy: 0.9902, sst_loss: 0.0261 ||
+06/29 07:19:56 PM: Update 14254: task sst, batch 4254 (14254): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:20:07 PM: Update 14267: task sst, batch 4267 (14267): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:20:18 PM: Update 14279: task sst, batch 4279 (14279): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:20:29 PM: Update 14291: task sst, batch 4291 (14291): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:20:40 PM: Update 14303: task sst, batch 4303 (14303): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:20:51 PM: Update 14315: task sst, batch 4315 (14315): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:21:01 PM: Update 14327: task sst, batch 4327 (14327): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:21:12 PM: Update 14339: task sst, batch 4339 (14339): accuracy: 0.9902, sst_loss: 0.0260 ||
+06/29 07:21:23 PM: Update 14351: task sst, batch 4351 (14351): accuracy: 0.9902, sst_loss: 0.0259 ||
+06/29 07:21:34 PM: Update 14363: task sst, batch 4363 (14363): accuracy: 0.9902, sst_loss: 0.0259 ||
+06/29 07:21:45 PM: Update 14375: task sst, batch 4375 (14375): accuracy: 0.9902, sst_loss: 0.0259 ||
+06/29 07:21:55 PM: Update 14386: task sst, batch 4386 (14386): accuracy: 0.9902, sst_loss: 0.0259 ||
+06/29 07:22:05 PM: Update 14398: task sst, batch 4398 (14398): accuracy: 0.9903, sst_loss: 0.0259 ||
+06/29 07:22:16 PM: Update 14410: task sst, batch 4410 (14410): accuracy: 0.9903, sst_loss: 0.0259 ||
+06/29 07:22:27 PM: Update 14422: task sst, batch 4422 (14422): accuracy: 0.9903, sst_loss: 0.0259 ||
+06/29 07:22:38 PM: Update 14434: task sst, batch 4434 (14434): accuracy: 0.9903, sst_loss: 0.0258 ||
+06/29 07:22:49 PM: Update 14446: task sst, batch 4446 (14446): accuracy: 0.9903, sst_loss: 0.0258 ||
+06/29 07:23:00 PM: Update 14458: task sst, batch 4458 (14458): accuracy: 0.9903, sst_loss: 0.0258 ||
+06/29 07:23:10 PM: Update 14470: task sst, batch 4470 (14470): accuracy: 0.9903, sst_loss: 0.0258 ||
+06/29 07:23:21 PM: Update 14482: task sst, batch 4482 (14482): accuracy: 0.9903, sst_loss: 0.0258 ||
+06/29 07:23:32 PM: Update 14494: task sst, batch 4494 (14494): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:23:43 PM: Update 14506: task sst, batch 4506 (14506): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:23:54 PM: Update 14518: task sst, batch 4518 (14518): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:04 PM: Update 14531: task sst, batch 4531 (14531): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:15 PM: Update 14543: task sst, batch 4543 (14543): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:26 PM: Update 14555: task sst, batch 4555 (14555): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:37 PM: Update 14567: task sst, batch 4567 (14567): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:48 PM: Update 14579: task sst, batch 4579 (14579): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:24:59 PM: Update 14591: task sst, batch 4591 (14591): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:25:10 PM: Update 14603: task sst, batch 4603 (14603): accuracy: 0.9903, sst_loss: 0.0257 ||
+06/29 07:25:20 PM: Update 14615: task sst, batch 4615 (14615): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:25:31 PM: Update 14627: task sst, batch 4627 (14627): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:25:42 PM: Update 14639: task sst, batch 4639 (14639): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:25:52 PM: Update 14650: task sst, batch 4650 (14650): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:26:02 PM: Update 14661: task sst, batch 4661 (14661): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:26:12 PM: Update 14672: task sst, batch 4672 (14672): accuracy: 0.9904, sst_loss: 0.0256 ||
+06/29 07:26:23 PM: Update 14684: task sst, batch 4684 (14684): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:26:34 PM: Update 14696: task sst, batch 4696 (14696): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:26:44 PM: Update 14708: task sst, batch 4708 (14708): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:26:54 PM: Update 14719: task sst, batch 4719 (14719): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:27:05 PM: Update 14731: task sst, batch 4731 (14731): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:27:16 PM: Update 14743: task sst, batch 4743 (14743): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:27:27 PM: Update 14755: task sst, batch 4755 (14755): accuracy: 0.9904, sst_loss: 0.0255 ||
+06/29 07:27:37 PM: Update 14766: task sst, batch 4766 (14766): accuracy: 0.9904, sst_loss: 0.0254 ||
+06/29 07:27:48 PM: Update 14778: task sst, batch 4778 (14778): accuracy: 0.9904, sst_loss: 0.0254 ||
+06/29 07:27:58 PM: Update 14791: task sst, batch 4791 (14791): accuracy: 0.9904, sst_loss: 0.0254 ||
+06/29 07:28:09 PM: Update 14803: task sst, batch 4803 (14803): accuracy: 0.9905, sst_loss: 0.0254 ||
+06/29 07:28:20 PM: Update 14815: task sst, batch 4815 (14815): accuracy: 0.9905, sst_loss: 0.0254 ||
+06/29 07:28:30 PM: Update 14826: task sst, batch 4826 (14826): accuracy: 0.9905, sst_loss: 0.0254 ||
+06/29 07:28:40 PM: Update 14837: task sst, batch 4837 (14837): accuracy: 0.9905, sst_loss: 0.0254 ||
+06/29 07:28:50 PM: Update 14848: task sst, batch 4848 (14848): accuracy: 0.9905, sst_loss: 0.0254 ||
+06/29 07:29:01 PM: Update 14860: task sst, batch 4860 (14860): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:29:12 PM: Update 14872: task sst, batch 4872 (14872): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:29:23 PM: Update 14884: task sst, batch 4884 (14884): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:29:33 PM: Update 14896: task sst, batch 4896 (14896): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:29:44 PM: Update 14908: task sst, batch 4908 (14908): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:29:54 PM: Update 14919: task sst, batch 4919 (14919): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:30:05 PM: Update 14931: task sst, batch 4931 (14931): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:30:16 PM: Update 14943: task sst, batch 4943 (14943): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:30:27 PM: Update 14955: task sst, batch 4955 (14955): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:30:37 PM: Update 14967: task sst, batch 4967 (14967): accuracy: 0.9905, sst_loss: 0.0253 ||
+06/29 07:30:48 PM: Update 14979: task sst, batch 4979 (14979): accuracy: 0.9905, sst_loss: 0.0252 ||
+06/29 07:30:58 PM: Update 14990: task sst, batch 4990 (14990): accuracy: 0.9905, sst_loss: 0.0252 ||
+06/29 07:31:07 PM: ***** Pass 15000 / Epoch 3 *****
+06/29 07:31:07 PM: sst: trained on 5000 batches, 18.939 epochs
+06/29 07:31:07 PM: Validating...
+06/29 07:31:09 PM: Batch 2/4: accuracy: 0.8555, sst_loss: 0.8404 ||
+06/29 07:31:10 PM: Best model found for sst.
+06/29 07:31:10 PM: Best model found for micro.
+06/29 07:31:10 PM: Best model found for macro.
+06/29 07:31:10 PM: Statistic: sst_loss
+06/29 07:31:10 PM: 	training: 0.025183
+06/29 07:31:10 PM: 	validation: 0.820698
+06/29 07:31:10 PM: Statistic: macro_avg
+06/29 07:31:10 PM: 	validation: 0.852064
+06/29 07:31:10 PM: Statistic: micro_avg
+06/29 07:31:10 PM: 	validation: 0.852064
+06/29 07:31:10 PM: Statistic: sst_accuracy
+06/29 07:31:10 PM: 	training: 0.990526
+06/29 07:31:10 PM: 	validation: 0.852064
+06/29 07:31:10 PM: global_lr: 0.000361
+06/29 07:31:10 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch256/sst
+06/29 07:31:19 PM: Update 15010: task sst, batch 10 (15010): accuracy: 0.9938, sst_loss: 0.0177 ||
+06/29 07:31:30 PM: Update 15022: task sst, batch 22 (15022): accuracy: 0.9943, sst_loss: 0.0150 ||
+06/29 07:31:40 PM: Update 15033: task sst, batch 33 (15033): accuracy: 0.9937, sst_loss: 0.0157 ||
+06/29 07:31:51 PM: Update 15045: task sst, batch 45 (15045): accuracy: 0.9934, sst_loss: 0.0170 ||
+06/29 07:32:01 PM: Update 15058: task sst, batch 58 (15058): accuracy: 0.9937, sst_loss: 0.0167 ||
+06/29 07:32:12 PM: Update 15070: task sst, batch 70 (15070): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 07:32:22 PM: Update 15081: task sst, batch 81 (15081): accuracy: 0.9934, sst_loss: 0.0174 ||
+06/29 07:32:33 PM: Update 15093: task sst, batch 93 (15093): accuracy: 0.9934, sst_loss: 0.0178 ||
+06/29 07:32:43 PM: Update 15104: task sst, batch 104 (15104): accuracy: 0.9933, sst_loss: 0.0180 ||
+06/29 07:32:53 PM: Update 15115: task sst, batch 115 (15115): accuracy: 0.9930, sst_loss: 0.0188 ||
+06/29 07:33:04 PM: Update 15127: task sst, batch 127 (15127): accuracy: 0.9931, sst_loss: 0.0184 ||
+06/29 07:33:15 PM: Update 15139: task sst, batch 139 (15139): accuracy: 0.9930, sst_loss: 0.0185 ||
+06/29 07:33:25 PM: Update 15151: task sst, batch 151 (15151): accuracy: 0.9931, sst_loss: 0.0185 ||
+06/29 07:33:36 PM: Update 15163: task sst, batch 163 (15163): accuracy: 0.9930, sst_loss: 0.0187 ||
+06/29 07:33:47 PM: Update 15175: task sst, batch 175 (15175): accuracy: 0.9929, sst_loss: 0.0191 ||
+06/29 07:33:58 PM: Update 15187: task sst, batch 187 (15187): accuracy: 0.9928, sst_loss: 0.0193 ||
+06/29 07:34:09 PM: Update 15199: task sst, batch 199 (15199): accuracy: 0.9928, sst_loss: 0.0193 ||
+06/29 07:34:19 PM: Update 15211: task sst, batch 211 (15211): accuracy: 0.9926, sst_loss: 0.0195 ||
+06/29 07:34:30 PM: Update 15223: task sst, batch 223 (15223): accuracy: 0.9926, sst_loss: 0.0196 ||
+06/29 07:34:41 PM: Update 15235: task sst, batch 235 (15235): accuracy: 0.9928, sst_loss: 0.0193 ||
+06/29 07:34:52 PM: Update 15247: task sst, batch 247 (15247): accuracy: 0.9927, sst_loss: 0.0193 ||
+06/29 07:35:03 PM: Update 15259: task sst, batch 259 (15259): accuracy: 0.9928, sst_loss: 0.0191 ||
+06/29 07:35:14 PM: Update 15271: task sst, batch 271 (15271): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:35:24 PM: Update 15283: task sst, batch 283 (15283): accuracy: 0.9930, sst_loss: 0.0190 ||
+06/29 07:35:34 PM: Update 15294: task sst, batch 294 (15294): accuracy: 0.9930, sst_loss: 0.0188 ||
+06/29 07:35:45 PM: Update 15306: task sst, batch 306 (15306): accuracy: 0.9930, sst_loss: 0.0187 ||
+06/29 07:35:56 PM: Update 15319: task sst, batch 319 (15319): accuracy: 0.9931, sst_loss: 0.0186 ||
+06/29 07:36:07 PM: Update 15331: task sst, batch 331 (15331): accuracy: 0.9929, sst_loss: 0.0187 ||
+06/29 07:36:18 PM: Update 15343: task sst, batch 343 (15343): accuracy: 0.9930, sst_loss: 0.0185 ||
+06/29 07:36:28 PM: Update 15355: task sst, batch 355 (15355): accuracy: 0.9930, sst_loss: 0.0187 ||
+06/29 07:36:39 PM: Update 15367: task sst, batch 367 (15367): accuracy: 0.9930, sst_loss: 0.0187 ||
+06/29 07:36:50 PM: Update 15379: task sst, batch 379 (15379): accuracy: 0.9929, sst_loss: 0.0188 ||
+06/29 07:37:01 PM: Update 15391: task sst, batch 391 (15391): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:37:12 PM: Update 15403: task sst, batch 403 (15403): accuracy: 0.9929, sst_loss: 0.0188 ||
+06/29 07:37:23 PM: Update 15415: task sst, batch 415 (15415): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:37:33 PM: Update 15427: task sst, batch 427 (15427): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:37:44 PM: Update 15439: task sst, batch 439 (15439): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:37:55 PM: Update 15451: task sst, batch 451 (15451): accuracy: 0.9928, sst_loss: 0.0190 ||
+06/29 07:38:06 PM: Update 15463: task sst, batch 463 (15463): accuracy: 0.9928, sst_loss: 0.0191 ||
+06/29 07:38:17 PM: Update 15475: task sst, batch 475 (15475): accuracy: 0.9928, sst_loss: 0.0191 ||
+06/29 07:38:28 PM: Update 15487: task sst, batch 487 (15487): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:38:38 PM: Update 15499: task sst, batch 499 (15499): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:38:49 PM: Update 15511: task sst, batch 511 (15511): accuracy: 0.9928, sst_loss: 0.0190 ||
+06/29 07:39:00 PM: Update 15523: task sst, batch 523 (15523): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:39:11 PM: Update 15535: task sst, batch 535 (15535): accuracy: 0.9929, sst_loss: 0.0189 ||
+06/29 07:39:22 PM: Update 15547: task sst, batch 547 (15547): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:39:32 PM: Update 15558: task sst, batch 558 (15558): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:39:42 PM: Update 15570: task sst, batch 570 (15570): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:39:53 PM: Update 15583: task sst, batch 583 (15583): accuracy: 0.9928, sst_loss: 0.0190 ||
+06/29 07:40:04 PM: Update 15595: task sst, batch 595 (15595): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:40:15 PM: Update 15607: task sst, batch 607 (15607): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:40:26 PM: Update 15619: task sst, batch 619 (15619): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:40:37 PM: Update 15631: task sst, batch 631 (15631): accuracy: 0.9928, sst_loss: 0.0190 ||
+06/29 07:40:48 PM: Update 15643: task sst, batch 643 (15643): accuracy: 0.9928, sst_loss: 0.0190 ||
+06/29 07:40:58 PM: Update 15655: task sst, batch 655 (15655): accuracy: 0.9927, sst_loss: 0.0190 ||
+06/29 07:41:09 PM: Update 15667: task sst, batch 667 (15667): accuracy: 0.9927, sst_loss: 0.0190 ||
+06/29 07:41:20 PM: Update 15679: task sst, batch 679 (15679): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:41:31 PM: Update 15691: task sst, batch 691 (15691): accuracy: 0.9928, sst_loss: 0.0188 ||
+06/29 07:41:41 PM: Update 15703: task sst, batch 703 (15703): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:41:52 PM: Update 15715: task sst, batch 715 (15715): accuracy: 0.9927, sst_loss: 0.0189 ||
+06/29 07:42:03 PM: Update 15727: task sst, batch 727 (15727): accuracy: 0.9928, sst_loss: 0.0189 ||
+06/29 07:42:14 PM: Update 15739: task sst, batch 739 (15739): accuracy: 0.9927, sst_loss: 0.0190 ||
+06/29 07:42:25 PM: Update 15751: task sst, batch 751 (15751): accuracy: 0.9927, sst_loss: 0.0189 ||
+06/29 07:42:35 PM: Update 15763: task sst, batch 763 (15763): accuracy: 0.9927, sst_loss: 0.0189 ||
+06/29 07:42:46 PM: Update 15775: task sst, batch 775 (15775): accuracy: 0.9927, sst_loss: 0.0189 ||
+06/29 07:42:57 PM: Update 15787: task sst, batch 787 (15787): accuracy: 0.9928, sst_loss: 0.0187 ||
+06/29 07:43:08 PM: Update 15799: task sst, batch 799 (15799): accuracy: 0.9928, sst_loss: 0.0188 ||
+06/29 07:43:19 PM: Update 15811: task sst, batch 811 (15811): accuracy: 0.9928, sst_loss: 0.0188 ||
+06/29 07:43:30 PM: Update 15823: task sst, batch 823 (15823): accuracy: 0.9928, sst_loss: 0.0188 ||
+06/29 07:43:40 PM: Update 15835: task sst, batch 835 (15835): accuracy: 0.9928, sst_loss: 0.0188 ||
+06/29 07:43:51 PM: Update 15848: task sst, batch 848 (15848): accuracy: 0.9928, sst_loss: 0.0187 ||
+06/29 07:44:02 PM: Update 15860: task sst, batch 860 (15860): accuracy: 0.9928, sst_loss: 0.0187 ||
+06/29 07:44:13 PM: Update 15872: task sst, batch 872 (15872): accuracy: 0.9928, sst_loss: 0.0187 ||
+06/29 07:44:24 PM: Update 15884: task sst, batch 884 (15884): accuracy: 0.9929, sst_loss: 0.0186 ||
+06/29 07:44:34 PM: Update 15895: task sst, batch 895 (15895): accuracy: 0.9928, sst_loss: 0.0186 ||
+06/29 07:44:45 PM: Update 15907: task sst, batch 907 (15907): accuracy: 0.9929, sst_loss: 0.0186 ||
+06/29 07:44:55 PM: Update 15919: task sst, batch 919 (15919): accuracy: 0.9929, sst_loss: 0.0186 ||
+06/29 07:45:06 PM: Update 15931: task sst, batch 931 (15931): accuracy: 0.9929, sst_loss: 0.0186 ||
+06/29 07:45:17 PM: Update 15943: task sst, batch 943 (15943): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:45:28 PM: Update 15955: task sst, batch 955 (15955): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:45:39 PM: Update 15967: task sst, batch 967 (15967): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:45:49 PM: Update 15979: task sst, batch 979 (15979): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:46:00 PM: Update 15991: task sst, batch 991 (15991): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:46:11 PM: Update 16003: task sst, batch 1003 (16003): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:46:22 PM: Update 16015: task sst, batch 1015 (16015): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:46:33 PM: Update 16027: task sst, batch 1027 (16027): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:46:44 PM: Update 16039: task sst, batch 1039 (16039): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:46:54 PM: Update 16051: task sst, batch 1051 (16051): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:47:05 PM: Update 16063: task sst, batch 1063 (16063): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:47:16 PM: Update 16075: task sst, batch 1075 (16075): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:47:27 PM: Update 16087: task sst, batch 1087 (16087): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:47:38 PM: Update 16099: task sst, batch 1099 (16099): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:47:48 PM: Update 16112: task sst, batch 1112 (16112): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:47:59 PM: Update 16124: task sst, batch 1124 (16124): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:48:10 PM: Update 16136: task sst, batch 1136 (16136): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:48:21 PM: Update 16148: task sst, batch 1148 (16148): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:48:31 PM: Update 16159: task sst, batch 1159 (16159): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:48:42 PM: Update 16171: task sst, batch 1171 (16171): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:48:53 PM: Update 16183: task sst, batch 1183 (16183): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:49:04 PM: Update 16195: task sst, batch 1195 (16195): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:49:14 PM: Update 16207: task sst, batch 1207 (16207): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:49:25 PM: Update 16219: task sst, batch 1219 (16219): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:49:36 PM: Update 16231: task sst, batch 1231 (16231): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:49:47 PM: Update 16243: task sst, batch 1243 (16243): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:49:58 PM: Update 16255: task sst, batch 1255 (16255): accuracy: 0.9929, sst_loss: 0.0185 ||
+06/29 07:50:08 PM: Update 16267: task sst, batch 1267 (16267): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:50:19 PM: Update 16279: task sst, batch 1279 (16279): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:50:30 PM: Update 16291: task sst, batch 1291 (16291): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:50:41 PM: Update 16303: task sst, batch 1303 (16303): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:50:52 PM: Update 16315: task sst, batch 1315 (16315): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:51:03 PM: Update 16327: task sst, batch 1327 (16327): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:51:13 PM: Update 16339: task sst, batch 1339 (16339): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:51:24 PM: Update 16351: task sst, batch 1351 (16351): accuracy: 0.9929, sst_loss: 0.0184 ||
+06/29 07:51:35 PM: Update 16363: task sst, batch 1363 (16363): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:51:46 PM: Update 16376: task sst, batch 1376 (16376): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:51:57 PM: Update 16388: task sst, batch 1388 (16388): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:52:08 PM: Update 16400: task sst, batch 1400 (16400): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:52:18 PM: Update 16412: task sst, batch 1412 (16412): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:52:29 PM: Update 16423: task sst, batch 1423 (16423): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:52:39 PM: Update 16435: task sst, batch 1435 (16435): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:52:50 PM: Update 16447: task sst, batch 1447 (16447): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:53:01 PM: Update 16459: task sst, batch 1459 (16459): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:53:12 PM: Update 16471: task sst, batch 1471 (16471): accuracy: 0.9930, sst_loss: 0.0184 ||
+06/29 07:53:23 PM: Update 16483: task sst, batch 1483 (16483): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:53:33 PM: Update 16495: task sst, batch 1495 (16495): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:53:44 PM: Update 16507: task sst, batch 1507 (16507): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:53:55 PM: Update 16519: task sst, batch 1519 (16519): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:54:06 PM: Update 16531: task sst, batch 1531 (16531): accuracy: 0.9930, sst_loss: 0.0183 ||
+06/29 07:54:17 PM: Update 16543: task sst, batch 1543 (16543): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:54:27 PM: Update 16555: task sst, batch 1555 (16555): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:54:38 PM: Update 16567: task sst, batch 1567 (16567): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:54:49 PM: Update 16579: task sst, batch 1579 (16579): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:55:00 PM: Update 16591: task sst, batch 1591 (16591): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:55:11 PM: Update 16603: task sst, batch 1603 (16603): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:55:22 PM: Update 16615: task sst, batch 1615 (16615): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:55:32 PM: Update 16627: task sst, batch 1627 (16627): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:55:43 PM: Update 16640: task sst, batch 1640 (16640): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:55:54 PM: Update 16652: task sst, batch 1652 (16652): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 07:56:05 PM: Update 16664: task sst, batch 1664 (16664): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 07:56:16 PM: Update 16676: task sst, batch 1676 (16676): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 07:56:26 PM: Update 16687: task sst, batch 1687 (16687): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 07:56:37 PM: Update 16699: task sst, batch 1699 (16699): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:56:47 PM: Update 16711: task sst, batch 1711 (16711): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:56:58 PM: Update 16723: task sst, batch 1723 (16723): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:57:09 PM: Update 16735: task sst, batch 1735 (16735): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:57:20 PM: Update 16747: task sst, batch 1747 (16747): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:57:31 PM: Update 16759: task sst, batch 1759 (16759): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:57:41 PM: Update 16771: task sst, batch 1771 (16771): accuracy: 0.9930, sst_loss: 0.0182 ||
+06/29 07:57:52 PM: Update 16783: task sst, batch 1783 (16783): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:58:03 PM: Update 16795: task sst, batch 1795 (16795): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:58:14 PM: Update 16807: task sst, batch 1807 (16807): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:58:25 PM: Update 16819: task sst, batch 1819 (16819): accuracy: 0.9930, sst_loss: 0.0181 ||
+06/29 07:58:36 PM: Update 16831: task sst, batch 1831 (16831): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:58:46 PM: Update 16843: task sst, batch 1843 (16843): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:58:57 PM: Update 16855: task sst, batch 1855 (16855): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:59:08 PM: Update 16867: task sst, batch 1867 (16867): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:59:19 PM: Update 16879: task sst, batch 1879 (16879): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:59:30 PM: Update 16891: task sst, batch 1891 (16891): accuracy: 0.9931, sst_loss: 0.0181 ||
+06/29 07:59:40 PM: Update 16904: task sst, batch 1904 (16904): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 07:59:51 PM: Update 16916: task sst, batch 1916 (16916): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:02 PM: Update 16928: task sst, batch 1928 (16928): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:13 PM: Update 16940: task sst, batch 1940 (16940): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:23 PM: Update 16951: task sst, batch 1951 (16951): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:34 PM: Update 16963: task sst, batch 1963 (16963): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:45 PM: Update 16975: task sst, batch 1975 (16975): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:00:56 PM: Update 16987: task sst, batch 1987 (16987): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:01:06 PM: Update 16999: task sst, batch 1999 (16999): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:01:17 PM: Update 17011: task sst, batch 2011 (17011): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:01:28 PM: Update 17023: task sst, batch 2023 (17023): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:01:39 PM: Update 17035: task sst, batch 2035 (17035): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:01:50 PM: Update 17047: task sst, batch 2047 (17047): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:02:00 PM: Update 17059: task sst, batch 2059 (17059): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:02:11 PM: Update 17071: task sst, batch 2071 (17071): accuracy: 0.9931, sst_loss: 0.0180 ||
+06/29 08:02:22 PM: Update 17083: task sst, batch 2083 (17083): accuracy: 0.9931, sst_loss: 0.0179 ||
+06/29 08:02:33 PM: Update 17095: task sst, batch 2095 (17095): accuracy: 0.9932, sst_loss: 0.0179 ||
+06/29 08:02:44 PM: Update 17107: task sst, batch 2107 (17107): accuracy: 0.9932, sst_loss: 0.0179 ||
+06/29 08:02:55 PM: Update 17119: task sst, batch 2119 (17119): accuracy: 0.9932, sst_loss: 0.0179 ||
+06/29 08:03:05 PM: Update 17131: task sst, batch 2131 (17131): accuracy: 0.9932, sst_loss: 0.0179 ||
+06/29 08:03:16 PM: Update 17143: task sst, batch 2143 (17143): accuracy: 0.9932, sst_loss: 0.0179 ||
+06/29 08:03:27 PM: Update 17155: task sst, batch 2155 (17155): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:03:38 PM: Update 17168: task sst, batch 2168 (17168): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:03:49 PM: Update 17180: task sst, batch 2180 (17180): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:03:59 PM: Update 17192: task sst, batch 2192 (17192): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:04:10 PM: Update 17204: task sst, batch 2204 (17204): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:04:20 PM: Update 17215: task sst, batch 2215 (17215): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:04:31 PM: Update 17227: task sst, batch 2227 (17227): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:04:42 PM: Update 17239: task sst, batch 2239 (17239): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:04:53 PM: Update 17251: task sst, batch 2251 (17251): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:05:04 PM: Update 17263: task sst, batch 2263 (17263): accuracy: 0.9932, sst_loss: 0.0178 ||
+06/29 08:05:14 PM: Update 17275: task sst, batch 2275 (17275): accuracy: 0.9932, sst_loss: 0.0177 ||
+06/29 08:05:25 PM: Update 17287: task sst, batch 2287 (17287): accuracy: 0.9932, sst_loss: 0.0177 ||
+06/29 08:05:36 PM: Update 17299: task sst, batch 2299 (17299): accuracy: 0.9932, sst_loss: 0.0177 ||
+06/29 08:05:47 PM: Update 17311: task sst, batch 2311 (17311): accuracy: 0.9932, sst_loss: 0.0177 ||
+06/29 08:05:58 PM: Update 17323: task sst, batch 2323 (17323): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:06:08 PM: Update 17335: task sst, batch 2335 (17335): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:06:19 PM: Update 17347: task sst, batch 2347 (17347): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:06:30 PM: Update 17359: task sst, batch 2359 (17359): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:06:41 PM: Update 17371: task sst, batch 2371 (17371): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:06:52 PM: Update 17383: task sst, batch 2383 (17383): accuracy: 0.9932, sst_loss: 0.0176 ||
+06/29 08:07:02 PM: Update 17395: task sst, batch 2395 (17395): accuracy: 0.9933, sst_loss: 0.0176 ||
+06/29 08:07:12 PM: Update 17406: task sst, batch 2406 (17406): accuracy: 0.9933, sst_loss: 0.0176 ||
+06/29 08:07:23 PM: Update 17417: task sst, batch 2417 (17417): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:07:33 PM: Update 17429: task sst, batch 2429 (17429): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:07:43 PM: Update 17440: task sst, batch 2440 (17440): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:07:54 PM: Update 17451: task sst, batch 2451 (17451): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:08:04 PM: Update 17462: task sst, batch 2462 (17462): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:08:14 PM: Update 17474: task sst, batch 2474 (17474): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:08:25 PM: Update 17485: task sst, batch 2485 (17485): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:08:35 PM: Update 17497: task sst, batch 2497 (17497): accuracy: 0.9932, sst_loss: 0.0175 ||
+06/29 08:08:46 PM: Update 17509: task sst, batch 2509 (17509): accuracy: 0.9932, sst_loss: 0.0175 ||
+06/29 08:08:57 PM: Update 17521: task sst, batch 2521 (17521): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:09:08 PM: Update 17533: task sst, batch 2533 (17533): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:09:19 PM: Update 17545: task sst, batch 2545 (17545): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:09:29 PM: Update 17556: task sst, batch 2556 (17556): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:09:39 PM: Update 17568: task sst, batch 2568 (17568): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:09:50 PM: Update 17580: task sst, batch 2580 (17580): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:10:01 PM: Update 17592: task sst, batch 2592 (17592): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:10:12 PM: Update 17604: task sst, batch 2604 (17604): accuracy: 0.9933, sst_loss: 0.0175 ||
+06/29 08:10:23 PM: Update 17616: task sst, batch 2616 (17616): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:10:33 PM: Update 17627: task sst, batch 2627 (17627): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:10:44 PM: Update 17639: task sst, batch 2639 (17639): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:10:54 PM: Update 17651: task sst, batch 2651 (17651): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:05 PM: Update 17663: task sst, batch 2663 (17663): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:15 PM: Update 17674: task sst, batch 2674 (17674): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:26 PM: Update 17686: task sst, batch 2686 (17686): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:37 PM: Update 17699: task sst, batch 2699 (17699): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:47 PM: Update 17710: task sst, batch 2710 (17710): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:11:57 PM: Update 17721: task sst, batch 2721 (17721): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:12:07 PM: Update 17732: task sst, batch 2732 (17732): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:12:17 PM: Update 17743: task sst, batch 2743 (17743): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:12:28 PM: Update 17755: task sst, batch 2755 (17755): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:12:39 PM: Update 17767: task sst, batch 2767 (17767): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:12:50 PM: Update 17779: task sst, batch 2779 (17779): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:01 PM: Update 17791: task sst, batch 2791 (17791): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:11 PM: Update 17803: task sst, batch 2803 (17803): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:22 PM: Update 17815: task sst, batch 2815 (17815): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:33 PM: Update 17827: task sst, batch 2827 (17827): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:44 PM: Update 17839: task sst, batch 2839 (17839): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:13:55 PM: Update 17851: task sst, batch 2851 (17851): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:14:06 PM: Update 17863: task sst, batch 2863 (17863): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:14:17 PM: Update 17875: task sst, batch 2875 (17875): accuracy: 0.9933, sst_loss: 0.0174 ||
+06/29 08:14:28 PM: Update 17887: task sst, batch 2887 (17887): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:14:38 PM: Update 17899: task sst, batch 2899 (17899): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:14:49 PM: Update 17911: task sst, batch 2911 (17911): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:15:00 PM: Update 17923: task sst, batch 2923 (17923): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:15:11 PM: Update 17935: task sst, batch 2935 (17935): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:15:22 PM: Update 17947: task sst, batch 2947 (17947): accuracy: 0.9933, sst_loss: 0.0173 ||
+06/29 08:15:33 PM: Update 17960: task sst, batch 2960 (17960): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:15:44 PM: Update 17972: task sst, batch 2972 (17972): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:15:55 PM: Update 17984: task sst, batch 2984 (17984): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:16:06 PM: Update 17996: task sst, batch 2996 (17996): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:16:16 PM: Update 18007: task sst, batch 3007 (18007): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:16:27 PM: Update 18019: task sst, batch 3019 (18019): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:16:37 PM: Update 18031: task sst, batch 3031 (18031): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:16:48 PM: Update 18043: task sst, batch 3043 (18043): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:16:59 PM: Update 18055: task sst, batch 3055 (18055): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:17:10 PM: Update 18067: task sst, batch 3067 (18067): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:17:21 PM: Update 18079: task sst, batch 3079 (18079): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:17:32 PM: Update 18091: task sst, batch 3091 (18091): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:17:43 PM: Update 18103: task sst, batch 3103 (18103): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:17:53 PM: Update 18115: task sst, batch 3115 (18115): accuracy: 0.9934, sst_loss: 0.0172 ||
+06/29 08:18:04 PM: Update 18127: task sst, batch 3127 (18127): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:18:15 PM: Update 18139: task sst, batch 3139 (18139): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:18:26 PM: Update 18151: task sst, batch 3151 (18151): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:18:37 PM: Update 18163: task sst, batch 3163 (18163): accuracy: 0.9934, sst_loss: 0.0171 ||
+06/29 08:18:48 PM: Update 18175: task sst, batch 3175 (18175): accuracy: 0.9934, sst_loss: 0.0170 ||
+06/29 08:18:58 PM: Update 18187: task sst, batch 3187 (18187): accuracy: 0.9934, sst_loss: 0.0170 ||
+06/29 08:19:09 PM: Update 18199: task sst, batch 3199 (18199): accuracy: 0.9934, sst_loss: 0.0170 ||
+06/29 08:19:20 PM: Update 18211: task sst, batch 3211 (18211): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:19:31 PM: Update 18224: task sst, batch 3224 (18224): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:19:42 PM: Update 18236: task sst, batch 3236 (18236): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:19:53 PM: Update 18248: task sst, batch 3248 (18248): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:20:04 PM: Update 18260: task sst, batch 3260 (18260): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:20:14 PM: Update 18271: task sst, batch 3271 (18271): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:20:25 PM: Update 18283: task sst, batch 3283 (18283): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:20:36 PM: Update 18295: task sst, batch 3295 (18295): accuracy: 0.9935, sst_loss: 0.0170 ||
+06/29 08:20:47 PM: Update 18307: task sst, batch 3307 (18307): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:20:58 PM: Update 18319: task sst, batch 3319 (18319): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:21:08 PM: Update 18331: task sst, batch 3331 (18331): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:21:19 PM: Update 18343: task sst, batch 3343 (18343): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:21:30 PM: Update 18355: task sst, batch 3355 (18355): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:21:41 PM: Update 18367: task sst, batch 3367 (18367): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:21:52 PM: Update 18379: task sst, batch 3379 (18379): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:03 PM: Update 18391: task sst, batch 3391 (18391): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:13 PM: Update 18403: task sst, batch 3403 (18403): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:24 PM: Update 18415: task sst, batch 3415 (18415): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:35 PM: Update 18427: task sst, batch 3427 (18427): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:46 PM: Update 18439: task sst, batch 3439 (18439): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:22:57 PM: Update 18451: task sst, batch 3451 (18451): accuracy: 0.9935, sst_loss: 0.0169 ||
+06/29 08:23:08 PM: Update 18463: task sst, batch 3463 (18463): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:23:19 PM: Update 18475: task sst, batch 3475 (18475): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:23:30 PM: Update 18488: task sst, batch 3488 (18488): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:23:41 PM: Update 18500: task sst, batch 3500 (18500): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:23:52 PM: Update 18512: task sst, batch 3512 (18512): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:03 PM: Update 18524: task sst, batch 3524 (18524): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:13 PM: Update 18535: task sst, batch 3535 (18535): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:24 PM: Update 18547: task sst, batch 3547 (18547): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:34 PM: Update 18559: task sst, batch 3559 (18559): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:45 PM: Update 18571: task sst, batch 3571 (18571): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:24:56 PM: Update 18583: task sst, batch 3583 (18583): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:25:07 PM: Update 18595: task sst, batch 3595 (18595): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:25:18 PM: Update 18607: task sst, batch 3607 (18607): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:25:29 PM: Update 18619: task sst, batch 3619 (18619): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:25:39 PM: Update 18631: task sst, batch 3631 (18631): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:25:50 PM: Update 18643: task sst, batch 3643 (18643): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:01 PM: Update 18655: task sst, batch 3655 (18655): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:12 PM: Update 18667: task sst, batch 3667 (18667): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:23 PM: Update 18679: task sst, batch 3679 (18679): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:34 PM: Update 18691: task sst, batch 3691 (18691): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:45 PM: Update 18703: task sst, batch 3703 (18703): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:26:55 PM: Update 18715: task sst, batch 3715 (18715): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:06 PM: Update 18727: task sst, batch 3727 (18727): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:17 PM: Update 18739: task sst, batch 3739 (18739): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:28 PM: Update 18752: task sst, batch 3752 (18752): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:38 PM: Update 18763: task sst, batch 3763 (18763): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:48 PM: Update 18774: task sst, batch 3774 (18774): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:27:59 PM: Update 18786: task sst, batch 3786 (18786): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:28:09 PM: Update 18797: task sst, batch 3797 (18797): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:28:19 PM: Update 18808: task sst, batch 3808 (18808): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:28:30 PM: Update 18820: task sst, batch 3820 (18820): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:28:41 PM: Update 18832: task sst, batch 3832 (18832): accuracy: 0.9935, sst_loss: 0.0168 ||
+06/29 08:28:52 PM: Update 18844: task sst, batch 3844 (18844): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:02 PM: Update 18855: task sst, batch 3855 (18855): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:12 PM: Update 18867: task sst, batch 3867 (18867): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:22 PM: Update 18878: task sst, batch 3878 (18878): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:33 PM: Update 18890: task sst, batch 3890 (18890): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:44 PM: Update 18902: task sst, batch 3902 (18902): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:29:55 PM: Update 18914: task sst, batch 3914 (18914): accuracy: 0.9935, sst_loss: 0.0167 ||
+06/29 08:30:06 PM: Update 18926: task sst, batch 3926 (18926): accuracy: 0.9936, sst_loss: 0.0167 ||
+06/29 08:30:17 PM: Update 18938: task sst, batch 3938 (18938): accuracy: 0.9936, sst_loss: 0.0167 ||
+06/29 08:30:27 PM: Update 18949: task sst, batch 3949 (18949): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:30:38 PM: Update 18961: task sst, batch 3961 (18961): accuracy: 0.9936, sst_loss: 0.0167 ||
+06/29 08:30:48 PM: Update 18973: task sst, batch 3973 (18973): accuracy: 0.9936, sst_loss: 0.0167 ||
+06/29 08:30:59 PM: Update 18985: task sst, batch 3985 (18985): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:31:10 PM: Update 18997: task sst, batch 3997 (18997): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:31:21 PM: Update 19010: task sst, batch 4010 (19010): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:31:32 PM: Update 19022: task sst, batch 4022 (19022): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:31:42 PM: Update 19033: task sst, batch 4033 (19033): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:31:52 PM: Update 19044: task sst, batch 4044 (19044): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:02 PM: Update 19055: task sst, batch 4055 (19055): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:12 PM: Update 19066: task sst, batch 4066 (19066): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:23 PM: Update 19078: task sst, batch 4078 (19078): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:34 PM: Update 19090: task sst, batch 4090 (19090): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:44 PM: Update 19102: task sst, batch 4102 (19102): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:32:54 PM: Update 19113: task sst, batch 4113 (19113): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:05 PM: Update 19125: task sst, batch 4125 (19125): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:16 PM: Update 19137: task sst, batch 4137 (19137): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:27 PM: Update 19149: task sst, batch 4149 (19149): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:37 PM: Update 19160: task sst, batch 4160 (19160): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:48 PM: Update 19172: task sst, batch 4172 (19172): accuracy: 0.9936, sst_loss: 0.0166 ||
+06/29 08:33:59 PM: Update 19184: task sst, batch 4184 (19184): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:34:10 PM: Update 19196: task sst, batch 4196 (19196): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:34:20 PM: Update 19207: task sst, batch 4207 (19207): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:34:31 PM: Update 19219: task sst, batch 4219 (19219): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:34:41 PM: Update 19231: task sst, batch 4231 (19231): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:34:52 PM: Update 19243: task sst, batch 4243 (19243): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:03 PM: Update 19255: task sst, batch 4255 (19255): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:14 PM: Update 19267: task sst, batch 4267 (19267): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:25 PM: Update 19280: task sst, batch 4280 (19280): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:36 PM: Update 19292: task sst, batch 4292 (19292): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:47 PM: Update 19304: task sst, batch 4304 (19304): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:35:58 PM: Update 19316: task sst, batch 4316 (19316): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:36:08 PM: Update 19327: task sst, batch 4327 (19327): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:36:19 PM: Update 19339: task sst, batch 4339 (19339): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:36:29 PM: Update 19351: task sst, batch 4351 (19351): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:36:40 PM: Update 19363: task sst, batch 4363 (19363): accuracy: 0.9936, sst_loss: 0.0165 ||
+06/29 08:36:51 PM: Update 19375: task sst, batch 4375 (19375): accuracy: 0.9936, sst_loss: 0.0164 ||
+06/29 08:37:02 PM: Update 19387: task sst, batch 4387 (19387): accuracy: 0.9936, sst_loss: 0.0164 ||
+06/29 08:37:13 PM: Update 19399: task sst, batch 4399 (19399): accuracy: 0.9936, sst_loss: 0.0164 ||
+06/29 08:37:24 PM: Update 19411: task sst, batch 4411 (19411): accuracy: 0.9936, sst_loss: 0.0164 ||
+06/29 08:37:35 PM: Update 19423: task sst, batch 4423 (19423): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:37:45 PM: Update 19435: task sst, batch 4435 (19435): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:37:56 PM: Update 19447: task sst, batch 4447 (19447): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:38:07 PM: Update 19459: task sst, batch 4459 (19459): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:38:18 PM: Update 19471: task sst, batch 4471 (19471): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:38:29 PM: Update 19483: task sst, batch 4483 (19483): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:38:40 PM: Update 19495: task sst, batch 4495 (19495): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:38:51 PM: Update 19507: task sst, batch 4507 (19507): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:39:02 PM: Update 19519: task sst, batch 4519 (19519): accuracy: 0.9937, sst_loss: 0.0164 ||
+06/29 08:39:12 PM: Update 19531: task sst, batch 4531 (19531): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:39:23 PM: Update 19544: task sst, batch 4544 (19544): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:39:34 PM: Update 19556: task sst, batch 4556 (19556): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:39:44 PM: Update 19567: task sst, batch 4567 (19567): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:39:54 PM: Update 19578: task sst, batch 4578 (19578): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:05 PM: Update 19589: task sst, batch 4589 (19589): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:15 PM: Update 19600: task sst, batch 4600 (19600): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:25 PM: Update 19612: task sst, batch 4612 (19612): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:36 PM: Update 19624: task sst, batch 4624 (19624): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:47 PM: Update 19636: task sst, batch 4636 (19636): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:40:58 PM: Update 19648: task sst, batch 4648 (19648): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:41:09 PM: Update 19660: task sst, batch 4660 (19660): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:41:19 PM: Update 19671: task sst, batch 4671 (19671): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:41:30 PM: Update 19683: task sst, batch 4683 (19683): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:41:41 PM: Update 19695: task sst, batch 4695 (19695): accuracy: 0.9937, sst_loss: 0.0163 ||
+06/29 08:41:51 PM: Update 19707: task sst, batch 4707 (19707): accuracy: 0.9937, sst_loss: 0.0162 ||
+06/29 08:42:01 PM: Update 19718: task sst, batch 4718 (19718): accuracy: 0.9937, sst_loss: 0.0162 ||
+06/29 08:42:12 PM: Update 19730: task sst, batch 4730 (19730): accuracy: 0.9937, sst_loss: 0.0162 ||
+06/29 08:42:22 PM: Update 19741: task sst, batch 4741 (19741): accuracy: 0.9938, sst_loss: 0.0162 ||

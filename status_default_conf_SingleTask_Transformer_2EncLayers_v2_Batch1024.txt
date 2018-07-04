@@ -1,0 +1,382 @@
+06/29 03:48:59 PM: fastText library not found!
+06/29 03:48:59 PM: Parsed args: 
+{
+  "batch_size": 1024,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 512,
+  "cola_classifier_dropout": 0.2,
+  "cola_classifier_hid_dim": 512,
+  "cola_lr": 0.0001,
+  "cola_max_vals": 25,
+  "cola_val_interval": 100,
+  "cove": 0,
+  "cuda": 0,
+  "d_char": 100,
+  "d_ff": 2048,
+  "d_hid": 512,
+  "d_hid_attn": 512,
+  "d_hid_dec": 300,
+  "d_proj": 512,
+  "d_tproj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 50,
+  "eval_tasks": "sst",
+  "eval_val_interval": 500,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/",
+  "exp_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "keep_all_checkpoints": 0,
+  "load_eval_checkpoint": "none",
+  "load_model": 1,
+  "log_file": "log.log",
+  "lr": 0.0001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 40,
+  "max_vals": 25,
+  "max_word_v_size": 30000,
+  "min_lr": 1e-06,
+  "mnli_classifier_dropout": 0.2,
+  "mnli_classifier_hid_dim": 512,
+  "mnli_lr": 0.0001,
+  "mnli_max_vals": 15,
+  "mnli_pair_attn": 1,
+  "mnli_val_interval": 10000,
+  "mrpc_classifier_dropout": 0.4,
+  "mrpc_classifier_hid_dim": 128,
+  "mrpc_lr": 0.0001,
+  "mrpc_max_vals": 50,
+  "mrpc_pair_attn": 0,
+  "mrpc_val_interval": 100,
+  "n_char_filters": 100,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 2,
+  "n_layers_highway": 0,
+  "no_tqdm": 1,
+  "optimizer": "adam",
+  "pair_attn": 1,
+  "patience": 5,
+  "preproc_file": "preproc.pkl",
+  "qnli_classifier_dropout": 0.2,
+  "qnli_classifier_hid_dim": 512,
+  "qnli_lr": 0.0001,
+  "qnli_max_vals": 25,
+  "qnli_pair_attn": 1,
+  "qnli_val_interval": 10000,
+  "qqp_classifier_dropout": 0.2,
+  "qqp_classifier_hid_dim": 512,
+  "qqp_lr": 0.0001,
+  "qqp_max_vals": 15,
+  "qqp_pair_attn": 1,
+  "qqp_val_interval": 10000,
+  "random_seed": 19,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 0,
+  "remote_log_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024__sst",
+  "rte_classifier_dropout": 0.4,
+  "rte_classifier_hid_dim": 128,
+  "rte_lr": 0.0001,
+  "rte_max_vals": 50,
+  "rte_pair_attn": 0,
+  "rte_val_interval": 100,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/sst",
+  "run_name": "sst",
+  "scaling_method": "max",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "transformer",
+  "shared_optimizer": 1,
+  "shared_pair_attn": 0,
+  "skip_embs": 1,
+  "sst_classifier_dropout": 0.2,
+  "sst_classifier_hid_dim": 512,
+  "sst_lr": 0.0001,
+  "sst_max_vals": 25,
+  "sst_val_interval": 500,
+  "sts-b_classifier_dropout": 0.4,
+  "sts-b_classifier_hid_dim": 128,
+  "sts-b_lr": 0.0001,
+  "sts-b_max_vals": 50,
+  "sts-b_pair_attn": 0,
+  "sts-b_val_interval": 100,
+  "task_patience": 2,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 5000,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "proportional",
+  "wnli_classifier_dropout": 0.4,
+  "wnli_classifier_hid_dim": 128,
+  "wnli_lr": 0.0001,
+  "wnli_max_vals": 50,
+  "wnli_pair_attn": 0,
+  "wnli_val_interval": 100,
+  "word_embs": "none",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/29 03:48:59 PM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/sst/params.conf
+06/29 03:48:59 PM: Using random seed 19
+06/29 03:48:59 PM: Using GPU 0
+06/29 03:48:59 PM: Loading tasks...
+06/29 03:48:59 PM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/
+06/29 03:48:59 PM: 	Creating task sst from scratch
+06/29 03:49:07 PM: 	Finished loading SST data.
+06/29 03:49:07 PM: 	Finished loading tasks: sst.
+06/29 03:49:07 PM: 	Building vocab from scratch
+06/29 03:49:08 PM: 	Finished counting words
+06/29 03:49:08 PM: 	Saved vocab to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/vocab
+06/29 03:49:08 PM: 	Finished building vocab. Using 15707 words, 74 chars.
+06/29 03:49:08 PM: 	Task 'sst': indexing from scratch
+06/29 03:49:11 PM: Your label namespace was 'idxs'. We recommend you use a namespace ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by default to your vocabulary.  See documentation for `non_padded_namespaces` parameter in Vocabulary.
+06/29 03:49:19 PM: 	Task 'sst': saved data to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/preproc
+06/29 03:49:19 PM: 	Task 'sst': cleared in-memory data.
+06/29 03:49:19 PM: 	Finished indexing tasks
+06/29 03:49:19 PM: 	Lazy-loading indexed data for task='sst' from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_v2_Batch1024/preproc
+06/29 03:49:19 PM: All tasks initialized with data iterators.
+06/29 03:49:19 PM: 	  Training on sst
+06/29 03:49:19 PM: 	  Evaluating on sst
+06/29 03:49:20 PM: 	Finished loading tasks in 20.302s
+06/29 03:49:20 PM: Building model...
+06/29 03:49:20 PM: 	Not using word embeddings!
+06/29 03:49:20 PM: 	Not using character embeddings!
+06/29 03:49:20 PM: Loading ELMo from files:
+06/29 03:49:20 PM: ELMO_OPT_PATH = https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json
+06/29 03:49:20 PM: ELMO_WEIGHTS_PATH = https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5
+06/29 03:49:20 PM: 	Using ELMo character CNN only!
+06/29 03:49:24 PM: input_dim = 512
+06/29 03:49:24 PM: hidden_dim = 512
+06/29 03:49:24 PM: projection_dim = 64
+06/29 03:49:24 PM: feedforward_hidden_dim = 2048
+06/29 03:49:24 PM: num_layers = 2
+06/29 03:49:24 PM: num_attention_heads = 8
+06/29 03:49:24 PM: use_positional_encoding = True
+06/29 03:49:24 PM: dropout_prob = 0.1
+06/29 03:49:24 PM: residual_dropout_prob = 0.2
+06/29 03:49:24 PM: attention_dropout_prob = 0.1
+06/29 03:49:24 PM: Initializing parameters
+06/29 03:49:24 PM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/29 03:49:24 PM:    _phrase_layer.feedforward_0._linear_layers.0.bias
+06/29 03:49:24 PM:    _phrase_layer.feedforward_0._linear_layers.0.weight
+06/29 03:49:24 PM:    _phrase_layer.feedforward_0._linear_layers.1.bias
+06/29 03:49:24 PM:    _phrase_layer.feedforward_0._linear_layers.1.weight
+06/29 03:49:24 PM:    _phrase_layer.feedforward_1._linear_layers.0.bias
+06/29 03:49:24 PM:    _phrase_layer.feedforward_1._linear_layers.0.weight
+06/29 03:49:24 PM:    _phrase_layer.feedforward_1._linear_layers.1.bias
+06/29 03:49:24 PM:    _phrase_layer.feedforward_1._linear_layers.1.weight
+06/29 03:49:24 PM:    _phrase_layer.feedforward_layer_norm_0.beta
+06/29 03:49:24 PM:    _phrase_layer.feedforward_layer_norm_0.gamma
+06/29 03:49:24 PM:    _phrase_layer.feedforward_layer_norm_1.beta
+06/29 03:49:24 PM:    _phrase_layer.feedforward_layer_norm_1.gamma
+06/29 03:49:24 PM:    _phrase_layer.layer_norm_0.beta
+06/29 03:49:24 PM:    _phrase_layer.layer_norm_0.gamma
+06/29 03:49:24 PM:    _phrase_layer.layer_norm_1.beta
+06/29 03:49:24 PM:    _phrase_layer.layer_norm_1.gamma
+06/29 03:49:24 PM:    _phrase_layer.self_attention_0._combined_projection.bias
+06/29 03:49:24 PM:    _phrase_layer.self_attention_0._combined_projection.weight
+06/29 03:49:24 PM:    _phrase_layer.self_attention_0._output_projection.bias
+06/29 03:49:24 PM:    _phrase_layer.self_attention_0._output_projection.weight
+06/29 03:49:24 PM:    _phrase_layer.self_attention_1._combined_projection.bias
+06/29 03:49:24 PM:    _phrase_layer.self_attention_1._combined_projection.weight
+06/29 03:49:24 PM:    _phrase_layer.self_attention_1._output_projection.bias
+06/29 03:49:24 PM:    _phrase_layer.self_attention_1._output_projection.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/29 03:49:24 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/29 03:49:28 PM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList()
+      )
+    )
+    (_phrase_layer): StackedSelfAttentionEncoder(
+      (feedforward_0): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_0): LayerNorm()
+      (self_attention_0): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_0): LayerNorm()
+      (feedforward_1): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_1): LayerNorm()
+      (self_attention_1): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_1): LayerNorm()
+      (dropout): Dropout(p=0.2)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): SingleClassifier(
+    (pooler): Pooler(
+      (project): Linear(in_features=1024, out_features=512, bias=True)
+    )
+    (classifier): Classifier(
+      (classifier): Sequential(
+        (0): Dropout(p=0.2)
+        (1): Linear(in_features=512, out_features=512, bias=True)
+        (2): Tanh()
+        (3): LayerNorm(torch.Size([512]), eps=1e-05, elementwise_affine=True)
+        (4): Dropout(p=0.2)
+        (5): Linear(in_features=512, out_features=2, bias=True)
+      )
+    )
+  )
+)
+06/29 03:49:28 PM: Total number of parameters: 23294434
+06/29 03:49:28 PM: Number of trainable parameters: 5256578
+06/29 03:49:28 PM: 	Finished building model in 8.606s
+06/29 03:49:28 PM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: sst
+06/29 03:49:28 PM: Training...
+06/29 03:49:28 PM: 	Using noam scheduler with warmup 4000!
+06/29 03:49:28 PM: patience = 5
+06/29 03:49:28 PM: val_interval = 5000
+06/29 03:49:28 PM: max_vals = 25
+06/29 03:49:28 PM: cuda_device = 0
+06/29 03:49:28 PM: grad_norm = 5.0
+06/29 03:49:28 PM: grad_clipping = None
+06/29 03:49:28 PM: lr_decay = 0.99
+06/29 03:49:28 PM: min_lr = 1e-06
+06/29 03:49:28 PM: no_tqdm = 1
+06/29 03:49:28 PM: keep_all_checkpoints = False
+06/29 03:49:28 PM: Sampling tasks proportional to number of training batches
+06/29 03:49:28 PM: Scaling losses to largest task
+06/29 03:49:28 PM: type = adam
+06/29 03:49:28 PM: parameter_groups = None
+06/29 03:49:28 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:49:28 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:49:28 PM: lr = 0.0001
+06/29 03:49:28 PM: weight_decay = 0
+06/29 03:49:28 PM: amsgrad = True
+06/29 03:49:28 PM: type = noam
+06/29 03:49:28 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:49:28 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:49:28 PM: model_size = 512
+06/29 03:49:28 PM: warmup_steps = 4000
+06/29 03:49:28 PM: factor = 1.0
+06/29 03:49:28 PM: type = adam
+06/29 03:49:28 PM: parameter_groups = None
+06/29 03:49:28 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:49:28 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:49:28 PM: lr = 0.0001
+06/29 03:49:28 PM: weight_decay = 0
+06/29 03:49:28 PM: amsgrad = True
+06/29 03:49:28 PM: type = noam
+06/29 03:49:28 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:49:28 PM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:49:28 PM: model_size = 512
+06/29 03:49:28 PM: warmup_steps = 4000
+06/29 03:49:28 PM: factor = 1.0
+06/29 03:49:28 PM: Not loading.
+06/29 03:49:28 PM: Beginning training. Stopping metric: sst_accuracy
+THCudaCheck FAIL file=/opt/conda/conda-bld/pytorch_1524586445097/work/aten/src/THC/generic/THCStorage.cu line=58 error=2 : out of memory
+06/29 03:49:34 PM: Fatal error in main():
+Traceback (most recent call last):
+  File "src/main.py", line 184, in <module>
+    main(sys.argv[1:])
+  File "src/main.py", line 133, in main
+    args.shared_optimizer, args.load_model, phase="main")
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/trainer.py", line 334, in train
+    output_dict = self._forward(batch, task=task, for_training=True)
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/trainer.py", line 598, in _forward
+    return self._model.forward(task, tensor_batch)  # , **tensor_batch)
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/models.py", line 338, in forward
+    out = self._single_sentence_forward(batch, task)
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/models.py", line 359, in _single_sentence_forward
+    sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 491, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/modules.py", line 87, in forward
+    sent_embs = self._highway_layer(self._text_field_embedder(sent))
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 491, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/allennlp/modules/text_field_embedders/basic_text_field_embedder.py", line 80, in forward
+    token_vectors = embedder(*tensors)
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 491, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/raghu1991_p_gmail_com/jiant_v2/src/modules.py", line 669, in forward
+    convolved = conv(character_embedding)
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 491, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/usr/share/anaconda3/lib/python3.6/site-packages/torch/nn/modules/conv.py", line 176, in forward
+    self.padding, self.dilation, self.groups)
+RuntimeError: cuda runtime error (2) : out of memory at /opt/conda/conda-bld/pytorch_1524586445097/work/aten/src/THC/generic/THCStorage.cu:58

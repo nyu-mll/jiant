@@ -17,6 +17,7 @@
 # Example of custom paths for a local installation:
 # export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT
 # export JIANT_DATA_DIR=/Users/Bowman/Drive/JSALT/jiant/glue_data
+# export JIANT_DATA_DIR=/home/raghu1991_p_gmail_com/
 # export WORD_EMBS_FILE=~/glove.840B.300d.txt
 # export FASTTEXT_MODEL_FILE=None
 # export FASTTEXT_EMBS_FILE=None

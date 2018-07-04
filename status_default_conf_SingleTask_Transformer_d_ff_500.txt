@@ -1,0 +1,508 @@
+06/28 09:10:02 PM: fastText library not found!
+06/28 09:10:04 PM: Parsed args: 
+{
+  "batch_size": 64,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 256,
+  "cove": 0,
+  "cuda": 1,
+  "d_char": 100,
+  "d_ff": 500,
+  "d_hid": 512,
+  "d_hid_dec": 300,
+  "d_proj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 100,
+  "eval_tasks": "sst",
+  "eval_val_interval": 1000,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/",
+  "exp_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "load_eval_checkpoint": "none",
+  "load_model": 1,
+  "log_file": "log.log",
+  "lr": 0.001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 40,
+  "max_vals": 100,
+  "max_word_v_size": 30000,
+  "min_lr": 1e-06,
+  "n_char_filters": 100,
+  "n_epochs": 10000,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 2,
+  "n_layers_highway": 1,
+  "no_tqdm": 1,
+  "optimizer": "adam",
+  "pair_enc": "simple",
+  "patience": 10,
+  "preproc_file": "preproc.pkl",
+  "random_seed": 19,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 0,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst",
+  "run_name": "sst",
+  "scaling_method": "none",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "transformer",
+  "shared_optimizer": 1,
+  "shared_pair_enc": 1,
+  "skip_embs": 1,
+  "task_classifier_dropout": 0.2,
+  "task_classifier_hid_dim": 256,
+  "task_lr": 0.001,
+  "task_pair_enc": "simple",
+  "task_patience": 5,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 500,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "proportional",
+  "word_embs": "none",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/28 09:10:04 PM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/params.conf
+06/28 09:10:04 PM: Using GPU 1
+06/28 09:10:04 PM: Using random seed 19
+06/28 09:10:04 PM: Loading tasks...
+06/28 09:10:04 PM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/
+06/28 09:10:04 PM: 	Creating task sst from scratch
+06/28 09:10:11 PM: 	Finished loading SST data.
+06/28 09:10:11 PM: 	Finished loading tasks: sst.
+06/28 09:10:11 PM: 	Building vocab from scratch
+06/28 09:10:12 PM: 	Finished counting words
+06/28 09:10:12 PM: 	Saved vocab to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/vocab
+06/28 09:10:12 PM: 	Finished building vocab. Using 15707 words, 74 chars.
+06/28 09:10:12 PM: 	Indexing task sst from scratch
+06/28 09:10:22 PM: Your label namespace was 'idxs'. We recommend you use a namespace ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by default to your vocabulary.  See documentation for `non_padded_namespaces` parameter in Vocabulary.
+06/28 09:10:22 PM: 	Finished indexing tasks
+06/28 09:10:24 PM: 	Saved data to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/preproc.pkl
+06/28 09:10:24 PM: 	  Training on sst
+06/28 09:10:24 PM: 	  Evaluating on sst
+06/28 09:10:24 PM: 	Finished loading tasks in 20.760s
+06/28 09:10:24 PM: Building model...
+06/28 09:10:24 PM: 	Not using word embeddings!
+06/28 09:10:24 PM: 	Not using character embeddings!
+06/28 09:10:24 PM: 	Using ELMo character CNN only!
+06/28 09:10:30 PM: Initializing parameters
+06/28 09:10:30 PM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/28 09:10:30 PM:    _highway_layer._module._layers.0.bias
+06/28 09:10:30 PM:    _highway_layer._module._layers.0.weight
+06/28 09:10:30 PM:    _phrase_layer.feedforward_0._linear_layers.0.bias
+06/28 09:10:30 PM:    _phrase_layer.feedforward_0._linear_layers.0.weight
+06/28 09:10:30 PM:    _phrase_layer.feedforward_0._linear_layers.1.bias
+06/28 09:10:30 PM:    _phrase_layer.feedforward_0._linear_layers.1.weight
+06/28 09:10:30 PM:    _phrase_layer.feedforward_1._linear_layers.0.bias
+06/28 09:10:30 PM:    _phrase_layer.feedforward_1._linear_layers.0.weight
+06/28 09:10:30 PM:    _phrase_layer.feedforward_1._linear_layers.1.bias
+06/28 09:10:30 PM:    _phrase_layer.feedforward_1._linear_layers.1.weight
+06/28 09:10:30 PM:    _phrase_layer.feedforward_layer_norm_0.beta
+06/28 09:10:30 PM:    _phrase_layer.feedforward_layer_norm_0.gamma
+06/28 09:10:30 PM:    _phrase_layer.feedforward_layer_norm_1.beta
+06/28 09:10:30 PM:    _phrase_layer.feedforward_layer_norm_1.gamma
+06/28 09:10:30 PM:    _phrase_layer.layer_norm_0.beta
+06/28 09:10:30 PM:    _phrase_layer.layer_norm_0.gamma
+06/28 09:10:30 PM:    _phrase_layer.layer_norm_1.beta
+06/28 09:10:30 PM:    _phrase_layer.layer_norm_1.gamma
+06/28 09:10:30 PM:    _phrase_layer.self_attention_0._combined_projection.bias
+06/28 09:10:30 PM:    _phrase_layer.self_attention_0._combined_projection.weight
+06/28 09:10:30 PM:    _phrase_layer.self_attention_0._output_projection.bias
+06/28 09:10:30 PM:    _phrase_layer.self_attention_0._output_projection.weight
+06/28 09:10:30 PM:    _phrase_layer.self_attention_1._combined_projection.bias
+06/28 09:10:30 PM:    _phrase_layer.self_attention_1._combined_projection.weight
+06/28 09:10:30 PM:    _phrase_layer.self_attention_1._output_projection.bias
+06/28 09:10:30 PM:    _phrase_layer.self_attention_1._output_projection.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/28 09:10:30 PM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/28 09:10:34 PM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=1024, bias=True)
+        )
+      )
+    )
+    (_phrase_layer): StackedSelfAttentionEncoder(
+      (feedforward_0): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=500, bias=True)
+          (1): Linear(in_features=500, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_0): LayerNorm()
+      (self_attention_0): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_0): LayerNorm()
+      (feedforward_1): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=500, bias=True)
+          (1): Linear(in_features=500, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_1): LayerNorm()
+      (self_attention_1): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_1): LayerNorm()
+      (dropout): Dropout(p=0.2)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): Sequential(
+    (0): Dropout(p=0.2)
+    (1): Linear(in_features=1024, out_features=256, bias=True)
+    (2): Tanh()
+    (3): LayerNorm(torch.Size([256]), eps=1e-05, elementwise_affine=True)
+    (4): Dropout(p=0.2)
+    (5): Linear(in_features=256, out_features=2, bias=True)
+  )
+)
+06/28 09:10:34 PM: 	Finished building model in 10.125s
+06/28 09:10:34 PM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: sst
+06/28 09:10:34 PM: Training...
+06/28 09:10:34 PM: patience = 10
+06/28 09:10:34 PM: num_epochs = 10000
+06/28 09:10:34 PM: max_vals = 100
+06/28 09:10:34 PM: cuda_device = 1
+06/28 09:10:34 PM: grad_norm = 5.0
+06/28 09:10:34 PM: grad_clipping = None
+06/28 09:10:34 PM: lr_decay = 0.99
+06/28 09:10:34 PM: min_lr = 1e-06
+06/28 09:10:34 PM: no_tqdm = 1
+06/28 09:10:34 PM: Sampling tasks proportional to number of training batches
+06/28 09:10:34 PM: type = adam
+06/28 09:10:34 PM: parameter_groups = None
+06/28 09:10:34 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/28 09:10:34 PM: CURRENTLY DEFINED PARAMETERS: 
+06/28 09:10:34 PM: lr = 0.001
+06/28 09:10:34 PM: weight_decay = 1e-05
+06/28 09:10:34 PM: amsgrad = True
+06/28 09:10:34 PM: type = noam
+06/28 09:10:34 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/28 09:10:34 PM: CURRENTLY DEFINED PARAMETERS: 
+06/28 09:10:34 PM: model_size = 512
+06/28 09:10:34 PM: warmup_steps = 4000
+06/28 09:10:34 PM: factor = 1.0
+06/28 09:10:34 PM: type = adam
+06/28 09:10:34 PM: parameter_groups = None
+06/28 09:10:34 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/28 09:10:34 PM: CURRENTLY DEFINED PARAMETERS: 
+06/28 09:10:34 PM: lr = 0.001
+06/28 09:10:34 PM: weight_decay = 1e-05
+06/28 09:10:34 PM: amsgrad = True
+06/28 09:10:34 PM: type = noam
+06/28 09:10:34 PM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/28 09:10:34 PM: CURRENTLY DEFINED PARAMETERS: 
+06/28 09:10:34 PM: model_size = 512
+06/28 09:10:34 PM: warmup_steps = 4000
+06/28 09:10:34 PM: factor = 1.0
+06/28 09:10:34 PM: Not loading.
+06/28 09:10:34 PM: Beginning training. Stopping metric: sst_accuracy
+06/28 09:10:45 PM: Update 52: task sst, batch 52 (52): accuracy: 0.5216, sst_loss: 0.9110 ||
+06/28 09:10:55 PM: Update 103: task sst, batch 103 (103): accuracy: 0.5410, sst_loss: 0.7977 ||
+06/28 09:11:05 PM: Update 156: task sst, batch 156 (156): accuracy: 0.6126, sst_loss: 0.7003 ||
+06/28 09:11:15 PM: Update 208: task sst, batch 208 (208): accuracy: 0.6687, sst_loss: 0.6218 ||
+06/28 09:11:25 PM: Update 259: task sst, batch 259 (259): accuracy: 0.7023, sst_loss: 0.5718 ||
+06/28 09:11:35 PM: Update 311: task sst, batch 311 (311): accuracy: 0.7252, sst_loss: 0.5373 ||
+06/28 09:11:45 PM: Update 362: task sst, batch 362 (362): accuracy: 0.7429, sst_loss: 0.5112 ||
+06/28 09:11:55 PM: Update 414: task sst, batch 414 (414): accuracy: 0.7572, sst_loss: 0.4898 ||
+06/28 09:12:06 PM: Update 466: task sst, batch 466 (466): accuracy: 0.7687, sst_loss: 0.4726 ||
+06/28 09:12:12 PM: ***** Pass 500 / Epoch 1 *****
+06/28 09:12:12 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:12:12 PM: Validating...
+06/28 09:12:14 PM: Best model found for sst.
+06/28 09:12:14 PM: Best model found for micro.
+06/28 09:12:14 PM: Best model found for macro.
+06/28 09:12:14 PM: Statistic: sst_loss
+06/28 09:12:14 PM: 	training: 0.461795
+06/28 09:12:14 PM: 	validation: 0.393106
+06/28 09:12:14 PM: Statistic: macro_avg
+06/28 09:12:14 PM: 	validation: 0.824541
+06/28 09:12:14 PM: Statistic: micro_avg
+06/28 09:12:14 PM: 	validation: 0.824541
+06/28 09:12:14 PM: Statistic: sst_accuracy
+06/28 09:12:14 PM: 	training: 0.775312
+06/28 09:12:14 PM: 	validation: 0.824541
+06/28 09:12:15 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:12:16 PM: Update 505: task sst, batch 5 (505): accuracy: 0.8812, sst_loss: 0.2952 ||
+06/28 09:12:26 PM: Update 556: task sst, batch 56 (556): accuracy: 0.8627, sst_loss: 0.3282 ||
+06/28 09:12:36 PM: Update 608: task sst, batch 108 (608): accuracy: 0.8595, sst_loss: 0.3307 ||
+06/28 09:12:46 PM: Update 660: task sst, batch 160 (660): accuracy: 0.8585, sst_loss: 0.3296 ||
+06/28 09:12:56 PM: Update 712: task sst, batch 212 (712): accuracy: 0.8613, sst_loss: 0.3267 ||
+06/28 09:13:06 PM: Update 764: task sst, batch 264 (764): accuracy: 0.8616, sst_loss: 0.3252 ||
+06/28 09:13:16 PM: Update 817: task sst, batch 317 (817): accuracy: 0.8668, sst_loss: 0.3164 ||
+06/28 09:13:27 PM: Update 868: task sst, batch 368 (868): accuracy: 0.8677, sst_loss: 0.3140 ||
+06/28 09:13:37 PM: Update 919: task sst, batch 419 (919): accuracy: 0.8697, sst_loss: 0.3102 ||
+06/28 09:13:47 PM: Update 972: task sst, batch 472 (972): accuracy: 0.8697, sst_loss: 0.3100 ||
+06/28 09:13:52 PM: ***** Pass 1000 / Epoch 2 *****
+06/28 09:13:52 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:13:52 PM: Validating...
+06/28 09:13:54 PM: Statistic: sst_loss
+06/28 09:13:54 PM: 	training: 0.307734
+06/28 09:13:54 PM: 	validation: 0.392037
+06/28 09:13:54 PM: Statistic: macro_avg
+06/28 09:13:54 PM: 	validation: 0.824541
+06/28 09:13:54 PM: Statistic: micro_avg
+06/28 09:13:54 PM: 	validation: 0.824541
+06/28 09:13:54 PM: Statistic: sst_accuracy
+06/28 09:13:54 PM: 	training: 0.870719
+06/28 09:13:54 PM: 	validation: 0.824541
+06/28 09:13:55 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:13:57 PM: Update 1012: task sst, batch 12 (1012): accuracy: 0.8789, sst_loss: 0.2639 ||
+06/28 09:14:07 PM: Update 1064: task sst, batch 64 (1064): accuracy: 0.8791, sst_loss: 0.2903 ||
+06/28 09:14:17 PM: Update 1116: task sst, batch 116 (1116): accuracy: 0.8850, sst_loss: 0.2746 ||
+06/28 09:14:27 PM: Update 1168: task sst, batch 168 (1168): accuracy: 0.8865, sst_loss: 0.2722 ||
+06/28 09:14:37 PM: Update 1221: task sst, batch 221 (1221): accuracy: 0.8884, sst_loss: 0.2707 ||
+06/28 09:14:47 PM: Update 1274: task sst, batch 274 (1274): accuracy: 0.8902, sst_loss: 0.2666 ||
+06/28 09:14:57 PM: Update 1326: task sst, batch 326 (1326): accuracy: 0.8899, sst_loss: 0.2665 ||
+06/28 09:15:08 PM: Update 1379: task sst, batch 379 (1379): accuracy: 0.8906, sst_loss: 0.2656 ||
+06/28 09:15:18 PM: Update 1432: task sst, batch 432 (1432): accuracy: 0.8918, sst_loss: 0.2638 ||
+06/28 09:15:28 PM: Update 1484: task sst, batch 484 (1484): accuracy: 0.8924, sst_loss: 0.2622 ||
+06/28 09:15:31 PM: ***** Pass 1500 / Epoch 3 *****
+06/28 09:15:31 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:15:31 PM: Validating...
+06/28 09:15:33 PM: Best model found for sst.
+06/28 09:15:33 PM: Best model found for micro.
+06/28 09:15:33 PM: Best model found for macro.
+06/28 09:15:33 PM: Statistic: sst_loss
+06/28 09:15:33 PM: 	training: 0.262156
+06/28 09:15:33 PM: 	validation: 0.387595
+06/28 09:15:33 PM: Statistic: macro_avg
+06/28 09:15:33 PM: 	validation: 0.827982
+06/28 09:15:33 PM: Statistic: micro_avg
+06/28 09:15:33 PM: 	validation: 0.827982
+06/28 09:15:33 PM: Statistic: sst_accuracy
+06/28 09:15:33 PM: 	training: 0.892543
+06/28 09:15:33 PM: 	validation: 0.827982
+06/28 09:15:33 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:15:38 PM: Update 1524: task sst, batch 24 (1524): accuracy: 0.9056, sst_loss: 0.2412 ||
+06/28 09:15:48 PM: Update 1576: task sst, batch 76 (1576): accuracy: 0.9017, sst_loss: 0.2481 ||
+06/28 09:15:58 PM: Update 1628: task sst, batch 128 (1628): accuracy: 0.8990, sst_loss: 0.2522 ||
+06/28 09:16:08 PM: Update 1679: task sst, batch 179 (1679): accuracy: 0.9008, sst_loss: 0.2498 ||
+06/28 09:16:18 PM: Update 1732: task sst, batch 232 (1732): accuracy: 0.9014, sst_loss: 0.2475 ||
+06/28 09:16:28 PM: Update 1783: task sst, batch 283 (1783): accuracy: 0.9002, sst_loss: 0.2488 ||
+06/28 09:16:38 PM: Update 1834: task sst, batch 334 (1834): accuracy: 0.8999, sst_loss: 0.2477 ||
+06/28 09:16:48 PM: Update 1886: task sst, batch 386 (1886): accuracy: 0.8994, sst_loss: 0.2476 ||
+06/28 09:16:58 PM: Update 1937: task sst, batch 437 (1937): accuracy: 0.9005, sst_loss: 0.2466 ||
+06/28 09:17:08 PM: Update 1988: task sst, batch 488 (1988): accuracy: 0.9006, sst_loss: 0.2467 ||
+06/28 09:17:11 PM: ***** Pass 2000 / Epoch 4 *****
+06/28 09:17:11 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:17:11 PM: Validating...
+06/28 09:17:13 PM: Best model found for sst.
+06/28 09:17:13 PM: Best model found for micro.
+06/28 09:17:13 PM: Best model found for macro.
+06/28 09:17:13 PM: Statistic: sst_loss
+06/28 09:17:13 PM: 	training: 0.247342
+06/28 09:17:13 PM: 	validation: 0.383325
+06/28 09:17:13 PM: Statistic: macro_avg
+06/28 09:17:13 PM: 	validation: 0.834862
+06/28 09:17:13 PM: Statistic: micro_avg
+06/28 09:17:13 PM: 	validation: 0.834862
+06/28 09:17:13 PM: Statistic: sst_accuracy
+06/28 09:17:13 PM: 	training: 0.900344
+06/28 09:17:13 PM: 	validation: 0.834862
+06/28 09:17:13 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:17:19 PM: Update 2027: task sst, batch 27 (2027): accuracy: 0.9097, sst_loss: 0.2302 ||
+06/28 09:17:29 PM: Update 2078: task sst, batch 78 (2078): accuracy: 0.9083, sst_loss: 0.2349 ||
+06/28 09:17:39 PM: Update 2130: task sst, batch 130 (2130): accuracy: 0.9120, sst_loss: 0.2298 ||
+06/28 09:17:49 PM: Update 2182: task sst, batch 182 (2182): accuracy: 0.9118, sst_loss: 0.2272 ||
+06/28 09:17:59 PM: Update 2235: task sst, batch 235 (2235): accuracy: 0.9146, sst_loss: 0.2226 ||
+06/28 09:18:09 PM: Update 2287: task sst, batch 287 (2287): accuracy: 0.9157, sst_loss: 0.2195 ||
+06/28 09:18:19 PM: Update 2339: task sst, batch 339 (2339): accuracy: 0.9164, sst_loss: 0.2183 ||
+06/28 09:18:29 PM: Update 2391: task sst, batch 391 (2391): accuracy: 0.9161, sst_loss: 0.2171 ||
+06/28 09:18:39 PM: Update 2442: task sst, batch 442 (2442): accuracy: 0.9159, sst_loss: 0.2163 ||
+06/28 09:18:49 PM: Update 2495: task sst, batch 495 (2495): accuracy: 0.9169, sst_loss: 0.2152 ||
+06/28 09:18:50 PM: ***** Pass 2500 / Epoch 5 *****
+06/28 09:18:50 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:18:50 PM: Validating...
+06/28 09:18:53 PM: Statistic: sst_loss
+06/28 09:18:53 PM: 	training: 0.214945
+06/28 09:18:53 PM: 	validation: 0.370040
+06/28 09:18:53 PM: Statistic: macro_avg
+06/28 09:18:53 PM: 	validation: 0.822248
+06/28 09:18:53 PM: Statistic: micro_avg
+06/28 09:18:53 PM: 	validation: 0.822248
+06/28 09:18:53 PM: Statistic: sst_accuracy
+06/28 09:18:53 PM: 	training: 0.917107
+06/28 09:18:53 PM: 	validation: 0.822248
+06/28 09:18:53 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:18:59 PM: Update 2534: task sst, batch 34 (2534): accuracy: 0.9196, sst_loss: 0.2056 ||
+06/28 09:19:09 PM: Update 2586: task sst, batch 86 (2586): accuracy: 0.9161, sst_loss: 0.2190 ||
+06/28 09:19:20 PM: Update 2637: task sst, batch 137 (2637): accuracy: 0.9143, sst_loss: 0.2209 ||
+06/28 09:19:30 PM: Update 2690: task sst, batch 190 (2690): accuracy: 0.9151, sst_loss: 0.2179 ||
+06/28 09:19:40 PM: Update 2742: task sst, batch 242 (2742): accuracy: 0.9169, sst_loss: 0.2149 ||
+06/28 09:19:50 PM: Update 2793: task sst, batch 293 (2793): accuracy: 0.9176, sst_loss: 0.2145 ||
+06/28 09:20:00 PM: Update 2846: task sst, batch 346 (2846): accuracy: 0.9169, sst_loss: 0.2164 ||
+06/28 09:20:10 PM: Update 2898: task sst, batch 398 (2898): accuracy: 0.9170, sst_loss: 0.2168 ||
+06/28 09:20:20 PM: Update 2950: task sst, batch 450 (2950): accuracy: 0.9170, sst_loss: 0.2174 ||
+06/28 09:20:29 PM: ***** Pass 3000 / Epoch 6 *****
+06/28 09:20:29 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:20:29 PM: Validating...
+06/28 09:20:30 PM: Batch 2/14: accuracy: 0.8516, sst_loss: 0.3399 ||
+06/28 09:20:32 PM: Statistic: sst_loss
+06/28 09:20:32 PM: 	training: 0.216596
+06/28 09:20:32 PM: 	validation: 0.381578
+06/28 09:20:32 PM: Statistic: macro_avg
+06/28 09:20:32 PM: 	validation: 0.832569
+06/28 09:20:32 PM: Statistic: micro_avg
+06/28 09:20:32 PM: 	validation: 0.832569
+06/28 09:20:32 PM: Statistic: sst_accuracy
+06/28 09:20:32 PM: 	training: 0.917594
+06/28 09:20:32 PM: 	validation: 0.832569
+06/28 09:20:32 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:20:40 PM: Update 3041: task sst, batch 41 (3041): accuracy: 0.9192, sst_loss: 0.2061 ||
+06/28 09:20:50 PM: Update 3092: task sst, batch 92 (3092): accuracy: 0.9137, sst_loss: 0.2241 ||
+06/28 09:21:00 PM: Update 3145: task sst, batch 145 (3145): accuracy: 0.9147, sst_loss: 0.2206 ||
+06/28 09:21:10 PM: Update 3197: task sst, batch 197 (3197): accuracy: 0.9185, sst_loss: 0.2100 ||
+06/28 09:21:20 PM: Update 3248: task sst, batch 248 (3248): accuracy: 0.9215, sst_loss: 0.2056 ||
+06/28 09:21:30 PM: Update 3301: task sst, batch 301 (3301): accuracy: 0.9225, sst_loss: 0.2028 ||
+06/28 09:21:40 PM: Update 3353: task sst, batch 353 (3353): accuracy: 0.9240, sst_loss: 0.1999 ||
+06/28 09:21:50 PM: Update 3405: task sst, batch 405 (3405): accuracy: 0.9248, sst_loss: 0.1983 ||
+06/28 09:22:01 PM: Update 3456: task sst, batch 456 (3456): accuracy: 0.9248, sst_loss: 0.1982 ||
+06/28 09:22:09 PM: ***** Pass 3500 / Epoch 7 *****
+06/28 09:22:09 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:22:09 PM: Validating...
+06/28 09:22:11 PM: Batch 9/14: accuracy: 0.8229, sst_loss: 0.4073 ||
+06/28 09:22:11 PM: Statistic: sst_loss
+06/28 09:22:11 PM: 	training: 0.197213
+06/28 09:22:11 PM: 	validation: 0.384067
+06/28 09:22:11 PM: Statistic: macro_avg
+06/28 09:22:11 PM: 	validation: 0.830275
+06/28 09:22:11 PM: Statistic: micro_avg
+06/28 09:22:11 PM: 	validation: 0.830275
+06/28 09:22:11 PM: Statistic: sst_accuracy
+06/28 09:22:11 PM: 	training: 0.924899
+06/28 09:22:11 PM: 	validation: 0.830275
+06/28 09:22:12 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:22:21 PM: Update 3547: task sst, batch 47 (3547): accuracy: 0.9215, sst_loss: 0.2057 ||
+06/28 09:22:31 PM: Update 3599: task sst, batch 99 (3599): accuracy: 0.9255, sst_loss: 0.1952 ||
+06/28 09:22:41 PM: Update 3651: task sst, batch 151 (3651): accuracy: 0.9267, sst_loss: 0.1945 ||
+06/28 09:22:51 PM: Update 3705: task sst, batch 205 (3705): accuracy: 0.9255, sst_loss: 0.1959 ||
+06/28 09:23:01 PM: Update 3758: task sst, batch 258 (3758): accuracy: 0.9267, sst_loss: 0.1959 ||
+06/28 09:23:12 PM: Update 3810: task sst, batch 310 (3810): accuracy: 0.9276, sst_loss: 0.1938 ||
+06/28 09:23:22 PM: Update 3862: task sst, batch 362 (3862): accuracy: 0.9258, sst_loss: 0.1976 ||
+06/28 09:23:32 PM: Update 3913: task sst, batch 413 (3913): accuracy: 0.9261, sst_loss: 0.1971 ||
+06/28 09:23:42 PM: Update 3965: task sst, batch 465 (3965): accuracy: 0.9255, sst_loss: 0.1984 ||
+06/28 09:23:49 PM: ***** Pass 4000 / Epoch 8 *****
+06/28 09:23:49 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:23:49 PM: Validating...
+06/28 09:23:51 PM: Statistic: sst_loss
+06/28 09:23:51 PM: 	training: 0.197871
+06/28 09:23:51 PM: 	validation: 0.385805
+06/28 09:23:51 PM: Statistic: macro_avg
+06/28 09:23:51 PM: 	validation: 0.825688
+06/28 09:23:51 PM: Statistic: micro_avg
+06/28 09:23:51 PM: 	validation: 0.825688
+06/28 09:23:51 PM: Statistic: sst_accuracy
+06/28 09:23:51 PM: 	training: 0.926031
+06/28 09:23:51 PM: 	validation: 0.825688
+06/28 09:23:52 PM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst
+06/28 09:23:52 PM: Update 4002: task sst, batch 2 (4002): accuracy: 0.9375, sst_loss: 0.1640 ||
+06/28 09:24:02 PM: Update 4054: task sst, batch 54 (4054): accuracy: 0.9277, sst_loss: 0.1895 ||
+06/28 09:24:12 PM: Update 4106: task sst, batch 106 (4106): accuracy: 0.9294, sst_loss: 0.1894 ||
+06/28 09:24:22 PM: Update 4159: task sst, batch 159 (4159): accuracy: 0.9307, sst_loss: 0.1850 ||
+06/28 09:24:32 PM: Update 4211: task sst, batch 211 (4211): accuracy: 0.9280, sst_loss: 0.1884 ||
+06/28 09:24:43 PM: Update 4263: task sst, batch 263 (4263): accuracy: 0.9308, sst_loss: 0.1807 ||
+06/28 09:24:53 PM: Update 4314: task sst, batch 314 (4314): accuracy: 0.9317, sst_loss: 0.1807 ||
+06/28 09:25:03 PM: Update 4366: task sst, batch 366 (4366): accuracy: 0.9324, sst_loss: 0.1797 ||
+06/28 09:25:13 PM: Update 4419: task sst, batch 419 (4419): accuracy: 0.9318, sst_loss: 0.1805 ||
+06/28 09:25:23 PM: Update 4471: task sst, batch 471 (4471): accuracy: 0.9321, sst_loss: 0.1805 ||
+06/28 09:25:29 PM: ***** Pass 4500 / Epoch 9 *****
+06/28 09:25:29 PM: sst: trained on 500 batches, 0.475 epochs
+06/28 09:25:29 PM: Validating...
+06/28 09:25:31 PM: Best model found for sst.
+06/28 09:25:31 PM: Best model found for micro.
+06/28 09:25:31 PM: Best model found for macro.
+06/28 09:25:31 PM: Statistic: sst_loss
+06/28 09:25:31 PM: 	training: 0.179905
+06/28 09:25:31 PM: 	validation: 0.382322
+06/28 09:25:31 PM: Statistic: macro_avg
+06/28 09:25:31 PM: 	validation: 0.838303
+06/28 09:25:31 PM: Statistic: micro_avg
+06/28 09:25:31 PM: 	validation: 0.838303
+06/28 09:25:31 PM: Statistic: sst_accuracy
+06/28 09:25:31 PM: 	training: 0.932159
+06/28 09:25:31 PM: 	validation: 0.838303
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/model_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/metric_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/task_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/training_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/task_state_main_epoch_3.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/training_state_main_epoch_3.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_d_ff_500/sst/model_state_main_epoch_3.best_macro.th
+/home/rag
