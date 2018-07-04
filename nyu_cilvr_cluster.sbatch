@@ -11,7 +11,7 @@
 # JIANT_OVERRIDES="exp_name = main-multi-task-glue, train_tasks = glue, run_name = noelmo-do2-sd1, elmo_chars_only = 1, dropout = 0.2" sbatch ../nyu_cilvr_cluster.sbatch
 
 # Log what we're running and where.
-echo $SLURM_JOBID - `hostname` - $JIANT_FLAGS >> ~/jiant_machine_assignments.txt
+echo $SLURM_JOBID - `hostname` - $JIANT_OVERRIDES >> ~/jiant_machine_assignments.txt
 
 # Run.
 conda activate jiant
