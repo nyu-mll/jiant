@@ -15,6 +15,7 @@ from allennlp_mods.correlation import Correlation
 
 from utils import load_tsv, process_sentence, truncate
 
+from typing import Iterable, Sequence
 
 class Task():
     '''Generic class for a task
@@ -39,6 +40,10 @@ class Task():
     def truncate(self, max_seq_len, sos_tok, eos_tok):
         ''' Shorten sentences to max_seq_len and add sos and eos tokens. '''
         raise NotImplementedError
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        yield from self.sentences
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''

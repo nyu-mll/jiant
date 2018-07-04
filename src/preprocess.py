@@ -152,6 +152,37 @@ def _index_split(task, split, token_indexer, vocab, record_file):
         _indexed_instance_generator(instance_list, vocab), record_file)
     log.info("%s: saved instances to %s", log_prefix, record_file)
 
+def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
+                      relative_path: str, log_prefix: str="") -> bool:
+    """Find a cached file.
+
+    Look in local exp_dir first, then in global_exp_cache_dir. If found in the
+    global dir, make a symlink in the local dir pointing to the global one.
+
+    Args:
+        exp_dir: (string) local experiment dir
+        global_exp_cache_dir: (string) global experiment cache
+        relative_path: (string) relative path to file, from exp_dir
+        log_prefix: (string) prefix for logging info
+
+    Returns:
+        True if file was found in either location.
+    """
+    if log_prefix:
+        log_prefix = log_prefix + ": "
+    # Try in local preproc dir.
+    local_file = os.path.join(exp_dir, relative_path)
+    if os.path.isfile(local_file) or os.path.islink(local_file):
+        log.info("%sFound preprocessed copy in %s", log_prefix, local_file)
+        return True
+    # Try in global preproc dir; if found, make a symlink.
+    global_file = os.path.join(global_exp_cache_dir, relative_path)
+    if os.path.exists(global_file):
+        log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
+        os.symlink(global_file, local_file)
+        log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
+        return True
+    return False
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -215,30 +246,21 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
     reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
+        force_reindex = (args.reload_indexing and
+                         task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            # Try in local preproc dir.
-            record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-            if (os.path.isfile(record_file) or os.path.islink(record_file)) and \
-                    not (args.reload_indexing and task.name in reindex_tasks):
-                log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
-                continue
-            # Try in global preproc dir; if found, make a symlink.
-            global_record_file = _get_serialized_record_path(task.name, split,
-                                                             global_preproc_dir)
-            if os.path.exists(global_record_file) and not \
-                    (args.reload_indexing and task.name in reindex_tasks):
-                log.info("%s: found (global) preprocessed copy in %s",
-                         log_prefix, global_record_file)
-                os.symlink(global_record_file, record_file)
-                log.info("\tCreated symlink: %s -> %s", record_file,
-                         global_record_file)
-                continue
-            # If all else fails, reindex from scratch.
-            _index_split(task, split, token_indexer, vocab, record_file)
+            relative_path = _get_serialized_record_path(task.name, split,
+                                                        "preproc")
+            cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
+                                            relative_path, log_prefix=log_prefix)
+            if force_reindex or not cache_found:
+                # Re-index from scratch.
+                record_file = _get_serialized_record_path(task.name, split,
+                                                          preproc_dir)
+                _index_split(task, split, token_indexer, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         task.train_data = None
@@ -334,7 +356,8 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        for sentence in task.sentences:
+        log.info("\tCounting words for task: '%s'", task)
+        for sentence in task.get_sentences():
             count_sentence(sentence)
 
     log.info("\tFinished counting words")
