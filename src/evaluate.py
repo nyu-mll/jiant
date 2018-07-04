@@ -1,6 +1,5 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
-import ipdb as pdb
 import logging as log
 
 import torch
@@ -70,7 +69,6 @@ def write_preds(all_preds, pred_dir):
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
                         Assumes that predictions are sorted (if necessary).'''
-    pdb.set_trace()
 
     def write_preds_to_file(preds, pred_file, pred_map=None, write_float=False):
         ''' Write preds to pred_file '''
