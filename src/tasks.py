@@ -5,6 +5,8 @@
 - Set all text data as an attribute, task.sentences (List[List[str]])
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
+import copy
+import itertools
 import os
 import math
 import logging as log
@@ -13,9 +15,102 @@ import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from allennlp_mods.correlation import Correlation
 
+# Fields for instance processing
+from allennlp.data import Instance, Token
+from allennlp.data.fields import TextField, LabelField
+from allennlp_mods.numeric_field import NumericField
+
 from utils import load_tsv, process_sentence, truncate
 
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Any
+
+def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
+    return TextField(list(map(Token, sent)), token_indexers=indexers)
+
+def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
+    '''
+    Convert a dataset of sentences into padded sequences of indices.
+
+    Args:
+        - split (list[list[str]]): list of inputs (possibly pair) and outputs
+        - pair_input (int)
+        - tok2idx (dict)
+
+    Returns:
+    '''
+    def _make_instance(sent, label, ids):
+        input1 = _sentence_to_text_field(sent, indexers)
+        label = NumericField(label)
+        ids = NumericField(ids)
+        return Instance({"input1": input1, "labels": label, "ids": ids})
+
+    # Map over columns: input1, labels, ids
+    instances = map(_make_instance, *split)
+    return list(instances)
+
+
+def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
+    '''
+    Convert a dataset of sentences into padded sequences of indices.
+
+    Args:
+        - split (list[list[str]]): list of inputs (possibly pair) and outputs
+        - pair_input (int)
+        - tok2idx (dict)
+
+    Returns:
+    '''
+    def _make_instance(input1, input2, labels, idx=None):
+        d = {}
+        d["input1"] = _sentence_to_text_field(input1, indexers)
+        if input2:
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+        if classification:
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+        else:
+            d["labels"] = NumericField(labels)
+
+        if idx:  # numbered test examples
+            d["idx"] = LabelField(idx, label_namespace="idxs",
+                                  skip_indexing=True)
+        return Instance(d)
+
+    if not is_pair:  # dummy iterator for input2
+        split = list(split)
+        split[1] = itertools.repeat(None)
+    # Map over columns: input2, (input2), labels, (idx)
+    instances = map(_make_instance, *split)
+    return list(instances)
+
+
+def process_lm_task_split(split, indexers):
+    ''' Process a language modeling split '''
+    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+    inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
+               for sent in split]
+    if "chars" not in indexers:
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+    else:
+        targs_indexers = indexers
+    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
+               for sent in split]
+    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
+               for sent in split]
+    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+    #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
+    instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
+                 for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
+    return instances
+
+
+def process_mt_task_split(split, indexers):
+    ''' Process a machine translation split '''
+    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
+    return instances
 
 class Task():
     '''Generic class for a task
