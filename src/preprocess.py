@@ -135,9 +135,8 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, token_indexer, vocab, record_file):
+def _index_split(task, split, token_indexer, target_indexer, vocab, record_file):
     """Index instances and stream to disk.
-
     Args:
         task: Task instance
         split: (string), 'train', 'val', or 'test'
@@ -148,7 +147,7 @@ def _index_split(task, split, token_indexer, vocab, record_file):
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
     log.info("%s: processing to tokens", log_prefix)
-    instance_list = process_task_split(task, split, token_indexer)
+    instance_list = process_task_split(task, split, token_indexer, target_indexer)
     log.info("%s: %d examples to index", log_prefix, len(instance_list))
     serialize.write_records(
         _indexed_instance_generator(instance_list, vocab), record_file)
@@ -176,6 +175,7 @@ def build_tasks(args):
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     token_indexer = {}
+    target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
@@ -187,16 +187,18 @@ def build_tasks(args):
         log.info("\tLoaded vocab from %s", vocab_path)
     else:
         log.info("\tBuilding vocab from scratch")
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
-        word2freq, char2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+        ### FIXME MAGIC NUMBER
+        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000}
+        word2freq, char2freq, target2freq = get_words(tasks)
+        vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
-        del word2freq, char2freq
+        del word2freq, char2freq, target2freq
     word_v_size = vocab.get_vocab_size('tokens')
     char_v_size = vocab.get_vocab_size('chars')
-    log.info("\tFinished building vocab. Using %d words, %d chars.",
-             word_v_size, char_v_size)
+    target_v_size = vocab.get_vocab_size('targets')
+    log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
+             word_v_size, char_v_size, target_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
     if args.word_embs != 'none':
         if not args.reload_vocab and os.path.exists(emb_file):
@@ -237,7 +239,7 @@ def build_tasks(args):
                          global_record_file)
                 continue
             # If all else fails, reindex from scratch.
-            _index_split(task, split, token_indexer, vocab, record_file)
+            _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         task.train_data = None
@@ -322,7 +324,7 @@ def get_words(tasks):
     Get all words for all tasks for all splits for all sentences
     Return dictionary mapping words to frequencies.
     '''
-    word2freq, char2freq = defaultdict(int), defaultdict(int)
+    word2freq, char2freq, target2freq = defaultdict(int), defaultdict(int), defaultdict(int)
 
     def count_sentence(sentence):
         '''Update counts for words in the sentence'''
@@ -336,11 +338,17 @@ def get_words(tasks):
         for sentence in task.sentences:
             count_sentence(sentence)
 
+    for task in tasks:
+        if hasattr(task, "target_sentences"):
+            for sentence in task.target_sentences:
+                for word in sentence:
+                    target2freq[word] += 1
+
     log.info("\tFinished counting words")
-    return word2freq, char2freq
+    return word2freq, char2freq, target2freq
 
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
@@ -355,6 +363,11 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     chars_by_freq.sort(key=lambda x: x[1], reverse=True)
     for char, _ in chars_by_freq[:max_v_sizes['char']]:
         vocab.add_token_to_namespace(char, 'chars')
+
+    targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
+    targets_by_freq.sort(key=lambda x: x[1], reverse=True)
+    for target, _ in targets_by_freq[:max_v_sizes['target']]:
+        vocab.add_token_to_namespace(target, 'targets')
     return vocab
 
 
@@ -397,7 +410,7 @@ def get_fastText_model(vocab, d_word, model_file=None):
     return embeddings, model
 
 
-def process_task_split(task, split, token_indexer):
+def process_task_split(task, split, token_indexer, target_indexer=None):
     '''
     Convert a task split into AllenNLP fields.
     Different tasks have different formats and fields, so process_task routes tasks
@@ -428,7 +441,7 @@ def process_task_split(task, split, token_indexer):
     elif isinstance(task, LanguageModelingTask):
         instances = process_lm_task_split(split_text, token_indexer)
     elif isinstance(task, TaggingTask):
-    	instances = process_tagging_task_split(split_text, token_indexer)
+        instances = process_tagging_task_split(split_text, token_indexer, target_indexer)
     elif isinstance(task, MTTask):
         instances = process_mt_task_split(split_text, token_indexer)
     elif isinstance(task, SequenceGenerationTask):
@@ -537,10 +550,10 @@ def process_mt_task_split(split, indexers):
     return instances
 
 
-def process_tagging_task_split(split, indexers):
+def process_tagging_task_split(split, token_indexer, target_indexer):
     ''' Process a tagging task '''
-    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
+    inputs = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[0]]
+    targs = [TextField(list(map(Token, sent)), token_indexers=target_indexer) for sent in split[2]]
     # Might be better as LabelField? I don't know what these things mean
     instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
     return instances

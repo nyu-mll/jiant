@@ -28,7 +28,7 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask
+    GroundedTask, MTTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -217,6 +217,9 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, TaggingTask):
+            hid2tag = build_tagger(task, d_sent, task.num_tags)
+            setattr(model, '%s_mdl' % task.name, hid2tag)
         elif isinstance(task, MTTask):
             decoder = Seq2SeqDecoder.from_params(vocab,
                                                  Params({'input_dim': d_sent,
@@ -312,6 +315,10 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+def build_tagger(task, d_inp, out_dim):
+    ''' Build LM components (just map hidden states to vocab logits) '''
+    hid2tag = nn.Linear(d_inp, out_dim)
+    return hid2tag
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
@@ -354,6 +361,8 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_forward(batch, task)
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task)
+        elif isinstance(task, TaggingTask):
+            out = self._tagger_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task)
         elif isinstance(task, GroundedTask):
@@ -437,6 +446,39 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             pass
+        return out
+
+    def _tagger_forward(self, batch, task):
+        ''' For language modeling? '''
+        out = {}
+        b_size, seq_len = batch['targs']['words'].size()
+        sent_encoder = self.sent_encoder
+
+        if not isinstance(sent_encoder, BiLMEncoder):
+            sent, mask = sent_encoder(batch['inputs'])
+            sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            sent = sent[:,1:-1,:]
+            hid2tag = getattr(self, "%s_mdl" % task.name)
+            logits = hid2tag(sent).view(b_size * seq_len, -1)
+            out['logits'] = logits
+            targs = batch['targs']['words'].view(-1)
+        else:
+            sent, mask = sent_encoder(batch['input'], batch['input_bwd'])
+            sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            split = int(self.sent_encoder.output_dim / 2)
+            fwd, bwd = sent[:, :, :split], sent[:, :, split:]
+            hid2voc = getattr(self, "%s_hid2voc" % task.name)
+            logits_fwd = hid2voc(fwd).view(b_size * seq_len, -1)
+            logits_bwd = hid2voc(bwd).view(b_size * seq_len, -1)
+            logits = torch.cat([logits_fwd, logits_bwd], dim=0)
+            out['logits'] = logits
+            trg_fwd = batch['targs']['words'].view(-1)
+            trg_bwd = batch['targs_b']['words'].view(-1)
+            targs = torch.cat([trg_fwd, trg_bwd])
+
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
         return out
 
     def _lm_forward(self, batch, task):

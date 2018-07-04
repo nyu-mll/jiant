@@ -956,7 +956,7 @@ class TaggingTask(Task):
     def __init__(self, name, num_tags):
         super().__init__(name)
         self.num_tags = num_tags
-        self.scorer1 = CategoricalAccuracy()
+        self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -975,20 +975,21 @@ class TaggingTask(Task):
         return {'accuracy': acc}
 
 class POSTaggingTask(TaggingTask):
-	def __init__(self, path, max_seq_len, name="pos"):
-		super().__init__(name, 45) # 45 tags
-		self.load_data(path, max_seq_len)
-	        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+    def __init__(self, path, max_seq_len, name="pos"):
+        super().__init__(name, 45) # 45 tags
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
 
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
         tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1)
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
         val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1)
+                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
         te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1)
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -997,10 +998,10 @@ class POSTaggingTask(TaggingTask):
 
 
 class CCGTaggingTask(TaggingTask):
-	def __init__(self, path, max_seq_length, name="ccg"):
-		super().__init__(name, 1363) # 1363 tags
-		self.load_data(path, max_seq_len)
-	        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+    def __init__(self, path, max_seq_len, name="ccg"):
+        super().__init__(name, 1363) # 1363 tags
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
