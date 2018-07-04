@@ -20,7 +20,7 @@ from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 from allennlp.training.optimizers import Optimizer
 from utils import device_mapping
 from utils import assert_for_log
-
+import ipdb as pdb
 
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
@@ -328,6 +328,7 @@ class SamplingMultiTaskTrainer:
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
+                #pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()

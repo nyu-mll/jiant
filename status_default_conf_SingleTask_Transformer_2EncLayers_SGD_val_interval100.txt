@@ -1,0 +1,6866 @@
+06/29 03:01:45 AM: fastText library not found!
+06/29 03:01:46 AM: Parsed args: 
+{
+  "batch_size": 64,
+  "bidirectional": 1,
+  "bpp_base": 1,
+  "char_embs": 0,
+  "char_filter_sizes": "2,3,4,5",
+  "classifier": "mlp",
+  "classifier_dropout": 0.2,
+  "classifier_hid_dim": 256,
+  "cove": 0,
+  "cuda": 0,
+  "d_char": 100,
+  "d_ff": 2048,
+  "d_hid": 512,
+  "d_hid_dec": 300,
+  "d_proj": 64,
+  "d_word": 300,
+  "data_dir": "/usr/share/jsalt/glue_data",
+  "do_eval": 1,
+  "do_train": 1,
+  "dropout": 0.2,
+  "dropout_embs": 0.2,
+  "elmo": 1,
+  "elmo_chars_only": 1,
+  "eval_max_vals": 100,
+  "eval_tasks": "sst",
+  "eval_val_interval": 1000,
+  "exp_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/",
+  "exp_name": "jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd",
+  "fastText": 0,
+  "fastText_model_file": ".",
+  "load_eval_checkpoint": "none",
+  "load_model": 1,
+  "log_file": "log.log",
+  "lr": 0.001,
+  "lr_decay_factor": 0.5,
+  "max_char_v_size": 250,
+  "max_grad_norm": 5.0,
+  "max_seq_len": 40,
+  "max_vals": 100,
+  "max_word_v_size": 30000,
+  "min_lr": 1e-06,
+  "n_char_filters": 100,
+  "n_epochs": 10000,
+  "n_heads": 8,
+  "n_layers_dec": 1,
+  "n_layers_enc": 2,
+  "n_layers_highway": 1,
+  "no_tqdm": 1,
+  "optimizer": "sgd",
+  "pair_enc": "simple",
+  "patience": 10,
+  "preproc_file": "preproc.pkl",
+  "random_seed": 19,
+  "reload_indexing": 0,
+  "reload_tasks": 0,
+  "reload_vocab": 0,
+  "run_dir": "/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst",
+  "run_name": "sst",
+  "scaling_method": "none",
+  "scheduler_threshold": 0.0001,
+  "sent_combine_method": "max",
+  "sent_enc": "transformer",
+  "shared_optimizer": 1,
+  "shared_pair_enc": 1,
+  "skip_embs": 1,
+  "task_classifier_dropout": 0.2,
+  "task_classifier_hid_dim": 256,
+  "task_lr": 0.001,
+  "task_pair_enc": "simple",
+  "task_patience": 5,
+  "train_for_eval": 1,
+  "train_tasks": "sst",
+  "trainer_type": "sampling",
+  "val_interval": 10,
+  "warmup": 4000,
+  "weight_decay": 1e-07,
+  "weighting_method": "proportional",
+  "word_embs": "none",
+  "word_embs_file": "/usr/share/jsalt/glove/glove.840B.300d.txt",
+  "write_preds": 0
+}
+06/29 03:01:46 AM: Saved config to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/params.conf
+06/29 03:01:46 AM: Using GPU 0
+06/29 03:01:46 AM: Using random seed 19
+06/29 03:01:46 AM: Loading tasks...
+06/29 03:01:46 AM: Writing pre-preprocessed tasks to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/
+06/29 03:01:46 AM: 	Loaded existing task sst
+06/29 03:01:46 AM: 	Finished loading tasks: sst.
+06/29 03:01:46 AM: Loading token dictionary from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/vocab.
+06/29 03:01:46 AM: 	Loaded vocab from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/vocab
+06/29 03:01:46 AM: 	Finished building vocab. Using 15707 words, 74 chars.
+06/29 03:01:53 AM: 	Loaded indexed data for sst from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/preproc.pkl
+06/29 03:01:53 AM: 	Finished indexing tasks
+06/29 03:01:53 AM: 	  Training on sst
+06/29 03:01:53 AM: 	  Evaluating on sst
+06/29 03:01:53 AM: 	Finished loading tasks in 7.458s
+06/29 03:01:53 AM: Building model...
+06/29 03:01:53 AM: 	Not using word embeddings!
+06/29 03:01:53 AM: 	Not using character embeddings!
+06/29 03:01:53 AM: 	Using ELMo character CNN only!
+06/29 03:01:58 AM: Initializing parameters
+06/29 03:01:58 AM: Done initializing parameters; the following parameters are using their default initialization from their code
+06/29 03:01:58 AM:    _highway_layer._module._layers.0.bias
+06/29 03:01:58 AM:    _highway_layer._module._layers.0.weight
+06/29 03:01:58 AM:    _phrase_layer.feedforward_0._linear_layers.0.bias
+06/29 03:01:58 AM:    _phrase_layer.feedforward_0._linear_layers.0.weight
+06/29 03:01:58 AM:    _phrase_layer.feedforward_0._linear_layers.1.bias
+06/29 03:01:58 AM:    _phrase_layer.feedforward_0._linear_layers.1.weight
+06/29 03:01:58 AM:    _phrase_layer.feedforward_1._linear_layers.0.bias
+06/29 03:01:58 AM:    _phrase_layer.feedforward_1._linear_layers.0.weight
+06/29 03:01:58 AM:    _phrase_layer.feedforward_1._linear_layers.1.bias
+06/29 03:01:58 AM:    _phrase_layer.feedforward_1._linear_layers.1.weight
+06/29 03:01:58 AM:    _phrase_layer.feedforward_layer_norm_0.beta
+06/29 03:01:58 AM:    _phrase_layer.feedforward_layer_norm_0.gamma
+06/29 03:01:58 AM:    _phrase_layer.feedforward_layer_norm_1.beta
+06/29 03:01:58 AM:    _phrase_layer.feedforward_layer_norm_1.gamma
+06/29 03:01:58 AM:    _phrase_layer.layer_norm_0.beta
+06/29 03:01:58 AM:    _phrase_layer.layer_norm_0.gamma
+06/29 03:01:58 AM:    _phrase_layer.layer_norm_1.beta
+06/29 03:01:58 AM:    _phrase_layer.layer_norm_1.gamma
+06/29 03:01:58 AM:    _phrase_layer.self_attention_0._combined_projection.bias
+06/29 03:01:58 AM:    _phrase_layer.self_attention_0._combined_projection.weight
+06/29 03:01:58 AM:    _phrase_layer.self_attention_0._output_projection.bias
+06/29 03:01:58 AM:    _phrase_layer.self_attention_0._output_projection.weight
+06/29 03:01:58 AM:    _phrase_layer.self_attention_1._combined_projection.bias
+06/29 03:01:58 AM:    _phrase_layer.self_attention_1._combined_projection.weight
+06/29 03:01:58 AM:    _phrase_layer.self_attention_1._output_projection.bias
+06/29 03:01:58 AM:    _phrase_layer.self_attention_1._output_projection.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._char_embedding_weights
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._highways._layers.0.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._highways._layers.1.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._projection.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo._projection.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_0.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_0.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_1.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_1.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_2.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_2.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_3.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_3.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_4.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_4.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_5.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_5.weight
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_6.bias
+06/29 03:01:58 AM:    _text_field_embedder.token_embedder_elmo.char_conv_6.weight
+06/29 03:02:02 AM: MultiTaskModel(
+  (sent_encoder): SentenceEncoder(
+    (_text_field_embedder): BasicTextFieldEmbedder(
+      (token_embedder_elmo): ElmoCharacterEncoder(
+        (char_conv_0): Conv1d(16, 32, kernel_size=(1,), stride=(1,))
+        (char_conv_1): Conv1d(16, 32, kernel_size=(2,), stride=(1,))
+        (char_conv_2): Conv1d(16, 64, kernel_size=(3,), stride=(1,))
+        (char_conv_3): Conv1d(16, 128, kernel_size=(4,), stride=(1,))
+        (char_conv_4): Conv1d(16, 256, kernel_size=(5,), stride=(1,))
+        (char_conv_5): Conv1d(16, 512, kernel_size=(6,), stride=(1,))
+        (char_conv_6): Conv1d(16, 1024, kernel_size=(7,), stride=(1,))
+        (_highways): Highway(
+          (_layers): ModuleList(
+            (0): Linear(in_features=2048, out_features=4096, bias=True)
+            (1): Linear(in_features=2048, out_features=4096, bias=True)
+          )
+        )
+        (_projection): Linear(in_features=2048, out_features=512, bias=True)
+      )
+    )
+    (_highway_layer): TimeDistributed(
+      (_module): Highway(
+        (_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=1024, bias=True)
+        )
+      )
+    )
+    (_phrase_layer): StackedSelfAttentionEncoder(
+      (feedforward_0): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_0): LayerNorm()
+      (self_attention_0): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_0): LayerNorm()
+      (feedforward_1): FeedForward(
+        (_linear_layers): ModuleList(
+          (0): Linear(in_features=512, out_features=2048, bias=True)
+          (1): Linear(in_features=2048, out_features=512, bias=True)
+        )
+        (_dropout): ModuleList(
+          (0): Dropout(p=0.1)
+          (1): Dropout(p=0.1)
+        )
+      )
+      (feedforward_layer_norm_1): LayerNorm()
+      (self_attention_1): MultiHeadSelfAttention(
+        (_combined_projection): Linear(in_features=512, out_features=192, bias=True)
+        (_output_projection): Linear(in_features=64, out_features=512, bias=True)
+        (_attention_dropout): Dropout(p=0.1)
+      )
+      (layer_norm_1): LayerNorm()
+      (dropout): Dropout(p=0.2)
+    )
+    (_dropout): Dropout(p=0.2)
+  )
+  (sst_mdl): Sequential(
+    (0): Dropout(p=0.2)
+    (1): Linear(in_features=1024, out_features=256, bias=True)
+    (2): Tanh()
+    (3): LayerNorm(torch.Size([256]), eps=1e-05, elementwise_affine=True)
+    (4): Dropout(p=0.2)
+    (5): Linear(in_features=256, out_features=2, bias=True)
+  )
+)
+06/29 03:02:02 AM: 	Finished building model in 8.487s
+06/29 03:02:02 AM: Will run the following steps:
+Training model on tasks: sst
+Re-training model for individual eval tasks
+Evaluating model on tasks: sst
+06/29 03:02:02 AM: Training...
+06/29 03:02:02 AM: patience = 10
+06/29 03:02:02 AM: num_epochs = 10000
+06/29 03:02:02 AM: max_vals = 100
+06/29 03:02:02 AM: cuda_device = 0
+06/29 03:02:02 AM: grad_norm = 5.0
+06/29 03:02:02 AM: grad_clipping = None
+06/29 03:02:02 AM: lr_decay = 0.99
+06/29 03:02:02 AM: min_lr = 1e-06
+06/29 03:02:02 AM: no_tqdm = 1
+06/29 03:02:02 AM: Sampling tasks proportional to number of training batches
+06/29 03:02:02 AM: type = sgd
+06/29 03:02:02 AM: parameter_groups = None
+06/29 03:02:02 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:02:02 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:02:02 AM: lr = 0.001
+06/29 03:02:02 AM: weight_decay = 1e-05
+06/29 03:02:02 AM: type = noam
+06/29 03:02:02 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:02:02 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:02:02 AM: model_size = 512
+06/29 03:02:02 AM: warmup_steps = 4000
+06/29 03:02:02 AM: factor = 1.0
+06/29 03:02:02 AM: type = sgd
+06/29 03:02:02 AM: parameter_groups = None
+06/29 03:02:02 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:02:02 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:02:02 AM: lr = 0.001
+06/29 03:02:02 AM: weight_decay = 1e-05
+06/29 03:02:02 AM: type = noam
+06/29 03:02:02 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:02:02 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:02:02 AM: model_size = 512
+06/29 03:02:02 AM: warmup_steps = 4000
+06/29 03:02:02 AM: factor = 1.0
+06/29 03:02:02 AM: Not loading.
+06/29 03:02:02 AM: Beginning training. Stopping metric: sst_accuracy
+06/29 03:02:04 AM: ***** Pass 10 / Epoch 1 *****
+06/29 03:02:04 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:04 AM: Validating...
+06/29 03:02:06 AM: Best model found for sst.
+06/29 03:02:06 AM: Best model found for micro.
+06/29 03:02:06 AM: Best model found for macro.
+06/29 03:02:06 AM: Statistic: sst_loss
+06/29 03:02:06 AM: 	training: 0.738247
+06/29 03:02:06 AM: 	validation: 0.710949
+06/29 03:02:06 AM: Statistic: macro_avg
+06/29 03:02:06 AM: 	validation: 0.511468
+06/29 03:02:06 AM: Statistic: micro_avg
+06/29 03:02:06 AM: 	validation: 0.511468
+06/29 03:02:06 AM: Statistic: sst_accuracy
+06/29 03:02:06 AM: 	training: 0.534375
+06/29 03:02:06 AM: 	validation: 0.511468
+06/29 03:02:06 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:09 AM: ***** Pass 20 / Epoch 2 *****
+06/29 03:02:09 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:09 AM: Validating...
+06/29 03:02:11 AM: Best model found for sst.
+06/29 03:02:11 AM: Best model found for micro.
+06/29 03:02:11 AM: Best model found for macro.
+06/29 03:02:11 AM: Statistic: sst_loss
+06/29 03:02:11 AM: 	training: 0.721088
+06/29 03:02:11 AM: 	validation: 0.710188
+06/29 03:02:11 AM: Statistic: macro_avg
+06/29 03:02:11 AM: 	validation: 0.513761
+06/29 03:02:11 AM: Statistic: micro_avg
+06/29 03:02:11 AM: 	validation: 0.513761
+06/29 03:02:11 AM: Statistic: sst_accuracy
+06/29 03:02:11 AM: 	training: 0.521875
+06/29 03:02:11 AM: 	validation: 0.513761
+06/29 03:02:11 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:12 AM: Update 21: task sst, batch 1 (21): accuracy: 0.6094, sst_loss: 0.6619 ||
+06/29 03:02:13 AM: ***** Pass 30 / Epoch 3 *****
+06/29 03:02:13 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:13 AM: Validating...
+06/29 03:02:16 AM: Statistic: sst_loss
+06/29 03:02:16 AM: 	training: 0.695207
+06/29 03:02:16 AM: 	validation: 0.713243
+06/29 03:02:16 AM: Statistic: macro_avg
+06/29 03:02:16 AM: 	validation: 0.509174
+06/29 03:02:16 AM: Statistic: micro_avg
+06/29 03:02:16 AM: 	validation: 0.509174
+06/29 03:02:16 AM: Statistic: sst_accuracy
+06/29 03:02:16 AM: 	training: 0.546875
+06/29 03:02:16 AM: 	validation: 0.509174
+06/29 03:02:16 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/model_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/metric_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/task_state_main_epoch_1.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/training_state_main_epoch_1.best_macro.th
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:02:18 AM: ***** Pass 40 / Epoch 4 *****
+06/29 03:02:18 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:18 AM: Validating...
+06/29 03:02:21 AM: Statistic: sst_loss
+06/29 03:02:21 AM: 	training: 0.725230
+06/29 03:02:21 AM: 	validation: 0.700842
+06/29 03:02:21 AM: Statistic: macro_avg
+06/29 03:02:21 AM: 	validation: 0.506881
+06/29 03:02:21 AM: Statistic: micro_avg
+06/29 03:02:21 AM: 	validation: 0.506881
+06/29 03:02:21 AM: Statistic: sst_accuracy
+06/29 03:02:21 AM: 	training: 0.510938
+06/29 03:02:21 AM: 	validation: 0.506881
+06/29 03:02:21 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:22 AM: Update 44: task sst, batch 4 (44): accuracy: 0.5156, sst_loss: 0.7180 ||
+06/29 03:02:23 AM: ***** Pass 50 / Epoch 5 *****
+06/29 03:02:23 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:23 AM: Validating...
+06/29 03:02:25 AM: Statistic: sst_loss
+06/29 03:02:25 AM: 	training: 0.711580
+06/29 03:02:25 AM: 	validation: 0.708095
+06/29 03:02:25 AM: Statistic: macro_avg
+06/29 03:02:25 AM: 	validation: 0.511468
+06/29 03:02:25 AM: Statistic: micro_avg
+06/29 03:02:25 AM: 	validation: 0.511468
+06/29 03:02:25 AM: Statistic: sst_accuracy
+06/29 03:02:25 AM: 	training: 0.535937
+06/29 03:02:25 AM: 	validation: 0.511468
+06/29 03:02:26 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:28 AM: ***** Pass 60 / Epoch 6 *****
+06/29 03:02:28 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:28 AM: Validating...
+06/29 03:02:30 AM: Statistic: sst_loss
+06/29 03:02:30 AM: 	training: 0.708149
+06/29 03:02:30 AM: 	validation: 0.712304
+06/29 03:02:30 AM: Statistic: macro_avg
+06/29 03:02:30 AM: 	validation: 0.508028
+06/29 03:02:30 AM: Statistic: micro_avg
+06/29 03:02:30 AM: 	validation: 0.508028
+06/29 03:02:30 AM: Statistic: sst_accuracy
+06/29 03:02:30 AM: 	training: 0.550000
+06/29 03:02:30 AM: 	validation: 0.508028
+06/29 03:02:30 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:32 AM: Update 67: task sst, batch 7 (67): accuracy: 0.5022, sst_loss: 0.7343 ||
+06/29 03:02:32 AM: ***** Pass 70 / Epoch 7 *****
+06/29 03:02:32 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:32 AM: Validating...
+06/29 03:02:35 AM: Best model found for sst.
+06/29 03:02:35 AM: Best model found for micro.
+06/29 03:02:35 AM: Best model found for macro.
+06/29 03:02:35 AM: Statistic: sst_loss
+06/29 03:02:35 AM: 	training: 0.733084
+06/29 03:02:35 AM: 	validation: 0.696613
+06/29 03:02:35 AM: Statistic: macro_avg
+06/29 03:02:35 AM: 	validation: 0.525229
+06/29 03:02:35 AM: Statistic: micro_avg
+06/29 03:02:35 AM: 	validation: 0.525229
+06/29 03:02:35 AM: Statistic: sst_accuracy
+06/29 03:02:35 AM: 	training: 0.489063
+06/29 03:02:35 AM: 	validation: 0.525229
+06/29 03:02:35 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/model_state_main_epoch_2.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/task_state_main_epoch_2.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/metric_state_main_epoch_2.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/training_state_main_epoch_2.best_macro.th
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:02:37 AM: ***** Pass 80 / Epoch 8 *****
+06/29 03:02:37 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:37 AM: Validating...
+06/29 03:02:40 AM: Statistic: sst_loss
+06/29 03:02:40 AM: 	training: 0.715104
+06/29 03:02:40 AM: 	validation: 0.696299
+06/29 03:02:40 AM: Statistic: macro_avg
+06/29 03:02:40 AM: 	validation: 0.516055
+06/29 03:02:40 AM: Statistic: micro_avg
+06/29 03:02:40 AM: 	validation: 0.516055
+06/29 03:02:40 AM: Statistic: sst_accuracy
+06/29 03:02:40 AM: 	training: 0.512500
+06/29 03:02:40 AM: 	validation: 0.516055
+06/29 03:02:40 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:42 AM: Update 90: task sst, batch 10 (90): accuracy: 0.5250, sst_loss: 0.7132 ||
+06/29 03:02:42 AM: ***** Pass 90 / Epoch 9 *****
+06/29 03:02:42 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:42 AM: Validating...
+06/29 03:02:44 AM: Statistic: sst_loss
+06/29 03:02:44 AM: 	training: 0.713209
+06/29 03:02:44 AM: 	validation: 0.696408
+06/29 03:02:44 AM: Statistic: macro_avg
+06/29 03:02:44 AM: 	validation: 0.487385
+06/29 03:02:44 AM: Statistic: micro_avg
+06/29 03:02:44 AM: 	validation: 0.487385
+06/29 03:02:44 AM: Statistic: sst_accuracy
+06/29 03:02:44 AM: 	training: 0.525000
+06/29 03:02:44 AM: 	validation: 0.487385
+06/29 03:02:44 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:47 AM: ***** Pass 100 / Epoch 10 *****
+06/29 03:02:47 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:47 AM: Validating...
+06/29 03:02:49 AM: Statistic: sst_loss
+06/29 03:02:49 AM: 	training: 0.717767
+06/29 03:02:49 AM: 	validation: 0.696686
+06/29 03:02:49 AM: Statistic: macro_avg
+06/29 03:02:49 AM: 	validation: 0.520642
+06/29 03:02:49 AM: Statistic: micro_avg
+06/29 03:02:49 AM: 	validation: 0.520642
+06/29 03:02:49 AM: Statistic: sst_accuracy
+06/29 03:02:49 AM: 	training: 0.528125
+06/29 03:02:49 AM: 	validation: 0.520642
+06/29 03:02:49 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:02:51 AM: ***** Pass 110 / Epoch 11 *****
+06/29 03:02:51 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:51 AM: Validating...
+06/29 03:02:52 AM: Batch 3/14: accuracy: 0.5365, sst_loss: 0.6982 ||
+06/29 03:02:54 AM: Statistic: sst_loss
+06/29 03:02:54 AM: 	training: 0.706192
+06/29 03:02:54 AM: 	validation: 0.697862
+06/29 03:02:54 AM: Statistic: macro_avg
+06/29 03:02:54 AM: 	validation: 0.518349
+06/29 03:02:54 AM: Statistic: micro_avg
+06/29 03:02:54 AM: 	validation: 0.518349
+06/29 03:02:54 AM: Statistic: sst_accuracy
+06/29 03:02:54 AM: 	training: 0.537500
+06/29 03:02:54 AM: 	validation: 0.518349
+06/29 03:02:54 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:02:56 AM: ***** Pass 120 / Epoch 12 *****
+06/29 03:02:56 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:02:56 AM: Validating...
+06/29 03:02:59 AM: Best model found for sst.
+06/29 03:02:59 AM: Best model found for micro.
+06/29 03:02:59 AM: Best model found for macro.
+06/29 03:02:59 AM: Statistic: sst_loss
+06/29 03:02:59 AM: 	training: 0.713879
+06/29 03:02:59 AM: 	validation: 0.695889
+06/29 03:02:59 AM: Statistic: macro_avg
+06/29 03:02:59 AM: 	validation: 0.533257
+06/29 03:02:59 AM: Statistic: micro_avg
+06/29 03:02:59 AM: 	validation: 0.533257
+06/29 03:02:59 AM: Statistic: sst_accuracy
+06/29 03:02:59 AM: 	training: 0.525000
+06/29 03:02:59 AM: 	validation: 0.533257
+06/29 03:02:59 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:01 AM: ***** Pass 130 / Epoch 13 *****
+06/29 03:03:01 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:01 AM: Validating...
+06/29 03:03:02 AM: Batch 7/14: accuracy: 0.5491, sst_loss: 0.6929 ||
+06/29 03:03:03 AM: Statistic: sst_loss
+06/29 03:03:03 AM: 	training: 0.706335
+06/29 03:03:03 AM: 	validation: 0.696454
+06/29 03:03:03 AM: Statistic: macro_avg
+06/29 03:03:03 AM: 	validation: 0.528670
+06/29 03:03:03 AM: Statistic: micro_avg
+06/29 03:03:03 AM: 	validation: 0.528670
+06/29 03:03:03 AM: Statistic: sst_accuracy
+06/29 03:03:03 AM: 	training: 0.550000
+06/29 03:03:03 AM: 	validation: 0.528670
+06/29 03:03:03 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:06 AM: ***** Pass 140 / Epoch 14 *****
+06/29 03:03:06 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:06 AM: Validating...
+06/29 03:03:08 AM: Statistic: sst_loss
+06/29 03:03:08 AM: 	training: 0.705344
+06/29 03:03:08 AM: 	validation: 0.697893
+06/29 03:03:08 AM: Statistic: macro_avg
+06/29 03:03:08 AM: 	validation: 0.518349
+06/29 03:03:08 AM: Statistic: micro_avg
+06/29 03:03:08 AM: 	validation: 0.518349
+06/29 03:03:08 AM: Statistic: sst_accuracy
+06/29 03:03:08 AM: 	training: 0.559375
+06/29 03:03:08 AM: 	validation: 0.518349
+06/29 03:03:08 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:10 AM: ***** Pass 150 / Epoch 15 *****
+06/29 03:03:10 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:10 AM: Validating...
+06/29 03:03:12 AM: Batch 10/14: accuracy: 0.5312, sst_loss: 0.6896 ||
+06/29 03:03:13 AM: Statistic: sst_loss
+06/29 03:03:13 AM: 	training: 0.697297
+06/29 03:03:13 AM: 	validation: 0.693766
+06/29 03:03:13 AM: Statistic: macro_avg
+06/29 03:03:13 AM: 	validation: 0.527523
+06/29 03:03:13 AM: Statistic: micro_avg
+06/29 03:03:13 AM: 	validation: 0.527523
+06/29 03:03:13 AM: Statistic: sst_accuracy
+06/29 03:03:13 AM: 	training: 0.573438
+06/29 03:03:13 AM: 	validation: 0.527523
+06/29 03:03:13 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+
+NOW leanring rate 
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/training_state_main_epoch_7.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/task_state_main_epoch_7.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/model_state_main_epoch_7.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/metric_state_main_epoch_7.best_macro.th
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:03:15 AM: ***** Pass 160 / Epoch 16 *****
+06/29 03:03:15 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:15 AM: Validating...
+06/29 03:03:18 AM: Statistic: sst_loss
+06/29 03:03:18 AM: 	training: 0.699272
+06/29 03:03:18 AM: 	validation: 0.698220
+06/29 03:03:18 AM: Statistic: macro_avg
+06/29 03:03:18 AM: 	validation: 0.496560
+06/29 03:03:18 AM: Statistic: micro_avg
+06/29 03:03:18 AM: 	validation: 0.496560
+06/29 03:03:18 AM: Statistic: sst_accuracy
+06/29 03:03:18 AM: 	training: 0.562500
+06/29 03:03:18 AM: 	validation: 0.496560
+06/29 03:03:18 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:20 AM: ***** Pass 170 / Epoch 17 *****
+06/29 03:03:20 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:20 AM: Validating...
+06/29 03:03:22 AM: Batch 13/14: accuracy: 0.5228, sst_loss: 0.6925 ||
+06/29 03:03:22 AM: Statistic: sst_loss
+06/29 03:03:22 AM: 	training: 0.721145
+06/29 03:03:22 AM: 	validation: 0.692709
+06/29 03:03:22 AM: Statistic: macro_avg
+06/29 03:03:22 AM: 	validation: 0.522936
+06/29 03:03:22 AM: Statistic: micro_avg
+06/29 03:03:22 AM: 	validation: 0.522936
+06/29 03:03:22 AM: Statistic: sst_accuracy
+06/29 03:03:22 AM: 	training: 0.485938
+06/29 03:03:22 AM: 	validation: 0.522936
+06/29 03:03:22 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:25 AM: ***** Pass 180 / Epoch 18 *****
+06/29 03:03:25 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:25 AM: Validating...
+06/29 03:03:27 AM: Best model found for sst.
+06/29 03:03:27 AM: Best model found for micro.
+06/29 03:03:27 AM: Best model found for macro.
+06/29 03:03:27 AM: Statistic: sst_loss
+06/29 03:03:27 AM: 	training: 0.699614
+06/29 03:03:27 AM: 	validation: 0.694431
+06/29 03:03:27 AM: Statistic: macro_avg
+06/29 03:03:27 AM: 	validation: 0.534404
+06/29 03:03:27 AM: Statistic: micro_avg
+06/29 03:03:27 AM: 	validation: 0.534404
+06/29 03:03:27 AM: Statistic: sst_accuracy
+06/29 03:03:27 AM: 	training: 0.551562
+06/29 03:03:27 AM: 	validation: 0.534404
+06/29 03:03:27 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:29 AM: ***** Pass 190 / Epoch 19 *****
+06/29 03:03:29 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:29 AM: Validating...
+06/29 03:03:32 AM: Statistic: sst_loss
+06/29 03:03:32 AM: 	training: 0.729129
+06/29 03:03:32 AM: 	validation: 0.691697
+06/29 03:03:32 AM: Statistic: macro_avg
+06/29 03:03:32 AM: 	validation: 0.513761
+06/29 03:03:32 AM: Statistic: micro_avg
+06/29 03:03:32 AM: 	validation: 0.513761
+06/29 03:03:32 AM: Statistic: sst_accuracy
+06/29 03:03:32 AM: 	training: 0.504687
+06/29 03:03:32 AM: 	validation: 0.513761
+06/29 03:03:32 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:32 AM: Update 192: task sst, batch 2 (192): accuracy: 0.5781, sst_loss: 0.6735 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/task_state_main_epoch_12.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/metric_state_main_epoch_12.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/training_state_main_epoch_12.best_macro.th
+/home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/model_state_main_epoch_12.best_macro.th
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:03:34 AM: ***** Pass 200 / Epoch 20 *****
+06/29 03:03:34 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:34 AM: Validating...
+06/29 03:03:36 AM: Statistic: sst_loss
+06/29 03:03:36 AM: 	training: 0.690053
+06/29 03:03:36 AM: 	validation: 0.698462
+06/29 03:03:36 AM: Statistic: macro_avg
+06/29 03:03:36 AM: 	validation: 0.516055
+06/29 03:03:36 AM: Statistic: micro_avg
+06/29 03:03:36 AM: 	validation: 0.516055
+06/29 03:03:36 AM: Statistic: sst_accuracy
+06/29 03:03:36 AM: 	training: 0.557813
+06/29 03:03:36 AM: 	validation: 0.516055
+06/29 03:03:37 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:39 AM: ***** Pass 210 / Epoch 21 *****
+06/29 03:03:39 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:39 AM: Validating...
+06/29 03:03:41 AM: Statistic: sst_loss
+06/29 03:03:41 AM: 	training: 0.701875
+06/29 03:03:41 AM: 	validation: 0.691788
+06/29 03:03:41 AM: Statistic: macro_avg
+06/29 03:03:41 AM: 	validation: 0.534404
+06/29 03:03:41 AM: Statistic: micro_avg
+06/29 03:03:41 AM: 	validation: 0.534404
+06/29 03:03:41 AM: Statistic: sst_accuracy
+06/29 03:03:41 AM: 	training: 0.565625
+06/29 03:03:41 AM: 	validation: 0.534404
+06/29 03:03:41 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:42 AM: Update 214: task sst, batch 4 (214): accuracy: 0.5391, sst_loss: 0.7086 ||
+06/29 03:03:44 AM: ***** Pass 220 / Epoch 22 *****
+06/29 03:03:44 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:44 AM: Validating...
+06/29 03:03:46 AM: Statistic: sst_loss
+06/29 03:03:46 AM: 	training: 0.718393
+06/29 03:03:46 AM: 	validation: 0.690375
+06/29 03:03:46 AM: Statistic: macro_avg
+06/29 03:03:46 AM: 	validation: 0.527523
+06/29 03:03:46 AM: Statistic: micro_avg
+06/29 03:03:46 AM: 	validation: 0.527523
+06/29 03:03:46 AM: Statistic: sst_accuracy
+06/29 03:03:46 AM: 	training: 0.517188
+06/29 03:03:46 AM: 	validation: 0.527523
+06/29 03:03:46 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:48 AM: ***** Pass 230 / Epoch 23 *****
+06/29 03:03:48 AM: sst: trained on 10 batches, 0.009 epochs
+06/29 03:03:48 AM: Validating...
+06/29 03:03:51 AM: Out of patience. Stopped tracking sst
+06/29 03:03:51 AM: Out of patience. Stopped tracking micro
+06/29 03:03:51 AM: Out of patience. Stopped tracking macro
+06/29 03:03:51 AM: All metrics ran out of patience. Stopping training.
+06/29 03:03:51 AM: Statistic: sst_loss
+06/29 03:03:51 AM: 	training: 0.695052
+06/29 03:03:51 AM: 	validation: 0.697645
+06/29 03:03:51 AM: Statistic: macro_avg
+06/29 03:03:51 AM: 	validation: 0.491972
+06/29 03:03:51 AM: Statistic: micro_avg
+06/29 03:03:51 AM: 	validation: 0.491972
+06/29 03:03:51 AM: Statistic: sst_accuracy
+06/29 03:03:51 AM: 	training: 0.557813
+06/29 03:03:51 AM: 	validation: 0.491972
+06/29 03:03:51 AM: Saved files to /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst
+06/29 03:03:51 AM: Stopped training after 23 validation checks
+06/29 03:03:51 AM: Trained sst for 230 batches or 0.218 epochs
+06/29 03:03:51 AM: ***** VALIDATION RESULTS *****
+06/29 03:03:51 AM: sst_accuracy, 18, sst_loss: 0.69443, macro_avg: 0.53440, micro_avg: 0.53440, sst_accuracy: 0.53440
+06/29 03:03:51 AM: micro_avg, 18, sst_loss: 0.69443, macro_avg: 0.53440, micro_avg: 0.53440, sst_accuracy: 0.53440
+06/29 03:03:51 AM: macro_avg, 18, sst_loss: 0.69443, macro_avg: 0.53440, micro_avg: 0.53440, sst_accuracy: 0.53440
+06/29 03:03:51 AM: Loaded model state from /home/raghu1991_p_gmail_com/exp/jsalt_demo_sst_Transformer_default_conf_SingleTask_2EncLayers_sgd/sst/model_state_main_epoch_18.best_macro.th
+06/29 03:03:51 AM: patience = 10
+06/29 03:03:51 AM: num_epochs = 10000
+06/29 03:03:51 AM: max_vals = 100
+06/29 03:03:51 AM: cuda_device = 0
+06/29 03:03:51 AM: grad_norm = 5.0
+06/29 03:03:51 AM: grad_clipping = None
+06/29 03:03:51 AM: lr_decay = 0.99
+06/29 03:03:51 AM: min_lr = 1e-06
+06/29 03:03:51 AM: no_tqdm = 1
+06/29 03:03:51 AM: Sampling tasks proportional to number of training batches
+06/29 03:03:51 AM: type = sgd
+06/29 03:03:51 AM: parameter_groups = None
+06/29 03:03:51 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:03:51 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:03:51 AM: lr = 0.001
+06/29 03:03:51 AM: weight_decay = 1e-05
+06/29 03:03:51 AM: type = noam
+06/29 03:03:51 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:03:51 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:03:51 AM: model_size = 512
+06/29 03:03:51 AM: warmup_steps = 4000
+06/29 03:03:51 AM: factor = 1.0
+06/29 03:03:51 AM: type = sgd
+06/29 03:03:51 AM: parameter_groups = None
+06/29 03:03:51 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:03:51 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:03:51 AM: lr = 0.001
+06/29 03:03:51 AM: weight_decay = 1e-05
+06/29 03:03:51 AM: type = noam
+06/29 03:03:51 AM: Converting Params object to dict; logging of default values will not occur when dictionary parameters are used subsequently.
+06/29 03:03:51 AM: CURRENTLY DEFINED PARAMETERS: 
+06/29 03:03:51 AM: model_size = 512
+06/29 03:03:51 AM: warmup_steps = 4000
+06/29 03:03:51 AM: factor = 1.0
+06/29 03:03:51 AM: Not loading.
+06/29 03:03:51 AM: Beginning training. Stopping metric: sst_accuracy
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:01 AM: Update 47: task sst, batch 47 (47): accuracy: 0.5455, sst_loss: 0.7012 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:11 AM: Update 94: task sst, batch 94 (94): accuracy: 0.5416, sst_loss: 0.7041 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:21 AM: Update 141: task sst, batch 141 (141): accuracy: 0.5471, sst_loss: 0.7014 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:32 AM: Update 187: task sst, batch 187 (187): accuracy: 0.5468, sst_loss: 0.7003 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:42 AM: Update 234: task sst, batch 234 (234): accuracy: 0.5457, sst_loss: 0.7004 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:04:52 AM: Update 281: task sst, batch 281 (281): accuracy: 0.5453, sst_loss: 0.7000 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:05:02 AM: Update 329: task sst, batch 329 (329): accuracy: 0.5451, sst_loss: 0.6992 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>06/29 03:05:12 AM: Update 375: task sst, batch 375 (375): accuracy: 0.5454, sst_loss: 0.6983 ||
+
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>
+NOW leanring rate 
+<bound method Optimizer.state_dict of SGD (
+Parameter Group 0
+    dampening: 0
+    initial_lr: 0.001
+    lr: 0.001
+    momentum: 0
+    nesterov: False
+    weight_decay: 1e-05
+)>

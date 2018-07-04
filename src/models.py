@@ -28,13 +28,15 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask
+    GroundedTask, MTTask, RedditTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
 from utils import assert_for_log
 from seq2seq_decoder import Seq2SeqDecoder
+import ipdb as pdb
+
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -231,6 +233,11 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
         elif isinstance(task, GroundedTask):
             pass
+        elif isinstance(task, RankingTask):
+            module = build_reddit_module(task, d_sent, task_params)
+            setattr(model, '%s_mdl' % task.name, module)
+
+            print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -258,6 +265,13 @@ def get_task_specific_params(args, task):
         params['dropout'] = get_task_attr("classifier_dropout")
 
     return Params(params)
+
+
+def build_reddit_module(task, d_inp, params):
+    ''' Build a single classifier '''
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+    return pooler
 
 
 def build_single_sentence_module(task, d_inp, params):
@@ -368,7 +382,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-
+        #pdb.set_trace()
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
@@ -420,6 +434,59 @@ class MultiTaskModel(nn.Module):
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
         return out
+
+
+    def _ranking_forward(self, batch, task):
+        ''' For caption and image ranking. This implementation is intended for Reddit'''
+        out = {}
+        # feed forwarding inputs through sentence encoders
+        sent1, mask1 = self.sent_encoder(batch['input1'])  
+        sent2, mask2 = self.sent_encoder(batch['input2']) 
+        sent_pooler = getattr(self, "%s_mdl" % task.name)
+        sent1_rep = sent_pooler(sent1, mask1)
+        sent2_rep = sent_pooler(sent2, mask2)
+        if 1:
+            #labels = batch['labels']
+            #pdb.set_trace()
+            sent1_rep = F.normalize(sent1_rep, 2, 1)
+            sent2_rep = F.normalize(sent2_rep,2,1)
+
+            # all the below implementation is binary cross entropy with weighted neg pairs
+            # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
+
+            # cosine similarity between every pair of samples
+            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+            cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
+            diag_elem = torch.diagonal(cos_simi)
+            no_pos_pairs = len(diag_elem) 
+            no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
+
+            #positive pairs loss: with the main diagonal elements
+            pos_simi = torch.log2(diag_elem)  
+            pos_loss = torch.neg(torch.sum(pos_simi)) 
+
+            # negative pairs loss: with the off diagonal elements
+            off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
+            cos_simi_log = torch.log2(off_diag_elem)
+            neg_loss = torch.neg(torch.sum(cos_simi_log))
+            # scaling
+            neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
+
+            out['loss'] = pos_loss + neg_loss_scaled
+            #pdb.set_trace()
+            # calculating accuracy
+            pred = cos_simi.round()
+          
+            no_pos_pairs_correct = torch.trace(pred)
+            # getting 1-pred and setting matrix with main diagonal elements to zero 
+            offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
+            no_neg_pairs_correct = torch.sum(offdiag_pred)
+            
+            total_correct = no_pos_pairs_correct + no_neg_pairs_correct
+            batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
+            task.scorer1(batch_acc)
+        return out
+ 
 
     def _seq_gen_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
@@ -508,6 +575,4 @@ class MultiTaskModel(nn.Module):
 
         return out
     
-    def _ranking_forward(self, batch, task):
-        ''' For caption and image ranking '''
-        raise NotImplementedError
+
