@@ -956,6 +956,7 @@ class TaggingTask(Task):
     def __init__(self, name, num_tags):
         super().__init__(name)
         self.num_tags = num_tags
+        ## TODO check if this is good metric
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -993,7 +994,7 @@ class POSTaggingTask(TaggingTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        log.info("\tFinished loading POSTagging data.")
 
 
 

@@ -175,7 +175,7 @@ def build_tasks(args):
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     token_indexer = {}
-    target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
+    target_indexer = {"words": SingleIdTokenIndexer(namespace="target_tags")} # TODO namespace
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
@@ -188,7 +188,7 @@ def build_tasks(args):
     else:
         log.info("\tBuilding vocab from scratch")
         ### FIXME MAGIC NUMBER
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000}
+        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000} # TODO target max size
         word2freq, char2freq, target2freq = get_words(tasks)
         vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
@@ -367,7 +367,7 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
     targets_by_freq.sort(key=lambda x: x[1], reverse=True)
     for target, _ in targets_by_freq[:max_v_sizes['target']]:
-        vocab.add_token_to_namespace(target, 'targets')
+        vocab.add_token_to_namespace(target, 'target_tags') # TODO namespace
     return vocab
 
 
