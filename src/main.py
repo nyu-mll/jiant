@@ -16,13 +16,12 @@ import torch
 
 import config
 import gcp
-import utils
-from utils import assert_for_log
 
+from utils import assert_for_log, maybe_make_dir, load_model_state
 from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer, build_trainer_params
-from evaluate import evaluate, load_model_state, write_results, write_preds
+from evaluate import evaluate, write_results, write_preds
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
@@ -81,9 +80,9 @@ def main(cl_arguments):
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
-    utils.maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
-    utils.maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
-    utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
+    maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
+    maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
+    maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
 
@@ -202,7 +201,8 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
-            best_epoch = trainer.train([task], task.val_metric, 1,
+            best_epoch = trainer.train([task], task.val_metric,
+                                       args.batch_size, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
