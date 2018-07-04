@@ -12,14 +12,14 @@ import itertools
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils.clip_grad import clip_grad_norm_
-from tensorboardX import SummaryWriter # pylint: disable=import-error
+from tensorboardX import SummaryWriter  # pylint: disable=import-error
 
-from allennlp.common import Params # pylint: disable=import-error
-from allennlp.common.checks import ConfigurationError # pylint: disable=import-error
-from allennlp.data.iterators import BasicIterator, BucketIterator # pylint: disable=import-error
-from allennlp.training.learning_rate_schedulers import LearningRateScheduler # pylint: disable=import-error
-from allennlp.training.optimizers import Optimizer # pylint: disable=import-error
-from utils import device_mapping, assert_for_log # pylint: disable=import-error
+from allennlp.common import Params  # pylint: disable=import-error
+from allennlp.common.checks import ConfigurationError  # pylint: disable=import-error
+from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
+from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
+from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
+from utils import device_mapping, assert_for_log  # pylint: disable=import-error
 
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -36,7 +36,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
-                  'no_tqdm', 'cuda', 'keep_all_checkpoints', 
+                  'no_tqdm', 'cuda', 'keep_all_checkpoints',
                   'val_data_limit']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
@@ -346,19 +346,20 @@ class SamplingMultiTaskTrainer():
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
 
-        elif weighting_method == 'proportional_log_batch': # log(training batch)
+        elif weighting_method == 'proportional_log_batch':  # log(training batch)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
-        elif weighting_method == 'proportional_log_example': # log(training example)
+        elif weighting_method == 'proportional_log_example':  # log(training example)
             sample_weights = [math.log(task.n_tr_examples) for task in tasks]
 
-        elif weighting_method == 'inverse_example': # 1/training example
-            sample_weights = [(1/task.n_tr_examples) for task in tasks]
-        elif weighting_method == 'inverse_batch': # 1/training batch
-            sample_weights = [(1/task_infos[task.name]['n_tr_batches']) for task in tasks]
-        elif weighting_method == 'inverse_log_example': # 1/log(training example)
-            sample_weights = [(1/math.log(task.n_tr_examples)) for task in tasks]
-        elif weighting_method == 'inverse_log_batch': # 1/log(training batch)
-            sample_weights = [(1/math.log(task_infos[task.name]['n_tr_batches'])) for task in tasks]
+        elif weighting_method == 'inverse_example':  # 1/training example
+            sample_weights = [(1 / task.n_tr_examples) for task in tasks]
+        elif weighting_method == 'inverse_batch':  # 1/training batch
+            sample_weights = [(1 / task_infos[task.name]['n_tr_batches']) for task in tasks]
+        elif weighting_method == 'inverse_log_example':  # 1/log(training example)
+            sample_weights = [(1 / math.log(task.n_tr_examples)) for task in tasks]
+        elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
+            sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
+                              for task in tasks]
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
@@ -412,7 +413,6 @@ class SamplingMultiTaskTrainer():
             task_info['total_batches_trained'] = total_batches_trained
             task_info['loss'] = tr_loss
 
-
             # Intermediate log to logger and tensorboard
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
@@ -421,7 +421,7 @@ class SamplingMultiTaskTrainer():
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
                     task_metrics_to_TB["loss"] = \
-                                float(task_info['loss'] / n_batches_since_val)
+                        float(task_info['loss'] / n_batches_since_val)
                     self._metrics_to_tensorboard_tr(n_pass, task_metrics_to_TB, task.name)
 
                 task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
@@ -434,7 +434,6 @@ class SamplingMultiTaskTrainer():
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
                     log.info("BATCH UTILIZATION: %.3f", batch_util)
-
 
             # Validation
             if n_pass % (validation_interval) == 0:
@@ -483,7 +482,10 @@ class SamplingMultiTaskTrainer():
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
                 all_tr_metrics = {}
-                samples = random.choices(tasks, weights=sample_weights, k=validation_interval) # pylint: disable=no-member
+                samples = random.choices(
+                    tasks,
+                    weights=sample_weights,
+                    k=validation_interval)  # pylint: disable=no-member
 
                 if should_save:
                     self._save_checkpoint(
@@ -539,8 +541,8 @@ class SamplingMultiTaskTrainer():
             else:
                 max_data_points = task.n_val_examples
             val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-                                          task.val_data, num_epochs=1, shuffle=False,
-                                          cuda_device=self._cuda_device)
+                task.val_data, num_epochs=1, shuffle=False,
+                cuda_device=self._cuda_device)
             n_val_batches = math.ceil(max_data_points / batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
 
@@ -888,7 +890,6 @@ class SamplingMultiTaskTrainer():
             name = task_name + '/' + task_name + '_' + name
             self._TB_train_log.add_scalar(name, train_metric, epoch)
 
-
     def _metrics_to_tensorboard_val(self, epoch, val_metrics):
         """
         Sends all of the val metrics to tensorboard
@@ -897,7 +898,7 @@ class SamplingMultiTaskTrainer():
 
         for name in metric_names:
             val_metric = val_metrics.get(name)
-            name = name.split('_')[0]+ '/' +  name
+            name = name.split('_')[0] + '/' + name
             self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod

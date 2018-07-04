@@ -93,10 +93,13 @@ class NLIProbingTask(PairClassificationTask):
     def __init__(self, name, n_classes):
         super().__init__(name)
 
+
 class RegressionTask(Task):
     ''' General regression task '''
+
     def __init__(self, name):
         super().__init__(name)
+
 
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
@@ -742,8 +745,10 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
+
     def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
         super().__init__(path, max_seq_len, name)
         self.scorer1 = Average()
@@ -770,6 +775,7 @@ class WikiInsertionsTask(MTTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
