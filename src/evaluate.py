@@ -69,46 +69,45 @@ def write_preds(all_preds, pred_dir):
 
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
-                        Assumes that predictions are sorted (if necessary).'''
-    pdb.set_trace()
-
-    def write_preds_to_file(preds, pred_file, pred_map=None, write_float=False):
+            Assumes that predictions are sorted (if necessary).
+            For tasks with sentence predictions, we assume they've been mapped back to strings.
+    '''
+    def write_preds_to_file(preds, pred_file, pred_map=None, write_type=int):
         ''' Write preds to pred_file '''
         with open(pred_file, 'w') as pred_fh:
             pred_fh.write("index\tprediction\n")
             for idx, pred in enumerate(preds):
-                pred = pred_map[pred] if pred_map is not None else pred
-                if write_float:
-                    pred_fh.write("%d\t%.3f\n" % (idx, pred))
-                else:
+                if pred_map is not None or write_type == str:
+                    pred = pred_map[pred]
                     pred_fh.write("%d\t%s\n" % (idx, pred))
+                elif write_type == float:
+                    pred_fh.write("%d\t%.3f\n" % (idx, pred))
+                elif write_type == int:
+                    pred_fh.write("%d\t%d\n" % (idx, pred))
 
     for task, preds in all_preds.items():
-        if task not in ['cola', 'sst', 'qqp', 'mrpc', 'sts-b', 'mnli', 'qnli', 'rte', 'wnli']:
-            continue
-        if task in ['sts-b']:
-            preds = [min(max(0., pred * 5.), 5.) for pred in preds]
-
-        if task == 'mnli':
+        if task == 'mnli': # 9796 + 9847 = 19643
+            # assert len(preds) == whatever this should be
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
             write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796:9796+9847], os.path.join(pred_dir, "%s-mm.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796+9847:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+            write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
+                                pred_map=pred_map)
+            write_preds_to_file(preds[19643:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
         elif task in ['rte', 'qnli']:
             pred_map = {0: 'not_entailment', 1: 'entailment'}
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
         elif task in ['sts-b']:
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
+            preds = [min(max(0., pred * 5.), 5.) for pred in preds]
+            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=float)
+        elif task in ['wmt']:
+            # convert each prediction to a single string if we find a list of tokens
+            if isinstance(preds[0], list):
+                assert isinstance(preds[0][0], str)
+                preds = [' '.join(pred) for pred in preds]
+            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=str)
         else:
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task))
-
-
-            with open(os.path.join(pred_dir, "%s.tsv" % (task)), 'w') as pred_fh:
-                pred_fh.write("index\tprediction\n")
-                for idx, pred in enumerate(preds):
-                    if 'sts-b' in task:
-                        pred_fh.write("%d\t%.3f\n" % (idx, pred))
-
+    log.info("Wrote predictions to %s", pred_dir)
     return
 
 
