@@ -4,8 +4,10 @@ import time, os, sys
 import csv
 import pandas
 
-data_path = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs/'
-out_dir = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs_Filtered/'
+#data_path = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs/'
+data_path = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs_Filtered/'
+#out_dir = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs_Filtered/'
+out_dir = '/nfs/jsalt/home/raghu/reddit_post_reply_pairs_Filtered_250Length/'
 
 year_no = sys.argv[1]
 
@@ -36,7 +38,7 @@ for year in [year_no]:
                 try:
                     #row = row_temp.values[0]
                     row = row_temp.strip().split(delimiter)
-                    if len(row) == 4 and len(row[2]) < 350 and len(row[3]) < 350:
+                    if len(row) == 4 and len(row[2]) < 250 and len(row[3]) < 250:
                         if check_condition(row[2]) and check_condition(row[3]): 
                             count_good += 1
                             row[2] = row[2].replace('\r', '')

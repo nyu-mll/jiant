@@ -269,13 +269,13 @@ class RedditTask(RankingTask):
         print("Loading data")
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
-        tr_data = load_tsv(os.path.join(path, 'train_2008.csv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING TRAIN DATA")
-        dev_data = load_tsv(os.path.join(path, 'dev_2007.csv'), max_seq_len,
+        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING dev DATA")
-        test_data = load_tsv(os.path.join(path, 'dev_2007.csv'), max_seq_len,
+        test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING test DATA")
         self.train_data_text = tr_data

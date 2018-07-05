@@ -15,7 +15,6 @@ from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
-import ipdb as pdb
 
 try:
     import fastText
