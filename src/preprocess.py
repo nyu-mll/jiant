@@ -36,7 +36,9 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RecastPunTask
+    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
+    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask,
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
