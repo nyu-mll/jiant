@@ -84,20 +84,23 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
         preproc_dir: (string) path to preprocessing dir
+        fraction: if set to a float between 0 and 1, load only the specified percentage
+          of examples. Hashing is used to ensure that the same examples are loaded each
+          epoch.
 
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
-    return serialize.read_records(filename, repeatable=True)
+    return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
 
 def _indexed_instance_generator(instance_iter, vocab):
@@ -292,7 +295,8 @@ def build_tasks(args):
     # 5) Initialize tasks with data iterators.
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                  fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
         log.info("\tLazy-loading indexed data for task='%s' from %s",
