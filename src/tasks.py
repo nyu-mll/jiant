@@ -1190,3 +1190,8 @@ class RecastNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading recast probing data.")
+
+class RecastPunTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-puns"):
+        super(RecastPunTask, self).__init__(name, 2)

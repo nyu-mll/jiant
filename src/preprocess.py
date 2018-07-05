@@ -35,7 +35,8 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask
+    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RecastPunTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -70,6 +71,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE')
+             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
