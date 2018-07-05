@@ -37,7 +37,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'no_tqdm', 'cuda', 'keep_all_checkpoints',
-                  'val_data_limit']
+                  'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
@@ -97,7 +97,8 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
-                           'val_data_limit': params['val_data_limit']})
+                           'val_data_limit': params['val_data_limit'],
+                           'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
                                                    copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
@@ -107,7 +108,8 @@ class SamplingMultiTaskTrainer():
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000):
+                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
+                 training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
@@ -156,6 +158,8 @@ class SamplingMultiTaskTrainer():
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
             Set to -1 to use all.
+        training_data_fraction: If set to a float between 0 and 1, load only the specified percentage
+            of examples. Hashing is used to ensure that the same examples are loaded each epoch.
         """
         self._model = model
 
@@ -170,6 +174,7 @@ class SamplingMultiTaskTrainer():
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._training_data_fraction = training_data_fraction
 
         self._task_infos = None
         self._metric_infos = None
@@ -232,7 +237,11 @@ class SamplingMultiTaskTrainer():
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
 
             task_info['iterator'] = iterator
-            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
+
+            # Warning: This won't be precise when training_data_fraction is set, since each example is included
+            #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
+            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -895,6 +904,7 @@ class SamplingMultiTaskTrainer():
         no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        training_data_fraction = params.pop("training_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(model, patience=patience,
@@ -904,7 +914,8 @@ class SamplingMultiTaskTrainer():
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints,
-                                        val_data_limit=val_data_limit)
+                                        val_data_limit=val_data_limit,
+                                        training_data_fraction=training_data_fraction)
 
 
 def dont_save(key):
