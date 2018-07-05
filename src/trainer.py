@@ -336,21 +336,16 @@ class SamplingMultiTaskTrainer():
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
-        # debugging print([task.name for task in tasks],[task.n_tr_examples for task in tasks],
-        # [task_infos[task.name]['n_tr_batches'] for task in tasks])
-
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
             sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
             max_weight = max(sample_weights)
             min_weight = min(sample_weights)
-
         elif weighting_method == 'proportional_log_batch':  # log(training batch)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'proportional_log_example':  # log(training example)
             sample_weights = [math.log(task.n_tr_examples) for task in tasks]
-
         elif weighting_method == 'inverse_example':  # 1/training example
             sample_weights = [(1 / task.n_tr_examples) for task in tasks]
         elif weighting_method == 'inverse_batch':  # 1/training batch
@@ -360,7 +355,6 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
-
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -387,7 +381,6 @@ class SamplingMultiTaskTrainer():
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
-                # TODO(Alex): separate into helper function)
                 if scaling_method == 'unit' and weighting_method == 'proportional':
                     loss /= task_info['n_tr_batches']
                 elif scaling_method == 'max' and weighting_method == 'proportional':
@@ -406,7 +399,6 @@ class SamplingMultiTaskTrainer():
 
                 # step scheduler if it's not ReduceLROnPlateau
                 if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                    # scheduler.step(n_pass)
                     scheduler.step_batch(n_pass)
 
             # Update training progress on that task
@@ -461,8 +453,8 @@ class SamplingMultiTaskTrainer():
 
                 # Validate
                 log.info("Validating...")
-                all_val_metrics, should_save, new_best_macro, task_infos, metric_infos = self._validate(
-                    epoch, tasks, batch_size, task_infos, metric_infos, g_scheduler, periodic_save=(phase != "eval"))
+                all_val_metrics, should_save, new_best_macro = self._validate(
+                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
                 should_stop, task_infos, metric_infos = self._check_stop(
@@ -515,16 +507,10 @@ class SamplingMultiTaskTrainer():
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(
-            self,
-            epoch,
-            tasks,
-            batch_size,
-            task_infos,
-            metric_infos,
-            g_scheduler,
-            periodic_save=True):
+    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
+        task_infos, metric_infos = self._task_infos, self._metric_infos
+        g_scheduler = self._g_scheduler
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
         all_val_metrics["macro_avg"] = 0.0
@@ -533,10 +519,9 @@ class SamplingMultiTaskTrainer():
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples = 0.0
+            n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
 
-            # TODO: Make this an explicit parameter rather than hard-coding.
             if self._val_data_limit >= 0:
                 max_data_points = min(task.n_val_examples, self._val_data_limit)
             else:
@@ -547,7 +532,6 @@ class SamplingMultiTaskTrainer():
             n_val_batches = math.ceil(max_data_points / batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
 
-            batch_num = 0
             for batch in val_generator:
                 batch_num += 1
                 out = self._forward(batch, task=task, for_training=False)
@@ -558,9 +542,8 @@ class SamplingMultiTaskTrainer():
                 # log
                 if time.time() - task_info['last_log'] > self._log_interval:
                     task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" %
-                                 task.name] = all_val_metrics["%s_loss" %
-                                                              task.name] / batch_num
+                    task_metrics["%s_loss" % task.name] = \
+                            all_val_metrics["%s_loss" % task.name] / batch_num
                     description = self._description_from_metrics(task_metrics)
                     log.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                     task_info['last_log'] = time.time()
@@ -571,10 +554,8 @@ class SamplingMultiTaskTrainer():
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
             all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-            all_val_metrics["micro_avg"] += \
-                all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += \
-                all_val_metrics[task.val_metric]
+            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
             n_examples_overall += n_examples
 
             # Reset training progress
@@ -630,7 +611,7 @@ class SamplingMultiTaskTrainer():
                 log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
                 log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
-        return all_val_metrics, should_save, new_best_macro, task_infos, metric_infos
+        return all_val_metrics, should_save, new_best_macro
 
     def _get_lr(self):
         if self._g_optimizer is not None:
