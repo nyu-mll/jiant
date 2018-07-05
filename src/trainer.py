@@ -299,6 +299,10 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks inverse to log number of training examples")
         elif weighting_method == 'inverse_log_batch':
             log.info("Sampling tasks inverse to log number of training batches")
+        elif 'power_' in weighting_method:
+            log.info("Sampling tasks with %s", weighting_method.replace('_',' of '))
+        elif 'softmax_' in weighting_method:
+            log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature ')
         # TODO (Shuning): Add an option here.
 
         if scaling_method == 'max':
@@ -361,6 +365,17 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
+        elif 'power_' in weighting_method:  # x ^ power
+            weighting_power = float(weighting_method.strip('power_'))
+            sample_weights = [(task.n_tr_examples ** weighting_power) for task in tasks]
+        elif 'softmax_' in weighting_method:  # exp(x/temp)
+            weighting_temp = float(weighting_method.strip('softmax_'))
+            sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
+
+        log.info ("task.n_tr_examples: " + str([(task, task.n_tr_examples) for task in tasks]) )
+        log.info ("weighting_method: " + weighting_method )
+        log.info ("sample_weights: " + str(sample_weights) )
+
         # TODO (Shuning): I guess you _don't_ want to do anything here, since this
         #   picks the weights in advance.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
@@ -441,7 +456,7 @@ class SamplingMultiTaskTrainer():
 
             # TODO (Shuning):
             # Add code to do a very short validation here: One step per task.
-            # Use the validate method below as an example, but don't compute accuracy 
+            # Use the validate method below as an example, but don't compute accuracy
             # or log as much information -- should be short/simple.
             # Once you're done, call this to turn training mode back on:
             # self._model.train()
@@ -531,8 +546,8 @@ class SamplingMultiTaskTrainer():
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
-        # TODO (Shuning): You should make a new validate function instead of using this one, but you can use 
-        #   it as an example of how to use eval mode (model.eval) and how to access the eval data 
+        # TODO (Shuning): You should make a new validate function instead of using this one, but you can use
+        #   it as an example of how to use eval mode (model.eval) and how to access the eval data
         #   for the tasks.
 
         task_infos, metric_infos = self._task_infos, self._metric_infos
@@ -883,7 +898,7 @@ class SamplingMultiTaskTrainer():
             self._metric_infos[metric_name]['stopped'] = metric_state['stopped']
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
-        # TODO (Shuning): Make sure this can correctly load the state of the agent. 
+        # TODO (Shuning): Make sure this can correctly load the state of the agent.
         # (The Q variables and the history, I guess?)
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]

@@ -5,6 +5,8 @@
 - Set all text data as an attribute, task.sentences (List[List[str]])
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
+import copy
+import itertools
 import os
 import math
 import logging as log
@@ -13,7 +15,54 @@ import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from allennlp_mods.correlation import Correlation
 
+# Fields for instance processing
+from allennlp.data import Instance, Token
+from allennlp.data.fields import TextField, LabelField
+from allennlp_mods.numeric_field import NumericField
+
 from utils import load_tsv, process_sentence, truncate
+
+from typing import Iterable, Sequence, Any, Type
+
+def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
+    return TextField(list(map(Token, sent)), token_indexers=indexers)
+
+
+def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
+    '''
+    Convert a dataset of sentences into padded sequences of indices. Shared
+    across several classes.
+
+    Args:
+        - split (list[list[str]]): list of inputs (possibly pair) and outputs
+        - pair_input (int)
+        - tok2idx (dict)
+
+    Returns:
+    '''
+    def _make_instance(input1, input2, labels, idx=None):
+        d = {}
+        d["input1"] = _sentence_to_text_field(input1, indexers)
+        if input2:
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+        if classification:
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+        else:
+            d["labels"] = NumericField(labels)
+
+        if idx:  # numbered test examples
+            d["idx"] = LabelField(idx, label_namespace="idxs",
+                                  skip_indexing=True)
+        return Instance(d)
+
+    if not is_pair:  # dummy iterator for input2
+        split = list(split)
+        split[1] = itertools.repeat(None)
+    # Map over columns: input2, (input2), labels, (idx)
+    instances = map(_make_instance, *split)
+    #  return list(instances)
+    return instances  # lazy iterator
 
 
 class Task():
@@ -38,6 +87,21 @@ class Task():
 
     def truncate(self, max_seq_len, sos_tok, eos_tok):
         ''' Shorten sentences to max_seq_len and add sos and eos tokens. '''
+        raise NotImplementedError
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        yield from self.sentences
+
+    def get_split_text(self, split: str):
+        ''' Get split text, typically as list of columns.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return getattr(self, '%s_data_text' % split)
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
         raise NotImplementedError
 
     def get_metrics(self, reset=False):
@@ -81,6 +145,10 @@ class SingleClassificationTask(ClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=False)
+
 
 class PairClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
@@ -97,6 +165,10 @@ class PairClassificationTask(ClassificationTask):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True)
 
 
 class NLIProbingTask(PairClassificationTask):
@@ -123,6 +195,11 @@ class PairRegressionTask(RegressionTask):
         mse = self.scorer1.get_metric(reset)
         return {'mse': mse}
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True,
+                                              classification=False)
+
 
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
@@ -143,6 +220,11 @@ class PairOrdinalRegressionTask(RegressionTask):
         return {'1-mse': 1 - mse,
                 'mse': mse,
                 'spearmanr': spearmanr}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True,
+                                              classification=False)
 
 
 class SequenceGenerationTask(Task):
@@ -188,6 +270,29 @@ class LanguageModelingTask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+
+        Split is a single list of sentences here.
+        '''
+        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
+                   for sent in split]
+        if "chars" not in indexers:
+            targs_indexers = {"words": SingleIdTokenIndexer()}
+        else:
+            targs_indexers = indexers
+        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
+                   for sent in split]
+        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
+                   for sent in split]
+        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
+        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
+                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
+        return instances
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -767,12 +872,25 @@ class MTTask(SequenceGenerationTask):
         self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
                                        targ_fn=lambda t: t.split(' '))
+
         log.info("\tFinished loading MT data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a machine translation split '''
+        def _make_instance(input, target):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(input, indexers)
+            d["targs"] = _sentence_to_text_field(target, indexers)
+            return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        #  return list(instances)
+        return instances  # lazy iterator
 
 
 class WikiInsertionsTask(MTTask):
@@ -921,7 +1039,6 @@ class GroundedTask(Task):
             self.val_data_text[1]
         self.path = path
         self.img_encoder = None
-        #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -943,6 +1060,29 @@ class GroundedTask(Task):
         metric = self.scorer1.get_metric(reset)
 
         return {'metric': metric}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        '''
+        Convert a dataset of sentences into padded sequences of indices.
+
+        Args:
+            - split (list[list[str]]): list of inputs (possibly pair) and outputs
+            - pair_input (int)
+            - tok2idx (dict)
+
+        Returns:
+        '''
+        def _make_instance(sent, label, ids):
+            input1 = _sentence_to_text_field(sent, indexers)
+            label = NumericField(label)
+            ids = NumericField(ids)
+            return Instance({"input1": input1, "labels": label, "ids": ids})
+
+        # Map over columns: input1, labels, ids
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
 
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
@@ -982,41 +1122,6 @@ class GroundedTask(Task):
                 test[2].append(int(img_id))
                 # test[2].append(caption_id)
 
-        for img_id in train_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            train[0].append(caption)
-            train[1].append(0)
-            train[2].append(int(img_id))
-
-        for img_id in val_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            val[0].append(caption)
-            val[1].append(0)
-            val[2].append(int(img_id))
-
-        for img_id in test_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            test[0].append(caption)
-            test[1].append(0)
-            test[2].append(int(img_id))
 
         self.tr_data = train
         self.val_data = val
@@ -1024,5 +1129,42 @@ class GroundedTask(Task):
         self.train_data_text = train
         self.val_data_text = val
         self.test_data_text = test
-
+        log.info('Train: ' + str(len(train)) + ' , Val: ' + str(len(val)) + ', Test: ' + str(len(test)))
         log.info("\tFinished loading MSCOCO data.")
+
+class VAETask(SequenceGenerationTask):
+    '''Variational Autoencoder (with corrupted input) Task'''
+
+    def __init__(self, path, max_seq_len, name='MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+            self.train_data_text[2] + self.val_data_text[2]
+
+    def load_data(self, path, max_seq_len):
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))        
+        self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))
+
+        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+                                      s1_idx=0, s2_idx=None, targ_idx=1,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
+                                       s1_idx=0, s2_idx=None, targ_idx=1,
+                                       targ_fn=lambda t: t.split(' '))
+        log.info("\tFinished loading VAE data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
