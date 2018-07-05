@@ -473,6 +473,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -498,6 +499,9 @@ class MultiTaskModel(nn.Module):
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
+        if predict:
+            pass
+
         return out
 
     def _grounded_classification_forward(self, batch, task, predict):
@@ -506,6 +510,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
         image_map = nn.Linear(d_1, d_2).cuda()
         sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1)
@@ -553,6 +558,8 @@ class MultiTaskModel(nn.Module):
         preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
         acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
         task.scorer1.__call__(np.sum(acc) / len(acc))
+        if predict:
+            out['preds'] = preds
 
         return out
 
