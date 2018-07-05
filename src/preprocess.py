@@ -36,7 +36,8 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask
+    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
+    MultiNLIAltTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -47,6 +48,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'qqp': (QQPTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
+             'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
              'mnli-slate': (MultiNLISlateTask, 'MNLI/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),

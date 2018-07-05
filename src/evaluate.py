@@ -21,7 +21,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         for batch in generator:
-            if 'idx' in batch: # for sorting examples
+            if 'idx' in batch:  # for sorting examples
                 task_idxs += batch['idx'].data.tolist()
                 batch.pop('idx', None)
             out = model.forward(task, batch, predict=True)

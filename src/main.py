@@ -27,6 +27,7 @@ from evaluate import evaluate, write_results, write_preds
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
 
+
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
@@ -46,6 +47,7 @@ def handle_arguments(cl_arguments):
 
     return parser.parse_args(cl_arguments)
 
+
 def _try_logging_git_info():
     try:
         log.info("Waiting on git info....")
@@ -61,6 +63,7 @@ def _try_logging_git_info():
         log.exception(e)
         log.warn("Git info not found. Moving right along...")
 
+
 def _run_background_tensorboard(logdir, port):
     """Run a TensorBoard server in the background."""
     import atexit
@@ -74,6 +77,7 @@ def _run_background_tensorboard(logdir, port):
         log.info("Shutting down TensorBoard server on port %d ...", port)
         tb_process.terminate()
     atexit.register(_kill_tb_child)
+
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -189,7 +193,9 @@ def main(cl_arguments):
             assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
             load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
         else:
-            assert_for_log(args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate.")
+            assert_for_log(
+                args.allow_untrained_encoder_parameters,
+                "No best checkpoint found to evaluate.")
             log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
@@ -224,7 +230,6 @@ def main(cl_arguments):
 
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
-
 
     log.info("Done!")
 

@@ -106,6 +106,7 @@ class NLIProbingTask(PairClassificationTask):
         super().__init__(name)
 
 
+
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
@@ -588,6 +589,17 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
+class MultiNLIAltTask(MultiNLITask):
+    ''' Task class for Multi-Genre Natural Language Inference.
+
+    Identical to MultiNLI class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="mnli-alt"):
+        '''MNLI'''
+        super(MultiNLIAltTask, self).__init__(path, max_seq_len, name)
+
+
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
@@ -739,8 +751,10 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
+
     def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
         super().__init__(path, max_seq_len, name)
         self.scorer1 = Average()
@@ -767,6 +781,7 @@ class WikiInsertionsTask(MTTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
