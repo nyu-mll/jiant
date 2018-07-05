@@ -217,7 +217,7 @@ class SamplingMultiTaskTrainer():
 
         return best_so_far, out_of_patience
 
-    def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params):
+    def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params, phase):
         # Task bookkeeping
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
@@ -238,9 +238,12 @@ class SamplingMultiTaskTrainer():
 
             task_info['iterator'] = iterator
 
-            # Warning: This won't be precise when training_data_fraction is set, since each example is included
-            #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
-            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+            if phase == "main":
+                # Warning: This won't be precise when training_data_fraction is set, since each example is included
+                #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
+                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+            else:
+                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
 
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
@@ -314,7 +317,7 @@ class SamplingMultiTaskTrainer():
             log.info("Dividing losses by number of training batches")
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
-                                                        optimizer_params, scheduler_params)
+                                                        optimizer_params, scheduler_params, phase)
         if shared_optimizer:
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(

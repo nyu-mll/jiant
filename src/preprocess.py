@@ -293,18 +293,28 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    train_tasks = []
+    eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                   fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        if task.name in train_task_names:
+            train_tasks.append(task)
+        if task.name in eval_task_names:
+            if args.training_data_fraction < 1:
+                # Rebuild the iterator so you see the full dataset in the eval training
+                # phase.
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0) 
+            eval_tasks.append(task)
+
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-
-    train_tasks = [task for task in tasks if task.name in train_task_names]
-    eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
