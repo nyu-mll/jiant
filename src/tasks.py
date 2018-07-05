@@ -1195,3 +1195,44 @@ class RecastPunTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-puns"):
         super(RecastPunTask, self).__init__(name, 2)
+
+class RecastNERTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-ner"):
+        super(RecastNERTask, self).__init__(name, 2)
+
+class RecastVerbnetTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-verbnet"):
+        super(RecastVerbnetTask, self).__init__(name, 2)
+
+class RecastVerbcornerTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-verbcorner"):
+        super(RecastVerbcornerTask, self).__init__(name, 2)
+
+class RecastSentimentTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-sentiment"):
+        super(RecastSentimentTask, self).__init__(name, 2)
+
+class RecastFactualityTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-factuality"):
+        super(RecastFactualityTask, self).__init__(name, 2)
+
+class RecastWinogenderTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-winogender"):
+        super(RecastWinogenderTask, self).__init__(name, 2)
+
+class RecastLexicosynTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
+        super(RecastLexicosynTask, self).__init__(name, 2)
+
+class RecastKGTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-kg"):
+        super(RecastKGTask, self).__init__(name, 2)
+
