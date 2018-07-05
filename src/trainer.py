@@ -446,6 +446,7 @@ class SamplingMultiTaskTrainer():
             # Once you're done, call this to turn training mode back on:
             # self._model.train()
             # Then update the parameters of the agent, using the average validation loss as reward.
+            # with self.[name of agent?].update_TaskSelector_Q_values(scores)
 
             # Validation
             if n_pass % (validation_interval) == 0:
@@ -490,7 +491,7 @@ class SamplingMultiTaskTrainer():
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
-                # TODO (Shuning): Print out the weights of the tasks here (the Q parameters?), so we can
+                # TODO (Shuning): log the weights of the tasks here (the Q parameters?), so we can
                 #   watch them change.
 
                 self._metric_infos = metric_infos
