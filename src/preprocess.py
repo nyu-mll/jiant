@@ -304,7 +304,7 @@ def build_tasks(args):
         if task.name in train_task_names:
             train_tasks.append(task)
         if task.name in eval_task_names:
-            if args.training_data_fraction < 1:
+            if args.training_data_fraction < 1 and task.name in train_task_names:
                 # Rebuild the iterator so you see the full dataset in the eval training
                 # phase.
                 task = copy.deepcopy(task)
