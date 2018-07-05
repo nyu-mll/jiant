@@ -70,7 +70,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
-             'vae': (VAETask, 'VAE')
+             'vae': (VAETask, 'VAE'),
              'recast-puns': (RecastPunTask, 'DNC/recast_puns_data')
              }
 
