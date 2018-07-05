@@ -29,7 +29,7 @@ from tasks import STSBTask, CoLATask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
-    WeakGroundedTask, GroundedTask
+    WeakGroundedTask, GroundedTask, VAETask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -232,6 +232,18 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+
+        elif isinstance(task, VAETask):
+            decoder = Seq2SeqDecoder.from_params(vocab,
+                                                 Params({'input_dim': d_sent,
+                                                         'target_embedding_dim': 300,
+                                                         'max_decoding_steps': 200,
+                                                         'target_namespace': 'tokens',
+                                                         'attention': 'bilinear',
+                                                         'dropout': args.dropout,
+                                                         'scheduled_sampling_ratio': 0.0}))
+            setattr(model, '%s_decoder' % task.name, decoder)
+            
         elif isinstance(task, GroundedTask):
             task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         else:
@@ -358,6 +370,8 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
+        elif isinstance(task, VAETask):
+            out = self._vae_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -448,8 +462,27 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _seq_gen_forward(self, batch, task, predict):
+    def _vae_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
+        out = {}
+        sent, sent_mask = self.sent_encoder(batch['inputs'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+
+        if isinstance(task, VAETask):
+            decoder = getattr(self, "%s_decoder" % task.name)
+            out = decoder.forward(sent, sent_mask, batch['targs'])
+            task.scorer1(math.exp(out['loss'].item()))
+            return out
+        if 'targs' in batch:
+            pass
+
+        if predict:
+            pass
+
+        return out
+    
+    def _seq_gen_forward(self, batch, task, predict):
+        ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
         out['n_exs'] = get_batch_size_from_field(batch['input1'])
@@ -563,6 +596,3 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _ranking_forward(self, batch, task, predict):
-        ''' For caption and image ranking '''
-        raise NotImplementedError

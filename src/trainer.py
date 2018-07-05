@@ -306,6 +306,10 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks inverse to log number of training examples")
         elif weighting_method == 'inverse_log_batch':
             log.info("Sampling tasks inverse to log number of training batches")
+        elif 'power_' in weighting_method:
+            log.info("Sampling tasks with %s", weighting_method.replace('_',' of '))
+        elif 'softmax_' in weighting_method:
+            log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -367,6 +371,17 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
+        elif 'power_' in weighting_method:  # x ^ power
+            weighting_power = float(weighting_method.strip('power_'))
+            sample_weights = [(task.n_tr_examples ** weighting_power) for task in tasks]
+        elif 'softmax_' in weighting_method:  # exp(x/temp)
+            weighting_temp = float(weighting_method.strip('softmax_'))
+            sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
+
+        log.info ("task.n_tr_examples: " + str([(task, task.n_tr_examples) for task in tasks]) )
+        log.info ("weighting_method: " + weighting_method )
+        log.info ("sample_weights: " + str(sample_weights) )
+
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
