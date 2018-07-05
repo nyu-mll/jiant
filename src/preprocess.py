@@ -35,7 +35,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask
+    NLITypeProbingTask, MultiNLIAltTask, VAETask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -68,7 +68,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/')
+             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
+             'vae': (VAETask, 'VAE')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"

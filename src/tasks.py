@@ -1039,7 +1039,6 @@ class GroundedTask(Task):
             self.val_data_text[1]
         self.path = path
         self.img_encoder = None
-        #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -1123,41 +1122,6 @@ class GroundedTask(Task):
                 test[2].append(int(img_id))
                 # test[2].append(caption_id)
 
-        for img_id in train_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            train[0].append(caption)
-            train[1].append(0)
-            train[2].append(int(img_id))
-
-        for img_id in val_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            val[0].append(caption)
-            val[1].append(0)
-            val[2].append(int(img_id))
-
-        for img_id in test_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            test[0].append(caption)
-            test[1].append(0)
-            test[2].append(int(img_id))
 
         self.tr_data = train
         self.val_data = val
@@ -1165,5 +1129,42 @@ class GroundedTask(Task):
         self.train_data_text = train
         self.val_data_text = val
         self.test_data_text = test
-
+        log.info('Train: ' + str(len(train)) + ' , Val: ' + str(len(val)) + ', Test: ' + str(len(test)))
         log.info("\tFinished loading MSCOCO data.")
+
+class VAETask(SequenceGenerationTask):
+    '''Variational Autoencoder (with corrupted input) Task'''
+
+    def __init__(self, path, max_seq_len, name='MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+            self.train_data_text[2] + self.val_data_text[2]
+
+    def load_data(self, path, max_seq_len):
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))        
+        self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))
+
+        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+                                      s1_idx=0, s2_idx=None, targ_idx=1,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
+                                       s1_idx=0, s2_idx=None, targ_idx=1,
+                                       targ_fn=lambda t: t.split(' '))
+        log.info("\tFinished loading VAE data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
