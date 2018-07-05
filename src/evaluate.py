@@ -1,6 +1,5 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
-import ipdb as pdb
 import logging as log
 
 import torch
@@ -22,7 +21,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         for batch in generator:
-            if 'idx' in batch: # for sorting examples
+            if 'idx' in batch:  # for sorting examples
                 task_idxs += batch['idx'].data.tolist()
                 batch.pop('idx', None)
             out = model.forward(task, batch)
@@ -70,7 +69,6 @@ def write_preds(all_preds, pred_dir):
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
                         Assumes that predictions are sorted (if necessary).'''
-    pdb.set_trace()
 
     def write_preds_to_file(preds, pred_file, pred_map=None, write_float=False):
         ''' Write preds to pred_file '''
@@ -92,8 +90,10 @@ def write_preds(all_preds, pred_dir):
         if task == 'mnli':
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
             write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796:9796+9847], os.path.join(pred_dir, "%s-mm.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796+9847:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+            write_preds_to_file(preds[9796:9796 + 9847],
+                                os.path.join(pred_dir, "%s-mm.tsv" % task), pred_map)
+            write_preds_to_file(preds[9796 + 9847:],
+                                os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
         elif task in ['rte', 'qnli']:
             pred_map = {0: 'not_entailment', 1: 'entailment'}
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
@@ -101,7 +101,6 @@ def write_preds(all_preds, pred_dir):
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
         else:
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task))
-
 
             with open(os.path.join(pred_dir, "%s.tsv" % (task)), 'w') as pred_fh:
                 pred_fh.write("index\tprediction\n")

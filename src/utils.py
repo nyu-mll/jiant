@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+
 def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     ''' Helper function to load a model state
 
