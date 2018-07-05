@@ -1,6 +1,5 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
-import ipdb as pdb
 import logging as log
 
 import torch
@@ -52,7 +51,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         # Store predictions, possibly sorting them if
         if task_idxs:
             assert len(task_idxs) == len(task_preds), "Number of indices and predictions differ!"
-            idxs_and_preds = [(idx, pred) for pred, idx in zip(task_idxs, task_preds)]
+            idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
             idxs_and_preds.sort(key=lambda x: x[0])
             task_preds = [p for _, p in idxs_and_preds]
         all_preds[task.name] = task_preds
@@ -86,8 +85,8 @@ def write_preds(all_preds, pred_dir):
                     pred_fh.write("%d\t%d\n" % (idx, pred))
 
     for task, preds in all_preds.items():
-        if task == 'mnli': # 9796 + 9847 = 19643
-            # assert len(preds) == whatever this should be
+        if task == 'mnli': # 9796 + 9847 + 1104 = 20747
+            assert len(preds) == 20747, "Missing predictions for MNLI!"
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
             write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
             write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
