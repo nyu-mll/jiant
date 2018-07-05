@@ -53,6 +53,13 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     logging.info("Loaded model state from %s", state_path)
 
 
+def get_batch_size_from_field(batch_field):
+    ''' Given a field with unknown text_fields, get the batch size '''
+    keys = [k for k in batch_field.keys()]
+    batch_size = batch_field[keys[0]].size()[0]
+    return batch_size
+
+
 def get_batch_utilization(batch_field, pad_idx=0):
     ''' Get ratio of batch elements that are padding
 

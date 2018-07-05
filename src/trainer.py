@@ -387,6 +387,7 @@ class SamplingMultiTaskTrainer():
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
+                # TODO(Alex): separate into helper function)
                 if scaling_method == 'unit' and weighting_method == 'proportional':
                     loss /= task_info['n_tr_batches']
                 elif scaling_method == 'max' and weighting_method == 'proportional':
@@ -549,9 +550,10 @@ class SamplingMultiTaskTrainer():
             batch_num = 0
             for batch in val_generator:
                 batch_num += 1
-                val_output_dict = self._forward(batch, task=task, for_training=False)
-                loss = val_output_dict["loss"]
+                out = self._forward(batch, task=task, for_training=False)
+                loss = out["loss"]
                 all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+                n_examples += out["n_exs"]
 
                 # log
                 if time.time() - task_info['last_log'] > self._log_interval:
@@ -562,10 +564,6 @@ class SamplingMultiTaskTrainer():
                     description = self._description_from_metrics(task_metrics)
                     log.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
                     task_info['last_log'] = time.time()
-                if 'labels' in batch:
-                    n_examples += batch['labels'].size()[0]
-                elif 'targs' in batch:
-                    n_examples += batch['targs']['words'].nelement()
             assert batch_num == n_val_batches
 
             # Get task validation metrics and store in all_val_metrics
