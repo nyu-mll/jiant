@@ -21,5 +21,10 @@
 # export FASTTEXT_MODEL_FILE=None
 # export FASTTEXT_EMBS_FILE=None
 
+export JIANT_PROJECT_PREFIX=exp
+export JIANT_DATA_DIR=/nfs/jsalt/home/
+export NFS_PROJECT_PREFIX=/nfs/jsalt/exp/nkim
+export NFS_DATA_DIR=/nfs/jsalt/home/
+
 # echo "Loaded Sam's config."
 

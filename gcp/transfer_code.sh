@@ -2,6 +2,8 @@
 
 # Convenience script to copy this jiant repo to a (new) GCE instance.
 # Usage: ./transfer_code.sh <instance_name> [<zone>]
+echo "FRIENDLY WARNING: Your life will be easier if you keep your code of NFS and maintain only one copy."
+
 INSTANCE_NAME="${1:-"$USER"}"
 ZONE="${2:-"us-east1-c"}"
 

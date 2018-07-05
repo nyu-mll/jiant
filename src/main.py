@@ -1,8 +1,9 @@
 '''Train a multi-task model using AllenNLP '''
+# pylint: disable=no-member
 import argparse
 import glob
-import json
 import os
+import ipdb as pdb
 import subprocess
 import random
 import sys
@@ -16,33 +17,66 @@ import torch
 
 import config
 import gcp
-import utils
 
+from utils import assert_for_log, maybe_make_dir, load_model_state
 from preprocess import build_tasks
 from models import build_model
 from trainer import build_trainer, build_trainer_params
-from evaluate import evaluate, load_model_state, write_results, write_preds
-from utils import assert_for_log
-
-import _pickle as pkl
+from evaluate import evaluate, write_results, write_preds
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
-DEFAULT_CONFIG_FILE = os.path.join(JIANT_BASE_DIR, "config/defaults.conf")
 
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file', type=str, default=DEFAULT_CONFIG_FILE,
+    parser.add_argument('--config_file', '-c', type=str, required=True,
                         help="Config file (.conf) for model parameters.")
-    parser.add_argument('--overrides', type=str, default=None,
+    parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 
-    parser.add_argument('--remote_log', action="store_true",
+    parser.add_argument('--remote_log', '-r', action="store_true",
                         help="If true, enable remote logging on GCP.")
 
+    parser.add_argument('--tensorboard', '-t', action="store_true",
+                        help="If true, will run Tensorboard server in a "
+                        "subprocess, serving on the port given by "
+                        "--tensorboard_port.")
+    parser.add_argument('--tensorboard_port', type=int, default=6006)
+
     return parser.parse_args(cl_arguments)
+
+
+def _try_logging_git_info():
+    try:
+        log.info("Waiting on git info....")
+        c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_branch_name = c.stdout.decode().strip()
+        log.info("Git branch: %s", git_branch_name)
+        c = subprocess.run(["git", "rev-parse", "HEAD"],
+                           timeout=10, stdout=subprocess.PIPE)
+        git_sha = c.stdout.decode().strip()
+        log.info("Git SHA: %s", git_sha)
+    except subprocess.TimeoutExpired as e:
+        log.exception(e)
+        log.warn("Git info not found. Moving right along...")
+
+
+def _run_background_tensorboard(logdir, port):
+    """Run a TensorBoard server in the background."""
+    import atexit
+    tb_args = ["tensorboard", "--logdir", logdir,
+               "--port", str(port)]
+    log.info("Starting TensorBoard server on port %d ...", port)
+    tb_process = subprocess.Popen(tb_args)
+    log.info("TensorBoard process: %d", tb_process.pid)
+
+    def _kill_tb_child():
+        log.info("Shutting down TensorBoard server on port %d ...", port)
+        tb_process.terminate()
+    atexit.register(_kill_tb_child)
 
 
 def main(cl_arguments):
@@ -51,36 +85,22 @@ def main(cl_arguments):
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
     # Logistics #
-    utils.maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
-    utils.maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
-    utils.maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
+    maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
+    maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
+    maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
     log.getLogger().addHandler(log.FileHandler(local_log_path))
+
     if cl_args.remote_log:
         gcp.configure_remote_logging(args.remote_log_name)
+
+    _try_logging_git_info()
 
     log.info("Parsed args: \n%s", args)
 
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
-      
-#    try:
-#        log.info("Waiting on git info....")
-#        git_branch_name = subprocess.check_output(
-#            'git rev-parse --abbrev-ref HEAD',
-#            stderr=subprocess.STDOUT,
-#            timeout=10,
-#            shell=True)
-#        git_sha = subprocess.check_output(
-#            'git rev-parse HEAD',
-#            stderr=subprocess.STDOUT,
-#            timeout=10,
-#            shell=True)
-#        log.info("On git branch {} at checkpoint {}.".format(git_branch_name, git_sha))
-#    except subprocess.TimeoutExpired:
-#        git_branch_name.kill()
-#        log.warn("Git info not found. Moving right along...")
 
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
@@ -120,7 +140,7 @@ def main(cl_arguments):
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
 
-    if not(args.load_eval_checkpoint == 'none'):
+    if not args.load_eval_checkpoint == 'none':
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
@@ -139,7 +159,12 @@ def main(cl_arguments):
                        "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
         steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
 
-    log.info("Will run the following steps:\n%s" % ('\n'.join(steps_log)))
+    # Start Tensorboard if requested
+    if cl_args.tensorboard:
+        tb_logdir = os.path.join(args.run_dir, "tensorboard")
+        _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
+
+    log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
@@ -150,22 +175,28 @@ def main(cl_arguments):
                                                             args.run_dir,
                                                             should_decrease)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        best_epochs = trainer.train(train_tasks, stop_metric, args.bpp_base,
+        best_epochs = trainer.train(train_tasks, stop_metric,
+                                    args.batch_size, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
     # is not None and args.load_eval_checkpoint != "none":
-    if not(args.load_eval_checkpoint == "none"):
-        log.info("Loading existing model from %s..." % args.load_eval_checkpoint)
+    if not args.load_eval_checkpoint == "none":
+        log.info("Loading existing model from %s...", args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models)
     else:
         macro_best = glob.glob(os.path.join(args.run_dir,
                                             "model_state_main_epoch_*.best_macro.th"))
-        assert_for_log(len(macro_best) > 0, "No best checkpoint found to evaluate.")
-        assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-        load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
+        if len(macro_best) > 0:
+            assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
+            load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
+        else:
+            assert_for_log(
+                args.allow_untrained_encoder_parameters,
+                "No best checkpoint found to evaluate.")
+            log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
@@ -177,7 +208,8 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
-            best_epoch = trainer.train([task], task.val_metric, 1,
+            best_epoch = trainer.train([task], task.val_metric,
+                                       args.batch_size, 1,
                                        args.weighting_method, args.scaling_method,
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")

@@ -1,20 +1,18 @@
-'''Preprocessing functions and pipeline
-
-To add new tasks, add task-specific preprocessing functions to
-process_task_split()'''
+'''Preprocessing functions and pipeline'''
 import io
 import os
+import sys
 import copy
 import logging as log
 from collections import defaultdict
 import numpy as np
 import torch
 
-from allennlp.data import Instance, Vocabulary, Token
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data import Vocabulary
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
-from allennlp_mods.numeric_field import NumericField
+
+import tasks
 
 try:
     import fastText
@@ -36,7 +34,8 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask
+    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
+    NLITypeProbingTask, MultiNLIAltTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -47,6 +46,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'qqp': (QQPTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
+             'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
              'mnli-slate': (MultiNLISlateTask, 'MNLI/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
@@ -68,6 +68,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
+             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -99,20 +100,19 @@ def _get_instance_generator(task_name, split, preproc_dir):
     return serialize.read_records(filename, repeatable=True)
 
 
-def _indexed_instance_generator(instance_list, vocab):
-    """Yield indexed copies of the given instances.
+def _indexed_instance_generator(instance_iter, vocab):
+    """Yield indexed instances. Instances are modified in-place.
 
     TODO(iftenney): multiprocess the $%^& out of this.
 
     Args:
-        instance_list: list(Instance) of examples
+        instance_iter: iterable(Instance) of examples
         vocab: Vocabulary for use in indexing
 
     Yields:
         Instance with indexed fields.
     """
-    for orig_instance in instance_list:
-        instance = copy.deepcopy(orig_instance)
+    for instance in instance_iter:
         instance.index_fields(vocab)
         # Strip token fields to save memory and disk.
         del_field_tokens(instance)
@@ -145,13 +145,63 @@ def _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
     """
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
-    log.info("%s: processing to tokens", log_prefix)
-    instance_list = process_task_split(task, split, token_indexer, target_indexer)
-    log.info("%s: %d examples to index", log_prefix, len(instance_list))
-    serialize.write_records(
-        _indexed_instance_generator(instance_list, vocab), record_file)
-    log.info("%s: saved instances to %s", log_prefix, record_file)
+    split_text = task.get_split_text(split)
+    instance_iter = task.process_split(split_text, token_indexer)
+    if hasattr(instance_iter, '__len__'):  # if non-lazy
+        log.warn("%s: non-lazy Instance generation. You'll want to refactor "
+                 "%s.process_split to return a lazy iterator.", log_prefix,
+                 type(task).__name__)
+        log.info("%s: %d examples to index", log_prefix, len(instance_iter))
+        # Copy so that we don't store indexed data in memory.
+        # TODO: remove this case and stream everything.
+        instance_iter = utils.copy_iter(instance_iter)
 
+    # Counter for lazy-loaded data, so we can log the # of elements.
+    _instance_counter = 0
+    def _counter_iter(elems):
+        nonlocal _instance_counter
+        for elem in elems:
+            _instance_counter += 1
+            yield elem
+    instance_iter = _counter_iter(instance_iter)
+
+    # Actually call generators and stream to disk.
+    serialize.write_records(
+        _indexed_instance_generator(instance_iter, vocab), record_file)
+    log.info("%s: saved %d instances to %s",
+             log_prefix, _instance_counter, record_file)
+
+def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
+                      relative_path: str, log_prefix: str="") -> bool:
+    """Find a cached file.
+
+    Look in local exp_dir first, then in global_exp_cache_dir. If found in the
+    global dir, make a symlink in the local dir pointing to the global one.
+
+    Args:
+        exp_dir: (string) local experiment dir
+        global_exp_cache_dir: (string) global experiment cache
+        relative_path: (string) relative path to file, from exp_dir
+        log_prefix: (string) prefix for logging info
+
+    Returns:
+        True if file was found in either location.
+    """
+    if log_prefix:
+        log_prefix = log_prefix + ": "
+    # Try in local preproc dir.
+    local_file = os.path.join(exp_dir, relative_path)
+    if os.path.isfile(local_file) or os.path.islink(local_file):
+        log.info("%sFound preprocessed copy in %s", log_prefix, local_file)
+        return True
+    # Try in global preproc dir; if found, make a symlink.
+    global_file = os.path.join(global_exp_cache_dir, relative_path)
+    if os.path.exists(global_file):
+        log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
+        os.symlink(global_file, local_file)
+        log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
+        return True
+    return False
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -218,27 +268,21 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
+    reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
+        force_reindex = (args.reload_indexing and
+                         task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            # Try in local preproc dir.
-            record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-            if os.path.exists(record_file):
-                log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
-                continue
-            # Try in global preproc dir; if found, make a symlink.
-            global_record_file = _get_serialized_record_path(task.name, split,
-                                                             global_preproc_dir)
-            if os.path.exists(global_record_file):
-                log.info("%s: found (global) preprocessed copy in %s",
-                         log_prefix, global_record_file)
-                os.symlink(global_record_file, record_file)
-                log.info("\tCreated symlink: %s -> %s", record_file,
-                         global_record_file)
-                continue
-            # If all else fails, reindex from scratch.
-            _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
+            relative_path = _get_serialized_record_path(task.name, split,
+                                                        "preproc")
+            cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
+                                            relative_path, log_prefix=log_prefix)
+            if force_reindex or not cache_found:
+                # Re-index from scratch.
+                record_file = _get_serialized_record_path(task.name, split,
+                                                          preproc_dir)
+                _index_split(task, split, token_indexer, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         task.train_data = None
@@ -299,7 +343,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
             if not os.path.isdir(task_scratch_path):
-                os.mkdir(task_scratch_path)
+                utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
         tasks.append(task)
@@ -334,7 +378,8 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        for sentence in task.sentences:
+        log.info("\tCounting words for task: '%s'", task.name)
+        for sentence in task.get_sentences():
             count_sentence(sentence)
 
     for task in tasks:
@@ -407,139 +452,3 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-def process_task_split(task, split, token_indexer, target_indexer=None):
-    '''
-    Convert a task split into AllenNLP fields.
-    Different tasks have different formats and fields, so process_task routes tasks
-    to the corresponding processing based on the task type. These task specific processing
-    functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
-
-    Args:
-        task: Task object
-        split: (string) split name
-        token_indexer: token indexer
-
-    Returns:
-        list(Instance) of AllenNLP instances, not indexed.
-    '''
-    split_text = getattr(task, '%s_data_text' % split)
-    if isinstance(task, SingleClassificationTask):
-        instances = process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=False)
-    elif isinstance(task, PairClassificationTask):
-        instances = process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=True)
-    elif isinstance(task, PairRegressionTask):
-        instances = process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, PairOrdinalRegressionTask):
-        instances = process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, LanguageModelingTask):
-        instances = process_lm_task_split(split_text, token_indexer)
-    elif isinstance(task, MTTask):
-        instances = process_mt_task_split(split_text, token_indexer, target_indexer)
-    elif isinstance(task, SequenceGenerationTask):
-        pass
-    elif isinstance(task, GroundedTask):
-        instances = process_grounded_task_split(split_text, token_indexer,
-                                                is_pair=False, classification=True)
-    elif isinstance(task, RankingTask):
-        pass
-    else:
-        raise ValueError("Preprocessing procedure not found for %s" % task.name)
-    return instances
-
-
-def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-
-    Returns:
-    '''
-    inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-    labels = [NumericField(l) for l in split[1]]
-    ids = [NumericField(l) for l in split[2]]
-    instances = [Instance({"input1": input1, "labels": label, "ids": ids})
-                 for (input1, label, ids) in zip(inputs1, labels, ids)]
-
-    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
-
-
-def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-
-    Returns:
-    '''
-    if is_pair:
-        inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        inputs2 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[1]]
-        if classification:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
-        else:
-            labels = [NumericField(l) for l in split[-1]]
-
-        if len(split) == 4:  # numbered test examples
-            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label, "idx": idx})
-                         for (input1, input2, label, idx) in zip(inputs1, inputs2, labels, idxs)]
-
-        else:
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label}) for
-                         (input1, input2, label) in zip(inputs1, inputs2, labels)]
-
-    else:
-        inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        if classification:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
-        else:
-            labels = [NumericField(l) for l in split[2]]
-
-        if len(split) == 4:
-            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "labels": label, "idx": idx}) for
-                         (input1, label, idx) in zip(inputs1, labels, idxs)]
-        else:
-            instances = [Instance({"input1": input1, "labels": label}) for (input1, label) in
-                         zip(inputs1, labels)]
-    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
-
-
-def process_lm_task_split(split, indexers):
-    ''' Process a language modeling split '''
-    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-               for sent in split]
-    if "chars" not in indexers:
-        targs_indexers = {"words": SingleIdTokenIndexer()}
-    else:
-        targs_indexers = indexers
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-               for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-               for sent in split]
-    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-    #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-    instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                 for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-    return instances
-
-def process_mt_task_split(split, token_indexer, target_indexer):
-    ''' Process a machine translation split '''
-    inputs = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[0]]
-    targs = [TextField(list(map(Token, sent)), token_indexers=target_indexer) for sent in split[2]]
-    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-    return instances
