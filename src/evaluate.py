@@ -24,21 +24,16 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             if 'idx' in batch: # for sorting examples
                 task_idxs += batch['idx'].data.tolist()
                 batch.pop('idx', None)
-            out = model.forward(task, batch)
-
-            # count number of examples; currently not working for sequence tasks
-            if 'labels' in batch:
-                n_examples += batch['labels'].size()[0]
-            else:
-                assert 'targs' in batch
-                n_examples += batch['targs']['words'].nelement()
+            out = model.forward(task, batch, predict=True)
+            n_examples += out["n_exs"]
 
             # get predictions
-            if isinstance(task, (RegressionTask, STSBTask, JOCITask)):
-                preds, _ = out['logits'].max(dim=1)
-            else:
-                _, preds = out['logits'].max(dim=1)
-            task_preds += preds.data.tolist()
+            if 'preds' in out:
+                preds = out['preds']
+                if isinstance(preds, torch.Tensor):
+                    preds = preds.data.tolist()
+                assert isinstance(preds, list), "Convert predictions to list!"
+                task_preds += preds
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -85,6 +80,9 @@ def write_preds(all_preds, pred_dir):
                     pred_fh.write("%d\t%d\n" % (idx, pred))
 
     for task, preds in all_preds.items():
+        if not preds: # catch empty lists
+            continue
+
         if task == 'mnli': # 9796 + 9847 + 1104 = 20747
             assert len(preds) == 20747, "Missing predictions for MNLI!"
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}

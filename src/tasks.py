@@ -45,7 +45,19 @@ class Task():
         raise NotImplementedError
 
 
-class SingleClassificationTask(Task):
+class ClassificationTask(Task):
+    ''' General classification task '''
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class RegressionTask(Task):
+    ''' General regression task '''
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class SingleClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name, n_classes):
@@ -70,7 +82,7 @@ class SingleClassificationTask(Task):
         return {'accuracy': acc}
 
 
-class PairClassificationTask(Task):
+class PairClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name, n_classes):
@@ -93,10 +105,6 @@ class NLIProbingTask(PairClassificationTask):
     def __init__(self, name, n_classes):
         super().__init__(name)
 
-class RegressionTask(Task):
-    ''' General regression task '''
-    def __init__(self, name):
-        super().__init__(name)
 
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
