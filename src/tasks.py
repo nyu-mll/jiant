@@ -22,36 +22,16 @@ from allennlp_mods.numeric_field import NumericField
 
 from utils import load_tsv, process_sentence, truncate
 
-from typing import Iterable, Sequence, Any
+from typing import Iterable, Sequence, Any, Type
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
-def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-
-    Returns:
-    '''
-    def _make_instance(sent, label, ids):
-        input1 = _sentence_to_text_field(sent, indexers)
-        label = NumericField(label)
-        ids = NumericField(ids)
-        return Instance({"input1": input1, "labels": label, "ids": ids})
-
-    # Map over columns: input1, labels, ids
-    instances = map(_make_instance, *split)
-    return list(instances)
-
 
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
     '''
-    Convert a dataset of sentences into padded sequences of indices.
+    Convert a dataset of sentences into padded sequences of indices. Shared
+    across several classes.
 
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
@@ -84,34 +64,6 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     return list(instances)
 
 
-def process_lm_task_split(split, indexers):
-    ''' Process a language modeling split '''
-    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-               for sent in split]
-    if "chars" not in indexers:
-        targs_indexers = {"words": SingleIdTokenIndexer()}
-    else:
-        targs_indexers = indexers
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-               for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-               for sent in split]
-    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-    #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-    instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                 for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-    return instances
-
-
-def process_mt_task_split(split, indexers):
-    ''' Process a machine translation split '''
-    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
-    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-    return instances
-
 class Task():
     '''Generic class for a task
 
@@ -139,6 +91,17 @@ class Task():
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
         yield from self.sentences
+
+    def get_split_text(self, split: str):
+        ''' Get split text, typically as list of columns.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return getattr(self, '%s_data_text' % split)
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        raise NotImplementedError
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -169,6 +132,10 @@ class SingleClassificationTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=False)
+
 
 class PairClassificationTask(Task):
     ''' Generic sentence pair classification '''
@@ -185,6 +152,10 @@ class PairClassificationTask(Task):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True)
 
 
 class NLIProbingTask(PairClassificationTask):
@@ -217,6 +188,11 @@ class PairRegressionTask(RegressionTask):
         mse = self.scorer1.get_metric(reset)
         return {'mse': mse}
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True,
+                                              classification=False)
+
 
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
@@ -237,6 +213,11 @@ class PairOrdinalRegressionTask(RegressionTask):
         return {'1-mse': 1 - mse,
                 'mse': mse,
                 'spearmanr': spearmanr}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True,
+                                              classification=False)
 
 
 class SequenceGenerationTask(Task):
@@ -282,6 +263,29 @@ class LanguageModelingTask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+
+        Split is a single list of sentences here.
+        '''
+        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
+        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
+                   for sent in split]
+        if "chars" not in indexers:
+            targs_indexers = {"words": SingleIdTokenIndexer()}
+        else:
+            targs_indexers = indexers
+        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
+                   for sent in split]
+        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
+                   for sent in split]
+        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
+        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
+        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
+                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
+        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
+        return instances
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -838,12 +842,24 @@ class MTTask(SequenceGenerationTask):
         self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
                                        targ_fn=lambda t: t.split(' '))
+
         log.info("\tFinished loading MT data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a machine translation split '''
+        def _make_instance(input, target):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(input, indexers)
+            d["targs"] = _sentence_to_text_field(target, indexers)
+            return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        return list(instances)
 
 
 class WikiInsertionsTask(MTTask):
@@ -1014,6 +1030,28 @@ class GroundedTask(Task):
         metric = self.scorer1.get_metric(reset)
 
         return {'metric': metric}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        '''
+        Convert a dataset of sentences into padded sequences of indices.
+
+        Args:
+            - split (list[list[str]]): list of inputs (possibly pair) and outputs
+            - pair_input (int)
+            - tok2idx (dict)
+
+        Returns:
+        '''
+        def _make_instance(sent, label, ids):
+            input1 = _sentence_to_text_field(sent, indexers)
+            label = NumericField(label)
+            ids = NumericField(ids)
+            return Instance({"input1": input1, "labels": label, "ids": ids})
+
+        # Map over columns: input1, labels, ids
+        instances = map(_make_instance, *split)
+        return list(instances)
+
 
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''

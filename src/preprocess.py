@@ -149,14 +149,14 @@ def _index_split(task, split, token_indexer, vocab, record_file):
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
     log.info("%s: processing to tokens", log_prefix)
-    instance_list = process_task_split(task, split, token_indexer)
-    if hasattr(instance_list, '__len__'):
-        log.info("%s: %d examples to index", log_prefix, len(instance_list))
+    instance_iter = process_task_split(task, split, token_indexer)
+    if hasattr(instance_iter, '__len__'):
+        log.info("%s: %d examples to index", log_prefix, len(instance_iter))
     else:
         log.info("%s: lazy-processing instances; total # of examples not "
                  "available.", log_prefix)
     serialize.write_records(
-        _indexed_instance_generator(instance_list, vocab), record_file)
+        _indexed_instance_generator(instance_iter, vocab), record_file)
     log.info("%s: saved instances to %s", log_prefix, record_file)
 
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
@@ -443,32 +443,6 @@ def process_task_split(task, split, token_indexer):
     Returns:
         list(Instance) of AllenNLP instances, not indexed.
     '''
-    split_text = getattr(task, '%s_data_text' % split)
-    if isinstance(task, SingleClassificationTask):
-        instances = tasks.process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=False)
-    elif isinstance(task, PairClassificationTask):
-        instances = tasks.process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=True)
-    elif isinstance(task, PairRegressionTask):
-        instances = tasks.process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, PairOrdinalRegressionTask):
-        instances = tasks.process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, LanguageModelingTask):
-        instances = tasks.process_lm_task_split(split_text, token_indexer)
-    elif isinstance(task, MTTask):
-        instances = tasks.process_mt_task_split(split_text, token_indexer)
-    elif isinstance(task, SequenceGenerationTask):
-        pass
-    elif isinstance(task, GroundedTask):
-        instances = tasks.process_grounded_task_split(split_text, token_indexer,
-                                                is_pair=False, classification=True)
-    elif isinstance(task, RankingTask):
-        pass
-    else:
-        raise ValueError("Preprocessing procedure not found for %s" % task.name)
-    return instances
-
+    split_text = task.get_split_text(split)
+    return task.process_split(split_text, token_indexer)
 
