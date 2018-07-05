@@ -302,7 +302,7 @@ class SamplingMultiTaskTrainer():
         elif 'power_' in weighting_method:
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of '))
         elif 'softmax_' in weighting_method:
-            log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature ')
+            log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
         # TODO (Shuning): Add an option here.
 
         if scaling_method == 'max':
