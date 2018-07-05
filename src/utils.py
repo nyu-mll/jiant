@@ -1,7 +1,7 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-
+import copy
 import os
 from typing import Dict, List, Optional, Union
 import random
@@ -32,6 +32,11 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+def copy_iter(elems):
+    '''Simple iterator yielding copies of elements.'''
+    for elem in elems:
+        yield copy.deepcopy(elem)
+
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     ''' Helper function to load a model state
@@ -51,6 +56,13 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
 
     model.load_state_dict(model_state, strict=False)
     logging.info("Loaded model state from %s", state_path)
+
+
+def get_batch_size_from_field(batch_field):
+    ''' Given a field with unknown text_fields, get the batch size '''
+    keys = [k for k in batch_field.keys()]
+    batch_size = batch_field[keys[0]].size()[0]
+    return batch_size
 
 
 def get_batch_utilization(batch_field, pad_idx=0):

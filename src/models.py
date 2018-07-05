@@ -32,11 +32,12 @@ from tasks import STSBTask, CoLATask, SSTTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask
+
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log
+from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
 from seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -357,7 +358,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
 
-    def forward(self, task, batch):
+    def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
 
@@ -371,23 +372,23 @@ class MultiTaskModel(nn.Module):
         if 'input1' in batch and self.utilization is not None:
             self.utilization(get_batch_utilization(batch['input1']))
         if isinstance(task, SingleClassificationTask):
-            out = self._single_sentence_forward(batch, task)
+            out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
-            out = self._pair_sentence_forward(batch, task)
+            out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            out = self._lm_forward(batch, task)
+            out = self._lm_forward(batch, task, predict)
         elif isinstance(task, SequenceGenerationTask):
-            out = self._seq_gen_forward(batch, task)
+            out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
-            out = self._grounded_classification_forward(batch, task)
+            out = self._grounded_classification_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
-            out = self._ranking_forward(batch, task)
+            out = self._ranking_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
 
-    def _single_sentence_forward(self, batch, task):
+    def _single_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
@@ -396,23 +397,33 @@ class MultiTaskModel(nn.Module):
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
+        out['logits'] = logits
 
-        if 'labels' in batch:
+        if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
-                labels = labels.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
                 _, preds = logits.max(dim=1)
-                task.scorer1(labels, preds.data.cpu().numpy())
+                task.scorer1(labels_np, preds.data.cpu().numpy())
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
-        out['logits'] = logits
+
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_forward(self, batch, task):
+    def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
@@ -421,28 +432,39 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
             if isinstance(task, JOCITask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
-                logits = logits.data.cpu().numpy()
-                labels = labels.data.cpu().numpy()
-                task.scorer1(mean_squared_error(logits, labels))
-                task.scorer2(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(mean_squared_error(logits_np, labels_np))
+                task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
-                logits = logits.data.cpu().numpy()
-                labels = labels.data.cpu().numpy()
-                task.scorer1(logits, labels)
-                task.scorer2(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(logits_np, labels_np)
+                task.scorer2(logits_np, labels_np)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
+
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
         return out
 
 
@@ -501,11 +523,11 @@ class MultiTaskModel(nn.Module):
         return out
  
 
-    def _seq_gen_forward(self, batch, task):
+    def _seq_gen_forward(self, batch, task, predict):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -515,13 +537,18 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             pass
+
+        if predict:
+            pass
+
         return out
 
-    def _lm_forward(self, batch, task):
+    def _lm_forward(self, batch, task, predict):
         ''' For language modeling? '''
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -547,14 +574,18 @@ class MultiTaskModel(nn.Module):
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
+        if predict:
+            pass
+
         return out
 
-    def _grounded_classification_forward(self, batch, task):
+    def _grounded_classification_forward(self, batch, task, predict):
         out = {}
         d_1, d_2 = self.sent_encoder.output_dim, 2048
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
         image_map = nn.Linear(d_1, d_2).cuda()
         sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1)
@@ -602,5 +633,7 @@ class MultiTaskModel(nn.Module):
         preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
         acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
         task.scorer1.__call__(np.sum(acc) / len(acc))
+        if predict:
+            out['preds'] = preds
 
         return out
