@@ -3,7 +3,6 @@
 import argparse
 import glob
 import os
-import ipdb as pdb
 import subprocess
 import random
 import sys
