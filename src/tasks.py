@@ -14,7 +14,6 @@ from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from allennlp_mods.correlation import Correlation
 
 from utils import load_tsv, process_sentence, truncate
-import ipdb as pdb
 
 class Task():
     '''Generic class for a task
@@ -261,13 +260,15 @@ class RedditTask(RankingTask):
     def load_data(self, path, max_seq_len):
         ''' Load data '''
         print("Loading data")
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
+        path = '//nfs/jsalt/home/raghu/'
+        tr_data = load_tsv(os.path.join(path, 'train_2008.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING TRAIN DATA")
-        dev_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        dev_data = load_tsv(os.path.join(path, 'dev_2007.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING dev DATA")
-        test_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        test_data = load_tsv(os.path.join(path, 'dev_2007.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING test DATA")
         self.train_data_text = tr_data

@@ -38,7 +38,6 @@ from modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder
 from utils import assert_for_log
 from seq2seq_decoder import Seq2SeqDecoder
-import ipdb as pdb
 
 
 # Elmo stuff
@@ -239,10 +238,11 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, GroundedTask):
             task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         elif isinstance(task, RankingTask):
-            module = build_reddit_module(task, d_sent, task_params)
-            setattr(model, '%s_mdl' % task.name, module)
+            pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
+            setattr(model, '%s_mdl' % task.name, pooler)
+            setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel) 
 
-            print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
+            #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -275,8 +275,11 @@ def get_task_specific_params(args, task):
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
     pooler = Pooler.from_params(d_inp, params['d_proj'])
+    dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
+                                        nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']),
+                                        )
     #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
-    return pooler
+    return pooler, dnn_ResponseModel
 
 
 def build_single_sentence_module(task, d_inp, params):
@@ -450,9 +453,12 @@ class MultiTaskModel(nn.Module):
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'])  
         sent2, mask2 = self.sent_encoder(batch['input2']) 
-        sent_pooler = getattr(self, "%s_mdl" % task.name)
+        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response
+        sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response  
         sent1_rep = sent_pooler(sent1, mask1)
-        sent2_rep = sent_pooler(sent2, mask2)
+        sent2_rep_pool = sent_pooler(sent2, mask2)
+        sent2_rep = sent_dnn(sent2_rep_pool)
+
         if 1:
             #labels = batch['labels']
             #pdb.set_trace()
