@@ -1,7 +1,7 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-
+import copy
 import os
 from typing import Dict, List, Optional, Union
 import random
@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+
+def copy_iter(elems):
+    '''Simple iterator yielding copies of elements.'''
+    for elem in elems:
+        yield copy.deepcopy(elem)
 
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False):

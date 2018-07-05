@@ -99,20 +99,19 @@ def _get_instance_generator(task_name, split, preproc_dir):
     return serialize.read_records(filename, repeatable=True)
 
 
-def _indexed_instance_generator(instance_list, vocab):
-    """Yield indexed copies of the given instances.
+def _indexed_instance_generator(instance_iter, vocab):
+    """Yield indexed instances. Instances are modified in-place.
 
     TODO(iftenney): multiprocess the $%^& out of this.
 
     Args:
-        instance_list: list(Instance) of examples
+        instance_iter: iterable(Instance) of examples
         vocab: Vocabulary for use in indexing
 
     Yields:
         Instance with indexed fields.
     """
-    for orig_instance in instance_list:
-        instance = copy.deepcopy(orig_instance)
+    for instance in instance_iter:
         instance.index_fields(vocab)
         # Strip token fields to save memory and disk.
         del_field_tokens(instance)
@@ -148,9 +147,15 @@ def _index_split(task, split, token_indexer, vocab, record_file):
     split_text = task.get_split_text(split)
     instance_iter = task.process_split(split_text, token_indexer)
     if hasattr(instance_iter, '__len__'):  # if non-lazy
+        log.warn("%s: non-lazy Instance generation. You'll want to refactor "
+                 "%s.process_split to return a lazy iterator.", log_prefix,
+                 type(task).__name__)
         log.info("%s: %d examples to index", log_prefix, len(instance_iter))
+        # Copy so that we don't store indexed data in memory.
+        # TODO: remove this case and stream everything.
+        instance_iter = utils.copy_iter(instance_iter)
 
-    # Counter for lazy-loaded data, so we can print # of elements.
+    # Counter for lazy-loaded data, so we can log the # of elements.
     _instance_counter = 0
     def _counter_iter(elems):
         nonlocal _instance_counter
