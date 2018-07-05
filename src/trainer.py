@@ -20,7 +20,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from utils import device_mapping, assert_for_log  # pylint: disable=import-error
-
+# TODO (Shuning): Copy the agent code into our codebase and import it.
 
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
@@ -194,6 +194,8 @@ class SamplingMultiTaskTrainer():
         and the current score, check if current score is
         best so far and if out of patience.
         '''
+        # Note (Shuning): Don't use metric history, and make sure we don't update it when we
+        #   update the agent. It should only cover the big validation runs, not our little ones.
         patience = self._patience + 1
         best_fn = min if should_decrease else max
         best_score = best_fn(metric_history)
@@ -214,6 +216,9 @@ class SamplingMultiTaskTrainer():
 
     def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params):
         # Task bookkeeping
+
+        # TODO (Shuning): This function is where you want to create the agent object.
+
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
@@ -294,6 +299,7 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks inverse to log number of training examples")
         elif weighting_method == 'inverse_log_batch':
             log.info("Sampling tasks inverse to log number of training batches")
+        # TODO (Shuning): Add an option here.
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -355,6 +361,8 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
+        # TODO (Shuning): I guess you _don't_ want to do anything here, since this
+        #   picks the weights in advance.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -363,6 +371,7 @@ class SamplingMultiTaskTrainer():
             self._model.train()
 
             # randomly select a task
+            # TODO (Shuning): Sample a task here.
             task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]
             if task_info['stopped']:
@@ -373,6 +382,8 @@ class SamplingMultiTaskTrainer():
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
+            # TODO (Shuning): When using the new sampler, set n_batches_per_pass to 10.
+            # I'm pretty sure you do this by just setting bpp_base in your config file.
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
                 n_batches_since_val += 1
                 total_batches_trained += 1
@@ -428,6 +439,14 @@ class SamplingMultiTaskTrainer():
                     batch_util = self._model.utilization.get_metric()
                     log.info("BATCH UTILIZATION: %.3f", batch_util)
 
+            # TODO (Shuning):
+            # Add code to do a very short validation here: One step per task.
+            # Use the validate method below as an example, but don't compute accuracy 
+            # or log as much information -- should be short/simple.
+            # Once you're done, call this to turn training mode back on:
+            # self._model.train()
+            # Then update the parameters of the agent, using the average validation loss as reward.
+
             # Validation
             if n_pass % (validation_interval) == 0:
                 epoch = int(n_pass / validation_interval)
@@ -471,6 +490,8 @@ class SamplingMultiTaskTrainer():
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
+                # TODO (Shuning): Print out the weights of the tasks here (the Q parameters?), so we can
+                #   watch them change.
 
                 self._metric_infos = metric_infos
                 self._task_infos = task_infos
@@ -509,6 +530,10 @@ class SamplingMultiTaskTrainer():
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
+        # TODO (Shuning): You should make a new validate function instead of using this one, but you can use 
+        #   it as an example of how to use eval mode (model.eval) and how to access the eval data 
+        #   for the tasks.
+
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
         self._model.eval()
@@ -720,6 +745,8 @@ class SamplingMultiTaskTrainer():
         torch.save(model_state, model_path)
 
         if phase != "eval":
+            # TODO (Shuning): Make sure the state of the agent is included in training state.
+            # This probably includes at least the Q values and the history of rewards.
             torch.save(
                 training_state,
                 os.path.join(
@@ -855,6 +882,8 @@ class SamplingMultiTaskTrainer():
             self._metric_infos[metric_name]['stopped'] = metric_state['stopped']
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
+        # TODO (Shuning): Make sure this can correctly load the state of the agent. 
+        # (The Q variables and the history, I guess?)
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]
 
