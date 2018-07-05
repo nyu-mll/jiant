@@ -751,7 +751,7 @@ class RTETask(PairClassificationTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading RTE{1,2,3}.")
+        log.info("\tFinished loading RTE.")
 
 
 class QNLITask(PairClassificationTask):

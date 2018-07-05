@@ -87,20 +87,23 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
         preproc_dir: (string) path to preprocessing dir
+        fraction: if set to a float between 0 and 1, load only the specified percentage
+          of examples. Hashing is used to ensure that the same examples are loaded each
+          epoch.
 
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
-    return serialize.read_records(filename, repeatable=True)
+    return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
 
 def _indexed_instance_generator(instance_iter, vocab):
@@ -293,17 +296,28 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    train_tasks = []
+    eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                  fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        if task.name in train_task_names:
+            train_tasks.append(task)
+        if task.name in eval_task_names:
+            if args.training_data_fraction < 1 and task.name in train_task_names:
+                # Rebuild the iterator so you see the full dataset in the eval training
+                # phase.
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0) 
+            eval_tasks.append(task)
+
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-
-    train_tasks = [task for task in tasks if task.name in train_task_names]
-    eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
