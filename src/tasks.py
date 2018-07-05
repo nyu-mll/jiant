@@ -61,7 +61,8 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         split[1] = itertools.repeat(None)
     # Map over columns: input2, (input2), labels, (idx)
     instances = map(_make_instance, *split)
-    return list(instances)
+    #  return list(instances)
+    return instances  # lazy iterator
 
 
 class Task():
@@ -865,7 +866,8 @@ class MTTask(SequenceGenerationTask):
             return Instance(d)
         # Map over columns: inputs, targs
         instances = map(_make_instance, split[0], split[2])
-        return list(instances)
+        #  return list(instances)
+        return instances  # lazy iterator
 
 
 class WikiInsertionsTask(MTTask):
@@ -1056,7 +1058,8 @@ class GroundedTask(Task):
 
         # Map over columns: input1, labels, ids
         instances = map(_make_instance, *split)
-        return list(instances)
+        #  return list(instances)
+        return instances  # lazy iterator
 
 
     def load_data(self, path, max_seq_len):

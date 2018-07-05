@@ -1,7 +1,4 @@
-'''Preprocessing functions and pipeline
-
-To add new tasks, add task-specific preprocessing functions to
-process_task_split()'''
+'''Preprocessing functions and pipeline'''
 import io
 import os
 import sys
@@ -148,16 +145,25 @@ def _index_split(task, split, token_indexer, vocab, record_file):
     """
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
-    log.info("%s: processing to tokens", log_prefix)
-    instance_iter = process_task_split(task, split, token_indexer)
-    if hasattr(instance_iter, '__len__'):
+    split_text = task.get_split_text(split)
+    instance_iter = task.process_split(split_text, token_indexer)
+    if hasattr(instance_iter, '__len__'):  # if non-lazy
         log.info("%s: %d examples to index", log_prefix, len(instance_iter))
-    else:
-        log.info("%s: lazy-processing instances; total # of examples not "
-                 "available.", log_prefix)
+
+    # Counter for lazy-loaded data, so we can print # of elements.
+    _instance_counter = 0
+    def _counter_iter(elems):
+        nonlocal _instance_counter
+        for elem in elems:
+            _instance_counter += 1
+            yield elem
+    instance_iter = _counter_iter(instance_iter)
+
+    # Actually call generators and stream to disk.
     serialize.write_records(
         _indexed_instance_generator(instance_iter, vocab), record_file)
-    log.info("%s: saved instances to %s", log_prefix, record_file)
+    log.info("%s: saved %d instances to %s",
+             log_prefix, _instance_counter, record_file)
 
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
                       relative_path: str, log_prefix: str="") -> bool:
@@ -426,23 +432,4 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-
-def process_task_split(task, split, token_indexer):
-    '''
-    Convert a task split into AllenNLP fields.
-    Different tasks have different formats and fields, so process_task routes tasks
-    to the corresponding processing based on the task type. These task specific processing
-    functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
-
-    Args:
-        task: Task object
-        split: (string) split name
-        token_indexer: token indexer
-
-    Returns:
-        list(Instance) of AllenNLP instances, not indexed.
-    '''
-    split_text = task.get_split_text(split)
-    return task.process_split(split_text, token_indexer)
 
