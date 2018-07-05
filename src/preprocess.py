@@ -15,6 +15,7 @@ from allennlp.data.fields import TextField, LabelField
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
 from allennlp_mods.numeric_field import NumericField
+import ipdb as pdb
 
 try:
     import fastText
@@ -37,7 +38,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    MultiNLIAltTask
+    MultiNLIAltTask, RedditTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -70,6 +71,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
+             'reddit': (RedditTask, 'reddit_comments_replies/'),
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -438,7 +440,8 @@ def process_task_split(task, split, token_indexer):
         instances = process_grounded_task_split(split_text, token_indexer,
                                                 is_pair=False, classification=True)
     elif isinstance(task, RankingTask):
-        pass
+        instances = process_ranking_task_split(split_text, token_indexer, 
+                                                is_pair=True, classification=False)
     else:
         raise ValueError("Preprocessing procedure not found for %s" % task.name)
     return instances
@@ -535,4 +538,14 @@ def process_mt_task_split(split, indexers):
     inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
     targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
     instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
+    return instances
+
+def process_ranking_task_split(split, indexers, is_pair=True, classification=False):
+    ''' Process reddit data set split '''
+    inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]  
+    inputs2 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[1]]  
+        
+    labels = [LabelField(1, label_namespace="labels", skip_indexing=True) for _ in range(len(split[0]))]    
+    instances = [Instance({"input1": input1, "input2": input2, "labels": label}) for
+                         (input1, input2, label) in zip(inputs1, inputs2, labels)]
     return instances
