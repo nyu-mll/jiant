@@ -71,7 +71,15 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE'),
-             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data')
+             'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
+             'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
+             'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
+             'recast-factuality': (RecastFactualityTask, 'DNC/recast_factuality_data'),
+             'recast-ner': (RecastNerTask, 'DNC/recast_ner_data'),
+             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
+             'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
+             'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
