@@ -45,7 +45,19 @@ class Task():
         raise NotImplementedError
 
 
-class SingleClassificationTask(Task):
+class ClassificationTask(Task):
+    ''' General classification task '''
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class RegressionTask(Task):
+    ''' General regression task '''
+    def __init__(self, name):
+        super().__init__(name)
+
+
+class SingleClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name, n_classes):
@@ -70,7 +82,7 @@ class SingleClassificationTask(Task):
         return {'accuracy': acc}
 
 
-class PairClassificationTask(Task):
+class PairClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name, n_classes):
@@ -94,7 +106,8 @@ class NLIProbingTask(PairClassificationTask):
         super().__init__(name)
 
 
-class PairRegressionTask(Task):
+
+class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
     def __init__(self, name):
@@ -111,7 +124,7 @@ class PairRegressionTask(Task):
         return {'mse': mse}
 
 
-class PairOrdinalRegressionTask(Task):
+class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
         in case we find a good way to implement ordinal regression with NN'''
@@ -599,6 +612,17 @@ class NLITypeProbingTask(PairClassificationTask):
         log.info("\tFinished loading NLI-type probing data.")
 
 
+class MultiNLIAltTask(MultiNLITask):
+    ''' Task class for Multi-Genre Natural Language Inference.
+
+    Identical to MultiNLI class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="mnli-alt"):
+        '''MNLI'''
+        super(MultiNLIAltTask, self).__init__(path, max_seq_len, name)
+
+
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
@@ -750,8 +774,10 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
+
     def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
         super().__init__(path, max_seq_len, name)
         self.scorer1 = Average()
@@ -778,6 +804,7 @@ class WikiInsertionsTask(MTTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''

@@ -33,6 +33,45 @@ TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
+def load_model_state(model, state_path, gpu_id, skip_task_models=False):
+    ''' Helper function to load a model state
+
+    Parameters
+    ----------
+    model: The model object to populate with loaded parameters.
+    state_path: The path to a model_state checkpoint.
+    gpu_id: The GPU to use. -1 for no GPU.
+    skip_task_models: If set, load only the task-independent parameters.
+    '''
+    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    if skip_task_models:
+        keys_to_skip = [key for key in model_state if "_mdl" in key]
+        for key in keys_to_skip:
+            del model_state[key]
+
+    model.load_state_dict(model_state, strict=False)
+    logging.info("Loaded model state from %s", state_path)
+
+
+def get_batch_size_from_field(batch_field):
+    ''' Given a field with unknown text_fields, get the batch size '''
+    keys = [k for k in batch_field.keys()]
+    batch_size = batch_field[keys[0]].size()[0]
+    return batch_size
+
+
+def get_batch_utilization(batch_field, pad_idx=0):
+    ''' Get ratio of batch elements that are padding
+
+    Batch should be field, i.e. a dictionary of inputs'''
+    if 'elmo' in batch_field:
+        idxs = batch_field['elmo']
+        pad_ratio = idxs.eq(pad_idx).sum().item() / idxs.nelement()
+    else:
+        raise NotImplementedError
+    return 1 - pad_ratio
+
+
 def maybe_make_dir(dirname):
     """Make a directory if it doesn't exist."""
     os.makedirs(dirname, exist_ok=True)
