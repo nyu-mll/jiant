@@ -38,8 +38,10 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
+    RedditTask
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     POSTaggingTask, CCGTaggingTask
+
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -72,6 +74,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
+             'reddit': (RedditTask, 'reddit_comments_replies/'),
 	         'pos': (POSTaggingTask, 'POS/'),
 	         'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),

@@ -22,7 +22,6 @@ from allennlp.data.fields import TextField, LabelField
 from allennlp_mods.numeric_field import NumericField
 
 from utils import load_tsv, process_sentence, truncate
-
 from typing import Iterable, Sequence, Any, Type
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
@@ -250,11 +249,6 @@ class RankingTask(Task):
     def __init__(self, name, n_choices):
         super().__init__(name)
         self.n_choices = n_choices
-        raise NotImplementedError
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        raise NotImplementedError
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -366,6 +360,50 @@ class SSTTask(SingleClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
+
+
+class RedditTask(RankingTask):
+    ''' Task class for Reddit data.  '''
+
+    def __init__(self, path, max_seq_len, name="reddit"):
+        ''' '''
+        super(RedditTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
+        #:pdb.set_trace()
+        self.scorer1 = Average() #CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = True
+
+    def load_data(self, path, max_seq_len):
+        ''' Load data '''
+        print("Loading data")
+        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
+        path = '//nfs/jsalt/home/raghu/'
+        tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING TRAIN DATA")
+        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING dev DATA")
+        test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING test DATA")
+        self.train_data_text = tr_data
+        self.val_data_text = dev_data
+        self.test_data_text = test_data
+        log.info("\tFinished loading Temporary Reddit data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        #pdb.set_trace()
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 
 class CoLATask(SingleClassificationTask):
