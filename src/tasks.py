@@ -176,6 +176,7 @@ class NLIProbingTask(PairClassificationTask):
 
     def __init__(self, name, n_classes):
         super().__init__(name)
+        self.use_classifier = 'mnli'
 
 
 
@@ -1188,7 +1189,7 @@ class VAETask(SequenceGenerationTask):
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))        
+                                        targ_fn=lambda t: t.split(' '))
         self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,

@@ -257,13 +257,13 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
                                                          'dropout': args.dropout,
                                                          'scheduled_sampling_ratio': 0.0}))
             setattr(model, '%s_decoder' % task.name, decoder)
-            
+
         elif isinstance(task, GroundedTask):
             task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         elif isinstance(task, RankingTask):
             pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
             setattr(model, '%s_mdl' % task.name, pooler)
-            setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel) 
+            setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
 
             #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
@@ -405,9 +405,9 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, VAETask):
-            out = self._vae_forward(batch, task)
+            out = self._vae_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
-            out = self._tagger_forward(batch, task)
+            out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -418,6 +418,11 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
+    def _get_classifier(self, task):
+        key = task.use_classifier if hasattr(task, 'use_classifier') else task.name
+        module = getattr(self, "%s_mdl" % key)
+        return module
+
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
 
@@ -425,7 +430,7 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
         #pdb.set_trace()
         # pass to a task specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(self, task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
 
@@ -459,7 +464,7 @@ class MultiTaskModel(nn.Module):
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(self, task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size_from_field(batch['input1'])
@@ -509,12 +514,12 @@ class MultiTaskModel(nn.Module):
         cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
         cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
         diag_elem = torch.diagonal(cos_simi)
-        no_pos_pairs = len(diag_elem) 
+        no_pos_pairs = len(diag_elem)
         no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
 
         #positive pairs loss: with the main diagonal elements
-        pos_simi = torch.log2(diag_elem)  
-        pos_loss = torch.neg(torch.sum(pos_simi)) 
+        pos_simi = torch.log2(diag_elem)
+        pos_loss = torch.neg(torch.sum(pos_simi))
 
         # negative pairs loss: with the off diagonal elements
         off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
@@ -527,22 +532,22 @@ class MultiTaskModel(nn.Module):
         # calculating accuracy
         pred = cos_simi.round()
         no_pos_pairs_correct = torch.trace(pred)
-        # getting 1-pred and setting matrix with main diagonal elements to zero 
+        # getting 1-pred and setting matrix with main diagonal elements to zero
         offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
         no_neg_pairs_correct = torch.sum(offdiag_pred)
-        
+
         total_correct = no_pos_pairs_correct + no_neg_pairs_correct
         batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
         return total_loss, batch_acc
-        
+
     def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
         out = {}
         # feed forwarding inputs through sentence encoders
-        sent1, mask1 = self.sent_encoder(batch['input1'])  
-        sent2, mask2 = self.sent_encoder(batch['input2']) 
-        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response
-        sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response  
+        sent1, mask1 = self.sent_encoder(batch['input1'])
+        sent2, mask2 = self.sent_encoder(batch['input2'])
+        sent_pooler = self._get_classifier(self, task) # pooler for both Input and Response
+        sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
@@ -553,26 +558,26 @@ class MultiTaskModel(nn.Module):
             #task.scorer1(batch_acc)
             sent1_rep = F.normalize(sent1_rep, 2, 1)
             sent2_rep = F.normalize(sent2_rep, 2, 1)
-            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1)) 
+            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
             labels = torch.eye(len(cos_simi))
-            
+
             scale = 1/(len(cos_simi) - 1)
             weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
-            
+
             #scale = (len(cos_simi) - 1)
             #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
-            weights = weights.view(-1).cuda()            
+            weights = weights.view(-1).cuda()
             #import ipdb as pdb; pdb.set_trace()
-            
+
 
             cos_simi = cos_simi.view(-1)
             labels = labels.view(-1).cuda()
             pred = F.sigmoid(cos_simi).round()
-            
+
             #cos_simi = torch.diagonal(cos_simi)
             #labels = torch.ones(cos_simi.shape).cuda()
             #import ipdb as pdb; pdb.set_trace()
-            
+
             total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
             #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
@@ -582,9 +587,9 @@ class MultiTaskModel(nn.Module):
             task.scorer1(batch_acc)
             #import ipdb as pdb; pdb.set_trace()
         return out
- 
 
-    def _vae_forward(self, batch, task):
+
+    def _vae_forward(self, batch, task, predict):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
@@ -602,7 +607,7 @@ class MultiTaskModel(nn.Module):
             pass
 
         return out
-    
+
     def _seq_gen_forward(self, batch, task, predict):
         ''' For variational autoencoder '''
         out = {}
@@ -623,7 +628,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch, task):
+    def _tagger_forward(self, batch, task, predict):
         ''' For language modeling? '''
         out = {}
         b_size, seq_len, _ = batch['inputs']['elmo'].size()
@@ -635,7 +640,7 @@ class MultiTaskModel(nn.Module):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
-            hid2tag = getattr(self, "%s_mdl" % task.name)
+            hid2tag = self._get_classifier(self, task)
             logits = hid2tag(sent)
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
