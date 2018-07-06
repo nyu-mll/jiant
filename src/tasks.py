@@ -1267,10 +1267,10 @@ class RecastWinogenderTask(RecastNLITask):
 class RecastLexicosynTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
-        super(RecastLexicosynTask, self).__init__
+        super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
 
 class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
-        super(RecastKGTask, self).__init__
+        super(RecastKGTask, self).__init__(path, max_seq_len, name)
 
