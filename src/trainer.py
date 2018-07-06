@@ -378,9 +378,11 @@ class SamplingMultiTaskTrainer():
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
 
-        log.info ("task.n_tr_examples: " + str([(task, task.n_tr_examples) for task in tasks]) )
+        log.info ("Weighting details: ")
+        log.info ("task.n_tr_examples: " + str([(task.name, task.n_tr_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
-        log.info ("sample_weights: " + str(sample_weights) )
+        normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
+        log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
@@ -401,6 +403,7 @@ class SamplingMultiTaskTrainer():
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
+                #pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
