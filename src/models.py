@@ -22,18 +22,20 @@ from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
+from allennlp.training.metrics import Average
 
-from tasks import STSBTask, CoLATask, SSTTask, \
-    PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
+from tasks import STSBTask, CoLATask, \
+    ClassificationTask, PairClassificationTask, SingleClassificationTask, \
+    RegressionTask, PairRegressionTask, RankingTask, \
+    SequenceGenerationTask, LanguageModelingTask, MTTask, \
+    PairOrdinalRegressionTask, JOCITask, \
+    WeakGroundedTask, GroundedTask, VAETask
     GroundedTask, MTTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log
+from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
 from seq2seq_decoder import Seq2SeqDecoder
 
 # Elmo stuff
@@ -234,6 +236,18 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
             setattr(model, '%s_decoder' % task.name, decoder)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+
+        elif isinstance(task, VAETask):
+            decoder = Seq2SeqDecoder.from_params(vocab,
+                                                 Params({'input_dim': d_sent,
+                                                         'target_embedding_dim': 300,
+                                                         'max_decoding_steps': 200,
+                                                         'target_namespace': 'tokens',
+                                                         'attention': 'bilinear',
+                                                         'dropout': args.dropout,
+                                                         'scheduled_sampling_ratio': 0.0}))
+            setattr(model, '%s_decoder' % task.name, decoder)
+            
         elif isinstance(task, GroundedTask):
             task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         else:
@@ -342,8 +356,9 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.combine_method = args.sent_combine_method
         self.vocab = vocab
+        self.utilization = Average() if args.track_batch_utilization else None
 
-    def forward(self, task, batch):
+    def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
 
@@ -354,52 +369,66 @@ class MultiTaskModel(nn.Module):
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
+        if 'input1' in batch and self.utilization is not None:
+            self.utilization(get_batch_utilization(batch['input1']))
         if isinstance(task, SingleClassificationTask):
-            out = self._single_sentence_forward(batch, task)
+            out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
-            out = self._pair_sentence_forward(batch, task)
+            out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            out = self._lm_forward(batch, task)
+            out = self._lm_forward(batch, task, predict)
+        elif isinstance(task, VAETask):
+            out = self._vae_forward(batch, task)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
-            out = self._seq_gen_forward(batch, task)
+            out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
-            out = self._grounded_classification_forward(batch, task)
+            out = self._grounded_classification_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
-            out = self._ranking_forward(batch, task)
-
+            out = self._ranking_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
 
-    def _single_sentence_forward(self, batch, task):
+    def _single_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
+        out['logits'] = logits
 
-        if 'labels' in batch:
+        if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
-                labels = labels.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
                 _, preds = logits.max(dim=1)
-                task.scorer1(labels, preds.data.cpu().numpy())
+                task.scorer1(labels_np, preds.data.cpu().numpy())
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
-        out['logits'] = logits
+
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_forward(self, batch, task):
+    def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
@@ -408,35 +437,65 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if 'labels' in batch:
             labels = batch['labels'].squeeze(-1)
             if isinstance(task, JOCITask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
-                logits = logits.data.cpu().numpy()
-                labels = labels.data.cpu().numpy()
-                task.scorer1(mean_squared_error(logits, labels))
-                task.scorer2(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(mean_squared_error(logits_np, labels_np))
+                task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1)
                 out['loss'] = F.mse_loss(logits, labels)
-                logits = logits.data.cpu().numpy()
-                labels = labels.data.cpu().numpy()
-                task.scorer1(logits, labels)
-                task.scorer2(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(logits_np, labels_np)
+                task.scorer2(logits_np, labels_np)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
+
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _seq_gen_forward(self, batch, task):
+    def _vae_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        b_size, seq_len = batch['inputs']['words'].size()
         sent, sent_mask = self.sent_encoder(batch['inputs'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+
+        if isinstance(task, VAETask):
+            decoder = getattr(self, "%s_decoder" % task.name)
+            out = decoder.forward(sent, sent_mask, batch['targs'])
+            task.scorer1(math.exp(out['loss'].item()))
+            return out
+        if 'targs' in batch:
+            pass
+
+        if predict:
+            pass
+
+        return out
+    
+    def _seq_gen_forward(self, batch, task, predict):
+        ''' For variational autoencoder '''
+        out = {}
+        sent, sent_mask = self.sent_encoder(batch['inputs'])
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -446,6 +505,10 @@ class MultiTaskModel(nn.Module):
 
         if 'targs' in batch:
             pass
+
+        if predict:
+            pass
+
         return out
 
     def _tagger_forward(self, batch, task):
@@ -471,11 +534,12 @@ class MultiTaskModel(nn.Module):
         task.scorer1(out['loss'].item())
         return out
 
-    def _lm_forward(self, batch, task):
+    def _lm_forward(self, batch, task, predict):
         ''' For language modeling? '''
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -501,48 +565,67 @@ class MultiTaskModel(nn.Module):
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
+        if predict:
+            pass
+
         return out
 
-    def _grounded_classification_forward(self, batch, task):
-        out = {}; d_1, d_2 = self.sent_encoder.output_dim, 2048;
+    def _grounded_classification_forward(self, batch, task, predict):
+        out = {}
+        d_1, d_2 = self.sent_encoder.output_dim, 2048
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        image_map = nn.Linear(d_1, d_2).cuda(); sent_transform = image_map(sent_emb)
-        ids = batch['ids'].cpu().squeeze(-1); ids = list(ids.data.numpy());
-        labels = batch['labels'].cpu().squeeze(-1); labels = [int(item) for item in labels.data.numpy()]  
-    
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        image_map = nn.Linear(d_1, d_2).cuda()
+        sent_transform = image_map(sent_emb)
+        ids = batch['ids'].cpu().squeeze(-1)
+        ids = list(ids.data.numpy())
+        labels = batch['labels'].cpu().squeeze(-1)
+        labels = [int(item) for item in labels.data.numpy()]
+
         seq, true = [], []
         for i in range(len(ids)):
             img_id, label = ids[i], labels[i]
             init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
-            seq.append(torch.tensor(init_emb, dtype=torch.float)); true.append(label)
-        img_emb = torch.stack(seq, dim=0);
+            seq.append(torch.tensor(init_emb, dtype=torch.float))
+            true.append(label)
+        img_emb = torch.stack(seq, dim=0)
 
         batch_size = len(labels)
         sent_transform = sent_transform.view(batch_size, -1)
-        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda(); sent_transform = image_map(sent_transform)
+        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda()
+        sent_transform = image_map(sent_transform)
 
         '''
-        cos = nn.SmoothL1Loss()        
-        cos = nn.MSELoss()        
+        cos = nn.SmoothL1Loss()
+        cos = nn.MSELoss()
         cos = nn.L1Loss()
         out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
         '''
-        cos = nn.CosineEmbeddingLoss(); flags = Variable(torch.ones(len(labels)))
-        out['loss'] = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float), flags)
+        cos = nn.CosineEmbeddingLoss()
+        flags = Variable(torch.ones(len(labels)))
+        out['loss'] = cos(
+            torch.tensor(
+                sent_transform, dtype=torch.float), torch.tensor(
+                img_emb, dtype=torch.float), flags)
         cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        sim = cos(torch.tensor(sent_transform, dtype=torch.float), torch.tensor(img_emb, dtype=torch.float))
+        sim = cos(
+            torch.tensor(
+                sent_transform,
+                dtype=torch.float),
+            torch.tensor(
+                img_emb,
+                dtype=torch.float))
         classifier = nn.Linear(len(labels), len(labels))
         logits = classifier(sim)
         out['logits'] = logits
 
         preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
         acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
-        task.scorer1.__call__(np.sum(acc)/len(acc))
+        task.scorer1.__call__(np.sum(acc) / len(acc))
+        if predict:
+            out['preds'] = preds
 
         return out
 
-    def _ranking_forward(self, batch, task):
-        ''' For caption and image ranking '''
-        raise NotImplementedError

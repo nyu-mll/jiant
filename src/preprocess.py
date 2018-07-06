@@ -1,20 +1,18 @@
-'''Preprocessing functions and pipeline
-
-To add new tasks, add task-specific preprocessing functions to
-process_task_split()'''
+'''Preprocessing functions and pipeline'''
 import io
 import os
+import sys
 import copy
 import logging as log
 from collections import defaultdict
 import numpy as np
 import torch
 
-from allennlp.data import Instance, Vocabulary, Token
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data import Vocabulary
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
-from allennlp_mods.numeric_field import NumericField
+
+import tasks
 
 try:
     import fastText
@@ -36,6 +34,11 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
+    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
+    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
+    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask
     GroundedTask, MTTask, BWBLMTask, TaggingTask, \
     POSTaggingTask, CCGTaggingTask
 
@@ -48,6 +51,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'qqp': (QQPTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
+             'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
              'mnli-slate': (MultiNLISlateTask, 'MNLI/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
@@ -63,6 +67,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
+             'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
@@ -70,6 +75,17 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
 	     'pos': (POSTaggingTask, 'POS/'),
 	     'ccg': (CCGTaggingTask, 'CCG/')
+             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
+             'vae': (VAETask, 'VAE'),
+             'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
+             'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
+             'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
+             'recast-factuality': (RecastFactualityTask, 'DNC/recast_factuality_data'),
+             'recast-ner': (RecastNERTask, 'DNC/recast_ner_data'),
+             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
+             'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
+             'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -85,36 +101,38 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
         preproc_dir: (string) path to preprocessing dir
+        fraction: if set to a float between 0 and 1, load only the specified percentage
+          of examples. Hashing is used to ensure that the same examples are loaded each
+          epoch.
 
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
-    return serialize.read_records(filename, repeatable=True)
+    return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
 
-def _indexed_instance_generator(instance_list, vocab):
-    """Yield indexed copies of the given instances.
+def _indexed_instance_generator(instance_iter, vocab):
+    """Yield indexed instances. Instances are modified in-place.
 
     TODO(iftenney): multiprocess the $%^& out of this.
 
     Args:
-        instance_list: list(Instance) of examples
+        instance_iter: iterable(Instance) of examples
         vocab: Vocabulary for use in indexing
 
     Yields:
         Instance with indexed fields.
     """
-    for orig_instance in instance_list:
-        instance = copy.deepcopy(orig_instance)
+    for instance in instance_iter:
         instance.index_fields(vocab)
         # Strip token fields to save memory and disk.
         del_field_tokens(instance)
@@ -146,13 +164,63 @@ def _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
     """
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
-    log.info("%s: processing to tokens", log_prefix)
-    instance_list = process_task_split(task, split, token_indexer, target_indexer)
-    log.info("%s: %d examples to index", log_prefix, len(instance_list))
-    serialize.write_records(
-        _indexed_instance_generator(instance_list, vocab), record_file)
-    log.info("%s: saved instances to %s", log_prefix, record_file)
+    split_text = task.get_split_text(split)
+    instance_iter = task.process_split(split_text, token_indexer)
+    if hasattr(instance_iter, '__len__'):  # if non-lazy
+        log.warn("%s: non-lazy Instance generation. You'll want to refactor "
+                 "%s.process_split to return a lazy iterator.", log_prefix,
+                 type(task).__name__)
+        log.info("%s: %d examples to index", log_prefix, len(instance_iter))
+        # Copy so that we don't store indexed data in memory.
+        # TODO: remove this case and stream everything.
+        instance_iter = utils.copy_iter(instance_iter)
 
+    # Counter for lazy-loaded data, so we can log the # of elements.
+    _instance_counter = 0
+    def _counter_iter(elems):
+        nonlocal _instance_counter
+        for elem in elems:
+            _instance_counter += 1
+            yield elem
+    instance_iter = _counter_iter(instance_iter)
+
+    # Actually call generators and stream to disk.
+    serialize.write_records(
+        _indexed_instance_generator(instance_iter, vocab), record_file)
+    log.info("%s: saved %d instances to %s",
+             log_prefix, _instance_counter, record_file)
+
+def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
+                      relative_path: str, log_prefix: str="") -> bool:
+    """Find a cached file.
+
+    Look in local exp_dir first, then in global_exp_cache_dir. If found in the
+    global dir, make a symlink in the local dir pointing to the global one.
+
+    Args:
+        exp_dir: (string) local experiment dir
+        global_exp_cache_dir: (string) global experiment cache
+        relative_path: (string) relative path to file, from exp_dir
+        log_prefix: (string) prefix for logging info
+
+    Returns:
+        True if file was found in either location.
+    """
+    if log_prefix:
+        log_prefix = log_prefix + ": "
+    # Try in local preproc dir.
+    local_file = os.path.join(exp_dir, relative_path)
+    if os.path.isfile(local_file) or os.path.islink(local_file):
+        log.info("%sFound preprocessed copy in %s", log_prefix, local_file)
+        return True
+    # Try in global preproc dir; if found, make a symlink.
+    global_file = os.path.join(global_exp_cache_dir, relative_path)
+    if os.path.exists(global_file):
+        log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
+        os.symlink(global_file, local_file)
+        log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
+        return True
+    return False
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -219,27 +287,21 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    global_preproc_dir = os.path.join(args.global_ro_exp_dir, "preproc")
+    reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
+        force_reindex = (args.reload_indexing and
+                         task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            # Try in local preproc dir.
-            record_file = _get_serialized_record_path(task.name, split, preproc_dir)
-            if os.path.isfile(record_file) or os.path.islink(record_file):
-                log.info("%s: found preprocessed copy in %s", log_prefix, record_file)
-                continue
-            # Try in global preproc dir; if found, make a symlink.
-            global_record_file = _get_serialized_record_path(task.name, split,
-                                                             global_preproc_dir)
-            if os.path.exists(global_record_file):
-                log.info("%s: found (global) preprocessed copy in %s",
-                         log_prefix, global_record_file)
-                os.symlink(global_record_file, record_file)
-                log.info("\tCreated symlink: %s -> %s", record_file,
-                         global_record_file)
-                continue
-            # If all else fails, reindex from scratch.
-            _index_split(task, split, token_indexer, target_indexer, vocab, record_file)
+            relative_path = _get_serialized_record_path(task.name, split,
+                                                        "preproc")
+            cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
+                                            relative_path, log_prefix=log_prefix)
+            if force_reindex or not cache_found:
+                # Re-index from scratch.
+                record_file = _get_serialized_record_path(task.name, split,
+                                                          preproc_dir)
+                _index_split(task, split, token_indexer, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         task.train_data = None
@@ -250,17 +312,28 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    train_tasks = []
+    eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                  fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        if task.name in train_task_names:
+            train_tasks.append(task)
+        if task.name in eval_task_names:
+            if args.training_data_fraction < 1 and task.name in train_task_names:
+                # Rebuild the iterator so you see the full dataset in the eval training
+                # phase.
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0) 
+            eval_tasks.append(task)
+
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-
-    train_tasks = [task for task in tasks if task.name in train_task_names]
-    eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
@@ -335,7 +408,8 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        for sentence in task.sentences:
+        log.info("\tCounting words for task: '%s'", task.name)
+        for sentence in task.get_sentences():
             count_sentence(sentence)
 
     for task in tasks:
