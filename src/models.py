@@ -489,7 +489,44 @@ class MultiTaskModel(nn.Module):
         return out
 
 
-    def _ranking_forward(self, batch, task):
+    def BCE_implementation(sent1_rep, sent2_rep):
+        sent1_rep = F.normalize(sent1_rep, 2, 1)
+        sent2_rep = F.normalize(sent2_rep, 2, 1)
+
+        # all the below implementation is binary cross entropy with weighted neg pairs
+        # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
+
+        # cosine similarity between every pair of samples
+        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+        cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
+        diag_elem = torch.diagonal(cos_simi)
+        no_pos_pairs = len(diag_elem) 
+        no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
+
+        #positive pairs loss: with the main diagonal elements
+        pos_simi = torch.log2(diag_elem)  
+        pos_loss = torch.neg(torch.sum(pos_simi)) 
+
+        # negative pairs loss: with the off diagonal elements
+        off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
+        cos_simi_log = torch.log2(off_diag_elem)
+        neg_loss = torch.neg(torch.sum(cos_simi_log))
+        # scaling
+        neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
+        total_loss = pos_loss + neg_loss_scaled
+        #import ipdb as pdb; pdb.set_trace()
+        # calculating accuracy
+        pred = cos_simi.round()
+        no_pos_pairs_correct = torch.trace(pred)
+        # getting 1-pred and setting matrix with main diagonal elements to zero 
+        offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
+        no_neg_pairs_correct = torch.sum(offdiag_pred)
+        
+        total_correct = no_pos_pairs_correct + no_neg_pairs_correct
+        batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
+        return total_loss, batch_acc
+        
+    def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
         out = {}
         # feed forwarding inputs through sentence encoders
@@ -500,47 +537,41 @@ class MultiTaskModel(nn.Module):
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
-
+        #import ipdb as pdb; pdb.set_trace()
         if 1:
-            #labels = batch['labels']
-            #pdb.set_trace()
+            #total_loss, batch_acc = BCE_implementation(sent1_rep, sent1_rep)
+            #out['loss'] = total_loss
+            #task.scorer1(batch_acc)
             sent1_rep = F.normalize(sent1_rep, 2, 1)
-            sent2_rep = F.normalize(sent2_rep,2,1)
-
-            # all the below implementation is binary cross entropy with weighted neg pairs
-            # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
-
-            # cosine similarity between every pair of samples
-            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
-            cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
-            diag_elem = torch.diagonal(cos_simi)
-            no_pos_pairs = len(diag_elem) 
-            no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
-
-            #positive pairs loss: with the main diagonal elements
-            pos_simi = torch.log2(diag_elem)  
-            pos_loss = torch.neg(torch.sum(pos_simi)) 
-
-            # negative pairs loss: with the off diagonal elements
-            off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
-            cos_simi_log = torch.log2(off_diag_elem)
-            neg_loss = torch.neg(torch.sum(cos_simi_log))
-            # scaling
-            neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
-
-            out['loss'] = pos_loss + neg_loss_scaled
-            #pdb.set_trace()
-            # calculating accuracy
-            pred = cos_simi.round()
-          
-            no_pos_pairs_correct = torch.trace(pred)
-            # getting 1-pred and setting matrix with main diagonal elements to zero 
-            offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
-            no_neg_pairs_correct = torch.sum(offdiag_pred)
+            sent2_rep = F.normalize(sent2_rep, 2, 1)
+            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1)) 
+            labels = torch.eye(len(cos_simi))
             
-            total_correct = no_pos_pairs_correct + no_neg_pairs_correct
-            batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
+            scale = 1/(len(cos_simi) - 1)
+            weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+            
+            #scale = (len(cos_simi) - 1)
+            #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
+            weights = weights.view(-1).cuda()            
+            #import ipdb as pdb; pdb.set_trace()
+            
+
+            cos_simi = cos_simi.view(-1)
+            labels = labels.view(-1).cuda()
+            pred = F.sigmoid(cos_simi).round()
+            
+            #cos_simi = torch.diagonal(cos_simi)
+            #labels = torch.ones(cos_simi.shape).cuda()
+            #import ipdb as pdb; pdb.set_trace()
+            
+            total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+            #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
+            out['loss'] = total_loss
+            total_correct = torch.sum(pred == labels)
+            batch_acc = total_correct.item()/len(labels)
+            out["n_exs"] = len(labels)
             task.scorer1(batch_acc)
+            #import ipdb as pdb; pdb.set_trace()
         return out
  
 
