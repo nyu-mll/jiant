@@ -24,18 +24,29 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
+from utils import get_batch_utilization
+
+from tasks import STSBTask, CoLATask, SSTTask, \
+    PairClassificationTask, SingleClassificationTask, \
+    PairRegressionTask, RankingTask, \
+    SequenceGenerationTask, LanguageModelingTask, \
+    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
+    GroundedTask, MTTask, RedditTask
+
 from tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask
+
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
 from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
 from seq2seq_decoder import Seq2SeqDecoder
+
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -246,6 +257,12 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             
         elif isinstance(task, GroundedTask):
             task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
+        elif isinstance(task, RankingTask):
+            pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
+            setattr(model, '%s_mdl' % task.name, pooler)
+            setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel) 
+
+            #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -273,6 +290,16 @@ def get_task_specific_params(args, task):
         params['dropout'] = get_task_attr("classifier_dropout")
 
     return Params(params)
+
+
+def build_reddit_module(task, d_inp, params):
+    ''' Build a single classifier '''
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
+                                        nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']),
+                                        )
+    #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+    return pooler, dnn_ResponseModel
 
 
 def build_single_sentence_module(task, d_inp, params):
@@ -387,8 +414,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
-
+        #pdb.set_trace()
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
@@ -461,6 +487,93 @@ class MultiTaskModel(nn.Module):
             else:
                 _, out['preds'] = logits.max(dim=1)
         return out
+
+
+    def BCE_implementation(sent1_rep, sent2_rep):
+        sent1_rep = F.normalize(sent1_rep, 2, 1)
+        sent2_rep = F.normalize(sent2_rep, 2, 1)
+
+        # all the below implementation is binary cross entropy with weighted neg pairs
+        # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
+
+        # cosine similarity between every pair of samples
+        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+        cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
+        diag_elem = torch.diagonal(cos_simi)
+        no_pos_pairs = len(diag_elem) 
+        no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
+
+        #positive pairs loss: with the main diagonal elements
+        pos_simi = torch.log2(diag_elem)  
+        pos_loss = torch.neg(torch.sum(pos_simi)) 
+
+        # negative pairs loss: with the off diagonal elements
+        off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
+        cos_simi_log = torch.log2(off_diag_elem)
+        neg_loss = torch.neg(torch.sum(cos_simi_log))
+        # scaling
+        neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
+        total_loss = pos_loss + neg_loss_scaled
+        #import ipdb as pdb; pdb.set_trace()
+        # calculating accuracy
+        pred = cos_simi.round()
+        no_pos_pairs_correct = torch.trace(pred)
+        # getting 1-pred and setting matrix with main diagonal elements to zero 
+        offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
+        no_neg_pairs_correct = torch.sum(offdiag_pred)
+        
+        total_correct = no_pos_pairs_correct + no_neg_pairs_correct
+        batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
+        return total_loss, batch_acc
+        
+    def _ranking_forward(self, batch, task, predict):
+        ''' For caption and image ranking. This implementation is intended for Reddit'''
+        out = {}
+        # feed forwarding inputs through sentence encoders
+        sent1, mask1 = self.sent_encoder(batch['input1'])  
+        sent2, mask2 = self.sent_encoder(batch['input2']) 
+        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response
+        sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response  
+        sent1_rep = sent_pooler(sent1, mask1)
+        sent2_rep_pool = sent_pooler(sent2, mask2)
+        sent2_rep = sent_dnn(sent2_rep_pool)
+        #import ipdb as pdb; pdb.set_trace()
+        if 1:
+            #total_loss, batch_acc = BCE_implementation(sent1_rep, sent1_rep)
+            #out['loss'] = total_loss
+            #task.scorer1(batch_acc)
+            sent1_rep = F.normalize(sent1_rep, 2, 1)
+            sent2_rep = F.normalize(sent2_rep, 2, 1)
+            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1)) 
+            labels = torch.eye(len(cos_simi))
+            
+            scale = 1/(len(cos_simi) - 1)
+            weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+            
+            #scale = (len(cos_simi) - 1)
+            #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
+            weights = weights.view(-1).cuda()            
+            #import ipdb as pdb; pdb.set_trace()
+            
+
+            cos_simi = cos_simi.view(-1)
+            labels = labels.view(-1).cuda()
+            pred = F.sigmoid(cos_simi).round()
+            
+            #cos_simi = torch.diagonal(cos_simi)
+            #labels = torch.ones(cos_simi.shape).cuda()
+            #import ipdb as pdb; pdb.set_trace()
+            
+            total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+            #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
+            out['loss'] = total_loss
+            total_correct = torch.sum(pred == labels)
+            batch_acc = total_correct.item()/len(labels)
+            out["n_exs"] = len(labels)
+            task.scorer1(batch_acc)
+            #import ipdb as pdb; pdb.set_trace()
+        return out
+ 
 
     def _vae_forward(self, batch, task):
         ''' For translation, denoising, maybe language modeling? '''
@@ -595,4 +708,3 @@ class MultiTaskModel(nn.Module):
             out['preds'] = preds
 
         return out
-
