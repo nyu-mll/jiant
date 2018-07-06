@@ -1239,14 +1239,6 @@ class RecastNERTask(RecastNLITask):
     def __init__(self, path, max_seq_len, name="recast-ner"):
         super(RecastNERTask, self).__init__(name, 2)
 
-    def __init__(self, path, max_seq_len, name="recast-puns"):
-        super(RecastPunTask, self).__init__(name, 2)
-
-class RecastNERTask(RecastNLITask):
-
-    def __init__(self, path, max_seq_len, name="recast-ner"):
-        super(RecastNERTask, self).__init__(name, 2)
-
 class RecastVerbnetTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbnet"):
