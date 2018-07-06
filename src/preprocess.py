@@ -35,7 +35,12 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    MultiNLIAltTask, NLITypeProbingTask, RedditTask
+    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
+    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask \
+    RedditTask
+
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -69,7 +74,17 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
-             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/')
+             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
+             'vae': (VAETask, 'VAE'),
+             'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
+             'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
+             'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
+             'recast-factuality': (RecastFactualityTask, 'DNC/recast_factuality_data'),
+             'recast-ner': (RecastNERTask, 'DNC/recast_ner_data'),
+             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
+             'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
+             'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -85,20 +100,23 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
         preproc_dir: (string) path to preprocessing dir
+        fraction: if set to a float between 0 and 1, load only the specified percentage
+          of examples. Hashing is used to ensure that the same examples are loaded each
+          epoch.
 
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
-    return serialize.read_records(filename, repeatable=True)
+    return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
 
 def _indexed_instance_generator(instance_iter, vocab):
@@ -291,17 +309,28 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    train_tasks = []
+    eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                  fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        if task.name in train_task_names:
+            train_tasks.append(task)
+        if task.name in eval_task_names:
+            if args.training_data_fraction < 1 and task.name in train_task_names:
+                # Rebuild the iterator so you see the full dataset in the eval training
+                # phase.
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0) 
+            eval_tasks.append(task)
+
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-
-    train_tasks = [task for task in tasks if task.name in train_task_names]
-    eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
