@@ -8,7 +8,7 @@ if len(sys.argv) < 2:
   print("Usage: python extract_results.py log.log")
   exit(0)
 
-col_order = ['date', 'train_tasks', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1']
+col_order = ['date', 'train_tasks', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1', 'path']
 
 
 today = datetime.datetime.now()
@@ -20,12 +20,12 @@ for path in sys.argv[1:]:
   try:
     cols = {c : '' for c in col_order}
     cols['date'] =  today.strftime("%m/%d/%Y")
+    cols['path'] = path
     results_line = None
     found_eval = False
     train_tasks = None
     dropout = None
     elmo = None
-    print(path)
 
     with open(path) as f:
       for line in f:
@@ -68,8 +68,7 @@ for path in sys.argv[1:]:
       metric, value = mv.split(':')
       cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
 
-    print('\t'.join(col_order))
     print('\t'.join([cols[c] for c in col_order]))
   except BaseException as e:
-    print("Error:", e)
+    print("Error:", e, path)
 
