@@ -38,7 +38,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask, \
     RedditTask
 
 
