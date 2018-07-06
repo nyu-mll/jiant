@@ -38,8 +38,7 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask
-    GroundedTask, MTTask, BWBLMTask, TaggingTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     POSTaggingTask, CCGTaggingTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -73,8 +72,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-	     'pos': (POSTaggingTask, 'POS/'),
-	     'ccg': (CCGTaggingTask, 'CCG/')
+	         'pos': (POSTaggingTask, 'POS/'),
+	         'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
@@ -153,7 +152,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, token_indexer, target_indexer, vocab, record_file):
+def _index_split(task, split, token_indexer, vocab, record_file):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -243,7 +242,6 @@ def build_tasks(args):
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     token_indexer = {}
-    target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
@@ -484,153 +482,7 @@ def get_fastText_model(vocab, d_word, model_file=None):
     return embeddings, model
 
 
-def process_task_split(task, split, token_indexer, target_indexer=None):
-    '''
-    Convert a task split into AllenNLP fields.
-    Different tasks have different formats and fields, so process_task routes tasks
-    to the corresponding processing based on the task type. These task specific processing
-    functions should return three splits, which are lists (possibly empty) of AllenNLP instances.
 
-    Args:
-        task: Task object
-        split: (string) split name
-        token_indexer: token indexer
-
-    Returns:
-        list(Instance) of AllenNLP instances, not indexed.
-    '''
-    split_text = getattr(task, '%s_data_text' % split)
-    if isinstance(task, SingleClassificationTask):
-        instances = process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=False)
-    elif isinstance(task, PairClassificationTask):
-        instances = process_single_pair_task_split(split_text,
-                                                   token_indexer, is_pair=True)
-    elif isinstance(task, PairRegressionTask):
-        instances = process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, PairOrdinalRegressionTask):
-        instances = process_single_pair_task_split(split_text, token_indexer,
-                                                   is_pair=True, classification=False)
-    elif isinstance(task, LanguageModelingTask):
-        instances = process_lm_task_split(split_text, token_indexer)
-    elif isinstance(task, TaggingTask):
-        instances = process_tagging_task_split(split_text, token_indexer, target_indexer)
-    elif isinstance(task, MTTask):
-        instances = process_mt_task_split(split_text, token_indexer)
-    elif isinstance(task, SequenceGenerationTask):
-        pass
-    elif isinstance(task, GroundedTask):
-        instances = process_grounded_task_split(split_text, token_indexer,
-                                                is_pair=False, classification=True)
-    elif isinstance(task, RankingTask):
-        pass
-    else:
-        raise ValueError("Preprocessing procedure not found for %s" % task.name)
-    return instances
-
-
-def process_grounded_task_split(split, indexers, is_pair=True, classification=True):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-
-    Returns:
-    '''
-    inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-    labels = [NumericField(l) for l in split[1]]
-    ids = [NumericField(l) for l in split[2]]
-    instances = [Instance({"input1": input1, "labels": label, "ids": ids})
-                 for (input1, label, ids) in zip(inputs1, labels, ids)]
-
-    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
-
-
-def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
-    '''
-    Convert a dataset of sentences into padded sequences of indices.
-
-    Args:
-        - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
-
-    Returns:
-    '''
-    if is_pair:
-        inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        inputs2 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[1]]
-        if classification:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
-        else:
-            labels = [NumericField(l) for l in split[-1]]
-
-        if len(split) == 4:  # numbered test examples
-            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label, "idx": idx})
-                         for (input1, input2, label, idx) in zip(inputs1, inputs2, labels, idxs)]
-
-        else:
-            instances = [Instance({"input1": input1, "input2": input2, "labels": label}) for
-                         (input1, input2, label) in zip(inputs1, inputs2, labels)]
-
-    else:
-        inputs1 = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        if classification:
-            labels = [LabelField(l, label_namespace="labels", skip_indexing=True) for l in split[2]]
-        else:
-            labels = [NumericField(l) for l in split[2]]
-
-        if len(split) == 4:
-            idxs = [LabelField(l, label_namespace="idxs", skip_indexing=True) for l in split[3]]
-            instances = [Instance({"input1": input1, "labels": label, "idx": idx}) for
-                         (input1, label, idx) in zip(inputs1, labels, idxs)]
-        else:
-            instances = [Instance({"input1": input1, "labels": label}) for (input1, label) in
-                         zip(inputs1, labels)]
-    return instances  # DatasetReader(instances) #Batch(instances) #Dataset(instances)
-
-
-def process_lm_task_split(split, indexers):
-    ''' Process a language modeling split '''
-    inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-    inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-               for sent in split]
-    if "chars" not in indexers:
-        targs_indexers = {"words": SingleIdTokenIndexer()}
-    else:
-        targs_indexers = indexers
-    trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-               for sent in split]
-    trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-               for sent in split]
-    # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-    #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-    instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                 for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-    #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-    return instances
-
-
-def process_mt_task_split(split, indexers):
-    ''' Process a machine translation split '''
-    inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-    targs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[2]]
-    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-    return instances
-
-
-def process_tagging_task_split(split, token_indexer, target_indexer):
-    ''' Process a tagging task '''
-    inputs = [TextField(list(map(Token, sent)), token_indexers=token_indexer) for sent in split[0]]
-    targs = [TextField(list(map(Token, sent)), token_indexers=target_indexer) for sent in split[2]]
-    # Might be better as LabelField? I don't know what these things mean
-    instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-    return instances
 
 
 

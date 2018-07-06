@@ -29,8 +29,8 @@ from tasks import STSBTask, CoLATask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
-    WeakGroundedTask, GroundedTask, VAETask
-    GroundedTask, MTTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+    WeakGroundedTask, GroundedTask, VAETask, \
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -518,6 +518,7 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
+        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
