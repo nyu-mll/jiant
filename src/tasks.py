@@ -1295,7 +1295,7 @@ class TaggingTask(Task):
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
+        self.val_metric_decreases = True
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
