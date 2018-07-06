@@ -38,8 +38,8 @@ from tasks import STSBTask, CoLATask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
-    WeakGroundedTask, GroundedTask, VAETask
-
+    WeakGroundedTask, GroundedTask, VAETask, \
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -229,6 +229,9 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, LanguageModelingTask):
             hid2voc = build_lm(task, d_sent, args)
             setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        elif isinstance(task, TaggingTask):
+            hid2tag = build_tagger(task, d_sent, task.num_tags)
+            setattr(model, '%s_mdl' % task.name, hid2tag)
         elif isinstance(task, MTTask):
             decoder = Seq2SeqDecoder.from_params(vocab,
                                                  Params({'input_dim': d_sent,
@@ -352,6 +355,10 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+def build_tagger(task, d_inp, out_dim):
+    ''' Build LM components (just map hidden states to vocab logits) '''
+    hid2tag = nn.Linear(d_inp, out_dim)
+    return hid2tag
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
@@ -399,6 +406,8 @@ class MultiTaskModel(nn.Module):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, VAETask):
             out = self._vae_forward(batch, task)
+        elif isinstance(task, TaggingTask):
+            out = self._tagger_forward(batch, task)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -612,6 +621,30 @@ class MultiTaskModel(nn.Module):
         if predict:
             pass
 
+        return out
+
+    def _tagger_forward(self, batch, task):
+        ''' For language modeling? '''
+        out = {}
+        b_size, seq_len, _ = batch['inputs']['elmo'].size()
+        seq_len -= 2
+        sent_encoder = self.sent_encoder
+
+        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
+        if not isinstance(sent_encoder, BiLMEncoder):
+            sent, mask = sent_encoder(batch['inputs'])
+            sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            sent = sent[:,1:-1,:]
+            hid2tag = getattr(self, "%s_mdl" % task.name)
+            logits = hid2tag(sent)
+            logits = logits.view(b_size * seq_len, -1)
+            out['logits'] = logits
+            targs = batch['targs']['words'][:,:seq_len].contiguous().view(-1)
+
+
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
         return out
 
     def _lm_forward(self, batch, task, predict):
