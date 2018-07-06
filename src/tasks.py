@@ -394,6 +394,10 @@ class RedditTask(RankingTask):
         self.test_data_text = test_data
         log.info("\tFinished loading Temporary Reddit data.")
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True)
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         #pdb.set_trace()
