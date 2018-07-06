@@ -3,7 +3,6 @@
 import argparse
 import glob
 import os
-import ipdb as pdb
 import subprocess
 import random
 import sys
@@ -118,6 +117,14 @@ def main(cl_arguments):
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
+    if args.debug:
+        log.info("Debugging is ON; we're importing pdb!")
+        try:
+            pass
+            #import ipdb as pdb
+        except ImportError:
+            pass
+            #import pdb
 
     # Prepare data #
     log.info("Loading tasks...")

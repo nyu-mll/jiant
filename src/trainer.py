@@ -20,6 +20,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from evaluate import evaluate
 
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -426,7 +427,7 @@ class SamplingMultiTaskTrainer():
 
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
-                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+                    log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
             if n_pass % (validation_interval) == 0:
@@ -449,7 +450,7 @@ class SamplingMultiTaskTrainer():
 
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric(reset=True)
-                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+                    log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
                 log.info("Validating...")
@@ -457,8 +458,7 @@ class SamplingMultiTaskTrainer():
                     epoch, tasks, batch_size, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
-                should_stop, task_infos, metric_infos = self._check_stop(
-                    epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
+                should_stop = self._check_stop(epoch, stop_metric, tasks)
 
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
@@ -472,8 +472,6 @@ class SamplingMultiTaskTrainer():
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
 
-                self._metric_infos = metric_infos
-                self._task_infos = task_infos
                 all_tr_metrics = {}
                 samples = random.choices(
                     tasks,
@@ -622,8 +620,10 @@ class SamplingMultiTaskTrainer():
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
 
-    def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
+    def _check_stop(self, epoch, stop_metric, tasks):
         ''' Check to see if should stop '''
+        task_infos, metric_infos = self._task_infos, self._metric_infos
+        g_optimizer = self._g_optimizer
         if g_optimizer is None:
             stop_tr = True
             for task in tasks:
@@ -653,12 +653,11 @@ class SamplingMultiTaskTrainer():
             log.info("Maximum number of validations hit. Stopping training.")
             should_stop = True
 
-        return should_stop, task_infos, metric_infos
+        return should_stop
 
     def _forward(self, batch, for_training, task=None):
-        # tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
         tensor_batch = batch
-        return self._model.forward(task, tensor_batch)  # , **tensor_batch)
+        return self._model.forward(task, tensor_batch)
 
     def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use

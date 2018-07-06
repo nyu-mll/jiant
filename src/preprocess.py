@@ -267,12 +267,10 @@ def build_tasks(args):
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
-        force_reindex = (args.reload_indexing and
-                         task.name in reindex_tasks)
+        force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            relative_path = _get_serialized_record_path(task.name, split,
-                                                        "preproc")
+            relative_path = _get_serialized_record_path(task.name, split, "preproc")
             cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
                                             relative_path, log_prefix=log_prefix)
             if force_reindex or not cache_found:
