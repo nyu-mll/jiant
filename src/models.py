@@ -430,7 +430,7 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
         #pdb.set_trace()
         # pass to a task specific classifier
-        classifier = self._get_classifier(self, task)
+        classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
 
