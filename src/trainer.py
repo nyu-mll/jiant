@@ -378,9 +378,11 @@ class SamplingMultiTaskTrainer():
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
 
-        log.info ("task.n_tr_examples: " + str([(task, task.n_tr_examples) for task in tasks]) )
+        log.info ("Weighting details: ")
+        log.info ("task.n_tr_examples: " + str([(task.name, task.n_tr_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
-        log.info ("sample_weights: " + str(sample_weights) )
+        normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
+        log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
