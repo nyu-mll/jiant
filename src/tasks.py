@@ -960,7 +960,7 @@ class TaggingTask(Task):
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
+        self.val_metric_decreases = True
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
         self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
