@@ -50,7 +50,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         else:
             d["labels"] = NumericField(labels)
 
-        if idx:  # numbered test examples
+        if idx is not None:  # numbered test examples
             d["idx"] = LabelField(idx, label_namespace="idxs",
                                   skip_indexing=True)
         return Instance(d)
