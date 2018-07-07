@@ -28,6 +28,23 @@ from .allennlp_mods.numeric_field import NumericField
 from . import serialize
 from .utils import load_tsv, process_sentence, truncate
 
+REGISTRY = {}  # Do not edit manually!
+def register_task(name, rel_path):
+    '''Decorator to register a task.
+
+    Use this instead of adding to NAME2INFO in preprocess.py
+
+    Usage:
+    @register_task('mytask', 'my-task/data')
+    class MyTask(SingleClassificationTask):
+        ...
+    '''
+    def _wrap(cls):
+        REGISTRY[name] = (cls, rel_path)
+        return cls
+    return _wrap
+
+
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
@@ -251,6 +268,7 @@ class EdgeProbingTask(Task):
                 yield record["text"].split()
 
 
+@register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005')
 class EdgeProbingSRLConll2005Task(EdgeProbingTask):
 
     def __init__(self, path, max_seq_len, name="edges_srl_conll2005"):

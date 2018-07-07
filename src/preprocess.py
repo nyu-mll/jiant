@@ -9,10 +9,9 @@ import numpy as np
 import torch
 
 from allennlp.data import Vocabulary
-from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
+from allennlp.data.token_indexers import \
+    SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
-
-#  import tasks
 
 try:
     import fastText
@@ -23,9 +22,8 @@ import _pickle as pkl
 
 from . import serialize
 from . import utils
+from . import tasks as tasks_module
 
-from .tasks import SingleClassificationTask, PairClassificationTask, \
-    PairRegressionTask, SequenceGenerationTask, RankingTask
 from .tasks import \
     CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
@@ -43,12 +41,12 @@ from .tasks import \
 from .tasks import MultiNLIFictionTask, \
     MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
     MultiNLITelephoneTask
-from .tasks import TaggingTask, POSTaggingTask, CCGTaggingTask
-from .tasks import EdgeProbingSRLConll2005Task
+from .tasks import POSTaggingTask, CCGTaggingTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
+# DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
@@ -91,8 +89,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
-             'edges-srl-conll2005': (EdgeProbingSRLConll2005Task, 'edges/srl_conll2005')
              }
+# Add any tasks registered in tasks.py
+NAME2INFO.update(tasks_module.REGISTRY)
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
@@ -159,19 +158,19 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, token_indexer, vocab, record_file):
+def _index_split(task, split, indexers, vocab, record_file):
     """Index instances and stream to disk.
     Args:
         task: Task instance
         split: (string), 'train', 'val', or 'test'
-        token_indexer: dict of token indexers
+        indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
     """
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, token_indexer)
+    instance_iter = task.process_split(split_text, indexers)
     if hasattr(instance_iter, '__len__'):  # if non-lazy
         log.warn("%s: non-lazy Instance generation. You'll want to refactor "
                  "%s.process_split to return a lazy iterator.", log_prefix,
@@ -248,13 +247,13 @@ def build_tasks(args):
     # 2 + 3) build / load vocab and word vectors
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     emb_file = os.path.join(args.exp_dir, 'embs.pkl')
-    token_indexer = {}
+    indexers = {}
     if not args.word_embs == 'none':
-        token_indexer["words"] = SingleIdTokenIndexer()
+        indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
-        token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
-        token_indexer["chars"] = TokenCharactersIndexer("chars")
+        indexers["chars"] = TokenCharactersIndexer("chars")
     if not args.reload_vocab and os.path.exists(vocab_path):
         vocab = Vocabulary.from_files(vocab_path)
         log.info("\tLoaded vocab from %s", vocab_path)
@@ -304,7 +303,7 @@ def build_tasks(args):
                 # Re-index from scratch.
                 record_file = _get_serialized_record_path(task.name, split,
                                                           preproc_dir)
-                _index_split(task, split, token_indexer, vocab, record_file)
+                _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         task.train_data = None
