@@ -12,7 +12,7 @@ from allennlp.data import Vocabulary
 from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
 
-import tasks
+#  import tasks
 
 try:
     import fastText
@@ -21,10 +21,10 @@ except BaseException:
 
 import _pickle as pkl
 
-import serialize
-import utils
+from . import serialize
+from . import utils
 
-from tasks import SingleClassificationTask, PairClassificationTask, \
+from .tasks import SingleClassificationTask, PairClassificationTask, \
     PairRegressionTask, SequenceGenerationTask, RankingTask, \
     CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
     MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \

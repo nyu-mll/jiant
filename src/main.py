@@ -14,17 +14,14 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 import torch
 
-import config
-import gcp
+from . import config
+from . import gcp
 
-from utils import assert_for_log, maybe_make_dir, load_model_state
-from preprocess import build_tasks
-from models import build_model
-from trainer import build_trainer, build_trainer_params
-from evaluate import evaluate, write_results, write_preds
-
-THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-JIANT_BASE_DIR = os.path.abspath(os.path.join(THIS_DIR, ".."))
+from .utils import assert_for_log, maybe_make_dir, load_model_state
+from .preprocess import build_tasks
+from .models import build_model
+from .trainer import build_trainer, build_trainer_params
+from .evaluate import evaluate, write_results, write_preds
 
 
 def handle_arguments(cl_arguments):

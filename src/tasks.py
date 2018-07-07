@@ -6,23 +6,27 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import copy
+import collections
 import itertools
+import functools
 import os
 import math
 import logging as log
 import json
 import numpy as np
+from typing import Iterable, Sequence, Any, Type
+
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
-from allennlp_mods.correlation import Correlation
 from allennlp.data.token_indexers import SingleIdTokenIndexer
+from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
-from allennlp_mods.numeric_field import NumericField
+from .allennlp_mods.numeric_field import NumericField
 
-from utils import load_tsv, process_sentence, truncate
-from typing import Iterable, Sequence, Any, Type
+from . import serialize
+from .utils import load_tsv, process_sentence, truncate
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -177,6 +181,88 @@ class NLIProbingTask(PairClassificationTask):
     def __init__(self, name, n_classes):
         super().__init__(name)
 
+
+class EdgeProbingTask(Task):
+    ''' Generic class for fine-grained edge probing.
+
+    Acts as a classifier, but with multiple targets for each input text.
+
+    Targets are of the form (span1, span2, label), where span1 and span2 are
+    half-open token intervals [i, j).
+
+    Subclass this for each dataset.
+
+    Subclass constructor should call this constructor with appropriate values of
+    n_classes (number of target labels) and files_by_split, which should map
+    split names ('train', 'dev', 'test') to JSON files.
+    '''
+
+    def __init__(self, name, n_classes=None,
+                 max_seq_len=None,
+                 files_by_split=None):
+        super().__init__(name)
+
+        assert n_classes is not None
+        assert files_by_split is not None
+        self._files_by_split = files_by_split
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+
+        self.n_classes = n_classes
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+
+    @staticmethod
+    def load_json_data(filename):
+        with open(filename, 'r') as fd:
+            for line in fd:
+                yield json.loads(line)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            # Lazy-load using RepeatableIterator.
+            loader = functools.partial(EdgeProbingTask.load_json_data,
+                                       filename=filename)
+            iter = serialize.RepeatableIterator(loader)
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        raise NotImplementedError
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+
+class EdgeProbingSRLConll2005Task(EdgeProbingTask):
+
+    def __init__(self, path, max_seq_len, name="edges_srl_conll2005"):
+        files_by_split = {
+            'train': os.path.join(path, "train.edges.json"),
+            'val': os.path.join(path, "dev.edges.json"),
+            'test': os.path.join(path, "test.wsj.edges.json"),
+        }
+        n_classes = 53  # number of roles in training set
+        super().__init__(name, n_classes=n_classes,
+                         max_seq_len=max_seq_len,
+                         files_by_split=files_by_split)
 
 
 class PairRegressionTask(RegressionTask):
@@ -1188,7 +1274,7 @@ class VAETask(SequenceGenerationTask):
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))        
+                                        targ_fn=lambda t: t.split(' '))
         self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,

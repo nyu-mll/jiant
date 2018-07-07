@@ -35,13 +35,13 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 # StackedSelfAttentionEncoder
 from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
-from utils import MaskedMultiHeadSelfAttention
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
+from .utils import MaskedMultiHeadSelfAttention
 
-from cnns.alexnet import alexnet
-from cnns.resnet import resnet101
-from cnns.inception import inception_v3
+from .cnns.alexnet import alexnet
+from .cnns.resnet import resnet101
+from .cnns.inception import inception_v3
 
 
 class SentenceEncoder(Model):
