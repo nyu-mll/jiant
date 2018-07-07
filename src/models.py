@@ -630,7 +630,6 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
-        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -642,7 +641,9 @@ class MultiTaskModel(nn.Module):
             targs = batch['targs']['words'][:,:seq_len].contiguous().view(-1)
 
 
+        out['n_exs'] = sum(sum(mask,0),0)
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         return out
