@@ -37,14 +37,16 @@ class Correlation(Metric):
         if isinstance(labels, np.ndarray):
             labels = labels.tolist()
 
-        batch_corr = self._correlation(labels, predictions)
-        self._per_batch_history.append(batch_corr)
+        if hasattr(self, '_per_batch_history'):
+            batch_corr = self._correlation(labels, predictions)
+            self._per_batch_history.append(batch_corr)
 
         self._predictions += predictions
         self._labels += labels
 
-        corr = self._correlation(self._labels, self._predictions)
-        self._history.append(corr)
+        if hasattr(self, '_history'):
+            corr = self._correlation(self._labels, self._predictions)
+            self._history.append(corr)
 
     def get_metric(self, reset=False):
         correlation = self._correlation(self._labels, self._predictions)
