@@ -14,7 +14,6 @@ import json
 import numpy as np
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from allennlp_mods.correlation import Correlation
-from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
@@ -1282,93 +1281,4 @@ class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
         super(RecastKGTask, self).__init__(name, 2)
-
-
-
-class TaggingTask(Task):
-    ''' Generic tagging, one tag per word '''
-
-    def __init__(self, name, num_tags):
-        super().__init__(name)
-        self.num_tags = num_tags + 2 # add unknown and padding
-        ## TODO check if this is good metric
-        self.scorer1 = Average()
-        self.scorer2 = None
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = True
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
-
-    def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
-        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
-                                         sos_tok, eos_tok), self.train_data_text[1]]
-        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
-                                       sos_tok, eos_tok), self.val_data_text[1]]
-        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
-                                        sos_tok, eos_tok), self.test_data_text[1]]
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a tagging task '''
-        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
-        instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-        return instances
-
-class POSTaggingTask(TaggingTask):
-    def __init__(self, path, max_seq_len, name="pos"):
-        super().__init__(name, 45) # 45 tags
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading POSTagging data.")
-
-
-
-class CCGTaggingTask(TaggingTask):
-    def __init__(self, path, max_seq_len, name="ccg"):
-        super().__init__(name, 1363) # 1363 tags
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-
-
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        te_data = load_tsv(os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading CCGTagging data.")
-
-
-
-
-
-
-
-
 
