@@ -25,10 +25,9 @@ from . import serialize
 from . import utils
 
 from .tasks import SingleClassificationTask, PairClassificationTask, \
-    PairRegressionTask, SequenceGenerationTask, RankingTask, \
-    CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
-    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
-    MultiNLITelephoneTask, QQPTask, RTETask, \
+    PairRegressionTask, SequenceGenerationTask, RankingTask
+from .tasks import \
+    CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     LanguageModelingTask, PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
@@ -36,12 +35,16 @@ from .tasks import SingleClassificationTask, PairClassificationTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RedditTask
+from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RedditTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    POSTaggingTask, CCGTaggingTask
-
+    RecastVerbnetTask, RecastNERTask, RecastPunTask
+from .tasks import MultiNLIFictionTask, \
+    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
+    MultiNLITelephoneTask
+from .tasks import TaggingTask, POSTaggingTask, CCGTaggingTask
+from .tasks import EdgeProbingSRLConll2005Task
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -87,7 +90,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
-             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'edges-srl-conll2005': (EdgeProbingSRLConll2005Task, 'edges/srl_conll2005')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
