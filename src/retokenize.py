@@ -1,5 +1,8 @@
 # Retokenization helpers.
 # Use this to project span annotations from one tokenization to another.
+#
+# NOTE: please don't make this depend on any other jiant/ libraries; it would
+# be nice to opensource this as a standalone utility.
 
 from typing import Sequence, Iterable, Tuple, \
         Union, Type, NewType
@@ -68,6 +71,10 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
 class TokenAligner(object):
     """Align two similiar tokenizations.
 
+    Usage:
+        ta = TokenAligner(source_tokens, target_tokens)
+        target_span = ta.project_span(*source_span)
+
     Uses Levenshtein distance to align two similar tokenizations, and provide
     facilities to project indices and spans from the source tokenization to the
     target.
@@ -82,6 +89,19 @@ class TokenAligner(object):
     construct T as:
         T = (U C V')
     where V' denotes the transpose.
+
+    Spans of non-aligned bytes are assumed to contain a many-to-many alignment
+    of all chars in that range. This can lead to unwanted alignments if, for
+    example, two consecutive tokens are mapped to escape sequences:
+        source: ["'s", "["]
+        target: ["&apos;", "s", "&#91;"]
+    In the above case, "'s'" may be spuriously aligned to "&apos;" while "["
+    has no character match with "s" or "&#91;", and so is aligned to both. To
+    make a correct alignment more likely, ensure that the characters in target
+    correspond as closely as possible to those in source. For example, the
+    following will align correctly:
+        source: ["'s", "["]
+        target: ["'", "s", "["]
     """
     def _mat_from_spans(self, spans: Sequence[Tuple[int, int]],
                         n_chars: int) -> Matrix:
@@ -107,11 +127,6 @@ class TokenAligner(object):
         mb is a sequence of (s1, s2, n_char) tuples, where s1 and s2 are the
         start indices in the first and second sequence, and n_char is the
         length of the block.
-
-        Non-matching regions are filled with a spanning rectangle - this is
-        equivalent to assuming a many-to-many alignment of all chars in this
-        range. To reduce how often this occurs, perform pre-processing so that
-        source and target share as many characters as possible.
         """
         # TODO(iftenney): compare performance of these implementations.
         return _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt)
