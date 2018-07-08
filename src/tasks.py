@@ -25,22 +25,28 @@ from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
 from .allennlp_mods.numeric_field import NumericField
 
+from . import retokenize
 from . import serialize
+from . import utils
 from .utils import load_tsv, process_sentence, truncate
 
 REGISTRY = {}  # Do not edit manually!
-def register_task(name, rel_path):
+def register_task(name, rel_path, kw=None):
     '''Decorator to register a task.
 
     Use this instead of adding to NAME2INFO in preprocess.py
 
+    If kw is not None, this will be passed as additional args when the Task is
+    constructed in preprocess.py.
+
     Usage:
-    @register_task('mytask', 'my-task/data')
+    @register_task('mytask', 'my-task/data', optional_kw_dict)
     class MyTask(SingleClassificationTask):
         ...
     '''
     def _wrap(cls):
-        REGISTRY[name] = (cls, rel_path)
+        entry = (cls, rel_path, kw) if kw else (cls, rel_path)
+        REGISTRY[name] = entry
         return cls
     return _wrap
 
@@ -222,6 +228,12 @@ class NLIProbingTask(PairClassificationTask):
         super().__init__(name)
 
 
+@register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
+               kw=dict(n_classes=53, files_by_split={
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.wsj.edges.json",
+               }))
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
@@ -237,14 +249,16 @@ class EdgeProbingTask(Task):
     split names ('train', 'dev', 'test') to JSON files.
     '''
 
-    def __init__(self, name, n_classes=None,
-                 max_seq_len=None,
+    def __init__(self, path, max_seq_len, name, n_classes=None,
                  files_by_split=None):
         super().__init__(name)
 
         assert n_classes is not None
         assert files_by_split is not None
-        self._files_by_split = files_by_split
+        self._files_by_split = {
+            split: os.path.join(path, fname)
+            for split, fname in files_by_split.items()
+        }
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
 
@@ -254,21 +268,31 @@ class EdgeProbingTask(Task):
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
-    @staticmethod
-    def load_json_data(filename):
-        with open(filename, 'r') as fd:
-            for line in fd:
-                yield json.loads(line)
+    def retokenize(self, record, inplace=True):
+        if not inplace:
+            record = copy.deepcopy(record)
+        text = record['text']
+        moses_tokens = utils.TOKENIZER.tokenize(text)
+        cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
+        ta = retokenize.TokenAligner(text, cleaned_moses_tokens)
+        record['text'] = " ".join(moses_tokens)
+        for target in record['targets']:
+            if 'span1' in target:
+                target['span1'] = ta.project_span(*target['span1'])
+            if 'span2' in target:
+                target['span2'] = ta.project_span(*target['span2'])
+        return record
 
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
             #  # Lazy-load using RepeatableIterator.
-            #  loader = functools.partial(EdgeProbingTask.load_json_data,
+            #  loader = functools.partial(utils.load_json_data,
             #                             filename=filename)
             #  iter = serialize.RepeatableIterator(loader)
-            iter = list(EdgeProbingTask.load_json_data(filename))
-            iters_by_split[split] = iter
+            iter = utils.load_json_data(filename)
+            iter = map(self.retokenize, iter)
+            iters_by_split[split] = list(iter)
         return iters_by_split
 
     def get_split_text(self, split: str):
@@ -297,21 +321,6 @@ class EdgeProbingTask(Task):
                 continue
             for record in iter:
                 yield record["text"].split()
-
-
-@register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005')
-class EdgeProbingSRLConll2005Task(EdgeProbingTask):
-
-    def __init__(self, path, max_seq_len, name="edges_srl_conll2005"):
-        files_by_split = {
-            'train': os.path.join(path, "train.edges.json"),
-            'val': os.path.join(path, "dev.edges.json"),
-            'test': os.path.join(path, "test.wsj.edges.json"),
-        }
-        n_classes = 53  # number of roles in training set
-        super().__init__(name, n_classes=n_classes,
-                         max_seq_len=max_seq_len,
-                         files_by_split=files_by_split)
 
 
 class PairRegressionTask(RegressionTask):

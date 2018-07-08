@@ -370,16 +370,18 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        task_src_path = os.path.join(path, NAME2INFO[name][1])
-        task_scratch_path = os.path.join(scratch_path, NAME2INFO[name][1])
+        task_info = NAME2INFO[name]
+        task_src_path = os.path.join(path, task_info[1])
+        task_scratch_path = os.path.join(scratch_path, task_info[1])
         pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
         if os.path.isfile(pkl_path) and load_pkl:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task_cls = NAME2INFO[name][0]
-            task = task_cls(task_src_path, max_seq_len, name)
+            task_cls = task_info[0]
+            kw = task_info[2] if len(task_info) > 2 else {}
+            task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)

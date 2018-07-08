@@ -1,12 +1,16 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
+from typing import Dict, List, Optional, Union, Iterable
+
 import copy
 import os
-from typing import Dict, List, Optional, Union
+import json
 import random
 import logging
 import codecs
+import time
+
 import nltk
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
@@ -24,7 +28,6 @@ from torch.nn import init
 from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
-import time
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -107,6 +110,11 @@ def process_sentence(sent, max_seq_len):
 def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
+def load_json_data(filename: str) -> Iterable:
+    ''' Load JSON records, one per line. '''
+    with open(filename, 'r') as fd:
+        for line in fd:
+            yield json.loads(line)
 
 def load_tsv(
         data_file,
