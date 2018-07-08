@@ -114,12 +114,35 @@ class Task():
         ''' Yield sentences, used to compute vocabulary. '''
         yield from self.sentences
 
+    def count_examples(self, splits=['train', 'val', 'test']):
+        ''' Count examples in the dataset. '''
+        self.example_counts = {}
+        for split in splits:
+            st = self.get_split_text(split)
+            count = self.get_num_examples(st)
+            self.example_counts[split] = count
+
+    @property
+    def n_train_examples(self):
+        return self.example_counts['train']
+
+    @property
+    def n_val_examples(self):
+        return self.example_counts['val']
+
     def get_split_text(self, split: str):
         ''' Get split text, typically as list of columns.
 
         Split should be one of 'train', 'val', or 'test'.
         '''
         return getattr(self, '%s_data_text' % split)
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text[0])
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
@@ -240,10 +263,11 @@ class EdgeProbingTask(Task):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            # Lazy-load using RepeatableIterator.
-            loader = functools.partial(EdgeProbingTask.load_json_data,
-                                       filename=filename)
-            iter = serialize.RepeatableIterator(loader)
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(EdgeProbingTask.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(EdgeProbingTask.load_json_data(filename))
             iters_by_split[split] = iter
         return iters_by_split
 
@@ -253,6 +277,13 @@ class EdgeProbingTask(Task):
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
@@ -364,6 +395,11 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text. '''
+        # Special case for LM: split_text is a single list.
+        return len(split_text)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''

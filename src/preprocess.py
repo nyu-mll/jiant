@@ -378,22 +378,19 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
-            if not os.path.isdir(task_scratch_path):
-                utils.maybe_make_dir(task_scratch_path)
+            task_cls = NAME2INFO[name][0]
+            task = task_cls(task_src_path, max_seq_len, name)
+            utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
-        tasks.append(task)
 
-    for task in tasks:  # hacky
-        if isinstance(task, LanguageModelingTask):  # should be true to seq task?
-            task.n_tr_examples = len(task.train_data_text)
-            task.n_val_examples = len(task.val_data_text)
-            task.n_te_examples = len(task.test_data_text)
-        else:
-            task.n_tr_examples = len(task.train_data_text[0])
-            task.n_val_examples = len(task.val_data_text[0])
-            task.n_te_examples = len(task.test_data_text[0])
+        # Count examples, store in example_counts.
+        if not hasattr(task, 'example_counts'):
+            task.count_examples()
+        log.info("\tTask '%s': %s", task.name,
+                 " ".join(("%s=%d" % kv for kv in
+                           task.example_counts.items())))
+        tasks.append(task)
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names

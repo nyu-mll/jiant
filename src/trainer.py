@@ -243,9 +243,9 @@ class SamplingMultiTaskTrainer():
             if phase == "main":
                 # Warning: This won't be precise when training_data_fraction is set, since each example is included
                 #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
-                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+                task_info['n_tr_batches'] = math.ceil(task.n_train_examples * self._training_data_fraction / batch_size)
             else:
-                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
+                task_info['n_tr_batches'] = math.ceil(task.n_train_examples / batch_size)
 
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
@@ -363,25 +363,25 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'proportional_log_batch':  # log(training batch)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'proportional_log_example':  # log(training example)
-            sample_weights = [math.log(task.n_tr_examples) for task in tasks]
+            sample_weights = [math.log(task.n_train_examples) for task in tasks]
         elif weighting_method == 'inverse_example':  # 1/training example
-            sample_weights = [(1 / task.n_tr_examples) for task in tasks]
+            sample_weights = [(1 / task.n_train_examples) for task in tasks]
         elif weighting_method == 'inverse_batch':  # 1/training batch
             sample_weights = [(1 / task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'inverse_log_example':  # 1/log(training example)
-            sample_weights = [(1 / math.log(task.n_tr_examples)) for task in tasks]
+            sample_weights = [(1 / math.log(task.n_train_examples)) for task in tasks]
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
         elif 'power_' in weighting_method:  # x ^ power
             weighting_power = float(weighting_method.strip('power_'))
-            sample_weights = [(task.n_tr_examples ** weighting_power) for task in tasks]
+            sample_weights = [(task.n_train_examples ** weighting_power) for task in tasks]
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
-            sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
+            sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
 
         log.info ("Weighting details: ")
-        log.info ("task.n_tr_examples: " + str([(task.name, task.n_tr_examples) for task in tasks]) )
+        log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
         normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
         log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
