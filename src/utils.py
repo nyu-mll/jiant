@@ -8,7 +8,7 @@ import random
 import logging
 import codecs
 import nltk
-from nltk.tokenize.moses import MosesTokenizer
+from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
 import numpy as np
 import torch
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+
+# Note: using the full 'detokenize()' method is not recommended, since it does
+# a poor job of adding correct whitespace. Use unescape_xml() only.
+_MOSES_DETOKENIZER = MosesDetokenizer()
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
@@ -81,6 +85,13 @@ def maybe_make_dir(dirname):
     """Make a directory if it doesn't exist."""
     os.makedirs(dirname, exist_ok=True)
 
+def unescape_moses(moses_tokens):
+    '''Unescape Moses punctuation tokens.
+
+    Replaces escape sequences like &#91; with the original characters
+    (such as '['), so they better align to the original text.
+    '''
+    return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence '''

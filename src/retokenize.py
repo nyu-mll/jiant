@@ -113,6 +113,7 @@ class TokenAligner(object):
         range. To reduce how often this occurs, perform pre-processing so that
         source and target share as many characters as possible.
         """
+        # TODO(iftenney): compare performance of these implementations.
         return _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt)
         #  return _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt)
 
@@ -139,14 +140,19 @@ class TokenAligner(object):
         # Token transfer matrix (m x n)
         self.T = self.U * self.C * self.V.T
 
-    def pprint(self):
+    def pprint(self, src_tokens=None, tgt_tokens=None) -> str:
         """Render as alignment table."""
         output = StringIO()
         output.write("{:s}({:d}, {:d}):\n".format(self.__class__.__name__,
                                                     *self.T.shape))
         for i in range(self.T.shape[0]):
             targs = sorted(list(self.project_tokens(i)))
-            output.write("  {:d} -> {:s}\n".format(i, str(targs)))
+            output.write("  {:d} -> {:s}".format(i, str(targs)))
+            if src_tokens is not None and tgt_tokens is not None:
+                tgt_list = [tgt_tokens[j] for j in targs]
+                output.write("\t'{:s}' -> {:s}".format(src_tokens[i],
+                                                       str(tgt_list)))
+            output.write("\n")
         return output.getvalue()
 
     def project_tokens(self, idxs: Union[int, Sequence[int]]) -> Sequence[int]:
