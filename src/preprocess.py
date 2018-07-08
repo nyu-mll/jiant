@@ -27,7 +27,7 @@ from . import tasks as tasks_module
 from .tasks import \
     CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
-    LanguageModelingTask, PDTBTask, \
+    PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
