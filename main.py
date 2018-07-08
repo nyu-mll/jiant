@@ -14,14 +14,14 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 import torch
 
-from . import config
-from . import gcp
+from src import config
+from src import gcp
 
-from .utils import assert_for_log, maybe_make_dir, load_model_state
-from .preprocess import build_tasks
-from .models import build_model
-from .trainer import build_trainer, build_trainer_params
-from .evaluate import evaluate, write_results, write_preds
+from src.utils import assert_for_log, maybe_make_dir, load_model_state
+from src.preprocess import build_tasks
+from src.models import build_model
+from src.trainer import build_trainer, build_trainer_params
+from src.evaluate import evaluate, write_results, write_preds
 
 
 def handle_arguments(cl_arguments):
