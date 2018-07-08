@@ -260,12 +260,17 @@ def build_tasks(args):
     else:
         log.info("\tBuilding vocab from scratch")
         ### FIXME MAGIC NUMBER
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000} # TODO target max size
+        max_v_sizes = {
+            'word': args.max_word_v_size,
+            'char': args.max_char_v_size,
+            'target': 20000, # TODO target max size
+        }
         word2freq, char2freq, target2freq = get_words(tasks)
         vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
         del word2freq, char2freq, target2freq
+
     word_v_size = vocab.get_vocab_size('tokens')
     char_v_size = vocab.get_vocab_size('chars')
     target_v_size = vocab.get_vocab_size('targets')
@@ -330,7 +335,7 @@ def build_tasks(args):
                 # phase.
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0) 
+                    task.name, "train", preproc_dir, fraction=1.0)
             eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
