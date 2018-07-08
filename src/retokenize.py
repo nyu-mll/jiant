@@ -140,8 +140,11 @@ class TokenAligner(object):
         # Token transfer matrix (m x n)
         self.T = self.U * self.C * self.V.T
 
+    def __str__(self):
+        return self.pprint()
+
     def pprint(self, src_tokens=None, tgt_tokens=None) -> str:
-        """Render as alignment table."""
+        """Render as alignment table: src -> [tgts]"""
         output = StringIO()
         output.write("{:s}({:d}, {:d}):\n".format(self.__class__.__name__,
                                                     *self.T.shape))
