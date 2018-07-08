@@ -242,11 +242,8 @@ class EdgeProbingTask(Task):
     Targets are of the form (span1, span2, label), where span1 and span2 are
     half-open token intervals [i, j).
 
-    Subclass this for each dataset.
-
-    Subclass constructor should call this constructor with appropriate values of
-    n_classes (number of target labels) and files_by_split, which should map
-    split names ('train', 'dev', 'test') to JSON files.
+    Subclass this for each dataset, or use register_task with appropriate kw
+    args.
     '''
 
     def __init__(self, path, max_seq_len, name, n_classes=None,
