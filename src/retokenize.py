@@ -3,6 +3,8 @@
 #
 # NOTE: please don't make this depend on any other jiant/ libraries; it would
 # be nice to opensource this as a standalone utility.
+#
+# Current implementation is not fast; TODO to profile this and see why.
 
 from typing import Sequence, Iterable, Tuple, \
         Union, Type, NewType

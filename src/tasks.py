@@ -25,7 +25,6 @@ from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
 from .allennlp_mods.numeric_field import NumericField
 
-from . import retokenize
 from . import serialize
 from . import utils
 from .utils import load_tsv, process_sentence, truncate
@@ -228,11 +227,13 @@ class NLIProbingTask(PairClassificationTask):
         super().__init__(name)
 
 
+# Make sure we load the properly-retokenized versions.
+_tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
                kw=dict(n_classes=53, files_by_split={
-                    'train': "train.edges.json",
-                    'val': "dev.edges.json",
-                    'test': "test.wsj.edges.json",
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.wsj.edges.json" + _tokenizer_suffix,
                }))
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
@@ -245,7 +246,6 @@ class EdgeProbingTask(Task):
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
     '''
-
     def __init__(self, path, max_seq_len, name, n_classes=None,
                  files_by_split=None):
         super().__init__(name)
@@ -265,21 +265,6 @@ class EdgeProbingTask(Task):
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
-    def retokenize(self, record, inplace=True):
-        if not inplace:
-            record = copy.deepcopy(record)
-        text = record['text']
-        moses_tokens = utils.TOKENIZER.tokenize(text)
-        cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
-        ta = retokenize.TokenAligner(text, cleaned_moses_tokens)
-        record['text'] = " ".join(moses_tokens)
-        for target in record['targets']:
-            if 'span1' in target:
-                target['span1'] = ta.project_span(*target['span1'])
-            if 'span2' in target:
-                target['span2'] = ta.project_span(*target['span2'])
-        return record
-
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
@@ -288,7 +273,6 @@ class EdgeProbingTask(Task):
             #                             filename=filename)
             #  iter = serialize.RepeatableIterator(loader)
             iter = utils.load_json_data(filename)
-            iter = map(self.retokenize, iter)
             iters_by_split[split] = list(iter)
         return iters_by_split
 
@@ -306,9 +290,29 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
+    @staticmethod
+    def make_instance(record, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        text = _sentence_to_text_field(tokens, indexers)
+        span1s = [t['span1'] for t in record['targets']]
+        span2s = [t['span2'] for t in record['targets']]
+        labels = [t['label'] for t in record['targets']]
+
+        d = {}
+        d['input1'] = text
+        d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span1s])
+        d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span2s])
+        d['labels'] = ListField([LabelField(label, label_namespace="labels")
+                                 for label in labels])
+        return Instance(d)
+
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        raise NotImplementedError
+        _map_fn = lambda r: EdgeProbingTask.make_instance(r, indexers)
+        return map(_map_fn, records)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
