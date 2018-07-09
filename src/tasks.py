@@ -6,23 +6,27 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import copy
+import collections
 import itertools
+import functools
 import os
 import math
 import logging as log
 import json
 import numpy as np
+from typing import Iterable, Sequence, Any, Type
+
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
-from allennlp_mods.correlation import Correlation
 from allennlp.data.token_indexers import SingleIdTokenIndexer
+from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
-from allennlp_mods.numeric_field import NumericField
+from .allennlp_mods.numeric_field import NumericField
 
-from utils import load_tsv, process_sentence, truncate
-from typing import Iterable, Sequence, Any, Type
+from . import serialize
+from .utils import load_tsv, process_sentence, truncate
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -176,7 +180,6 @@ class NLIProbingTask(PairClassificationTask):
 
     def __init__(self, name, n_classes):
         super().__init__(name)
-
 
 
 class PairRegressionTask(RegressionTask):
@@ -1188,7 +1191,7 @@ class VAETask(SequenceGenerationTask):
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))        
+                                        targ_fn=lambda t: t.split(' '))
         self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
         '''
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,

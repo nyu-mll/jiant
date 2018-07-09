@@ -25,28 +25,29 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from utils import get_batch_utilization, get_elmo_mixing_weights
+from .utils import get_batch_utilization, get_elmo_mixing_weights
 
-from tasks import STSBTask, CoLATask, SSTTask, \
+from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask
 
-from tasks import STSBTask, CoLATask, \
+from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
-from modules import SentenceEncoder, BoWSentEncoder, \
+from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
-from seq2seq_decoder import Seq2SeqDecoder
+
+from .utils import assert_for_log, get_batch_utilization, get_batch_size
+from .seq2seq_decoder import Seq2SeqDecoder
 
 
 # Elmo stuff
@@ -57,10 +58,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-#  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-# ELMO_WEIGHTS_PATH =
-# "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
-# # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):
@@ -429,7 +426,7 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
@@ -464,7 +461,7 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch:
             labels = batch['labels']
@@ -591,7 +588,7 @@ class MultiTaskModel(nn.Module):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, VAETask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -610,7 +607,7 @@ class MultiTaskModel(nn.Module):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['inputs'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -633,7 +630,7 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
-        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
+        out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -655,7 +652,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch['input1'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -692,7 +689,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
         image_map = nn.Linear(d_1, d_2).cuda()
         sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1)
