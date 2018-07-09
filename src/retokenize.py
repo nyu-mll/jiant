@@ -28,8 +28,10 @@ _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
 Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
                                  Type[np.ndarray]])
 
+_DTYPE = np.int32
+
 def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
-    M = np.zeros((n_chars_src, n_chars_tgt), dtype=np.int32)
+    M = np.zeros((n_chars_src, n_chars_tgt), dtype=_DTYPE)
     for i in range(len(mb)):
         b = mb[i]  # current block
         # Fill in-between this block and last block
@@ -59,12 +61,12 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
             idxs = np.indices((l0, l1))
             ridxs.extend((s0 + idxs[0]).flatten())  # row indices
             cidxs.extend((s1 + idxs[1]).flatten())  # col indices
-            data.extend(np.ones(l0 * l1))
+            data.extend(np.ones(l0 * l1, dtype=_DTYPE))
 
         # Fill matching region on diagonal
         ridxs.extend(range(b[0], b[0]+b[2]))
         cidxs.extend(range(b[1], b[1]+b[2]))
-        data.extend(2*np.ones(b[2]))
+        data.extend(2*np.ones(b[2], dtype=_DTYPE))
     M = sparse.csr_matrix((data, (ridxs, cidxs)),
                           shape=(n_chars_src, n_chars_tgt))
     return M
@@ -72,7 +74,7 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
 def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]],
                           n_chars: int) -> Matrix:
     """Construct a token-to-char matrix from a list of char spans."""
-    M = np.zeros((len(spans), n_chars), dtype=np.int32)
+    M = np.zeros((len(spans), n_chars), dtype=_DTYPE)
     for i, s in enumerate(spans):
         M[i, s[0]:s[1]] = 1
     return M
@@ -86,7 +88,7 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
         ridxs.extend([i] * (s[1] - s[0]))  # repeat token index
         cidxs.extend(range(s[0], s[1]))    # char indices
         #  assert len(ridxs) == len(cidxs)
-    data = np.ones(len(ridxs), dtype=np.int32)
+    data = np.ones(len(ridxs), dtype=_DTYPE)
     return sparse.csr_matrix((data, (ridxs, cidxs)),
                              shape=(len(spans), n_chars))
 
