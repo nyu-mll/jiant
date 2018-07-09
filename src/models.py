@@ -24,28 +24,28 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from utils import get_batch_utilization
+from .utils import get_batch_utilization
 
-from tasks import STSBTask, CoLATask, SSTTask, \
+from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask
 
-from tasks import STSBTask, CoLATask, \
+from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
-from modules import SentenceEncoder, BoWSentEncoder, \
+from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
-from seq2seq_decoder import Seq2SeqDecoder
+from .utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
+from .seq2seq_decoder import Seq2SeqDecoder
 
 
 # Elmo stuff
@@ -56,10 +56,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-#  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-# ELMO_WEIGHTS_PATH =
-# "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
-# # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):

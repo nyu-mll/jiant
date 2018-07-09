@@ -4,7 +4,7 @@ import logging as log
 
 import torch
 from allennlp.data.iterators import BasicIterator
-from tasks import RegressionTask, STSBTask, JOCITask
+from .tasks import RegressionTask, STSBTask, JOCITask
 
 
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
