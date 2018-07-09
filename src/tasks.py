@@ -732,6 +732,36 @@ class MultiNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
 
+    def get_metrics(self, reset=False):
+        # TODO implement metrics for different tags
+        pearsonr = self.scorer1.get_metric(reset)
+        spearmanr = self.scorer2.get_metric(reset)
+        return {'corr': (pearsonr + spearmanr) / 2,
+                'pearsonr': pearsonr, 'spearmanr': spearmanr}
+
+class MultiNLIDiagnosticTask(PairClassificationTask):
+    ''' Task class for diagnostic on MNLI'''
+
+    def __init__(self, path, max_seq_len, name="MNLIDiagnostics"):
+        super().__init__(name, 3) # 3 is number of labels
+        self.load_data(path, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        '''load MNLI diagnostics data.'''
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+                           s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+                           s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+
+        te_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+                                   s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MNLI Diagnostics data.")
+
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
