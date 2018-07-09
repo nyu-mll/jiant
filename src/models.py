@@ -542,31 +542,51 @@ class MultiTaskModel(nn.Module):
             #total_loss, batch_acc = BCE_implementation(sent1_rep, sent1_rep)
             #out['loss'] = total_loss
             #task.scorer1(batch_acc)
-            sent1_rep = F.normalize(sent1_rep, 2, 1)
-            sent2_rep = F.normalize(sent2_rep, 2, 1)
-            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1)) 
+            #sent1_rep = F.normalize(sent1_rep, 2, 1)
+            #sent2_rep = F.normalize(sent2_rep, 2, 1)
+            #cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1)) 
+
+            sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
+            sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
+            cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1)) 
+
             labels = torch.eye(len(cos_simi))
+
+            #import ipdb as pdb; pdb.set_trace()
             
-            scale = 1/(len(cos_simi) - 1)
-            weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+            #scale = 1/(len(cos_simi) - 1)
+            #weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
             
             #scale = (len(cos_simi) - 1)
             #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
-            weights = weights.view(-1).cuda()            
+            #weights = weights.view(-1).cuda()            
             #import ipdb as pdb; pdb.set_trace()
             
-
-            cos_simi = cos_simi.view(-1)
-            labels = labels.view(-1).cuda()
-            pred = F.sigmoid(cos_simi).round()
+            ## taking all the pairs positive and negative
+            #cos_simi = cos_simi.view(-1)
+            #labels = labels.view(-1).cuda()
+            #pred = F.sigmoid(cos_simi).round()
             
+            ## taking only positive pairs            
             #cos_simi = torch.diagonal(cos_simi)
             #labels = torch.ones(cos_simi.shape).cuda()
             #import ipdb as pdb; pdb.set_trace()
-            
-            total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
-            #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
+           
+            # balancing pairs
+            cos_simi_pos = torch.diag(cos_simi)
+            cos_simi_neg = torch.diag(cos_simi, diagonal=1)
+            cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
+            labels_pos = torch.diag(labels)
+            labels_neg = torch.diag(labels, diagonal=1) 
+            labels = torch.cat([labels_pos, labels_neg], dim=0)
+
+ 
+            labels = labels.cuda()
+            #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+            total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
+
+            pred = F.sigmoid(cos_simi).round()
             total_correct = torch.sum(pred == labels)
             batch_acc = total_correct.item()/len(labels)
             out["n_exs"] = len(labels)
