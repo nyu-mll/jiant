@@ -28,21 +28,21 @@ _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
 Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
                                  Type[np.ndarray]])
 
-#  def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
-#      M = np.zeros((n_chars_src, n_chars_tgt), dtype=np.int32)
-#      for i in range(len(mb)):
-#          b = mb[i]  # current block
-#          # Fill in-between this block and last block
-#          if i > 0:
-#              lb = mb[i-1]  # last block
-#              s0 = lb[0]+lb[2]  # top
-#              e0 = b[0]         # bottom
-#              s1 = lb[1]+lb[2]  # left
-#              e1 = b[1]         # right
-#              M[s0:e0,s1:e1] = 1
-#          # Fill matching region on diagonal
-#          M[b[0]:b[0]+b[2], b[1]:b[1]+b[2]] = 2*np.identity(b[2])
-#      return M
+def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
+    M = np.zeros((n_chars_src, n_chars_tgt), dtype=np.int32)
+    for i in range(len(mb)):
+        b = mb[i]  # current block
+        # Fill in-between this block and last block
+        if i > 0:
+            lb = mb[i-1]  # last block
+            s0 = lb[0]+lb[2]  # top
+            e0 = b[0]         # bottom
+            s1 = lb[1]+lb[2]  # left
+            e1 = b[1]         # right
+            M[s0:e0,s1:e1] = 1
+        # Fill matching region on diagonal
+        M[b[0]:b[0]+b[2], b[1]:b[1]+b[2]] = 2*np.identity(b[2])
+    return M
 
 def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
     ridxs = []
@@ -69,6 +69,26 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
                           shape=(n_chars_src, n_chars_tgt))
     return M
 
+def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]],
+                          n_chars: int) -> Matrix:
+    """Construct a token-to-char matrix from a list of char spans."""
+    M = np.zeros((len(spans), n_chars), dtype=np.int32)
+    for i, s in enumerate(spans):
+        M[i, s[0]:s[1]] = 1
+    return M
+
+def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
+                           n_chars: int) -> Matrix:
+    """Construct a token-to-char matrix from a list of char spans."""
+    ridxs = []
+    cidxs = []
+    for i, s in enumerate(spans):
+        ridxs.extend([i] * (s[1] - s[0]))  # repeat token index
+        cidxs.extend(range(s[0], s[1]))    # char indices
+        #  assert len(ridxs) == len(cidxs)
+    data = np.ones(len(ridxs), dtype=np.int32)
+    return sparse.csr_matrix((data, (ridxs, cidxs)),
+                             shape=(len(spans), n_chars))
 
 class TokenAligner(object):
     """Align two similiar tokenizations.
@@ -105,22 +125,11 @@ class TokenAligner(object):
         source: ["'s", "["]
         target: ["'", "s", "["]
     """
-    def _mat_from_spans(self, spans: Sequence[Tuple[int, int]],
-                        n_chars: int) -> Matrix:
-        """Construct a token-to-char matrix from a list of char spans."""
-        ridxs = []
-        cidxs = []
-        for i, s in enumerate(spans):
-            ridxs.extend([i] * (s[1] - s[0]))  # repeat token index
-            cidxs.extend(range(s[0], s[1]))    # char indices
-            assert len(ridxs) == len(cidxs)
-        data = np.ones(len(ridxs), dtype=np.int32)
-        return sparse.csr_matrix((data, (ridxs, cidxs)),
-                                 shape=(len(spans), n_chars))
-
     def token_to_char(self, text: str) -> Matrix:
         spans = _SIMPLE_TOKENIZER.span_tokenize(text)
-        return self._mat_from_spans(tuple(spans), len(text))
+        # TODO(iftenney): compare performance of these implementations.
+        return _mat_from_spans_sparse(tuple(spans), len(text))
+        #  return _mat_from_spans_dense(tuple(spans), len(text))
 
     def _mat_from_blocks(self, mb: Sequence[Tuple[int, int, int]],
                          n_chars_src: int, n_chars_tgt: int) -> Matrix:
@@ -131,8 +140,8 @@ class TokenAligner(object):
         length of the block.
         """
         # TODO(iftenney): compare performance of these implementations.
-        return _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt)
-        #  return _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt)
+        #  return _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt)
+        return _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt)
 
 
     def char_to_char(self, source: str, target: str) -> Matrix:
@@ -156,6 +165,7 @@ class TokenAligner(object):
         self.C = self.char_to_char(source, target)
         # Token transfer matrix (m x n)
         self.T = self.U * self.C * self.V.T
+        #  self.T = self.U.dot(self.C).dot(self.V.T)
 
     def __str__(self):
         return self.pprint()
@@ -177,6 +187,8 @@ class TokenAligner(object):
 
     def project_tokens(self, idxs: Union[int, Sequence[int]]) -> Sequence[int]:
         """Project source token indices to target token indices."""
+        if isinstance(idxs, int):
+          idxs = [idxs]
         return self.T[idxs].nonzero()[1]  # column indices
 
     def project_span(self, start, end) -> Tuple[int, int]:
