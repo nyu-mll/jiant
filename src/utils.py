@@ -67,7 +67,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
 
 def get_batch_size(batch):
     ''' Given a batch with unknown text_fields, get the batch size '''
-    batch_field = batch['inputs']['input1'] if 'inputs' in batch else batch['input1']
+    batch_field = batch['inputs'] if 'inputs' in batch else batch['input1']
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
     return batch_size
