@@ -14,7 +14,7 @@ import math
 import logging as log
 import json
 import numpy as np
-from typing import Iterable, Sequence, Any, Type
+from typing import Iterable, Sequence, List, Any, Type
 
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -30,7 +30,7 @@ from . import utils
 from .utils import load_tsv, process_sentence, truncate
 
 REGISTRY = {}  # Do not edit manually!
-def register_task(name, rel_path, kw=None):
+def register_task(name, rel_path, **kw):
     '''Decorator to register a task.
 
     Use this instead of adding to NAME2INFO in preprocess.py
@@ -230,11 +230,11 @@ class NLIProbingTask(PairClassificationTask):
 # Make sure we load the properly-retokenized versions.
 _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
-               kw=dict(n_classes=53, files_by_split={
+               label_file="labels.txt", files_by_split={
                     'train': "train.edges.json" + _tokenizer_suffix,
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
-               }))
+               })
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
@@ -246,11 +246,12 @@ class EdgeProbingTask(Task):
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
     '''
-    def __init__(self, path, max_seq_len, name, n_classes=None,
+    def __init__(self, path, max_seq_len, name,
+                 label_file=None,
                  files_by_split=None):
         super().__init__(name)
 
-        assert n_classes is not None
+        assert label_file is not None
         assert files_by_split is not None
         self._files_by_split = {
             split: os.path.join(path, fname)
@@ -259,7 +260,11 @@ class EdgeProbingTask(Task):
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
 
-        self.n_classes = n_classes
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+
+        #  self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -272,8 +277,8 @@ class EdgeProbingTask(Task):
             #  loader = functools.partial(utils.load_json_data,
             #                             filename=filename)
             #  iter = serialize.RepeatableIterator(loader)
-            iter = utils.load_json_data(filename)
-            iters_by_split[split] = list(iter)
+            iter = list(utils.load_json_data(filename))
+            iters_by_split[split] = iter
         return iters_by_split
 
     def get_split_text(self, split: str):
@@ -313,6 +318,9 @@ class EdgeProbingTask(Task):
         ''' Process split text into a list of AllenNLP Instances. '''
         _map_fn = lambda r: EdgeProbingTask.make_instance(r, indexers)
         return map(_map_fn, records)
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
