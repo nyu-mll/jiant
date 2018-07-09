@@ -263,12 +263,28 @@ class EdgeProbingTask(Task):
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
         self.n_classes = len(self.all_labels)
+        # see add_task_label_namespace in preprocess.py
+        self._label_namespace = self.name + "_labels"
 
         #  self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
 
     def load_data(self):
         iters_by_split = collections.OrderedDict()
@@ -277,7 +293,7 @@ class EdgeProbingTask(Task):
             #  loader = functools.partial(utils.load_json_data,
             #                             filename=filename)
             #  iter = serialize.RepeatableIterator(loader)
-            iter = list(utils.load_json_data(filename))
+            iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
         return iters_by_split
 
@@ -295,8 +311,7 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
-    @staticmethod
-    def make_instance(record, indexers) -> Type[Instance]:
+    def make_instance(self, record, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
         text = _sentence_to_text_field(tokens, indexers)
@@ -310,13 +325,14 @@ class EdgeProbingTask(Task):
                                  for s in span1s])
         d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
                                  for s in span2s])
-        d['labels'] = ListField([LabelField(label, label_namespace="labels")
+        d['labels'] = ListField([LabelField(label,
+                                            label_namespace=self._label_namespace)
                                  for label in labels])
         return Instance(d)
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        _map_fn = lambda r: EdgeProbingTask.make_instance(r, indexers)
+        _map_fn = lambda r: self.make_instance(r, indexers)
         return map(_map_fn, records)
 
     def get_all_labels(self) -> List[str]:
