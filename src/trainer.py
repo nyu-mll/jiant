@@ -571,7 +571,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
-                metric_decreases = False
+                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases
