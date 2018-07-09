@@ -19,8 +19,9 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
-from utils import device_mapping, assert_for_log  # pylint: disable=import-error
-from evaluate import evaluate
+
+from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .evaluate import evaluate
 
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -404,7 +405,6 @@ class SamplingMultiTaskTrainer():
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
-                #pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()

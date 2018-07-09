@@ -12,7 +12,7 @@ import argparse
 import pyhocon
 import json
 
-import hocon_writer
+from . import hocon_writer
 
 
 class Params(object):
