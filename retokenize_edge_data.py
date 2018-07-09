@@ -20,7 +20,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src import utils
 from src import retokenize
-    
+
 def retokenize_record(record, inplace=True):
     """Retokenize edge probing examples.
 
