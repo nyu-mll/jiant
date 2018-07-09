@@ -4,6 +4,7 @@ import sys
 import math
 import copy
 import logging as log
+import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -24,7 +25,7 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from utils import get_batch_utilization
+from utils import get_batch_utilization, get_elmo_mixing_weights
 
 from tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -383,6 +384,7 @@ class MultiTaskModel(nn.Module):
         self.combine_method = args.sent_combine_method
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
+        self.elmo = args.elmo and not args.elmo_chars_only
 
     def forward(self, task, batch, predict=False):
         '''
@@ -608,7 +610,7 @@ class MultiTaskModel(nn.Module):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size_from_field(batch['inputs'])
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -742,3 +744,21 @@ class MultiTaskModel(nn.Module):
             out['preds'] = preds
 
         return out
+
+    def get_elmo_mixing_weights(self, mix_id=0):
+        ''' Get elmo mixing weights from text_field_embedder,
+        since elmo should be in the same place every time.
+
+        args:
+            - text_field_embedder
+            - mix_id: if we learned multiple mixing weights, which one we want
+                to extract, usually 0
+
+        returns:
+            - params Dict[str:float]: dictionary maybe layers to scalar params
+        '''
+        if self.elmo:
+            params = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, mix_id)
+        else:
+            params = {}
+        return params
