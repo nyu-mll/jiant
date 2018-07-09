@@ -22,7 +22,7 @@ from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data.fields import TextField, LabelField, SpanField, ListField
 from .allennlp_mods.numeric_field import NumericField
 
 from . import serialize

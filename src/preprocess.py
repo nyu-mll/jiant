@@ -76,8 +76,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
-	         'pos': (POSTaggingTask, 'POS/'),
-	         'ccg': (CCGTaggingTask, 'CCG/'),
+             'pos': (POSTaggingTask, 'POS/'),
+             'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
@@ -311,12 +311,15 @@ def build_tasks(args):
                 _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
+        # TODO: delete task.{split}_data_text as well?
         task.train_data = None
         task.val_data = None
         task.test_data = None
         log.info("\tTask '%s': cleared in-memory data.", task.name)
 
     log.info("\tFinished indexing tasks")
+
+    #  sys.exit(1)  # DEBUG
 
     # 5) Initialize tasks with data iterators.
     train_tasks = []

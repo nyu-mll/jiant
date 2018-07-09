@@ -40,6 +40,7 @@ from .tasks import STSBTask, CoLATask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+from .tasks import EdgeProbingTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -228,6 +229,9 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, TaggingTask):
             hid2tag = build_tagger(task, d_sent, task.num_tags)
             setattr(model, '%s_mdl' % task.name, hid2tag)
+        elif isinstance(task, EdgeProbingTask):
+            module = build_edge_classifier_module(task, d_sent, task_params)
+            setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, MTTask):
             decoder = Seq2SeqDecoder.from_params(vocab,
                                                  Params({'input_dim': d_sent,
@@ -352,9 +356,22 @@ def build_lm(task, d_inp, args):
     return hid2voc
 
 def build_tagger(task, d_inp, out_dim):
-    ''' Build LM components (just map hidden states to vocab logits) '''
+    ''' Build tagger components. '''
     hid2tag = nn.Linear(d_inp, out_dim)
     return hid2tag
+
+def build_edge_classifier_module(task, d_inp: int, params):
+    ''' Build edge classifier components.
+
+    Use same classifier code as build_single_sentence_module,
+    except instead of whole-sentence pooling we'll use span1 and span2 indices.
+
+    TODO: consider alternate span-pooling operators: SegRNN for each span, or
+    3rd-order Tensor interaction term between spans.
+    '''
+    in_dim = 4 * d_inp  # (start_1, end_1, start_2, end_2)
+    classifier = Classifier.from_params(in_dim, task.n_classes, params)
+    return classifier
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
@@ -404,6 +421,8 @@ class MultiTaskModel(nn.Module):
             out = self._vae_forward(batch, task)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task)
+        elif isinstance(task, EdgeProbingTask):
+            out = self._edge_probe_forward(batch, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -449,6 +468,22 @@ class MultiTaskModel(nn.Module):
             else:
                 _, out['preds'] = logits.max(dim=1)
         return out
+
+
+    def _edge_probe_forward(self, batch, task, predict):
+        out = {}
+
+        # embed the sentence
+        sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+
+        # extract spans by indexing
+        import ipdb; ipdb.set_trace()
+
+        # invoke task-specific classifier
+        classifier = getattr(self, "%s_mdl" % task.name)
+
+        return out
+
 
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
