@@ -1222,11 +1222,11 @@ class RecastNLITask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
         val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+                        s1_idx=0, s2_idx=1, skip_rows=0, targ_idx=3)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1236,55 +1236,47 @@ class RecastNLITask(PairClassificationTask):
 class RecastPunTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-puns"):
-        super(RecastPunTask, self).__init__(name, 2)
+        super(RecastPunTask, self).__init__(path, max_seq_len, name)
 
 class RecastNERTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-ner"):
-        super(RecastNERTask, self).__init__(name, 2)
-
-    def __init__(self, path, max_seq_len, name="recast-puns"):
-        super(RecastPunTask, self).__init__(name, 2)
-
-class RecastNERTask(RecastNLITask):
-
-    def __init__(self, path, max_seq_len, name="recast-ner"):
-        super(RecastNERTask, self).__init__(name, 2)
+        super(RecastNERTask, self).__init__(path, max_seq_len, name)
 
 class RecastVerbnetTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbnet"):
-        super(RecastVerbnetTask, self).__init__(name, 2)
+        super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
 
 class RecastVerbcornerTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbcorner"):
-        super(RecastVerbcornerTask, self).__init__(name, 2)
+        super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
 
 class RecastSentimentTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-sentiment"):
-        super(RecastSentimentTask, self).__init__(name, 2)
+        super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
 
 class RecastFactualityTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-factuality"):
-        super(RecastFactualityTask, self).__init__(name, 2)
+        super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
 
 class RecastWinogenderTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-winogender"):
-        super(RecastWinogenderTask, self).__init__(name, 2)
+        super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
 
 class RecastLexicosynTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
-        super(RecastLexicosynTask, self).__init__(name, 2)
+        super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
 
 class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
-        super(RecastKGTask, self).__init__(name, 2)
+        super(RecastKGTask, self).__init__(path, max_seq_len, name)
 
 
 
