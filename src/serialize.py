@@ -1,12 +1,10 @@
-#!/bin/bash
-
 # Serialization and deserialization helpers.
 # Write arbitrary pickle-able Python objects to a record file, with one object
 # per line as a base64-encoded pickle.
 
 import _pickle as pkl
 import base64
-
+from zlib import crc32
 
 def _serialize(examples, fd, flush_every):
     for i, example in enumerate(examples):
@@ -50,13 +48,24 @@ class RepeatableIterator(object):
         return self._iter_fn().__iter__()
 
 
-def read_records(filename, repeatable=False):
+def bytes_to_float(b):
+    """ Maps a byte string to a float in [0, 1].
+
+    Verified to be uniform, at least over text strings and zero byte strings of varying lengths.
+    """
+    return float(crc32(b) & 0xffffffff) / 2**32
+
+
+def read_records(filename, repeatable=False, fraction=None):
     """Streaming read records from file.
 
     Args:
       filename: path to file of b64-encoded pickles, one per line
       repeatable: if true, returns a RepeatableIterator that can read the file
         multiple times.
+      fraction: if set to a float between 0 and 1, load only the specified percentage
+        of examples. Hashing is used to ensure that the same examples are loaded each
+        epoch.
 
     Returns:
       iterable, possible repeatable, yielding deserialized Python objects
@@ -65,6 +74,10 @@ def read_records(filename, repeatable=False):
         with open(filename, 'rb') as fd:
             for line in fd:
                 blob = base64.b64decode(line)
+                if fraction and fraction < 1:
+                    hash_float = bytes_to_float(blob)
+                    if hash_float > fraction:
+                        continue
                 example = pkl.loads(blob)
                 yield example
     return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()

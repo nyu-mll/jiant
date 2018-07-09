@@ -6,23 +6,27 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import copy
+import collections
 import itertools
+import functools
 import os
 import math
 import logging as log
 import json
 import numpy as np
+from typing import Iterable, Sequence, Any, Type
+
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
-from allennlp_mods.correlation import Correlation
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
-from allennlp_mods.numeric_field import NumericField
+from .allennlp_mods.numeric_field import NumericField
 
-from utils import load_tsv, process_sentence, truncate
-
-from typing import Iterable, Sequence, Any, Type
+from . import serialize
+from .utils import load_tsv, process_sentence, truncate
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -51,7 +55,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         else:
             d["labels"] = NumericField(labels)
 
-        if idx:  # numbered test examples
+        if idx is not None:  # numbered test examples
             d["idx"] = LabelField(idx, label_namespace="idxs",
                                   skip_indexing=True)
         return Instance(d)
@@ -178,7 +182,6 @@ class NLIProbingTask(PairClassificationTask):
         super().__init__(name)
 
 
-
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
@@ -249,11 +252,6 @@ class RankingTask(Task):
     def __init__(self, name, n_choices):
         super().__init__(name)
         self.n_choices = n_choices
-        raise NotImplementedError
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        raise NotImplementedError
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -365,6 +363,50 @@ class SSTTask(SingleClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
+
+
+class RedditTask(RankingTask):
+    ''' Task class for Reddit data.  '''
+
+    def __init__(self, path, max_seq_len, name="reddit"):
+        ''' '''
+        super(RedditTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
+        #:pdb.set_trace()
+        self.scorer1 = Average() #CategoricalAccuracy()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = True
+
+    def load_data(self, path, max_seq_len):
+        ''' Load data '''
+        print("Loading data")
+        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
+        path = '//nfs/jsalt/home/raghu/'
+        tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING TRAIN DATA")
+        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING dev DATA")
+        test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+        print("FINISHED LOADING test DATA")
+        self.train_data_text = tr_data
+        self.val_data_text = dev_data
+        self.test_data_text = test_data
+        log.info("\tFinished loading Temporary Reddit data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        return process_single_pair_task_split(split, indexers, is_pair=True)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        #pdb.set_trace()
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 
 class CoLATask(SingleClassificationTask):
@@ -751,7 +793,7 @@ class RTETask(PairClassificationTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading RTE{1,2,3}.")
+        log.info("\tFinished loading RTE.")
 
 
 class QNLITask(PairClassificationTask):
@@ -1037,7 +1079,6 @@ class GroundedTask(Task):
             self.val_data_text[1]
         self.path = path
         self.img_encoder = None
-        #self.img_encoder = CNNEncoder(model_name='resnet', path=path)
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -1121,41 +1162,6 @@ class GroundedTask(Task):
                 test[2].append(int(img_id))
                 # test[2].append(caption_id)
 
-        for img_id in train_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            train[0].append(caption)
-            train[1].append(0)
-            train[2].append(int(img_id))
-
-        for img_id in val_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            val[0].append(caption)
-            val[1].append(0)
-            val[2].append(int(img_id))
-
-        for img_id in test_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1, 1))[0][0]
-            caption_id = np.random.randint(5, size=(1, 1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']
-            caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            test[0].append(caption)
-            test[1].append(0)
-            test[2].append(int(img_id))
 
         self.tr_data = train
         self.val_data = val
@@ -1163,5 +1169,199 @@ class GroundedTask(Task):
         self.train_data_text = train
         self.val_data_text = val
         self.test_data_text = test
-
+        log.info('Train: ' + str(len(train)) + ' , Val: ' + str(len(val)) + ', Test: ' + str(len(test)))
         log.info("\tFinished loading MSCOCO data.")
+
+class VAETask(SequenceGenerationTask):
+    '''Variational Autoencoder (with corrupted input) Task'''
+
+    def __init__(self, path, max_seq_len, name='MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+            self.train_data_text[2] + self.val_data_text[2]
+
+    def load_data(self, path, max_seq_len):
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'wmt_sample.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))
+        self.val_data_text = self.train_data_text; self.test_data_text = self.train_data_text
+        '''
+        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+                                        s1_idx=0, s2_idx=None, targ_idx=1,
+                                        targ_fn=lambda t: t.split(' '))
+
+        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+                                      s1_idx=0, s2_idx=None, targ_idx=1,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
+                                       s1_idx=0, s2_idx=None, targ_idx=1,
+                                       targ_fn=lambda t: t.split(' '))
+        log.info("\tFinished loading VAE data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
+
+class RecastNLITask(PairClassificationTask):
+    ''' Task class for NLI Recast Data'''
+
+    def __init__(self, path, max_seq_len, name="recast"):
+        super(RecastNLITask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, skip_rows=0, targ_idx=3)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading recast probing data.")
+
+class RecastPunTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-puns"):
+        super(RecastPunTask, self).__init__(path, max_seq_len, name)
+
+class RecastNERTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-ner"):
+        super(RecastNERTask, self).__init__(path, max_seq_len, name)
+
+class RecastVerbnetTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-verbnet"):
+        super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
+
+class RecastVerbcornerTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-verbcorner"):
+        super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
+
+class RecastSentimentTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-sentiment"):
+        super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
+
+class RecastFactualityTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-factuality"):
+        super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
+
+class RecastWinogenderTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-winogender"):
+        super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
+
+class RecastLexicosynTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
+        super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
+
+class RecastKGTask(RecastNLITask):
+
+    def __init__(self, path, max_seq_len, name="recast-kg"):
+        super(RecastKGTask, self).__init__(path, max_seq_len, name)
+
+
+
+class TaggingTask(Task):
+    ''' Generic tagging, one tag per word '''
+
+    def __init__(self, name, num_tags):
+        super().__init__(name)
+        self.num_tags = num_tags + 2 # add unknown and padding
+        ## TODO check if this is good metric
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = True
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+
+    def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
+        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
+                                         sos_tok, eos_tok), self.train_data_text[1]]
+        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
+                                       sos_tok, eos_tok), self.val_data_text[1]]
+        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
+                                        sos_tok, eos_tok), self.test_data_text[1]]
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a tagging task '''
+        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
+        # Might be better as LabelField? I don't know what these things mean
+        instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
+        return instances
+
+class POSTaggingTask(TaggingTask):
+    def __init__(self, path, max_seq_len, name="pos"):
+        super().__init__(name, 45) # 45 tags
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading POSTagging data.")
+
+
+
+class CCGTaggingTask(TaggingTask):
+    def __init__(self, path, max_seq_len, name="ccg"):
+        super().__init__(name, 1363) # 1363 tags
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+
+
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
+                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        te_data = load_tsv(os.path.join(path, 'ccg_1363.test'), max_seq_len,
+                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading CCGTagging data.")
+
+
+
+
+
+
+
+
+

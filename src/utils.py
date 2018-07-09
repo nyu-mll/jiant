@@ -1,14 +1,18 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
+from typing import Dict, List, Optional, Union, Iterable
+
 import copy
 import os
-from typing import Dict, List, Optional, Union
+import json
 import random
 import logging
 import codecs
+import time
+
 import nltk
-from nltk.tokenize.moses import MosesTokenizer
+from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
 import numpy as np
 import torch
@@ -25,12 +29,15 @@ from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+
+# Note: using the full 'detokenize()' method is not recommended, since it does
+# a poor job of adding correct whitespace. Use unescape_xml() only.
+_MOSES_DETOKENIZER = MosesDetokenizer()
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
@@ -58,8 +65,9 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     logging.info("Loaded model state from %s", state_path)
 
 
-def get_batch_size_from_field(batch_field):
-    ''' Given a field with unknown text_fields, get the batch size '''
+def get_batch_size(batch):
+    ''' Given a batch with unknown text_fields, get the batch size '''
+    batch_field = batch['inputs'] if 'inputs' in batch else batch['input1']
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
     return batch_size
@@ -81,6 +89,13 @@ def maybe_make_dir(dirname):
     """Make a directory if it doesn't exist."""
     os.makedirs(dirname, exist_ok=True)
 
+def unescape_moses(moses_tokens):
+    '''Unescape Moses punctuation tokens.
+
+    Replaces escape sequences like &#91; with the original characters
+    (such as '['), so they better align to the original text.
+    '''
+    return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 def process_sentence(sent, max_seq_len):
     '''process a sentence '''
@@ -96,6 +111,11 @@ def process_sentence(sent, max_seq_len):
 def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
+def load_json_data(filename: str) -> Iterable:
+    ''' Load JSON records, one per line. '''
+    with open(filename, 'r') as fd:
+        for line in fd:
+            yield json.loads(line)
 
 def load_tsv(
         data_file,
