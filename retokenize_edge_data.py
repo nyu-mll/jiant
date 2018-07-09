@@ -7,7 +7,7 @@
 # Usage:
 #  python retokenize_edge_data.py /path/to/edge/probing/data/*.json
 #
-# Speed: takes around 5 minutes to process 90000 sentences on a single core.
+# Speed: takes around 2.5 minutes to process 90000 sentences on a single core.
 
 import sys
 import os
@@ -20,7 +20,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src import utils
 from src import retokenize
-    
+
 def retokenize_record(record, inplace=True):
     """Retokenize edge probing examples.
 
