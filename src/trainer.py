@@ -20,7 +20,10 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from evaluate import evaluate
 # TODO (Shuning): Copy the agent code into our codebase and import it.
+from banditSampling import Bandit
+import numpy as np
 
 def build_trainer_params(args, task, max_vals, val_interval):
     ''' Build trainer parameters, possibly loading task specific parameters '''
@@ -37,7 +40,7 @@ def build_trainer_params(args, task, max_vals, val_interval):
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'no_tqdm', 'cuda', 'keep_all_checkpoints',
-                  'val_data_limit']
+                  'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = get_task_attr(attr)
     for attr in extra_opts:
@@ -97,7 +100,8 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
-                           'val_data_limit': params['val_data_limit']})
+                           'val_data_limit': params['val_data_limit'],
+                           'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
                                                    copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
@@ -107,7 +111,8 @@ class SamplingMultiTaskTrainer():
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000):
+                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
+                 training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
@@ -156,6 +161,8 @@ class SamplingMultiTaskTrainer():
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
             Set to -1 to use all.
+        training_data_fraction: If set to a float between 0 and 1, load only the specified percentage
+            of examples. Hashing is used to ensure that the same examples are loaded each epoch.
         """
         self._model = model
 
@@ -170,6 +177,7 @@ class SamplingMultiTaskTrainer():
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._training_data_fraction = training_data_fraction
 
         self._task_infos = None
         self._metric_infos = None
@@ -214,10 +222,18 @@ class SamplingMultiTaskTrainer():
 
         return best_so_far, out_of_patience
 
-    def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params):
+    def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params, phase):
         # Task bookkeeping
 
         # TODO (Shuning): This function is where you want to create the agent object.
+        #if weighting_method == 'bandit':
+        initialQ = 0
+        stepSize = 0.3
+        explore_method = 'gradient' # 'epsilon','gradient'
+        temp = 1.0,
+        epsilon = 0.2
+        actions = [task.name for task in tasks]
+        self.bandit = Bandit(actions, stepSize,initialQ,explore_method,temp, epsilon)
 
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
@@ -237,7 +253,14 @@ class SamplingMultiTaskTrainer():
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
 
             task_info['iterator'] = iterator
-            task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
+
+            if phase == "main":
+                # Warning: This won't be precise when training_data_fraction is set, since each example is included
+                #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
+                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+            else:
+                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
+
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
@@ -304,6 +327,8 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
         # TODO (Shuning): Add an option here.
+        elif weighting_method == 'bandit':
+            log.info("Sampling tasks using multi-armed bandit")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -315,7 +340,7 @@ class SamplingMultiTaskTrainer():
             log.info("Dividing losses by number of training batches")
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
-                                                        optimizer_params, scheduler_params)
+                                                        optimizer_params, scheduler_params, phase)
         if shared_optimizer:
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
@@ -375,12 +400,13 @@ class SamplingMultiTaskTrainer():
         log.info ("Weighting details: ")
         log.info ("task.n_tr_examples: " + str([(task.name, task.n_tr_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
-        normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
-        log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
 
-        # TODO (Shuning): I guess you _don't_ want to do anything here, since this
-        #   picks the weights in advance.
-        samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+        if weighting_method != 'bandit':
+            normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
+            log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
+            # TODO (Shuning): I guess you _don't_ want to do anything here, since this
+            #   picks the weights in advance.
+            samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
@@ -388,8 +414,13 @@ class SamplingMultiTaskTrainer():
             self._model.train()
 
             # randomly select a task
-            # TODO (Shuning): Sample a task here.
-            task = samples[n_pass % (validation_interval)]
+            # TODO (Shuning): Sample a task here. ????
+            if weighting_method == 'bandit':
+                self.bandit.chooseAction()
+                task = tasks[self.bandit.action]
+                log.info ("Action: " + self.bandit.mapping[self.bandit.action])
+            else:
+                task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]
             if task_info['stopped']:
                 continue
@@ -399,9 +430,13 @@ class SamplingMultiTaskTrainer():
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
+
             # TODO (Shuning): When using the new sampler, set n_batches_per_pass to 10.
             # I'm pretty sure you do this by just setting bpp_base in your config file.
+            # bpp_base = 10
+
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
+                #pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
@@ -454,14 +489,37 @@ class SamplingMultiTaskTrainer():
 
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
-                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+                    log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # TODO (Shuning):
             # Add code to do a very short validation here: One step per task.
             # Use the validate method below as an example, but don't compute accuracy
             # or log as much information -- should be short/simple.
+            if weighting_method == 'bandit':
+                log.info("***** Pass %d *****", n_pass)
+                # Validate
+                log.info("Validating Bandit...")
+                #negative average valiation loss of all trained tasks
+
+                validate_bandit_losses = self._validate_bandit(tasks, batch_size)
+                log.info("Validation Loss: ")
+                for taskname, loss in zip([task.name for task in tasks], validate_bandit_losses):
+                    log.info("  %s loss: %.6f", taskname, loss)
+
+                reward = -np.mean(validate_bandit_losses)
+                self.bandit.update_actionValue(reward)
+                log.info ("Reward: %.6f", reward)
+                log.info("Task action value:")
+                for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
+                    log.info("  %s qvalue: %.6f", taskname, Qvalue)
+                if self.bandit.explore_method == 'gradient':
+                    nparray_exp = np.exp(self.bandit.Q/self.bandit.temp)
+                    action_prob = nparray_exp/sum(nparray_exp)
+                    log.info("action_prob" + str(action_prob))
+
+            # TODO (Shuning):
             # Once you're done, call this to turn training mode back on:
-            # self._model.train()
+            # self._model.train()  ???????
             # Then update the parameters of the agent, using the average validation loss as reward.
             # with self.[name of agent?].update_TaskSelector_Q_values(scores)
 
@@ -486,7 +544,7 @@ class SamplingMultiTaskTrainer():
 
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric(reset=True)
-                    log.info("BATCH UTILIZATION: %.3f", batch_util)
+                    log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
                 log.info("Validating...")
@@ -494,8 +552,7 @@ class SamplingMultiTaskTrainer():
                     epoch, tasks, batch_size, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
-                should_stop, task_infos, metric_infos = self._check_stop(
-                    epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer)
+                should_stop = self._check_stop(epoch, stop_metric, tasks)
 
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
@@ -510,14 +567,18 @@ class SamplingMultiTaskTrainer():
                     log.info("%s: %.6f", name, value)
                 # TODO (Shuning): log the weights of the tasks here (the Q parameters?), so we can
                 #   watch them change.
+                log.info("Task action value:")
+                for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
+                    log.info("  %s qvalue: %.6f", taskname, Qvalue)
 
-                self._metric_infos = metric_infos
-                self._task_infos = task_infos
+
                 all_tr_metrics = {}
-                samples = random.choices(
-                    tasks,
-                    weights=sample_weights,
-                    k=validation_interval)  # pylint: disable=no-member
+
+                if weighting_method != 'bandit':
+                    samples = random.choices(
+                        tasks,
+                        weights=sample_weights,
+                        k=validation_interval)  # pylint: disable=no-member
 
                 if should_save:
                     self._save_checkpoint(
@@ -656,6 +717,69 @@ class SamplingMultiTaskTrainer():
 
         return all_val_metrics, should_save, new_best_macro
 
+    def _validate_bandit(self, tasks, batch_size):
+        ''' Validate on all tasks for one batch and return losses '''
+        # TODO (Shuning): You should make a new validate function instead of using this one, but you can use
+        #   it as an example of how to use eval mode (model.eval) and how to access the eval data
+        #   for the tasks.
+        n_batches_perTask =1
+
+        task_infos  = self._task_infos
+        #task_infos, metric_infos = self._task_infos, self._metric_infos
+        self._model.eval()
+        all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
+        #all_val_metrics["macro_avg"] = 0.0
+        #all_val_metrics["micro_avg"] = 0.0
+        #n_examples_overall = 0.0
+
+        validation_losses = []
+
+        # Get validation numbers for each task
+        for task in tasks:
+            n_examples, batch_num = 0, 0
+            task_info = task_infos[task.name]
+
+            val_generator = BasicIterator(batch_size, instances_per_epoch= batch_size)(
+                task.val_data, num_epochs=1, shuffle=False,
+                cuda_device=self._cuda_device)
+            n_val_batches = n_batches_perTask
+            all_val_metrics["%s_loss" % task.name] = 0.0
+
+            for batch in val_generator:
+                batch_num += 1
+                out = self._forward(batch, task=task, for_training=False)
+                loss = out["loss"]
+                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+                n_examples += out["n_exs"]
+
+            '''
+                # log
+                if time.time() - task_info['last_log'] > self._log_interval:
+                    task_metrics = task.get_metrics()
+                    task_metrics["%s_loss" % task.name] = \
+                            all_val_metrics["%s_loss" % task.name] / batch_num
+                    description = self._description_from_metrics(task_metrics)
+                    log.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
+                    task_info['last_log'] = time.time()
+            assert batch_num == n_val_batches
+            '''
+            validation_losses.append( all_val_metrics["%s_loss" % task.name] )
+
+            '''
+            # Get task validation metrics and store in all_val_metrics
+            task_metrics = task.get_metrics(reset=True)
+            for name, value in task_metrics.items():
+                all_val_metrics["%s_%s" % (task.name, name)] = value
+            all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+            n_examples_overall += n_examples
+
+            # Reset training progress
+            task_info['n_batches_since_val'] = 0
+            task_info['loss'] = 0
+            '''
+        return validation_losses
+
+
     def _get_lr(self):
         if self._g_optimizer is not None:
             lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
@@ -665,8 +789,10 @@ class SamplingMultiTaskTrainer():
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
 
-    def _check_stop(self, epoch, stop_metric, tasks, task_infos, metric_infos, g_optimizer):
+    def _check_stop(self, epoch, stop_metric, tasks):
         ''' Check to see if should stop '''
+        task_infos, metric_infos = self._task_infos, self._metric_infos
+        g_optimizer = self._g_optimizer
         if g_optimizer is None:
             stop_tr = True
             for task in tasks:
@@ -696,12 +822,11 @@ class SamplingMultiTaskTrainer():
             log.info("Maximum number of validations hit. Stopping training.")
             should_stop = True
 
-        return should_stop, task_infos, metric_infos
+        return should_stop
 
     def _forward(self, batch, for_training, task=None):
-        # tensor_batch = arrays_to_variables(batch, self._cuda_device, for_training=for_training)
         tensor_batch = batch
-        return self._model.forward(task, tensor_batch)  # , **tensor_batch)
+        return self._model.forward(task, tensor_batch)
 
     def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use
@@ -942,6 +1067,7 @@ class SamplingMultiTaskTrainer():
         no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        training_data_fraction = params.pop("training_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(model, patience=patience,
@@ -951,7 +1077,8 @@ class SamplingMultiTaskTrainer():
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints,
-                                        val_data_limit=val_data_limit)
+                                        val_data_limit=val_data_limit,
+                                        training_data_fraction=training_data_fraction)
 
 
 def dont_save(key):

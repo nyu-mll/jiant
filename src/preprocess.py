@@ -35,7 +35,13 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask
+    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
+    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
+    RedditTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
+    POSTaggingTask, CCGTaggingTask
+
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -68,8 +74,20 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
+             'reddit': (RedditTask, 'reddit_comments_replies/'),
+	         'pos': (POSTaggingTask, 'POS/'),
+	         'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
-             'vae': (VAETask, 'VAE')
+             'vae': (VAETask, 'VAE'),
+             'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
+             'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
+             'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
+             'recast-factuality': (RecastFactualityTask, 'DNC/recast_factuality_data'),
+             'recast-ner': (RecastNERTask, 'DNC/recast_ner_data'),
+             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
+             'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
+             'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
              }
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -85,20 +103,23 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir):
+def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
         preproc_dir: (string) path to preprocessing dir
+        fraction: if set to a float between 0 and 1, load only the specified percentage
+          of examples. Hashing is used to ensure that the same examples are loaded each
+          epoch.
 
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
-    return serialize.read_records(filename, repeatable=True)
+    return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
 
 def _indexed_instance_generator(instance_iter, vocab):
@@ -136,7 +157,6 @@ def del_field_tokens(instance):
 
 def _index_split(task, split, token_indexer, vocab, record_file):
     """Index instances and stream to disk.
-
     Args:
         task: Task instance
         split: (string), 'train', 'val', or 'test'
@@ -236,16 +256,18 @@ def build_tasks(args):
         log.info("\tLoaded vocab from %s", vocab_path)
     else:
         log.info("\tBuilding vocab from scratch")
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size}
-        word2freq, char2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, char2freq, max_v_sizes)
+        ### FIXME MAGIC NUMBER
+        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000} # TODO target max size
+        word2freq, char2freq, target2freq = get_words(tasks)
+        vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
         vocab.save_to_files(vocab_path)
         log.info("\tSaved vocab to %s", vocab_path)
-        del word2freq, char2freq
+        del word2freq, char2freq, target2freq
     word_v_size = vocab.get_vocab_size('tokens')
     char_v_size = vocab.get_vocab_size('chars')
-    log.info("\tFinished building vocab. Using %d words, %d chars.",
-             word_v_size, char_v_size)
+    target_v_size = vocab.get_vocab_size('targets')
+    log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
+             word_v_size, char_v_size, target_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
     if args.word_embs != 'none':
         if not args.reload_vocab and os.path.exists(emb_file):
@@ -268,12 +290,10 @@ def build_tasks(args):
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
-        force_reindex = (args.reload_indexing and
-                         task.name in reindex_tasks)
+        force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            relative_path = _get_serialized_record_path(task.name, split,
-                                                        "preproc")
+            relative_path = _get_serialized_record_path(task.name, split, "preproc")
             cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
                                             relative_path, log_prefix=log_prefix)
             if force_reindex or not cache_found:
@@ -291,17 +311,28 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    train_tasks = []
+    eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir)
+        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                  fraction=args.training_data_fraction)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        if task.name in train_task_names:
+            train_tasks.append(task)
+        if task.name in eval_task_names:
+            if args.training_data_fraction < 1 and task.name in train_task_names:
+                # Rebuild the iterator so you see the full dataset in the eval training
+                # phase.
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0) 
+            eval_tasks.append(task)
+
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-
-    train_tasks = [task for task in tasks if task.name in train_task_names]
-    eval_tasks = [task for task in tasks if task.name in eval_task_names]
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
     return train_tasks, eval_tasks, vocab, word_embs
@@ -365,7 +396,7 @@ def get_words(tasks):
     Get all words for all tasks for all splits for all sentences
     Return dictionary mapping words to frequencies.
     '''
-    word2freq, char2freq = defaultdict(int), defaultdict(int)
+    word2freq, char2freq, target2freq = defaultdict(int), defaultdict(int), defaultdict(int)
 
     def count_sentence(sentence):
         '''Update counts for words in the sentence'''
@@ -380,11 +411,17 @@ def get_words(tasks):
         for sentence in task.get_sentences():
             count_sentence(sentence)
 
+    for task in tasks:
+        if hasattr(task, "target_sentences"):
+            for sentence in task.target_sentences:
+                for word in sentence:
+                    target2freq[word] += 1
+
     log.info("\tFinished counting words")
-    return word2freq, char2freq
+    return word2freq, char2freq, target2freq
 
 
-def get_vocab(word2freq, char2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
@@ -399,6 +436,11 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
     chars_by_freq.sort(key=lambda x: x[1], reverse=True)
     for char, _ in chars_by_freq[:max_v_sizes['char']]:
         vocab.add_token_to_namespace(char, 'chars')
+
+    targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
+    targets_by_freq.sort(key=lambda x: x[1], reverse=True)
+    for target, _ in targets_by_freq[:max_v_sizes['target']]:
+        vocab.add_token_to_namespace(target, 'targets') # TODO namespace
     return vocab
 
 
@@ -439,4 +481,10 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
+
+
+
+
+
+
 
