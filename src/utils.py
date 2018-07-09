@@ -65,6 +65,25 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     logging.info("Loaded model state from %s", state_path)
 
 
+def get_elmo_mixing_weights(text_field_embedder, mix_id=0):
+    ''' Get elmo mixing weights from text_field_embedder,
+    since elmo should be in the same place every time.
+
+    args:
+        - text_field_embedder
+        - mix_id: if we learned multiple mixing weights, which one we want
+            to extract, usually 0
+
+    returns:
+        - params Dict[str:float]: dictionary maybe layers to scalar params
+    '''
+    elmo = text_field_embedder.token_embedder_elmo._elmo
+    mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
+    params = {'layer%d' % layer_id: p.item() for layer_id, p in \
+              enumerate(mixer.scalar_parameters.parameters())}
+    return params
+
+
 def get_batch_size(batch):
     ''' Given a batch with unknown text_fields, get the batch size '''
     batch_field = batch['inputs'] if 'inputs' in batch else batch['input1']
