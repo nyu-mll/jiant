@@ -4,6 +4,7 @@ import sys
 import json
 import logging as log
 import h5py
+import ipdb as pdb
 
 import numpy
 import torch
@@ -291,9 +292,8 @@ class PairClassifier(nn.Module):
         self.attn = attn
 
     def forward(self, s1, s2, mask1, mask2):
-        if len(mask1) > 2:
-            mask1 = mask1.squeeze(-1)
-            mask2 = mask2.squeeze(-1)
+        mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
+        mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
         if self.attn is not None:
             s1, s2 = self.attn(s1, s2, mask1, mask2)
         emb1 = self.pooler(s1, mask1)
