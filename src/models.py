@@ -1,9 +1,9 @@
 '''Core model and functions for building it.'''
+import os
 import sys
 import math
 import copy
 import logging as log
-import os
 
 import torch
 import torch.nn as nn
@@ -423,7 +423,6 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        #pdb.set_trace()
         # pass to a task specific classifier
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
@@ -466,16 +465,17 @@ class MultiTaskModel(nn.Module):
         out['n_exs'] = get_batch_size_from_field(batch['input1'])
 
         if 'labels' in batch:
-            labels = batch['labels'].squeeze(-1)
+            labels = batch['labels']
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
