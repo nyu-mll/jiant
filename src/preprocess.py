@@ -319,8 +319,6 @@ def build_tasks(args):
 
     log.info("\tFinished indexing tasks")
 
-    #  sys.exit(1)  # DEBUG
-
     # 5) Initialize tasks with data iterators.
     train_tasks = []
     eval_tasks = []
