@@ -253,6 +253,13 @@ class RankingTask(Task):
         super().__init__(name)
         self.n_choices = n_choices
 
+class ContrastiveRankingTask(RankingTask):
+    ''' Generic contrastive triplet classification task
+    (sorry for naming abuse) '''
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print("ContrastiveRankingTask")
+
 
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
@@ -365,12 +372,12 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
-class RedditTask(RankingTask):
+class RedditTask(ContrastiveRankingTask):
     ''' Task class for Reddit data.  '''
 
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
-        super(RedditTask, self).__init__(name, 2)
+        super(RedditTask, self).__init__(name=name, n_choices=2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
         #:pdb.set_trace()
@@ -1103,7 +1110,7 @@ class GroundedTask(Task):
             metric = 0
 
         return metric
-        
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
@@ -1138,7 +1145,7 @@ class GroundedTask(Task):
 
         # changed for temp
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        
+
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1178,7 +1185,7 @@ class GroundedTask(Task):
 
         ''' Shapeworld data '''
 
-        
+
         f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
         for line in f:
             items = line.strip().split('\t')
@@ -1200,13 +1207,13 @@ class GroundedTask(Task):
             test[1].append(int(items[1]))
             test[2].append(int(items[2]))
 
-            
+
         r = 5
         train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
         train_ids = [item for sublist in train_ids for item in sublist]
         test_ids = [item for sublist in test_ids for item in sublist]
         val_ids = [item for sublist in val_ids for item in sublist]
-        
+
         for img_id in train_ids:
             rand_id = img_id
             while (rand_id == img_id):
@@ -1222,7 +1229,7 @@ class GroundedTask(Task):
                 rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
             caption_id = np.random.randint(5, size=(1,1))[0][0]
             captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]            
+            caption = captions[caption_ids[caption_id]]
             val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
 
         for img_id in test_ids:
@@ -1233,13 +1240,13 @@ class GroundedTask(Task):
             captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
             test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-        
 
-        
+
+
 
 
         #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
-        
+
         log.info("All train samples: " + str(len(train[0])))
 
         self.tr_data = train
@@ -1435,12 +1442,3 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
-
-
-
-
-
-
-
-
-
