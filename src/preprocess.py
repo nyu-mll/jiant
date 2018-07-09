@@ -227,6 +227,35 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
         return True
     return False
 
+def _build_embeddings(args, vocab, emb_file: str):
+    ''' Build word embeddings from from scratch. '''
+    log.info("\tBuilding embeddings from scratch")
+    if args.fastText:
+        word_embs, _ = get_fastText_model(vocab, args.d_word,
+                                          model_file=args.fastText_model_file)
+        log.info("\tUsing fastText; no pickling of embeddings.")
+        return word_embs
+
+    word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+    pkl.dump(word_embs, open(emb_file, 'wb'))
+    log.info("\tSaved embeddings to %s", emb_file)
+    return word_embs
+
+def _build_vocab(args, tasks, vocab_path: str):
+    ''' Build vocabulary from scratch, reading data from tasks. '''
+    log.info("\tBuilding vocab from scratch")
+    ### FIXME MAGIC NUMBER
+    max_v_sizes = {
+        'word': args.max_word_v_size,
+        'char': args.max_char_v_size,
+        'target': 20000, # TODO target max size
+    }
+    word2freq, char2freq, target2freq = get_words(tasks)
+    vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
+    vocab.save_to_files(vocab_path)
+    log.info("\tSaved vocab to %s", vocab_path)
+    #  del word2freq, char2freq, target2freq
+
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
     1) creating / loading the tasks
@@ -244,9 +273,8 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks))
 
-    # 2 + 3) build / load vocab and word vectors
+    # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')
-    emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     indexers = {}
     if not args.word_embs == 'none':
         indexers["words"] = SingleIdTokenIndexer()
@@ -254,22 +282,13 @@ def build_tasks(args):
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
-    if not args.reload_vocab and os.path.exists(vocab_path):
-        vocab = Vocabulary.from_files(vocab_path)
-        log.info("\tLoaded vocab from %s", vocab_path)
-    else:
-        log.info("\tBuilding vocab from scratch")
-        ### FIXME MAGIC NUMBER
-        max_v_sizes = {
-            'word': args.max_word_v_size,
-            'char': args.max_char_v_size,
-            'target': 20000, # TODO target max size
-        }
-        word2freq, char2freq, target2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
-        vocab.save_to_files(vocab_path)
-        log.info("\tSaved vocab to %s", vocab_path)
-        del word2freq, char2freq, target2freq
+
+    if args.reload_vocab or not os.path.exists(vocab_path):
+        _build_vocab(args, tasks, vocab_path)
+
+    # Always load vocab from file.
+    vocab = Vocabulary.from_files(vocab_path)
+    log.info("\tLoaded vocab from %s", vocab_path)
 
     word_v_size = vocab.get_vocab_size('tokens')
     char_v_size = vocab.get_vocab_size('chars')
@@ -277,21 +296,15 @@ def build_tasks(args):
     log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
              word_v_size, char_v_size, target_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
+
+    # 3) build / load word vectors
+    word_embs = None
     if args.word_embs != 'none':
-        if not args.reload_vocab and os.path.exists(emb_file):
+        emb_file = os.path.join(args.exp_dir, 'embs.pkl')
+        if args.reload_vocab or not os.path.exists(emb_file):
+            word_embs = _build_embeddings(args, vocab, emb_file)
+        else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
-        else:
-            log.info("\tBuilding embeddings from scratch")
-            if args.fastText:
-                word_embs, _ = get_fastText_model(vocab, args.d_word,
-                                                  model_file=args.fastText_model_file)
-                log.info("\tNo pickling")
-            else:
-                word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-                pkl.dump(word_embs, open(emb_file, 'wb'))
-                log.info("\tSaved embeddings to %s", emb_file)
-    else:
-        word_embs = None
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
