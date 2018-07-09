@@ -39,7 +39,7 @@ def register_task(name, rel_path, kw=None):
     constructed in preprocess.py.
 
     Usage:
-    @register_task('mytask', 'my-task/data', optional_kw_dict)
+    @register_task('mytask', 'my-task/data', **extra_kw)
     class MyTask(SingleClassificationTask):
         ...
     '''
