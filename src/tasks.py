@@ -314,8 +314,8 @@ class WikiTextLMTask(LanguageModelingTask):
         data = []
         with open(path) as txt_fh:
             for row in txt_fh:
-                toks = row.strip().split()
-                if not toks:
+                toks = row.strip()
+                if toks == '':
                     continue
                 data.append(process_sentence(toks, max_seq_len))
         return data
