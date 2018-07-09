@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Serialization and deserialization helpers.
 # Write arbitrary pickle-able Python objects to a record file, with one object
 # per line as a base64-encoded pickle.
@@ -51,7 +49,10 @@ class RepeatableIterator(object):
 
 
 def bytes_to_float(b):
-    """ Maps a byte string to a float in [0, 1]."""
+    """ Maps a byte string to a float in [0, 1].
+
+    Verified to be uniform, at least over text strings and zero byte strings of varying lengths.
+    """
     return float(crc32(b) & 0xffffffff) / 2**32
 
 
