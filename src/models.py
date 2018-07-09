@@ -44,7 +44,8 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from .utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
+
+from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -423,7 +424,7 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
@@ -458,7 +459,7 @@ class MultiTaskModel(nn.Module):
         classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch:
             labels = batch['labels']
@@ -585,7 +586,7 @@ class MultiTaskModel(nn.Module):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, VAETask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -604,7 +605,7 @@ class MultiTaskModel(nn.Module):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -627,7 +628,7 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
-        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
+        out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -649,7 +650,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch['input1'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -686,7 +687,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
         image_map = nn.Linear(d_1, d_2).cuda()
         sent_transform = image_map(sent_emb)
         ids = batch['ids'].cpu().squeeze(-1)
