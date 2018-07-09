@@ -14,6 +14,6 @@ echo $SLURM_JOBID - `hostname` - $JIANT_OVERRIDES >> ~/jiant_machine_assignments
 
 # Run.
 conda activate jiant
-cd ~/jiant/src
-source ../user_config.sh
-python main.py --config_file ../config/defaults.conf --overrides "global_ro_exp_dir = /misc/vlgscratch4/BowmanGroup/sbowman/exp/default, project_dir = $JIANT_PROJECT_PREFIX, $JIANT_OVERRIDES"
+cd ~/jiant
+source user_config.sh
+python main.py --config_file config/defaults.conf --overrides "global_ro_exp_dir = /misc/vlgscratch4/BowmanGroup/sbowman/exp/default, project_dir = $JIANT_PROJECT_PREFIX, $JIANT_OVERRIDES"
