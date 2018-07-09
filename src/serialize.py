@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Serialization and deserialization helpers.
 # Write arbitrary pickle-able Python objects to a record file, with one object
 # per line as a base64-encoded pickle.
