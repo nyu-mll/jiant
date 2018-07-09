@@ -1047,7 +1047,7 @@ class WeakGroundedTask(PairClassificationTask):
         targ_map = {'negative': 0, 'positive': 1}
         targ_map = {'0': 0, '1': 1}
 
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+        tr_data = load_tsv(os.path.join(path, "train_aug.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
                             s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
