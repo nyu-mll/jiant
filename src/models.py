@@ -484,6 +484,7 @@ class MultiTaskModel(nn.Module):
 
 
     def _edge_probe_forward(self, batch, task, predict):
+        task_params = getattr(self, '%s_task_params' % task.name)
         out = {}
 
         # embed the sentence
