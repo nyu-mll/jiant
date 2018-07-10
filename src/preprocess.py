@@ -155,7 +155,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, token_indexer, target_indexer, vocab, record_file):
+def _index_split(task, split, token_indexer, vocab, record_file):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -245,7 +245,6 @@ def build_tasks(args):
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     emb_file = os.path.join(args.exp_dir, 'embs.pkl')
     token_indexer = {}
-    target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
     if not args.word_embs == 'none':
         token_indexer["words"] = SingleIdTokenIndexer()
     if args.elmo:
@@ -258,7 +257,6 @@ def build_tasks(args):
     else:
         log.info("\tBuilding vocab from scratch")
         ### FIXME MAGIC NUMBER
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000}
         max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000} # TODO target max size
         word2freq, char2freq, target2freq = get_words(tasks)
         vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
