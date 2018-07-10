@@ -77,7 +77,7 @@ def get_elmo_mixing_weights(text_field_embedder, mix_id=0):
     returns:
         - params Dict[str:float]: dictionary maybe layers to scalar params
     '''
-    elmo = text_field_embedder.token_embedder_elmo._elmo
+    elmo = text_field_embedder.token_embedder_elmo
     mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
     params = {'layer%d' % layer_id: p.item() for layer_id, p in \
               enumerate(mixer.scalar_parameters.parameters())}

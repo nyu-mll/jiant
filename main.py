@@ -134,7 +134,7 @@ def main(cl_arguments):
 
     tasks = train_tasks + eval_tasks
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-
+    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
