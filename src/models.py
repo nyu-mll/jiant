@@ -118,7 +118,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    build_modules(tasks, model, d_sent, vocab, embedder, args)
+    for task in tasks:
+        build_module(task, model, d_sent, vocab, embedder, args)
     if args.cuda >= 0:
         model = model.cuda()
     log.info(model)
@@ -212,61 +213,62 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     return d_emb, embedder, cove_emb
 
 
-def build_modules(tasks, model, d_sent, vocab, embedder, args):
-    ''' Build task-specific components for each task and add them to model '''
-    for task in tasks:
-        task_params = get_task_specific_params(args, task.name)
-        if isinstance(task, SingleClassificationTask):
-            module = build_single_sentence_module(task, d_sent, task_params)
-            setattr(model, '%s_mdl' % task.name, module)
-        elif isinstance(task, (PairClassificationTask, PairRegressionTask,
-                               PairOrdinalRegressionTask)):
-            module = build_pair_sentence_module(task, d_sent, model, vocab,
-                                                task_params)
-            setattr(model, '%s_mdl' % task.name, module)
-        elif isinstance(task, LanguageModelingTask):
-            hid2voc = build_lm(task, d_sent, args)
-            setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        elif isinstance(task, TaggingTask):
-            hid2tag = build_tagger(task, d_sent, task.num_tags)
-            setattr(model, '%s_mdl' % task.name, hid2tag)
-        elif isinstance(task, MTTask):
-            decoder = Seq2SeqDecoder.from_params(vocab,
-                                                 Params({'input_dim': d_sent,
-                                                         'target_embedding_dim': 300,
-                                                         'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
-                                                         'attention': 'bilinear',
-                                                         'dropout': args.dropout,
-                                                         'scheduled_sampling_ratio': 0.0}))
-            setattr(model, '%s_decoder' % task.name, decoder)
-        elif isinstance(task, SequenceGenerationTask):
-            decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
-            setattr(model, '%s_decoder' % task.name, decoder)
-            setattr(model, '%s_hid2voc' % task.name, hid2voc)
+def build_module(task, model, d_sent, vocab, embedder, args):
+    ''' Build task-specific components for a task and add them to model. '''
+    task_params = get_task_specific_params(args, task.name)
+    # Store task-specific params in case we want to access later
+    setattr(model, '%s_task_params' % task.name, task_params)
 
-        elif isinstance(task, VAETask):
-            decoder = Seq2SeqDecoder.from_params(vocab,
-                                                 Params({'input_dim': d_sent,
-                                                         'target_embedding_dim': 300,
-                                                         'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
-                                                         'attention': 'bilinear',
-                                                         'dropout': args.dropout,
-                                                         'scheduled_sampling_ratio': 0.0}))
-            setattr(model, '%s_decoder' % task.name, decoder)
+    if isinstance(task, SingleClassificationTask):
+        module = build_single_sentence_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
+                           PairOrdinalRegressionTask)):
+        module = build_pair_sentence_module(task, d_sent, model, vocab,
+                                            task_params)
+        setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, LanguageModelingTask):
+        hid2voc = build_lm(task, d_sent, args)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
+    elif isinstance(task, TaggingTask):
+        hid2tag = build_tagger(task, d_sent, task.num_tags)
+        setattr(model, '%s_mdl' % task.name, hid2tag)
+    elif isinstance(task, MTTask):
+        decoder = Seq2SeqDecoder.from_params(vocab,
+                                             Params({'input_dim': d_sent,
+                                                     'target_embedding_dim': 300,
+                                                     'max_decoding_steps': 200,
+                                                     'target_namespace': 'tokens',
+                                                     'attention': 'bilinear',
+                                                     'dropout': args.dropout,
+                                                     'scheduled_sampling_ratio': 0.0}))
+        setattr(model, '%s_decoder' % task.name, decoder)
+    elif isinstance(task, SequenceGenerationTask):
+        decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
+        setattr(model, '%s_decoder' % task.name, decoder)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
 
-        elif isinstance(task, GroundedTask):
-            task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
-        elif isinstance(task, RankingTask):
-            pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
-            setattr(model, '%s_mdl' % task.name, pooler)
-            setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+    elif isinstance(task, VAETask):
+        decoder = Seq2SeqDecoder.from_params(vocab,
+                                             Params({'input_dim': d_sent,
+                                                     'target_embedding_dim': 300,
+                                                     'max_decoding_steps': 200,
+                                                     'target_namespace': 'tokens',
+                                                     'attention': 'bilinear',
+                                                     'dropout': args.dropout,
+                                                     'scheduled_sampling_ratio': 0.0}))
+        setattr(model, '%s_decoder' % task.name, decoder)
 
-            #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
-        else:
-            raise ValueError("Module not found for %s" % task.name)
-    return
+    elif isinstance(task, GroundedTask):
+        task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
+    elif isinstance(task, RankingTask):
+        pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, pooler)
+        setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+
+        #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
+    else:
+        raise ValueError("Module not found for %s" % task.name)
 
 
 def get_task_specific_params(args, task):
@@ -689,7 +691,7 @@ class MultiTaskModel(nn.Module):
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
         batch_size = get_batch_size_from_field(batch['input1'])
         out['n_exs'] = batch_size
-        
+
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
         labels = batch['labels'].cpu().squeeze(-1)
         labels = [int(item) for item in labels.data.numpy()]
@@ -707,11 +709,11 @@ class MultiTaskModel(nn.Module):
             sim = cos(sent, img_feat).cuda()
             preds.append(sim.cpu().data.numpy()[0])
 
-        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)        
+        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
         metric = np.mean(preds)
-        task.scorer1.__call__(metric)        
+        task.scorer1.__call__(metric)
         out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
-        
+
         cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
         out['loss'] = cos(
             torch.tensor(
@@ -720,7 +722,7 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out['preds'] = preds
-            
+
         return out
 
     def get_elmo_mixing_weights(self, mix_id=0):
