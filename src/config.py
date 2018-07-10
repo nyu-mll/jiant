@@ -84,7 +84,7 @@ class Params(object):
 
 
 def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]], 
-                  attr_name: str, fallback: bool=True):
+                  attr_name: str):
     """ Get a task-specific param.
 
     Look in args.task_name.attr_name, then args.task_name_attr_name,
@@ -98,11 +98,7 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
         compound_key = "%s_%s" % (task_name, attr_name)
         if compound_key in args:
             return args[compound_key]
-    if fallback:
-        return args[attr_name]
-    else:
-        raise ValueError("Task param '%s' not found for tasks %s" % (attr_name, 
-                                                                    str(task_names)))
+    return args[attr_name]
 
 
 # Argument handling is as follows:
