@@ -708,21 +708,22 @@ class MultiNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
+        val_matched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+        val_mismatched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                                        s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
+        val_data = val_matched_data
 
-        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
+        te_matched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
+        te_mismatched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                                       s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'), max_seq_len,
+        te_diagnostic_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
                                       s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
@@ -736,17 +737,18 @@ class MultiNLITask(PairClassificationTask):
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
-    def __init__(self, path, max_seq_len, name="nli-prob"):
+    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len)
+        self.load_data(path, max_seq_len, probe_path)
+        self.use_classifier = 'mnli'
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path, max_seq_len, probe_path):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dat_cv/with.cvcv.mnli'), max_seq_len,
+        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
                         s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
@@ -1220,11 +1222,11 @@ class RecastNLITask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
         val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+                        s1_idx=0, s2_idx=1, skip_rows=0, targ_idx=3)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+                        s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1283,8 +1285,6 @@ class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
         super(RecastKGTask, self).__init__(name, 2)
-
-
 
 class TaggingTask(Task):
     ''' Generic tagging, one tag per word '''
