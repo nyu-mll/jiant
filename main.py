@@ -27,8 +27,8 @@ from src.evaluate import evaluate, write_results, write_preds
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file', '-c', type=str, required=True,
-                        help="Config file (.conf) for model parameters.")
+    parser.add_argument('--config_file', '-c', type=str, nargs="+",
+                        help="Config file(s) (.conf) for model parameters.")
     parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 

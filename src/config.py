@@ -14,8 +14,7 @@ import json
 
 from . import hocon_writer
 
-from typing import Type, Union, Sequence
-
+from typing import Type, Union, Sequence, Iterable
 
 class Params(object):
     """Params handler object.
@@ -83,7 +82,7 @@ class Params(object):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
 
-def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]], 
+def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
                   attr_name: str, fallback: bool=True):
     """ Get a task-specific param.
 
@@ -101,7 +100,7 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
     if fallback:
         return args[attr_name]
     else:
-        raise ValueError("Task param '%s' not found for tasks %s" % (attr_name, 
+        raise ValueError("Task param '%s' not found for tasks %s" % (attr_name,
                                                                     str(task_names)))
 
 
@@ -111,10 +110,18 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
 # 3) validate specific parameters with custom logic
 
 
-def params_from_file(config_file, overrides=None):
-    with open(config_file) as fd:
-        config_string = fd.read()
+def params_from_file(config_files: Union[str, Iterable[str]],
+                     overrides: str=None):
+    config_string = ''
+    if isinstance(config_files, str):
+        config_files = [config_files]
+    for config_file in config_files:
+      with open(config_file) as fd:
+          log.info("Loading config from %s", config_file)
+          config_string += fd.read()
+          config_string += '\n'
     if overrides:
+        log.info("Config overrides: %s", overrides)
         # Append overrides to file to allow for references and injection.
         config_string += "\n"
         config_string += overrides
