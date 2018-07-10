@@ -234,7 +234,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
                                                  Params({'input_dim': d_sent,
                                                          'target_embedding_dim': 300,
                                                          'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
+                                                         'target_namespace': 'targets',
                                                          'attention': 'bilinear',
                                                          'dropout': args.dropout,
                                                          'scheduled_sampling_ratio': 0.0}))
