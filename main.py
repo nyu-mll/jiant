@@ -214,6 +214,7 @@ def main(cl_arguments):
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,

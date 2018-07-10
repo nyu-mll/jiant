@@ -287,24 +287,6 @@ def get_task_specific_params(args, task_name):
     '''
     _get_task_attr = lambda attr_name: config.get_task_attr(args, task_name,
                                                             attr_name)
-    #  def _get_task_attr(attr_name):
-    #      """ Get a task-specific param.
-
-    #      Look in args.task_name.attr_name, then args.task_name_attr_name,
-    #      then fall back to args.attr_name.
-    #      """
-    #      if task_name in args and (attr_name in args[task_name]):
-    #          return args[task_name][attr_name]
-    #      compound_key = "%s_%s" % (task_name, attr_name)
-    #      if compound_key in args:
-    #          return args[compound_key]
-    #      return args[attr_name]
-
-    #  def _get_task_attr(attr_name):
-    #      return getattr(args, "%s_%s" % (task_name, attr_name)) if \
-    #          hasattr(args, "%s_%s" % (task_name, attr_name)) else \
-    #          getattr(args, attr_name)
-
     params = {}
     params['cls_type'] = _get_task_attr("classifier")
     params['d_hid'] = _get_task_attr("classifier_hid_dim")

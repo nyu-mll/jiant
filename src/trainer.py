@@ -29,12 +29,6 @@ def build_trainer_params(args, task_names):
     ''' Build trainer parameters, possibly loading task specific parameters '''
     _get_task_attr = lambda attr_name: config.get_task_attr(args, task_names,
                                                             attr_name)
-
-    #  def get_task_attr(attr_name):
-    #      ''' Hacky way to get task specific attributes '''
-    #      return getattr(args, "%s_%s" % (task, attr_name)) if \
-    #          hasattr(args, "%s_%s" % (task, attr_name)) else \
-    #          getattr(args, attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
@@ -47,15 +41,8 @@ def build_trainer_params(args, task_names):
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
-    # Special logic for these: use the max_vals or val_interval passed
-    # to this function, instead of fetching from args.<attr> if no 
-    # task-specific found.
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
-    #  params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
-    #      hasattr(args, "%s_max_vals" % task) else max_vals
-    #  params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
-    #      hasattr(args, "%s_val_interval" % task) else val_interval
 
     return Params(params)
 
