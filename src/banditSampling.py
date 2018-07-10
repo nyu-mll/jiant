@@ -1,5 +1,8 @@
 import random
 import numpy as np
+
+from allennlp.common import Params
+import copy
 import matplotlib.pyplot as plt
 
 class Bandit():
@@ -20,6 +23,7 @@ class Bandit():
         self.Q = np.array([float(initialQ)] * self.k)
 
         self.explore_method = explore_method
+        self.temp = None; self.epsilon = None
         # boltzmann exploration: softmax temp
         if explore_method == 'gradient':
             self.temp = temp
@@ -55,3 +59,42 @@ class Bandit():
         self.reward = reward
         index = self.action
         self.Q[index] += self.stepSize * (reward - self.Q[index])
+
+    @classmethod
+    def from_params(cls,actions,params):
+        ''' Generator trainer from parameters.  '''
+
+        stepSize = params.pop("stepSize", 0.3)
+        initialQ = params.pop("initialQ", 0)
+        explore_method = params.pop("explore_method", "gradient")
+        temp = params.pop("temp", 1)
+        epsilon = params.pop("epsilon", 0.2)
+
+        params.assert_empty(cls.__name__)
+        return Bandit(actions,
+                     stepSize = stepSize, initialQ=initialQ,
+                     explore_method=explore_method, #'epsilon','gradient'
+                     temp=temp,
+                     epsilon=epsilon)
+
+def build_bandit(params, actions):
+
+    bandit_params = Params({'stepSize': params['stepSize'],
+                           'initialQ': params['initialQ'],
+                           'explore_method': params['explore_method'],
+                           'temp': params['temp'],
+                           'epsilon': params['epsilon']})
+
+    bandit = Bandit.from_params(actions,copy.deepcopy(bandit_params))
+    return bandit
+
+
+
+def build_bandit_params(args):
+    ''' Build trainer parameters, possibly loading task specific parameters '''
+    params = {}
+    opts = ['stepSize', 'initialQ', 'explore_method','temp', 'epsilon']
+    for attr in opts:
+        params[attr] = getattr(args, attr)
+
+    return Params(params)

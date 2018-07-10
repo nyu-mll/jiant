@@ -196,6 +196,8 @@ class SamplingMultiTaskTrainer():
             self._TB_validation_log = SummaryWriter(
                 os.path.join(self._TB_dir, "val"))
 
+        self.bandit = None
+
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
         Given a task, the history of the performance on that task,
@@ -226,6 +228,7 @@ class SamplingMultiTaskTrainer():
         # Task bookkeeping
 
         # TODO (Shuning): This function is where you want to create the agent object.
+        '''
         #if weighting_method == 'bandit':
         initialQ = 0
         stepSize = 0.3
@@ -234,6 +237,13 @@ class SamplingMultiTaskTrainer():
         epsilon = 0.2
         actions = [task.name for task in tasks]
         self.bandit = Bandit(actions, stepSize,initialQ,explore_method,temp, epsilon)
+        '''
+
+        '''
+        print ('debug')
+        print (self.bandit.mapping,self.bandit.stepSize,self.bandit.Q,self.bandit.explore_method,
+        self.bandit.temp,self.bandit.epsilon)
+        '''
 
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
@@ -501,26 +511,28 @@ class SamplingMultiTaskTrainer():
             # Use the validate method below as an example, but don't compute accuracy
             # or log as much information -- should be short/simple.
             if weighting_method == 'bandit':
-                log.info("***** Pass %d *****", n_pass)
+                #log.info("***** Pass %d *****", n_pass)
                 # Validate
-                log.info("Validating Bandit...")
+                #log.info("Validating Bandit...")
                 #negative average valiation loss of all trained tasks
 
                 validate_bandit_losses = self._validate_bandit(tasks, batch_size)
-                log.info("Validation Loss: ")
-                for taskname, loss in zip([task.name for task in tasks], validate_bandit_losses):
-                    log.info("  %s loss: %.6f", taskname, loss)
+                #log.info("Validation Loss: ")
+                #for taskname, loss in zip([task.name for task in tasks], validate_bandit_losses):
+                #    log.info("  %s loss: %.6f", taskname, loss)
 
                 reward = -np.mean(validate_bandit_losses)
                 self.bandit.update_actionValue(reward)
                 log.info ("Reward: %.6f", reward)
-                log.info("Task action value:")
-                for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
-                    log.info("  %s qvalue: %.6f", taskname, Qvalue)
+                #log.info("Task action value:")
+                log.info("  tasks: "+str([task.name for task in tasks]))
+                log.info("  qvalue: " + np.array_str(self.bandit.Q,precision =4))
+                #for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
+                #    log.info("  %s qvalue: %.4f", taskname, Qvalue)
                 if self.bandit.explore_method == 'gradient':
                     nparray_exp = np.exp(self.bandit.Q/self.bandit.temp)
                     action_prob = nparray_exp/sum(nparray_exp)
-                    log.info("action_prob" + str(action_prob))
+                    log.info("  action_prob: " + np.array_str(action_prob,precision =4))
 
             # TODO (Shuning):
             # Once you're done, call this to turn training mode back on:
@@ -574,7 +586,7 @@ class SamplingMultiTaskTrainer():
                 #   watch them change.
                 log.info("Task action value:")
                 for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
-                    log.info("  %s qvalue: %.6f", taskname, Qvalue)
+                    log.info("  %s qvalue: %.4f", taskname, Qvalue)
 
 
                 all_tr_metrics = {}
