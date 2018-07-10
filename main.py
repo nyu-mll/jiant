@@ -28,7 +28,7 @@ def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
     parser.add_argument('--config_file', '-c', type=str, required=True,
-                        help="Config file (.conf) for model parameters.")
+                        help="Config file (or comma-delimited list of config files) (.conf) for model parameters.")
     parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 
