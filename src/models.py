@@ -3,8 +3,8 @@ import os
 import sys
 import math
 import copy
+import json
 import logging as log
-# import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -26,6 +26,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .utils import get_batch_utilization, get_elmo_mixing_weights
+from . import config
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -121,6 +122,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     for task in tasks:
         build_module(task, model, d_sent, vocab, embedder, args)
+
     if args.cuda >= 0:
         model = model.cuda()
     log.info(model)
@@ -217,6 +219,8 @@ def build_embeddings(args, vocab, pretrained_embs=None):
 def build_module(task, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
     task_params = get_task_specific_params(args, task.name)
+    log.info("\tTask '%s' params: %s", task.name,
+             json.dumps(task_params.as_dict(), indent=2))
     # Store task-specific params in case we want to access later
     setattr(model, '%s_task_params' % task.name, task_params)
 
@@ -275,26 +279,31 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         raise ValueError("Module not found for %s" % task.name)
 
 
-def get_task_specific_params(args, task):
+def get_task_specific_params(args, task_name):
+    ''' Get task-specific parameters from the main args.
+
+    Args:
+        args: main-program args, a config.Params object
+        task_name: (string)
+
+    Returns:
+        AllenNLP Params object of task-specific params.
+    '''
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_name,
+                                                            attr_name)
     params = {}
-
-    def get_task_attr(attr_name):
-        return getattr(args, "%s_%s" % (task, attr_name)) if \
-            hasattr(args, "%s_%s" % (task, attr_name)) else \
-            getattr(args, attr_name)
-
-    params['cls_type'] = get_task_attr("classifier")
-    params['d_hid'] = get_task_attr("classifier_hid_dim")
-    params['d_proj'] = get_task_attr("d_proj")
+    params['cls_type'] = _get_task_attr("classifier")
+    params['d_hid'] = _get_task_attr("classifier_hid_dim")
+    params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
     if args.shared_pair_attn:
         params['attn'] = args.pair_attn
         params['d_hid_attn'] = args.d_hid_attn
         params['dropout'] = args.classifier_dropout
     else:
-        params['attn'] = get_task_attr("pair_attn")
-        params['d_hid_attn'] = get_task_attr("d_hid_attn")
-        params['dropout'] = get_task_attr("classifier_dropout")
+        params['attn'] = _get_task_attr("pair_attn")
+        params['d_hid_attn'] = _get_task_attr("d_hid_attn")
+        params['dropout'] = _get_task_attr("classifier_dropout")
 
     return Params(params)
 

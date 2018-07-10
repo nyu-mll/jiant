@@ -22,16 +22,13 @@ from allennlp.training.optimizers import Optimizer  # pylint: disable=import-err
 
 from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
+from . import config
 
 
-def build_trainer_params(args, task, max_vals, val_interval):
+def build_trainer_params(args, task_names):
     ''' Build trainer parameters, possibly loading task specific parameters '''
-
-    def get_task_attr(attr_name):
-        ''' Hacky way to get task specific attributes '''
-        return getattr(args, "%s_%s" % (task, attr_name)) if \
-            hasattr(args, "%s_%s" % (task, attr_name)) else \
-            getattr(args, attr_name)
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_names,
+                                                            attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
@@ -41,13 +38,11 @@ def build_trainer_params(args, task, max_vals, val_interval):
                   'no_tqdm', 'cuda', 'keep_all_checkpoints',
                   'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
-        params[attr] = get_task_attr(attr)
+        params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
-    params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
-        hasattr(args, "%s_max_vals" % task) else max_vals
-    params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
-        hasattr(args, "%s_val_interval" % task) else val_interval
+    params['max_vals'] = _get_task_attr('max_vals')
+    params['val_interval'] = _get_task_attr('val_interval')
 
     return Params(params)
 
@@ -606,7 +601,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
-                metric_decreases = False
+                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases
