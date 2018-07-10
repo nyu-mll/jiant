@@ -252,6 +252,12 @@ class SamplingMultiTaskTrainer():
                                       biggest_batch_first=True)
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
 
+            #if weighting_method == 'bandit':
+            bandit_val_generator = BasicIterator(batch_size, instances_per_epoch=batch_size)(
+                task.val_data, num_epochs=None, shuffle=True,
+                cuda_device=self._cuda_device)
+            task_info['bandit_val_generator'] = bandit_val_generator
+
             task_info['iterator'] = iterator
 
             if phase == "main":
@@ -414,7 +420,7 @@ class SamplingMultiTaskTrainer():
             self._model.train()
 
             # randomly select a task
-            # TODO (Shuning): Sample a task here. ????
+            # TODO (Shuning): Sample a task here.
             if weighting_method == 'bandit':
                 self.bandit.chooseAction()
                 task = tasks[self.bandit.action]
@@ -518,7 +524,7 @@ class SamplingMultiTaskTrainer():
 
             # TODO (Shuning):
             # Once you're done, call this to turn training mode back on:
-            # self._model.train()  ???????
+            # self._model.train()
             # Then update the parameters of the agent, using the average validation loss as reward.
             # with self.[name of agent?].update_TaskSelector_Q_values(scores)
 
@@ -608,9 +614,6 @@ class SamplingMultiTaskTrainer():
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
-        # TODO (Shuning): You should make a new validate function instead of using this one, but you can use
-        #   it as an example of how to use eval mode (model.eval) and how to access the eval data
-        #   for the tasks.
 
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -738,13 +741,21 @@ class SamplingMultiTaskTrainer():
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
 
+            '''
             val_generator = BasicIterator(batch_size, instances_per_epoch= batch_size)(
                 task.val_data, num_epochs=1, shuffle=False,
                 cuda_device=self._cuda_device)
+            log.info(task.val_data)
+            '''
+            val_generator = task_info['bandit_val_generator']
+            #log.info ('val_generator: ' + str(val_generator))
+
             n_val_batches = n_batches_perTask
             all_val_metrics["%s_loss" % task.name] = 0.0
 
-            for batch in val_generator:
+            #for batch in val_generator:
+            for batch in itertools.islice(val_generator, 1):
+                # log.info (task.name + "\n" + str(batch['labels']))
                 batch_num += 1
                 out = self._forward(batch, task=task, for_training=False)
                 loss = out["loss"]
