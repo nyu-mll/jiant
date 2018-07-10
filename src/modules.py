@@ -209,6 +209,7 @@ class Pooler(nn.Module):
 
     def __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
         super(Pooler, self).__init__()
+        self.d_proj = d_proj
         self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
         self.pool_type = pool_type
 
@@ -790,15 +791,15 @@ class CNNEncoder(Model):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
         self.model = self._load_model(model_name)
-        
-        
+
+
         # New loader
         '''
         self.feat_dict = self._load_features_from_json(path, 'train')
         self.feat_dict.update(self._load_features_from_json(path, 'val'))
         self.feat_dict.update(self._load_features_from_json(path, 'test'))
         '''
-        
+
         '''
         # Old loader
         self.feat_dict = self._load_features(path, 'train')
@@ -827,9 +828,9 @@ class CNNEncoder(Model):
             f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '.json', 'r')
             for line in f:
                 feat_dict = json.loads(line)
-                
+
         return feat_dict
-    
+
     def _load_features(self, path, dataset):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])
@@ -869,4 +870,3 @@ class CNNEncoder(Model):
         f = open('/nfs/jsalt/home/roma/CNN/feat/' + str(img_id) + '.json', 'r')
         for line in f: feat_dict = json.loads(line)
         return feat_dict['feat']
-

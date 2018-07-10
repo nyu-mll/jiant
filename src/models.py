@@ -265,7 +265,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             setattr(model, '%s_mdl' % task.name, pooler)
             setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
             classifier = Classifier.from_params(
-                d_inp=9 * d_sent,
+                d_inp=9 * pooler.d_proj,
                 n_classes=2,
                 params=task_params,
             )
@@ -530,7 +530,7 @@ class MultiTaskModel(nn.Module):
         sent2_pool = torch.zeros_like(sent_pool)
 
         def _shift(range_in):  # shift range by one for the negative idx
-            return range_in[1:] + [range_in[0]]
+            return list(range_in)[1:] + [range_in[0]]
 
         sent1_pool[:int(bs/2)] = sent_pool[:int(bs/2)]
         sent1_pool[int(bs/2):] = sent_pool[_shift(range(int(bs/2), bs))]
@@ -539,7 +539,7 @@ class MultiTaskModel(nn.Module):
         labels = torch.zeros(bs); labels[int(bs/2):] = 1
         sent1_pool = sent1_pool.cuda()
         sent2_pool = sent2_pool.cuda()
-        labels = labels.cuda()
+        labels = labels.type(torch.LongTensor).cuda()
 
         # dnn (for comparibility)
         sent1_dnn = sent_dnn(sent1_pool)
