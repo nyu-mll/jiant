@@ -40,7 +40,8 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
+    ContrastiveRankingTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -231,14 +232,15 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             hid2tag = build_tagger(task, d_sent, task.num_tags)
             setattr(model, '%s_mdl' % task.name, hid2tag)
         elif isinstance(task, MTTask):
-            decoder = Seq2SeqDecoder.from_params(vocab,
-                                                 Params({'input_dim': d_sent,
-                                                         'target_embedding_dim': 300,
-                                                         'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
-                                                         'attention': 'bilinear',
-                                                         'dropout': args.dropout,
-                                                         'scheduled_sampling_ratio': 0.0}))
+            decoder = Seq2SeqDecoder.from_params(
+                vocab,
+                Params({'input_dim': d_sent,
+                     'target_embedding_dim': 300,
+                     'max_decoding_steps': 200,
+                     'target_namespace': 'tokens',
+                     'attention': 'bilinear',
+                     'dropout': args.dropout,
+                     'scheduled_sampling_ratio': 0.0}))
             setattr(model, '%s_decoder' % task.name, decoder)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -262,6 +264,12 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
             setattr(model, '%s_mdl' % task.name, pooler)
             setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+            classifier = Classifier.from_params(
+                d_inp=9 * pooler.d_proj,
+                n_classes=2,
+                params=task_params,
+            )
+            setattr(model, '%s_classifier' % task.name, classifier)
 
             #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
@@ -411,6 +419,8 @@ class MultiTaskModel(nn.Module):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
             out = self._grounded_classification_forward(batch, task, predict)
+        elif isinstance(task, ContrastiveRankingTask):
+            out = self._contrastive_sampling_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         else:
@@ -497,6 +507,67 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
+    def _contrastive_sampling_forward(self, batch, task, predict):
+        ''' Classification based on triplet of sentences
+        {context, positive, negative}. Currently only samples negative samples
+        from within batch, and exactly one per example. Assumes batch is random
+        data is shuffled. This is probably not the optimal way to do this, should
+        do it at batching stage. https://openreview.net/forum?id=rJvJXZb0W
+        '''
+        out = {}
+
+        # feed forward inputs through shared sentence encoder and pooler
+        context_sent, context_mask = self.sent_encoder(batch['input1'])
+        pos_sent, pos_mask = self.sent_encoder(batch['input2'])
+        sent_pooler = getattr(self, "%s_mdl" % task.name)
+        sent_dnn = getattr(self, "%s_Response_mdl" % task.name)
+        context_sent_rep = sent_pooler(context_sent, context_mask)
+        sent_pool = sent_pooler(pos_sent, pos_mask)
+
+        # negative sampling, assumes shuffled
+        bs = sent_pool.size()[0]
+        sent1_pool = torch.zeros_like(sent_pool)
+        sent2_pool = torch.zeros_like(sent_pool)
+
+        def _shift(range_in):  # shift range by one for the negative idx
+            return list(range_in)[1:] + [range_in[0]]
+
+        sent1_pool[:int(bs/2)] = sent_pool[:int(bs/2)]
+        sent1_pool[int(bs/2):] = sent_pool[_shift(range(int(bs/2), bs))]
+        sent2_pool[:int(bs/2)] = sent_pool[_shift(range(int(bs/2)))]
+        sent2_pool[int(bs/2):] = sent_pool[int(bs/2):]
+        labels = torch.zeros(bs); labels[int(bs/2):] = 1
+        sent1_pool = sent1_pool.cuda()
+        sent2_pool = sent2_pool.cuda()
+        labels = labels.type(torch.LongTensor).cuda()
+
+        # dnn (for comparibility)
+        sent1_dnn = sent_dnn(sent1_pool)
+        sent2_dnn = sent_dnn(sent2_pool)
+
+        # concatenate all features together
+        classifier = getattr(self, "%s_classifier" % task.name)
+        logits = classifier(torch.cat([
+            context_sent_rep,
+            sent1_pool,
+            sent2_pool,
+            sent1_dnn,
+            sent2_dnn,
+            torch.abs(context_sent_rep - sent1_pool),
+            context_sent_rep * sent1_pool,
+            torch.abs(context_sent_rep - sent2_pool),
+            context_sent_rep * sent2_pool,
+        ], 1))
+
+        # compute loss
+        out['loss'] = F.cross_entropy(logits, labels)
+        _, preds = logits.max(dim=1)
+        total_correct = torch.sum(preds == labels)
+        batch_acc = total_correct.item()/len(labels)
+        out["n_exs"] = len(labels)
+        task.scorer1(batch_acc)
+
+        return out
 
     def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
@@ -513,31 +584,31 @@ class MultiTaskModel(nn.Module):
         if 1:
             sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
             sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
-            cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1)) 
+            cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1))
             labels = torch.eye(len(cos_simi))
 
             ## The following commented code can be used when we want to use only some pairs instead of all possible pairs
             #scale = 1/(len(cos_simi) - 1)
             #weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
-            #weights = weights.view(-1).cuda()            
+            #weights = weights.view(-1).cuda()
             #import ipdb as pdb; pdb.set_trace()
-            
+
             ## taking all the pairs positive and negative
             #cos_simi = cos_simi.view(-1)
             #labels = labels.view(-1).cuda()
             #pred = F.sigmoid(cos_simi).round()
-            
-            ## taking only positive pairs            
+
+            ## taking only positive pairs
             #cos_simi = torch.diagonal(cos_simi)
             #labels = torch.ones(cos_simi.shape).cuda()
             #import ipdb as pdb; pdb.set_trace()
-           
+
             # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
             cos_simi_pos = torch.diag(cos_simi)
             cos_simi_neg = torch.diag(cos_simi, diagonal=1)
             cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
             labels_pos = torch.diag(labels)
-            labels_neg = torch.diag(labels, diagonal=1) 
+            labels_neg = torch.diag(labels, diagonal=1)
             labels = torch.cat([labels_pos, labels_neg], dim=0)
             labels = labels.cuda()
             #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
@@ -656,9 +727,9 @@ class MultiTaskModel(nn.Module):
         out = {}
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        batch_size = get_batch_size_from_field(batch['input1'])
+        batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
-        
+
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
         labels = batch['labels'].cpu().squeeze(-1)
         labels = [int(item) for item in labels.data.numpy()]
@@ -676,11 +747,11 @@ class MultiTaskModel(nn.Module):
             sim = cos(sent, img_feat).cuda()
             preds.append(sim.cpu().data.numpy()[0])
 
-        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)        
+        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
         metric = np.mean(preds)
-        task.scorer1.__call__(metric)        
+        task.scorer1.__call__(metric)
         out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
-        
+
         cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
         out['loss'] = cos(
             torch.tensor(
@@ -689,7 +760,7 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out['preds'] = preds
-            
+
         return out
 
     def get_elmo_mixing_weights(self, mix_id=0):
