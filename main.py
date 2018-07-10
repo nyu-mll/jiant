@@ -191,16 +191,23 @@ def main(cl_arguments):
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models)
     else:
-        macro_best = glob.glob(os.path.join(args.run_dir,
-                                            "model_state_main_epoch_*.best_macro.th"))
-        if len(macro_best) > 0:
-            assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-            load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
+        # Look for eval checkpoints (available only if we're restoring from a run that already
+        # finished), then look for training checkpoints.
+        eval_best = glob.glob(os.path.join(args.run_dir,
+                                           "model_state_eval_best.th"))
+        if len(eval_best) > 0:
+            load_model_state(model, eval_best[0], args.cuda, args.skip_task_models)
         else:
-            assert_for_log(
-                args.allow_untrained_encoder_parameters,
-                "No best checkpoint found to evaluate.")
-            log.warning("Evaluating untrained encoder parameters!")
+            macro_best = glob.glob(os.path.join(args.run_dir,
+                                                "model_state_main_epoch_*.best_macro.th"))
+            if len(macro_best) > 0:
+                assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
+                load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
+            else:
+                assert_for_log(
+                    args.allow_untrained_encoder_parameters,
+                    "No best checkpoint found to evaluate.")
+                log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
