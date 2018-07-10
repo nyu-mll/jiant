@@ -83,9 +83,12 @@ class Params(object):
 # 3) validate specific parameters with custom logic
 
 
-def params_from_file(config_file, overrides=None):
-    with open(config_file) as fd:
-        config_string = fd.read()
+def params_from_file(config_files, overrides=None):
+    config_string = ''
+    for config_file in config_files.split(','):
+      with open(config_file) as fd:
+          config_string += fd.read() 
+          config_string += '\n'
     if overrides:
         # Append overrides to file to allow for references and injection.
         config_string += "\n"
