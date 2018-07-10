@@ -241,12 +241,6 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
                      'attention': 'bilinear',
                      'dropout': args.dropout,
                      'scheduled_sampling_ratio': 0.0}))
-            classifier = Classifier.from_params(
-                d_inp=9 * d_sent,
-                n_classes=2,
-                params=task_params,
-            )
-            setattr(model, '%s_classifier' % task.name, classifier)
             setattr(model, '%s_decoder' % task.name, decoder)
         elif isinstance(task, SequenceGenerationTask):
             decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -270,6 +264,12 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
             setattr(model, '%s_mdl' % task.name, pooler)
             setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+            classifier = Classifier.from_params(
+                d_inp=9 * d_sent,
+                n_classes=2,
+                params=task_params,
+            )
+            setattr(model, '%s_classifier' % task.name, classifier)
 
             #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
