@@ -21,7 +21,7 @@ from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
 from allennlp_mods.numeric_field import NumericField
 
-from utils import load_tsv, process_sentence, truncate
+from utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 from typing import Iterable, Sequence, Any, Type
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
@@ -750,13 +750,11 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''load MNLI diagnostics data.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+        tr_data = load_diagnostic_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
                            s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
-                           s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+        val_data = tr_data
 
-        te_data = load_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
-                                   s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+        te_data = tr_data
 
         self.train_data_text = tr_data
         self.val_data_text = val_data

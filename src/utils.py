@@ -97,6 +97,96 @@ def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
 
+def load_diagnosti_tsv(
+        data_file,
+        max_seq_len,
+        s1_idx=0,
+        s2_idx=1,
+        targ_idx=2,
+        idx_idx=None,
+        targ_map=None,
+        targ_fn=None,
+        skip_rows=0,
+        delimiter='\t',
+        filter_idx=None,
+        filter_value=None):
+    '''Load a tsv
+
+    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
+    sent1s, sent2s, targs, lex_sem, pr_ar_str, logic, knowledge  = [], [], [], [], [], [], []
+    ix_to_lex_sem_dic = {}
+    ix_to_pr_ar_str_dic = {}
+    ix_to_logic_dic = {}
+    ix_to_knowledge_dic = {}
+
+    lex_sem_to_ix_dic = {}
+    pr_ar_str_to_ix_dic = {}
+    logic_to_ix_dic = {}
+    knowledge_to_ix_dic = {}
+
+    def tags_to_ixs(tags, tag_to_ix_dict, ix_to_tag_dic):
+        splitted_tags = tags.split(';')
+        indexes = []
+        for t in splitted_tags:
+            if t in tag_to_ix_dict:
+                indexes.append(tag_to_ix_dict[t])
+            else:
+                highest_ix = len(tag_to_ix_dict)
+                new_index = highest_ix + 1
+                tag_to_ix_dict[t] = new_index
+                ix_to_tag_dic[new_index] = t
+                indexes.append(new_index)
+        return indexes
+
+
+
+    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
+        for _ in range(skip_rows):
+            data_fh.readline()
+        for row_idx, row in enumerate(data_fh):
+            try:
+                row = row.strip().split(delimiter)
+                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                if targ_map is not None:
+                        targ = targ_map[row[targ_idx]]
+                elif targ_fn is not None:
+                        targ = targ_fn(row[targ_idx])
+                else:
+                        targ = int(row[targ_idx])
+                sent2 = process_sentence(row[s2_idx], max_seq_len)
+                sent2s.append(sent2)
+
+                sent1s.append(sent1)
+                targs.append(targ)
+
+                lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
+                pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
+                logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
+                knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
+
+                lex_sem.append(lex_sem_sample)
+                pr_ar_str.append(pr_ar_str_sample)
+                logic.append(logic_sample)
+                knowledge.append(knowledge_sample)
+
+            except Exception as e:
+                print(e, " file: %s, row: %d" % (data_file, row_idx))
+                continue
+
+        return {'sents1': sent1s,
+                'sents2': sent2s,
+                'targs': targs,
+                'lex_sem': lex_sem,
+                'pr_ar_str': pr_ar_str,
+                'logic': logic,
+                'knowledge': knowledge,
+                'lex_sem_to_ix_dic': lex_sem_to_ix_dic,
+                'pr_ar_str_to_ix_dic': pr_ar_str_to_ix_dic,
+                'logic_to_ix_dic': logic_to_ix_dic,
+                'knowledge_to_ix_dic': knowledge_to_ix_dic,
+                'ix_to_lex_sem_dic
+
+
 def load_tsv(
         data_file,
         max_seq_len,
