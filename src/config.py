@@ -42,6 +42,9 @@ class Params(object):
     def __getitem__(self, k):
         return getattr(self, k)
 
+    def __contains__(self, k):
+        return k in self._known_keys
+
     def __setitem__(self, k, v):
         assert isinstance(k, str)
         if isinstance(self.get(k, None), types.FunctionType):
@@ -60,7 +63,7 @@ class Params(object):
         for k, v in kw.items():
             self[k] = v
 
-    def get(self, k, default):
+    def get(self, k, default=None):
         return getattr(self, k, default)
 
     def keys(self):
