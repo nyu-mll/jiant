@@ -476,13 +476,61 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
+        # batch['input1'] is [batch_size, max_len, dim???]
+        # sent_embs is [batch_size, max_len, repr_dim]
+        # sent_mask is [batch_size, max_len, 1], boolean mask
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
 
-        # extract spans by indexing
-        import ipdb; ipdb.set_trace()
+        # batch['labels'] is [batch_size, num_targets] array of ints
+        # padded with -1 along last dimension.
+        
+        # batch['span1s'] and batch['span2s'] are [batch_size, num_targets, 2]
+        # array of ints, padded with -1 along second dimension.
 
-        # invoke task-specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
+        # For now, just extract specific spans and use a sigmoid loss.
+        # TODO to enumerate all spans and take the given targets as positives.
+        batch_size = sent_embs.shape[0]
+        max_targets = batch['span1s'].shape[1]
+        mask = (batch['labels'] != -1)  # [batch_size, num_targets] bool
+        total_num_targets = mask.sum()
+        out['n_inputs'] = batch_size
+        out['n_targets'] = total_num_targets
+        out['n_exs'] = total_num_targets  # used by trainer.py
+        # [batch_size, max_targets] of batch indices
+        batch_idxs = (torch.arange(batch_size, dtype=torch.int64)
+                      .repeat(max_targets, 1)
+                      .transpose(0,1))
+        # Get indices in preparation for a big gather.
+        flat_batch_idxs = batch_idxs[mask]   # [total_num_targets]
+        flat_span1s = batch['span1s'][mask]  # [total_num_targets, 2]
+        flat_span2s = batch['span2s'][mask]  # [total_num_targets, 2]
+      
+        # RaSoR-style pooling: first and last token for each span.
+        # Results are [total_num_targets, repr_dim]
+        s1 = sent_embs[flat_batch_idxs, flat_span1s[:,0]]
+        e1 = sent_embs[flat_batch_idxs, flat_span1s[:,1]]
+        s2 = sent_embs[flat_batch_idxs, flat_span2s[:,0]]
+        e2 = sent_embs[flat_batch_idxs, flat_span2s[:,1]]
+        # [total_num_targets, 4*repr_dim]
+        span_vecs = torch.cat([s1, e1, s2, e2], dim=1)
+
+        # Invoke task-specific classifier
+        classifier = getattr(self, "%s_mdl" % task.name) 
+        logits = classifier(span_vecs)  # [total_num_targets, n_classes]
+        out['logits'] = logits
+        
+        # Compute loss if requested.
+        # TODO(iftenney): replace with sigmoid loss.
+        if 'labels' in batch:
+            flat_labels = batch['labels'][mask]  # [total_num_targets]
+            out['loss'] = F.cross_entropy(logits, flat_labels)
+            task.scorer1(logits, flat_labels)
+
+        if predict:
+            # return argmax predictions
+            _, out['preds'] = logits.max(dim=1)
+        
+        #  import ipdb; ipdb.set_trace()
 
         return out
 

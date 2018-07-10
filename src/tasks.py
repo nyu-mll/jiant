@@ -346,6 +346,11 @@ class EdgeProbingTask(Task):
                 continue
             for record in iter:
                 yield record["text"].split()
+    
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 
 class PairRegressionTask(RegressionTask):
