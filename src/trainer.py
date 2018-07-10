@@ -19,10 +19,10 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
-from utils import device_mapping, assert_for_log  # pylint: disable=import-error
-from evaluate import evaluate
+from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .evaluate import evaluate
 # TODO (Shuning): Copy the agent code into our codebase and import it.
-from banditSampling import Bandit
+from .banditSampling import Bandit
 import numpy as np
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -588,6 +588,11 @@ class SamplingMultiTaskTrainer():
                 for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
                     log.info("  %s qvalue: %.4f", taskname, Qvalue)
 
+                elmo_params = self._model.get_elmo_mixing_weights()
+                if elmo_params:
+                    log.info("ELMo mixing weights:")
+                    for layer, param in elmo_params.items():
+                        log.info("\t%s: %.6f", layer, param)
 
                 all_tr_metrics = {}
 
@@ -691,7 +696,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
-                metric_decreases = False
+                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases

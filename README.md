@@ -6,7 +6,7 @@ This repo contains the code for jiant sentence representation learning model for
 If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
 
 ```sh
-python src/main.py --config_file config/demo.conf
+python main.py --config_file config/demo.conf
 ```
 
 You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
@@ -37,7 +37,7 @@ For other pretraining task data, contact the person in charge.
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python src/main.py --config_file config/demo.conf \
+python main.py --config_file config/demo.conf \
   --overrides "exp_name = my_exp, run_name = foobar"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
@@ -58,7 +58,7 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 
 ## Model
 
-To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [src/main.py](src/main.py).
+To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
 
 
 ## Trainer
