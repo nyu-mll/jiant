@@ -4,7 +4,7 @@ import sys
 import math
 import copy
 import logging as log
-import ipdb as pdb
+# import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -612,7 +612,7 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out = decoder.forward(sent, sent_mask, batch['targs'])
+            out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
             return out
 
