@@ -26,6 +26,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .utils import get_batch_utilization, get_elmo_mixing_weights
+from . import config
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -120,6 +121,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     for task in tasks:
         build_module(task, model, d_sent, vocab, embedder, args)
+
     if args.cuda >= 0:
         model = model.cuda()
     log.info(model)
@@ -283,18 +285,20 @@ def get_task_specific_params(args, task_name):
     Returns:
         AllenNLP Params object of task-specific params.
     '''
-    def _get_task_attr(attr_name):
-        """ Get a task-specific param.
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_name,
+                                                            attr_name)
+    #  def _get_task_attr(attr_name):
+    #      """ Get a task-specific param.
 
-        Look in args.task_name.attr_name, then args.task_name_attr_name,
-        then fall back to args.attr_name.
-        """
-        if task_name in args and (attr_name in args[task_name]):
-            return args[task_name][attr_name]
-        compound_key = "%s_%s" % (task_name, attr_name)
-        if compound_key in args:
-            return args[compound_key]
-        return args[attr_name]
+    #      Look in args.task_name.attr_name, then args.task_name_attr_name,
+    #      then fall back to args.attr_name.
+    #      """
+    #      if task_name in args and (attr_name in args[task_name]):
+    #          return args[task_name][attr_name]
+    #      compound_key = "%s_%s" % (task_name, attr_name)
+    #      if compound_key in args:
+    #          return args[compound_key]
+    #      return args[attr_name]
 
     #  def _get_task_attr(attr_name):
     #      return getattr(args, "%s_%s" % (task_name, attr_name)) if \
