@@ -234,6 +234,8 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, EdgeProbingTask):
             module = build_edge_classifier_module(task, d_sent, task_params)
             setattr(model, '%s_mdl' % task.name, module)
+            # May want access to custom task params
+            setattr(model, '%s_params' % task.name, task_params)
         elif isinstance(task, MTTask):
             decoder = Seq2SeqDecoder.from_params(vocab,
                                                  Params({'input_dim': d_sent,
