@@ -216,6 +216,8 @@ def build_embeddings(args, vocab, pretrained_embs=None):
 def build_module(task, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
     task_params = get_task_specific_params(args, task.name)
+    # Store task-specific params in case we want to access later
+    setattr(model, '%s_task_params' % task.name, task_params)
 
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, task_params)
@@ -652,7 +654,7 @@ class MultiTaskModel(nn.Module):
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
         batch_size = get_batch_size_from_field(batch['input1'])
         out['n_exs'] = batch_size
-        
+
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
         labels = batch['labels'].cpu().squeeze(-1)
         labels = [int(item) for item in labels.data.numpy()]
@@ -670,11 +672,11 @@ class MultiTaskModel(nn.Module):
             sim = cos(sent, img_feat).cuda()
             preds.append(sim.cpu().data.numpy()[0])
 
-        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)        
+        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
         metric = np.mean(preds)
-        task.scorer1.__call__(metric)        
+        task.scorer1.__call__(metric)
         out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
-        
+
         cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
         out['loss'] = cos(
             torch.tensor(
@@ -683,7 +685,7 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out['preds'] = preds
-            
+
         return out
 
     def get_elmo_mixing_weights(self, mix_id=0):
