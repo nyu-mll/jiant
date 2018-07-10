@@ -232,7 +232,7 @@ def main(cl_arguments):
         log.info("Evaluating...")
         val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
         if args.write_preds:
-            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
+            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
             write_preds(te_preds, args.run_dir)
 
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),

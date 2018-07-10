@@ -73,7 +73,7 @@ def write_preds(all_preds, pred_dir):
             for idx, pred in enumerate(preds):
                 if pred_map is not None or write_type == str:
                     pred = pred_map[pred]
-                    pred_fh.write("%d\t%s\n" % (idx, pred))
+                    pred_fh.write("%d\t%s\n" % (idx+1, pred))
                 elif write_type == float:
                     pred_fh.write("%d\t%.3f\n" % (idx, pred))
                 elif write_type == int:
@@ -83,13 +83,14 @@ def write_preds(all_preds, pred_dir):
         if not preds: # catch empty lists
             continue
 
-        if task == 'mnli': # 9796 + 9847 + 1104 = 20747
-            assert len(preds) == 20747, "Missing predictions for MNLI!"
+        if task in ['mnli', 'nli-prob']: # 9796 + 9847 + 1104 = 20747
+            #assert len(preds) == 20747, "Missing predictions for MNLI!"
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
-            write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
-                                pred_map=pred_map)
-            write_preds_to_file(preds[19643:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+            #write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
+            #write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
+            #                    pred_map=pred_map)
+            #write_preds_to_file(preds[19643:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
         elif task in ['rte', 'qnli']:
             pred_map = {0: 'not_entailment', 1: 'entailment'}
             write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
