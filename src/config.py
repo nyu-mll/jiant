@@ -11,6 +11,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import argparse
 import pyhocon
 import json
+import itertools
 
 from . import hocon_writer
 
@@ -87,8 +88,10 @@ class Params(object):
 def params_from_file(config_files: Union[str, Iterable[str]],
                      overrides: str=None):
     config_string = ''
+    if isinstance(config_files, list) and isinstance(config_files[0], list):
+        config_files = list(itertools.chain(*config_files))
     if isinstance(config_files, str):
-        config_files = config_files.split(",")
+        config_files = [config_files]
     for config_file in config_files:
       with open(config_file) as fd:
           log.info("Loading config from %s", config_file)
