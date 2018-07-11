@@ -8,4 +8,4 @@ EXP_NAME="probing"
 RUN_NAME=$4 #"ptdb_pun_test"
 
 
-python main.py --c config/defaults.conf,${PARAM_FILE},config/eval_existing.conf -o "load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, run_name = ${RUN_NAME}, eval_tasks = ${PROBING_TASK}"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, run_name = ${RUN_NAME}, eval_tasks = ${PROBING_TASK}"
