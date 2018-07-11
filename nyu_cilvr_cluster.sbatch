@@ -3,7 +3,7 @@
 # Generic job script for all experiments on NYU CILVR machines.
 
 #SBATCH --gres=gpu:1
-#SBATCH --mem=14000
+#SBATCH --mem=30000
 #SBATCH --constraint=gpu_12gb,pascal
 
 # Example usage:
