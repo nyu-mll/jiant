@@ -14,6 +14,7 @@ import json
 
 from . import hocon_writer
 
+from typing import Union, Iterable
 
 class Params(object):
     """Params handler object.
@@ -83,13 +84,18 @@ class Params(object):
 # 3) validate specific parameters with custom logic
 
 
-def params_from_file(config_files, overrides=None):
+def params_from_file(config_files: Union[str, Iterable[str]],
+                     overrides: str=None):
     config_string = ''
-    for config_file in config_files.split(','):
+    if isinstance(config_files, str):
+        config_files = [config_files]
+    for config_file in config_files:
       with open(config_file) as fd:
-          config_string += fd.read() 
+          log.info("Loading config from %s", config_file)
+          config_string += fd.read()
           config_string += '\n'
     if overrides:
+        log.info("Config overrides: %s", overrides)
         # Append overrides to file to allow for references and injection.
         config_string += "\n"
         config_string += overrides
