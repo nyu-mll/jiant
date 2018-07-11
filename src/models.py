@@ -119,10 +119,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    for task in tasks:
+    for task in get_task_whitelist(args):
         build_module(task, model, d_sent, vocab, embedder, args)
-    for task in tasks:
-        maybe_override_task_classifier(args, model, task, tasks)
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
@@ -135,6 +133,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info("Number of trainable parameters: {}".format(trainable_param_count))
     return model
 
+def get_task_whitelist(args):
+  import ipdb; ipdb.set_trace()
+  tasks = args.train_tasks + args.eval_tasks
+  for task in args.eval_tasks:
+    tasks.append(get_task_attr(args, task, 'use_classifier'))
+  return tasks
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
@@ -273,44 +277,6 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
     else:
         raise ValueError("Module not found for %s" % task.name)
-
-
-def maybe_override_task_classifier(args, model, task, all_tasks):
-    """ If a task specifies to use another task's classifier, set that.
-
-    Overrides the model's <task>_mdl reference to point to another task's
-    classifier (the source task). If the source task is not found, will
-    construct the *source* task's <src_task>_mdl attribute as an alias of the
-    current task - this will cause the model to load the correct variables from
-    the checkpoints if available.
-    """
-    src_task = config.get_task_attr(args, task.name, "use_classifier")
-    if src_task is None:
-        return
-    if src_task == task.name:
-        log.warn("Task '%s': requested shared classifier from self. Did you"
-                 " mean something else?", task.name)
-        return
-    tasks_by_name = {task.name:task for task in all_tasks}
-    src_cls_key = "%s_mdl" % src_task    # name of source classifier
-    this_cls_key = "%s_mdl" % task.name  # name of this classifier
-
-    # Case where source task is *not* found.
-    if (src_task not in tasks_by_name) or (not hasattr(model, src_cls_key)):
-        log.warn("Task '%s': requested to share classifier from "
-                 "non-existent task '%s'. Back-copying classifier to alias"
-                 " checkpoints.", task.name, src_task)
-        setattr(model, src_cls_key, getattr(model, this_cls_key))
-        return
-    # Case where source task *is* found.
-    src_task_mdl = getattr(model, src_cls_key)
-    # Remove any task model we might have made for *this* task.
-    old_task_mdl = getattr(model, this_cls_key)
-    del old_task_mdl
-    # Override this task model with the other model's class.
-    setattr(model, this_cls_key, src_task_mdl)
-    log.info("USING %s module for task %s", src_task, task.name)
-
 
 def get_task_specific_params(args, task_name):
     ''' Search args for parameters specific to task.
