@@ -476,13 +476,13 @@ class Reddit_MTTask(SequenceGenerationTask):
         print("Loading data")
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
-        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
+        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
                                         s1_idx=2, s2_idx=None, targ_idx=3,
                                         targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
                                         s1_idx=2, s2_idx=None, targ_idx=3,
                                         targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
                                         s1_idx=2, s2_idx=None, targ_idx=3,
                                         targ_fn=lambda t: t.split(' '))
 
