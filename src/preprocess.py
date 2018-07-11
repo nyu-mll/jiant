@@ -9,10 +9,9 @@ import numpy as np
 import torch
 
 from allennlp.data import Vocabulary
-from allennlp.data.token_indexers import SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
+from allennlp.data.token_indexers import \
+    SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
-
-#  import tasks
 
 try:
     import fastText
@@ -23,29 +22,31 @@ import _pickle as pkl
 
 from . import serialize
 from . import utils
+from . import tasks as tasks_module
 
-from .tasks import SingleClassificationTask, PairClassificationTask, \
-    PairRegressionTask, SequenceGenerationTask, RankingTask, \
-    CoLATask, MRPCTask, MultiNLITask, MultiNLIFictionTask, \
-    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
-    MultiNLITelephoneTask, QQPTask, RTETask, \
+from .tasks import \
+    CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
-    LanguageModelingTask, PDTBTask, \
+    PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    RedditTask
+from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RedditTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    POSTaggingTask, CCGTaggingTask
-
+    RecastVerbnetTask, RecastNERTask, RecastPunTask
+from .tasks import MultiNLIFictionTask, \
+    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
+    MultiNLITelephoneTask
+from .tasks import POSTaggingTask, CCGTaggingTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
+# DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
@@ -75,8 +76,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
-	         'pos': (POSTaggingTask, 'POS/'),
-	         'ccg': (CCGTaggingTask, 'CCG/'),
+             'pos': (POSTaggingTask, 'POS/'),
+             'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
@@ -87,8 +88,10 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
-             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data')
+             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
              }
+# Add any tasks registered in tasks.py
+NAME2INFO.update(tasks_module.REGISTRY)
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
@@ -155,19 +158,19 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, token_indexer, vocab, record_file):
+def _index_split(task, split, indexers, vocab, record_file):
     """Index instances and stream to disk.
     Args:
         task: Task instance
         split: (string), 'train', 'val', or 'test'
-        token_indexer: dict of token indexers
+        indexers: dict of token indexers
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
     """
     log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
     log.info("%s: indexing from scratch", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, token_indexer)
+    instance_iter = task.process_split(split_text, indexers)
     if hasattr(instance_iter, '__len__'):  # if non-lazy
         log.warn("%s: non-lazy Instance generation. You'll want to refactor "
                  "%s.process_split to return a lazy iterator.", log_prefix,
@@ -224,6 +227,35 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
         return True
     return False
 
+def _build_embeddings(args, vocab, emb_file: str):
+    ''' Build word embeddings from from scratch. '''
+    log.info("\tBuilding embeddings from scratch")
+    if args.fastText:
+        word_embs, _ = get_fastText_model(vocab, args.d_word,
+                                          model_file=args.fastText_model_file)
+        log.info("\tUsing fastText; no pickling of embeddings.")
+        return word_embs
+
+    word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+    pkl.dump(word_embs, open(emb_file, 'wb'))
+    log.info("\tSaved embeddings to %s", emb_file)
+    return word_embs
+
+def _build_vocab(args, tasks, vocab_path: str):
+    ''' Build vocabulary from scratch, reading data from tasks. '''
+    log.info("\tBuilding vocab from scratch")
+    ### FIXME MAGIC NUMBER
+    max_v_sizes = {
+        'word': args.max_word_v_size,
+        'char': args.max_char_v_size,
+        'target': 20000, # TODO target max size
+    }
+    word2freq, char2freq, target2freq = get_words(tasks)
+    vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
+    vocab.save_to_files(vocab_path)
+    log.info("\tSaved vocab to %s", vocab_path)
+    #  del word2freq, char2freq, target2freq
+
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
     1) creating / loading the tasks
@@ -239,51 +271,41 @@ def build_tasks(args):
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
-                  load_pkl=bool(not args.reload_tasks), probe_path=args.probe_path)
+                  load_pkl=bool(not args.reload_tasks),
+                  nli_prob_probe_path=args['nli-prob'].probe_path)
 
-    # 2 + 3) build / load vocab and word vectors
+    # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')
-    emb_file = os.path.join(args.exp_dir, 'embs.pkl')
-    token_indexer = {}
+    indexers = {}
     if not args.word_embs == 'none':
-        token_indexer["words"] = SingleIdTokenIndexer()
+        indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
-        token_indexer["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
-        token_indexer["chars"] = TokenCharactersIndexer("chars")
-    if not args.reload_vocab and os.path.exists(vocab_path):
-        vocab = Vocabulary.from_files(vocab_path)
-        log.info("\tLoaded vocab from %s", vocab_path)
-    else:
-        log.info("\tBuilding vocab from scratch")
-        ### FIXME MAGIC NUMBER
-        max_v_sizes = {'word': args.max_word_v_size, 'char': args.max_char_v_size, 'target': 20000} # TODO target max size
-        word2freq, char2freq, target2freq = get_words(tasks)
-        vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
-        vocab.save_to_files(vocab_path)
-        log.info("\tSaved vocab to %s", vocab_path)
-        del word2freq, char2freq, target2freq
+        indexers["chars"] = TokenCharactersIndexer("chars")
+
+    if args.reload_vocab or not os.path.exists(vocab_path):
+        _build_vocab(args, tasks, vocab_path)
+
+    # Always load vocab from file.
+    vocab = Vocabulary.from_files(vocab_path)
+    log.info("\tLoaded vocab from %s", vocab_path)
+
     word_v_size = vocab.get_vocab_size('tokens')
     char_v_size = vocab.get_vocab_size('chars')
     target_v_size = vocab.get_vocab_size('targets')
     log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
              word_v_size, char_v_size, target_v_size)
     args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
+
+    # 3) build / load word vectors
+    word_embs = None
     if args.word_embs != 'none':
-        if not args.reload_vocab and os.path.exists(emb_file):
+        emb_file = os.path.join(args.exp_dir, 'embs.pkl')
+        if args.reload_vocab or not os.path.exists(emb_file):
+            word_embs = _build_embeddings(args, vocab, emb_file)
+        else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
-        else:
-            log.info("\tBuilding embeddings from scratch")
-            if args.fastText:
-                word_embs, _ = get_fastText_model(vocab, args.d_word,
-                                                  model_file=args.fastText_model_file)
-                log.info("\tNo pickling")
-            else:
-                word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-                pkl.dump(word_embs, open(emb_file, 'wb'))
-                log.info("\tSaved embeddings to %s", emb_file)
-    else:
-        word_embs = None
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -300,9 +322,10 @@ def build_tasks(args):
                 # Re-index from scratch.
                 record_file = _get_serialized_record_path(task.name, split,
                                                           preproc_dir)
-                _index_split(task, split, token_indexer, vocab, record_file)
+                _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
+        # TODO: delete task.{split}_data_text as well?
         task.train_data = None
         task.val_data = None
         task.test_data = None
@@ -327,7 +350,7 @@ def build_tasks(args):
                 # phase.
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0) 
+                    task.name, "train", preproc_dir, fraction=1.0)
             eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
@@ -349,7 +372,7 @@ def _parse_task_list_arg(task_list):
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1, probe_path=None):
+              scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
     ''' Load tasks '''
     train_task_names = _parse_task_list_arg(train_tasks)
     eval_task_names = _parse_task_list_arg(eval_tasks)
@@ -362,33 +385,33 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
     tasks = []
     for name in task_names:
         assert name in NAME2INFO, 'Task not found!'
-        task_src_path = os.path.join(path, NAME2INFO[name][1])
-        task_scratch_path = os.path.join(scratch_path, NAME2INFO[name][1])
+        task_info = NAME2INFO[name]
+        task_src_path = os.path.join(path, task_info[1])
+        task_scratch_path = os.path.join(scratch_path, task_info[1])
         pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
         if os.path.isfile(pkl_path) and load_pkl:
             task = pkl.load(open(pkl_path, 'rb'))
             log.info('\tLoaded existing task %s', name)
         else:
             log.info('\tCreating task %s from scratch', name)
-            if name == 'nli-prob':
-                task = NAME2INFO[name][0](task_src_path, max_seq_len, name, probe_path)
-            else:
-                task = NAME2INFO[name][0](task_src_path, max_seq_len, name)
-            if not os.path.isdir(task_scratch_path):
-                utils.maybe_make_dir(task_scratch_path)
+            task_cls = task_info[0]
+            kw = task_info[2] if len(task_info) > 2 else {}
+            if name == 'nli-prob':  # this task takes additional kw
+                # TODO: remove special case, replace with something general
+                # to pass custom loader args to task.
+                kw['probe_path'] = nli_prob_probe_path
+            task = task_cls(task_src_path, max_seq_len, name=name, **kw)
+            utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
-        tasks.append(task)
 
-    for task in tasks:  # hacky
-        if isinstance(task, LanguageModelingTask):  # should be true to seq task?
-            task.n_tr_examples = len(task.train_data_text)
-            task.n_val_examples = len(task.val_data_text)
-            task.n_te_examples = len(task.test_data_text)
-        else:
-            task.n_tr_examples = len(task.train_data_text[0])
-            task.n_val_examples = len(task.val_data_text[0])
-            task.n_te_examples = len(task.test_data_text[0])
+        # Count examples, store in example_counts.
+        if not hasattr(task, 'example_counts'):
+            task.count_examples()
+        log.info("\tTask '%s': %s", task.name,
+                 " ".join(("%s=%d" % kv for kv in
+                           task.example_counts.items())))
+        tasks.append(task)
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names

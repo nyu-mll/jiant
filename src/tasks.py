@@ -22,11 +22,33 @@ from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data.fields import TextField, LabelField, SpanField, ListField
 from .allennlp_mods.numeric_field import NumericField
 
 from . import serialize
+from . import utils
 from .utils import load_tsv, process_sentence, truncate
+
+REGISTRY = {}  # Do not edit manually!
+def register_task(name, rel_path, kw=None):
+    '''Decorator to register a task.
+
+    Use this instead of adding to NAME2INFO in preprocess.py
+
+    If kw is not None, this will be passed as additional args when the Task is
+    constructed in preprocess.py.
+
+    Usage:
+    @register_task('mytask', 'my-task/data', **extra_kw)
+    class MyTask(SingleClassificationTask):
+        ...
+    '''
+    def _wrap(cls):
+        entry = (cls, rel_path, kw) if kw else (cls, rel_path)
+        REGISTRY[name] = entry
+        return cls
+    return _wrap
+
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -97,12 +119,35 @@ class Task():
         ''' Yield sentences, used to compute vocabulary. '''
         yield from self.sentences
 
+    def count_examples(self, splits=['train', 'val', 'test']):
+        ''' Count examples in the dataset. '''
+        self.example_counts = {}
+        for split in splits:
+            st = self.get_split_text(split)
+            count = self.get_num_examples(st)
+            self.example_counts[split] = count
+
+    @property
+    def n_train_examples(self):
+        return self.example_counts['train']
+
+    @property
+    def n_val_examples(self):
+        return self.example_counts['val']
+
     def get_split_text(self, split: str):
         ''' Get split text, typically as list of columns.
 
         Split should be one of 'train', 'val', or 'test'.
         '''
         return getattr(self, '%s_data_text' % split)
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text[0])
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
@@ -264,6 +309,11 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text. '''
+        # Special case for LM: split_text is a single list.
+        return len(split_text)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
