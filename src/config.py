@@ -68,7 +68,7 @@ class Params(object):
         return getattr(self, k, default)
 
     def keys(self):
-        return list(self._known_keys)
+        return sorted(set(self._known_keys))
 
     def as_dict(self):
         """Recursively convert to a plain dict."""
