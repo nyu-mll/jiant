@@ -269,7 +269,7 @@ def build_tasks(args):
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
-        get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
+        get_tasks(_parse_task_list_arg(args.train_tasks), _parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
@@ -370,14 +370,10 @@ def _parse_task_list_arg(task_list):
     else:
         return task_list.split(',')
 
-
-def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
+def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
     ''' Load tasks '''
-    train_task_names = _parse_task_list_arg(train_tasks)
-    eval_task_names = _parse_task_list_arg(eval_tasks)
     task_names = list(set(train_task_names + eval_task_names))
-
     assert path is not None
     scratch_path = (scratch_path or path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)

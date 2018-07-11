@@ -48,7 +48,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
-from .preprocess import _parse_task_list_arg
+from .preprocess import _parse_task_list_arg, get_tasks
 from .seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -120,7 +120,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    for task in get_task_whitelist(args):
+    train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
+    tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir)
+    for task in tasks_to_build:
         build_module(task, model, d_sent, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
@@ -144,8 +146,8 @@ def get_task_whitelist(args):
     else:
       eval_clf_names.append(override_clf)
   train_task_names = _parse_task_list_arg(args.train_tasks)
-  import ipdb; ipdb.set_trace()
-  return train_task_names + eval_clf_names
+  #import ipdb; ipdb.set_trace()
+  return train_task_names, eval_clf_names
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
