@@ -40,7 +40,7 @@ from .tasks import SingleClassificationTask, PairClassificationTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RedditTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    POSTaggingTask, CCGTaggingTask
+    POSTaggingTask, CCGTaggingTask, Reddit_MTTask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -75,6 +75,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
 	         'pos': (POSTaggingTask, 'POS/'),
 	         'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),

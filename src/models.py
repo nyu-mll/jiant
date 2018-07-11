@@ -4,7 +4,6 @@ import sys
 import math
 import copy
 import logging as log
-# import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -32,7 +31,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask
+    GroundedTask, MTTask, RedditTask, Reddit_MTTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -230,7 +229,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
         elif isinstance(task, TaggingTask):
             hid2tag = build_tagger(task, d_sent, task.num_tags)
             setattr(model, '%s_mdl' % task.name, hid2tag)
-        elif isinstance(task, MTTask):
+        elif isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = Seq2SeqDecoder.from_params(vocab,
                                                  Params({'input_dim': d_sent,
                                                          'target_embedding_dim': 300,
@@ -262,8 +261,6 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
             pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
             setattr(model, '%s_mdl' % task.name, pooler)
             setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
-
-            #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
         else:
             raise ValueError("Module not found for %s" % task.name)
     return
@@ -407,7 +404,7 @@ class MultiTaskModel(nn.Module):
             out = self._vae_forward(batch, task)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task)
-        elif isinstance(task, SequenceGenerationTask):
+        elif isinstance(task, (SequenceGenerationTask, Reddit_MTTask)):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
             out = self._grounded_classification_forward(batch, task, predict)
@@ -509,28 +506,11 @@ class MultiTaskModel(nn.Module):
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
-        #import ipdb as pdb; pdb.set_trace()
         if 1:
             sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
             sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
             cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1)) 
             labels = torch.eye(len(cos_simi))
-
-            ## The following commented code can be used when we want to use only some pairs instead of all possible pairs
-            #scale = 1/(len(cos_simi) - 1)
-            #weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
-            #weights = weights.view(-1).cuda()            
-            #import ipdb as pdb; pdb.set_trace()
-            
-            ## taking all the pairs positive and negative
-            #cos_simi = cos_simi.view(-1)
-            #labels = labels.view(-1).cuda()
-            #pred = F.sigmoid(cos_simi).round()
-            
-            ## taking only positive pairs            
-            #cos_simi = torch.diagonal(cos_simi)
-            #labels = torch.ones(cos_simi.shape).cuda()
-            #import ipdb as pdb; pdb.set_trace()
            
             # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
             cos_simi_pos = torch.diag(cos_simi)
@@ -549,7 +529,6 @@ class MultiTaskModel(nn.Module):
             batch_acc = total_correct.item()/len(labels)
             out["n_exs"] = len(labels)
             task.scorer1(batch_acc)
-            #import ipdb as pdb; pdb.set_trace()
         return out
 
 
@@ -578,7 +557,7 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'])
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, MTTask):
+        if isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out = decoder.forward(sent, sent_mask, batch['targs'])
             task.scorer1(math.exp(out['loss'].item()))
