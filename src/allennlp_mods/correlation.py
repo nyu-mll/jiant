@@ -36,7 +36,7 @@ class Correlation(Metric):
         """ Accumulate statistics for a set of predictions and labels.
 
         Args:
-            predictions: Tensor or np.array of shape
+            predictions: Tensor or np.array
             labels: Tensor or np.array of same shape as predictions
         """
         # Convert from Tensor if necessary
