@@ -504,7 +504,7 @@ class SamplingMultiTaskTrainer():
                 for i, task in enumerate(tasks):
                     elmo_params = self._model.get_elmo_mixing_weights(mix_id=i)
                     if elmo_params:
-                        log.info("ELMo mixing weights {}:".format(i))
+                        log.info("ELMo mixing weights {} ({}):".format(i, task.name))
                         for layer, param in elmo_params.items():
                             log.info("\t%s: %.6f", layer, param)
 
