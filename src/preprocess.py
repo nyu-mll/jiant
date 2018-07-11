@@ -377,6 +377,7 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
     train_task_names = _parse_task_list_arg(train_tasks)
     eval_task_names = _parse_task_list_arg(eval_tasks)
     task_names = sorted(set(train_task_names + eval_task_names))
+
     assert path is not None
     scratch_path = (scratch_path or path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)
