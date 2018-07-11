@@ -51,7 +51,7 @@ class Bandit():
         # optimal_index = np.argmax(self.Q)
         # optimal action: random tie breaking for equal val
         optimal_index = np.random.choice(np.where(self.Q == self.Q.max())[0])
-        action_prob = [self.epsilon/(k-1)] * self.k
+        action_prob = [self.epsilon/(self.k-1)] * self.k
         action_prob [optimal_index] = 1-self.epsilon
         self.action = random.choices(self.indices,action_prob,k=1)[0]
 
