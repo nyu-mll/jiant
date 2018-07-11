@@ -1296,10 +1296,6 @@ class RecastNLITask(PairClassificationTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        self.val_metric = "%s_mcc" % self.name
-        self.val_metric_decreases = False
-        self.scorer1 = Correlation("matthews")
-        self.scorer2 = CategoricalAccuracy()
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
@@ -1313,11 +1309,6 @@ class RecastNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading recast probing data.")
-
-    def get_metrics(self, reset=False):
-        return {'mcc': self.scorer1.get_metric(reset),
-                'accuracy': self.scorer2.get_metric(reset)}
-
 
 class RecastPunTask(RecastNLITask):
 
