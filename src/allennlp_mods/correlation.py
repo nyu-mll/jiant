@@ -36,8 +36,8 @@ class Correlation(Metric):
         """ Accumulate statistics for a set of predictions and labels.
 
         Args:
-            predictions: binary {0,1} Tensor or np.array of shape [n_preds]
-            labels: binary {0,1} Tensor or np.array of same shape as predictions
+            predictions: Tensor or np.array of shape
+            labels: Tensor or np.array of same shape as predictions
         """
         # Convert from Tensor if necessary
         if isinstance(predictions, torch.Tensor):
