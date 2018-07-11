@@ -40,11 +40,11 @@ from tasks import SingleClassificationTask, PairClassificationTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RedditTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    POSTaggingTask, CCGTaggingTask
+    POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli']
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostics']
 
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -58,6 +58,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
              'mnli-telephone': (MultiNLITelephoneTask, 'MNLI/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
+             'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),

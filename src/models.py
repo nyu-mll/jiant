@@ -25,14 +25,6 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from utils import get_batch_utilization
-
-from tasks import STSBTask, CoLATask, SSTTask, \
-    PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask
 
 from tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -40,7 +32,9 @@ from tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
+    MultiNLIDiagnosticTask
+
 from modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -427,6 +421,8 @@ class MultiTaskModel(nn.Module):
             self.utilization(get_batch_utilization(batch['input1']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
+        elif isinstance(task, MultiNLIDiagnosticTask):
+            out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
             out = self._pair_sentence_forward(batch, task, predict)
@@ -486,6 +482,24 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
+    def _pair_sentence_MNLI_diagnostic_forward(self, batch, task, predict):
+        out = {}
+
+        # embed the sentence
+        sent1, mask1 = self.sent_encoder(batch['input1'])
+        sent2, mask2 = self.sent_encoder(batch['input2'])
+        classifier = self._get_classifier(task)
+        logits = classifier(sent1, sent2, mask1, mask2)
+        out['logits'] = logits
+        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+
+        labels = batch['labels'].squeeze(-1)
+        out['loss'] = F.cross_entropy(logits, labels)
+        task.update_diagnostic_metrics(logits, labels, batch)
+
+
+        return out
+
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
@@ -494,6 +508,8 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'])
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
+        sent1, sent2, idxs = batch['input1str'], batch['input2str'], batch['idx']
+        out['indices'] = [(sent1[i], sent2[i], idxs[i]) for i in range(len(sent1))]
         out['logits'] = logits
         out['n_exs'] = get_batch_size_from_field(batch['input1'])
 

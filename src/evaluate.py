@@ -17,23 +17,26 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     for task in tasks:
         n_examples = 0
         task_preds, task_idxs = [], []
+        task_idx_map = []
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         for batch in generator:
             if 'idx' in batch:  # for sorting examples
                 task_idxs += batch['idx'].data.tolist()
-                batch.pop('idx', None)
+                #batch.pop('idx', None)
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
 
             # get predictions
             if 'preds' in out:
                 preds = out['preds']
+                indices = out['indices']
                 if isinstance(preds, torch.Tensor):
                     preds = preds.data.tolist()
                 assert isinstance(preds, list), "Convert predictions to list!"
                 task_preds += preds
+                task_idx_map += indices
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -49,7 +52,9 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
             idxs_and_preds.sort(key=lambda x: x[0])
             task_preds = [p for _, p in idxs_and_preds]
-        all_preds[task.name] = task_preds
+
+        # all_preds[task.name] = task_preds
+        all_preds[task.name] = [task_preds, task_idx_map]
 
     all_metrics["macro_avg"] /= len(tasks)
     all_metrics["micro_avg"] /= n_overall_examples
@@ -66,44 +71,52 @@ def write_preds(all_preds, pred_dir):
             Assumes that predictions are sorted (if necessary).
             For tasks with sentence predictions, we assume they've been mapped back to strings.
     '''
-    def write_preds_to_file(preds, pred_file, pred_map=None, write_type=int):
+
+    def write_preds_to_file(preds, indices, pred_file, pred_map=None, write_type=int):
         ''' Write preds to pred_file '''
         with open(pred_file, 'w') as pred_fh:
             pred_fh.write("index\tprediction\n")
+            count = 0
             for idx, pred in enumerate(preds):
                 if pred_map is not None or write_type == str:
                     pred = pred_map[pred]
                     pred_fh.write("%d\t%s\n" % (idx, pred))
+                    print(indices[count])
+
                 elif write_type == float:
                     pred_fh.write("%d\t%.3f\n" % (idx, pred))
                 elif write_type == int:
                     pred_fh.write("%d\t%d\n" % (idx, pred))
+                count += 1
 
     for task, preds in all_preds.items():
-        if not preds: # catch empty lists
+        if not preds:  # catch empty lists
             continue
 
-        if task == 'mnli': # 9796 + 9847 + 1104 = 20747
+        indices = preds[1];
+        preds = preds[0]
+
+        if task == 'mnli':  # 9796 + 9847 + 1104 = 20747
             assert len(preds) == 20747, "Missing predictions for MNLI!"
             pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
-            write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
+            write_preds_to_file(preds[:9796], indices, os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
+            write_preds_to_file(preds[9796:19643], indices, os.path.join(pred_dir, "%s-mm.tsv" % task),
                                 pred_map=pred_map)
-            write_preds_to_file(preds[19643:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+            write_preds_to_file(preds[19643:], indices, os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
         elif task in ['rte', 'qnli']:
             pred_map = {0: 'not_entailment', 1: 'entailment'}
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
+            write_preds_to_file(preds, indices, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
         elif task in ['sts-b']:
             preds = [min(max(0., pred * 5.), 5.) for pred in preds]
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=float)
+            write_preds_to_file(preds, indices, os.path.join(pred_dir, "%s.tsv" % task), write_type=float)
         elif task in ['wmt']:
             # convert each prediction to a single string if we find a list of tokens
             if isinstance(preds[0], list):
                 assert isinstance(preds[0][0], str)
                 preds = [' '.join(pred) for pred in preds]
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=str)
+            write_preds_to_file(preds, indices, os.path.join(pred_dir, "%s.tsv" % task), write_type=str)
         else:
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task))
+            write_preds_to_file(preds, indices, os.path.join(pred_dir, "%s.tsv" % task))
     log.info("Wrote predictions to %s", pred_dir)
     return
 

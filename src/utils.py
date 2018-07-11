@@ -97,7 +97,7 @@ def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
 
-def load_diagnosti_tsv(
+def load_diagnostic_tsv(
         data_file,
         max_seq_len,
         s1_idx=0,
@@ -128,6 +128,8 @@ def load_diagnosti_tsv(
         splitted_tags = tags.split(';')
         indexes = []
         for t in splitted_tags:
+            if t == '':
+                continue
             if t in tag_to_ix_dict:
                 indexes.append(tag_to_ix_dict[t])
             else:
@@ -140,12 +142,13 @@ def load_diagnosti_tsv(
 
 
 
+
     with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
             try:
-                row = row.strip().split(delimiter)
+                row = row.rstrip().split(delimiter)
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if targ_map is not None:
                         targ = targ_map[row[targ_idx]]
@@ -173,18 +176,34 @@ def load_diagnosti_tsv(
                 print(e, " file: %s, row: %d" % (data_file, row_idx))
                 continue
 
-        return {'sents1': sent1s,
-                'sents2': sent2s,
-                'targs': targs,
-                'lex_sem': lex_sem,
-                'pr_ar_str': pr_ar_str,
-                'logic': logic,
-                'knowledge': knowledge,
-                'lex_sem_to_ix_dic': lex_sem_to_ix_dic,
-                'pr_ar_str_to_ix_dic': pr_ar_str_to_ix_dic,
-                'logic_to_ix_dic': logic_to_ix_dic,
-                'knowledge_to_ix_dic': knowledge_to_ix_dic,
-                'ix_to_lex_sem_dic
+
+    ix_to_lex_sem_dic[0] = "missing"
+    ix_to_pr_ar_str_dic[0] = "missing"
+    ix_to_logic_dic[0] = "missing"
+    ix_to_knowledge_dic[0] = "missing"
+
+    lex_sem_to_ix_dic[""] = 0
+    pr_ar_str_to_ix_dic[""] = 0
+    logic_to_ix_dic[""] = 0
+    knowledge_to_ix_dic[""] = 0
+
+    return {'sents1': sent1s,
+            'sents2': sent2s,
+            'targs': targs,
+            'lex_sem': lex_sem,
+            'pr_ar_str': pr_ar_str,
+            'logic': logic,
+            'knowledge': knowledge,
+            'lex_sem_to_ix_dic': lex_sem_to_ix_dic,
+            'pr_ar_str_to_ix_dic': pr_ar_str_to_ix_dic,
+            'logic_to_ix_dic': logic_to_ix_dic,
+            'knowledge_to_ix_dic': knowledge_to_ix_dic,
+            'ix_to_lex_sem_dic': ix_to_lex_sem_dic,
+            'ix_to_pr_ar_str_dic': ix_to_pr_ar_str_dic,
+            'ix_to_logic_dic': ix_to_logic_dic,
+            'ix_to_knowledge_dic': ix_to_knowledge_dic
+            }
+
 
 
 def load_tsv(
