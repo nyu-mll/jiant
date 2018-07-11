@@ -489,9 +489,8 @@ class MultiTaskModel(nn.Module):
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
-                labels_np = labels.data.cpu().numpy()
                 _, preds = logits.max(dim=1)
-                task.scorer1(labels_np, preds.data.cpu().numpy())
+                task.scorer1(labels, preds)
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
