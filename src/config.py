@@ -14,7 +14,7 @@ import json
 
 from . import hocon_writer
 
-from typing import Union, Iterable
+from typing import Type, Union, Sequence, Iterable
 
 class Params(object):
     """Params handler object.
@@ -43,6 +43,9 @@ class Params(object):
     def __getitem__(self, k):
         return getattr(self, k)
 
+    def __contains__(self, k):
+        return k in self._known_keys
+
     def __setitem__(self, k, v):
         assert isinstance(k, str)
         if isinstance(self.get(k, None), types.FunctionType):
@@ -61,7 +64,7 @@ class Params(object):
         for k, v in kw.items():
             self[k] = v
 
-    def get(self, k, default):
+    def get(self, k, default=None):
         return getattr(self, k, default)
 
     def keys(self):
@@ -77,6 +80,26 @@ class Params(object):
 
     def __str__(self):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
+
+
+def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
+                  attr_name: str, default=None):
+    """ Get a task-specific param.
+
+    Look in args.task_name.attr_name, then args.task_name_attr_name,
+    then fall back to args.attr_name.
+    """
+    if isinstance(task_names, str):
+        task_names = [task_names]
+    for task_name in task_names:
+        if task_name in args and (attr_name in args[task_name]):
+            return args[task_name][attr_name]
+        compound_key = "%s_%s" % (task_name, attr_name)
+        if compound_key in args:
+            return args[compound_key]
+    #  return args[attr_name]
+    return args.get(attr_name, default)
+
 
 # Argument handling is as follows:
 # 1) read config file into pyhocon.ConfigTree

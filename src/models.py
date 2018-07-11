@@ -3,8 +3,8 @@ import os
 import sys
 import math
 import copy
+import json
 import logging as log
-# import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -26,6 +26,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .utils import get_batch_utilization, get_elmo_mixing_weights
+from . import config
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -120,8 +121,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     for task in tasks:
         build_module(task, model, d_sent, vocab, embedder, args)
-    if args.cuda >= 0:
-        model = model.cuda()
+    for task in tasks:
+        maybe_override_task_classifier(args, model, task, tasks)
+    model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
     trainable_param_count = 0
@@ -216,6 +218,8 @@ def build_embeddings(args, vocab, pretrained_embs=None):
 def build_module(task, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
     task_params = get_task_specific_params(args, task.name)
+    log.info("\tTask '%s' params: %s", task.name,
+             json.dumps(task_params.as_dict(), indent=2))
     # Store task-specific params in case we want to access later
     setattr(model, '%s_task_params' % task.name, task_params)
 
@@ -234,14 +238,14 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
     elif isinstance(task, MTTask):
-        decoder = Seq2SeqDecoder.from_params(vocab,
-                                             Params({'input_dim': d_sent,
-                                                     'target_embedding_dim': 300,
-                                                     'max_decoding_steps': 200,
-                                                     'target_namespace': 'tokens',
-                                                     'attention': 'bilinear',
-                                                     'dropout': args.dropout,
-                                                     'scheduled_sampling_ratio': 0.0}))
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': 200,
+                                 'target_namespace': 'tokens',
+                                 'attention': 'bilinear',
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -249,14 +253,14 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
 
     elif isinstance(task, VAETask):
-        decoder = Seq2SeqDecoder.from_params(vocab,
-                                             Params({'input_dim': d_sent,
-                                                     'target_embedding_dim': 300,
-                                                     'max_decoding_steps': 200,
-                                                     'target_namespace': 'tokens',
-                                                     'attention': 'bilinear',
-                                                     'dropout': args.dropout,
-                                                     'scheduled_sampling_ratio': 0.0}))
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': 200,
+                                 'target_namespace': 'tokens',
+                                 'attention': 'bilinear',
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
 
     elif isinstance(task, GroundedTask):
@@ -271,26 +275,71 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         raise ValueError("Module not found for %s" % task.name)
 
 
-def get_task_specific_params(args, task):
+def maybe_override_task_classifier(args, model, task, all_tasks):
+    """ If a task specifies to use another task's classifier, set that.
+
+    Overrides the model's <task>_mdl reference to point to another task's
+    classifier (the source task). If the source task is not found, will
+    construct the *source* task's <src_task>_mdl attribute as an alias of the
+    current task - this will cause the model to load the correct variables from
+    the checkpoints if available.
+    """
+    src_task = config.get_task_attr(args, task.name, "use_classifier")
+    if src_task is None:
+        return
+    if src_task == task.name:
+        log.warn("Task '%s': requested shared classifier from self. Did you"
+                 " mean something else?", task.name)
+        return
+    tasks_by_name = {task.name:task for task in all_tasks}
+    src_cls_key = "%s_mdl" % src_task    # name of source classifier
+    this_cls_key = "%s_mdl" % task.name  # name of this classifier
+
+    # Case where source task is *not* found.
+    if (src_task not in tasks_by_name) or (not hasattr(model, src_cls_key)):
+        log.warn("Task '%s': requested to share classifier from "
+                 "non-existent task '%s'. Back-copying classifier to alias"
+                 " checkpoints.", task.name, src_task)
+        setattr(model, src_cls_key, getattr(model, this_cls_key))
+        return
+    # Case where source task *is* found.
+    src_task_mdl = getattr(model, src_cls_key)
+    # Remove any task model we might have made for *this* task.
+    old_task_mdl = getattr(model, this_cls_key)
+    del old_task_mdl
+    # Override this task model with the other model's class.
+    setattr(model, this_cls_key, src_task_mdl)
+    log.info("USING %s module for task %s", src_task, task.name)
+
+
+def get_task_specific_params(args, task_name):
+    ''' Search args for parameters specific to task.
+
+    Args:
+        args: main-program args, a config.Params object
+        task_name: (string)
+
+    Returns:
+        AllenNLP Params object of task-specific params.
+    '''
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_name,
+                                                            attr_name)
     params = {}
-
-    def get_task_attr(attr_name):
-        return getattr(args, "%s_%s" % (task, attr_name)) if \
-            hasattr(args, "%s_%s" % (task, attr_name)) else \
-            getattr(args, attr_name)
-
-    params['cls_type'] = get_task_attr("classifier")
-    params['d_hid'] = get_task_attr("classifier_hid_dim")
-    params['d_proj'] = get_task_attr("d_proj")
+    params['cls_type'] = _get_task_attr("classifier")
+    params['d_hid'] = _get_task_attr("classifier_hid_dim")
+    params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
     if args.shared_pair_attn:
         params['attn'] = args.pair_attn
         params['d_hid_attn'] = args.d_hid_attn
         params['dropout'] = args.classifier_dropout
     else:
-        params['attn'] = get_task_attr("pair_attn")
-        params['d_hid_attn'] = get_task_attr("d_hid_attn")
-        params['dropout'] = get_task_attr("classifier_dropout")
+        params['attn'] = _get_task_attr("pair_attn")
+        params['d_hid_attn'] = _get_task_attr("d_hid_attn")
+        params['dropout'] = _get_task_attr("classifier_dropout")
+
+    # TODO: rename this to be more descriptive than 'name'.
+    params['name'] = args.get("%s_use_classifier" % task_name, task_name)
 
     return Params(params)
 
@@ -356,7 +405,7 @@ def build_lm(task, d_inp, args):
     return hid2voc
 
 def build_tagger(task, d_inp, out_dim):
-    ''' Build LM components (just map hidden states to vocab logits) '''
+    ''' Build tagger components. '''
     hid2tag = nn.Linear(d_inp, out_dim)
     return hid2tag
 
@@ -406,9 +455,9 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, VAETask):
-            out = self._vae_forward(batch, task)
+            out = self._vae_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
-            out = self._tagger_forward(batch, task)
+            out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -419,13 +468,18 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
+    def _get_classifier(self, task):
+        key = task.name
+        module = getattr(self, "%s_mdl" % key)
+        return module
+
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
         # pass to a task specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -454,13 +508,14 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
+
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -499,51 +554,13 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
-
-    def BCE_implementation(sent1_rep, sent2_rep):
-        sent1_rep = F.normalize(sent1_rep, 2, 1)
-        sent2_rep = F.normalize(sent2_rep, 2, 1)
-
-        # all the below implementation is binary cross entropy with weighted neg pairs
-        # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
-
-        # cosine similarity between every pair of samples
-        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
-        cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
-        diag_elem = torch.diagonal(cos_simi)
-        no_pos_pairs = len(diag_elem)
-        no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
-
-        #positive pairs loss: with the main diagonal elements
-        pos_simi = torch.log2(diag_elem)
-        pos_loss = torch.neg(torch.sum(pos_simi))
-
-        # negative pairs loss: with the off diagonal elements
-        off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
-        cos_simi_log = torch.log2(off_diag_elem)
-        neg_loss = torch.neg(torch.sum(cos_simi_log))
-        # scaling
-        neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
-        total_loss = pos_loss + neg_loss_scaled
-        #import ipdb as pdb; pdb.set_trace()
-        # calculating accuracy
-        pred = cos_simi.round()
-        no_pos_pairs_correct = torch.trace(pred)
-        # getting 1-pred and setting matrix with main diagonal elements to zero
-        offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
-        no_neg_pairs_correct = torch.sum(offdiag_pred)
-
-        total_correct = no_pos_pairs_correct + no_neg_pairs_correct
-        batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
-        return total_loss, batch_acc
-
     def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
         out = {}
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response
+        sent_pooler = self._get_classifier(self, task) # pooler for both Input and Response
         sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
@@ -586,7 +603,7 @@ class MultiTaskModel(nn.Module):
         return out
 
 
-    def _vae_forward(self, batch, task):
+    def _vae_forward(self, batch, task, predict):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
@@ -625,7 +642,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch, task):
+    def _tagger_forward(self, batch, task, predict):
         ''' For language modeling? '''
         out = {}
         b_size, seq_len, _ = batch['inputs']['elmo'].size()
@@ -637,7 +654,7 @@ class MultiTaskModel(nn.Module):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
-            hid2tag = getattr(self, "%s_mdl" % task.name)
+            hid2tag = self._get_classifier(task)
             logits = hid2tag(sent)
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
