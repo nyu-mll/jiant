@@ -445,7 +445,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _get_classifier(self, task):
-        key = task.use_classifier if hasattr(task, 'use_classifier') else task.name
+        key = task.name
         module = getattr(self, "%s_mdl" % key)
         return module
 
@@ -667,7 +667,7 @@ class MultiTaskModel(nn.Module):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
-            hid2tag = self._get_classifier(self, task)
+            hid2tag = self._get_classifier(task)
             logits = hid2tag(sent)
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits

@@ -237,7 +237,7 @@ def main(cl_arguments):
         log.info("Evaluating...")
         val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
         if args.write_preds:
-            if isinstance(tasks[0], NLITypeProbingTask):
+            if len(tasks) == 1 and isinstance(tasks[0], NLITypeProbingTask):
                 _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
             else:
                 _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
