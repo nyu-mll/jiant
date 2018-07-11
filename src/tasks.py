@@ -761,22 +761,22 @@ class MultiNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_matched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        val_matched_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
                                        s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
         val_data = val_matched_data
 
-        te_matched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_mismatched_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
                                       s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
-        te_diagnostic_data = load_tsv(os.path.join(path, 'dummy.tsv'), max_seq_len,
+        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'), max_seq_len,
                                       s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
@@ -1156,7 +1156,7 @@ class GroundedTask(Task):
             metric = 0
 
         return metric
-        
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
@@ -1191,7 +1191,7 @@ class GroundedTask(Task):
 
         # changed for temp
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        
+
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1231,7 +1231,7 @@ class GroundedTask(Task):
 
         ''' Shapeworld data '''
 
-        
+
         f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
         for line in f:
             items = line.strip().split('\t')
@@ -1253,13 +1253,13 @@ class GroundedTask(Task):
             test[1].append(int(items[1]))
             test[2].append(int(items[2]))
 
-            
+
         r = 5
         train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
         train_ids = [item for sublist in train_ids for item in sublist]
         test_ids = [item for sublist in test_ids for item in sublist]
         val_ids = [item for sublist in val_ids for item in sublist]
-        
+
         for img_id in train_ids:
             rand_id = img_id
             while (rand_id == img_id):
@@ -1275,7 +1275,7 @@ class GroundedTask(Task):
                 rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
             caption_id = np.random.randint(5, size=(1,1))[0][0]
             captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]            
+            caption = captions[caption_ids[caption_id]]
             val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
 
         for img_id in test_ids:
@@ -1286,13 +1286,13 @@ class GroundedTask(Task):
             captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
             test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-        
 
-        
+
+
 
 
         #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
-        
+
         log.info("All train samples: " + str(len(train[0])))
 
         self.tr_data = train
@@ -1486,12 +1486,3 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
-
-
-
-
-
-
-
-
-
