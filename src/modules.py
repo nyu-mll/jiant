@@ -4,7 +4,6 @@ import sys
 import json
 import logging as log
 import h5py
-# import ipdb as pdb
 
 import numpy
 import torch
@@ -29,6 +28,7 @@ from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
 from allennlp.nn.util import remove_sentence_boundaries, add_sentence_boundary_token_ids, get_device_of
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper, ELMoTokenCharactersIndexer
 from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
@@ -62,11 +62,11 @@ class SentenceEncoder(Model):
             d_emb = text_field_embedder.get_output_dim()
             self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
         self._phrase_layer = phrase_layer
-        d_inp_phrase = phrase_layer.get_input_dim()
+        #d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
+        self.output_dim = phrase_layer.get_output_dim() #+ (skip_embs * d_inp_phrase)
 
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
@@ -96,6 +96,8 @@ class SentenceEncoder(Model):
         sent_lstm_mask = sent_mask if self._mask_lstms else None
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if isinstance(self._phrase_layer, ElmoLstm):
+            sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
             sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
@@ -790,15 +792,15 @@ class CNNEncoder(Model):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
         self.model = self._load_model(model_name)
-        
-        
+
+
         # New loader
         '''
         self.feat_dict = self._load_features_from_json(path, 'train')
         self.feat_dict.update(self._load_features_from_json(path, 'val'))
         self.feat_dict.update(self._load_features_from_json(path, 'test'))
         '''
-        
+
         '''
         # Old loader
         self.feat_dict = self._load_features(path, 'train')
@@ -827,9 +829,9 @@ class CNNEncoder(Model):
             f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '.json', 'r')
             for line in f:
                 feat_dict = json.loads(line)
-                
+
         return feat_dict
-    
+
     def _load_features(self, path, dataset):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])

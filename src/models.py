@@ -4,7 +4,7 @@ import sys
 import math
 import copy
 import logging as log
-# import ipdb as pdb
+import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -17,6 +17,7 @@ from allennlp.common import Params
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, \
     ElmoTokenEmbedder
 from allennlp.modules.similarity_functions import DotProductSimilarity
@@ -86,9 +87,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
             elif args.sent_enc == 'transformer':
                 fwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
                 bwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-            sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
-                                       fwd, bwd, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, cove_layer=cove_emb)
+            #sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
+            #                           fwd, bwd, dropout=args.dropout,
+            #                           skip_embs=args.skip_embs, cove_layer=cove_emb)
+            tmp = ElmoLstm(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
+            sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                           tmp, skip_embs=args.skip_embs,
+                                           dropout=args.dropout, cove_layer=cove_emb)
         else:  # not bidirectional
             if args.sent_enc == 'rnn':
                 fwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
@@ -228,7 +233,7 @@ def build_module(task, model, d_sent, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
-        hid2voc = build_lm(task, d_sent, args)
+        hid2voc = build_lm(task, d_sent / 2, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
@@ -659,10 +664,16 @@ class MultiTaskModel(nn.Module):
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            split = int(self.sent_encoder.output_dim / 2)
+            fwd, bwd = sent[:, :, :split], sent[:, :, split:]
             hid2voc = getattr(self, "%s_hid2voc" % task.name)
-            logits = hid2voc(sent).view(b_size * seq_len, -1)
+            logits_fwd = hid2voc(fwd).view(b_size * seq_len, -1)
+            logits_bwd = hid2voc(bwd).view(b_size * seq_len, -1)
+            logits = torch.cat([logits_fwd, logits_bwd], dim=0)
             out['logits'] = logits
-            targs = batch['targs']['words'].view(-1)
+            trg_fwd = batch['targs']['words'].view(-1)
+            trg_bwd = batch['targs_b']['words'].view(-1)
+            targs = torch.cat([trg_fwd, trg_bwd], dim=0)
         else:
             sent, mask = sent_encoder(batch['input'], batch['input_bwd'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -676,6 +687,7 @@ class MultiTaskModel(nn.Module):
             trg_fwd = batch['targs']['words'].view(-1)
             trg_bwd = batch['targs_b']['words'].view(-1)
             targs = torch.cat([trg_fwd, trg_bwd])
+        assert logits.size(0) == targs.size(0), "N predictions and n targets differ!"
 
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)

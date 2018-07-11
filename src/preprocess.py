@@ -327,7 +327,7 @@ def build_tasks(args):
                 # phase.
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0) 
+                    task.name, "train", preproc_dir, fraction=1.0)
             eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
@@ -481,10 +481,4 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-
-
-
-
-
 
