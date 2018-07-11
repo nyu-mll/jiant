@@ -41,7 +41,8 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
+    MultiNLIDiagnosticTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
