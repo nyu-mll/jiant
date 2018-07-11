@@ -6,7 +6,7 @@ This repo contains the code for jiant sentence representation learning model for
 If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
 
 ```sh
-python src/main.py --config_file config/demo.conf
+python main.py --config_file config/demo.conf
 ```
 
 You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
@@ -37,7 +37,7 @@ For other pretraining task data, contact the person in charge.
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python src/main.py --config_file config/demo.conf \
+python main.py --config_file config/demo.conf \
   --overrides "exp_name = my_exp, run_name = foobar"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
@@ -58,7 +58,7 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 
 ## Model
 
-To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [src/main.py](src/main.py).
+To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
 
 
 ## Trainer
@@ -96,9 +96,9 @@ To add new tasks, you should:
 3. In ``src/tasks.py``, make sure that:
     - The correct task-specific preprocessing is being used for your task in ``Task.process_split()``. This should be a function that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(field_name, Field)`` pairs.
     - ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples at the bottom of ``src/preprocess.py``.
-    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/model.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
+    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/models.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
 
-4. In ``src/model.py``, make sure that:
+4. In ``src/models.py``, make sure that:
     - The correct task-specific module is being created for your task in ``build_module()``.
     - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the ``Instance`` objects you created in preprocessing.
     - Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.

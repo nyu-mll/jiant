@@ -3,8 +3,8 @@ import os
 import sys
 import math
 import copy
+import json
 import logging as log
-import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -25,22 +25,30 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
+from .utils import get_batch_utilization, get_elmo_mixing_weights
+from . import config
 
-from tasks import STSBTask, CoLATask, \
+from .tasks import STSBTask, CoLATask, SSTTask, \
+    PairClassificationTask, SingleClassificationTask, \
+    PairRegressionTask, RankingTask, \
+    SequenceGenerationTask, LanguageModelingTask, \
+    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
+    GroundedTask, MTTask, RedditTask
+
+from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
-    MultiNLIDiagnosticTask
-
-from modules import SentenceEncoder, BoWSentEncoder, \
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
-from seq2seq_decoder import Seq2SeqDecoder
+
+from .utils import assert_for_log, get_batch_utilization, get_batch_size
+from .seq2seq_decoder import Seq2SeqDecoder
 
 
 # Elmo stuff
@@ -51,10 +59,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-#  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-# ELMO_WEIGHTS_PATH =
-# "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
-# # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):
@@ -115,9 +119,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    build_modules(tasks, model, d_sent, vocab, embedder, args)
-    if args.cuda >= 0:
-        model = model.cuda()
+    for task in tasks:
+        build_module(task, model, d_sent, vocab, embedder, args)
+    for task in tasks:
+        maybe_override_task_classifier(args, model, task, tasks)
+    model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
     trainable_param_count = 0
@@ -209,110 +215,131 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     return d_emb, embedder, cove_emb
 
 
-def build_modules(tasks, model, d_sent, vocab, embedder, args):
-    ''' Build task-specific components for each task and add them to model '''
-    task_names = [task.name for task in tasks]
-    for task in tasks:
-        task_name = task.name
-        task_params = get_task_specific_params(args, task_name)
+def build_module(task, model, d_sent, vocab, embedder, args):
+    ''' Build task-specific components for a task and add them to model. '''
+    task_params = get_task_specific_params(args, task.name)
+    log.info("\tTask '%s' params: %s", task.name,
+             json.dumps(task_params.as_dict(), indent=2))
+    # Store task-specific params in case we want to access later
+    setattr(model, '%s_task_params' % task.name, task_params)
 
-        if isinstance(task, SingleClassificationTask):
-            module = build_single_sentence_module(task, d_sent, task_params)
-            setattr(model, '%s_mdl' % task_name, module)
-        elif isinstance(task, (PairClassificationTask, PairRegressionTask,
-                               PairOrdinalRegressionTask)):
-            module = build_pair_sentence_module(task, d_sent, model, vocab,
-                                                task_params)
-            setattr(model, '%s_mdl' % task_name, module)
-        elif isinstance(task, LanguageModelingTask):
-            hid2voc = build_lm(task, d_sent, args)
-            setattr(model, '%s_hid2voc' % task_name, hid2voc)
-        elif isinstance(task, TaggingTask):
-            hid2tag = build_tagger(task, d_sent, task.num_tags)
-            setattr(model, '%s_mdl' % task_name, hid2tag)
-        elif isinstance(task, MTTask):
-            decoder = Seq2SeqDecoder.from_params(vocab,
-                                                 Params({'input_dim': d_sent,
-                                                         'target_embedding_dim': 300,
-                                                         'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
-                                                         'attention': 'bilinear',
-                                                         'dropout': args.dropout,
-                                                         'scheduled_sampling_ratio': 0.0}))
-            setattr(model, '%s_decoder' % task_name, decoder)
-        elif isinstance(task, SequenceGenerationTask):
-            decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
-            setattr(model, '%s_decoder' % task_name, decoder)
-            setattr(model, '%s_hid2voc' % task_name, hid2voc)
+    if isinstance(task, SingleClassificationTask):
+        module = build_single_sentence_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
+                           PairOrdinalRegressionTask)):
+        module = build_pair_sentence_module(task, d_sent, model, vocab,
+                                            task_params)
+        setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, LanguageModelingTask):
+        hid2voc = build_lm(task, d_sent, args)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
+    elif isinstance(task, TaggingTask):
+        hid2tag = build_tagger(task, d_sent, task.num_tags)
+        setattr(model, '%s_mdl' % task.name, hid2tag)
+    elif isinstance(task, MTTask):
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': 200,
+                                 'target_namespace': 'tokens',
+                                 'attention': 'bilinear',
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
+        setattr(model, '%s_decoder' % task.name, decoder)
+    elif isinstance(task, SequenceGenerationTask):
+        decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
+        setattr(model, '%s_decoder' % task.name, decoder)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
 
-        elif isinstance(task, VAETask):
-            decoder = Seq2SeqDecoder.from_params(vocab,
-                                                 Params({'input_dim': d_sent,
-                                                         'target_embedding_dim': 300,
-                                                         'max_decoding_steps': 200,
-                                                         'target_namespace': 'tokens',
-                                                         'attention': 'bilinear',
-                                                         'dropout': args.dropout,
-                                                         'scheduled_sampling_ratio': 0.0}))
-            setattr(model, '%s_decoder' % task_name, decoder)
+    elif isinstance(task, VAETask):
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': 200,
+                                 'target_namespace': 'tokens',
+                                 'attention': 'bilinear',
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
+        setattr(model, '%s_decoder' % task.name, decoder)
 
-        elif isinstance(task, GroundedTask):
-            task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
-        elif isinstance(task, RankingTask):
-            pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
-            setattr(model, '%s_mdl' % task_name, pooler)
-            setattr(model, '%s_Response_mdl' % task_name, dnn_ResponseModel)
+    elif isinstance(task, GroundedTask):
+        task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
+    elif isinstance(task, RankingTask):
+        pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, pooler)
+        setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
 
-            #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
-        else:
-            raise ValueError("Module not found for %s" % task_name)
-
-    # check if we're using a different model's classifier
-    # and if so, if that task is in tasks continue
-    for task in tasks:
-        if hasattr(args, '%s_use_classifier' % task.name):
-            task_to_use = getattr(args, '%s_use_classifier' % task.name)
-            if task_to_use in task_names:
-                old_task_mdl = getattr(model, '%s_mdl' % task.name)
-                del old_task_mdl
-                setattr(model, '%s_mdl' % task.name, \
-                        getattr(model, '%s_mdl' % task_to_use))
-            else:
-                setattr(model, '%s_mdl' % task_to_use,
-                        getattr(model, '%s_mdl' % task.name))
-            log.info("USING %s module for task %s", task_to_use, task.name)
-        else:
-            task_name = task.name
+        #print("NEED TO ADD DNN to RESPONSE INPUT -- TO DO: IMPLEMENT QUICKLY")
+    else:
+        raise ValueError("Module not found for %s" % task.name)
 
 
-    return
+def maybe_override_task_classifier(args, model, task, all_tasks):
+    """ If a task specifies to use another task's classifier, set that.
+
+    Overrides the model's <task>_mdl reference to point to another task's
+    classifier (the source task). If the source task is not found, will
+    construct the *source* task's <src_task>_mdl attribute as an alias of the
+    current task - this will cause the model to load the correct variables from
+    the checkpoints if available.
+    """
+    src_task = config.get_task_attr(args, task.name, "use_classifier")
+    if src_task is None:
+        return
+    if src_task == task.name:
+        log.warn("Task '%s': requested shared classifier from self. Did you"
+                 " mean something else?", task.name)
+        return
+    tasks_by_name = {task.name:task for task in all_tasks}
+    src_cls_key = "%s_mdl" % src_task    # name of source classifier
+    this_cls_key = "%s_mdl" % task.name  # name of this classifier
+
+    # Case where source task is *not* found.
+    if (src_task not in tasks_by_name) or (not hasattr(model, src_cls_key)):
+        log.warn("Task '%s': requested to share classifier from "
+                 "non-existent task '%s'. Back-copying classifier to alias"
+                 " checkpoints.", task.name, src_task)
+        setattr(model, src_cls_key, getattr(model, this_cls_key))
+        return
+    # Case where source task *is* found.
+    src_task_mdl = getattr(model, src_cls_key)
+    # Remove any task model we might have made for *this* task.
+    old_task_mdl = getattr(model, this_cls_key)
+    del old_task_mdl
+    # Override this task model with the other model's class.
+    setattr(model, this_cls_key, src_task_mdl)
+    log.info("USING %s module for task %s", src_task, task.name)
 
 
-def get_task_specific_params(args, task):
-    ''' Search args for parameters specific to task '''
+def get_task_specific_params(args, task_name):
+    ''' Search args for parameters specific to task.
+
+    Args:
+        args: main-program args, a config.Params object
+        task_name: (string)
+
+    Returns:
+        AllenNLP Params object of task-specific params.
+    '''
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_name,
+                                                            attr_name)
     params = {}
-
-    def get_task_attr(attr_name):
-        return getattr(args, "%s_%s" % (task, attr_name)) if \
-            hasattr(args, "%s_%s" % (task, attr_name)) else \
-            getattr(args, attr_name)
-
-    params['cls_type'] = get_task_attr("classifier")
-    params['d_hid'] = get_task_attr("classifier_hid_dim")
-    params['d_proj'] = get_task_attr("d_proj")
+    params['cls_type'] = _get_task_attr("classifier")
+    params['d_hid'] = _get_task_attr("classifier_hid_dim")
+    params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
     if args.shared_pair_attn:
         params['attn'] = args.pair_attn
         params['d_hid_attn'] = args.d_hid_attn
         params['dropout'] = args.classifier_dropout
     else:
-        params['attn'] = get_task_attr("pair_attn")
-        params['d_hid_attn'] = get_task_attr("d_hid_attn")
-        params['dropout'] = get_task_attr("classifier_dropout")
-    if hasattr(args, '%s_use_classifier' % task):
-        params['name'] = getattr(args, '%s_use_classifier' % task)
-    else:
-        params['name'] = task
+        params['attn'] = _get_task_attr("pair_attn")
+        params['d_hid_attn'] = _get_task_attr("d_hid_attn")
+        params['dropout'] = _get_task_attr("classifier_dropout")
+
+    # TODO: rename this to be more descriptive than 'name'.
+    params['name'] = args.get("%s_use_classifier" % task_name, task_name)
 
     return Params(params)
 
@@ -378,7 +405,7 @@ def build_lm(task, d_inp, args):
     return hid2voc
 
 def build_tagger(task, d_inp, out_dim):
-    ''' Build LM components (just map hidden states to vocab logits) '''
+    ''' Build tagger components. '''
     hid2tag = nn.Linear(d_inp, out_dim)
     return hid2tag
 
@@ -405,6 +432,7 @@ class MultiTaskModel(nn.Module):
         self.combine_method = args.sent_combine_method
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
+        self.elmo = args.elmo and not args.elmo_chars_only
 
     def forward(self, task, batch, predict=False):
         '''
@@ -443,7 +471,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _get_classifier(self, task):
-        key = task.use_classifier if hasattr(task, 'use_classifier') else task.name
+        key = task.name
         module = getattr(self, "%s_mdl" % key)
         return module
 
@@ -452,11 +480,11 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        #pdb.set_trace()
         # pass to a task specific classifier
         classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
@@ -511,19 +539,20 @@ class MultiTaskModel(nn.Module):
         sent1, sent2, idxs = batch['input1str'], batch['input2str'], batch['idx']
         out['indices'] = [(sent1[i], sent2[i], idxs[i]) for i in range(len(sent1))]
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch:
-            labels = batch['labels'].squeeze(-1)
+            labels = batch['labels']
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
@@ -545,44 +574,6 @@ class MultiTaskModel(nn.Module):
             else:
                 _, out['preds'] = logits.max(dim=1)
         return out
-
-
-    def BCE_implementation(sent1_rep, sent2_rep):
-        sent1_rep = F.normalize(sent1_rep, 2, 1)
-        sent2_rep = F.normalize(sent2_rep, 2, 1)
-
-        # all the below implementation is binary cross entropy with weighted neg pairs
-        # formula = sum(-log2(pos_pair_score) - scale * log2(1-neg_pair_score))
-
-        # cosine similarity between every pair of samples
-        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
-        cos_simi = F.sigmoid(cos_simi)  # bringing cos simi to [0,1]
-        diag_elem = torch.diagonal(cos_simi)
-        no_pos_pairs = len(diag_elem)
-        no_neg_pairs = no_pos_pairs * (no_pos_pairs - 1)
-
-        #positive pairs loss: with the main diagonal elements
-        pos_simi = torch.log2(diag_elem)
-        pos_loss = torch.neg(torch.sum(pos_simi))
-
-        # negative pairs loss: with the off diagonal elements
-        off_diag_elem = 1 - cos_simi + torch.diag(diag_elem)
-        cos_simi_log = torch.log2(off_diag_elem)
-        neg_loss = torch.neg(torch.sum(cos_simi_log))
-        # scaling
-        neg_loss_scaled = neg_loss * (no_pos_pairs/no_neg_pairs)
-        total_loss = pos_loss + neg_loss_scaled
-        #import ipdb as pdb; pdb.set_trace()
-        # calculating accuracy
-        pred = cos_simi.round()
-        no_pos_pairs_correct = torch.trace(pred)
-        # getting 1-pred and setting matrix with main diagonal elements to zero
-        offdiag_pred = torch.tril(1-pred, diagonal=-1) + torch.triu(1-pred, diagonal=1)
-        no_neg_pairs_correct = torch.sum(offdiag_pred)
-
-        total_correct = no_pos_pairs_correct + no_neg_pairs_correct
-        batch_acc = total_correct.item()/(no_pos_pairs*no_pos_pairs)
-        return total_loss, batch_acc
 
     def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
@@ -637,7 +628,7 @@ class MultiTaskModel(nn.Module):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, VAETask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -656,11 +647,11 @@ class MultiTaskModel(nn.Module):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out = decoder.forward(sent, sent_mask, batch['targs'])
+            out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
             return out
 
@@ -679,11 +670,12 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
+        out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
-            hid2tag = self._get_classifier(self, task)
+            hid2tag = self._get_classifier(task)
             logits = hid2tag(sent)
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
@@ -702,7 +694,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = b_size #get_batch_size(batch['input'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -735,59 +727,58 @@ class MultiTaskModel(nn.Module):
 
     def _grounded_classification_forward(self, batch, task, predict):
         out = {}
-        d_1, d_2 = self.sent_encoder.output_dim, 2048
-
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
-        image_map = nn.Linear(d_1, d_2).cuda()
-        sent_transform = image_map(sent_emb)
-        ids = batch['ids'].cpu().squeeze(-1)
-        ids = list(ids.data.numpy())
+        batch_size = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = batch_size
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
         labels = batch['labels'].cpu().squeeze(-1)
         labels = [int(item) for item in labels.data.numpy()]
 
-        seq, true = [], []
-        for i in range(len(ids)):
-            img_id, label = ids[i], labels[i]
-            init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
-            seq.append(torch.tensor(init_emb, dtype=torch.float))
-            true.append(label)
-        img_emb = torch.stack(seq, dim=0)
+        cos = task.metric_fn
+        flags = Variable(torch.ones(batch_size))
 
-        batch_size = len(labels)
-        sent_transform = sent_transform.view(batch_size, -1)
-        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda()
-        sent_transform = image_map(sent_transform)
+        img_idx, preds, img_seq,sent_seq = 0, [], [], []
+        for sent in sent_emb.split(1):
+            seq_len = sent.size()[1]
+            sent = task.pooler(sent.view(seq_len, -1))
+            sent = torch.div(torch.sum(sent, dim=0), seq_len).cuda().reshape((1, -1))
+            img_feat = torch.tensor(task.img_encoder.forward(int(ids[img_idx])), dtype=torch.float32).cuda()
+            img_seq.append(img_feat); sent_seq.append(sent); img_idx += 1
+            sim = cos(sent, img_feat).cuda()
+            preds.append(sim.cpu().data.numpy()[0])
 
-        '''
-        cos = nn.SmoothL1Loss()
-        cos = nn.MSELoss()
-        cos = nn.L1Loss()
-        out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
-        '''
-        cos = nn.CosineEmbeddingLoss()
-        flags = Variable(torch.ones(len(labels)))
+        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
+        metric = np.mean(preds)
+        task.scorer1.__call__(metric)
+        out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
+
+        cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
         out['loss'] = cos(
             torch.tensor(
-                sent_transform, dtype=torch.float), torch.tensor(
-                img_emb, dtype=torch.float), flags)
-        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        sim = cos(
-            torch.tensor(
-                sent_transform,
-                dtype=torch.float),
-            torch.tensor(
-                img_emb,
-                dtype=torch.float))
-        classifier = nn.Linear(len(labels), len(labels))
-        logits = classifier(sim)
-        out['logits'] = logits
+                sent_emb.reshape(batch_size, -1), dtype=torch.float), torch.tensor(
+                img_emb, dtype=torch.float).reshape(batch_size, -1), flags)
 
-        preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
-        acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
-        task.scorer1.__call__(np.sum(acc) / len(acc))
         if predict:
             out['preds'] = preds
 
         return out
+
+    def get_elmo_mixing_weights(self, mix_id=0):
+        ''' Get elmo mixing weights from text_field_embedder,
+        since elmo should be in the same place every time.
+
+        args:
+            - text_field_embedder
+            - mix_id: if we learned multiple mixing weights, which one we want
+                to extract, usually 0
+
+        returns:
+            - params Dict[str:float]: dictionary maybe layers to scalar params
+        '''
+        if self.elmo:
+            params = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, mix_id)
+        else:
+            params = {}
+        return params

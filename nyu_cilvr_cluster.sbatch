@@ -3,7 +3,7 @@
 # Generic job script for all experiments on NYU CILVR machines.
 
 #SBATCH --gres=gpu:1
-#SBATCH --mem=14000
+#SBATCH --mem=30000
 #SBATCH --constraint=gpu_12gb,pascal
 
 # Example usage:
@@ -13,7 +13,6 @@
 echo $SLURM_JOBID - `hostname` - $JIANT_OVERRIDES >> ~/jiant_machine_assignments.txt
 
 # Run.
-conda activate jiant
-cd ~/jiant/src
-source ../user_config.sh
-python main.py --config_file ../config/defaults.conf --overrides "global_ro_exp_dir = /misc/vlgscratch4/BowmanGroup/sbowman/exp/default, project_dir = $JIANT_PROJECT_PREFIX, $JIANT_OVERRIDES"
+cd ~/jiant/
+source user_config.sh
+python main.py --config_file config/defaults.conf --overrides "global_ro_exp_dir = /misc/vlgscratch4/BowmanGroup/sbowman/exp/default, project_dir = $JIANT_PROJECT_PREFIX, $JIANT_OVERRIDES"
