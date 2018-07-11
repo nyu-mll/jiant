@@ -48,6 +48,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
+from .preprocess import _parse_task_list_arg
 from .seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -134,11 +135,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
     return model
 
 def get_task_whitelist(args):
+  eval_task_names = _parse_task_list_arg(args.eval_tasks)
+  eval_clf_names = []
+  for task_name in eval_task_names:
+    override_clf = config.get_task_attr(args, task_name, 'use_classifier')
+    if override_clf == 'none'  or override_clf is None:
+      eval_clf_names.append(task_name)
+    else:
+      eval_clf_names.append(override_clf)
+  train_task_names = _parse_task_list_arg(args.train_tasks)
   import ipdb; ipdb.set_trace()
-  tasks = args.train_tasks + args.eval_tasks
-  for task in args.eval_tasks:
-    tasks.append(get_task_attr(args, task, 'use_classifier'))
-  return tasks
+  return train_task_names + eval_clf_names
 
 def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
