@@ -45,7 +45,7 @@ def copy_iter(elems):
         yield copy.deepcopy(elem)
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=False):
+def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=False):
     ''' Helper function to load a model state
 
     Parameters
@@ -54,8 +54,22 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False):
     state_path: The path to a model_state checkpoint.
     gpu_id: The GPU to use. -1 for no GPU.
     skip_task_models: If set, load only the task-independent parameters.
+    strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
+        there is a risk of leaving some parameters in their randomly initialized state.
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+
+    assert_for_log(not (skip_task_models and strict), 
+        "Can't skip task models while also strictly loading task models. Something is wrong.")
+
+    if strict:
+        for key, _ in model.named_parameters():
+            # We load ELMo separately (in Allen code), so we don't need it to be here,
+            # even in strict mode.
+            if "elmo" not in key:
+                assert_for_log(key in model_state,
+                    "In strict mode and failed to find at least one parameter: " + key)
+
     if skip_task_models:
         keys_to_skip = [key for key in model_state if "_mdl" in key]
         for key in keys_to_skip:

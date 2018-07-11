@@ -122,9 +122,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     for task in tasks:
         build_module(task, model, d_sent, vocab, embedder, args)
-
-    if args.cuda >= 0:
-        model = model.cuda()
+    for task in tasks:
+        maybe_override_task_classifier(args, model, task, tasks)
+    model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
     trainable_param_count = 0
@@ -257,14 +257,14 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
 
     elif isinstance(task, VAETask):
-        decoder = Seq2SeqDecoder.from_params(vocab,
-                                             Params({'input_dim': d_sent,
-                                                     'target_embedding_dim': 300,
-                                                     'max_decoding_steps': 200,
-                                                     'target_namespace': 'tokens',
-                                                     'attention': 'bilinear',
-                                                     'dropout': args.dropout,
-                                                     'scheduled_sampling_ratio': 0.0}))
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': 200,
+                                 'target_namespace': 'tokens',
+                                 'attention': 'bilinear',
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
 
     elif isinstance(task, GroundedTask):
@@ -279,8 +279,45 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         raise ValueError("Module not found for %s" % task.name)
 
 
+def maybe_override_task_classifier(args, model, task, all_tasks):
+    """ If a task specifies to use another task's classifier, set that.
+
+    Overrides the model's <task>_mdl reference to point to another task's
+    classifier (the source task). If the source task is not found, will
+    construct the *source* task's <src_task>_mdl attribute as an alias of the
+    current task - this will cause the model to load the correct variables from
+    the checkpoints if available.
+    """
+    src_task = config.get_task_attr(args, task.name, "use_classifier")
+    if src_task is None:
+        return
+    if src_task == task.name:
+        log.warn("Task '%s': requested shared classifier from self. Did you"
+                 " mean something else?", task.name)
+        return
+    tasks_by_name = {task.name:task for task in all_tasks}
+    src_cls_key = "%s_mdl" % src_task    # name of source classifier
+    this_cls_key = "%s_mdl" % task.name  # name of this classifier
+
+    # Case where source task is *not* found.
+    if (src_task not in tasks_by_name) or (not hasattr(model, src_cls_key)):
+        log.warn("Task '%s': requested to share classifier from "
+                 "non-existent task '%s'. Back-copying classifier to alias"
+                 " checkpoints.", task.name, src_task)
+        setattr(model, src_cls_key, getattr(model, this_cls_key))
+        return
+    # Case where source task *is* found.
+    src_task_mdl = getattr(model, src_cls_key)
+    # Remove any task model we might have made for *this* task.
+    old_task_mdl = getattr(model, this_cls_key)
+    del old_task_mdl
+    # Override this task model with the other model's class.
+    setattr(model, this_cls_key, src_task_mdl)
+    log.info("USING %s module for task %s", src_task, task.name)
+
+
 def get_task_specific_params(args, task_name):
-    ''' Get task-specific parameters from the main args.
+    ''' Search args for parameters specific to task.
 
     Args:
         args: main-program args, a config.Params object
@@ -305,6 +342,9 @@ def get_task_specific_params(args, task_name):
         params['attn'] = _get_task_attr("pair_attn")
         params['d_hid_attn'] = _get_task_attr("d_hid_attn")
         params['dropout'] = _get_task_attr("classifier_dropout")
+
+    # TODO: rename this to be more descriptive than 'name'.
+    params['name'] = args.get("%s_use_classifier" % task_name, task_name)
 
     return Params(params)
 
@@ -433,9 +473,9 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, VAETask):
-            out = self._vae_forward(batch, task)
+            out = self._vae_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
-            out = self._tagger_forward(batch, task)
+            out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
             out = self._edge_probe_forward(batch, task, predict)
         elif isinstance(task, SequenceGenerationTask):
@@ -448,13 +488,18 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
+    def _get_classifier(self, task):
+        key = task.name
+        module = getattr(self, "%s_mdl" % key)
+        return module
+
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
         # pass to a task specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -581,7 +626,7 @@ class MultiTaskModel(nn.Module):
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        classifier = getattr(self, "%s_mdl" % task.name)
+        classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -626,7 +671,7 @@ class MultiTaskModel(nn.Module):
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response
+        sent_pooler = self._get_classifier(self, task) # pooler for both Input and Response
         sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
@@ -665,7 +710,7 @@ class MultiTaskModel(nn.Module):
         return out
 
 
-    def _vae_forward(self, batch, task):
+    def _vae_forward(self, batch, task, predict):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
@@ -704,7 +749,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch, task):
+    def _tagger_forward(self, batch, task, predict):
         ''' For language modeling? '''
         out = {}
         b_size, seq_len, _ = batch['inputs']['elmo'].size()
@@ -716,7 +761,7 @@ class MultiTaskModel(nn.Module):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
-            hid2tag = getattr(self, "%s_mdl" % task.name)
+            hid2tag = self._get_classifier(task)
             logits = hid2tag(sent)
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits

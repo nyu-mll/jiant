@@ -14,8 +14,7 @@ import json
 
 from . import hocon_writer
 
-from typing import Type, Union, Sequence
-
+from typing import Type, Union, Sequence, Iterable
 
 class Params(object):
     """Params handler object.
@@ -83,8 +82,8 @@ class Params(object):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
 
-def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]], 
-                  attr_name: str):
+def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
+                  attr_name: str, default=None):
     """ Get a task-specific param.
 
     Look in args.task_name.attr_name, then args.task_name_attr_name,
@@ -98,7 +97,8 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
         compound_key = "%s_%s" % (task_name, attr_name)
         if compound_key in args:
             return args[compound_key]
-    return args[attr_name]
+    #  return args[attr_name]
+    return args.get(attr_name, default)
 
 
 # Argument handling is as follows:
@@ -107,10 +107,18 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
 # 3) validate specific parameters with custom logic
 
 
-def params_from_file(config_file, overrides=None):
-    with open(config_file) as fd:
-        config_string = fd.read()
+def params_from_file(config_files: Union[str, Iterable[str]],
+                     overrides: str=None):
+    config_string = ''
+    if isinstance(config_files, str):
+        config_files = [config_files]
+    for config_file in config_files:
+      with open(config_file) as fd:
+          log.info("Loading config from %s", config_file)
+          config_string += fd.read()
+          config_string += '\n'
     if overrides:
+        log.info("Config overrides: %s", overrides)
         # Append overrides to file to allow for references and injection.
         config_string += "\n"
         config_string += overrides
