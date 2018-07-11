@@ -254,7 +254,6 @@ def main(cl_arguments):
 
 if __name__ == '__main__':
     try:
-        raise ValueError("Test")
         main(sys.argv[1:])
     except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.

@@ -597,8 +597,8 @@ class MultiTaskModel(nn.Module):
             # shape [total_num_targets, n_classes, 2], with float scores
             binary_preds = torch.stack([-1*logits, logits], dim=2)
             task.f1_scorer(binary_preds, binary_targets)
-            # Matthews corefficient computed on {0,1} labels.
-            task.mcc_scorer(logits.ge(0), binary_targets)
+            # Matthews coefficient computed on {0,1} labels.
+            task.mcc_scorer(logits.ge(0).long(), binary_targets.long())
 
             loss_type = task_params["cls_loss_fn"]
             if loss_type == 'softmax':

@@ -41,14 +41,18 @@ class Correlation(Metric):
         """
         # Convert from Tensor if necessary
         if isinstance(predictions, torch.Tensor):
-            predictions = predictions.data.cpu().numpy()
+            predictions = predictions.cpu().numpy()
         if isinstance(labels, torch.Tensor):
-            labels = labels.data.cpu().numpy()
+            labels = labels.cpu().numpy()
 
-        if isinstance(predictions, np.ndarray):
-            predictions = predictions.tolist()
-        if isinstance(labels, np.ndarray):
-            labels = labels.tolist()
+        # Verify shape match
+        assert predictions.shape == labels.shape, ("Predictions and labels must"
+                                                   " have matching shape. Got:"
+                                                   " preds=%s, labels=%s" % (
+                                                       str(predictions.shape),
+                                                       str(labels.shape)))
+        predictions = list(predictions.flatten())
+        labels = list(labels.flatten())
 
         if hasattr(self, '_per_batch_history'):
             batch_corr = self._correlation(labels, predictions)
