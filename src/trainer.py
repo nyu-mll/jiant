@@ -19,8 +19,9 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
-from utils import device_mapping, assert_for_log  # pylint: disable=import-error
-from evaluate import evaluate
+
+from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .evaluate import evaluate
 
 
 def build_trainer_params(args, task, max_vals, val_interval):
@@ -404,7 +405,6 @@ class SamplingMultiTaskTrainer():
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
-                #pdb.set_trace()
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
@@ -501,6 +501,11 @@ class SamplingMultiTaskTrainer():
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
+                elmo_params = self._model.get_elmo_mixing_weights()
+                if elmo_params:
+                    log.info("ELMo mixing weights:")
+                    for layer, param in elmo_params.items():
+                        log.info("\t%s: %.6f", layer, param)
 
                 all_tr_metrics = {}
                 samples = random.choices(
@@ -601,7 +606,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
-                metric_decreases = False
+                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases

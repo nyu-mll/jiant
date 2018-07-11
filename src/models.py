@@ -4,7 +4,6 @@ import sys
 import math
 import copy
 import logging as log
-import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -25,28 +24,29 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from utils import get_batch_utilization
+from .utils import get_batch_utilization, get_elmo_mixing_weights
 
-from tasks import STSBTask, CoLATask, SSTTask, \
+from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask
 
-from tasks import STSBTask, CoLATask, \
+from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
-from modules import SentenceEncoder, BoWSentEncoder, \
+from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder
-from utils import assert_for_log, get_batch_utilization, get_batch_size_from_field
-from seq2seq_decoder import Seq2SeqDecoder
+
+from .utils import assert_for_log, get_batch_utilization, get_batch_size
+from .seq2seq_decoder import Seq2SeqDecoder
 
 
 # Elmo stuff
@@ -57,10 +57,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-#  ELMO_OPT_PATH = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"  # pylint: disable=line-too-long
-# ELMO_WEIGHTS_PATH =
-# "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
-# # pylint: disable=line-too-long
 
 
 def build_model(args, vocab, pretrained_embs, tasks):
@@ -122,8 +118,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_modules(tasks, model, d_sent, vocab, embedder, args)
-    if args.cuda >= 0:
-        model = model.cuda()
+    model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
     trainable_param_count = 0
@@ -215,6 +210,7 @@ def build_embeddings(args, vocab, pretrained_embs=None):
     return d_emb, embedder, cove_emb
 
 
+
 def build_modules(tasks, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for each task and add them to model '''
     task_names = [task.name for task in tasks]
@@ -292,6 +288,7 @@ def build_modules(tasks, model, d_sent, vocab, embedder, args):
 
 
     return
+
 
 
 def get_task_specific_params(args, task):
@@ -411,6 +408,7 @@ class MultiTaskModel(nn.Module):
         self.combine_method = args.sent_combine_method
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
+        self.elmo = args.elmo and not args.elmo_chars_only
 
     def forward(self, task, batch, predict=False):
         '''
@@ -456,11 +454,11 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
-        #pdb.set_trace()
         # pass to a task specific classifier
         classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
         out['logits'] = logits
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
             labels = batch['labels'].squeeze(-1)
@@ -495,19 +493,20 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch:
-            labels = batch['labels'].squeeze(-1)
+            labels = batch['labels']
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1)
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
@@ -621,7 +620,7 @@ class MultiTaskModel(nn.Module):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, VAETask):
             decoder = getattr(self, "%s_decoder" % task.name)
@@ -640,11 +639,11 @@ class MultiTaskModel(nn.Module):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, MTTask):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out = decoder.forward(sent, sent_mask, batch['targs'])
+            out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
             return out
 
@@ -663,7 +662,7 @@ class MultiTaskModel(nn.Module):
         seq_len -= 2
         sent_encoder = self.sent_encoder
 
-        out['n_exs'] = get_batch_size_from_field(batch['inputs'])  # TODO this is probably wrong
+        out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -685,7 +684,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = b_size #get_batch_size(batch['input'])
 
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['input'])
@@ -718,59 +717,58 @@ class MultiTaskModel(nn.Module):
 
     def _grounded_classification_forward(self, batch, task, predict):
         out = {}
-        d_1, d_2 = self.sent_encoder.output_dim, 2048
-
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
-        image_map = nn.Linear(d_1, d_2).cuda()
-        sent_transform = image_map(sent_emb)
-        ids = batch['ids'].cpu().squeeze(-1)
-        ids = list(ids.data.numpy())
+        batch_size = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = batch_size
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
         labels = batch['labels'].cpu().squeeze(-1)
         labels = [int(item) for item in labels.data.numpy()]
 
-        seq, true = [], []
-        for i in range(len(ids)):
-            img_id, label = ids[i], labels[i]
-            init_emb = task.img_encoder.forward(int(img_id)).data.numpy()[0]
-            seq.append(torch.tensor(init_emb, dtype=torch.float))
-            true.append(label)
-        img_emb = torch.stack(seq, dim=0)
+        cos = task.metric_fn
+        flags = Variable(torch.ones(batch_size))
 
-        batch_size = len(labels)
-        sent_transform = sent_transform.view(batch_size, -1)
-        image_map = nn.Linear(list(sent_transform.size())[-1], d_2).cuda()
-        sent_transform = image_map(sent_transform)
+        img_idx, preds, img_seq,sent_seq = 0, [], [], []
+        for sent in sent_emb.split(1):
+            seq_len = sent.size()[1]
+            sent = task.pooler(sent.view(seq_len, -1))
+            sent = torch.div(torch.sum(sent, dim=0), seq_len).cuda().reshape((1, -1))
+            img_feat = torch.tensor(task.img_encoder.forward(int(ids[img_idx])), dtype=torch.float32).cuda()
+            img_seq.append(img_feat); sent_seq.append(sent); img_idx += 1
+            sim = cos(sent, img_feat).cuda()
+            preds.append(sim.cpu().data.numpy()[0])
 
-        '''
-        cos = nn.SmoothL1Loss()
-        cos = nn.MSELoss()
-        cos = nn.L1Loss()
-        out['loss'] = cos(sent_emb, torch.tensor(img_emb, requires_grad=False))
-        '''
-        cos = nn.CosineEmbeddingLoss()
-        flags = Variable(torch.ones(len(labels)))
+        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
+        metric = np.mean(preds)
+        task.scorer1.__call__(metric)
+        out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
+
+        cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
         out['loss'] = cos(
             torch.tensor(
-                sent_transform, dtype=torch.float), torch.tensor(
-                img_emb, dtype=torch.float), flags)
-        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        sim = cos(
-            torch.tensor(
-                sent_transform,
-                dtype=torch.float),
-            torch.tensor(
-                img_emb,
-                dtype=torch.float))
-        classifier = nn.Linear(len(labels), len(labels))
-        logits = classifier(sim)
-        out['logits'] = logits
+                sent_emb.reshape(batch_size, -1), dtype=torch.float), torch.tensor(
+                img_emb, dtype=torch.float).reshape(batch_size, -1), flags)
 
-        preds = [1 if item > 0 else 0 for item in logits.data.numpy()]
-        acc = [1 if preds[i] == labels[i] else 0 for i in range(len(labels))]
-        task.scorer1.__call__(np.sum(acc) / len(acc))
         if predict:
             out['preds'] = preds
 
         return out
+
+    def get_elmo_mixing_weights(self, mix_id=0):
+        ''' Get elmo mixing weights from text_field_embedder,
+        since elmo should be in the same place every time.
+
+        args:
+            - text_field_embedder
+            - mix_id: if we learned multiple mixing weights, which one we want
+                to extract, usually 0
+
+        returns:
+            - params Dict[str:float]: dictionary maybe layers to scalar params
+        '''
+        if self.elmo:
+            params = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, mix_id)
+        else:
+            params = {}
+        return params

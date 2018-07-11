@@ -6,23 +6,27 @@
 - Each task's val_metric should be name_metric, where metric is returned by get_metrics()
 '''
 import copy
+import collections
 import itertools
+import functools
 import os
 import math
 import logging as log
 import json
 import numpy as np
+from typing import Iterable, Sequence, Any, Type
+
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
-from allennlp_mods.correlation import Correlation
 from allennlp.data.token_indexers import SingleIdTokenIndexer
+from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField
-from allennlp_mods.numeric_field import NumericField
+from .allennlp_mods.numeric_field import NumericField
 
-from utils import load_tsv, process_sentence, truncate
-from typing import Iterable, Sequence, Any, Type
+from . import serialize
+from .utils import load_tsv, process_sentence, truncate
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -179,7 +183,6 @@ class NLIProbingTask(PairClassificationTask):
         self.use_classifier = 'mnli'
 
 
-
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
@@ -312,8 +315,8 @@ class WikiTextLMTask(LanguageModelingTask):
         data = []
         with open(path) as txt_fh:
             for row in txt_fh:
-                toks = row.strip().split()
-                if not toks:
+                toks = row.strip()
+                if toks == '':
                     continue
                 data.append(process_sentence(toks, max_seq_len))
         return data
@@ -1047,7 +1050,7 @@ class WeakGroundedTask(PairClassificationTask):
         targ_map = {'negative': 0, 'positive': 1}
         targ_map = {'0': 0, '1': 1}
 
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+        tr_data = load_tsv(os.path.join(path, "train_aug.tsv"), max_seq_len, targ_map=targ_map,
                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
                             s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
@@ -1073,7 +1076,6 @@ class GroundedTask(Task):
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_metric" % self.name
-        self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + \
             self.val_data_text[0]
@@ -1081,6 +1083,14 @@ class GroundedTask(Task):
             self.val_data_text[1]
         self.path = path
         self.img_encoder = None
+        self.loss_fn = nn.CosineEmbeddingLoss()
+        self.metric_fn = nn.PairwiseDistance(p=1, eps=1e-6)
+        self.val_metric_decreases = True
+        '''
+        self.metric_fn = nn.CosineSimilarity(dim=1, eps=1e-6)
+        self.val_metric_decreases = False
+        '''
+
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -1096,7 +1106,7 @@ class GroundedTask(Task):
             metric = 0
 
         return metric
-
+        
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
@@ -1130,6 +1140,8 @@ class GroundedTask(Task):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
 
         # changed for temp
+        train, val, test = ([], [], []), ([], [], []), ([], [], [])
+        
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1144,7 +1156,6 @@ class GroundedTask(Task):
         for line in f:
             te_dict = json.loads(line)
 
-        train, val, test = ([], [], []), ([], [], []), ([], [], [])
         for img_id in train_ids:
             for caption_id in tr_dict[img_id]['captions']:
                 train[0].append(tr_dict[img_id]['captions'][caption_id])
@@ -1164,6 +1175,75 @@ class GroundedTask(Task):
                 test[2].append(int(img_id))
                 # test[2].append(caption_id)
 
+        log.info("Positive train samples: " + str(len(train[0])))
+
+
+
+        ''' Shapeworld data '''
+
+        
+        f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
+        for line in f:
+            items = line.strip().split('\t')
+            train[0].append(items[0])
+            train[1].append(int(items[1]))
+            train[2].append(int(items[2]))
+
+        f = open("/nfs/jsalt/home/roma/shapeworld/val.tsv", 'r')
+        for line in f:
+            items = line.strip().split('\t')
+            val[0].append(items[0])
+            val[1].append(int(items[1]))
+            val[2].append(int(items[2]))
+
+        f = open("/nfs/jsalt/home/roma/shapeworld/test.tsv", 'r')
+        for line in f:
+            items = line.strip().split('\t')
+            test[0].append(items[0])
+            test[1].append(int(items[1]))
+            test[2].append(int(items[2]))
+
+            
+        r = 5
+        train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
+        train_ids = [item for sublist in train_ids for item in sublist]
+        test_ids = [item for sublist in test_ids for item in sublist]
+        val_ids = [item for sublist in val_ids for item in sublist]
+        
+        for img_id in train_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(train_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = tr_dict[train_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]
+            train[0].append(caption); train[1].append(0); train[2].append(int(img_id))
+
+        for img_id in val_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]            
+            val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
+
+        for img_id in test_ids:
+            rand_id = img_id
+            while (rand_id == img_id):
+                rand_id = np.random.randint(len(test_ids), size=(1,1))[0][0]
+            caption_id = np.random.randint(5, size=(1,1))[0][0]
+            captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
+            caption = captions[caption_ids[caption_id]]
+            test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
+        
+
+        
+
+
+        #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
+        
+        log.info("All train samples: " + str(len(train[0])))
 
         self.tr_data = train
         self.val_data = val
@@ -1236,55 +1316,47 @@ class RecastNLITask(PairClassificationTask):
 class RecastPunTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-puns"):
-        super(RecastPunTask, self).__init__(name, 2)
+        super(RecastPunTask, self).__init__(path, max_seq_len, name)
 
 class RecastNERTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-ner"):
-        super(RecastNERTask, self).__init__(name, 2)
-
-    def __init__(self, path, max_seq_len, name="recast-puns"):
-        super(RecastPunTask, self).__init__(name, 2)
-
-class RecastNERTask(RecastNLITask):
-
-    def __init__(self, path, max_seq_len, name="recast-ner"):
-        super(RecastNERTask, self).__init__(name, 2)
+        super(RecastNERTask, self).__init__(path, max_seq_len, name)
 
 class RecastVerbnetTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbnet"):
-        super(RecastVerbnetTask, self).__init__(name, 2)
+        super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
 
 class RecastVerbcornerTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbcorner"):
-        super(RecastVerbcornerTask, self).__init__(name, 2)
+        super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
 
 class RecastSentimentTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-sentiment"):
-        super(RecastSentimentTask, self).__init__(name, 2)
+        super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
 
 class RecastFactualityTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-factuality"):
-        super(RecastFactualityTask, self).__init__(name, 2)
+        super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
 
 class RecastWinogenderTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-winogender"):
-        super(RecastWinogenderTask, self).__init__(name, 2)
+        super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
 
 class RecastLexicosynTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
-        super(RecastLexicosynTask, self).__init__(name, 2)
+        super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
 
 class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
-        super(RecastKGTask, self).__init__(name, 2)
+        super(RecastKGTask, self).__init__(path, max_seq_len, name)
 
 class TaggingTask(Task):
     ''' Generic tagging, one tag per word '''
