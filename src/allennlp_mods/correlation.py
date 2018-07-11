@@ -4,6 +4,7 @@ from overrides import overrides
 from allennlp.training.metrics.metric import Metric
 from sklearn.metrics import matthews_corrcoef
 from scipy.stats import pearsonr, spearmanr
+import torch
 
 @Metric.register("correlation")
 class Correlation(Metric):
@@ -32,6 +33,18 @@ class Correlation(Metric):
         return corr
 
     def __call__(self, predictions, labels):
+        """ Accumulate statistics for a set of predictions and labels.
+
+        Args:
+            predictions: binary {0,1} Tensor or np.array of shape [n_preds]
+            labels: binary {0,1} Tensor or np.array of same shape as predictions
+        """
+        # Convert from Tensor if necessary
+        if isinstance(predictions, torch.Tensor):
+            predictions = predictions.data.cpu().numpy()
+        if isinstance(labels, torch.Tensor):
+            labels = labels.data.cpu().numpy()
+
         if isinstance(predictions, np.ndarray):
             predictions = predictions.tolist()
         if isinstance(labels, np.ndarray):

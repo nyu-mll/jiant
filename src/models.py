@@ -293,6 +293,7 @@ def get_task_specific_params(args, task_name):
                                                             attr_name)
     params = {}
     params['cls_type'] = _get_task_attr("classifier")
+    params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
     params['d_hid'] = _get_task_attr("classifier_hid_dim")
     params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
@@ -495,7 +496,7 @@ class MultiTaskModel(nn.Module):
 
         # batch['labels'] is [batch_size, num_targets] array of ints
         # padded with -1 along last dimension.
-        
+
         # batch['span1s'] and batch['span2s'] are [batch_size, num_targets, 2]
         # array of ints, padded with -1 along second dimension.
 
@@ -516,9 +517,13 @@ class MultiTaskModel(nn.Module):
         flat_batch_idxs = batch_idxs[mask]   # [total_num_targets]
         flat_span1s = batch['span1s'][mask]  # [total_num_targets, 2]
         flat_span2s = batch['span2s'][mask]  # [total_num_targets, 2]
-      
+
         # RaSoR-style pooling: first and last token for each span.
         # Results are [total_num_targets, repr_dim]
+        # TODO: implement more efficiently by learning separate projection
+        # layers from repr_dim -> classifier_hid_dim for starts, ends
+        # and applying this to the sentence reprs separately before combining
+        # into span representations.
         s1 = sent_embs[flat_batch_idxs, flat_span1s[:,0]]
         e1 = sent_embs[flat_batch_idxs, flat_span1s[:,1]]
         s2 = sent_embs[flat_batch_idxs, flat_span2s[:,0]]
@@ -527,22 +532,45 @@ class MultiTaskModel(nn.Module):
         span_vecs = torch.cat([s1, e1, s2, e2], dim=1)
 
         # Invoke task-specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name) 
+        classifier = getattr(self, "%s_mdl" % task.name)
         logits = classifier(span_vecs)  # [total_num_targets, n_classes]
         out['logits'] = logits
-        
+
         # Compute loss if requested.
         # TODO(iftenney): replace with sigmoid loss.
         if 'labels' in batch:
             flat_labels = batch['labels'][mask]  # [total_num_targets]
-            out['loss'] = F.cross_entropy(logits, flat_labels)
-            task.scorer1(logits, flat_labels)
+            task.acc_scorer(logits, flat_labels)
+
+            # binary cross-entropy against one-hot rows.
+            binary_targets = torch.zeros_like(logits, dtype=torch.float32)
+            ridx = torch.arange(flat_labels.shape[0], dtype=torch.int64)
+            # [total_num_targets, n_classes]
+            binary_targets[ridx, flat_labels] = 1
+
+            # needed for AllenNLP F1Measure()
+            # shape [total_num_targets, n_classes, 2], with float scores
+            binary_preds = torch.stack([-1*logits, logits], dim=2)
+            task.f1_scorer(binary_preds, binary_targets)
+            # Matthews corefficient computed on {0,1} labels.
+            task.mcc_scorer(logits.ge(0), binary_targets)
+
+            loss_type = task_params["cls_loss_fn"]
+            if loss_type == 'softmax':
+                # softmax over each row.
+                out['loss'] = F.cross_entropy(logits, flat_labels)
+            elif loss_type == 'sigmoid':
+                out['loss'] = F.binary_cross_entropy(F.sigmoid(logits),
+                                                     binary_targets)
+            else:
+                raise ValueError("Unsupported loss type '%s' "
+                                 "for edge probing." % loss_type)
+            #  import ipdb; ipdb.set_trace()
 
         if predict:
             # return argmax predictions
             _, out['preds'] = logits.max(dim=1)
-        
-        #  import ipdb; ipdb.set_trace()
+
 
         return out
 
@@ -603,7 +631,6 @@ class MultiTaskModel(nn.Module):
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
-        #import ipdb as pdb; pdb.set_trace()
         if 1:
             #total_loss, batch_acc = BCE_implementation(sent1_rep, sent1_rep)
             #out['loss'] = total_loss
@@ -619,7 +646,6 @@ class MultiTaskModel(nn.Module):
             #scale = (len(cos_simi) - 1)
             #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
             weights = weights.view(-1).cuda()
-            #import ipdb as pdb; pdb.set_trace()
 
 
             cos_simi = cos_simi.view(-1)
@@ -628,7 +654,6 @@ class MultiTaskModel(nn.Module):
 
             #cos_simi = torch.diagonal(cos_simi)
             #labels = torch.ones(cos_simi.shape).cuda()
-            #import ipdb as pdb; pdb.set_trace()
 
             total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
             #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
@@ -637,7 +662,6 @@ class MultiTaskModel(nn.Module):
             batch_acc = total_correct.item()/len(labels)
             out["n_exs"] = len(labels)
             task.scorer1(batch_acc)
-            #import ipdb as pdb; pdb.set_trace()
         return out
 
 
