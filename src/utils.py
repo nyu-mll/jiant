@@ -45,7 +45,7 @@ def copy_iter(elems):
         yield copy.deepcopy(elem)
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=False):
+def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
     ''' Helper function to load a model state
 
     Parameters
