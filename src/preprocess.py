@@ -271,7 +271,7 @@ def build_tasks(args):
     tasks, train_task_names, eval_task_names = \
         get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
-                  load_pkl=bool(not args.reload_tasks))
+                  load_pkl=bool(not args.reload_tasks), probe_path=args.probe_path)
 
     # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -371,7 +371,7 @@ def _parse_task_list_arg(task_list):
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1):
+              scratch_path=None, load_pkl=1, probe_path=None):
     ''' Load tasks '''
     train_task_names = _parse_task_list_arg(train_tasks)
     eval_task_names = _parse_task_list_arg(eval_tasks)
@@ -397,6 +397,8 @@ def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
             kw = task_info[2] if len(task_info) > 2 else {}
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
+            #  if name == 'nli-prob':
+            #  task = NAME2INFO[name][0](task_src_path, max_seq_len, name, probe_path)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
 
