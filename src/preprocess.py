@@ -477,6 +477,13 @@ def add_task_label_vocab(vocab, task):
     If task has a 'get_all_labels' method, call that to get a list of labels
     to populate the <task_name>_labels vocabulary namespace.
 
+    This is the recommended way to implement multiclass models: in your task's
+    process_split code, make instances that use LabelFields with the task label
+    namespace, e.g.:
+        label_namespace = "%s_labels" % self.name
+        label = LabelField(label_string, label_namespace=label_namespace)
+    This will cause them to be properly indexed by the Vocabulary.
+
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
     '''
