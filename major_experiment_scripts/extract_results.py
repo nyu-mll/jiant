@@ -35,7 +35,7 @@ for path in sys.argv[1:]:
           found_eval = True
         else:
           if found_eval:
-            assert (results_line is None), "Error! Multiple GLUE evals found."
+            assert (results_line is None), "Multiple GLUE evals found."
             results_line = line.strip()
           found_eval = False
 
@@ -43,7 +43,7 @@ for path in sys.argv[1:]:
         if train_m:
           task = train_m.groups()[0]
           if train_tasks is not None:
-            assert (task == train_tasks), "Error! Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, task)
+            assert (task == train_tasks), "Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, task)
           train_tasks = task
 
         do_m = re.match('"dropout": (.*),', line)
@@ -58,7 +58,7 @@ for path in sys.argv[1:]:
         if el_m:
           el = el_m.groups()[0]
           if elmo is not None:
-            assert (elmo == el), "Error! Multiple elmo flags set, but settings don't match: %s vs. %s."%(elmo, el)
+            assert (elmo == el), "Multiple elmo flags set, but settings don't match: %s vs. %s."%(elmo, el)
           elmo = el
 
     cols['train_tasks'] = train_tasks
