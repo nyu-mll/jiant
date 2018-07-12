@@ -536,8 +536,6 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'])
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
-        sent1, sent2, idxs = batch['input1str'], batch['input2str'], batch['idx']
-        out['indices'] = [(sent1[i], sent2[i], idxs[i]) for i in range(len(sent1))]
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 

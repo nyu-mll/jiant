@@ -15,6 +15,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     all_metrics, all_preds = {"micro_avg": 0.0, "macro_avg": 0.0}, {}
     n_overall_examples = 0
     for task in tasks:
+        log.info("Evaluating on: %s", task.name)
         n_examples = 0
         task_preds, task_idxs = [], []
         task_idx_map = []
@@ -24,19 +25,18 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         for batch in generator:
             if 'idx' in batch:  # for sorting examples
                 task_idxs += batch['idx'].data.tolist()
-                #batch.pop('idx', None)
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
 
             # get predictions
             if 'preds' in out:
                 preds = out['preds']
-                indices = out['indices']
+                indices = batch['idx']
                 if isinstance(preds, torch.Tensor):
                     preds = preds.data.tolist()
                 assert isinstance(preds, list), "Convert predictions to list!"
                 task_preds += preds
-                task_idx_map += indices
+                task_idx_map += indices.data.tolist()
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -47,11 +47,11 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         n_overall_examples += n_examples
 
         # Store predictions, possibly sorting them if
-        if task_idxs:
-            assert len(task_idxs) == len(task_preds), "Number of indices and predictions differ!"
-            idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
-            idxs_and_preds.sort(key=lambda x: x[0])
-            task_preds = [p for _, p in idxs_and_preds]
+        # if task_idxs:
+        #     assert len(task_idxs) == len(task_preds), "Number of indices and predictions differ!"
+        #     idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
+        #     idxs_and_preds.sort(key=lambda x: x[0])
+        #     task_preds = [p for _, p in idxs_and_preds]
 
         # all_preds[task.name] = task_preds
         all_preds[task.name] = [task_preds, task_idx_map]
@@ -76,23 +76,21 @@ def write_preds(all_preds, pred_dir):
         ''' Write preds to pred_file '''
         with open(pred_file, 'w') as pred_fh:
             pred_fh.write("index\tprediction\n")
-            count = 0
             for idx, pred in enumerate(preds):
                 if pred_map is not None or write_type == str:
                     pred = pred_map[pred]
-                    pred_fh.write("%d\t%s\n" % (idx, pred))
-                    print(indices[count])
+                    pred_fh.write("%d\t%s\n" % (indices[idx], pred))
 
                 elif write_type == float:
-                    pred_fh.write("%d\t%.3f\n" % (idx, pred))
+                    pred_fh.write("%d\t%.3f\n" % (indices[idx], pred))
                 elif write_type == int:
-                    pred_fh.write("%d\t%d\n" % (idx, pred))
-                count += 1
+                    pred_fh.write("%d\t%d\n" % (indices[idx], pred))
 
     for task, preds in all_preds.items():
         if not preds:  # catch empty lists
             continue
 
+        log.info("Wrote predictions for task: %s", task)
         indices = preds[1];
         preds = preds[0]
 
@@ -103,6 +101,7 @@ def write_preds(all_preds, pred_dir):
             write_preds_to_file(preds[9796:19643], indices, os.path.join(pred_dir, "%s-mm.tsv" % task),
                                 pred_map=pred_map)
             write_preds_to_file(preds[19643:], indices, os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
+
         elif task in ['rte', 'qnli']:
             pred_map = {0: 'not_entailment', 1: 'entailment'}
             write_preds_to_file(preds, indices, os.path.join(pred_dir, "%s.tsv" % task), pred_map)

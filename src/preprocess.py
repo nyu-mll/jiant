@@ -44,7 +44,7 @@ from .tasks import MultiNLIFictionTask, \
 from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostics']
+                  'mnli', 'qnli', 'rte', 'wnli']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
