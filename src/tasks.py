@@ -3,7 +3,9 @@
 - As much as possible, following the existing task hierarchy structure.
 - When inheriting, be sure to write and call load_data.
 - Set all text data as an attribute, task.sentences (List[List[str]])
-- Each task's val_metric should be name_metric, where metric is returned by get_metrics()
+- Each task's val_metric should be name_metric, where metric is returned by
+get_metrics(): e.g. if task.val_metric = task_name + "_accuracy", then
+task.get_metrics() should return {"accuracy": accuracy_val, ... }
 '''
 import copy
 import collections
@@ -14,9 +16,10 @@ import math
 import logging as log
 import json
 import numpy as np
-from typing import Iterable, Sequence, Any, Type
+from typing import Iterable, Sequence, List, Dict, Any, Type
 
-from allennlp.training.metrics import CategoricalAccuracy, F1Measure, Average
+from allennlp.training.metrics import CategoricalAccuracy, \
+        BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from .allennlp_mods.correlation import Correlation
 
@@ -30,7 +33,7 @@ from . import utils
 from .utils import load_tsv, process_sentence, truncate
 
 REGISTRY = {}  # Do not edit manually!
-def register_task(name, rel_path, kw=None):
+def register_task(name, rel_path, **kw):
     '''Decorator to register a task.
 
     Use this instead of adding to NAME2INFO in preprocess.py
@@ -153,8 +156,8 @@ class Task():
         ''' Process split text into a list of AllenNLP Instances. '''
         raise NotImplementedError
 
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+    def get_metrics(self, reset: bool=False) -> Dict:
+        ''' Get metrics specific to the task. '''
         raise NotImplementedError
 
 
@@ -1156,7 +1159,7 @@ class GroundedTask(Task):
             metric = 0
 
         return metric
-        
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
@@ -1191,7 +1194,7 @@ class GroundedTask(Task):
 
         # changed for temp
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        
+
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1231,7 +1234,7 @@ class GroundedTask(Task):
 
         ''' Shapeworld data '''
 
-        
+
         f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
         for line in f:
             items = line.strip().split('\t')
@@ -1253,13 +1256,13 @@ class GroundedTask(Task):
             test[1].append(int(items[1]))
             test[2].append(int(items[2]))
 
-            
+
         r = 5
         train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
         train_ids = [item for sublist in train_ids for item in sublist]
         test_ids = [item for sublist in test_ids for item in sublist]
         val_ids = [item for sublist in val_ids for item in sublist]
-        
+
         for img_id in train_ids:
             rand_id = img_id
             while (rand_id == img_id):
@@ -1275,7 +1278,7 @@ class GroundedTask(Task):
                 rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
             caption_id = np.random.randint(5, size=(1,1))[0][0]
             captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]            
+            caption = captions[caption_ids[caption_id]]
             val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
 
         for img_id in test_ids:
@@ -1286,13 +1289,13 @@ class GroundedTask(Task):
             captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
             caption = captions[caption_ids[caption_id]]
             test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-        
 
-        
+
+
 
 
         #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
-        
+
         log.info("All train samples: " + str(len(train[0])))
 
         self.tr_data = train
