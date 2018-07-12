@@ -365,12 +365,15 @@ def build_tasks(args):
 
 def _parse_task_list_arg(task_list):
     '''Parse task list argument into a list of task names.'''
-    if task_list == 'glue':
-        return ALL_GLUE_TASKS
-    elif task_list == 'none':
-        return []
-    else:
-        return task_list.split(',')
+    task_names = []
+    for task_name in task_list.split(','):
+        if task_name == 'glue':
+            task_names.extend(ALL_GLUE_TASKS)
+        elif task_name == 'none' or task_name == '':
+            continue
+        else:
+            task_names.append(task_name)
+    return task_names
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
@@ -476,6 +479,13 @@ def add_task_label_vocab(vocab, task):
 
     If task has a 'get_all_labels' method, call that to get a list of labels
     to populate the <task_name>_labels vocabulary namespace.
+
+    This is the recommended way to implement multiclass models: in your task's
+    process_split code, make instances that use LabelFields with the task label
+    namespace, e.g.:
+        label_namespace = "%s_labels" % self.name
+        label = LabelField(label_string, label_namespace=label_namespace)
+    This will cause them to be properly indexed by the Vocabulary.
 
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
