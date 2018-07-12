@@ -85,20 +85,27 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        sent_embs = self._highway_layer(self._text_field_embedder(sent, task))
+        # embeddings
+        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
-
+        task_sent_embs = self._dropout(task_sent_embs)
+        
+        # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         sent_enc = self._dropout(sent_enc)
+
+        # skip connection
         if self.skip_embs:
-            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+            sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask

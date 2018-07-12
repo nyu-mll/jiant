@@ -139,7 +139,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
-    
+
     d_emb, d_char = 0, args.d_char
 
     token_embedder = {}
@@ -202,13 +202,14 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
-            
+
             d_emb += 512
         else:
             log.info("\tUsing full ELMo!")
             elmo_embedder = Elmo(options_file=ELMO_OPT_PATH,
                                  weight_file=ELMO_WEIGHTS_PATH,
-                                 num_output_representations=len(tasks),
+                                 # Include pretrain task
+                                 num_output_representations=len(tasks) + 1,
                                  dropout=args.dropout)
             d_emb += 1024
 
@@ -220,7 +221,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
 def build_module(task, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
-    
+
     task_params = get_task_specific_params(args, task.name)
     log.info("\tTask '%s' params: %s", task.name,
              json.dumps(task_params.as_dict(), indent=2))
@@ -437,8 +438,8 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        
-        
+
+
     def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
@@ -747,7 +748,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def get_elmo_mixing_weights(self, mix_id=0):
+    def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder,
         since elmo should be in the same place every time.
 
@@ -759,8 +760,12 @@ class MultiTaskModel(nn.Module):
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
         '''
+        params = {}
         if self.elmo:
-            params = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, mix_id)
-        else:
-            params = {}
+            tasks = [None] + tasks
+            for task in tasks:
+                if task:
+                    params[task.name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
+                else:
+                    params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
         return params

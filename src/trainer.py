@@ -248,6 +248,9 @@ class SamplingMultiTaskTrainer():
             task_info['n_batches_since_val'] = 0
             task_info['optimizer'] = Optimizer.from_params(train_params,
                                                            copy.deepcopy(optimizer_params))
+            # don't we don't want to update a specific set of parameters
+            # if phase == "eval":
+            #    del task_info['optimizer']
             task_info['scheduler'] = LearningRateScheduler.from_params(
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
@@ -496,11 +499,11 @@ class SamplingMultiTaskTrainer():
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
                 log.info("{}".format([task.name for task in tasks]))
-                for i, task in enumerate(tasks):
-                    elmo_params = self._model.get_elmo_mixing_weights(mix_id=i)
-                    if elmo_params:
-                        log.info("ELMo mixing weights {} ({}):".format(i, task.name))
-                        for layer, param in elmo_params.items():
+                elmo_params = self._model.get_elmo_mixing_weights(tasks)
+                if elmo_params:
+                    for task_name, task_params in elmo_params.items():
+                        log.info("ELMo mixing weights for {}:".format(task_name))
+                        for layer, param in task_params.items():
                             log.info("\t%s: %.6f", layer, param)
 
                 all_tr_metrics = {}
