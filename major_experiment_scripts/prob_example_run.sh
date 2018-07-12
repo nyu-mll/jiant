@@ -2,7 +2,7 @@
 
 MODEL_DIR=$1 # directory of checkpoint to probe, e.g: /nfs/jsalt/share/models_to_probe/nli_do2_noelmo
 PROBING_TASK=$2 # task name, e.g. recast-puns
-RUN_NAME=$3 
+RUN_NAME=${3:-"test"}
 
 EXP_NAME="probing"
 PARAM_FILE=${MODEL_DIR}"/params.conf"
