@@ -466,6 +466,7 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
     targets_by_freq.sort(key=lambda x: x[1], reverse=True)
     for target, _ in targets_by_freq[:max_v_sizes['target']]:
+        vocab.add_token_to_namespace(target, 'targets')
         vocab.add_token_to_namespace(target, 'targets') # TODO namespace
     return vocab
 
@@ -507,10 +508,3 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-
-
-
-
-
-
