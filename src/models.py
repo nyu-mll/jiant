@@ -559,7 +559,7 @@ class MultiTaskModel(nn.Module):
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        sent_pooler = self._get_classifier(self, task) # pooler for both Input and Response
+        sent_pooler = getattr(self, "%s_mdl" % task.name) # pooler for both Input and Response         
         sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
