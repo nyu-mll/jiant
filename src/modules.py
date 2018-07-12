@@ -85,7 +85,22 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        sent_embs = self._text_field_embedder(sent)
+        # specific for lm with elmo
+        if isinstance(self._phrase_layer, ElmoLstm) and sent_embs.size(2) != self._phrase_layer.get_input_dim():
+            sent_embs_list = []
+            st = 0
+            for key in sorted(self._text_field_embedder._token_embedders.keys()):
+                if key == 'elmo':
+                    sent_embs_list.append(sent_embs[:,:,st:512])
+                    st += 1024
+                else:
+                    _d = self._text_field_embedder._token_embedders[key].get_output_dim()
+                    sent_embs_list.append(sent_embs[:,:,st:st+_d])
+                    st += _d
+            sent_embs = torch.cat(sent_embs_list, dim=-1)
+        assert(sent_embs.size(2) == self._phrase_layer.get_input_dim())
+        sent_embs = self._highway_layer(sent_embs)
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)

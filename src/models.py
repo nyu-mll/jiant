@@ -80,6 +80,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
     if sum([isinstance(task, LanguageModelingTask) for task in tasks]):
+        # specific fix for elmo emb
+        if args.elmo and not args.elmo_chars_only:
+            d_emb -= 512
         if args.bidirectional:
             rnn_params['bidirectional'] = False
             if args.sent_enc == 'rnn':
