@@ -41,7 +41,7 @@ from .tasks import \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     POSTaggingTask, CCGTaggingTask, Reddit_MTTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, 
+    MultiNLITravelTask, MultiNLITelephoneTask 
 from .tasks import POSTaggingTask, CCGTaggingTask 
 
 
