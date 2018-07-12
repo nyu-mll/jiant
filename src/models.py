@@ -107,6 +107,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
             sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                            fwd, skip_embs=args.skip_embs,
                                            dropout=args.dropout, cove_layer=cove_emb)
+        d_sent = (1 + args.bidirectional) * args.d_hid
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         d_sent = d_emb
@@ -240,6 +241,9 @@ def build_module(task, model, d_sent, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
+        if args.bidirectional:
+            lstm_out_d = model.sent_encoder._phrase_layer.get_output_dim()
+            d_sent = model.sent_encoder.output_dim - lstm_out_d / 2
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
