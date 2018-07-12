@@ -49,9 +49,10 @@ for path in sys.argv[1:]:
         do_m = re.match('"dropout": (.*),', line)
         if do_m:
           do = do_m.groups()[0]
-          if dropout is not None:
-            assert (dropout == do), "Error! Multiple dropouts set, but dropouts don't match: %s vs. %s"%(dropout, do)
-          dropout = do
+          if dropout is None:
+            # This is a bit of a hack: Take the first instance of dropout, which will come from the overall config.
+            # Later matches will appear for model-specific configs.
+            dropout = do
 
         el_m = re.match('"elmo_chars_only": (.*),', line)
         if el_m:
@@ -64,6 +65,7 @@ for path in sys.argv[1:]:
     cols['dropout'] = dropout
     cols['elmo'] = 'Y' if elmo == '0' else 'N'
 
+    assert results_line is not None, "No GLUE eval results line found. Still training?"
     for mv in results_line.strip().split(','):
       metric, value = mv.split(':')
       cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
