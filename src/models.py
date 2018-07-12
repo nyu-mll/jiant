@@ -239,7 +239,8 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
     elif isinstance(task, EdgeProbingTask):
-        module = build_edge_classifier_module(task, d_sent, task_params)
+        #  module = build_edge_classifier_module(task, d_sent, task_params)
+        module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, MTTask):
         decoder_params = Params({'input_dim': d_sent,
@@ -330,7 +331,6 @@ def get_task_specific_params(args, task_name):
                                                             attr_name)
     params = {}
     params['cls_type'] = _get_task_attr("classifier")
-    params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
     params['d_hid'] = _get_task_attr("classifier_hid_dim")
     params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
@@ -342,6 +342,10 @@ def get_task_specific_params(args, task_name):
         params['attn'] = _get_task_attr("pair_attn")
         params['d_hid_attn'] = _get_task_attr("d_hid_attn")
         params['dropout'] = _get_task_attr("classifier_dropout")
+
+    # Used for edge probing. Other tasks can safely ignore.
+    params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
+    params['span_enum_mode'] = _get_task_attr("span_enum_mode")
 
     # TODO: rename this to be more descriptive than 'name'.
     params['name'] = args.get("%s_use_classifier" % task_name, task_name)
@@ -414,8 +418,8 @@ def build_tagger(task, d_inp, out_dim):
     hid2tag = nn.Linear(d_inp, out_dim)
     return hid2tag
 
-def build_edge_classifier_module(task, d_inp: int, params):
-    ''' Build edge classifier components.
+class EdgeClassifierModule(nn.Module):
+    ''' Build edge classifier components as a sub-module.
 
     Use same classifier code as build_single_sentence_module,
     except instead of whole-sentence pooling we'll use span1 and span2 indices.
@@ -423,9 +427,20 @@ def build_edge_classifier_module(task, d_inp: int, params):
     TODO: consider alternate span-pooling operators: SegRNN for each span, or
     3rd-order Tensor interaction term between spans.
     '''
-    in_dim = 4 * d_inp  # (start_1, end_1, start_2, end_2)
-    classifier = Classifier.from_params(in_dim, task.n_classes, params)
-    return classifier
+
+    def __init__(self, task, d_inp: int, task_params):
+        super(EdgeClassifierModule, self).__init__()
+        proj_dim = task_params['d_hid']
+        # Build separate projection blocks, will apply once to sentence embeddings
+        # for each type (start1, end1, start2, end2).
+        self.proj_s1 = nn.Linear(d_inp, proj_dim)
+        self.proj_e1 = nn.Linear(d_inp, proj_dim)
+        self.proj_s2 = nn.Linear(d_inp, proj_dim)
+        self.proj_e2 = nn.Linear(d_inp, proj_dim)
+        # Classifier gets summed projections of (start1, end1, start2, end2)
+        self.classifier = Classifier.from_params(proj_dim, task.n_classes,
+                                                 task_params)
+
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
@@ -530,6 +545,10 @@ class MultiTaskModel(nn.Module):
 
     def _edge_probe_forward(self, batch, task, predict):
         task_params = getattr(self, '%s_task_params' % task.name)
+
+        # Invoke task-specific classifier
+        module = getattr(self, "%s_mdl" % task.name)
+
         out = {}
 
         # embed the sentence
@@ -537,6 +556,16 @@ class MultiTaskModel(nn.Module):
         # sent_embs is [batch_size, max_len, repr_dim]
         # sent_mask is [batch_size, max_len, 1], boolean mask
         sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+
+        # Apply projection layer to sent_embs.
+        # Get four different versions, which we can combine to span
+        # representations.
+        se_proj_s1 = module.proj_s1(sent_embs)
+        se_proj_e1 = module.proj_e1(sent_embs)
+        se_proj_s2 = module.proj_s2(sent_embs)
+        se_proj_e2 = module.proj_e2(sent_embs)
+
+        span_set = task_params["span_enum_mode"]
 
         # batch['labels'] is [batch_size, num_targets] array of ints
         # padded with -1 along last dimension.
@@ -568,16 +597,20 @@ class MultiTaskModel(nn.Module):
         # layers from repr_dim -> classifier_hid_dim for starts, ends
         # and applying this to the sentence reprs separately before combining
         # into span representations.
-        s1 = sent_embs[flat_batch_idxs, flat_span1s[:,0]]
-        e1 = sent_embs[flat_batch_idxs, flat_span1s[:,1]]
-        s2 = sent_embs[flat_batch_idxs, flat_span2s[:,0]]
-        e2 = sent_embs[flat_batch_idxs, flat_span2s[:,1]]
-        # [total_num_targets, 4*repr_dim]
-        span_vecs = torch.cat([s1, e1, s2, e2], dim=1)
+        #  s1 = sent_embs[flat_batch_idxs, flat_span1s[:,0]]
+        #  e1 = sent_embs[flat_batch_idxs, flat_span1s[:,1]]
+        #  s2 = sent_embs[flat_batch_idxs, flat_span2s[:,0]]
+        #  e2 = sent_embs[flat_batch_idxs, flat_span2s[:,1]]
+        #  # [total_num_targets, 4*repr_dim]
+        #  span_vecs = torch.cat([s1, e1, s2, e2], dim=1)
+        s1 = se_proj_s1[flat_batch_idxs, flat_span1s[:, 0]]
+        e1 = se_proj_e2[flat_batch_idxs, flat_span1s[:, 1]]
+        s2 = se_proj_s1[flat_batch_idxs, flat_span2s[:, 0]]
+        e2 = se_proj_e2[flat_batch_idxs, flat_span2s[:, 1]]
 
-        # Invoke task-specific classifier
-        classifier = getattr(self, "%s_mdl" % task.name)
-        logits = classifier(span_vecs)  # [total_num_targets, n_classes]
+        # mimic first layer of a classifier by summing projected embs
+        span_vecs = s1 + e1 + s2 + e2  # [total_num_targets, proj_dim]
+        logits = module.classifier(span_vecs)  # [total_num_targets, n_classes]
         out['logits'] = logits
 
         # Compute loss if requested.
