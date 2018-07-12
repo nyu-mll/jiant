@@ -121,7 +121,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-    tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir)
+    tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
     for task in tasks_to_build:
         build_module(task, model, d_sent, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
@@ -408,6 +408,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
+        self.cl_args = args
 
     def forward(self, task, batch, predict=False):
         '''
@@ -445,7 +446,11 @@ class MultiTaskModel(nn.Module):
 
     def _get_classifier(self, task):
         key = task.name
-        module = getattr(self, "%s_mdl" % key)
+        use_clf = config.get_task_attr(self.cl_args, task.name, "use_classifier")
+        if (use_clf == "none") or (use_clf is None):
+          module = getattr(self, "%s_mdl" % key)
+        else:
+          module = getattr(self, "%s_mdl" % use_clf)
         return module
 
     def _single_sentence_forward(self, batch, task, predict):
