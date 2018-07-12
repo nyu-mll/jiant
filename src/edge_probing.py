@@ -44,13 +44,28 @@ class EdgeClassifierModule(nn.Module):
                 sent_mask: torch.Tensor,
                 task: EdgeProbingTask,
                 predict: bool) -> Dict:
-        out = {}
+        """ Run forward pass.
 
-        # embed the sentence
-        # batch['input1'] is [batch_size, max_len, dim???]
-        # sent_embs is [batch_size, max_len, repr_dim]
-        # sent_mask is [batch_size, max_len, 1], boolean mask
-        #  sent_embs, sent_mask = sent_encoder(batch['input1'])
+        Expects batch to have the following entries:
+            'batch1' : [batch_size, max_len, ??]
+            'labels' : [batch_size, num_targets] of label indices
+            'span1s' : pbatch)size, num_targets, 2] of spans
+            'span2s' : pbatch)size, num_targets, 2] of spans
+
+        'labels', 'span1s', and 'span2s' are padded with -1 along second
+        (num_targets) dimension.
+
+        Args:
+            batch: dict(str -> Tensor) with entries described above.
+            sent_embs: [batch_size, max_len, repr_dim] Tensor
+            sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
+            task: EdgeProbingTask
+            predict: whether or not to generate predictions
+
+        Returns:
+            out: dict(str -> Tensor)
+        """
+        out = {}
 
         # Apply projection layer to sent_embs.
         # Get four different versions, which we can combine to span
@@ -59,12 +74,6 @@ class EdgeClassifierModule(nn.Module):
         se_proj_e1 = self.proj_e1(sent_embs)
         se_proj_s2 = self.proj_s2(sent_embs)
         se_proj_e2 = self.proj_e2(sent_embs)
-
-        # batch['labels'] is [batch_size, num_targets] array of ints
-        # padded with -1 along last dimension.
-
-        # batch['span1s'] and batch['span2s'] are [batch_size, num_targets, 2]
-        # array of ints, padded with -1 along second dimension.
 
         # For now, just extract specific spans and use a sigmoid loss.
         # TODO to enumerate all spans and take the given targets as positives.
@@ -86,16 +95,6 @@ class EdgeClassifierModule(nn.Module):
 
         # RaSoR-style pooling: first and last token for each span.
         # Results are [total_num_targets, repr_dim]
-        # TODO: implement more efficiently by learning separate projection
-        # layers from repr_dim -> classifier_hid_dim for starts, ends
-        # and applying this to the sentence reprs separately before combining
-        # into span representations.
-        #  s1 = sent_embs[flat_batch_idxs, flat_span1s[:,0]]
-        #  e1 = sent_embs[flat_batch_idxs, flat_span1s[:,1]]
-        #  s2 = sent_embs[flat_batch_idxs, flat_span2s[:,0]]
-        #  e2 = sent_embs[flat_batch_idxs, flat_span2s[:,1]]
-        #  # [total_num_targets, 4*repr_dim]
-        #  span_vecs = torch.cat([s1, e1, s2, e2], dim=1)
         s1 = se_proj_s1[flat_batch_idxs, flat_span1s[:, 0]]
         e1 = se_proj_e2[flat_batch_idxs, flat_span1s[:, 1]]
         s2 = se_proj_s1[flat_batch_idxs, flat_span2s[:, 0]]
