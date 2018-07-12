@@ -69,8 +69,10 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
             if strict:
                 assert_for_log(name in model_state,
                     "In strict mode and failed to find at least one parameter: " + name)
-            elif name not in model_state:
+            elif (name not in model_state) and ((not skip_task_models) or ("_mdl" not in name)):
+                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logging.warning("Parameter missing from checkpoint: " + name)
+                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     if skip_task_models:
         keys_to_skip = [key for key in model_state if "_mdl" in key]
