@@ -380,7 +380,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
 
     tasks = []
     for name in task_names:
-        assert name in NAME2INFO, 'Task not found!'
+        assert name in NAME2INFO, "Task '{:s}' not found!".format(name)
         task_info = NAME2INFO[name]
         task_src_path = os.path.join(path, task_info[1])
         task_scratch_path = os.path.join(scratch_path, task_info[1])
@@ -503,10 +503,3 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-
-
-
-
-
-
