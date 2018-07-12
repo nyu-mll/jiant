@@ -51,8 +51,6 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             task_preds = [p for _, p in idxs_and_preds]
         all_preds[task.name] = task_preds
 
-    #  import ipdb; ipdb.set_trace()  # DEBUG
-
     all_metrics["micro_avg"] /= n_examples_overall
     all_metrics["macro_avg"] /= len(tasks)
 
