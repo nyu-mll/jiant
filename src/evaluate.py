@@ -6,7 +6,6 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from .tasks import RegressionTask, STSBTask, JOCITask
 
-
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
     model.eval()
@@ -55,7 +54,6 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
-
 
 def write_preds(all_preds, pred_dir):
     ''' Write predictions to separate files located in pred_dir.
