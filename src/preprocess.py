@@ -472,7 +472,14 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     return vocab
 
 def add_task_label_vocab(vocab, task):
-    '''Add custom task labels to a separate namespace.'''
+    '''Add custom task labels to a separate namespace.
+
+    If task has a 'get_all_labels' method, call that to get a list of labels
+    to populate the <task_name>_labels vocabulary namespace.
+
+    This can then be accessed when generating Instances, either via a custom
+    Indexer or by invoking the namespace when creating a LabelField.
+    '''
     if not hasattr(task, 'get_all_labels'):
         return
     namespace = task.name + "_labels"
