@@ -741,7 +741,7 @@ class SamplingMultiTaskTrainer():
 
         model_state = self._model.state_dict()
 
-        keys_to_save = []
+        # Skip non-trainable params, like the main ELMo params.
         for name, param in self._model.named_parameters():
             if not param.requires_grad:
                 del model_state[name]
