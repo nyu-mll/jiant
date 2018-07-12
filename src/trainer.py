@@ -858,9 +858,9 @@ class SamplingMultiTaskTrainer():
 
         for name, param in self._model.named_parameters():
             if param.requires_grad and name not in model_state:
-                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                logging.warning("Parameter missing from checkpoint: " + name)
-                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                log.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                log.warning("Parameter missing from checkpoint: " + name)
+                log.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         self._model.load_state_dict(model_state, strict=False)
 
