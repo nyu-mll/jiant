@@ -957,8 +957,21 @@ class MTTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
-            self.train_data_text[2] + self.val_data_text[2]
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a machine translation split '''
+        def _make_instance(input, target):
+             d = {}
+             d["inputs"] = _sentence_to_text_field(input, indexers)
+             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+             return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        #  return list(instances)
+        return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
@@ -977,19 +990,6 @@ class MTTask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a machine translation split '''
-        def _make_instance(input, target):
-            d = {}
-            d["inputs"] = _sentence_to_text_field(input, indexers)
-            d["targs"] = _sentence_to_text_field(target, indexers)
-            return Instance(d)
-        # Map over columns: inputs, targs
-        instances = map(_make_instance, split[0], split[2])
-        #  return list(instances)
-        return instances  # lazy iterator
-
 
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
@@ -1020,7 +1020,6 @@ class WikiInsertionsTask(MTTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
-
 
 class DisSentBWBSingleTask(PairClassificationTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
@@ -1489,12 +1488,3 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
-
-
-
-
-
-
-
-
-
