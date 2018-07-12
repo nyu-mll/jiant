@@ -365,12 +365,15 @@ def build_tasks(args):
 
 def _parse_task_list_arg(task_list):
     '''Parse task list argument into a list of task names.'''
-    if task_list == 'glue':
-        return ALL_GLUE_TASKS
-    elif task_list == 'none':
-        return []
-    else:
-        return task_list.split(',')
+    task_names = []
+    for task_name in task_list.split(','):
+        if task_name == 'glue':
+            task_names.extend(ALL_GLUE_TASKS)
+        elif task_name == 'none' or task_name == '':
+            continue
+        else:
+            task_names.append(task_name)
+    return task_names
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
