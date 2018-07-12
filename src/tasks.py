@@ -963,11 +963,15 @@ class MTTask(SequenceGenerationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a machine translation split '''
-        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
-        instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
-        return instances
+        def _make_instance(input, target):
+             d = {}
+             d["inputs"] = _sentence_to_text_field(input, indexers)
+             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+             return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        #  return list(instances)
+        return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
