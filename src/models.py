@@ -146,7 +146,7 @@ def get_task_whitelist(args):
     else:
       eval_clf_names.append(override_clf)
   train_task_names = _parse_task_list_arg(args.train_tasks)
-  #import ipdb; ipdb.set_trace()
+  log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s"%(str(train_task_names), str(eval_clf_names)))
   return train_task_names, eval_clf_names
 
 def build_embeddings(args, vocab, pretrained_embs=None):
