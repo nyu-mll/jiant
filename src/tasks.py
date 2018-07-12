@@ -30,7 +30,7 @@ from .allennlp_mods.numeric_field import NumericField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate
+from .utils import load_tsv, PreprocessWorker, truncate
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, **kw):
@@ -366,12 +366,13 @@ class WikiTextLMTask(LanguageModelingTask):
 
     def load_txt(self, path, max_seq_len):
         data = []
+        preprocess_worker = PreprocessWorker()
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if toks == '':
                     continue
-                data.append(process_sentence(toks, max_seq_len))
+                data.append(preprocess_worker.process_sentence(toks, max_seq_len))
         return data
 
 
@@ -439,13 +440,13 @@ class RedditTask(RankingTask):
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
         tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0, use_multiprocessing=True)
         print("FINISHED LOADING TRAIN DATA")
         dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0, use_multiprocessing=True)
         print("FINISHED LOADING dev DATA")
         test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
+                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0, use_multiprocessing=True)
         print("FINISHED LOADING test DATA")
         self.train_data_text = tr_data
         self.val_data_text = dev_data
