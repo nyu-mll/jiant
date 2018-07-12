@@ -745,7 +745,6 @@ class SamplingMultiTaskTrainer():
         for name, param in self._model.named_parameters():
             if not param.requires_grad:
                 del model_state[name]
-                print('Skipping', name)
         torch.save(model_state, model_path)
 
         if phase != "eval":
