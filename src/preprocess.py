@@ -371,8 +371,7 @@ def _parse_task_list_arg(task_list):
             continue
         else:
             task_names.append(task_name)
-    else:
-        return task_names
+    return task_names
 
 
 def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
