@@ -485,7 +485,10 @@ class MultiTaskModel(nn.Module):
         out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
-            labels = batch['labels'].squeeze(-1)
+            if batch['labels'].dim() == 0:
+                labels = batch['labels'].unsqueeze(0)
+            else:
+                labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
