@@ -35,14 +35,14 @@ class EdgeClassifierModule(nn.Module):
         self.proj_s2 = nn.Linear(d_inp, proj_dim)
         self.proj_e2 = nn.Linear(d_inp, proj_dim)
         # Classifier gets summed projections of (start1, end1, start2, end2)
-        self.classifier = modules.Classifier.from_params(proj_dim, 
+        self.classifier = modules.Classifier.from_params(proj_dim,
                                                          task.n_classes,
                                                          task_params)
 
-    def forward(self, batch: Dict, 
+    def forward(self, batch: Dict,
                 sent_embs: torch.Tensor,
                 sent_mask: torch.Tensor,
-                task: EdgeProbingTask, 
+                task: EdgeProbingTask,
                 predict: bool) -> Dict:
         out = {}
 
