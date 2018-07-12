@@ -3,8 +3,8 @@
 - As much as possible, following the existing task hierarchy structure.
 - When inheriting, be sure to write and call load_data.
 - Set all text data as an attribute, task.sentences (List[List[str]])
-- Each task's val_metric should be name_metric, where metric is returned by 
-get_metrics(): e.g. if task.val_metric = task_name + "_accuracy", then 
+- Each task's val_metric should be name_metric, where metric is returned by
+get_metrics(): e.g. if task.val_metric = task_name + "_accuracy", then
 task.get_metrics() should return {"accuracy": accuracy_val, ... }
 '''
 import copy
@@ -358,7 +358,7 @@ class EdgeProbingTask(Task):
         acc = self.acc_scorer.get_metric(reset)
         precision, recall, f1 = self.f1_scorer.get_metric(reset)
         return {'mcc': mcc,
-                'accuracy': acc, 
+                'accuracy': acc,
                 'f1': f1,
                 'precision': precision,
                 'recall': recall}
