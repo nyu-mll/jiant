@@ -855,6 +855,13 @@ class SamplingMultiTaskTrainer():
                                          "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
+
+        for name, param in model.named_parameters():
+            if param.requires_grad and name not in model_state:
+                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                logging.warning("Parameter missing from checkpoint: " + name)
+                logging.warning("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
         self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
