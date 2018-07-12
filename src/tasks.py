@@ -1351,7 +1351,6 @@ class RecastNLITask(PairClassificationTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        self.use_classifier = 'mnli'
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
