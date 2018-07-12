@@ -85,7 +85,28 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        sent_embs = self._text_field_embedder(sent)
+
+        # specific for lm with elmo
+        # we need to split the outputs of ELMo by direction so no info leakage
+        '''
+        if isinstance(self._phrase_layer, BiLMEncoder) and \
+                sent_embs.size(2) != self._phrase_layer.get_input_dim():
+            sent_embs_list = []
+            st = 0
+            for key in sorted(self._text_field_embedder._token_embedders.keys()):
+                if key == 'elmo':
+                    sent_embs_list.append(sent_embs[:,:,st:512])
+                    st += 1024
+                else:
+                    _d = self._text_field_embedder._token_embedders[key].get_output_dim()
+                    sent_embs_list.append(sent_embs[:,:,st:st+_d])
+                    st += _d
+            sent_embs = torch.cat(sent_embs_list, dim=-1)
+        assert(sent_embs.size(2) == self._phrase_layer.get_input_dim())
+        '''
+
+        sent_embs = self._highway_layer(sent_embs)
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
@@ -98,7 +119,7 @@ class SentenceEncoder(Model):
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
 
         # ELMoLSTM returns all layers, we just want to use the top layer
-        if isinstance(self._phrase_layer, ElmoLstm):
+        if isinstance(self._phrase_layer, BiLMEncoder):
             sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
@@ -107,74 +128,13 @@ class SentenceEncoder(Model):
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
 
+class BiLMEncoder(ElmoLstm):
+    ''' Wrapper around BiLM to give it an interface to comply with SentEncoder '''
+    def get_input_dim(self):
+        return self.input_size
 
-class BiLMEncoder(SentenceEncoder):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM
-    A simple wrap up for bidirectional LM training
-    '''
-
-    def __init__(self, vocab, text_field_embedder, num_highway_layers,
-                 phrase_layer, bwd_phrase_layer, skip_embs=True,
-                 cove_layer=None, dropout=0.2, mask_lstms=True,
-                 initializer=InitializerApplicator()):
-        super(
-            BiLMEncoder,
-            self).__init__(
-            vocab,
-            text_field_embedder,
-            num_highway_layers,
-            phrase_layer,
-            skip_embs,
-            cove_layer,
-            dropout,
-            mask_lstms,
-            initializer)
-        self._bwd_phrase_layer = bwd_phrase_layer
-        self.output_dim *= 2
-        initializer(self)
-
-    def _uni_directional_forward(self, sent, go_forward=True):
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        if self._cove is not None:
-            sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-            sent_cove_embs = self._cove(sent['words'], sent_lens)
-            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-        sent_embs = self._dropout(sent_embs)
-
-        sent_mask = util.get_text_field_mask(sent).float()
-        sent_lstm_mask = sent_mask if self._mask_lstms else None
-
-        if go_forward:
-            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
-        else:
-            sent_enc = self._bwd_phrase_layer(sent_embs, sent_lstm_mask)
-        sent_enc = self._dropout(sent_enc)
-        if self.skip_embs:
-            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
-
-        sent_mask = sent_mask.unsqueeze(dim=-1)
-        return sent_enc, sent_mask
-
-    def forward(self, sent, bwd_sent=None):
-        # pylint: disable=arguments-differ
-        """
-        Args:
-            - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
-
-        Returns:
-            - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
-        """
-        # TODO(Alex): bwd_sent_enc is likely flipped? shouldn't concatenate
-        # The masks should be the same though
-        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent)
-        if bwd_sent is not None:
-            bwd_sent_enc, _ = self._uni_directional_forward(bwd_sent, False)
-            sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=-1)
-        else:
-            sent_enc = fwd_sent_enc
-
-        return sent_enc, fwd_sent_mask
-
+    def get_output_dim(self):
+        return self.hidden_size * 2
 
 class BoWSentEncoder(Model):
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):

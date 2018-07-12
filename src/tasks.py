@@ -22,11 +22,33 @@ from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField
+from allennlp.data.fields import TextField, LabelField, SpanField, ListField
 from .allennlp_mods.numeric_field import NumericField
 
 from . import serialize
+from . import utils
 from .utils import load_tsv, process_sentence, truncate
+
+REGISTRY = {}  # Do not edit manually!
+def register_task(name, rel_path, kw=None):
+    '''Decorator to register a task.
+
+    Use this instead of adding to NAME2INFO in preprocess.py
+
+    If kw is not None, this will be passed as additional args when the Task is
+    constructed in preprocess.py.
+
+    Usage:
+    @register_task('mytask', 'my-task/data', **extra_kw)
+    class MyTask(SingleClassificationTask):
+        ...
+    '''
+    def _wrap(cls):
+        entry = (cls, rel_path, kw) if kw else (cls, rel_path)
+        REGISTRY[name] = entry
+        return cls
+    return _wrap
+
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
@@ -97,12 +119,35 @@ class Task():
         ''' Yield sentences, used to compute vocabulary. '''
         yield from self.sentences
 
+    def count_examples(self, splits=['train', 'val', 'test']):
+        ''' Count examples in the dataset. '''
+        self.example_counts = {}
+        for split in splits:
+            st = self.get_split_text(split)
+            count = self.get_num_examples(st)
+            self.example_counts[split] = count
+
+    @property
+    def n_train_examples(self):
+        return self.example_counts['train']
+
+    @property
+    def n_val_examples(self):
+        return self.example_counts['val']
+
     def get_split_text(self, split: str):
         ''' Get split text, typically as list of columns.
 
         Split should be one of 'train', 'val', or 'test'.
         '''
         return getattr(self, '%s_data_text' % split)
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text[0])
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
@@ -180,6 +225,7 @@ class NLIProbingTask(PairClassificationTask):
 
     def __init__(self, name, n_classes):
         super().__init__(name)
+        self.use_classifier = 'mnli'
 
 
 class PairRegressionTask(RegressionTask):
@@ -264,6 +310,11 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
 
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text. '''
+        # Special case for LM: split_text is a single list.
+        return len(split_text)
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         nll = self.scorer1.get_metric(reset)
@@ -274,23 +325,20 @@ class LanguageModelingTask(SequenceGenerationTask):
 
         Split is a single list of sentences here.
         '''
-        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-                   for sent in split]
         if "chars" not in indexers:
             targs_indexers = {"words": SingleIdTokenIndexer()}
         else:
             targs_indexers = indexers
-        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-        return instances
+        def _make_instance(sent):
+            d = {}
+            d["input"] = _sentence_to_text_field(sent, indexers)
+            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
+            return Instance(d)
+        
+        for sent in split:
+            yield _make_instance(sent)
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -719,6 +767,7 @@ class MultiNLITask(PairClassificationTask):
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
+        val_data = val_matched_data
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
@@ -738,17 +787,18 @@ class MultiNLITask(PairClassificationTask):
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
-    def __init__(self, path, max_seq_len, name="nli-prob"):
+    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len)
+        self.load_data(path, max_seq_len, probe_path)
+        self.use_classifier = 'mnli'
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self, path, max_seq_len, probe_path):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dat_cv/with.cvcv.mnli'), max_seq_len,
+        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
                         s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
@@ -1354,8 +1404,6 @@ class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
         super(RecastKGTask, self).__init__(path, max_seq_len, name)
-
-
 
 class TaggingTask(Task):
     ''' Generic tagging, one tag per word '''
