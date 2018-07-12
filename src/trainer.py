@@ -855,7 +855,6 @@ class SamplingMultiTaskTrainer():
                                          "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
-        print(model_state.keys())
         self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
