@@ -470,7 +470,7 @@ class Reddit_MTTask(SequenceGenerationTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
             self.train_data_text[2] + self.val_data_text[2]
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
 
     def load_data(self, path, max_seq_len):
         print("Loading data")
