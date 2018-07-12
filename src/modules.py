@@ -62,11 +62,11 @@ class SentenceEncoder(Model):
             d_emb = text_field_embedder.get_output_dim()
             self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
         self._phrase_layer = phrase_layer
-        #d_inp_phrase = phrase_layer.get_input_dim()
+        d_inp_phrase = phrase_layer.get_input_dim()
         self._cove = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.output_dim = phrase_layer.get_output_dim() #+ (skip_embs * d_inp_phrase)
+        self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
         if dropout > 0:
             self._dropout = torch.nn.Dropout(p=dropout)
@@ -96,6 +96,8 @@ class SentenceEncoder(Model):
         sent_lstm_mask = sent_mask if self._mask_lstms else None
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+
+        # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, ElmoLstm):
             sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)

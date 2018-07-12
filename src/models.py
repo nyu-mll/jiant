@@ -4,7 +4,6 @@ import sys
 import math
 import copy
 import logging as log
-import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -23,7 +22,8 @@ from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, 
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
+from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder, \
+                                              PytorchSeq2SeqWrapper
 from allennlp.training.metrics import Average
 
 from .utils import get_batch_utilization, get_elmo_mixing_weights
@@ -79,29 +79,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
     if sum([isinstance(task, LanguageModelingTask) for task in tasks]):
-        if args.bidirectional:
-            rnn_params['bidirectional'] = False
-            if args.sent_enc == 'rnn':
-                fwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
-                bwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
-            elif args.sent_enc == 'transformer':
-                fwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-                bwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-            #sent_encoder = BiLMEncoder(vocab, embedder, args.n_layers_highway,
-            #                           fwd, bwd, dropout=args.dropout,
-            #                           skip_embs=args.skip_embs, cove_layer=cove_emb)
-            tmp = ElmoLstm(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
-            sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                           tmp, skip_embs=args.skip_embs,
-                                           dropout=args.dropout, cove_layer=cove_emb)
-        else:  # not bidirectional
-            if args.sent_enc == 'rnn':
-                fwd = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
-            elif args.sent_enc == 'transformer':
-                fwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-            sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                           fwd, skip_embs=args.skip_embs,
-                                           dropout=args.dropout, cove_layer=cove_emb)
+        assert_for_log(args.sent_enc == 'rnn', "Only RNNLM supported!")
+        bilm = PytorchSeq2SeqWrapper(ElmoLstm(d_emb, args.d_hid, args.d_hid, args.n_layers_enc))
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       bilm, skip_embs=args.skip_embs,
+                                       dropout=args.dropout, cove_layer=cove_emb)
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         d_sent = d_emb
