@@ -63,8 +63,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
         "Can't skip task models while also strictly loading task models. Something is wrong.")
 
     for name, param in model.named_parameters():
-        # We load ELMo separately (in Allen code), so we don't need it to be here,
-        # even in strict mode.
+        # Make sure no trainable params are missing.
         if param.requires_grad:
             if strict:
                 assert_for_log(name in model_state,
