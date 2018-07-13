@@ -43,7 +43,7 @@ from .tasks import \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
     MultiNLITravelTask, MultiNLITelephoneTask 
 from .tasks import POSTaggingTask, CCGTaggingTask 
-
+from .tasks import Reddit_MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
