@@ -27,6 +27,7 @@ from allennlp.training.metrics import Average
 
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
+from . import edge_probing
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -42,6 +43,7 @@ from .tasks import STSBTask, CoLATask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
+from .tasks import EdgeProbingTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
@@ -267,6 +269,9 @@ def build_module(task, model, d_sent, vocab, embedder, args):
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
+    elif isinstance(task, EdgeProbingTask):
+        module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, MTTask):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -330,6 +335,10 @@ def get_task_specific_params(args, task_name):
         params['d_hid_attn'] = _get_task_attr("d_hid_attn")
         params['dropout'] = _get_task_attr("classifier_dropout")
 
+    # Used for edge probing. Other tasks can safely ignore.
+    params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
+
+    # For NLI probing tasks, might want to use a classifier trained 
     cls_task_name = _get_task_attr("use_classifier")
     params['use_classifier'] = cls_task_name or task_name  # default to this task
 
@@ -450,6 +459,12 @@ class MultiTaskModel(nn.Module):
             out = self._vae_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
+        elif isinstance(task, EdgeProbingTask):
+            # Just get embeddings and invoke task module.
+            sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+            module = getattr(self, "%s_mdl" % task.name)
+            out = module.forward(batch, sent_embs, sent_mask,
+                                 task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
@@ -568,7 +583,6 @@ class MultiTaskModel(nn.Module):
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
-        #import ipdb as pdb; pdb.set_trace()
         if 1:
             #total_loss, batch_acc = BCE_implementation(sent1_rep, sent1_rep)
             #out['loss'] = total_loss
@@ -584,7 +598,6 @@ class MultiTaskModel(nn.Module):
             #scale = (len(cos_simi) - 1)
             #weights = torch.ones(cos_simi.shape) + (scale-1) * torch.eye(len(cos_simi))
             weights = weights.view(-1).cuda()
-            #import ipdb as pdb; pdb.set_trace()
 
 
             cos_simi = cos_simi.view(-1)
@@ -593,7 +606,6 @@ class MultiTaskModel(nn.Module):
 
             #cos_simi = torch.diagonal(cos_simi)
             #labels = torch.ones(cos_simi.shape).cuda()
-            #import ipdb as pdb; pdb.set_trace()
 
             total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
             #total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
@@ -602,7 +614,6 @@ class MultiTaskModel(nn.Module):
             batch_acc = total_correct.item()/len(labels)
             out["n_exs"] = len(labels)
             task.scorer1(batch_acc)
-            #import ipdb as pdb; pdb.set_trace()
         return out
 
 

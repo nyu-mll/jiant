@@ -231,6 +231,139 @@ class NLIProbingTask(PairClassificationTask):
         #  self.use_classifier = 'mnli'  # use .conf params instead
 
 
+# Make sure we load the properly-retokenized versions.
+_tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
+@register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.wsj.edges.json" + _tokenizer_suffix,
+               })
+class EdgeProbingTask(Task):
+    ''' Generic class for fine-grained edge probing.
+
+    Acts as a classifier, but with multiple targets for each input text.
+
+    Targets are of the form (span1, span2, label), where span1 and span2 are
+    half-open token intervals [i, j).
+
+    Subclass this for each dataset, or use register_task with appropriate kw
+    args.
+    '''
+    def __init__(self, path, max_seq_len, name,
+                 label_file=None,
+                 files_by_split=None):
+        super().__init__(name)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname)
+            for split, fname in files_by_split.items()
+        }
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        # see add_task_label_namespace in preprocess.py
+        self._label_namespace = self.name + "_labels"
+
+        self.mcc_scorer = Correlation("matthews")
+        self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        #  self.val_metric = "%s_accuracy" % self.name
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(utils.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def make_instance(self, record, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        text = _sentence_to_text_field(tokens, indexers)
+        span1s = [t['span1'] for t in record['targets']]
+        span2s = [t['span2'] for t in record['targets']]
+        labels = [t['label'] for t in record['targets']]
+
+        d = {}
+        d['input1'] = text
+        d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span1s])
+        d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span2s])
+        d['labels'] = ListField([LabelField(label,
+                                            label_namespace=self._label_namespace)
+                                 for label in labels])
+        return Instance(d)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        _map_fn = lambda r: self.make_instance(r, indexers)
+        return map(_map_fn, records)
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        mcc = self.mcc_scorer.get_metric(reset)
+        acc = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        return {'mcc': mcc,
+                'accuracy': acc,
+                'f1': f1,
+                'precision': precision,
+                'recall': recall}
+
+
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
