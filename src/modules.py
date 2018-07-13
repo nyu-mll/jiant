@@ -76,7 +76,7 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def forward(self, sent):
+    def forward(self, sent, task):
         # pylint: disable=arguments-differ
         """
         Args:
@@ -85,20 +85,27 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
+        # embeddings
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
-
+        task_sent_embs = self._dropout(task_sent_embs)
+        
+        # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
 
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         sent_enc = self._dropout(sent_enc)
+
+        # skip connection
         if self.skip_embs:
-            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+            sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
@@ -129,8 +136,8 @@ class BiLMEncoder(SentenceEncoder):
         self.output_dim *= 2
         initializer(self)
 
-    def _uni_directional_forward(self, sent, go_forward=True):
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+    def _uni_directional_forward(self, sent, task, go_forward=True):
+        sent_embs = self._highway_layer(self._text_field_embedder(sent, task))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
@@ -151,7 +158,7 @@ class BiLMEncoder(SentenceEncoder):
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
 
-    def forward(self, sent, bwd_sent=None):
+    def forward(self, sent, task, bwd_sent=None):
         # pylint: disable=arguments-differ
         """
         Args:
@@ -162,7 +169,7 @@ class BiLMEncoder(SentenceEncoder):
         """
         # TODO(Alex): bwd_sent_enc is likely flipped? shouldn't concatenate
         # The masks should be the same though
-        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent)
+        fwd_sent_enc, fwd_sent_mask = self._uni_directional_forward(sent, task)
         if bwd_sent is not None:
             bwd_sent_enc, _ = self._uni_directional_forward(bwd_sent, False)
             sent_enc = torch.cat([fwd_sent_enc, bwd_sent_enc], dim=-1)
@@ -549,8 +556,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                    num_attention_heads=num_attention_heads,
                    use_positional_encoding=use_positional_encoding,
                    dropout_prob=dropout_prob)
-
-
+    
 class ElmoCharacterEncoder(torch.nn.Module):
     """
     Compute context sensitive token representation using pretrained biLM.

@@ -129,10 +129,9 @@ def main(cl_arguments):
                         any(train_task.val_metric_decreases for train_task in train_tasks)),
                    "Attempting multitask training with a mix of increasing and decreasing metrics. "
                    "This is not currently supported. (We haven't set it up yet.)")
-
-    tasks = train_tasks + eval_tasks
+    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x:x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-
+    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
