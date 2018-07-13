@@ -120,8 +120,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-    tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
+
+    if args.is_probing_task:
+      train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
+      tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
+    else:
+      tasks_to_build = tasks
+
     for task in tasks_to_build:
         build_module(task, model, d_sent, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
@@ -137,6 +142,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
     return model
 
 def get_task_whitelist(args):
+  """Filters tasks so that we only build models that we will use, meaning we only
+  build models for train tasks and for classifiers of eval tasks""'
   eval_task_names = _parse_task_list_arg(args.eval_tasks)
   eval_clf_names = []
   for task_name in eval_task_names:
@@ -445,13 +452,10 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _get_classifier(self, task):
-        key = task.name
         use_clf = config.get_task_attr(self.cl_args, task.name, "use_classifier")
         if (use_clf == "none") or (use_clf is None):
-          module = getattr(self, "%s_mdl" % key)
-        else:
-          module = getattr(self, "%s_mdl" % use_clf)
-        return module
+          use_clf = task.name
+        return module = getattr(self, "%s_mdl" % use_clf)
 
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
