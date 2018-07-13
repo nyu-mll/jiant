@@ -271,7 +271,7 @@ def build_tasks(args):
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
-        get_tasks(_parse_task_list_arg(args.train_tasks), _parse_task_list_arg(args.eval_tasks), args.max_seq_len,
+        get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
@@ -312,7 +312,7 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
+    reindex_tasks = parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
@@ -363,7 +363,7 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def _parse_task_list_arg(task_list):
+def parse_task_list_arg(task_list):
     '''Parse task list argument into a list of task names.'''
     task_names = []
     for task_name in task_list.split(','):

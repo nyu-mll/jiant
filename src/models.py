@@ -48,7 +48,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
-from .preprocess import _parse_task_list_arg, get_tasks
+from .preprocess import parse_task_list_arg, get_tasks
 from .seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -159,7 +159,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 def get_task_whitelist(args):
   """Filters tasks so that we only build models that we will use, meaning we only
   build models for train tasks and for classifiers of eval tasks"""
-  eval_task_names = _parse_task_list_arg(args.eval_tasks)
+  eval_task_names = parse_task_list_arg(args.eval_tasks)
   eval_clf_names = []
   for task_name in eval_task_names:
     override_clf = config.get_task_attr(args, task_name, 'use_classifier')
@@ -167,7 +167,7 @@ def get_task_whitelist(args):
       eval_clf_names.append(task_name)
     else:
       eval_clf_names.append(override_clf)
-  train_task_names = _parse_task_list_arg(args.train_tasks)
+  train_task_names = parse_task_list_arg(args.train_tasks)
   log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s"%(str(train_task_names), str(eval_clf_names)))
   return train_task_names, eval_clf_names
 
