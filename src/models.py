@@ -450,13 +450,10 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _get_classifier(self, task):
-        key = task.name
         use_clf = config.get_task_attr(self.cl_args, task.name, "use_classifier")
         if (use_clf == "none") or (use_clf is None):
-          module = getattr(self, "%s_mdl" % key)
-        else:
-          module = getattr(self, "%s_mdl" % use_clf)
-        return module
+          use_clf = task.name
+        return module = getattr(self, "%s_mdl" % use_clf)
 
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
