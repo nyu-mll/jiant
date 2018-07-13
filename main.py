@@ -91,7 +91,10 @@ def main(cl_arguments):
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
     local_log_path = os.path.join(args.run_dir, args.log_file)
-    log.getLogger().addHandler(log.FileHandler(local_log_path))
+    log_handler = log.FileHandler(local_log_path)
+    log_formatter = log.Formatter('%(asctime)s: %(message)s', datefmt='%m/%d %I:%M:%S %p')
+    log_handler.setFormatter(log_formatter)
+    log.getLogger().addHandler(log_handler)
 
     if cl_args.remote_log:
         gcp.configure_remote_logging(args.remote_log_name)
