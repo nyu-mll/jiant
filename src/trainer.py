@@ -584,9 +584,10 @@ class SamplingMultiTaskTrainer():
                     log.info("%s: %.6f", name, value)
                 # TODO (Shuning): log the weights of the tasks here (the Q parameters?), so we can
                 #   watch them change.
-                log.info("Task action value:")
-                for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
-                    log.info("  %s qvalue: %.4f", taskname, Qvalue)
+                if weighting_method == 'bandit':
+                    log.info("Task action value:")
+                    for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
+                        log.info("  %s qvalue: %.4f", taskname, Qvalue)
 
                 elmo_params = self._model.get_elmo_mixing_weights()
                 if elmo_params:
