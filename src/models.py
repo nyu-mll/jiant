@@ -339,7 +339,7 @@ def get_task_specific_params(args, task_name):
         params['dropout'] = _get_task_attr("classifier_dropout")
 
     cls_task_name = _get_task_attr("use_classifier")
-    params['cls_name'] = cls_task_name or task_name  # default to this task
+    params['use_classifier'] = cls_task_name or task_name  # default to this task
 
     return Params(params)
 
