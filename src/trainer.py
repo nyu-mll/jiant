@@ -248,9 +248,6 @@ class SamplingMultiTaskTrainer():
             task_info['n_batches_since_val'] = 0
             task_info['optimizer'] = Optimizer.from_params(train_params,
                                                            copy.deepcopy(optimizer_params))
-            # don't we don't want to update a specific set of parameters
-            # if phase == "eval":
-            #    del task_info['optimizer']
             task_info['scheduler'] = LearningRateScheduler.from_params(
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
@@ -390,7 +387,7 @@ class SamplingMultiTaskTrainer():
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
-
+            
             # randomly select a task
             task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]

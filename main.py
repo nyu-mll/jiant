@@ -214,9 +214,12 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
+        # might be empty if no elmo
+        elmo_scalars = [(n, p) for n, p in model.named_parameters() if
+                       "scalar_mix" in n and "scalar_mix_0" not in n]
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,

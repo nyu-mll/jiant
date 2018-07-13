@@ -29,9 +29,9 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         for key, embedder in token_embedders.items():
             name = 'token_embedder_%s' % key
             self.add_module(name, embedder)
-        self.task_map = {task.name:i for i, task in enumerate(tasks)}
+        self.task_map = {task.name:(i+1) for i, task in enumerate(tasks)}
         # pretrain task is a special, privileged task
-        self.task_map["@pretrain@"] = len(self.task_map) 
+        self.task_map["@pretrain@"] = 0
 
     @overrides
     def get_output_dim(self) -> int:
