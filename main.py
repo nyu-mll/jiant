@@ -151,10 +151,14 @@ def main(cl_arguments):
     if args.do_train:
         assert_for_log(args.train_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.train_tasks)
+        assert_for_log(args.val_interval % args.bpp_base == 0,
+                       "Error: val_interval [%d] must be divisible by bpp_base [%d]" % (args.val_interval,args.bpp_base))
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
+        assert_for_log(args.eval_val_interval % args.bpp_base == 0,
+                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))        
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",

@@ -154,6 +154,12 @@ def load_json_data(filename: str) -> Iterable:
         for line in fd:
             yield json.loads(line)
 
+def load_lines(filename: str) -> Iterable[str]:
+    ''' Load text data, yielding each line. '''
+    with open(filename) as fd:
+        for line in fd:
+            yield line.strip()
+
 def load_tsv(
         data_file,
         max_seq_len,
