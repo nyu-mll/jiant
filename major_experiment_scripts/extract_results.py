@@ -41,10 +41,10 @@ for path in sys.argv[1:]:
 
         train_m = re.match('Training model on tasks: (.*)', line)
         if train_m:
-          task = train_m.groups()[0]
+          found_tasks = train_m.groups()[0]
           if train_tasks is not None:
-            assert (task == train_tasks), "Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, task)
-          train_tasks = task
+            assert (found_tasks == train_tasks), "Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, found_tasks)
+          train_tasks = found_tasks
 
         do_m = re.match('"dropout": (.*),', line)
         if do_m:
