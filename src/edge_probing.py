@@ -27,10 +27,28 @@ class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
 
     Use same classifier code as build_single_sentence_module,
-    except instead of whole-sentence pooling we'll use span1 and span2 indices.
+    except instead of whole-sentence pooling we'll use span1 and span2 indices
+    to extract span representations, and use these as input to the classifier.
+
+    This works in the current form, but with some provisos:
+        - Expects both span1 and span2 to be set. TODO to support single-span
+        tasks like tagging and constituency membership.
+        - Only considers the explicit set of spans in inputs; does not consider
+        all other spans as negatives. (So, this won't work for argument
+        _identification_ yet.)
+        - Spans are represented by endpoints, and pooled by projecting each
+        side and adding the project span1 and span2 representations (this is
+        equivalent to concat + linear layer).
 
     TODO: consider alternate span-pooling operators: SegRNN for each span, or
     3rd-order Tensor interaction term between spans.
+
+    TODO: add span-expansion to negatives, one of the following modes:
+        - all-spans (either span1 or span2), treating not-seen as negative
+        - all-tokens (assuming span1 and span2 are length-1), e.g. for
+        dependency parsing
+        - batch-negative (pairwise among spans seen in batch, where not-seen
+        are negative)
     '''
 
     def __init__(self, task, d_inp: int, task_params):
