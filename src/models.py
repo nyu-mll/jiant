@@ -143,7 +143,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
 def get_task_whitelist(args):
   """Filters tasks so that we only build models that we will use, meaning we only
-  build models for train tasks and for classifiers of eval tasks""'
+  build models for train tasks and for classifiers of eval tasks"""
   eval_task_names = _parse_task_list_arg(args.eval_tasks)
   eval_clf_names = []
   for task_name in eval_task_names:
