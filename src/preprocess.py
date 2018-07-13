@@ -37,11 +37,13 @@ from .tasks import \
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask
-from .tasks import MultiNLIFictionTask, \
-    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
-    MultiNLITelephoneTask
-from .tasks import POSTaggingTask, CCGTaggingTask
+    RedditTask, \
+    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
+    POSTaggingTask, CCGTaggingTask, Reddit_MTTask, \
+    MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
+    MultiNLITravelTask, MultiNLITelephoneTask 
+from .tasks import POSTaggingTask, CCGTaggingTask 
+
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -76,6 +78,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
