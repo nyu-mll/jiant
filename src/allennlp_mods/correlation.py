@@ -4,6 +4,7 @@ from overrides import overrides
 from allennlp.training.metrics.metric import Metric
 from sklearn.metrics import matthews_corrcoef
 from scipy.stats import pearsonr, spearmanr
+import torch
 
 @Metric.register("correlation")
 class Correlation(Metric):
@@ -32,10 +33,35 @@ class Correlation(Metric):
         return corr
 
     def __call__(self, predictions, labels):
-        if isinstance(predictions, np.ndarray):
-            predictions = predictions.tolist()
-        if isinstance(labels, np.ndarray):
-            labels = labels.tolist()
+        """ Accumulate statistics for a set of predictions and labels.
+
+        Values depend on correlation type; for Matthews we enforce that labels
+        are binary {0,1} (for now).
+
+        Args:
+            predictions: Tensor or np.array
+            labels: Tensor or np.array of same shape as predictions
+        """
+        # Convert from Tensor if necessary
+        if isinstance(predictions, torch.Tensor):
+            predictions = predictions.cpu().numpy()
+        if isinstance(labels, torch.Tensor):
+            labels = labels.cpu().numpy()
+
+        # Verify shape match
+        assert predictions.shape == labels.shape, ("Predictions and labels must"
+                                                   " have matching shape. Got:"
+                                                   " preds=%s, labels=%s" % (
+                                                       str(predictions.shape),
+                                                       str(labels.shape)))
+        # Validate Matthews, must be binary labels.
+        if self.corr_type == 'matthews':
+            _validate_binary = lambda t: np.all((t == 0) | (t == 1))
+            assert _validate_binary(predictions)
+            assert _validate_binary(labels)
+
+        predictions = list(predictions.flatten())
+        labels = list(labels.flatten())
 
         if hasattr(self, '_per_batch_history'):
             batch_corr = self._correlation(labels, predictions)
