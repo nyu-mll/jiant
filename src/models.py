@@ -120,8 +120,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-    tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
+
+    if args.is_probing_task:
+      train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
+      tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
+    else:
+      tasks_to_build = tasks
+
     for task in tasks_to_build:
         build_module(task, model, d_sent, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
