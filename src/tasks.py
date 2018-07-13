@@ -228,7 +228,7 @@ class NLIProbingTask(PairClassificationTask):
 
     def __init__(self, name, n_classes):
         super().__init__(name)
-        self.use_classifier = 'mnli'
+        #  self.use_classifier = 'mnli'  # use .conf params instead
 
 
 class PairRegressionTask(RegressionTask):
@@ -796,7 +796,7 @@ class NLITypeProbingTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
-        self.use_classifier = 'mnli'
+        #  self.use_classifier = 'mnli'  # use .conf params instead
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
