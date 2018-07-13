@@ -40,8 +40,8 @@ class EdgeClassifierModule(nn.Module):
         side and adding the project span1 and span2 representations (this is
         equivalent to concat + linear layer).
 
-    TODO: consider alternate span-pooling operators: SegRNN for each span, or
-    3rd-order Tensor interaction term between spans.
+    TODO: consider alternate span-pooling operators: max or mean-pooling,
+    soft-head pooling, or SegRNN.
 
     TODO: add span-expansion to negatives, one of the following modes:
         - all-spans (either span1 or span2), treating not-seen as negative
