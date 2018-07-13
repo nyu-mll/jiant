@@ -33,7 +33,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask
+    GroundedTask, MTTask, RedditTask, Reddit_MTTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -237,7 +237,7 @@ def build_module(task, model, d_sent, vocab, embedder, args):
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
-    elif isinstance(task, MTTask):
+    elif isinstance(task, (MTTask, Reddit_MTTask)):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
@@ -627,7 +627,7 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'])
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, MTTask):
+        if isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
