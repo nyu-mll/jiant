@@ -338,8 +338,8 @@ def get_task_specific_params(args, task_name):
         params['d_hid_attn'] = _get_task_attr("d_hid_attn")
         params['dropout'] = _get_task_attr("classifier_dropout")
 
-    # TODO: rename this to be more descriptive than 'name'.
-    params['name'] = args.get("%s_use_classifier" % task_name, task_name)
+    cls_task_name = _get_task_attr("use_classifier")
+    params['use_classifier'] = cls_task_name or task_name  # default to this task
 
     return Params(params)
 
