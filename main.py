@@ -218,7 +218,7 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
-        # might be empty if no elmo
+        # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
         elmo_scalars = [(n, p) for n, p in model.named_parameters() if
                        "scalar_mix" in n and "scalar_mix_0" not in n]
         for task in eval_tasks:

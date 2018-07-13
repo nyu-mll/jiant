@@ -99,7 +99,6 @@ class SentenceEncoder(Model):
         # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         sent_enc = self._dropout(sent_enc)
 
@@ -557,6 +556,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                    use_positional_encoding=use_positional_encoding,
                    dropout_prob=dropout_prob)
     
+
 class ElmoCharacterEncoder(torch.nn.Module):
     """
     Compute context sensitive token representation using pretrained biLM.

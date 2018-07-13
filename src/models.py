@@ -25,7 +25,6 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder
-
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 
@@ -174,7 +173,6 @@ def get_task_whitelist(args):
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
-
     d_emb, d_char = 0, args.d_char
 
     token_embedder = {}

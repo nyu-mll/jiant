@@ -387,7 +387,6 @@ class SamplingMultiTaskTrainer():
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
-            
             # randomly select a task
             task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]
@@ -484,6 +483,7 @@ class SamplingMultiTaskTrainer():
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
+
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
@@ -499,8 +499,8 @@ class SamplingMultiTaskTrainer():
                 if elmo_params:
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
-                        log.info("\t" + ",".join([("%s: %.6f", layer, param)
-                                                  for layer, param in task_params.items()]))
+                        log.info("\t" + ", ".join(["{}: {:.6f}".format(layer, float(param))
+                                                   for layer, param in task_params.items()]))
 
                 all_tr_metrics = {}
                 samples = random.choices(

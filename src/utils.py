@@ -83,21 +83,18 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     logging.info("Loaded model state from %s", state_path)
 
 
-def get_elmo_mixing_weights(text_field_embedder, mix_id=0, task=None):
+def get_elmo_mixing_weights(text_field_embedder, task=None):
     ''' Get elmo mixing weights from text_field_embedder,
     since elmo should be in the same place every time.
 
     args:
         - text_field_embedder
-        - mix_id: DEPRECATED - has no effect!! if we learned multiple mixing weights, which one
-                  we want to extract, usually 0
         - task: task which gets indexed to the correct mix_id
 
     returns:
         - params Dict[str:float]: dictionary maybe layers to scalar params
     '''
     elmo = text_field_embedder.token_embedder_elmo
-    # replace with correct mix_id if task is provided
     if task:
         mix_id = text_field_embedder.task_map[task.name]
     else:
