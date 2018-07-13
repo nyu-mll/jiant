@@ -122,11 +122,26 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
 
     if args.is_probing_task:
-      train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-      tasks_to_build, _, _ = get_tasks(train_task_whitelist, eval_task_whitelist, args.max_seq_len, path=args.data_dir, scratch_path=args.exp_dir)
+        # TODO: move this logic to preprocess.py;
+        # current implementation reloads MNLI data, which is slow.
+        train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
+        tasks_to_build, _, _ = get_tasks(train_task_whitelist,
+                                         eval_task_whitelist,
+                                         args.max_seq_len,
+                                         path=args.data_dir,
+                                         scratch_path=args.exp_dir)
     else:
-      tasks_to_build = tasks
+        tasks_to_build = tasks
 
+    # Attach task-specific params.
+    for task in set(tasks + tasks_to_build):
+        task_params = get_task_specific_params(args, task.name)
+        log.info("\tTask '%s' params: %s", task.name,
+                 json.dumps(task_params.as_dict(), indent=2))
+        # Store task-specific params in case we want to access later
+        setattr(model, '%s_task_params' % task.name, task_params)
+
+    # Actually construct modules.
     for task in tasks_to_build:
         build_module(task, model, d_sent, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
@@ -237,12 +252,7 @@ def build_embeddings(args, vocab, pretrained_embs=None):
 
 def build_module(task, model, d_sent, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
-    task_params = get_task_specific_params(args, task.name)
-    log.info("\tTask '%s' params: %s", task.name,
-             json.dumps(task_params.as_dict(), indent=2))
-    # Store task-specific params in case we want to access later
-    setattr(model, '%s_task_params' % task.name, task_params)
-
+    task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
@@ -415,7 +425,6 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.cl_args = args
 
     def forward(self, task, batch, predict=False):
         '''
@@ -451,11 +460,17 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
+    def _get_task_params(self, task_name):
+        """ Get task-specific Params, as set in build_module(). """
+        return getattr(self, "%s_task_params" % task_name)
+
     def _get_classifier(self, task):
-        use_clf = config.get_task_attr(self.cl_args, task.name, "use_classifier")
-        if (use_clf == "none") or (use_clf is None):
-          use_clf = task.name
-        return module = getattr(self, "%s_mdl" % use_clf)
+        """ Get task-specific classifier, as set in build_module(). """
+        task_params = self._get_task_params(task.name)
+        use_clf = task_params['use_classifier']
+        if use_clf in [None, "", "none"]:
+          use_clf = task.name  # default if not set
+        return getattr(self, "%s_mdl" % use_clf)
 
     def _single_sentence_forward(self, batch, task, predict):
         out = {}
@@ -747,3 +762,4 @@ class MultiTaskModel(nn.Module):
         else:
             params = {}
         return params
+
