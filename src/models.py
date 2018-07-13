@@ -313,8 +313,8 @@ def get_task_specific_params(args, task_name):
         params['d_hid_attn'] = _get_task_attr("d_hid_attn")
         params['dropout'] = _get_task_attr("classifier_dropout")
 
-    # TODO: rename this to be more descriptive than 'name'.
-    params['name'] = args.get("%s_use_classifier" % task_name, task_name)
+    cls_task_name = _get_task_attr("use_classifier")
+    params['use_classifier'] = cls_task_name or task_name  # default to this task
 
     return Params(params)
 
@@ -465,7 +465,12 @@ class MultiTaskModel(nn.Module):
         out['n_exs'] = get_batch_size(batch)
 
         if 'labels' in batch: # means we should compute loss
-            labels = batch['labels'].squeeze(-1)
+            if batch['labels'].dim() == 0:
+                labels = batch['labels'].unsqueeze(0)
+            elif batch['labels'].dim() == 1:
+                labels = batch['labels']
+            else:
+                labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
