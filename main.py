@@ -1,4 +1,9 @@
-'''Train a multi-task model using AllenNLP '''
+'''Train a multi-task model using AllenNLP
+
+To debug this, run with -m ipdb:
+
+    python -m ipdb main.py --config_file ...
+'''
 # pylint: disable=no-member
 import argparse
 import glob
@@ -22,13 +27,15 @@ from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
 from src.evaluate import evaluate, write_results, write_preds
+from src.tasks import NLITypeProbingTask
 from src.banditSampling import build_bandit, build_bandit_params
+
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
     # Configuration files
-    parser.add_argument('--config_file', '-c', type=str, required=True,
-                        help="Config file (or comma-delimited list of config files) (.conf) for model parameters.")
+    parser.add_argument('--config_file', '-c', type=str, nargs="+",
+                        help="Config file(s) (.conf) for model parameters.")
     parser.add_argument('--overrides', '-o', type=str, default=None,
                         help="Parameter overrides, as valid HOCON string.")
 
@@ -119,14 +126,6 @@ def main(cl_arguments):
             log.warning(
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
-    if args.debug:
-        log.info("Debugging is ON; we're importing pdb!")
-        try:
-            pass
-            #import ipdb as pdb
-        except ImportError:
-            pass
-            #import pdb
 
     # Prepare data #
     log.info("Loading tasks...")
@@ -158,10 +157,14 @@ def main(cl_arguments):
     if args.do_train:
         assert_for_log(args.train_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.train_tasks)
+        assert_for_log(args.val_interval % args.bpp_base == 0,
+                       "Error: val_interval [%d] must be divisible by bpp_base [%d]" % (args.val_interval,args.bpp_base))
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
+        assert_for_log(args.eval_val_interval % args.bpp_base == 0,
+                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
@@ -177,7 +180,7 @@ def main(cl_arguments):
     if args.do_train:
         # Train on train tasks #
         log.info("Training...")
-        params = build_trainer_params(args, 'none', args.max_vals, args.val_interval)
+        params = build_trainer_params(args, task_names=[])
         stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
         should_decrease = train_tasks[0].val_metric_decreases if len(train_tasks) == 1 else False
         trainer, _, opt_params, schd_params = build_trainer(params, model,
@@ -202,23 +205,29 @@ def main(cl_arguments):
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    # is not None and args.load_eval_checkpoint != "none":
+    if not args.train_for_eval:
+        log.info("In strict mode because train_for_eval is off. "
+                 "Will crash if any tasks are missing from the checkpoint.")
+        strict = True
+    else:
+        strict = False
+
     if not args.load_eval_checkpoint == "none":
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models)
+        load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
         eval_best = glob.glob(os.path.join(args.run_dir,
                                            "model_state_eval_best.th"))
         if len(eval_best) > 0:
-            load_model_state(model, eval_best[0], args.cuda, args.skip_task_models)
+            load_model_state(model, eval_best[0], args.cuda, args.skip_task_models, strict=strict)
         else:
             macro_best = glob.glob(os.path.join(args.run_dir,
                                                 "model_state_main_epoch_*.best_macro.th"))
             if len(macro_best) > 0:
                 assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-                load_model_state(model, macro_best[0], args.cuda, args.skip_task_models)
+                load_model_state(model, macro_best[0], args.cuda, args.skip_task_models, strict=strict)
             else:
                 assert_for_log(
                     args.allow_untrained_encoder_parameters,
@@ -230,8 +239,8 @@ def main(cl_arguments):
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-            params = build_trainer_params(args, task.name, args.eval_max_vals,
-                                          args.eval_val_interval)
+            # Look for <task_name>_<param_name>, then eval_<param_name>
+            params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
@@ -245,14 +254,17 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda, skip_task_models=False)
+            load_model_state(model, layer_path, args.cuda, skip_task_models=False, strict=strict)
 
     if args.do_eval:
         # Evaluate #
         log.info("Evaluating...")
         val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
         if args.write_preds:
-            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
+            if len(tasks) == 1 and isinstance(tasks[0], NLITypeProbingTask):
+                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
+            else:
+                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
             write_preds(te_preds, args.run_dir)
 
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
@@ -264,8 +276,9 @@ def main(cl_arguments):
 if __name__ == '__main__':
     try:
         main(sys.argv[1:])
-    except BaseException:
+    except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
+        raise e  # re-raise exception, in case debugger is attached.
         sys.exit(1)
     sys.exit(0)

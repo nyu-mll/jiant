@@ -21,18 +21,15 @@ from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # 
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
+from . import config
 # TODO (Shuning): Copy the agent code into our codebase and import it.
 from .banditSampling import Bandit
 import numpy as np
 
-def build_trainer_params(args, task, max_vals, val_interval):
+def build_trainer_params(args, task_names):
     ''' Build trainer parameters, possibly loading task specific parameters '''
-
-    def get_task_attr(attr_name):
-        ''' Hacky way to get task specific attributes '''
-        return getattr(args, "%s_%s" % (task, attr_name)) if \
-            hasattr(args, "%s_%s" % (task, attr_name)) else \
-            getattr(args, attr_name)
+    _get_task_attr = lambda attr_name: config.get_task_attr(args, task_names,
+                                                            attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'task_patience', 'patience', 'scheduler_threshold']
@@ -42,13 +39,11 @@ def build_trainer_params(args, task, max_vals, val_interval):
                   'no_tqdm', 'cuda', 'keep_all_checkpoints',
                   'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
-        params[attr] = get_task_attr(attr)
+        params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
         params[attr] = getattr(args, attr)
-    params['max_vals'] = getattr(args, "%s_max_vals" % task) if \
-        hasattr(args, "%s_max_vals" % task) else max_vals
-    params['val_interval'] = getattr(args, "%s_val_interval" % task) if \
-        hasattr(args, "%s_val_interval" % task) else val_interval
+    params['max_vals'] = _get_task_attr('max_vals')
+    params['val_interval'] = _get_task_attr('val_interval')
 
     return Params(params)
 
@@ -273,9 +268,9 @@ class SamplingMultiTaskTrainer():
             if phase == "main":
                 # Warning: This won't be precise when training_data_fraction is set, since each example is included
                 #   or excluded independantly using a hashing function. Fortunately, it doesn't need to be.
-                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples * self._training_data_fraction / batch_size)
+                task_info['n_tr_batches'] = math.ceil(task.n_train_examples * self._training_data_fraction / batch_size)
             else:
-                task_info['n_tr_batches'] = math.ceil(task.n_tr_examples / batch_size)
+                task_info['n_tr_batches'] = math.ceil(task.n_train_examples / batch_size)
 
             task_info['tr_generator'] = tr_generator
             task_info['loss'] = 0.0
@@ -396,25 +391,25 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'proportional_log_batch':  # log(training batch)
             sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'proportional_log_example':  # log(training example)
-            sample_weights = [math.log(task.n_tr_examples) for task in tasks]
+            sample_weights = [math.log(task.n_train_examples) for task in tasks]
         elif weighting_method == 'inverse_example':  # 1/training example
-            sample_weights = [(1 / task.n_tr_examples) for task in tasks]
+            sample_weights = [(1 / task.n_train_examples) for task in tasks]
         elif weighting_method == 'inverse_batch':  # 1/training batch
             sample_weights = [(1 / task_infos[task.name]['n_tr_batches']) for task in tasks]
         elif weighting_method == 'inverse_log_example':  # 1/log(training example)
-            sample_weights = [(1 / math.log(task.n_tr_examples)) for task in tasks]
+            sample_weights = [(1 / math.log(task.n_train_examples)) for task in tasks]
         elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
             sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
                               for task in tasks]
         elif 'power_' in weighting_method:  # x ^ power
             weighting_power = float(weighting_method.strip('power_'))
-            sample_weights = [(task.n_tr_examples ** weighting_power) for task in tasks]
+            sample_weights = [(task.n_train_examples ** weighting_power) for task in tasks]
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
-            sample_weights = [math.exp(task.n_tr_examples/weighting_temp) for task in tasks]
+            sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
 
         log.info ("Weighting details: ")
-        log.info ("task.n_tr_examples: " + str([(task.name, task.n_tr_examples) for task in tasks]) )
+        log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
 
         if weighting_method != 'bandit':
@@ -908,11 +903,10 @@ class SamplingMultiTaskTrainer():
 
         model_state = self._model.state_dict()
 
-        # Don't save embeddings here.
-        # TODO: There has to be a prettier way to do this.
-        keys_to_skip = [key for key in model_state if dont_save(key)]
-        for key in keys_to_skip:
-            del model_state[key]
+        # Skip non-trainable params, like the main ELMo params.
+        for name, param in self._model.named_parameters():
+            if not param.requires_grad:
+                del model_state[name]
         torch.save(model_state, model_path)
 
         if phase != "eval":
@@ -1025,6 +1019,13 @@ class SamplingMultiTaskTrainer():
                                          "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
+
+        for name, param in self._model.named_parameters():
+            if param.requires_grad and name not in model_state:
+                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                log.error("Parameter missing from checkpoint: " + name)
+                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
         self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
@@ -1107,8 +1108,3 @@ class SamplingMultiTaskTrainer():
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
                                         training_data_fraction=training_data_fraction)
-
-
-def dont_save(key):
-    ''' Filter out strings with some bad words '''
-    return 'elmo' in key or 'text_field_embedder' in key
