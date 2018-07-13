@@ -345,7 +345,6 @@ def get_task_specific_params(args, task_name):
 
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
-    params['span_enum_mode'] = _get_task_attr("span_enum_mode")
 
     # TODO: rename this to be more descriptive than 'name'.
     params['name'] = args.get("%s_use_classifier" % task_name, task_name)

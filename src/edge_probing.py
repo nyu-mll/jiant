@@ -55,7 +55,6 @@ class EdgeClassifierModule(nn.Module):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
-        self.span_enum_mode = task_params['span_enum_mode']
 
         proj_dim = task_params['d_hid']
         # Separate projection for span1, span2
