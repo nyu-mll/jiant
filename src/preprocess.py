@@ -33,17 +33,15 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask
+    RedditTask, Reddit_MTTask
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RedditTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    POSTaggingTask, CCGTaggingTask, Reddit_MTTask, \
+    POSTaggingTask, CCGTaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
     MultiNLITravelTask, MultiNLITelephoneTask 
 from .tasks import POSTaggingTask, CCGTaggingTask 
-from .tasks import Reddit_MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
