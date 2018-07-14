@@ -3,12 +3,12 @@
 # Script to run an edge-probing task on an existing trained model.
 # Based on prob_example_run.sh
 
-# NOTE: don't be startled if you see a lot of warnings about missing parameters, 
-# like: 
+# NOTE: don't be startled if you see a lot of warnings about missing parameters,
+# like:
 #    Parameter missing from checkpoint: edges-srl-conll2005_mdl.proj2.weight
 # This is normal, because the probing task won't be in the original checkpoint.
 
-MODEL_DIR=$1 # directory of checkpoint to probe, 
+MODEL_DIR=$1 # directory of checkpoint to probe,
              # e.g: /nfs/jsalt/share/models_to_probe/nli_do2_noelmo
 PROBING_TASK=$2 # probing task name, e.g. edges-srl-conll2005
 
@@ -24,6 +24,9 @@ OVERRIDES+=", exp_name = ${EXP_NAME}"
 OVERRIDES+=", run_name = ${RUN_NAME}"
 OVERRIDES+=", eval_tasks = ${PROBING_TASK}"
 OVERRIDES+=", is_probing_task = 0, train_for_eval = 1"
+
+# TODO: remove this after write_preds works for non-GLUE tasks
+OVERRIDES+=", write_preds = 0"  # TEMPORARY
 
 pushd "${PWD%jiant*}jiant"
 
