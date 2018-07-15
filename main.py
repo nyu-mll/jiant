@@ -41,6 +41,9 @@ def handle_arguments(cl_arguments):
     parser.add_argument('--remote_log', '-r', action="store_true",
                         help="If true, enable remote logging on GCP.")
 
+    parser.add_argument('--notify', type=str, default="",
+                        help="Email address for job notifications.")
+
     parser.add_argument('--tensorboard', '-t', action="store_true",
                         help="If true, will run Tensorboard server in a "
                         "subprocess, serving on the port given by "
@@ -80,6 +83,38 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
+def _get_notifier(to: str, args):
+    """ Get a notification handler to call on exit. """
+    from src import emails
+    import socket
+    hostname = socket.gethostname()
+    def _handler(body:str, fail: bool=False):
+        # Construct subject line from args:
+        subj_tmpl = "run '{exp_name:s}/{run_name:s}' on host '{host:s}'"
+        if fail:
+            subj_tmpl = "FAILED " + subj_tmpl
+        else:
+            subj_tmpl = "Successful " + subj_tmpl
+        subject = subj_tmpl.format(host=hostname,
+                                   exp_name=args.exp_name,
+                                   run_name=args.run_name)
+        body += "\n\n Experiment log: {:s}".format(args.local_log_path)
+        try:
+            from src import gcp
+            body += ("\n Remote log (if enabled): " +
+                     gcp.get_remote_log_url(args.remote_log_name))
+        except Exception as e:
+            log.info("Unable to generate remote log URL - not on GCP?")
+        body += "\n\n Parsed experiment args: {:s}".format(str(args))
+        message = emails.make_message(to, subject, body)
+        log.info("Sending notification email to %s with subject: \n\t%s",
+                 to, subject)
+        return emails.send_message(message)
+    return _handler
+
+# Global notification handler, can be accessed outside main() during exception
+# handling.
+EMAIL_NOTIFIER = None
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -90,11 +125,16 @@ def main(cl_arguments):
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
-    local_log_path = os.path.join(args.run_dir, args.log_file)
-    log.getLogger().addHandler(log.FileHandler(local_log_path))
+    args['local_log_path'] = os.path.join(args.run_dir, args.log_file)
+    log.getLogger().addHandler(log.FileHandler(args.local_log_path))
 
     if cl_args.remote_log:
         gcp.configure_remote_logging(args.remote_log_name)
+
+    if cl_args.notify:
+        global EMAIL_NOTIFIER
+        log.info("Registering email notifier for %s", cl_args.notify)
+        EMAIL_NOTIFIER = _get_notifier(cl_args.notify, args)
 
     _try_logging_git_info()
 
@@ -158,7 +198,7 @@ def main(cl_arguments):
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
         assert_for_log(args.eval_val_interval % args.bpp_base == 0,
-                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))        
+                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
@@ -259,9 +299,15 @@ def main(cl_arguments):
 if __name__ == '__main__':
     try:
         main(sys.argv[1:])
+        if EMAIL_NOTIFIER is not None:
+            EMAIL_NOTIFIER(body="Woohoo!", fail=False)
     except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
+        if EMAIL_NOTIFIER is not None:
+            import traceback
+            tb_lines = traceback.format_exception(*sys.exc_info())
+            EMAIL_NOTIFIER(body="".join(tb_lines), fail=True)
         raise e  # re-raise exception, in case debugger is attached.
         sys.exit(1)
     sys.exit(0)
