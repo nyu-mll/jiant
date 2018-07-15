@@ -3,7 +3,7 @@ import numpy as np
 
 from allennlp.common import Params
 import copy
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class Bandit():
     def __init__(self, actions,
@@ -91,7 +91,7 @@ def build_bandit(params, actions):
 
 
 def build_bandit_params(args):
-    ''' Build trainer parameters, possibly loading task specific parameters '''
+    ''' Build bandit parameters, possibly loading task specific parameters '''
     params = {}
     opts = ['stepSize', 'initialQ', 'explore_method','temp', 'epsilon']
     for attr in opts:
