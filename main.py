@@ -84,11 +84,21 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 def _get_notifier(to: str, args):
-    """ Get a notification handler to call on exit. """
+    """ Get a notification handler to call on exit.
+
+    Args:
+        to: recipient email address
+        args: config.Params object, main config
+
+    Returns:
+        function(str, bool), call with message body and fail flag to send a
+        notification email using sendgrid.
+    """
     from src import emails
     import socket
     hostname = socket.gethostname()
     def _handler(body:str, fail: bool=False):
+        """ Email notifier. Sends an email. """
         # Construct subject line from args:
         subj_tmpl = "run '{exp_name:s}/{run_name:s}' on host '{host:s}'"
         if fail:
