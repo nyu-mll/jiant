@@ -56,24 +56,30 @@ class EdgeClassifierModule(nn.Module):
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
         self.span_pooling = task_params['cls_span_pooling']
+        self.homogeneous = task.homogeneous
 
         proj_dim = task_params['d_hid']
         # Separate projection for span1, span2
         self.proj1 = nn.Linear(d_inp, proj_dim)
-        self.proj2 = nn.Linear(d_inp, proj_dim)
+        self.proj2 = (self.proj1 if self.homogeneous
+                      else nn.Linear(d_inp, proj_dim))
 
         # Span extractor, shared for both span1 and span2.
         if self.span_pooling == "attn":
             # Learn soft headedness weights.
-            self.span_extractor = SelfAttentiveSpanExtractor(proj_dim)
+            self.span_extractor1 = SelfAttentiveSpanExtractor(proj_dim)
+            self.span_extractor2 = (self.span_extractor1 if self.homogeneous
+                                    else SelfAttentiveSpanExtractor(proj_dim))
         else:
             # Just use endpoints, according to span_pooling.
             # Default is "x,y", which concats (start, end) vectors.
-            self.span_extractor = EndpointSpanExtractor(proj_dim,
-                                                        combination=self.span_pooling)
+            self.span_extractor1 = EndpointSpanExtractor(proj_dim,
+                                                         combination=self.span_pooling)
+            self.span_extractor2 = self.span_extractor1  # no params, so share
 
-        # Classifier gets summed projections of span1, span2
-        clf_input_dim = self.span_extractor.get_output_dim()  # 2 * proj_dim
+        # Classifier gets concatenated projections of span1, span2
+        clf_input_dim = (self.span_extractor1.get_output_dim()
+                         + self.span_extractor2.get_output_dim())
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
                                                          task_params)
