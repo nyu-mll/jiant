@@ -43,10 +43,13 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = len(self.vocab._index_to_token[self._target_namespace])
-        self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self._start_index
-        self._end_index = len(self.vocab._index_to_token[self._target_namespace])
-        self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self.end_index
+        # self._start_index = len(self.vocab._index_to_token[self._target_namespace])
+        # self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self._start_index
+        # self._end_index = len(self.vocab._index_to_token[self._target_namespace])
+        # self.vocab._index_to_token[self._target_namespace][END_SYMBOL] = self._end_index
+        import pdb; pdb.set_trace()
+        self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
+        self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
@@ -86,21 +89,26 @@ class Seq2SeqDecoder(Model):
            Output of ``Textfield.as_array()`` applied on target ``TextField``. We assume that the
            target tokens are also represented as a ``TextField``.
         """
+        if target_tokens:
+            # important - append EOS to target_tokens
+            target_mask = get_text_field_mask(target_tokens)
+            import pdb; pdb.set_trace()
+
         # (batch_size, input_sequence_length, encoder_output_dim)
         batch_size, _, _ = encoder_outputs.size()
         #source_mask = get_text_field_mask(source_tokens)
         #encoder_outputs = self._encoder(embedded_input, source_mask)
         # final_encoder_output = encoder_outputs[:, -1]  # (batch_size, encoder_output_dim)
         if target_tokens is not None:
+            # append eos
+            target_tokens["words"].append()
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
-            # The last input from the target is either padding or the end symbol. Either way, we
-            # don't have to process it.
-            num_decoding_steps = target_sequence_length - 1
+            num_decoding_steps = target_sequence_length
         else:
             num_decoding_steps = self._max_decoding_steps
 
-        # TODO - we should use last hidden state but need to figure out masking
+        # TODO - we should use last hidden/cell state but need to figure out masking
         decoder_hidden = encoder_outputs.max(dim=1)[0]
         decoder_context = encoder_outputs.new_zeros(encoder_outputs.size(0), self._decoder_hidden_dim)  # this should be last encoder cell state
 
@@ -149,6 +157,7 @@ class Seq2SeqDecoder(Model):
         #"class_probabilities": class_probabilities,
         #"predictions": all_predictions}
         if target_tokens:
+            # important - append EOS to target_tokens
             target_mask = get_text_field_mask(target_tokens)
             loss = self._get_loss(logits, targets, target_mask)
             output_dict["loss"] = loss

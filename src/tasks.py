@@ -18,6 +18,7 @@ import json
 import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
+from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -1107,15 +1108,16 @@ class MTTask(SequenceGenerationTask):
         return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
         self.train_data_text = load_tsv(os.path.join(path, 'train_mini.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))
+                                        targ_fn=targ_fn_startend)
         self.val_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
-                                      targ_fn=lambda t: t.split(' '))
+                                      targ_fn=targ_fn_startend)
         self.test_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
-                                       targ_fn=lambda t: t.split(' '))
+                                       targ_fn=targ_fn_startend)
 
         log.info("\tFinished loading MT data.")
 
