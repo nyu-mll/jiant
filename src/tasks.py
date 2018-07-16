@@ -1109,13 +1109,13 @@ class MTTask(SequenceGenerationTask):
 
     def load_data(self, path, max_seq_len):
         targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train_mini.txt'), max_seq_len,
+        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
                                         targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
+        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
                                       targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
+        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
                                        targ_fn=targ_fn_startend)
 
