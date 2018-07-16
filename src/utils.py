@@ -1071,3 +1071,12 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
+
+
+def _parse_write_preds(write_preds_arg):
+    if write_preds_arg == 0:
+        return []
+    elif write_preds_arg == 1:
+        return ['test']
+    else:
+        return write_preds_arg.split(",")

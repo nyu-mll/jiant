@@ -22,7 +22,7 @@ import torch
 from src import config
 from src import gcp
 
-from src.utils import assert_for_log, maybe_make_dir, load_model_state
+from src.utils import assert_for_log, maybe_make_dir, load_model_state, _parse_write_preds
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
@@ -239,13 +239,12 @@ def main(cl_arguments):
         # Evaluate #
         log.info("Evaluating...")
         val_results, val_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-        if args.write_preds:
-            if len(tasks) == 1 and isinstance(tasks[0], NLITypeProbingTask):
-                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-            else:
-                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        splits_to_write = _parse_write_preds(args.write_preds)
+        if 'val' in splits_to_write:
+            write_preds(val_preds, args.run_dir, 'val')
+        if 'test' in splits_to_write:
+            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
             write_preds(te_preds, args.run_dir,'test')
-        write_preds(val_preds, args.run_dir, 'val')
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
 
