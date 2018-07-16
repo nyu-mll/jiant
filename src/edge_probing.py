@@ -50,39 +50,44 @@ class EdgeClassifierModule(nn.Module):
         - batch-negative (pairwise among spans seen in batch, where not-seen
         are negative)
     '''
+    def _make_span_extractor(self):
+        if self.span_pooling == "attn":
+            return SelfAttentiveSpanExtractor(self.proj_dim)
+        else:
+            return EndpointSpanExtractor(self.proj_dim,
+                                         combination=self.span_pooling)
 
     def __init__(self, task, d_inp: int, task_params):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
         self.span_pooling = task_params['cls_span_pooling']
-        self.homogeneous = task.homogeneous
+        self.is_symmetric = task.is_symmetric
 
-        proj_dim = task_params['d_hid']
+        self.proj_dim = task_params['d_hid']
         # Separate projection for span1, span2.
         # Use these to reduce dimensionality in case we're enumerating a lot of
         # spans - we want to do this *before* extracting spans for greatest
         # efficiency.
-        self.proj1 = nn.Linear(d_inp, proj_dim)
-        self.proj2 = (self.proj1 if self.homogeneous
-                      else nn.Linear(d_inp, proj_dim))
+        self.proj1 = nn.Linear(d_inp, self.proj_dim)
+        if self.is_symmetric:
+            self.projs = [None, self.proj1, self.proj1]
+        else:
+            # Separate params for span2
+            self.proj2 = nn.Linear(d_inp, self.proj_dim)
+            self.projs = [None, self.proj1, self.proj2]
 
         # Span extractor, shared for both span1 and span2.
-        if self.span_pooling == "attn":
-            # Learn soft headedness weights.
-            self.span_extractor1 = SelfAttentiveSpanExtractor(proj_dim)
-            self.span_extractor2 = (self.span_extractor1 if self.homogeneous
-                                    else SelfAttentiveSpanExtractor(proj_dim))
+        self.span_extractor1 = self._make_span_extractor()
+        if self.is_symmetric:
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
         else:
-            # Just use endpoints, according to span_pooling.
-            # Default is "x,y", which concats (start, end) vectors.
-            self.span_extractor1 = EndpointSpanExtractor(proj_dim,
-                                                         combination=self.span_pooling)
-            self.span_extractor2 = self.span_extractor1  # no params, so share
+            self.span_extractor2 = self._make_span_extractor()
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
 
         # Classifier gets concatenated projections of span1, span2
-        clf_input_dim = (self.span_extractor1.get_output_dim()
-                         + self.span_extractor2.get_output_dim())
+        clf_input_dim = (self.span_extractors[1].get_output_dim()
+                         + self.span_extractors[2].get_output_dim())
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
                                                          task_params)
@@ -119,8 +124,8 @@ class EdgeClassifierModule(nn.Module):
         out['n_inputs'] = batch_size
 
         # Apply projection layers for each span.
-        se_proj1 = self.proj1(sent_embs)
-        se_proj2 = self.proj2(sent_embs)
+        se_proj1 = self.projs[1](sent_embs)
+        se_proj2 = self.projs[2](sent_embs)
 
         # Span extraction.
         #  span_mask = (batch['labels'] != -1)  # [batch_size, num_targets] bool
@@ -133,8 +138,8 @@ class EdgeClassifierModule(nn.Module):
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
         # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
-        span1_emb = self.span_extractor1(se_proj1, batch['span1s'], **_kw)
-        span2_emb = self.span_extractor2(se_proj2, batch['span2s'], **_kw)
+        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
+        span2_emb = self.span_extractors[2](se_proj2, batch['span2s'], **_kw)
         span_emb = torch.cat([span1_emb, span2_emb], dim=2)
 
         # [batch_size, num_targets, n_classes]
