@@ -10,7 +10,7 @@ from .tasks import EdgeProbingTask
 from . import modules
 
 from allennlp.modules.span_extractors import \
-        EndpointSpanExtractor
+        EndpointSpanExtractor, SelfAttentiveSpanExtractor
 
 from typing import Dict, Iterable, List
 
@@ -55,6 +55,7 @@ class EdgeClassifierModule(nn.Module):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
+        self.span_pooling = task_params['cls_span_pooling']
 
         proj_dim = task_params['d_hid']
         # Separate projection for span1, span2
@@ -62,8 +63,14 @@ class EdgeClassifierModule(nn.Module):
         self.proj2 = nn.Linear(d_inp, proj_dim)
 
         # Span extractor, shared for both span1 and span2.
-        # Shouldn't actually have any parameters with the default config.
-        self.span_extractor = EndpointSpanExtractor(proj_dim, combination="x,y")
+        if self.span_pooling == "attn":
+            # Learn soft headedness weights.
+            self.span_extractor = SelfAttentiveSpanExtractor(proj_dim)
+        else:
+            # Just use endpoints, according to span_pooling.
+            # Default is "x,y", which concats (start, end) vectors.
+            self.span_extractor = EndpointSpanExtractor(proj_dim,
+                                                        combination=self.span_pooling)
 
         # Classifier gets summed projections of span1, span2
         clf_input_dim = self.span_extractor.get_output_dim()  # 2 * proj_dim
