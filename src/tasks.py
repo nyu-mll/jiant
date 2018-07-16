@@ -461,23 +461,20 @@ class LanguageModelingTask(SequenceGenerationTask):
 
         Split is a single list of sentences here.
         '''
-        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-                   for sent in split]
         if "chars" not in indexers:
             targs_indexers = {"words": SingleIdTokenIndexer()}
         else:
             targs_indexers = indexers
-        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-        return instances
+        def _make_instance(sent):
+            d = {}
+            d["input"] = _sentence_to_text_field(sent, indexers)
+            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
+            return Instance(d)
+        
+        for sent in split:
+            yield _make_instance(sent)
 
 
 class WikiTextLMTask(LanguageModelingTask):
