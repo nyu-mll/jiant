@@ -48,7 +48,8 @@ class Seq2SeqDecoder(Model):
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
         # hidden state of the decoder with that of the final hidden states of the encoder. Also, if
         # we're using attention with ``DotProductSimilarity``, this is needed.
-        self._decoder_output_dim = input_dim
+        self._decoder_hidden_dim = input_dim
+        self._decoder_output_dim = self._decoder_hidden_dim
         # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
         self._target_embedder = Embedding(num_classes, target_embedding_dim)
         if attention == "bilinear":
@@ -59,7 +60,7 @@ class Seq2SeqDecoder(Model):
         else:
             self._decoder_input_dim = target_embedding_dim
         # TODO (pradeep): Do not hardcode decoder cell type.
-        self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_output_dim)
+        self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
         self._output_projection_layer = Linear(self._decoder_output_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
@@ -94,8 +95,11 @@ class Seq2SeqDecoder(Model):
             num_decoding_steps = target_sequence_length - 1
         else:
             num_decoding_steps = self._max_decoding_steps
-        decoder_hidden = encoder_outputs.new_zeros(batch_size, self._decoder_output_dim)
-        decoder_context = encoder_outputs.max(dim=1)[0]
+
+        # TODO - we should use last hidden state but need to figure out masking
+        decoder_hidden = encoder_outputs.max(dim=1)[0]
+        decoder_context = encoder_outputs.new_zeros(encoder_outputs.size(0), self._decoder_hidden_dim)  # this should be last encoder cell state
+
         last_predictions = None
         step_logits = []
         #step_probabilities = []
@@ -134,7 +138,10 @@ class Seq2SeqDecoder(Model):
         logits = torch.cat(step_logits, 1)
         #class_probabilities = torch.cat(step_probabilities, 1)
         #all_predictions = torch.cat(step_predictions, 1)
-        output_dict = {"logits": logits}
+        output_dict = {
+            "logits": logits, "final_decoder_hidden": decoder_hidden,
+            "final_decoder_context": decoder_context,
+        }
         #"class_probabilities": class_probabilities,
         #"predictions": all_predictions}
         if target_tokens:
@@ -143,6 +150,13 @@ class Seq2SeqDecoder(Model):
             output_dict["loss"] = loss
             # TODO: Define metrics
         return output_dict
+
+    def _decoder_step(self, decoder_input, decoder_hidden, decoder_context):
+        decoder_hidden, decoder_context = self._decoder_cell(
+            decoder_input, (decoder_hidden, decoder_context))
+        logits = self._output_projection_layer(self._dropout(decoder_hidden))
+
+        return logits, decoder_hidden, decoder_context
 
     def _prepare_decode_step_input(
             self,
@@ -175,8 +189,8 @@ class Seq2SeqDecoder(Model):
         input_indices = input_indices.long()
         # input_indices : (batch_size,)  since we are processing these one timestep at a time.
         # (batch_size, target_embedding_dim)
-        embedded_input = self._dropout(self._target_embedder(input_indices))
-        if self._decoder_attention:
+        embedded_input = self._target_embedder(input_indices)
+        if hasattr(self, "_decoder_attention") and self._decoder_attention:
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.

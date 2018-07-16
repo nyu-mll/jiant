@@ -28,6 +28,7 @@ from allennlp.training.metrics import Average
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
+from . import beamsearch
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -277,7 +278,7 @@ def build_module(task, model, d_sent, vocab, embedder, args):
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
                                  'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
+                                 'attention': 'none',
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -338,7 +339,7 @@ def get_task_specific_params(args, task_name):
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
 
-    # For NLI probing tasks, might want to use a classifier trained 
+    # For NLI probing tasks, might want to use a classifier trained
     cls_task_name = _get_task_attr("use_classifier")
     params['use_classifier'] = cls_task_name or task_name  # default to this task
 
@@ -648,6 +649,12 @@ class MultiTaskModel(nn.Module):
             task.scorer1(math.exp(out['loss'].item()))
             return out
 
+            if True:  # if predict:
+                # bleu scoring
+                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
+                task.scorer2(bleu_score)
+                print(bleu_score)
+
         if 'targs' in batch:
             pass
 
@@ -773,4 +780,3 @@ class MultiTaskModel(nn.Module):
         else:
             params = {}
         return params
-
