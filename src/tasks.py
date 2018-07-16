@@ -11,6 +11,7 @@ import copy
 import collections
 import itertools
 import functools
+import torch
 import os
 import math
 import logging as log
@@ -25,12 +26,12 @@ from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField, SpanField, ListField
 from .allennlp_mods.numeric_field import NumericField
+from allennlp.data.fields import TextField, LabelField, MetadataField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate
+from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, **kw):
@@ -69,27 +70,38 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
     Returns:
     '''
-    def _make_instance(input1, input2, labels, idx=None):
+    def _make_instance(ix_split_tuple):
         d = {}
+        ix = ix_split_tuple[0]
+        split = ix_split_tuple[1]
+        input1 = split[0]
+        input2 =  split[1]
+        labels = split[2]
+        index = split[3] if len(split) == 4 else ix
+
         d["input1"] = _sentence_to_text_field(input1, indexers)
         if input2:
             d["input2"] = _sentence_to_text_field(input2, indexers)
+            d['sent2str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
         else:
             d["labels"] = NumericField(labels)
 
-        if idx is not None:  # numbered test examples
-            d["idx"] = LabelField(idx, label_namespace="idxs",
+        d["idx"] = LabelField(index, label_namespace="idxs",
                                   skip_indexing=True)
+
+        d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
+
+
         return Instance(d)
 
     if not is_pair:  # dummy iterator for input2
         split = list(split)
         split[1] = itertools.repeat(None)
     # Map over columns: input2, (input2), labels, (idx)
-    instances = map(_make_instance, *split)
+    instances = map(_make_instance,[(i,v) for i,v in enumerate(zip(*split))])
     #  return list(instances)
     return instances  # lazy iterator
 
@@ -682,6 +694,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -695,6 +708,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -919,6 +933,132 @@ class MultiNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
+
+
+class MultiNLIDiagnosticTask(PairClassificationTask):
+    ''' Task class for diagnostic on MNLI'''
+
+    def __init__(self, path, max_seq_len, name="mnli-diagnostics"):
+        super().__init__(name, 3) # 3 is number of labels
+        self.load_data_and_create_scorers(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+    def load_data_and_create_scorers(self, path, max_seq_len):
+        '''load MNLI diagnostics data.'''
+
+        def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
+            setattr(self, 'scorer__%s' % tag_group, scorer(arg_to_scorer))
+            for index, tag in tags_dict.items():
+                if index == 0:
+                    continue
+                setattr(self,"scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+
+
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        diag_data_dic = load_diagnostic_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+                           s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+
+        self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
+        self.ix_to_pr_ar_str_dic = diag_data_dic['ix_to_pr_ar_str_dic']
+        self.ix_to_logic_dic = diag_data_dic['ix_to_logic_dic']
+        self.ix_to_knowledge_dic = diag_data_dic['ix_to_knowledge_dic']
+
+        self.train_data_text = (diag_data_dic['sents1'], diag_data_dic['sents2'], \
+                                diag_data_dic['targs'], diag_data_dic['idxs'], diag_data_dic['lex_sem'], \
+                                diag_data_dic['pr_ar_str'], diag_data_dic['logic'], \
+                                diag_data_dic['knowledge'])
+        self.val_data_text = self.train_data_text
+        self.test_data_text = self.train_data_text
+        log.info("\tFinished loading MNLI Diagnostics data.")
+
+        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, 'lex_sem')
+        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, 'logic')
+        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, 'knowledge')
+        log.info("\tFinished creating Score functions for Diagnostics data.")
+
+
+
+    def update_diagnostic_metrics(self, logits, labels, batch):
+        def update_scores_for_tag_group(ix_to_tags_dic,tag_group):
+            for ix, tag in ix_to_tags_dic.items():
+                if ix == 0:
+                    mask = batch[tag_group]
+                    scorer_str = "scorer__%s" % tag_group
+                else:
+                    mask = batch["%s__%s" % (tag_group, tag)]
+                    scorer_str = "scorer__%s__%s" % (tag_group, tag)
+                indices_to_pull =  torch.nonzero(mask)
+                if indices_to_pull.size()[0] == 0:
+                    continue
+                sub_labels = labels[indices_to_pull[:,0]]
+                sub_logits = logits[indices_to_pull[:,0]]
+                scorer = getattr(self, scorer_str)
+                scorer(sub_logits, sub_labels)
+            return
+
+        update_scores_for_tag_group(self.ix_to_lex_sem_dic, 'lex_sem')
+        update_scores_for_tag_group(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        update_scores_for_tag_group(self.ix_to_logic_dic, 'logic')
+        update_scores_for_tag_group(self.ix_to_knowledge_dic, 'knowledge')
+
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+
+        def create_labels_from_tags(labels_dict,ix_to_tag_dict, tag_arr, tag_group):
+            is_tag_group= 1 if len(tag_arr) != 0 else 0
+            labels_dict[tag_group] = LabelField(is_tag_group, label_namespace=tag_group,
+                                         skip_indexing=True)
+            for ix,tag in ix_to_tag_dict.items():
+                if ix == 0:
+                    continue
+                is_present = 1 if ix in tag_arr else 0
+                labels_dict['%s__%s' % (tag_group, tag)] = LabelField(is_present, label_namespace= '%s__%s' % (tag_group, tag),
+                                         skip_indexing=True)
+            return
+
+        def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            d["input1"] = _sentence_to_text_field(input1, indexers)
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(label, label_namespace="labels",
+                                         skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idx",
+                                         skip_indexing=True)
+            d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
+
+            # adds keys to d dict for every possible type in the column
+            create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
+            create_labels_from_tags(d, self.ix_to_pr_ar_str_dic, pr_ar_str, 'pr_ar_str')
+            create_labels_from_tags(d, self.ix_to_logic_dic, logic, 'logic')
+            create_labels_from_tags(d, self.ix_to_knowledge_dic, knowledge, 'knowledge')
+
+            return Instance(d)
+
+        # Map over columns: input2, (input2), labels, (idx)
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {}
+        def collect_metrics(ix_to_tag_dict, tag_group):
+            for index, tag in ix_to_tag_dict.items():
+                if index == 0:
+                    scorer_str = 'scorer__%s' % tag_group
+                else:
+                    scorer_str = 'scorer__%s__%s' % (tag_group, tag)
+                scorer = getattr(self, scorer_str)
+                collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+
+        collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
+        collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        collect_metrics(self.ix_to_logic_dic, 'logic')
+        collect_metrics(self.ix_to_knowledge_dic, 'knowledge')
+        return collected_metrics
 
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
