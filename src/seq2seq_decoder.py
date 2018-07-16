@@ -57,7 +57,8 @@ class Seq2SeqDecoder(Model):
         self._decoder_hidden_dim = input_dim
         self._decoder_output_dim = self._decoder_hidden_dim
         # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
-        self._target_embedder = Embedding(num_classes, target_embedding_dim)
+        self._target_embedding_dim = target_embedding_dim
+        self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(input_dim, input_dim)
             # The output of attention, a weighted average over encoder outputs, will be

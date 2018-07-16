@@ -650,7 +650,6 @@ class MultiTaskModel(nn.Module):
 
             if True:  # if predict:
                 # bleu scoring
-                import pdb; pdb.set_trace()
                 bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
                 task.scorer2(bleu_score)
                 print(bleu_score)

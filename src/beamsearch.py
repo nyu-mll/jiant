@@ -134,17 +134,16 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
     batch_size = encoder_outputs.size(0)
     encoder_hidden_dim = encoder_outputs.size(2)
     assert encoder_hidden_dim == decoder._decoder_hidden_dim
-    import ipdb; ipdb.set_trace()
-    trg_h_t = encoder_outputs.max(dim=1)[0].unsqueeze(1)
-    trg_c_t = encoder_outputs.new_zeros(encoder_outputs.size(0), decoder._decoder_hidden_dim).unsqueeze(1)  # [bs, 1, h]
+    trg_h_t = encoder_outputs.max(dim=1)[0]
+    trg_c_t = encoder_outputs.new_zeros(encoder_outputs.size(0), decoder._decoder_hidden_dim)  # [bs, 1, h]
 
     max_trg_length = decoder._max_decoding_steps
 
+    import pdb; pdb.set_trace()
     # Expand tensors for each beam.
-    context = Variable(trg_h_t.data.repeat(1, beam_size, 1))
     dec_states = [
-        Variable(trg_h_t.data.repeat(1, beam_size, 1)),
-        Variable(trg_c_t.data.repeat(1, beam_size, 1))
+        Variable(trg_h_t.data.repeat(beam_size, 1)),  # [bs*beam_size, h]
+        Variable(trg_c_t.data.repeat(beam_size, 1))
     ]
 
     beam = [
@@ -156,22 +155,22 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
     remaining_sents = batch_size
 
     for _ in range(max_trg_length):
-        ipdb.set_trace()
+        import pdb; pdb.set_trace()
         input_indices = torch.stack(
             [b.get_current_state() for b in beam if not b.done]
-        ).t().contiguous().view(1, -1)
+        ).contiguous().view(-1)  # [beam_size*bs]
         decoder_input = decoder._prepare_decode_step_input(input_indices)
 
         logits, trg_h_t, trg_c_t = decoder._decoder_step(
             decoder_input,
-            trg_h_t,
-            trg_c_t,
+            dec_states[0],
+            dec_states[1],
         )
 
-        dec_states = (trg_h_t.unsqueeze(0), trg_c_t.unsqueeze(0))
+        dec_states = (trg_h_t, trg_c_t)
         dec_out = trg_h_t.squeeze(1)
 
-        word_lk = logits.view(
+        word_lk = F.softmax(logits, dim=1).view(  # (softmax is not really necessary)
             beam_size,
             remaining_sents,
             -1
@@ -185,18 +184,6 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
             idx = batch_idx[b]
             if not beam[b].advance(word_lk.data[idx]):
                 active += [b]
-
-            for dec_state in dec_states:  # iterate over h, c
-                # layers x beam*sent x dim
-                sent_states = dec_state.view(
-                    -1, beam_size, remaining_sents, dec_state.size(2)
-                )[:, :, idx]
-                sent_states.data.copy_(
-                    sent_states.data.index_select(
-                        1,
-                        beam[b].get_current_origin()
-                    )
-                )
 
         if not active:
             break
@@ -224,7 +211,6 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
             update_active(dec_states[1])
         )
         dec_out = update_active(dec_out)
-        context = update_active(context)
 
         remaining_sents = len(active)
 
