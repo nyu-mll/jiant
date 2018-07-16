@@ -33,6 +33,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                     preds = preds.data.tolist()
                 assert isinstance(preds, list), "Convert predictions to list!"
                 task_preds += preds
+        # task_preds should be a list of length = # examples.
+        # for GLUE tasks, entries should be single scalars.
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -44,7 +46,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 
         # Store predictions, possibly sorting them if
         if task_idxs:
-            assert len(task_idxs) == len(task_preds), "Number of indices and predictions differ!"
+            assert len(task_idxs) == len(task_preds), (
+                "Number of indices != number of predictions!")
             idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
             idxs_and_preds.sort(key=lambda x: x[0])
             task_preds = [p for _, p in idxs_and_preds]
@@ -58,6 +61,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 def write_preds(all_preds, pred_dir):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
+
+    TODO: clean this up, remove special cases & hard-coded dataset sizes.
 
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.

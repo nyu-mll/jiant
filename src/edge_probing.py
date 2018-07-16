@@ -12,7 +12,7 @@ from . import modules
 from allennlp.modules.span_extractors import \
         EndpointSpanExtractor
 
-from typing import Dict
+from typing import Dict, Iterable, List
 
 
 def to_onehot(labels: torch.Tensor, n_classes: int):
@@ -27,17 +27,34 @@ class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
 
     Use same classifier code as build_single_sentence_module,
-    except instead of whole-sentence pooling we'll use span1 and span2 indices.
+    except instead of whole-sentence pooling we'll use span1 and span2 indices
+    to extract span representations, and use these as input to the classifier.
 
-    TODO: consider alternate span-pooling operators: SegRNN for each span, or
-    3rd-order Tensor interaction term between spans.
+    This works in the current form, but with some provisos:
+        - Expects both span1 and span2 to be set. TODO to support single-span
+        tasks like tagging and constituency membership.
+        - Only considers the explicit set of spans in inputs; does not consider
+        all other spans as negatives. (So, this won't work for argument
+        _identification_ yet.)
+        - Spans are represented by endpoints, and pooled by projecting each
+        side and adding the project span1 and span2 representations (this is
+        equivalent to concat + linear layer).
+
+    TODO: consider alternate span-pooling operators: max or mean-pooling,
+    soft-head pooling, or SegRNN.
+
+    TODO: add span-expansion to negatives, one of the following modes:
+        - all-spans (either span1 or span2), treating not-seen as negative
+        - all-tokens (assuming span1 and span2 are length-1), e.g. for
+        dependency parsing
+        - batch-negative (pairwise among spans seen in batch, where not-seen
+        are negative)
     '''
 
     def __init__(self, task, d_inp: int, task_params):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
-        self.span_enum_mode = task_params['span_enum_mode']
 
         proj_dim = task_params['d_hid']
         # Separate projection for span1, span2
@@ -117,11 +134,43 @@ class EdgeClassifierModule(nn.Module):
                                             task)
 
         if predict:
-            # return argmax predictions
-            _, out['preds'] = logits.max(dim=1)
+            # Return preds as a list.
+            preds = self.get_predictions(logits)
+            out['preds'] = list(self.unbind_predictions(preds, span_mask))
 
         return out
 
+    def unbind_predictions(self, preds: torch.Tensor,
+                           masks: torch.Tensor) -> Iterable[np.ndarray]:
+        """ Unpack preds to varying-length numpy arrays.
+
+        Args:
+            preds: [batch_size, num_targets, ...]
+            masks: [batch_size, num_targets] boolean mask
+
+        Yields:
+            np.ndarray for each row of preds, selected by the corresponding row
+            of span_mask.
+        """
+        preds = preds.detach().cpu()
+        masks = masks.detach().cpu()
+        for pred, mask in zip(torch.unbind(preds, dim=0),
+                              torch.unbind(masks, dim=0)):
+            yield pred[mask].numpy()  # only non-masked predictions
+
+
+    def get_predictions(self, logits: torch.Tensor):
+        if self.loss_type == 'softmax':
+            # For softmax loss, return argmax predictions.
+            # [batch_size, num_targets]
+            return logits.max(dim=2)[1]  # argmax
+        elif self.loss_type == 'sigmoid':
+            # For sigmoid loss, return class probabilities.
+            # [batch_size, num_targets, n_classes]
+            return F.sigmoid(logits)
+        else:
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % loss_type)
 
     def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task: EdgeProbingTask):

@@ -741,11 +741,10 @@ class SamplingMultiTaskTrainer():
 
         model_state = self._model.state_dict()
 
-        # Don't save embeddings here.
-        # TODO: There has to be a prettier way to do this.
-        keys_to_skip = [key for key in model_state if dont_save(key)]
-        for key in keys_to_skip:
-            del model_state[key]
+        # Skip non-trainable params, like the main ELMo params.
+        for name, param in self._model.named_parameters():
+            if not param.requires_grad:
+                del model_state[name]
         torch.save(model_state, model_path)
 
         if phase != "eval":
@@ -856,6 +855,13 @@ class SamplingMultiTaskTrainer():
                                          "metric_state_{}".format(suffix_to_load))
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
+
+        for name, param in self._model.named_parameters():
+            if param.requires_grad and name not in model_state:
+                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                log.error("Parameter missing from checkpoint: " + name)
+                log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
         self._model.load_state_dict(model_state, strict=False)
 
         task_states = torch.load(task_state_path)
@@ -936,8 +942,3 @@ class SamplingMultiTaskTrainer():
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
                                         training_data_fraction=training_data_fraction)
-
-
-def dont_save(key):
-    ''' Filter out strings with some bad words '''
-    return 'elmo' in key or 'text_field_embedder' in key
