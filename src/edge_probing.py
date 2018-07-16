@@ -59,7 +59,10 @@ class EdgeClassifierModule(nn.Module):
         self.homogeneous = task.homogeneous
 
         proj_dim = task_params['d_hid']
-        # Separate projection for span1, span2
+        # Separate projection for span1, span2.
+        # Use these to reduce dimensionality in case we're enumerating a lot of
+        # spans - we want to do this *before* extracting spans for greatest
+        # efficiency.
         self.proj1 = nn.Linear(d_inp, proj_dim)
         self.proj2 = (self.proj1 if self.homogeneous
                       else nn.Linear(d_inp, proj_dim))
@@ -129,14 +132,13 @@ class EdgeClassifierModule(nn.Module):
 
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
-        def _extract_spans(embs, spans):
-            return self.span_extractor.forward(embs, spans, **_kw)
-        # span1_emb and span2_emb are [batch_size, num_targets, clf_input_dim]
-        span1_emb = _extract_spans(se_proj1, batch['span1s'])
-        span2_emb = _extract_spans(se_proj2, batch['span2s'])
+        # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
+        span1_emb = self.span_extractor1(se_proj1, batch['span1s'], **_kw)
+        span2_emb = self.span_extractor2(se_proj2, batch['span2s'], **_kw)
+        span_emb = torch.cat([span1_emb, span2_emb], dim=2)
 
         # [batch_size, num_targets, n_classes]
-        logits = self.classifier(span1_emb + span2_emb)
+        logits = self.classifier(span_emb)
         out['logits'] = logits
 
         # Compute loss if requested.
