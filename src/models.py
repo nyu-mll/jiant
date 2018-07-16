@@ -337,7 +337,7 @@ def get_task_specific_params(args, task_name):
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
 
-    # For NLI probing tasks, might want to use a classifier trained 
+    # For NLI probing tasks, might want to use a classifier trained
     cls_task_name = _get_task_attr("use_classifier")
     params['use_classifier'] = cls_task_name or task_name  # default to this task
 
@@ -578,34 +578,37 @@ class MultiTaskModel(nn.Module):
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'])
         sent2, mask2 = self.sent_encoder(batch['input2'])
-        sent_pooler = getattr(self, "%s_mdl" % task.name)  # pooler for both Input and Response   
+        # pooler for both Input and Response
+        sent_pooler = getattr(self, "%s_mdl" % task.name)
         sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
-        if 1:
-            sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
-            sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
-            cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1)) 
-            labels = torch.eye(len(cos_simi))
-           
-            # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
-            cos_simi_pos = torch.diag(cos_simi)
-            cos_simi_neg = torch.diag(cos_simi, diagonal=1)
-            cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
-            labels_pos = torch.diag(labels)
-            labels_neg = torch.diag(labels, diagonal=1) 
-            labels = torch.cat([labels_pos, labels_neg], dim=0)
-            labels = labels.cuda()
-            #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
-            total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
-            out['loss'] = total_loss
 
-            pred = F.sigmoid(cos_simi).round()
-            total_correct = torch.sum(pred == labels)
-            batch_acc = total_correct.item()/len(labels)
-            out["n_exs"] = len(labels)
-            task.scorer1(batch_acc)
+        #  if 1:
+        sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
+        sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
+        cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1))
+        labels = torch.eye(len(cos_simi))
+
+        # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
+        cos_simi_pos = torch.diag(cos_simi)
+        cos_simi_neg = torch.diag(cos_simi, diagonal=1)
+        cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
+        labels_pos = torch.diag(labels)
+        labels_neg = torch.diag(labels, diagonal=1)
+        labels = torch.cat([labels_pos, labels_neg], dim=0)
+        labels = labels.cuda()
+        #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+        total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
+        out['loss'] = total_loss
+
+        pred = F.sigmoid(cos_simi).round()
+        total_correct = torch.sum(pred == labels)
+        batch_acc = total_correct.item()/len(labels)
+        out["n_exs"] = len(labels)
+        task.scorer1(batch_acc)
+
         return out
 
 
