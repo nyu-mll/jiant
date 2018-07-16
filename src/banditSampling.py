@@ -43,8 +43,7 @@ class Bandit():
 
     def chooseAction_gradient(self):
         # softmax(nparray,temp)
-        nparray_exp = np.exp(self.Q/self.temp)
-        action_prob = nparray_exp/sum(nparray_exp)
+        action_prob = softmax(self.temp,self.Q)
         self.action = random.choices(self.indices,action_prob,k=1)[0]
 
     def chooseAction_epsilonGreedy(self):
@@ -89,7 +88,6 @@ def build_bandit(params, actions):
     return bandit
 
 
-
 def build_bandit_params(args):
     ''' Build bandit parameters, possibly loading task specific parameters '''
     params = {}
@@ -98,3 +96,8 @@ def build_bandit_params(args):
         params[attr] = getattr(args, attr)
 
     return Params(params)
+
+def softmax(temp, nparray):
+    nparray = nparray - np.max(nparray)
+    nparray_exp = np.exp(nparray/temp)
+    return (nparray_exp/sum(nparray_exp))
