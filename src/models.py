@@ -42,8 +42,7 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    MultiNLIDiagnosticTask
-    GroundedTask, TaggingTask, \
+    MultiNLIDiagnosticTask, GroundedTask, TaggingTask
 from .tasks import EdgeProbingTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \

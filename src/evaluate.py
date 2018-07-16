@@ -49,12 +49,12 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 
         # Store predictions, possibly sorting them if
         if task_idxs:
-            idxs_preds_strs = [(idx, pred, str) for idx, pred, str in zip(task_idxs, task_preds, sen1_strs)]
+            assert len(task_idxs) == len(task_preds), (
+                "Number of indices != number of predictions!")
+            idxs_preds_strs = [(idx, pred, sent_str) for idx, pred, sent_str in zip(task_idxs, task_preds, sen1_strs)]
             idxs_preds_strs.sort(key=lambda x: x[0])
             task_idxs, task_preds, sen1_strs = zip(*idxs_preds_strs)
         all_preds[task.name] = [task_preds, task_idxs, sen1_strs]
-            assert len(task_idxs) == len(task_preds), (
-                "Number of indices != number of predictions!")
 
     all_metrics["micro_avg"] /= n_examples_overall
     all_metrics["macro_avg"] /= len(tasks)
