@@ -158,7 +158,7 @@ def main(cl_arguments):
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
         assert_for_log(args.eval_val_interval % args.bpp_base == 0,
-                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))        
+                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
