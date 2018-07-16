@@ -99,7 +99,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
-                                       dropout=args.dropout, skep_embs=args.sep_embs
+                                       dropout=args.dropout, sep_embs=args.sep_embs,
                                        cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
     elif args.sent_enc == 'transformer':
@@ -137,7 +137,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Actually construct modules.
     for task in tasks_to_build:
-        build_module(task, model, d_sent, vocab, embedder, args)
+        build_module(task, model, d_sent, d_emb, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
