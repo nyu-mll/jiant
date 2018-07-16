@@ -901,11 +901,11 @@ class MultiNLITask(PairClassificationTask):
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
-                                       skip_rows=1)
-        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
-        val_data = tuple(val_data)
+        # val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+        #                                s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
+        #                                skip_rows=1)
+        # val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        # val_data = tuple(val_data)
         val_data = val_matched_data
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
