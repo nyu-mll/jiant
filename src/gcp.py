@@ -14,14 +14,6 @@ def get_instance_id():
     #  gce_name = requests.get(metadata_server + 'hostname', headers = metadata_flavor).text
     #  gce_machine_type = requests.get(metadata_server + 'machine-type', headers = metadata_flavor).text
 
-def get_remote_log_url(log_name, project_name="jsalt-sentence-rep"):
-    instance_id = get_instance_id()
-    url= ("https://console.cloud.google.com/logs/viewer?"
-          "authuser=2&project={project_name:s}"
-          "&resource=gce_instance%2Finstance_id%2F{instance_id:s}"
-          "&logName=projects%2F{project_name:s}%2Flogs%2F{log_name:s}")
-    return url.format(instance_id=instance_id, log_name=log_name,
-                      project_name=project_name)
 
 def configure_remote_logging(log_name):
     # Avoid deadlock situation with subprocess. See:
