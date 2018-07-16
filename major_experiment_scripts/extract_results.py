@@ -35,35 +35,37 @@ for path in sys.argv[1:]:
           found_eval = True
         else:
           if found_eval:
-            assert (results_line is None), "Error! Multiple GLUE evals in this log\n"
+            assert (results_line is None), "Multiple GLUE evals found."
             results_line = line.strip()
           found_eval = False
 
         train_m = re.match('Training model on tasks: (.*)', line)
         if train_m:
-          task = train_m.groups()[0]
+          found_tasks = train_m.groups()[0]
           if train_tasks is not None:
-            assert (task == train_tasks), "Error! Multiple starts to training tasks, but tasks don't match: %s vs. %s"%(train_tasks, task)
-          train_tasks = task
+            assert (found_tasks == train_tasks), "Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, found_tasks)
+          train_tasks = found_tasks
 
         do_m = re.match('"dropout": (.*),', line)
         if do_m:
           do = do_m.groups()[0]
-          if dropout is not None:
-            assert (dropout == do), "Error! Multiple dropouts set, but dropouts don't match: %s vs. %s"%(dropout, do)
-          dropout = do
+          if dropout is None:
+            # This is a bit of a hack: Take the first instance of dropout, which will come from the overall config.
+            # Later matches will appear for model-specific configs.
+            dropout = do
 
         el_m = re.match('"elmo_chars_only": (.*),', line)
         if el_m:
           el = el_m.groups()[0]
           if elmo is not None:
-            assert (elmo == el), "Error! Multiple elmo flags set, but settings don't match: %s vs. %s"%(elmo, el)
+            assert (elmo == el), "Multiple elmo flags set, but settings don't match: %s vs. %s."%(elmo, el)
           elmo = el
 
     cols['train_tasks'] = train_tasks
     cols['dropout'] = dropout
     cols['elmo'] = 'Y' if elmo == '0' else 'N'
 
+    assert results_line is not None, "No GLUE eval results line found. Still training?"
     for mv in results_line.strip().split(','):
       metric, value = mv.split(':')
       cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
