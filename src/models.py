@@ -98,7 +98,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
                 fwd = MaskedStackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
             sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                            fwd, skip_embs=args.skip_embs,
-                                           dropout=args.dropout, cove_layer=cove_emb)
+                                           dropout=args.dropout, cove_layer=cove_emb,
+                                           sep_embs=args.sep_embs)
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         d_sent = d_emb
@@ -106,13 +107,15 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
-                                       dropout=args.dropout, cove_layer=cove_emb)
+                                       dropout=args.dropout, cove_layer=cove_emb,
+                                       sep_embs=args.sep_embs)
         d_sent = (1 + args.bidirectional) * args.d_hid
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, cove_layer=cove_emb)
+                                       skip_embs=args.skip_embs, cove_layer=cove_emb,
+                                       sep_embs=args.sep_embs)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
 
@@ -231,21 +234,18 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
-            #elmo_embedder = elmo_embedder._elmo._elmo_lstm._token_embedder
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
-
             d_emb += 512
         else:
-            log.info("\tUsing full ELMo!")
+            log.info("\tUsing full ELMo! (separate scalars/task)")
             elmo_embedder = Elmo(options_file=ELMO_OPT_PATH,
                                  weight_file=ELMO_WEIGHTS_PATH,
                                  # Include pretrain task
                                  num_output_representations=len(tasks) + 1,
                                  dropout=args.dropout)
             d_emb += 1024
-
         token_embedder["elmo"] = elmo_embedder
     embedder = ElmoTextFieldEmbedder(token_embedder, tasks)
     assert d_emb, "You turned off all the embeddings, ya goof!"
@@ -427,6 +427,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
+        self.sep_embs = args.sep_embs
 
 
     def forward(self, task, batch, predict=False):
@@ -762,7 +763,10 @@ class MultiTaskModel(nn.Module):
         '''
         params = {}
         if self.elmo:
-            tasks = [None] + tasks
+            if not self.sep_embs:
+                tasks = [None]
+            else:
+                tasks = [None] + tasks
             for task in tasks:
                 if task:
                     params[task.name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)

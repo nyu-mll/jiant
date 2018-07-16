@@ -1,3 +1,8 @@
+# Modified from allennlp/allennlp/modules/text_field_embedders/basic_text_field_embedder.py
+# This textfield embedder is compatible with multi- output representation ELMo. In the Basic
+# version, the single ELMo output representation can be simply concatenated. In multi-output
+# representation, we need to first select the representation that is used.
+
 from typing import Dict
 
 import torch
@@ -14,7 +19,9 @@ from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
 @TextFieldEmbedder.register("elmo")
 class ElmoTextFieldEmbedder(TextFieldEmbedder):
     """
-    Major modification is that the forward direction now accepts task as an argument
+    forward() now accepts task as an argument, which tells the embedder which ELMo representation
+    to return. init() also requires a list of tasks (i.e. the number of tasks that need their own
+    ELMo scalars).
     
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
