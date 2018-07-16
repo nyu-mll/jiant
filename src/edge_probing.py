@@ -12,7 +12,7 @@ from . import modules
 from allennlp.modules.span_extractors import \
         EndpointSpanExtractor
 
-from typing import Dict
+from typing import Dict, Iterable, List
 
 
 def to_onehot(labels: torch.Tensor, n_classes: int):
@@ -134,11 +134,43 @@ class EdgeClassifierModule(nn.Module):
                                             task)
 
         if predict:
-            # return argmax predictions
-            _, out['preds'] = logits.max(dim=1)
+            # Return preds as a list.
+            preds = self.get_predictions(logits)
+            out['preds'] = list(self.unbind_predictions(preds, span_mask))
 
         return out
 
+    def unbind_predictions(self, preds: torch.Tensor,
+                           masks: torch.Tensor) -> Iterable[np.ndarray]:
+        """ Unpack preds to varying-length numpy arrays.
+
+        Args:
+            preds: [batch_size, num_targets, ...]
+            masks: [batch_size, num_targets] boolean mask
+
+        Yields:
+            np.ndarray for each row of preds, selected by the corresponding row
+            of span_mask.
+        """
+        preds = preds.detach().cpu()
+        masks = masks.detach().cpu()
+        for pred, mask in zip(torch.unbind(preds, dim=0),
+                              torch.unbind(masks, dim=0)):
+            yield pred[mask].numpy()  # only non-masked predictions
+
+
+    def get_predictions(self, logits: torch.Tensor):
+        if self.loss_type == 'softmax':
+            # For softmax loss, return argmax predictions.
+            # [batch_size, num_targets]
+            return logits.max(dim=2)[1]  # argmax
+        elif self.loss_type == 'sigmoid':
+            # For sigmoid loss, return class probabilities.
+            # [batch_size, num_targets, n_classes]
+            return F.sigmoid(logits)
+        else:
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % loss_type)
 
     def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task: EdgeProbingTask):
