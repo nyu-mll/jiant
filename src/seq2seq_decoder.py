@@ -47,7 +47,6 @@ class Seq2SeqDecoder(Model):
         # self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self._start_index
         # self._end_index = len(self.vocab._index_to_token[self._target_namespace])
         # self.vocab._index_to_token[self._target_namespace][END_SYMBOL] = self._end_index
-        import pdb; pdb.set_trace()
         self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
         self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
@@ -92,7 +91,6 @@ class Seq2SeqDecoder(Model):
         if target_tokens:
             # important - append EOS to target_tokens
             target_mask = get_text_field_mask(target_tokens)
-            import pdb; pdb.set_trace()
 
         # (batch_size, input_sequence_length, encoder_output_dim)
         batch_size, _, _ = encoder_outputs.size()
@@ -100,11 +98,9 @@ class Seq2SeqDecoder(Model):
         #encoder_outputs = self._encoder(embedded_input, source_mask)
         # final_encoder_output = encoder_outputs[:, -1]  # (batch_size, encoder_output_dim)
         if target_tokens is not None:
-            # append eos
-            target_tokens["words"].append()
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
-            num_decoding_steps = target_sequence_length
+            num_decoding_steps = target_sequence_length - 1
         else:
             num_decoding_steps = self._max_decoding_steps
 
@@ -124,13 +120,7 @@ class Seq2SeqDecoder(Model):
             if torch.rand(1).item() >= self._scheduled_sampling_ratio:
                 input_choices = targets[:, timestep]
             else:
-                if timestep == 0:
-                    # For the first timestep, when we do not have targets, we input start symbols.
-                    # (batch_size,)
-                    input_choices = source_mask.new_full(
-                        (batch_size,), fill_value=self._start_index)
-                else:
-                    input_choices = last_predictions
+                input_choices = last_predictions
             decoder_input = self._prepare_decode_step_input(input_choices, decoder_hidden,
                                                             encoder_outputs, source_mask)
             decoder_hidden, decoder_context = self._decoder_cell(decoder_input,
