@@ -41,7 +41,7 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
+    GroundedTask, TaggingTask, \
     MultiNLIDiagnosticTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -519,14 +519,25 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
-        out['n_exs'] = get_batch_size_from_field(batch['input1'])
+        out['n_exs'] = get_batch_size(batch)
 
         labels = batch['labels'].squeeze(-1)
         out['loss'] = F.cross_entropy(logits, labels)
-        task.update_diagnostic_metrics(logits, labels, batch)
+        _, predicted = logits.max(dim=1)
+        if 'labels' in batch:
+            if batch['labels'].dim() == 0:
+                labels = batch['labels'].unsqueeze(0)
+            elif batch['labels'].dim() == 1:
+                labels = batch['labels']
+            else:
+                labels = batch['labels'].squeeze(-1)
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.update_diagnostic_metrics(predicted, labels, batch)
 
-
+        if predict:
+            out['preds'] = predicted
         return out
+
 
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}

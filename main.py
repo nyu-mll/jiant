@@ -244,8 +244,8 @@ def main(cl_arguments):
                 _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
             else:
                 _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
-            write_preds(te_preds, args.run_dir)
-        write_preds(val_preds, args.run_dir)
+            write_preds(te_preds, args.run_dir,'test')
+        write_preds(val_preds, args.run_dir, 'val')
         write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
                       args.run_dir.split('/')[-1])
 

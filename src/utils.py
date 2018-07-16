@@ -166,7 +166,7 @@ def load_diagnostic_tsv(
     '''Load a tsv
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
-    sent1s, sent2s, targs, lex_sem, pr_ar_str, logic, knowledge  = [], [], [], [], [], [], []
+    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge  = [], [], [], [], [], [], [], []
     ix_to_lex_sem_dic = {}
     ix_to_pr_ar_str_dic = {}
     ix_to_logic_dic = {}
@@ -220,6 +220,7 @@ def load_diagnostic_tsv(
                 logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
                 knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
 
+                idxs.append(row_idx)
                 lex_sem.append(lex_sem_sample)
                 pr_ar_str.append(pr_ar_str_sample)
                 logic.append(logic_sample)
@@ -243,6 +244,7 @@ def load_diagnostic_tsv(
     return {'sents1': sent1s,
             'sents2': sent2s,
             'targs': targs,
+            'idxs': idxs,
             'lex_sem': lex_sem,
             'pr_ar_str': pr_ar_str,
             'logic': logic,

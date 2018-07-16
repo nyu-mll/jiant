@@ -9,6 +9,7 @@ import copy
 import collections
 import itertools
 import functools
+import torch
 import os
 import math
 import logging as log
@@ -27,7 +28,7 @@ from allennlp.data.fields import TextField, LabelField, MetadataField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate
+from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, kw=None):
@@ -806,11 +807,19 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name="mnli-diagnostics"):
         super().__init__(name, 3) # 3 is number of labels
-        self.load_data(path, max_seq_len)
+        self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-    def load_data(self, path, max_seq_len):
+    def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data.'''
+
+        def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
+            setattr(self, 'scorer__%s' % tag_group, scorer(arg_to_scorer))
+            for index, tag in tags_dict.items():
+                if index == 0:
+                    continue
+                setattr(self,"scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+
 
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         diag_data_dic = load_diagnostic_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
@@ -822,20 +831,37 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.ix_to_knowledge_dic = diag_data_dic['ix_to_knowledge_dic']
 
         self.train_data_text = (diag_data_dic['sents1'], diag_data_dic['sents2'], \
-                                diag_data_dic['targs'], diag_data_dic['lex_sem'], \
+                                diag_data_dic['targs'], diag_data_dic['idxs'], diag_data_dic['lex_sem'], \
                                 diag_data_dic['pr_ar_str'], diag_data_dic['logic'], \
                                 diag_data_dic['knowledge'])
         self.val_data_text = self.train_data_text
         self.test_data_text = self.train_data_text
         log.info("\tFinished loading MNLI Diagnostics data.")
 
+        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, 'lex_sem')
+        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, 'logic')
+        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, 'knowledge')
+        log.info("\tFinished creating Score functions for Diagnostics data.")
+
+
+
     def update_diagnostic_metrics(self, logits, labels, batch):
         def update_scores_for_tag_group(ix_to_tags_dic,tag_group):
-            for ix,tag in ix_to_tags_dic.items():
+            for ix, tag in ix_to_tags_dic.items():
                 if ix == 0:
                     mask = batch[tag_group]
+                    scorer_str = "scorer__%s" % tag_group
                 else:
-                    mask = batch['%s__%s' % (tag_group, tag)]
+                    mask = batch["%s__%s" % (tag_group, tag)]
+                    scorer_str = "scorer__%s__%s" % (tag_group, tag)
+                indices_to_pull =  torch.nonzero(mask)
+                if indices_to_pull.size()[0] == 0:
+                    continue
+                sub_labels = labels[indices_to_pull[:,0]]
+                sub_logits = logits[indices_to_pull[:,0]]
+                scorer = getattr(self, scorer_str)
+                scorer(sub_logits, sub_labels)
             return
 
         update_scores_for_tag_group(self.ix_to_lex_sem_dic, 'lex_sem')
@@ -859,13 +885,18 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                                          skip_indexing=True)
             return
 
-        def _make_instance(input1, input2, labels, lex_sem, pr_ar_str, logic, knowledge):
+        def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
+            ''' from multiple types in one column create multiple fields '''
             d = {}
             d["input1"] = _sentence_to_text_field(input1, indexers)
             d["input2"] = _sentence_to_text_field(input2, indexers)
-            d["labels"] = LabelField(labels, label_namespace="labels",
+            d["labels"] = LabelField(label, label_namespace="labels",
                                          skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idx",
+                                         skip_indexing=True)
+            d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
 
+            # adds keys to d dict for every possible type in the column
             create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
             create_labels_from_tags(d, self.ix_to_pr_ar_str_dic, pr_ar_str, 'pr_ar_str')
             create_labels_from_tags(d, self.ix_to_logic_dic, logic, 'logic')
@@ -877,6 +908,24 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         instances = map(_make_instance, *split)
         #  return list(instances)
         return instances  # lazy iterator
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {}
+        def collect_metrics(ix_to_tag_dict, tag_group):
+            for index, tag in ix_to_tag_dict.items():
+                if index == 0:
+                    scorer_str = 'scorer__%s' % tag_group
+                else:
+                    scorer_str = 'scorer__%s__%s' % (tag_group, tag)
+                scorer = getattr(self, scorer_str)
+                collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+
+        collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
+        collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        collect_metrics(self.ix_to_logic_dic, 'logic')
+        collect_metrics(self.ix_to_knowledge_dic, 'knowledge')
+        return collected_metrics
 
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
