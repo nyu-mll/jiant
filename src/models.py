@@ -720,7 +720,7 @@ class MultiTaskModel(nn.Module):
         out = {}
         # embed the sentence, embed the image, map and classify
         sent_emb, sent_mask = self.sent_encoder(batch['input1'])
-        batch_size = get_batch_size_from_field(batch['input1'])
+        batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
 
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
@@ -754,6 +754,313 @@ class MultiTaskModel(nn.Module):
         if predict:
             out['preds'] = preds
 
+        return out
+
+    def _grounded_ranking_bce_forward(self, batch, task, predict):
+        ''' Binary Cross Entropy Loss
+            Create sentence, image representation.
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+        img_seq = []
+        for img_idx in range(len(ids)):
+            img_feat = torch.tensor(task.img_encoder.forward(int(img_idx))[0], dtype=torch.float32).cuda()
+            img_seq.append(img_feat)
+
+        img_emb = torch.stack(img_seq, dim=0);
+        sent1_rep = sent_rep; sent2_rep = img_emb
+        
+        if 1:
+            sent1_rep = F.normalize(sent1_rep, 2, 1)
+            sent2_rep = F.normalize(sent2_rep, 2, 1)
+            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+            labels = torch.eye(len(cos_simi))
+
+            scale = 1/(len(cos_simi) - 1)
+            weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+            weights = weights.view(-1).cuda()
+
+
+            cos_simi = cos_simi.view(-1)
+            labels = labels.view(-1).cuda()
+            pred = F.sigmoid(cos_simi).round()
+
+            total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+            out['loss'] = total_loss
+            total_correct = torch.sum(pred == labels)
+            batch_acc = total_correct.item()/len(labels)
+            out["n_exs"] = len(labels)
+            task.scorer1.__call__(batch_acc)
+        return out
+
+    def _grounded_ranking_cosine_forward(self, batch, task, predict):
+        ''' Cosine Embedding Loss
+            Create sentence, image representation
+            Look at cosine sim of representations
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+
+        img_seq = []
+        for img_idx in range(len(ids)):
+            img_feat = torch.tensor(task.img_encoder.forward(int(img_idx))[0], dtype=torch.float32).cuda()
+            img_seq.append(img_feat)
+
+        img_emb = torch.stack(img_seq, dim=0);
+        sent1_rep = sent_rep; sent2_rep = img_emb
+        
+        loss_fn = task.loss_fn; flags = Variable(torch.ones(batch_size))
+        out['loss'] = loss_fn(torch.tensor(sent1_rep, dtype=torch.float32), torch.tensor(sent2_rep, dtype=torch.float32), flags)
+        cos_sim = task.metric_fn
+        metric = cos_sim(sent1_rep, sent2_rep)
+        task.scorer1.__call__(np.mean(metric.cpu().data.numpy()))
+        
+        return out
+
+    def _grounded_rsa_forward(self, batch, task, predict):
+        ''' RSA Listener function
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+
+        img_seq = [torch.tensor(task.img_encoder.forward(int(img_idx))[0], dtype=torch.float32).cuda() for img_idx in range(len(ids))]
+        img_seq = torch.stack(img_seq)
+        
+        loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
+        softmax = nn.Softmax(dim = 0); softmin = nn.Softmin(); cos = nn.CosineSimilarity(dim=0, eps=1e-6)
+        acc = []
+        loss_fn = nn.L1Loss()
+        #loss_fn = nn.functional.binary_cross_entropy()
+        
+        def cosine_sim(m1, m2):
+            matrix = np.zeros((batch_size, batch_size))
+            for i in range(batch_size):
+                for j in range(batch_size):
+                    matrix[i][j] = cos(sent_rep[i], img_seq[j])
+            return matrix
+        
+        def rownorm(mat):
+            return np.divide(mat.T, np.sum(mat, axis=1)).T
+
+        '''
+        a literal L0 listener takes a sentence, set of images
+        produces distribution over images based on lexicon priors
+        '''
+        def l0_listener(lex, idx):
+            lex = rownorm(lex)
+            return lex[idx]
+            
+        '''
+        creates context lexicon sliced from entire matrix
+        '''
+        def lexicon(nsamples, idx):
+            idxs = [idx]; lex = np.zeros((nsamples, nsamples))
+            for _ in range(nsamples):
+                r = idx
+                while (r == idx):
+                    r = np.random.randint(batch_size, size=(1,1))[0][0]
+                idxs.append(r)
+
+            for i in range(nsamples):
+                for j in range(nsamples):
+                    lex[i][j] = matrix[idxs[i]][idxs[j]]
+
+            return lex
+        
+        def sample(nsamples, samples, lex, idx, r1):
+            while(len(lex) < nsamples):
+                r = idx
+                while (r == idx):
+                    r = np.random.randint(batch_size, size=(1,1))[0][0]
+                r2 = samples[r].reshape(1, -1).cuda()
+                lex.append(cos(r1, r2).cpu().data.numpy()[0])
+            return lex
+        
+        matrix = torch.mm(sent_rep, torch.transpose(img_seq, 0,1))
+        matrix = cosine_sim(sent_rep, img_seq)
+        nsamples, temp = 3, 0.001
+        
+        for sent_idx in range(batch_size):
+            sent = sent_rep[sent_idx].reshape(1, -1).cuda()
+            img = img_seq[sent_idx].reshape(1, -1).cuda()
+                        
+            lex = lexicon(nsamples, sent_idx)
+            l0_scores = l0_listener(lex, sent_idx)
+            l0_preds = [0 for _ in range(nsamples)]; l0_preds[np.argmax(l0_scores)] = 1
+            labels = [0 for _ in range(nsamples)]; labels[0] = 1
+            labels = torch.tensor(labels, dtype=torch.float32
+
+            preds = l0_preds
+            dist = softmax(Variable(torch.tensor(preds, dtype=torch.float32)))
+            loss.add(loss_fn(dist, labels))
+            #loss.add(nn.functional.binary_cross_entropy(dist, labels))
+
+            preds = [0 for i in range(samples)]; preds[max_idx] = 1
+            if max_idx == 0: acc.append(1)
+            else: acc.append(0)
+
+        return
+            
+
+        out['loss'] = loss
+        task.scorer1.__call__(np.mean(acc))
+        return out
+    
+    def _grounded_literal_pragma_forward(self, batch, task, predict):
+        ''' Literal RSA Listener function
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+
+        img_seq = [torch.tensor(task.img_encoder.forward(int(img_idx))[0], dtype=torch.float32).cuda() for img_idx in range(len(ids))]
+
+        loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
+        softmax = nn.Softmax(); softmin = nn.Softmin();
+        distance = nn.PairwiseDistance(p=1, eps=1e-06); cos = task.metric_fn
+        acc = []
+        '''
+        # contrastive against all other samples
+        for sent_idx in range(batch_size):
+            sent = sent_rep[sent_idx].reshape(1, -1).cuda()
+            labels = [0 for i in range(batch_size)]; labels[sent_idx] = 1
+            labels = torch.tensor(labels, dtype=torch.float32)
+            mat = []
+            for img_idx in range(batch_size):
+                img = img_seq[img_idx].reshape(1, -1).cuda()
+                mat.append(cos(sent, img).cpu().data.numpy()[0])
+                #mat.append(distance(sent, img).cpu().data.numpy()[0])
+            #dist = softmin(Variable(torch.tensor(mat, dtype=torch.float32)))
+            dist = softmax(Variable(torch.tensor(mat, dtype=torch.float32)))
+
+            max_idx = np.argmax(dist.data.numpy())
+            loss.add(loss_fn(dist, labels))
+            if max_idx == sent_idx: acc.append(1)
+            else: acc.append(0)
+        out['loss'] = loss
+        task.scorer1.__call__(np.mean(acc))
+        '''
+        loss_fn = nn.L1Loss()
+        #loss_fn = nn.functional.binary_cross_entropy()
+        # contrastive against n samples (n = {2, 3}), temperature
+        samples, temp = batch_size-1, 0.001
+        for sent_idx in range(batch_size):
+            sent = sent_rep[sent_idx].reshape(1, -1).cuda()
+            img = img_seq[sent_idx].reshape(1, -1).cuda()
+            labels = [0 for i in range(samples)]; labels[0] = 1
+            labels = torch.tensor(labels, dtype=torch.float32)
+            mat = [cos(sent, img).cpu().data.numpy()[0]]
+            while(len(mat) < samples):
+                r = sent_idx
+                while (r == sent_idx):
+                    r = np.random.randint(batch_size, size=(1,1))[0][0]
+                img = img_seq[r].reshape(1, -1).cuda()
+                mat.append(cos(sent, img).cpu().data.numpy()[0])
+                #mat.append(distance(sent, img).cpu().data.numpy()[0])
+
+            # add speaker beliefs, weighted by temperature
+            mat = torch.tensor(mat, dtype=torch.float32) + torch.mul(labels, temp)
+            mat = torch.div(mat, 2.0)
+            dist = softmax(Variable(torch.tensor(mat, dtype=torch.float32)))
+            #dist = softmin(Variable(torch.tensor(mat, dtype=torch.float32)))
+            max_idx = np.argmax(dist.data.numpy())
+            loss.add(loss_fn(dist, labels))
+            #loss.add(nn.functional.binary_cross_entropy(dist, labels))
+
+            preds = [0 for i in range(samples)]; preds[max_idx] = 1
+            if max_idx == 0: acc.append(1)
+            else: acc.append(0)
+        out['loss'] = loss
+        task.scorer1.__call__(np.mean(acc))
+        return out
+
+    
+    def _grounded_ranking_margin_forward(self, batch, task, predict):
+        ''' Margin Ranking Loss
+            Create sentence, image representation
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+
+        img_seq = []
+        for img_idx in range(len(ids)):
+            img_feat = torch.tensor(task.img_encoder.forward(int(img_idx))[0], dtype=torch.float32).cuda()
+            img_seq.append(img_feat)
+
+        img_emb = torch.stack(img_seq, dim=0);
+        sent1_rep = sent_rep; sent2_rep = img_emb
+
+        sent_si, img_si, sent_is, img_is = [], [], [], []
+        emb_loss = task.loss_fn
+        total_loss = []
+        '''
+        margin ranking loss; for each (sent, img) in the batch look at n-1
+        (sent, img) pairs so for batch_i = 1, consider:
+        [s1 s1 .. s1] [i1 i2 .. in] and [s1 s2 .. sn] [i1 i1 .. i1]
+        with labels = [1 0  .. 0] and [1 0 .. 0]
+        vals = [c1 c2 .. cn] and [d1 d2 .. dn]
+        '''
+
+        flags = [0 for i in range(batch_size)]; flags[0] = 1;
+        flags = Variable(torch.tensor(flags, dtype=torch.float))
+        loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
+        cos = task.metric_fn
+        margin = 0.5
+        for idx in range(len(sent_rep.split(1))):
+            sent, img = sent_rep[idx].reshape(1, -1), img_seq[idx].reshape(1, -1)
+            sent_neg = torch.tensor([sent_rep[i].data.tolist() for i in range(len(sent_rep))], dtype=torch.float)
+            img_neg = torch.tensor([img_seq[i].data.tolist() for i in range(len(img_seq))], dtype=torch.float)
+            sent_pos = torch.tensor([sent_rep[idx].data.tolist() for i in range(len(sent_rep))], dtype=torch.float)
+            img_pos = torch.tensor([img_seq[idx].data.tolist() for i in range(len(img_seq))], dtype=torch.float)
+            cos_si, cos_is = [], []
+            sim = cos(torch.tensor(sent), torch.tensor(img)).data.numpy()[0]
+            for i in range(len(sent_neg)):
+                nsent, nimg = sent_neg[i].reshape(1, -1), img_neg[i].reshape(1, -1)
+                cos_si.append(cos(torch.tensor(sent), torch.tensor(nimg)).data.numpy()[0])
+                cos_is.append(cos(torch.tensor(img), torch.tensor(nsent)).data.numpy()[0])
+
+            cos_si = [(margin -sim + cos_si[i]) for i in range(len(cos_si))]
+            cos_is = [(margin - sim + cos_is[i]) for i in range(len(cos_is))]
+
+            loss1 = emb_loss(torch.tensor(sent_pos), torch.tensor(img_neg), flags)
+            loss2 = emb_loss(torch.tensor(sent_neg), torch.tensor(img_pos), flags)
+            loss.add(loss1); loss.add(loss2)
+        
+        out['loss'] = loss
         return out
 
     def get_elmo_mixing_weights(self, mix_id=0):
