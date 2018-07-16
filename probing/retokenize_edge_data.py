@@ -12,6 +12,7 @@
 import sys
 import os
 import json
+import copy
 from tqdm import tqdm
 
 import logging as log
