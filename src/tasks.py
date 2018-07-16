@@ -25,7 +25,7 @@ from .allennlp_mods.correlation import Correlation
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField, SpanField, ListField
+from allennlp.data.fields import TextField, LabelField, SpanField, ListField, MetadataField
 from .allennlp_mods.numeric_field import NumericField
 
 from . import serialize
@@ -61,35 +61,44 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
-
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - pair_input (int)
         - tok2idx (dict)
-
     Returns:
     '''
-    def _make_instance(input1, input2, labels, idx=None):
+    def _make_instance(ix_split_tuple):
         d = {}
+        ix = ix_split_tuple[0]
+        split = ix_split_tuple[1]
+        input1 = split[0]
+        input2 =  split[1]
+        labels = split[2]
+        index = split[3] if len(split) == 4 else ix
+
         d["input1"] = _sentence_to_text_field(input1, indexers)
         if input2:
             d["input2"] = _sentence_to_text_field(input2, indexers)
+            d['sent2str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
         else:
             d["labels"] = NumericField(labels)
 
-        if idx is not None:  # numbered test examples
-            d["idx"] = LabelField(idx, label_namespace="idxs",
+        d["idx"] = LabelField(index, label_namespace="idxs",
                                   skip_indexing=True)
+
+        d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
+
+
         return Instance(d)
 
     if not is_pair:  # dummy iterator for input2
         split = list(split)
         split[1] = itertools.repeat(None)
     # Map over columns: input2, (input2), labels, (idx)
-    instances = map(_make_instance, *split)
+    instances = map(_make_instance,[(i,v) for i,v in enumerate(zip(*split))])
     #  return list(instances)
     return instances  # lazy iterator
 
@@ -685,6 +694,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -698,6 +708,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
