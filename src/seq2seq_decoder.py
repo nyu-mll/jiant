@@ -40,11 +40,15 @@ class Seq2SeqDecoder(Model):
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
         self._scheduled_sampling_ratio = scheduled_sampling_ratio
+
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
-        self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
-        num_classes = self.vocab.get_vocab_size('targets')
+        self._start_index = len(self.vocab._index_to_token[self._target_namespace])
+        self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self._start_index
+        self._end_index = len(self.vocab._index_to_token[self._target_namespace])
+        self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self.end_index
+        num_classes = self.vocab.get_vocab_size(self._target_namespace)
+
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
         # hidden state of the decoder with that of the final hidden states of the encoder. Also, if
         # we're using attention with ``DotProductSimilarity``, this is needed.
@@ -124,7 +128,7 @@ class Seq2SeqDecoder(Model):
             decoder_hidden, decoder_context = self._decoder_cell(decoder_input,
                                                                  (decoder_hidden, decoder_context))
             # (batch_size, num_classes)
-            output_projections = self._output_projection_layer(self._dropout(decoder_hidden))
+            output_projections = self._output_projection_layer(decoder_hidden)
             # list of (batch_size, 1, num_classes)
             step_logits.append(output_projections.unsqueeze(1))
             #class_probabilities = F.softmax(output_projections, dim=-1)
@@ -154,7 +158,7 @@ class Seq2SeqDecoder(Model):
     def _decoder_step(self, decoder_input, decoder_hidden, decoder_context):
         decoder_hidden, decoder_context = self._decoder_cell(
             decoder_input, (decoder_hidden, decoder_context))
-        logits = self._output_projection_layer(self._dropout(decoder_hidden))
+        logits = self._output_projection_layer(decoder_hidden)
 
         return logits, decoder_hidden, decoder_context
 

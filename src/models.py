@@ -277,7 +277,7 @@ def build_module(task, model, d_sent, vocab, embedder, args):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'tokens',
+                                 'target_namespace': 'targets',
                                  'attention': 'none',
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})

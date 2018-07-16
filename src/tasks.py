@@ -1107,13 +1107,13 @@ class MTTask(SequenceGenerationTask):
         return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
-        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+        self.train_data_text = load_tsv(os.path.join(path, 'train_mini.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
                                         targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+        self.val_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
                                       targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
+        self.test_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
                                        targ_fn=lambda t: t.split(' '))
 
