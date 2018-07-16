@@ -231,6 +231,139 @@ class NLIProbingTask(PairClassificationTask):
         #  self.use_classifier = 'mnli'  # use .conf params instead
 
 
+# Make sure we load the properly-retokenized versions.
+_tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
+@register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.wsj.edges.json" + _tokenizer_suffix,
+               })
+class EdgeProbingTask(Task):
+    ''' Generic class for fine-grained edge probing.
+
+    Acts as a classifier, but with multiple targets for each input text.
+
+    Targets are of the form (span1, span2, label), where span1 and span2 are
+    half-open token intervals [i, j).
+
+    Subclass this for each dataset, or use register_task with appropriate kw
+    args.
+    '''
+    def __init__(self, path, max_seq_len, name,
+                 label_file=None,
+                 files_by_split=None):
+        super().__init__(name)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname)
+            for split, fname in files_by_split.items()
+        }
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        # see add_task_label_namespace in preprocess.py
+        self._label_namespace = self.name + "_labels"
+
+        self.mcc_scorer = Correlation("matthews")
+        self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        #  self.val_metric = "%s_accuracy" % self.name
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(utils.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def make_instance(self, record, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        text = _sentence_to_text_field(tokens, indexers)
+        span1s = [t['span1'] for t in record['targets']]
+        span2s = [t['span2'] for t in record['targets']]
+        labels = [t['label'] for t in record['targets']]
+
+        d = {}
+        d['input1'] = text
+        d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span1s])
+        d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                 for s in span2s])
+        d['labels'] = ListField([LabelField(label,
+                                            label_namespace=self._label_namespace)
+                                 for label in labels])
+        return Instance(d)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        _map_fn = lambda r: self.make_instance(r, indexers)
+        return map(_map_fn, records)
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        mcc = self.mcc_scorer.get_metric(reset)
+        acc = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        return {'mcc': mcc,
+                'accuracy': acc,
+                'f1': f1,
+                'precision': precision,
+                'recall': recall}
+
+
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
@@ -328,23 +461,20 @@ class LanguageModelingTask(SequenceGenerationTask):
 
         Split is a single list of sentences here.
         '''
-        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-                   for sent in split]
         if "chars" not in indexers:
             targs_indexers = {"words": SingleIdTokenIndexer()}
         else:
             targs_indexers = indexers
-        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-        return instances
+        def _make_instance(sent):
+            d = {}
+            d["input"] = _sentence_to_text_field(sent, indexers)
+            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
+            return Instance(d)
+        
+        for sent in split:
+            yield _make_instance(sent)
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -427,7 +557,6 @@ class RedditTask(RankingTask):
         super(RedditTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
-        #:pdb.set_trace()
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -438,13 +567,13 @@ class RedditTask(RankingTask):
         print("Loading data")
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
-        tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING TRAIN DATA")
-        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING dev DATA")
-        test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+        test_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING test DATA")
         self.train_data_text = tr_data
@@ -458,9 +587,55 @@ class RedditTask(RankingTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        #pdb.set_trace()
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
+
+
+class Reddit_MTTask(SequenceGenerationTask):
+    ''' Same as Machine Translation Task except for the load_data function'''
+
+    def __init__(self, path, max_seq_len, name='Reddit_MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a machine translation split '''
+        def _make_instance(input, target):
+             d = {}
+             d["inputs"] = _sentence_to_text_field(input, indexers)
+             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+             return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def load_data(self, path, max_seq_len):
+        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
+        path = '//nfs/jsalt/home/raghu/'
+        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
+                                        s1_idx=2, s2_idx=None, targ_idx=3,
+                                        targ_fn=lambda t: t.split(' '))
+        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                      s1_idx=2, s2_idx=None, targ_idx=3,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                       s1_idx=2, s2_idx=None, targ_idx=3,
+                                       targ_fn=lambda t: t.split(' '))
+
+        log.info("\tFinished loading MT data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
 
 
 class CoLATask(SingleClassificationTask):
@@ -768,11 +943,11 @@ class MultiNLITask(PairClassificationTask):
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
-                                       skip_rows=1)
-        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
-        val_data = tuple(val_data)
+        # val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+        #                                s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
+        #                                skip_rows=1)
+        # val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        # val_data = tuple(val_data)
         val_data = val_matched_data
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
@@ -991,6 +1166,7 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
 
@@ -1083,6 +1259,76 @@ class DisSentWikiFullTask(PairClassificationTask):
         val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
                             s1_idx=0, s2_idx=1, targ_idx=2)
         te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+class DisSentWikiBigFullTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.big.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.big.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.big.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+
+
+class DisSentWikiBigTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentbig"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "big.dissent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "big.dissent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'big.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiHugeTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissenthuge"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "huge.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "huge.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'huge.test'), max_seq_len,
                            s1_idx=0, s2_idx=1, targ_idx=2)
         self.train_data_text = tr_data
         self.val_data_text = val_data
