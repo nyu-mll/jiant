@@ -135,7 +135,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Actually construct modules.
     for task in tasks_to_build:
-        build_module(task, model, d_sent, vocab, embedder, args)
+        build_module(task, model, d_sent, d_emb, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
