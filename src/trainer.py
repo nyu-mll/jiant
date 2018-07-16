@@ -461,18 +461,6 @@ class SamplingMultiTaskTrainer():
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
 
-                '''
-                elif scaling_method == 'max' and weighting_method == 'bandit':
-                    sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
-                    max_weight = max(sample_weights)
-                    min_weight = min(sample_weights)
-                    loss *= (max_weight / task_info['n_tr_batches'])
-                elif scaling_method == 'min' and weighting_method == 'bandit':
-                    sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
-                    max_weight = max(sample_weights)
-                    min_weight = min(sample_weights)
-                    loss *= (min_weight / task_info['n_tr_batches'])
-                '''
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -529,8 +517,6 @@ class SamplingMultiTaskTrainer():
                 #for taskname, loss in zip([task.name for task in tasks], validate_bandit_losses):
                 #    log.info("  %s loss: %.6f", taskname, loss)
                 log.info("  loss: " + np.array_str(validate_bandit_losses,precision =4))
-
-
 
                 reward = -np.mean(validate_bandit_losses)
                 self.bandit.update_actionValue(reward)
@@ -783,7 +769,7 @@ class SamplingMultiTaskTrainer():
             all_val_metrics["%s_loss" % task.name] = 0.0
 
             #for batch in val_generator:
-            for batch in itertools.islice(val_generator, 1):
+            for batch in itertools.islice(val_generator, n_batches_perTask):
                 # log.info (task.name + "\n" + str(batch['labels']))
                 batch_num += 1
                 out = self._forward(batch, task=task, for_training=False)
