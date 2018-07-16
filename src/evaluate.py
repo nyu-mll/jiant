@@ -6,14 +6,13 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from .tasks import RegressionTask, STSBTask, JOCITask
 
-
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
     model.eval()
     iterator = BasicIterator(batch_size)
 
     all_metrics, all_preds = {"micro_avg": 0.0, "macro_avg": 0.0}, {}
-    n_overall_examples = 0
+    n_examples_overall = 0
     for task in tasks:
         log.info("Evaluating on: %s", task.name)
         n_examples = 0
@@ -37,6 +36,8 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                     task_idxs += batch['idx'].data.tolist()
                 if 'sent1str' in batch:
                     sen1_strs += batch['sent1str']
+        # task_preds should be a list of length = # examples.
+        # for GLUE tasks, entries should be single scalars.
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -44,25 +45,27 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
             all_metrics["%s_%s" % (task.name, name)] = value
         all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
         all_metrics["macro_avg"] += all_metrics[task.val_metric]
-        n_overall_examples += n_examples
+        n_examples_overall += n_examples
 
         # Store predictions, possibly sorting them if
         if task_idxs:
-            assert len(task_idxs) == len(task_preds), "Number of indices and predictions differ!"
             idxs_preds_strs = [(idx, pred, str) for idx, pred, str in zip(task_idxs, task_preds, sen1_strs)]
             idxs_preds_strs.sort(key=lambda x: x[0])
             task_idxs, task_preds, sen1_strs = zip(*idxs_preds_strs)
         all_preds[task.name] = [task_preds, task_idxs, sen1_strs]
+            assert len(task_idxs) == len(task_preds), (
+                "Number of indices != number of predictions!")
 
+    all_metrics["micro_avg"] /= n_examples_overall
     all_metrics["macro_avg"] /= len(tasks)
-    all_metrics["micro_avg"] /= n_overall_examples
 
     return all_metrics, all_preds
-
 
 def write_preds(all_preds, pred_dir, split):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
+
+    TODO: clean this up, remove special cases & hard-coded dataset sizes.
 
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.

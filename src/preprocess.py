@@ -253,6 +253,8 @@ def _build_vocab(args, tasks, vocab_path: str):
     }
     word2freq, char2freq, target2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
+    for task in tasks:  # add custom label namespaces
+        add_task_label_vocab(vocab, task)
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -270,7 +272,7 @@ def build_tasks(args):
     prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
     utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
-        get_tasks(args.train_tasks, args.eval_tasks, args.max_seq_len,
+        get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
@@ -311,7 +313,7 @@ def build_tasks(args):
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
-    reindex_tasks = _parse_task_list_arg(args.reindex_tasks)
+    reindex_tasks = parse_task_list_arg(args.reindex_tasks)
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
@@ -362,23 +364,22 @@ def build_tasks(args):
     return train_tasks, eval_tasks, vocab, word_embs
 
 
-def _parse_task_list_arg(task_list):
+def parse_task_list_arg(task_list):
     '''Parse task list argument into a list of task names.'''
-    if task_list == 'glue':
-        return ALL_GLUE_TASKS
-    elif task_list == 'none':
-        return []
-    else:
-        return task_list.split(',')
+    task_names = []
+    for task_name in task_list.split(','):
+        if task_name == 'glue':
+            task_names.extend(ALL_GLUE_TASKS)
+        elif task_name == 'none' or task_name == '':
+            continue
+        else:
+            task_names.append(task_name)
+    return task_names
 
-
-def get_tasks(train_tasks, eval_tasks, max_seq_len, path=None,
+def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
     ''' Load tasks '''
-    train_task_names = _parse_task_list_arg(train_tasks)
-    eval_task_names = _parse_task_list_arg(eval_tasks)
     task_names = sorted(set(train_task_names + eval_task_names))
-
     assert path is not None
     scratch_path = (scratch_path or path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)
@@ -470,6 +471,28 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
         vocab.add_token_to_namespace(target, 'targets') # TODO namespace
     return vocab
 
+def add_task_label_vocab(vocab, task):
+    '''Add custom task labels to a separate namespace.
+
+    If task has a 'get_all_labels' method, call that to get a list of labels
+    to populate the <task_name>_labels vocabulary namespace.
+
+    This is the recommended way to implement multiclass models: in your task's
+    process_split code, make instances that use LabelFields with the task label
+    namespace, e.g.:
+        label_namespace = "%s_labels" % self.name
+        label = LabelField(label_string, label_namespace=label_namespace)
+    This will cause them to be properly indexed by the Vocabulary.
+
+    This can then be accessed when generating Instances, either via a custom
+    Indexer or by invoking the namespace when creating a LabelField.
+    '''
+    if not hasattr(task, 'get_all_labels'):
+        return
+    namespace = task.name + "_labels"
+    log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
+    for label in task.get_all_labels():
+        vocab.add_token_to_namespace(label, namespace)
 
 def get_embeddings(vocab, vec_file, d_word):
     '''Get embeddings for the words in vocab'''
@@ -508,10 +531,3 @@ def get_fastText_model(vocab, d_word, model_file=None):
     embeddings = torch.FloatTensor(embeddings)
     log.info("\tFinished loading pretrained fastText model and embeddings")
     return embeddings, model
-
-
-
-
-
-
-
