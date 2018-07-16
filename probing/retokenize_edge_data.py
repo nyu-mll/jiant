@@ -19,29 +19,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
 from src import utils
-from src import retokenize
-
-def retokenize_record(record, inplace=True):
-    """Retokenize edge probing examples.
-
-    This can be slow, so recommended to use as a pre-processing step.
-    See retokenize_edge_data.py.
-    """
-    if not inplace:
-        record = copy.deepcopy(record)
-    text = record['text']
-    moses_tokens = utils.TOKENIZER.tokenize(text)
-    cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
-    ta = retokenize.TokenAligner(text, cleaned_moses_tokens)
-    record['text'] = " ".join(moses_tokens)
-    for target in record['targets']:
-        if 'span1' in target:
-            target['span1'] = list(map(int,
-                                       ta.project_span(*target['span1'])))
-        if 'span2' in target:
-            target['span2'] = list(map(int,
-                                       ta.project_span(*target['span2'])))
-    return record
+from src.edge_probing import retokenize_record
 
 def retokenize_file(fname):
     new_tokenizer_name = utils.TOKENIZER.__class__.__name__
