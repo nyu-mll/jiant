@@ -161,14 +161,6 @@ class Task():
         ''' Process split text into a list of AllenNLP Instances. '''
         raise NotImplementedError
 
-    def get_eval_required_fields(self) -> Sequence[str]:
-        ''' Return field names that *must* be present in eval batches.
-
-        Subclass should implement this to enforce behavior in
-        evaluate.evaluate().
-        '''
-        return []
-
     def get_metrics(self, reset: bool=False) -> Dict:
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
