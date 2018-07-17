@@ -512,7 +512,8 @@ class SamplingMultiTaskTrainer():
                 #log.info("Validating Bandit...")
                 #negative average valiation loss of all trained tasks
 
-                validate_bandit_losses = np.array(self._validate_bandit(tasks, batch_size))
+                validate_bandit_losses = np.array(self._validate_bandit(tasks, batch_size))/self.bandit.val_batch
+                #validate_bandit_losses = validate_bandit_losses.clip(min=None,max=1)
                 #log.info("Validation Loss: ")
                 #for taskname, loss in zip([task.name for task in tasks], validate_bandit_losses):
                 #    log.info("  %s loss: %.6f", taskname, loss)
@@ -739,7 +740,7 @@ class SamplingMultiTaskTrainer():
         # TODO (Shuning): You should make a new validate function instead of using this one, but you can use
         #   it as an example of how to use eval mode (model.eval) and how to access the eval data
         #   for the tasks.
-        n_batches_perTask =1
+        n_batches_perTask =self.bandit.val_batch
 
         task_infos  = self._task_infos
         #task_infos, metric_infos = self._task_infos, self._metric_infos
@@ -756,13 +757,12 @@ class SamplingMultiTaskTrainer():
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
 
-            '''
-            val_generator = BasicIterator(batch_size, instances_per_epoch= batch_size)(
-                task.val_data, num_epochs=1, shuffle=False,
-                cuda_device=self._cuda_device)
-            log.info(task.val_data)
-            '''
-            val_generator = task_info['bandit_val_generator']
+            if self.bandit.val_generation =='static':
+                val_generator = BasicIterator(batch_size, instances_per_epoch= batch_size)(
+                    task.val_data, num_epochs=self.bandit.val_batch, shuffle=False,
+                    cuda_device=self._cuda_device)
+            elif self.bandit.val_generation =='dynamic':
+                val_generator = task_info['bandit_val_generator']
             #log.info ('val_generator: ' + str(val_generator))
 
             n_val_batches = n_batches_perTask
@@ -770,7 +770,7 @@ class SamplingMultiTaskTrainer():
 
             #for batch in val_generator:
             for batch in itertools.islice(val_generator, n_batches_perTask):
-                # log.info (task.name + "\n" + str(batch['labels']))
+                #log.info (task.name + "\n" + str(batch['labels']))
                 batch_num += 1
                 out = self._forward(batch, task=task, for_training=False)
                 loss = out["loss"]

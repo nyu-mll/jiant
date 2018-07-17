@@ -10,7 +10,8 @@ class Bandit():
                  stepSize = 0.3, initialQ=0.0,
                  explore_method=None, #'epsilon','gradient'
                  temp=1.0,
-                 epsilon=0.2):
+                 epsilon=0.2,
+                 val_batch =1, val_generation = 'static'):
 
         self.mapping = dict(enumerate(actions))
         self.k = len(actions)
@@ -34,6 +35,9 @@ class Bandit():
         # keep trace
         self.action = None
         self.reward = None
+        # control
+        self.val_batch = val_batch
+        self.val_generation = val_generation
 
     def chooseAction(self):
         if self.explore_method == 'gradient':
@@ -68,13 +72,17 @@ class Bandit():
         explore_method = params.pop("explore_method", "gradient")
         temp = params.pop("temp", 1)
         epsilon = params.pop("epsilon", 0.2)
+        val_batch = params.pop("val_batch",1)
+        val_generation = params.pop("val_generation","static")
 
         params.assert_empty(cls.__name__)
         return Bandit(actions,
                      stepSize = stepSize, initialQ=initialQ,
                      explore_method=explore_method, #'epsilon','gradient'
                      temp=temp,
-                     epsilon=epsilon)
+                     epsilon=epsilon,
+                     val_batch = val_batch,
+                     val_generation= val_generation)
 
 def build_bandit(params, actions):
 
@@ -82,7 +90,9 @@ def build_bandit(params, actions):
                            'initialQ': params['initialQ'],
                            'explore_method': params['explore_method'],
                            'temp': params['temp'],
-                           'epsilon': params['epsilon']})
+                           'epsilon': params['epsilon'],
+                           'val_batch':params['val_batch'],
+                           'val_generation':params['val_generation']})
 
     bandit = Bandit.from_params(actions,copy.deepcopy(bandit_params))
     return bandit
@@ -91,7 +101,7 @@ def build_bandit(params, actions):
 def build_bandit_params(args):
     ''' Build bandit parameters, possibly loading task specific parameters '''
     params = {}
-    opts = ['stepSize', 'initialQ', 'explore_method','temp', 'epsilon']
+    opts = ['stepSize', 'initialQ', 'explore_method','temp', 'epsilon','val_batch','val_generation']
     for attr in opts:
         params[attr] = getattr(args, attr)
 
