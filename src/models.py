@@ -269,7 +269,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
                                  'target_namespace': 'targets',
-                                 'attention': 'bilinear',
+                                 'attention': args.mt_attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
