@@ -1,7 +1,7 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-from typing import Dict, List, Optional, Union, Iterable
+from typing import Dict, List, Sequence, Optional, Union, Iterable
 
 import copy
 import os
@@ -44,6 +44,11 @@ def copy_iter(elems):
     for elem in elems:
         yield copy.deepcopy(elem)
 
+def wrap_singleton(item: Union[Sequence, str]):
+    ''' Wrap a single item as a list. '''
+    if isinstance(item, str):
+        return [item]
+    return item
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
     ''' Helper function to load a model state
@@ -59,7 +64,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
 
-    assert_for_log(not (skip_task_models and strict), 
+    assert_for_log(not (skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.")
 
     for name, param in model.named_parameters():
