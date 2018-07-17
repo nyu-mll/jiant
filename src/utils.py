@@ -94,7 +94,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     returns:
         - params Dict[str:float]: dictionary maybe layers to scalar params
     '''
-    elmo = text_field_embedder.token_embedder_elmo
+    elmo = text_field_embedder.token_embedder_elmo._elmo
     if task:
         mix_id = text_field_embedder.task_map[task.name]
     else:

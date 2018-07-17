@@ -3,6 +3,8 @@
 # version, the single ELMo output representation can be simply concatenated. In multi-output
 # representation, we need to first select the representation that is used.
 
+# A wrapper class for Elmo is also included here.
+
 from typing import Dict
 
 import torch
@@ -14,6 +16,42 @@ from allennlp.data import Vocabulary
 from allennlp.modules.text_field_embedders.text_field_embedder import TextFieldEmbedder
 from allennlp.modules.time_distributed import TimeDistributed
 from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
+from allennlp.modules import Elmo
+
+@TokenEmbedder.register("elmo_token_embedder_wrapper")
+class ElmoTokenEmbedderWrapper(TokenEmbedder):
+    """
+    Wraps the Elmo call so that the parameters are saved correctly
+    
+    Forwards all calls to Elmo
+    """
+    def __init__(self,
+                 options_file: str,
+                 weight_file: str,
+                 do_layer_norm: bool = False,
+                 dropout: float = 0.5,
+                 requires_grad: bool = False,
+                 projection_dim: int = None,
+                 num_output_representations: int = 1) -> None:
+        super(ElmoTokenEmbedderWrapper, self).__init__()
+
+        # other arguments can be passed in when needed
+        self._elmo = Elmo(options_file=options_file,
+                          weight_file=weight_file,
+                          num_output_representations=num_output_representations,
+                          dropout=dropout)
+
+    def get_output_dim(self):
+        return self._elmo.get_output_dim()
+
+    def forward(self, inputs: torch.Tensor) -> Dict[str, torch.Tensor]: #pylint: disable=arguments-differ
+        return self._elmo(inputs)
+
+    # this is also deferred to elmo
+    @classmethod
+    def from_params(cls, params: Params):
+        self._elmo = Elmo.from_params(params)
+        return self
 
 
 @TextFieldEmbedder.register("elmo")

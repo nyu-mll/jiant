@@ -25,7 +25,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder, \
                                               PytorchSeq2SeqWrapper
 from allennlp.training.metrics import Average
 
-from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder
+from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
@@ -238,11 +238,12 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             else:
                 # no unique rep for each task
                 reps = []
-            elmo_embedder = Elmo(options_file=ELMO_OPT_PATH,
-                                 weight_file=ELMO_WEIGHTS_PATH,
-                                 # Include pretrain task
-                                 num_output_representations=len(reps) + 1,
-                                 dropout=args.dropout)
+            elmo_embedder = ElmoTokenEmbedderWrapper(
+                options_file=ELMO_OPT_PATH,
+                weight_file=ELMO_WEIGHTS_PATH,
+                # Include pretrain task
+                num_output_representations=len(reps) + 1,
+                dropout=args.dropout)
             d_emb += 1024
         token_embedder["elmo"] = elmo_embedder
     embedder = ElmoTextFieldEmbedder(token_embedder, reps)
