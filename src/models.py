@@ -30,6 +30,7 @@ from allennlp.training.metrics import Average
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
+from . import beamsearch
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -267,8 +268,8 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
+                                 'target_namespace': 'targets',
+                                 'attention': 'none',
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -328,6 +329,7 @@ def get_task_specific_params(args, task_name):
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
     params['cls_span_pooling'] = _get_task_attr("classifier_span_pooling")
+
 
     # For NLI probing tasks, might want to use a classifier trained on
     # something else (typically 'mnli').
@@ -637,6 +639,13 @@ class MultiTaskModel(nn.Module):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
+
+            if predict:
+                # bleu scoring
+                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
+                task.scorer2(bleu_score)
+                print(bleu_score)
+
             return out
 
         if 'targs' in batch:
@@ -767,4 +776,3 @@ class MultiTaskModel(nn.Module):
         else:
             params = {}
         return params
-
