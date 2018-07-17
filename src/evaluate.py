@@ -168,7 +168,7 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         # Does this do anything close to what we want? Looks like the indices &
         # sentences are not sliced, so not aligned to preds anymore.
-        # THIS IS WHY PARALLEL LISTS ARE BAD!!!
+        # TODO: fix this, use pandas writer with proper index slicing.
         _write_preds_to_file(preds[:9796], indices, sent1_strs,
                              os.path.join(pred_dir, "%s-m.tsv" % task_name),
                              pred_map)
