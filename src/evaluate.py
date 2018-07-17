@@ -142,9 +142,8 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
         log.warning("Task '%s': predictions are empty!", task_name)
         return
 
-    default_output_filename = os.path.join(pred_dir,
-                                           "%s__%s.tsv" % (task_name,
-                                                           split_name))
+    default_pred_file = os.path.join(pred_dir,
+                                     "%s__%s.tsv" % (task_name, split_name))
 
     def _add_default_column(df, name, val):
         if not name in df:
@@ -181,24 +180,22 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
     elif task_name in ['rte', 'qnli']:
         pred_map = {0: 'not_entailment', 1: 'entailment'}
         _write_preds_to_file(preds, indices, sent1_strs,
-                             default_output_filename, pred_map)
+                             default_pred_file, pred_map)
     elif task_name in ['sts-b']:
         #  preds = [min(max(0., pred * 5.), 5.) for pred in preds]
         preds_df['prediction'] = [min(max(0., pred * 5.), 5.) for pred in
                                   preds_df['prediction']]
-        _write_preds_with_pd(preds_df,
-                             default_output_filename, write_type=float)
+        _write_preds_with_pd(preds_df, default_pred_file, write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
         if isinstance(preds_df['prediction'][0], list):
             assert isinstance(preds_df['prediction'][0][0], str)
             preds_df['prediction'] = [' '.join(pred)
                                       for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df,
-                             default_output_filename, write_type=str)
+        _write_preds_with_pd(preds_df, default_pred_file, write_type=str)
     else:
-        _write_preds_with_pd(preds_df,
-                             default_output_filename)
+        _write_preds_with_pd(preds_df, default_pred_file, write_type=int)
+
     log.info("Wrote predictions for task: %s", task_name)
 
 
