@@ -29,19 +29,19 @@ from .tasks import \
     QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
     PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
-    DisSentWikiSingleTask, DisSentWikiFullTask, \
+    DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
+    DisSentWikiHugeTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask
+    RedditTask, Reddit_MTTask
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask
-from .tasks import MultiNLIFictionTask, \
-    MultiNLISlateTask, MultiNLIGovernmentTask, MultiNLITravelTask, \
-    MultiNLITelephoneTask
-from .tasks import POSTaggingTask, CCGTaggingTask
+    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
+    MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
+    MultiNLITravelTask, MultiNLITelephoneTask 
+from .tasks import POSTaggingTask, CCGTaggingTask 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
@@ -73,9 +73,13 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
+             'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
+             'dissentbig': (DisSentWikiBigTask, 'DisSent/wikitext/'),
+             'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
