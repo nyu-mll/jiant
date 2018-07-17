@@ -160,6 +160,14 @@ class Task():
         ''' Process split text into a list of AllenNLP Instances. '''
         raise NotImplementedError
 
+    def get_eval_required_fields(self) -> Sequence[str]:
+        ''' Return field names that *must* be present in eval batches.
+
+        Subclass should implement this to enforce behavior in
+        evaluate.evaluate().
+        '''
+        return []
+
     def get_metrics(self, reset: bool=False) -> Dict:
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
@@ -476,7 +484,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
             d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
             return Instance(d)
-        
+
         for sent in split:
             yield _make_instance(sent)
 

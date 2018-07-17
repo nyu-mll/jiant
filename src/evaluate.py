@@ -39,6 +39,9 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
     n_examples_overall = 0
     for task in tasks:
         log.info("Evaluating on: %s", task.name)
+        required_fields = task.get_eval_required_fields()
+        log.info("Task '%s': expecting required fields %s",
+                 task, str(required_fields))
         n_examples = 0
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
@@ -55,7 +58,11 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
             preds = _coerce_list(out['preds'])
             assert isinstance(preds, list), "Convert predictions to list!"
             cols = {"preds": preds}
-            for field in FIELDS_TO_EXPORT:
+            for field in set(FIELDS_TO_EXPORT).union(required_fields):
+                if field in required_fields:
+                    assert field in batch, (f"Task '{task.name}': required "
+                                            "field '{field}' not found in "
+                                            "batch.")
                 if field in batch:
                     cols[field] = _coerce_list(batch[field])
             # Transpose data using Pandas
