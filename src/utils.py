@@ -59,7 +59,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
 
-    assert_for_log(not (skip_task_models and strict), 
+    assert_for_log(not (skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.")
 
     for name, param in model.named_parameters():

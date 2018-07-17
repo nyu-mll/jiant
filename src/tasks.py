@@ -92,8 +92,6 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         assert len(split) == 3
         split.append(itertools.count())
 
-    #  import ipdb; ipdb.set_trace()
-
     # Map over columns: input2, (input2), labels, idx
     instances = map(_make_instance, *split)
     #  return list(instances)
