@@ -112,23 +112,6 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
             Assumes that predictions are sorted (if necessary).
             For tasks with sentence predictions, we assume they've been mapped back to strings.
     '''
-
-    #  def _write_preds_to_file(preds, indices, sent1_strs,
-    #                           pred_file, pred_map=None, write_type=int):
-    #      ''' Write preds to pred_file '''
-    #      with open(pred_file, 'w') as pred_fh:
-    #          pred_fh.write("index\tprediction\tsentence_1\n")
-    #          for idx, pred in enumerate(preds):
-    #              index = indices[idx] if len(indices) > 0 else -1
-    #              sent1_str = sent1_strs[idx] if len(sent1_strs) > 0 else ""
-    #              if pred_map is not None or write_type == str:
-    #                  pred = pred_map[pred]
-    #                  pred_fh.write("%d\t%s\t%s\n" % (index, pred, sent1_str))
-    #              elif write_type == float:
-    #                  pred_fh.write("%d\t%.3f\t%s\n" % (index, pred, sent1_str))
-    #              elif write_type == int:
-    #                  pred_fh.write("%d\t%d\t%s\n" % (index, pred, sent1_str))
-
     def _apply_pred_map(preds_df, pred_map, key='prediction'):
         """ Apply preds_map, in-place. """
         preds_df[key] = [pred_map[p] for p in preds_df[key]]
@@ -153,6 +136,7 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
         if not name in df:
             df[name] = val
         df[name].fillna(value=val, inplace=True)
+
     preds_df = preds_df.copy()
     _add_default_column(preds_df, 'idx', -1)
     _add_default_column(preds_df, 'sent1_str', "")
@@ -172,31 +156,18 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
                  len(preds))
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
-        #  _write_preds_to_file(preds[:9796], indices, sent1_strs,
         _write_preds_with_pd(preds_df.iloc[:9796],
-                             os.path.join(pred_dir, "%s-m.tsv" % task_name),
-                            )
-                             #  pred_map=pred_map)
-        #  _write_preds_to_file(preds[9796:19643], indices, sent1_strs,
+                             os.path.join(pred_dir, "%s-m.tsv" % task_name))
         _write_preds_with_pd(preds_df.iloc[9796:19643],
-                             os.path.join(pred_dir, "%s-mm.tsv" % task_name),
-                            )
-                             #  pred_map=pred_map)
-        #  _write_preds_to_file(preds[19643:], indices, sent1_strs,
+                             os.path.join(pred_dir, "%s-mm.tsv" % task_name))
         _write_preds_with_pd(preds_df.iloc[19643:],
-                             os.path.join(pred_dir, "diagnostic.tsv"),
-                            )
-                             #  pred_map=pred_map)
+                             os.path.join(pred_dir, "diagnostic.tsv"))
 
     elif task_name in ['rte', 'qnli']:
         pred_map = {0: 'not_entailment', 1: 'entailment'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
         _write_preds_with_pd(preds_df, default_pred_file)
-        #  _write_preds_with_pd(preds_df, default_pred_file, pred_map)
-        #  _write_preds_to_file(preds, indices, sent1_strs,
-        #                       default_pred_file, pred_map)
     elif task_name in ['sts-b']:
-        #  preds = [min(max(0., pred * 5.), 5.) for pred in preds]
         preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
                                   for pred in preds_df['prediction']]
         _write_preds_with_pd(preds_df, default_pred_file, write_type=float)
