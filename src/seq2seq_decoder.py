@@ -43,10 +43,6 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        # self._start_index = len(self.vocab._index_to_token[self._target_namespace])
-        # self.vocab._index_to_token[self._target_namespace][START_SYMBOL] = self._start_index
-        # self._end_index = len(self.vocab._index_to_token[self._target_namespace])
-        # self.vocab._index_to_token[self._target_namespace][END_SYMBOL] = self._end_index
         self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
         self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
@@ -59,45 +55,51 @@ class Seq2SeqDecoder(Model):
         # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
+
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(input_dim, input_dim)
             # The output of attention, a weighted average over encoder outputs, will be
             # concatenated to the input vector of the decoder at each time step.
             self._decoder_input_dim = input_dim + target_embedding_dim
-        else:
+        elif attention == "none":
             self._decoder_input_dim = target_embedding_dim
-        # TODO (pradeep): Do not hardcode decoder cell type.
+        else:
+            raise Exception("attention not implemented {}".format(attention))
+
         self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
         self._output_projection_layer = Linear(self._decoder_output_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
+    def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
+        # this line is very important - feel free to check it a third time
+        # idempotent / safe to run in place
+        encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
+
+        decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+        decoder_context = encoder_outputs.max(dim=1)[0]
+
+        return decoder_hidden, decoder_context
+
     @overrides
     def forward(self,  # type: ignore
                 encoder_outputs,  # type: ignore
-                source_mask,  # type: ignore
-                target_tokens: Dict[str, torch.LongTensor] = None) -> Dict[str, torch.Tensor]:
+                encoder_outputs_mask,  # type: ignore
+                target_tokens: Dict[str, torch.LongTensor] = None,
+                debug: bool = False) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
         Decoder logic for producing the entire target sequence.
 
         Parameters
         ----------
-        source_tokens : Dict[str, torch.LongTensor]
-           The output of ``TextField.as_array()`` applied on the source ``TextField``. This will be
-           passed through a ``TextFieldEmbedder`` and then through an encoder.
+        encoder_outputs : torch.FloatTensor, [bs, T, h]
+        encoder_outputs_mask : torch.LongTensor, [bs, T]
         target_tokens : Dict[str, torch.LongTensor], optional (default = None)
            Output of ``Textfield.as_array()`` applied on target ``TextField``. We assume that the
            target tokens are also represented as a ``TextField``.
         """
-        if target_tokens:
-            # important - append EOS to target_tokens
-            target_mask = get_text_field_mask(target_tokens)
-
-        # (batch_size, input_sequence_length, encoder_output_dim)
         batch_size, _, _ = encoder_outputs.size()
-        #source_mask = get_text_field_mask(source_tokens)
-        #encoder_outputs = self._encoder(embedded_input, source_mask)
-        # final_encoder_output = encoder_outputs[:, -1]  # (batch_size, encoder_output_dim)
+
         if target_tokens is not None:
             targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
@@ -105,56 +107,49 @@ class Seq2SeqDecoder(Model):
         else:
             num_decoding_steps = self._max_decoding_steps
 
-        decoder_hidden = encoder_outputs.max(dim=1)[0]
-        decoder_context = encoder_outputs.new_zeros(encoder_outputs.size(0), self._decoder_hidden_dim)
+        decoder_hidden, decoder_context = self._initalize_hidden_context_states(
+            encoder_outputs, encoder_outputs_mask)
 
-        last_predictions = None
         step_logits = []
-        #step_probabilities = []
-        #step_predictions = []
-        ### Remove -inf
-        encoder_outputs.data.masked_fill_(1 - source_mask.byte().data, 0.0)
+
         for timestep in range(num_decoding_steps):
-            # Fixme
-            # if self.training and torch.rand(1).item() >= self._scheduled_sampling_ratio:
-            if torch.rand(1).item() >= self._scheduled_sampling_ratio:
-                input_choices = targets[:, timestep]
-            else:
-                input_choices = last_predictions
-            decoder_input = self._prepare_decode_step_input(input_choices, decoder_hidden,
-                                                            encoder_outputs, source_mask)
-            decoder_hidden, decoder_context = self._decoder_cell(decoder_input,
-                                                                 (decoder_hidden, decoder_context))
+            input_choices = targets[:, timestep]
+            decoder_input = self._prepare_decode_step_input(
+                input_choices, decoder_hidden,
+                encoder_outputs, encoder_outputs_mask)
+            decoder_hidden, decoder_context = self._decoder_cell(
+                decoder_input, (decoder_hidden, decoder_context))
+
             # (batch_size, num_classes)
             output_projections = self._output_projection_layer(decoder_hidden)
+
             # list of (batch_size, 1, num_classes)
-            step_logits.append(output_projections.unsqueeze(1))
-            #class_probabilities = F.softmax(output_projections, dim=-1)
-            #_, predicted_classes = torch.max(class_probabilities, 1)
-            # step_probabilities.append(class_probabilities.unsqueeze(1))
-            #last_predictions = predicted_classes
-            # (batch_size, 1)
-            # step_predictions.append(last_predictions.unsqueeze(1))
-        # step_logits is a list containing tensors of shape (batch_size, 1, num_classes)
-        # This is (batch_size, num_decoding_steps, num_classes)
+            step_logit = output_projections.unsqueeze(1)
+            step_logits.append(step_logit)
+
+        # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
-        #class_probabilities = torch.cat(step_probabilities, 1)
-        #all_predictions = torch.cat(step_predictions, 1)
+
         output_dict = {
             "logits": logits, "final_decoder_hidden": decoder_hidden,
             "final_decoder_context": decoder_context,
         }
-        #"class_probabilities": class_probabilities,
-        #"predictions": all_predictions}
+
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
             loss = self._get_loss(logits, targets, target_mask)
             output_dict["loss"] = loss
+
         return output_dict
 
-    def _decoder_step(self, decoder_input, decoder_hidden, decoder_context):
+    def _decoder_step(self,
+                      decoder_input,
+                      decoder_hidden,
+                      decoder_context,
+                      debug=False):
         decoder_hidden, decoder_context = self._decoder_cell(
             decoder_input, (decoder_hidden, decoder_context))
+
         logits = self._output_projection_layer(decoder_hidden)
 
         return logits, decoder_hidden, decoder_context
@@ -191,11 +186,18 @@ class Seq2SeqDecoder(Model):
         # input_indices : (batch_size,)  since we are processing these one timestep at a time.
         # (batch_size, target_embedding_dim)
         embedded_input = self._target_embedder(input_indices)
+
         if hasattr(self, "_decoder_attention") and self._decoder_attention:
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
             # Fixme
+
+            # need to use zero-masking instead of -inf for attention
+            encoder_outputs = encoder_outputs.clone()
+            encoder_outputs.data.masked_fill_(
+                1 - encoder_outputs_mask.byte().data, 0.0)
+
             encoder_outputs = 0.5 * encoder_outputs
             encoder_outputs_mask = encoder_outputs_mask.float()
             encoder_outputs_mask = encoder_outputs_mask[:, :, 0]

@@ -1,4 +1,3 @@
-
 import torch
 from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from torch.autograd import Variable
@@ -118,20 +117,33 @@ class Beam(object):
 
         return hyp[::-1]
 
+    def print_sentences(self, decoder_vocab):
+        sentences = [[] for _ in range(self.size)]
+        for t in range(len(self.nextYs)):
+            ys = self.nextYs[t]
+            for i in range(self.size):
+                word_idx = int(ys[i].item())
+                word = decoder_vocab._index_to_token['targets'][word_idx]
+                sentences[i].append(word)
+        for sent in sentences:
+            print(' '.join(sent))
+        print('\n')
 
-def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
+
+def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_SIZE, debug=False):
     """ performs beam search. returns hypotheses with scores."""
     batch_size = encoder_outputs.size(0)
     encoder_hidden_dim = encoder_outputs.size(2)
     assert encoder_hidden_dim == decoder._decoder_hidden_dim
-    trg_h_t = encoder_outputs.max(dim=1)[0]
-    trg_c_t = encoder_outputs.new_zeros(encoder_outputs.size(0), decoder._decoder_hidden_dim)  # [bs, 1, h]
+
+    trg_h_t, trg_c_t = decoder._initalize_hidden_context_states(
+        encoder_outputs, encoder_outputs_mask)
 
     max_trg_length = decoder._max_decoding_steps
 
     # Expand tensors for each beam.
     dec_states = [
-        Variable(trg_h_t.data.repeat(beam_size, 1)),  # [bs*beam_size, h]
+        Variable(trg_h_t.data.repeat(beam_size, 1)),  # [bs * beam_size, h]
         Variable(trg_c_t.data.repeat(beam_size, 1))
     ]
 
@@ -143,22 +155,28 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
     batch_idx = list(range(batch_size))
     remaining_sents = batch_size
 
-    for _ in range(max_trg_length):
+    for i in range(max_trg_length):
         input_indices = torch.stack(
             [b.get_current_state() for b in beam if not b.done]
         ).contiguous().view(-1)  # [beam_size*bs]
-        decoder_input = decoder._prepare_decode_step_input(input_indices)
+
+        decoder_input = decoder._prepare_decode_step_input(
+            input_indices=input_indices,
+            decoder_hidden_state=dec_states[0],
+            encoder_outputs=encoder_outputs,
+            encoder_outputs_mask=encoder_outputs_mask,
+        )
 
         logits, trg_h_t, trg_c_t = decoder._decoder_step(
             decoder_input,
             dec_states[0],
             dec_states[1],
+            debug=True if debug and i == 0 else False,
         )
 
         dec_states = (trg_h_t, trg_c_t)
-        dec_out = trg_h_t.squeeze(1)
 
-        word_lk = F.softmax(logits, dim=1).view(  # (softmax is not really necessary)
+        word_lk = F.softmax(logits, dim=1).view(  # softmax is not really necessary
             beam_size,
             remaining_sents,
             -1
@@ -198,7 +216,6 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
             update_active(dec_states[0]),
             update_active(dec_states[1])
         )
-        dec_out = update_active(dec_out)
 
         remaining_sents = len(active)
 
@@ -214,15 +231,20 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
         hyps = zip(*[beam[b].get_hyp(k) for k in ks[:n_best]])
         allHyp += [hyps]
 
+    if debug:
+        for b in beam:
+            b.print_sentences(decoder.vocab)
+
     return allHyp, allScores
 
 
 def compute_bleu(hyps, scores, targets):
-    pass
+    return 0  # TODO
 
 
-def generate_and_compute_bleu(decoder, encoder_outputs, encoder_mask, targets):
-    hyps, scores = beam_search(decoder, encoder_outputs, encoder_mask)
+def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
+                              targets):
+    hyps, scores = beam_search(decoder, encoder_outputs, encoder_outputs_mask)
     bleu_score = compute_bleu(hyps, scores, targets)
 
     return bleu_score

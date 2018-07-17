@@ -196,7 +196,7 @@ def _index_split(task, split, indexers, vocab, record_file):
              log_prefix, _instance_counter, record_file)
 
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
-                      relative_path: str, log_prefix: str="") -> bool:
+                      relative_path: str, log_prefix: str="", use_global_preproc_dir: bool=True) -> bool:
     """Find a cached file.
 
     Look in local exp_dir first, then in global_exp_cache_dir. If found in the
@@ -219,12 +219,13 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
         log.info("%sFound preprocessed copy in %s", log_prefix, local_file)
         return True
     # Try in global preproc dir; if found, make a symlink.
-    global_file = os.path.join(global_exp_cache_dir, relative_path)
-    if os.path.exists(global_file):
-        log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
-        os.symlink(global_file, local_file)
-        log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
-        return True
+    if use_global_preproc_dir:
+        global_file = os.path.join(global_exp_cache_dir, relative_path)
+        if os.path.exists(global_file):
+            log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
+            os.symlink(global_file, local_file)
+            log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
+            return True
     return False
 
 def _build_embeddings(args, vocab, emb_file: str):
