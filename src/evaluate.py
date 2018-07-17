@@ -131,9 +131,9 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
         return
 
     log.info("Wrote predictions for task: %s", task_name)
-    preds = preds_df['preds']
-    indices = preds_df['idx']
-    sent1_strs = preds_df['sent1str']
+    preds = list(preds_df['preds'])
+    indices = list(preds_df['idx'])
+    sent1_strs = list(preds_df['sent1str'])
     default_output_filename = os.path.join(pred_dir,
                                            "%s__%s.tsv" % (task_name,
                                                            split_name))
