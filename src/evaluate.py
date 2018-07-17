@@ -51,7 +51,6 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
-
             # get predictions
             if 'preds' not in out:
                 continue
