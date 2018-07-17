@@ -67,15 +67,8 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         - tok2idx (dict)
     Returns:
     '''
-    def _make_instance(ix_split_tuple):
+    def _make_instance(input1, input2, labels, idx):
         d = {}
-        ix = ix_split_tuple[0]
-        split = ix_split_tuple[1]
-        input1 = split[0]
-        input2 =  split[1]
-        labels = split[2]
-        index = split[3] if len(split) == 4 else ix
-
         d["input1"] = _sentence_to_text_field(input1, indexers)
         d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if input2:
@@ -87,16 +80,22 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         else:
             d["labels"] = NumericField(labels)
 
-        d["idx"] = LabelField(index, label_namespace="idxs",
-                                  skip_indexing=True)
+        d["idx"] = LabelField(idx, label_namespace="idxs",
+                              skip_indexing=True)
 
         return Instance(d)
 
+    split = list(split)
     if not is_pair:  # dummy iterator for input2
-        split = list(split)
         split[1] = itertools.repeat(None)
-    # Map over columns: input2, (input2), labels, (idx)
-    instances = map(_make_instance,[(i,v) for i,v in enumerate(zip(*split))])
+    if len(split) < 4:  # counting iterator for idx
+        assert len(split) == 3
+        split.append(itertools.count())
+
+    #  import ipdb; ipdb.set_trace()
+
+    # Map over columns: input2, (input2), labels, idx
+    instances = map(_make_instance, *split)
     #  return list(instances)
     return instances  # lazy iterator
 

@@ -61,8 +61,8 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
             # Transpose data using Pandas
             df = pd.DataFrame(cols)
             task_preds.append(df)
-        # task_preds will be a DataFrame with columns ['preds'] +
-        # FIELDS_TO_EXPORT
+        # task_preds will be a DataFrame with columns
+        # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
 
         # Combine task_preds from each batch to a single DataFrame.
@@ -78,7 +78,8 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
         # Store predictions, sorting by index if given.
         if 'idx' in task_preds.columns:
-           task_preds.sort_values(by=['idx'], inplace=True)
+            log.info("Task '%s': sorting predictions by 'idx'", task.name)
+            task_preds.sort_values(by=['idx'], inplace=True)
 
         all_preds[task.name] = task_preds
 
