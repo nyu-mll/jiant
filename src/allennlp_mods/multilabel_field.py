@@ -1,3 +1,6 @@
+# Patched version of AllenNLP's MultiLabelField, such that empty_field()
+# works properly in the case where skip_indexing=False.
+
 from typing import Dict, Union, Sequence, Set, Optional, cast
 import logging
 
