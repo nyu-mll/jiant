@@ -9,6 +9,7 @@ from .tasks import RegressionTask, STSBTask, JOCITask
 def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     '''Evaluate on a dataset'''
     model.eval()
+    task.get_metrics(reset=True) # Trying this...
     iterator = BasicIterator(batch_size)
 
     all_metrics, all_preds = {"micro_avg": 0.0, "macro_avg": 0.0}, {}
