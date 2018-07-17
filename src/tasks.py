@@ -77,9 +77,10 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         index = split[3] if len(split) == 4 else ix
 
         d["input1"] = _sentence_to_text_field(input1, indexers)
+        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if input2:
             d["input2"] = _sentence_to_text_field(input2, indexers)
-            d['sent2str'] = MetadataField(" ".join(input2[1:-1]))
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
@@ -88,9 +89,6 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
         d["idx"] = LabelField(index, label_namespace="idxs",
                                   skip_indexing=True)
-
-        d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
-
 
         return Instance(d)
 

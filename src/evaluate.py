@@ -3,6 +3,7 @@ import os
 import logging as log
 
 import pandas as pd
+from csv import QUOTE_NONE
 
 import torch
 from allennlp.data.iterators import BasicIterator
@@ -29,7 +30,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
-    FIELDS_TO_EXPORT = ['idx', 'sent1str']
+    FIELDS_TO_EXPORT = ['idx', 'sent1_str']
     model.eval()
     iterator = BasicIterator(batch_size)
 
@@ -55,7 +56,8 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
             assert isinstance(preds, list), "Convert predictions to list!"
             cols = {"preds": preds}
             for field in FIELDS_TO_EXPORT:
-                cols[field] = _coerce_list(batch[field])
+                if field in batch:
+                    cols[field] = _coerce_list(batch[field])
             # Transpose data using Pandas
             df = pd.DataFrame(cols)
             task_preds.append(df)
@@ -75,8 +77,8 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
         n_examples_overall += n_examples
 
         # Store predictions, sorting by index if given.
-        if 'idxs' in task_preds.columns:
-           task_preds.sort_values(by=['idxs'], inplace=True)
+        if 'idx' in task_preds.columns:
+           task_preds.sort_values(by=['idx'], inplace=True)
 
         all_preds[task.name] = task_preds
 
@@ -126,22 +128,46 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
                 elif write_type == int:
                     pred_fh.write("%d\t%d\t%s\n" % (index, pred, sent1_str))
 
+    #  def _write_preds_with_pd(preds_df, pred_file, pred_map=None,
+    #                           write_type=int):
+    #      if pred_map is not None:
+    #         preds_df['prediction'] = [pred_map[p] for p in
+    #                                   preds_df['prediction']]
+    #      preds_df.to_csv(pred_file, sep="\t", index=False, float_format=".3f",
+    #                      quoting=QUOTE_NONE,
+    #                      columns=['index', 'prediction', 'sentence_1'])
+
     if len(preds_df) == 0:  # catch empty lists
         log.warning("Task '%s': predictions are empty!", task_name)
         return
 
-    log.info("Wrote predictions for task: %s", task_name)
-    preds = list(preds_df['preds'])
-    indices = list(preds_df['idx'])
-    sent1_strs = list(preds_df['sent1str'])
     default_output_filename = os.path.join(pred_dir,
                                            "%s__%s.tsv" % (task_name,
                                                            split_name))
+
+    def _add_default_column(df, name, val):
+        if not name in df:
+            df[name] = val
+        df[name].fillna(value=val, inplace=True)
+    preds_df = preds_df.copy()
+    _add_default_column(preds_df, 'idx', -1)
+    _add_default_column(preds_df, 'sent1_str', "")
+    # Rename columns to match output headers.
+    preds_df.rename({"idx": "index", "preds": "prediction",
+                     "sent1_str": "sentence_1"},
+                    axis='columns', inplace=True)
+
+    preds = list(preds_df['prediction'])
+    indices = list(preds_df['index'])
+    sent1_strs = list(preds_df['sentence_1'])
 
     if task_name == 'mnli' and split_name == 'test':  # 9796 + 9847 + 1104 = 20747
         assert len(preds) == 20747, "Missing predictions for MNLI!"
         log.info("There are %d examples in MNLI, 20747 were expected")
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
+        # Does this do anything close to what we want? Looks like the indices &
+        # sentences are not sliced, so not aligned to preds anymore.
+        # THIS IS WHY PARALLEL LISTS ARE BAD!!!
         _write_preds_to_file(preds[:9796], indices, sent1_strs,
                              os.path.join(pred_dir, "%s-m.tsv" % task_name),
                              pred_map)
@@ -169,6 +195,7 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
     else:
         _write_preds_to_file(preds, indices, sent1_strs,
                              default_output_filename)
+    log.info("Wrote predictions for task: %s", task_name)
 
 
 def write_results(results, results_file, run_name):
