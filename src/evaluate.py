@@ -14,7 +14,6 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
     all_metrics, all_preds = {"micro_avg": 0.0, "macro_avg": 0.0}, {}
     n_examples_overall = 0
     for task in tasks:
-        log.info("Evaluating on: %s", task.name)
         n_examples = 0
         task_preds, task_idxs = [], []
         assert split in ["train", "val", "test"]
@@ -26,6 +25,7 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                 batch.pop('idx', None)
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
+
             # get predictions
             if 'preds' in out:
                 preds = out['preds']
