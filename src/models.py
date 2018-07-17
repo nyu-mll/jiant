@@ -89,7 +89,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        bilm, skip_embs=args.skip_embs,
-                                       dropout=args.dropout, sep_embs=args.sep_embs,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
     elif args.sent_enc == 'bow':
@@ -99,7 +100,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
-                                       dropout=args.dropout, sep_embs=args.sep_embs,
+                                       dropout=args.dropout, sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
     elif args.sent_enc == 'transformer':
@@ -107,7 +108,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
-                                       sep_embs=args.sep_embs)
+                                       sep_embs_for_skip=args.sep_embs_for_skip)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
     d_sent += args.skip_embs * d_emb
@@ -425,7 +426,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.sep_embs = args.sep_embs
+        self.sep_embs_for_skip = args.sep_embs_for_skip
 
 
     def forward(self, task, batch, predict=False):
@@ -765,7 +766,7 @@ class MultiTaskModel(nn.Module):
         '''
         params = {}
         if self.elmo:
-            if not self.sep_embs:
+            if not self.sep_embs_for_skip:
                 tasks = [None]
             else:
                 tasks = [None] + tasks

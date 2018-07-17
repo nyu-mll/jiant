@@ -50,7 +50,7 @@ class SentenceEncoder(Model):
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
-                 sep_embs=False, initializer=InitializerApplicator()):
+                 sep_embs_for_skip=False, initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
@@ -66,7 +66,7 @@ class SentenceEncoder(Model):
         self._cove = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.sep_embs = sep_embs
+        self.sep_embs_for_skip = sep_embs_for_skip
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
         if dropout > 0:
@@ -107,7 +107,7 @@ class SentenceEncoder(Model):
             sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
-            if self.sep_embs:
+            if self.sep_embs_for_skip:
                 sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
             else:
                 sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
