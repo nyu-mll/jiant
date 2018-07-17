@@ -183,8 +183,8 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
                              default_pred_file, pred_map)
     elif task_name in ['sts-b']:
         #  preds = [min(max(0., pred * 5.), 5.) for pred in preds]
-        preds_df['prediction'] = [min(max(0., pred * 5.), 5.) for pred in
-                                  preds_df['prediction']]
+        preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
+                                  for pred in preds_df['prediction']]
         _write_preds_with_pd(preds_df, default_pred_file, write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
