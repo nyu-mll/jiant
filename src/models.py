@@ -44,8 +44,7 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
-    MultiNLIDiagnosticTask
+    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from .tasks import EdgeProbingTask
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -444,8 +443,6 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch['input']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, MultiNLIDiagnosticTask):
-            out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
             out = self._pair_sentence_forward(batch, task, predict)
@@ -520,34 +517,6 @@ class MultiTaskModel(nn.Module):
                 out['preds'] = logits
             else:
                 _, out['preds'] = logits.max(dim=1)
-        return out
-
-    def _pair_sentence_MNLI_diagnostic_forward(self, batch, task, predict):
-        out = {}
-
-        # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'])
-        sent2, mask2 = self.sent_encoder(batch['input2'])
-        classifier = self._get_classifier(task)
-        logits = classifier(sent1, sent2, mask1, mask2)
-        out['logits'] = logits
-        out['n_exs'] = get_batch_size(batch)
-
-        labels = batch['labels'].squeeze(-1)
-        out['loss'] = F.cross_entropy(logits, labels)
-        _, predicted = logits.max(dim=1)
-        if 'labels' in batch:
-            if batch['labels'].dim() == 0:
-                labels = batch['labels'].unsqueeze(0)
-            elif batch['labels'].dim() == 1:
-                labels = batch['labels']
-            else:
-                labels = batch['labels'].squeeze(-1)
-            out['loss'] = F.cross_entropy(logits, labels)
-            task.update_diagnostic_metrics(predicted, labels, batch)
-
-        if predict:
-            out['preds'] = predicted
         return out
 
 
