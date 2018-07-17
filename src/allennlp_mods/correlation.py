@@ -55,10 +55,10 @@ class Correlation(Metric):
                                                        str(predictions.shape),
                                                        str(labels.shape)))
         # Validate Matthews, must be binary labels.
-        if self.corr_type == 'matthews':
-            _validate_binary = lambda t: np.all((t == 0) | (t == 1))
-            assert _validate_binary(predictions)
-            assert _validate_binary(labels)
+        # if self.corr_type == 'matthews':
+        #     _validate_binary = lambda t: np.all((t == 0) | (t == 1))
+        #     assert _validate_binary(predictions)
+        #     assert _validate_binary(labels)
 
         predictions = list(predictions.flatten())
         labels = list(labels.flatten())
