@@ -35,8 +35,7 @@ class Correlation(Metric):
     def __call__(self, predictions, labels):
         """ Accumulate statistics for a set of predictions and labels.
 
-        Values depend on correlation type; for Matthews we enforce that labels
-        are binary {0,1} (for now).
+        Values depend on correlation type; Could be binary or multivalued. This is handled by sklearn.
 
         Args:
             predictions: Tensor or np.array
@@ -54,11 +53,9 @@ class Correlation(Metric):
                                                    " preds=%s, labels=%s" % (
                                                        str(predictions.shape),
                                                        str(labels.shape)))
-        # Validate Matthews, must be binary labels.
         if self.corr_type == 'matthews':
-            _validate_binary = lambda t: np.all((t == 0) | (t == 1))
-            assert _validate_binary(predictions)
-            assert _validate_binary(labels)
+            assert predictions.dtype in [np.int32, np.int64, int]
+            assert labels.dtype in [np.int32, np.int64, int]
 
         predictions = list(predictions.flatten())
         labels = list(labels.flatten())
