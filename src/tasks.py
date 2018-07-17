@@ -235,11 +235,19 @@ class NLIProbingTask(PairClassificationTask):
 
 # Make sure we load the properly-retokenized versions.
 _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
+# SRL CoNLL 2005, formulated as an edge-labeling task.
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
                label_file="labels.txt", files_by_split={
                     'train': "train.edges.json" + _tokenizer_suffix,
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+# SPR2, as an edge-labeling task (multilabel).
+@register_task('edges-spr2', rel_path='edges/spr2',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
