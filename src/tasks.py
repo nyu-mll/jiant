@@ -1546,7 +1546,7 @@ class RecastKGTask(RecastNLITask):
 class SpatialTask(PairClassificationTask):
     ''' Task class for Spatial Probing Task (NLI-type)'''
 
-    def __init__(self, path, max_seq_len, name="spatial", probe_path="spatial.tsv"):
+    def __init__(self, path, max_seq_len, name="spatial", probe_path="all.tsv"):
         super(SpatialTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -1554,20 +1554,42 @@ class SpatialTask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len, probe_path):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        targ_map = {'0': 0, '1': 1}
 
-        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'all.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
         val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
                         s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+        te_data = load_tsv(os.path.join(path, 'all.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading NLI-type probing data.")
-        
+        log.info("\tFinished loading NLI-type (spatial) probing data.")
+
+class AddOneTask(PairClassificationTask):
+    ''' Task class for Spatial Probing Task (NLI-type)'''
+
+    def __init__(self, path, max_seq_len, name="addone", probe_path="all.tsv"):
+        super(AddOneTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+
+        tr_data = load_tsv(os.path.join(path, 'all.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'all.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NLI-type (add one) probing data.")
 
 class TaggingTask(Task):
     ''' Generic tagging, one tag per word '''
