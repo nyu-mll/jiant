@@ -269,7 +269,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
                                  'target_namespace': 'targets',
-                                 'attention': 'none',
+                                 'attention': 'bilinear',
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -643,7 +643,6 @@ class MultiTaskModel(nn.Module):
                 # bleu scoring
                 bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
                 # task.scorer2(bleu_score)
-                print(bleu_score)
 
             return out
 

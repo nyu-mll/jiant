@@ -93,7 +93,7 @@ class Seq2SeqDecoder(Model):
         Parameters
         ----------
         encoder_outputs : torch.FloatTensor, [bs, T, h]
-        encoder_outputs_mask : torch.LongTensor, [bs, T]
+        encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
         target_tokens : Dict[str, torch.LongTensor], optional (default = None)
            Output of ``Textfield.as_array()`` applied on target ``TextField``. We assume that the
            target tokens are also represented as a ``TextField``.

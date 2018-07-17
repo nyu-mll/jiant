@@ -160,11 +160,14 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
             [b.get_current_state() for b in beam if not b.done]
         ).contiguous().view(-1)  # [beam_size*bs]
 
+        # need to repeat inside since update_active()
+        encoder_outputs_beam = encoder_outputs.repeat(beam_size, 1, 1)
+        encoder_outputs_mask_beam = encoder_outputs_mask.repeat(beam_size, 1, 1)
         decoder_input = decoder._prepare_decode_step_input(
             input_indices=input_indices,
             decoder_hidden_state=dec_states[0],
-            encoder_outputs=encoder_outputs,
-            encoder_outputs_mask=encoder_outputs_mask,
+            encoder_outputs=encoder_outputs_beam,
+            encoder_outputs_mask=encoder_outputs_mask_beam,
         )
 
         logits, trg_h_t, trg_c_t = decoder._decoder_step(
@@ -211,11 +214,15 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
             return Variable(view.index_select(
                 1, active_idx
             ).view(*new_size))
-
         dec_states = (
             update_active(dec_states[0]),
             update_active(dec_states[1])
         )
+
+        def update_active_encoder_out(t):
+            return t.index_select(0, active_idx)
+        encoder_outputs = update_active_encoder_out(encoder_outputs)
+        encoder_outputs_mask = update_active_encoder_out(encoder_outputs_mask)
 
         remaining_sents = len(active)
 
