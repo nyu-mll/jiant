@@ -139,7 +139,6 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
 
     max_trg_length = decoder._max_decoding_steps
 
-    import pdb; pdb.set_trace()
     # Expand tensors for each beam.
     dec_states = [
         Variable(trg_h_t.data.repeat(beam_size, 1)),  # [bs*beam_size, h]
@@ -155,7 +154,6 @@ def beam_search(decoder, encoder_outputs, encoder_mask, beam_size=BEAM_SIZE):
     remaining_sents = batch_size
 
     for _ in range(max_trg_length):
-        import pdb; pdb.set_trace()
         input_indices = torch.stack(
             [b.get_current_state() for b in beam if not b.done]
         ).contiguous().view(-1)  # [beam_size*bs]
