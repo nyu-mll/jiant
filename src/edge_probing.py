@@ -27,12 +27,9 @@ class EdgeClassifierModule(nn.Module):
         - Only considers the explicit set of spans in inputs; does not consider
         all other spans as negatives. (So, this won't work for argument
         _identification_ yet.)
-        - Spans are represented by endpoints, and pooled by projecting each
-        side and adding the project span1 and span2 representations (this is
-        equivalent to concat + linear layer).
 
     TODO: consider alternate span-pooling operators: max or mean-pooling,
-    soft-head pooling, or SegRNN.
+    or SegRNN.
 
     TODO: add span-expansion to negatives, one of the following modes:
         - all-spans (either span1 or span2), treating not-seen as negative
