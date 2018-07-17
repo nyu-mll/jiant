@@ -249,6 +249,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Definite pronoun resolution. Two labels.
+@register_task('edges-dpr', rel_path='edges/dpr',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
