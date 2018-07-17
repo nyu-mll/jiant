@@ -553,6 +553,13 @@ class BWBLMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
 
+    def _stream_txt(self, path, max_seq_len):
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                yield process_sentence(toks, max_seq_len)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
