@@ -71,6 +71,8 @@ class EdgeClassifierModule(nn.Module):
         # efficiency.
         self.proj1 = nn.Linear(d_inp, self.proj_dim)
         if self.is_symmetric:
+            # Use None as dummy padding for readability,
+            # so that we can index projs[1] and projs[2]
             self.projs = [None, self.proj1, self.proj1]
         else:
             # Separate params for span2
