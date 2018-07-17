@@ -461,23 +461,20 @@ class LanguageModelingTask(SequenceGenerationTask):
 
         Split is a single list of sentences here.
         '''
-        inp_fwd = [TextField(list(map(Token, sent[:-1])), token_indexers=indexers) for sent in split]
-        inp_bwd = [TextField(list(map(Token, sent[::-1][:-1])), token_indexers=indexers)
-                   for sent in split]
         if "chars" not in indexers:
             targs_indexers = {"words": SingleIdTokenIndexer()}
         else:
             targs_indexers = indexers
-        trg_fwd = [TextField(list(map(Token, sent[1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        trg_bwd = [TextField(list(map(Token, sent[::-1][1:])), token_indexers=targs_indexers)
-                   for sent in split]
-        # instances = [Instance({"input": inp, "targs": trg_f, "targs_b": trg_b})
-        #             for (inp, trg_f, trg_b) in zip(inputs, trg_fwd, trg_bwd)]
-        instances = [Instance({"input": inp_f, "input_bwd": inp_b, "targs": trg_f, "targs_b": trg_b})
-                     for (inp_f, inp_b, trg_f, trg_b) in zip(inp_fwd, inp_bwd, trg_fwd, trg_bwd)]
-        #instances = [Instance({"input": inp_f, "targs": trg_f}) for (inp_f, trg_f) in zip(inp_fwd, trg_fwd)]
-        return instances
+        def _make_instance(sent):
+            d = {}
+            d["input"] = _sentence_to_text_field(sent, indexers)
+            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
+            return Instance(d)
+        
+        for sent in split:
+            yield _make_instance(sent)
 
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -560,7 +557,6 @@ class RedditTask(RankingTask):
         super(RedditTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
-        #:pdb.set_trace()
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -571,13 +567,13 @@ class RedditTask(RankingTask):
         print("Loading data")
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
-        tr_data = load_tsv(os.path.join(path, 'train_2008_Random.csv'), max_seq_len,
+        tr_data = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING TRAIN DATA")
-        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING dev DATA")
-        test_data = load_tsv(os.path.join(path, 'dev_2008_Random.csv'), max_seq_len,
+        test_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
         print("FINISHED LOADING test DATA")
         self.train_data_text = tr_data
@@ -591,9 +587,55 @@ class RedditTask(RankingTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        #pdb.set_trace()
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
+
+
+class Reddit_MTTask(SequenceGenerationTask):
+    ''' Same as Machine Translation Task except for the load_data function'''
+
+    def __init__(self, path, max_seq_len, name='Reddit_MTTask'):
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a machine translation split '''
+        def _make_instance(input, target):
+             d = {}
+             d["inputs"] = _sentence_to_text_field(input, indexers)
+             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+             return Instance(d)
+        # Map over columns: inputs, targs
+        instances = map(_make_instance, split[0], split[2])
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def load_data(self, path, max_seq_len):
+        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
+        path = '//nfs/jsalt/home/raghu/'
+        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
+                                        s1_idx=2, s2_idx=None, targ_idx=3,
+                                        targ_fn=lambda t: t.split(' '))
+        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                      s1_idx=2, s2_idx=None, targ_idx=3,
+                                      targ_fn=lambda t: t.split(' '))
+        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                       s1_idx=2, s2_idx=None, targ_idx=3,
+                                       targ_fn=lambda t: t.split(' '))
+
+        log.info("\tFinished loading MT data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        return {'perplexity': ppl}
 
 
 class CoLATask(SingleClassificationTask):
@@ -901,11 +943,11 @@ class MultiNLITask(PairClassificationTask):
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
-                                       skip_rows=1)
-        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
-        val_data = tuple(val_data)
+        # val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+        #                                s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
+        #                                skip_rows=1)
+        # val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        # val_data = tuple(val_data)
         val_data = val_matched_data
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
@@ -1124,6 +1166,7 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
 
@@ -1216,6 +1259,76 @@ class DisSentWikiFullTask(PairClassificationTask):
         val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
                             s1_idx=0, s2_idx=1, targ_idx=2)
         te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+class DisSentWikiBigFullTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.big.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "wikitext.dissent.big.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.big.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+
+
+class DisSentWikiBigTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissentbig"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "big.dissent.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "big.dissent.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'big.dissent.test'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading DisSent data.")
+
+
+class DisSentWikiHugeTask(PairClassificationTask):
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+
+    def __init__(self, path, max_seq_len, name="dissenthuge"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+        tr_data = load_tsv(os.path.join(path, "huge.train"), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, "huge.valid"), max_seq_len,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'huge.test'), max_seq_len,
                            s1_idx=0, s2_idx=1, targ_idx=2)
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1568,9 +1681,9 @@ class SpatialTask(PairClassificationTask):
         log.info("\tFinished loading NLI-type (spatial) probing data.")
 
 class AddOneTask(PairClassificationTask):
-    ''' Task class for Spatial Probing Task (NLI-type)'''
+    ''' Task class for Add One RTE Probing Task (NLI-type)'''
 
-    def __init__(self, path, max_seq_len, name="addone", probe_path="all.tsv"):
+    def __init__(self, path, max_seq_len, name="add_one", probe_path="all.tsv"):
         super(AddOneTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -1589,8 +1702,8 @@ class AddOneTask(PairClassificationTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading NLI-type (add one) probing data.")
-
+        log.info("\tFinished loading NLI-type (add one RTE) probing data.")
+        
 class TaggingTask(Task):
     ''' Generic tagging, one tag per word '''
 
