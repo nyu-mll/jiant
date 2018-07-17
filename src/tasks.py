@@ -472,38 +472,66 @@ class LanguageModelingTask(SequenceGenerationTask):
             d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
             d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
             return Instance(d)
-        
         for sent in split:
             yield _make_instance(sent)
 
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def _stream_txt(self, path, max_seq_len):
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                yield process_sentence(toks, max_seq_len)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for sent in iter:
+                yield sent
 
 class WikiTextLMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext '''
 
     def __init__(self, path, max_seq_len, name="wiki"):
         super().__init__(name)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text + self.val_data_text
+        self._iters_by_split = self.load_data(path, max_seq_len)
+        #self.sentences = self.train_data_text + self.val_data_text
 
     def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading WikiText")
+        iters_by_split = collections.OrderedDict()
+        files_by_split = [('train', os.path.join(path, "train.txt")), ('val', os.path.join(path, "valid.txt")), ('test', os.path.join(path, "test.txt"))]
+        for split, filename in files_by_split:
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(utils.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(self._stream_txt(filename, max_seq_len))
+            iters_by_split[split] = iter
+        return iters_by_split
 
-    def load_txt(self, path, max_seq_len):
-        data = []
+    def _stream_txt(self, path, max_seq_len):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if toks == '':
                     continue
-                data.append(process_sentence(toks, max_seq_len))
-        return data
-
+                # hard code to fix unk symbol
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, max_seq_len)
+                for i in range(0, len(sent)):
+                    if sent[i] == 'UNKNOWN':
+                        sent[i] = '@@UNKNOWN@@'
+                yield sent
 
 class WikiText2LMTask(WikiTextLMTask):
     ''' Language modeling task on Wikitext 2'''
