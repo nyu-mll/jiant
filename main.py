@@ -22,12 +22,12 @@ import torch
 from src import config
 from src import gcp
 
-from src.utils import assert_for_log, maybe_make_dir, load_model_state, _parse_write_preds
+from src.utils import assert_for_log, maybe_make_dir, load_model_state
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
-from src.evaluate import evaluate, write_results, write_preds
 from src.tasks import NLITypeProbingTask
+from src import evaluate
 
 
 def handle_arguments(cl_arguments):
@@ -256,15 +256,20 @@ def main(cl_arguments):
     if args.do_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, val_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-        splits_to_write = _parse_write_preds(args.write_preds)
+        val_results, val_preds = evaluate.evaluate(model, tasks,
+                                                   args.batch_size,
+                                                   args.cuda, "val")
+
+        splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
-            write_preds(val_preds, args.run_dir, 'val')
+            evaluate.write_preds(val_preds, args.run_dir, 'val')
         if 'test' in splits_to_write:
-            _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
-            write_preds(te_preds, args.run_dir, 'test')
-        write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
-                      args.run_dir.split('/')[-1])
+            _, te_preds = evaluate.evaluate(model, tasks,
+                                            args.batch_size, args.cuda, "test")
+            evaluate.write_preds(te_preds, args.run_dir, 'test')
+        run_name = args.get("run_name", os.path.basename(args.run_dir))
+        evaluate.write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
+                               run_name=run_name)
 
     log.info("Done!")
 
