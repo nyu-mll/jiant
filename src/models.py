@@ -232,14 +232,20 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
+            if args.sep_embs_for_skip:
+                # one representation per task
+                reps = tasks
+            else:
+                # no unique rep for each task
+                reps = []
             elmo_embedder = Elmo(options_file=ELMO_OPT_PATH,
                                  weight_file=ELMO_WEIGHTS_PATH,
                                  # Include pretrain task
-                                 num_output_representations=len(tasks) + 1,
+                                 num_output_representations=len(reps) + 1,
                                  dropout=args.dropout)
             d_emb += 1024
         token_embedder["elmo"] = elmo_embedder
-    embedder = ElmoTextFieldEmbedder(token_embedder, tasks)
+    embedder = ElmoTextFieldEmbedder(token_embedder, reps)
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, cove_emb
 

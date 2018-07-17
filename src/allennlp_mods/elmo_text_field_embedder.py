@@ -64,8 +64,12 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
                 embedder = TimeDistributed(embedder)
             token_vectors = embedder(tensor)
             if key == "elmo":
-              token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
-              # optional projection step that we are ignoring.
+                if task_name in self.task_map:
+                    token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
+                else:
+                    token_vectors = token_vectors['elmo_representations'][self.task_map["@pretrain@"]]
+
+            # optional projection step that we are ignoring.
             embedded_representations.append(token_vectors)
         return torch.cat(embedded_representations, dim=-1)
 
