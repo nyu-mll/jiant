@@ -9,17 +9,7 @@ BEAM_SIZE = 3
 
 
 """Beam search implementation in PyTorch."""
-#
-#
-#         hyp1#-hyp1---hyp1 -hyp1
-#                 \             /
-#         hyp2 \-hyp2 /-hyp2#hyp2
-#                               /      \
-#         hyp3#-hyp3---hyp3 -hyp3
-#         ========================
-#
 # Takes care of beams, back pointers, and scores.
-
 # Code borrowed from PyTorch OpenNMT example
 # https://github.com/pytorch/examples/blob/master/OpenNMT/onmt/Beam.py
 

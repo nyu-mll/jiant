@@ -105,9 +105,8 @@ class Seq2SeqDecoder(Model):
         else:
             num_decoding_steps = self._max_decoding_steps
 
-        # TODO - we should use last hidden/cell state but need to figure out masking
         decoder_hidden = encoder_outputs.max(dim=1)[0]
-        decoder_context = encoder_outputs.new_zeros(encoder_outputs.size(0), self._decoder_hidden_dim)  # this should be last encoder cell state
+        decoder_context = encoder_outputs.new_zeros(encoder_outputs.size(0), self._decoder_hidden_dim)
 
         last_predictions = None
         step_logits = []
@@ -148,11 +147,9 @@ class Seq2SeqDecoder(Model):
         #"class_probabilities": class_probabilities,
         #"predictions": all_predictions}
         if target_tokens:
-            # important - append EOS to target_tokens
             target_mask = get_text_field_mask(target_tokens)
             loss = self._get_loss(logits, targets, target_mask)
             output_dict["loss"] = loss
-            # TODO: Define metrics
         return output_dict
 
     def _decoder_step(self, decoder_input, decoder_hidden, decoder_context):
