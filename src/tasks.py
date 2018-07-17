@@ -1084,7 +1084,6 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
             return Instance(d)
 
-        # Map over columns: input2, (input2), labels, (idx)
         instances = map(_make_instance, *split)
         #  return list(instances)
         return instances  # lazy iterator
