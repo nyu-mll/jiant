@@ -54,8 +54,8 @@ class Correlation(Metric):
                                                        str(predictions.shape),
                                                        str(labels.shape)))
         if self.corr_type == 'matthews':
-            predictions.dtype in [np.int32, np.int64, int]
-            labels.dtype in [np.int32, np.int64, int]
+            assert predictions.dtype in [np.int32, np.int64, int]
+            assert labels.dtype in [np.int32, np.int64, int]
 
         predictions = list(predictions.flatten())
         labels = list(labels.flatten())
