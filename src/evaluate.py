@@ -128,14 +128,15 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
                 elif write_type == int:
                     pred_fh.write("%d\t%d\t%s\n" % (index, pred, sent1_str))
 
-    #  def _write_preds_with_pd(preds_df, pred_file, pred_map=None,
-    #                           write_type=int):
-    #      if pred_map is not None:
-    #         preds_df['prediction'] = [pred_map[p] for p in
-    #                                   preds_df['prediction']]
-    #      preds_df.to_csv(pred_file, sep="\t", index=False, float_format=".3f",
-    #                      quoting=QUOTE_NONE,
-    #                      columns=['index', 'prediction', 'sentence_1'])
+    def _write_preds_with_pd(preds_df, pred_file, pred_map=None,
+                             write_type=int):
+        if pred_map is not None:
+           preds_df['prediction'] = [pred_map[p] for p in
+                                     preds_df['prediction']]
+        # Write TSV file in GLUE format.
+        preds_df.to_csv(pred_file, sep="\t", index=False, float_format="%.3f",
+                        quoting=QUOTE_NONE,
+                        columns=['index', 'prediction', 'sentence_1'])
 
     if len(preds_df) == 0:  # catch empty lists
         log.warning("Task '%s': predictions are empty!", task_name)
@@ -182,18 +183,21 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
         _write_preds_to_file(preds, indices, sent1_strs,
                              default_output_filename, pred_map)
     elif task_name in ['sts-b']:
-        preds = [min(max(0., pred * 5.), 5.) for pred in preds]
-        _write_preds_to_file(preds, indices, sent1_strs,
+        #  preds = [min(max(0., pred * 5.), 5.) for pred in preds]
+        preds_df['prediction'] = [min(max(0., pred * 5.), 5.) for pred in
+                                  preds_df['prediction']]
+        _write_preds_with_pd(preds_df,
                              default_output_filename, write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
-        if isinstance(preds[0], list):
-            assert isinstance(preds[0][0], str)
-            preds = [' '.join(pred) for pred in preds]
-        _write_preds_to_file(preds, indices, sent1_strs,
+        if isinstance(preds_df['prediction'][0], list):
+            assert isinstance(preds_df['prediction'][0][0], str)
+            preds_df['prediction'] = [' '.join(pred)
+                                      for pred in preds_df['prediction']]
+        _write_preds_with_pd(preds_df,
                              default_output_filename, write_type=str)
     else:
-        _write_preds_to_file(preds, indices, sent1_strs,
+        _write_preds_with_pd(preds_df,
                              default_output_filename)
     log.info("Wrote predictions for task: %s", task_name)
 
