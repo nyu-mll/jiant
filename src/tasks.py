@@ -257,7 +257,6 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
-
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
