@@ -820,4 +820,3 @@ class CNNEncoder(Model):
         f = open('/nfs/jsalt/home/roma/CNN/feat/' + str(img_id) + '.json', 'r')
         for line in f: feat_dict = json.loads(line)
         return feat_dict['feat']
-
