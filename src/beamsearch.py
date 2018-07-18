@@ -22,7 +22,7 @@ class Beam(object):
         self.done = False
         self.vocab = vocab
 
-        self.pad = self.vocab.get_token_index(START_SYMBOL, "targets")  # TODO
+        self.pad = self.vocab.get_token_index(START_SYMBOL, "targets")
         self.bos = self.vocab.get_token_index(START_SYMBOL, "targets")
         self.eos = self.vocab.get_token_index(END_SYMBOL, "targets")
         self.tt = torch.cuda if cuda else torch
@@ -170,17 +170,16 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
             encoder_outputs_mask=encoder_outputs_mask_beam,
         )
 
-        logits, trg_h_t, trg_c_t = decoder._decoder_step(
+        logits, dec_states = decoder._decoder_step(
             decoder_input,
             dec_states[0],
             dec_states[1],
         )
 
-        dec_states = (trg_h_t, trg_c_t)
-
+        transition_probs = F.softmax(logits, dim=1)
          # be careful if you want to change this - the orientation doesn't
          # work if you switch dims in view() and remove transpose()
-        word_lk = F.softmax(logits, dim=1).view(  # softmax is not really necessary
+        word_lk = transition_probs.view(
             beam_size,
             remaining_sents,
             -1

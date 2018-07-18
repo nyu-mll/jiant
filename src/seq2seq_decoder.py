@@ -150,7 +150,7 @@ class Seq2SeqDecoder(Model):
 
         logits = self._output_projection_layer(decoder_hidden)
 
-        return logits, decoder_hidden, decoder_context
+        return logits, (decoder_hidden, decoder_context)
 
     def _prepare_decode_step_input(
             self,
