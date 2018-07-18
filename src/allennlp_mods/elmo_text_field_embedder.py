@@ -102,6 +102,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
                 embedder = TimeDistributed(embedder)
             token_vectors = embedder(tensor)
             if key == "elmo":
+                # We always pass the task_name into the forward step, but sometimes we want to
+                # ignore it (if we don't want separate scalars) and default to @pretrain@
                 if task_name in self.task_map:
                     token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
                 else:

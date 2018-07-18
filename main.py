@@ -234,11 +234,11 @@ def main(cl_arguments):
     if args.train_for_eval:
         # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
         elmo_scalars = [(n, p) for n, p in model.named_parameters() if
-                       "scalar_mix" in n and "scalar_mix_0" not in n]
+                        "scalar_mix" in n and "scalar_mix_0" not in n]
         # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
         assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
-                       "ERROR: ELMo scalars loaded in and WILL be updated"
-                       "in train_for_eval but should not be updated!")
+                       "Error: ELMo scalars loaded and will be updated in train_for_eval but "
+                       "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
