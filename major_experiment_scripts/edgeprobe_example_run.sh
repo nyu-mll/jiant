@@ -31,4 +31,5 @@ pushd "${PWD%jiant*}jiant"
 # then eval_existing.conf to override paths & eval config.
 # Finally, apply custom overrides defined above.
 python main.py -c config/defaults.conf ${PARAM_FILE} config/edgeprobe_existing.conf \
-  -o "${OVERRIDES}" --remote_log
+    # --notify iftenney@gmail.com \
+    -o "${OVERRIDES}" --remote_log
