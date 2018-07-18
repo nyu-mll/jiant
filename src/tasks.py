@@ -17,6 +17,7 @@ import logging as log
 import json
 import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
+import torch.nn as nn
 
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
@@ -1269,13 +1270,8 @@ class GroundedTask(Task):
         self.path = path
         self.img_encoder = None
         self.loss_fn = nn.CosineEmbeddingLoss()
-        self.metric_fn = nn.PairwiseDistance(p=1, eps=1e-6)
-        self.val_metric_decreases = True
-        '''
         self.metric_fn = nn.CosineSimilarity(dim=1, eps=1e-6)
         self.val_metric_decreases = False
-        '''
-
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -1323,10 +1319,32 @@ class GroundedTask(Task):
 
     def load_data(self, path, max_seq_len):
         '''Map sentences to image ids (keep track of sentence ids just in case)'''
-
-        # changed for temp
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
 
+        ''' Abstract Scenes data '''
+        def get_data(dataset, data):
+            f = open("/nfs/jsalt/home/roma/" dataset + ".tsv", 'r')
+            for line in f:
+                items = line.strip().split('\t')
+                if len(items) < 3 or items[1] == '0': continue
+                data[0].append(items[0])
+                data[1].append(int(items[1]))
+                data[2].append(int(items[2]))
+            return data
+
+        train = get_data('abstract/train_temp', train)
+        val = get_data('abstract/val_temp', val)
+        test = get_data('abstract/test_temp', test)
+
+        ''' ShapeWorld data '''
+
+        train = get_data('shapeworld/train', train)
+        val = get_data('shapeworld/val', val)
+        test = get_data('shapeworld/test', test)
+        
+ 
+        ''' MSCOCO data '''
+        
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1346,88 +1364,21 @@ class GroundedTask(Task):
                 train[0].append(tr_dict[img_id]['captions'][caption_id])
                 train[1].append(1)
                 train[2].append(int(img_id))
-                # train[2].append(caption_id)
+
         for img_id in val_ids:
             for caption_id in val_dict[img_id]['captions']:
                 val[0].append(val_dict[img_id]['captions'][caption_id])
                 val[1].append(1)
                 val[2].append(int(img_id))
-                # val[2].append(caption_id)
+
         for img_id in test_ids:
             for caption_id in te_dict[img_id]['captions']:
                 test[0].append(te_dict[img_id]['captions'][caption_id])
                 test[1].append(1)
                 test[2].append(int(img_id))
-                # test[2].append(caption_id)
 
         log.info("Positive train samples: " + str(len(train[0])))
-
-
-
-        ''' Shapeworld data '''
-
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            train[0].append(items[0])
-            train[1].append(int(items[1]))
-            train[2].append(int(items[2]))
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/val.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            val[0].append(items[0])
-            val[1].append(int(items[1]))
-            val[2].append(int(items[2]))
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/test.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            test[0].append(items[0])
-            test[1].append(int(items[1]))
-            test[2].append(int(items[2]))
-
-
-        r = 5
-        train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
-        train_ids = [item for sublist in train_ids for item in sublist]
-        test_ids = [item for sublist in test_ids for item in sublist]
-        val_ids = [item for sublist in val_ids for item in sublist]
-
-        for img_id in train_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            train[0].append(caption); train[1].append(0); train[2].append(int(img_id))
-
-        for img_id in val_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
-
-        for img_id in test_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-
-
-
-
-
         #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
-
         log.info("All train samples: " + str(len(train[0])))
 
         self.tr_data = train
