@@ -130,10 +130,7 @@ class Seq2SeqDecoder(Model):
         # (batch_size, num_decoding_steps, num_classes)
         logits = torch.cat(step_logits, 1)
 
-        output_dict = {
-            "logits": logits, "final_decoder_hidden": decoder_hidden,
-            "final_decoder_context": decoder_context,
-        }
+        output_dict = {"logits": logits}
 
         if target_tokens:
             target_mask = get_text_field_mask(target_tokens)
