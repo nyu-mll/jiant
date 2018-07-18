@@ -3,7 +3,7 @@ import os
 import logging as log
 
 import pandas as pd
-from csv import QUOTE_NONE
+from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
 from allennlp.data.iterators import BasicIterator
@@ -92,10 +92,11 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
     return all_metrics, all_preds
 
-def write_preds(all_preds, pred_dir, split_name) -> None:
+def write_preds(all_preds, pred_dir, split_name, strict_glue_format=False) -> None:
     for task_name, preds_df in all_preds.items():
         if task_name in preprocess.ALL_GLUE_TASKS + ['wmt']:
-            strict = (task_name in preprocess.ALL_GLUE_TASKS)
+            # Strict mode: strict GLUE format (no extra cols)
+            strict = (strict_glue_format and task_name in preprocess.ALL_GLUE_TASKS)
             write_glue_preds(task_name, preds_df, pred_dir, split_name,
                              strict_glue_format=strict)
             log.info("Task '%s': Wrote predictions to %s", task_name, pred_dir)
