@@ -174,7 +174,6 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
             decoder_input,
             dec_states[0],
             dec_states[1],
-            debug=True if debug and i == 0 else False,
         )
 
         dec_states = (trg_h_t, trg_c_t)

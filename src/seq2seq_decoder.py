@@ -84,8 +84,7 @@ class Seq2SeqDecoder(Model):
     def forward(self,  # type: ignore
                 encoder_outputs,  # type: ignore
                 encoder_outputs_mask,  # type: ignore
-                target_tokens: Dict[str, torch.LongTensor] = None,
-                debug: bool = False) -> Dict[str, torch.Tensor]:
+                target_tokens: Dict[str, torch.LongTensor] = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
         Decoder logic for producing the entire target sequence.
@@ -145,8 +144,7 @@ class Seq2SeqDecoder(Model):
     def _decoder_step(self,
                       decoder_input,
                       decoder_hidden,
-                      decoder_context,
-                      debug=False):
+                      decoder_context):
         decoder_hidden, decoder_context = self._decoder_cell(
             decoder_input, (decoder_hidden, decoder_context))
 
