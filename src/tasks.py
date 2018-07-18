@@ -1033,10 +1033,9 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
-#same as NLITypeProbingTask except indices changed in val
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
-    ''' Task class for Alt Probing Task (NLI-type)'''
+    ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
 
     def __init__(self, path, max_seq_len, name="nli-alt", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTask, self).__init__(name, 3)
