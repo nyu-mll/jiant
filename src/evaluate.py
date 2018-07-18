@@ -30,7 +30,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
-    FIELDS_TO_EXPORT = ['idx', 'sent1_str']
+    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str']
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = preprocess.ALL_GLUE_TASKS + ['wmt']
     model.eval()
@@ -95,7 +95,9 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 def write_preds(all_preds, pred_dir, split_name) -> None:
     for task_name, preds_df in all_preds.items():
         if task_name in preprocess.ALL_GLUE_TASKS + ['wmt']:
-            write_glue_preds(task_name, preds_df, pred_dir, split_name)
+            strict = (task_name in preprocess.ALL_GLUE_TASKS)
+            write_glue_preds(task_name, preds_df, pred_dir, split_name,
+                             strict_glue_format=strict)
             log.info("Task '%s': Wrote predictions to %s", task_name, pred_dir)
         else:
             log.warning("Task '%s' not supported by write_preds().",
@@ -105,11 +107,13 @@ def write_preds(all_preds, pred_dir, split_name) -> None:
     return
 
 
-def write_glue_preds(task_name, preds_df, pred_dir, split_name):
+def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
+                     pred_dir: str, split_name: str,
+                     strict_glue_format: bool=False):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
 
-    TODO: clean this up, remove special cases & hard-coded dataset sizes.
+    Use strict_glue_format to guarantee compatibility with
 
     Args:
         - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
@@ -123,10 +127,16 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
     def _write_preds_with_pd(preds_df: pd.DataFrame, pred_file: str,
                              write_type=int):
         """ Write TSV file in GLUE format, using Pandas. """
-        cols_to_write = ['index', 'prediction', 'sentence_1']
+        if strict_glue_format:
+            cols_to_write = ['index', 'prediction']
+            quoting = QUOTE_NONE
+            log.info("Task '%s', split '%s': writing %s in "
+                     "strict GLUE format.", task_name, split_name, pred_file)
+        else:
+            cols_to_write = ['index', 'prediction', 'sentence_1', 'sentence_2']
+            quoting = QUOTE_MINIMAL
         preds_df.to_csv(pred_file, sep="\t", index=False, float_format="%.3f",
-                        quoting=QUOTE_NONE,   # TODO: can we change this?
-                        columns=cols_to_write)
+                        quoting=quoting, columns=cols_to_write)
 
     if len(preds_df) == 0:  # catch empty lists
         log.warning("Task '%s': predictions are empty!", task_name)
@@ -144,20 +154,18 @@ def write_glue_preds(task_name, preds_df, pred_dir, split_name):
     preds_df = preds_df.copy()
     _add_default_column(preds_df, 'idx', -1)
     _add_default_column(preds_df, 'sent1_str', "")
+    _add_default_column(preds_df, 'sent2_str', "")
     # Rename columns to match output headers.
     preds_df.rename({"idx": "index",
                      "preds": "prediction",
-                     "sent1_str": "sentence_1"},
+                     "sent1_str": "sentence_1",
+                     "sent2_str": "sentence_2"},
                     axis='columns', inplace=True)
 
-    preds = list(preds_df['prediction'])
-    indices = list(preds_df['index'])
-    sent1_strs = list(preds_df['sentence_1'])
-
     if task_name == 'mnli' and split_name == 'test':  # 9796 + 9847 + 1104 = 20747
-        assert len(preds) == 20747, "Missing predictions for MNLI!"
+        assert len(preds_df) == 20747, "Missing predictions for MNLI!"
         log.info("There are %d examples in MNLI, 20747 were expected",
-                 len(preds))
+                 len(preds_df))
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
         _write_preds_with_pd(preds_df.iloc[:9796],
