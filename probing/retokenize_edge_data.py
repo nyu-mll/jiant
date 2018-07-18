@@ -21,14 +21,12 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 from src import utils
 from src import retokenize
 
-def retokenize_record(record, inplace=True):
-    """Retokenize edge probing examples.
+def retokenize_record(record):
+    """Retokenize edge probing examples. Modifies in-place.
 
     This can be slow, so recommended to use as a pre-processing step.
     See retokenize_edge_data.py.
     """
-    if not inplace:
-        record = copy.deepcopy(record)
     text = record['text']
     moses_tokens = utils.TOKENIZER.tokenize(text)
     cleaned_moses_tokens = utils.unescape_moses(moses_tokens)

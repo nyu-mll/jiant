@@ -238,7 +238,7 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "train.edges.json" + _tokenizer_suffix,
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
-               })
+               }, is_symmetric=False)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
@@ -250,9 +250,28 @@ class EdgeProbingTask(Task):
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
     '''
-    def __init__(self, path, max_seq_len, name,
-                 label_file=None,
-                 files_by_split=None):
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str=None,
+                 files_by_split: Dict[str,str]=None,
+                 is_symmetric: bool=False):
+        """Construct an edge probing task.
+
+        path, max_seq_len, and name are passed by the code in preprocess.py;
+        remaining arguments should be provided by a subclass constructor or via
+        @register_task.
+
+        Args:
+            path: data directory
+            max_seq_len: maximum sequence length (currently ignored)
+            name: task name
+            label_file: relative path to labels file
+            files_by_split: split name ('train', 'val', 'test') mapped to
+                relative filenames (e.g. 'train': 'train.json')
+            is_symmetric: if true, span1 and span2 are assumed to be the same
+                type and share parameters. Otherwise, we learn a separate
+                projection layer and attention weight for each.
+        """
         super().__init__(name)
 
         assert label_file is not None
@@ -263,6 +282,7 @@ class EdgeProbingTask(Task):
         }
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
+        self.is_symmetric = is_symmetric
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
@@ -270,11 +290,12 @@ class EdgeProbingTask(Task):
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
+        # Scorers
         self.mcc_scorer = Correlation("matthews")
         self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
         #  self.val_metric = "%s_accuracy" % self.name
-        self.val_metric = "%s_f1" % self.name
+        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
     def _stream_records(self, filename):
@@ -976,14 +997,15 @@ class MultiNLITask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
+
+        # Warning to anyone who edits this: The reference label is column *15*, not 11 as above.
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
-                                    s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        # val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-        #                                s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
-        #                                skip_rows=1)
-        # val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
-        # val_data = tuple(val_data)
-        val_data = val_matched_data
+                                    s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map, skip_rows=1)
+        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+                                       s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map,
+                                       skip_rows=1)
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
