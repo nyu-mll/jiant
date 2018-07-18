@@ -327,8 +327,10 @@ def get_task_specific_params(args, task_name):
 
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
+    params['cls_span_pooling'] = _get_task_attr("classifier_span_pooling")
 
-    # For NLI probing tasks, might want to use a classifier trained
+    # For NLI probing tasks, might want to use a classifier trained on
+    # something else (typically 'mnli').
     cls_task_name = _get_task_attr("use_classifier")
     params['use_classifier'] = cls_task_name or task_name  # default to this task
 
