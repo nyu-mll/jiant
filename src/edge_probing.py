@@ -10,18 +10,9 @@ from .tasks import EdgeProbingTask
 from . import modules
 
 from allennlp.modules.span_extractors import \
-        EndpointSpanExtractor
+        EndpointSpanExtractor, SelfAttentiveSpanExtractor
 
 from typing import Dict, Iterable, List
-
-
-def to_onehot(labels: torch.Tensor, n_classes: int):
-    """ Convert integer-valued labels to one-hot targets. """
-    binary_targets = torch.zeros([labels.shape[0], n_classes],
-                                 dtype=torch.int64, device=labels.device)
-    ridx = torch.arange(labels.shape[0], dtype=torch.int64)
-    binary_targets[ridx, labels] = 1
-    return binary_targets
 
 class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
@@ -36,12 +27,9 @@ class EdgeClassifierModule(nn.Module):
         - Only considers the explicit set of spans in inputs; does not consider
         all other spans as negatives. (So, this won't work for argument
         _identification_ yet.)
-        - Spans are represented by endpoints, and pooled by projecting each
-        side and adding the project span1 and span2 representations (this is
-        equivalent to concat + linear layer).
 
     TODO: consider alternate span-pooling operators: max or mean-pooling,
-    soft-head pooling, or SegRNN.
+    or SegRNN.
 
     TODO: add span-expansion to negatives, one of the following modes:
         - all-spans (either span1 or span2), treating not-seen as negative
@@ -50,23 +38,46 @@ class EdgeClassifierModule(nn.Module):
         - batch-negative (pairwise among spans seen in batch, where not-seen
         are negative)
     '''
+    def _make_span_extractor(self):
+        if self.span_pooling == "attn":
+            return SelfAttentiveSpanExtractor(self.proj_dim)
+        else:
+            return EndpointSpanExtractor(self.proj_dim,
+                                         combination=self.span_pooling)
 
     def __init__(self, task, d_inp: int, task_params):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
+        self.span_pooling = task_params['cls_span_pooling']
+        self.is_symmetric = task.is_symmetric
 
-        proj_dim = task_params['d_hid']
-        # Separate projection for span1, span2
-        self.proj1 = nn.Linear(d_inp, proj_dim)
-        self.proj2 = nn.Linear(d_inp, proj_dim)
+        self.proj_dim = task_params['d_hid']
+        # Separate projection for span1, span2.
+        # Use these to reduce dimensionality in case we're enumerating a lot of
+        # spans - we want to do this *before* extracting spans for greatest
+        # efficiency.
+        self.proj1 = nn.Linear(d_inp, self.proj_dim)
+        if self.is_symmetric:
+            # Use None as dummy padding for readability,
+            # so that we can index projs[1] and projs[2]
+            self.projs = [None, self.proj1, self.proj1]
+        else:
+            # Separate params for span2
+            self.proj2 = nn.Linear(d_inp, self.proj_dim)
+            self.projs = [None, self.proj1, self.proj2]
 
         # Span extractor, shared for both span1 and span2.
-        # Shouldn't actually have any parameters with the default config.
-        self.span_extractor = EndpointSpanExtractor(proj_dim, combination="x,y")
+        self.span_extractor1 = self._make_span_extractor()
+        if self.is_symmetric:
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
+        else:
+            self.span_extractor2 = self._make_span_extractor()
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
 
-        # Classifier gets summed projections of span1, span2
-        clf_input_dim = self.span_extractor.get_output_dim()  # 2 * proj_dim
+        # Classifier gets concatenated projections of span1, span2
+        clf_input_dim = (self.span_extractors[1].get_output_dim()
+                         + self.span_extractors[2].get_output_dim())
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
                                                          task_params)
@@ -103,8 +114,8 @@ class EdgeClassifierModule(nn.Module):
         out['n_inputs'] = batch_size
 
         # Apply projection layers for each span.
-        se_proj1 = self.proj1(sent_embs)
-        se_proj2 = self.proj2(sent_embs)
+        se_proj1 = self.projs[1](sent_embs)
+        se_proj2 = self.projs[2](sent_embs)
 
         # Span extraction.
         #  span_mask = (batch['labels'] != -1)  # [batch_size, num_targets] bool
@@ -116,18 +127,19 @@ class EdgeClassifierModule(nn.Module):
 
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
-        def _extract_spans(embs, spans):
-            return self.span_extractor.forward(embs, spans, **_kw)
-        # span1_emb and span2_emb are [batch_size, num_targets, clf_input_dim]
-        span1_emb = _extract_spans(se_proj1, batch['span1s'])
-        span2_emb = _extract_spans(se_proj2, batch['span2s'])
+        # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
+        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
+        span2_emb = self.span_extractors[2](se_proj2, batch['span2s'], **_kw)
+        span_emb = torch.cat([span1_emb, span2_emb], dim=2)
 
         # [batch_size, num_targets, n_classes]
-        logits = self.classifier(span1_emb + span2_emb)
+        logits = self.classifier(span_emb)
         out['logits'] = logits
 
         # Compute loss if requested.
         if 'labels' in batch:
+            # Labels is [batch_size, num_targets, n_classes],
+            # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
             out['loss'] = self.compute_loss(logits[span_mask],
                                             batch['labels'][span_mask],
@@ -160,13 +172,18 @@ class EdgeClassifierModule(nn.Module):
 
 
     def get_predictions(self, logits: torch.Tensor):
+        """Return class probabilities, same shape as logits.
+
+        Args:
+            logits: [batch_size, num_targets, n_classes]
+
+        Returns:
+            probs: [batch_size, num_targets, n_classes]
+        """
         if self.loss_type == 'softmax':
-            # For softmax loss, return argmax predictions.
-            # [batch_size, num_targets]
-            return logits.max(dim=2)[1]  # argmax
+            raise NotImplementedError("Softmax loss not fully supported.")
+            return F.softmax(logits, dim=2)
         elif self.loss_type == 'sigmoid':
-            # For sigmoid loss, return class probabilities.
-            # [batch_size, num_targets, n_classes]
             return F.sigmoid(logits)
         else:
             raise ValueError("Unsupported loss type '%s' "
@@ -181,32 +198,30 @@ class EdgeClassifierModule(nn.Module):
 
         Args:
             logits: [total_num_targets, n_classes] Tensor of float scores
-            labels: [total_num_targets] Tensor of int targets
+            labels: [total_num_targets, n_classes] Tensor of sparse binary targets
 
         Returns:
             loss: scalar Tensor
         """
-        # Accuracy scorer can handle multiclass natively.
-        task.acc_scorer(logits, labels)
+        binary_preds = logits.ge(0).long()  # {0,1}
 
-        # Matthews and F1 need binary targets, as does sigmoid loss.
-        # [total_num_targets, n_classes] LongTensor
-        binary_targets = to_onehot(labels, n_classes=logits.shape[1])
-
-        # Matthews coefficient computed on {0,1} labels.
-        task.mcc_scorer(logits.ge(0).long(), binary_targets)
+        # Matthews coefficient and accuracy computed on {0,1} labels.
+        task.mcc_scorer(binary_preds, labels)
+        task.acc_scorer(binary_preds, labels.long())
 
         # F1Measure() expects [total_num_targets, n_classes, 2]
         # to compute binarized F1.
         binary_scores = torch.stack([-1*logits, logits], dim=2)
-        task.f1_scorer(binary_scores, binary_targets)
+        task.f1_scorer(binary_scores, labels)
 
         if self.loss_type == 'softmax':
-            # softmax over each row.
-            return F.cross_entropy(logits, flat_labels)
+            raise NotImplementedError("Softmax loss not fully supported.")
+            # Expect exactly one target, convert to indices.
+            assert labels.shape[1] == 1  # expect a single target
+            return F.cross_entropy(logits, labels)
         elif self.loss_type == 'sigmoid':
             return F.binary_cross_entropy(F.sigmoid(logits),
-                                          binary_targets.float())
+                                          labels.float())
         else:
             raise ValueError("Unsupported loss type '%s' "
                              "for edge probing." % loss_type)
