@@ -112,10 +112,6 @@ class Seq2SeqDecoder(Model):
 
         step_logits = []
 
-        # important - need to use zero-masking instead of -inf for attention
-        encoder_outputs.data.masked_fill_(
-            1 - encoder_outputs_mask.byte().data, 0.0)
-
         for timestep in range(num_decoding_steps):
             input_choices = targets[:, timestep]
             decoder_input = self._prepare_decode_step_input(
@@ -192,6 +188,12 @@ class Seq2SeqDecoder(Model):
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
             # Fixme
+
+            # important - need to use zero-masking instead of -inf for attention
+            # I've checked that doing this doesn't significantly increase time
+            # per batch, but should consider only doing once
+            encoder_outputs.data.masked_fill_(
+                1 - encoder_outputs_mask.byte().data, 0.0)
 
             encoder_outputs = 0.5 * encoder_outputs
             encoder_outputs_mask = encoder_outputs_mask.float()

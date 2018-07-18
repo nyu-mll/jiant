@@ -13,6 +13,8 @@ BEAM_SIZE = 3
 # Code borrowed from PyTorch OpenNMT example
 # https://github.com/pytorch/examples/blob/master/OpenNMT/onmt/Beam.py
 
+def _get_word(decoder_vocab, word_idx):
+    return decoder_vocab._index_to_token['targets'][word_idx]
 
 class Beam(object):
     """Ordered beam of candidate outputs."""
@@ -114,13 +116,14 @@ class Beam(object):
             k = self.prevKs[j][k]
         return hyp[::-1]
 
+
     def print_sentences(self, decoder_vocab):
         sentences = [[] for _ in range(self.size)]
         for t in range(len(self.nextYs)):
             ys = self.nextYs[t]
             for i in range(self.size):
                 word_idx = int(ys[i].item())
-                word = decoder_vocab._index_to_token['targets'][word_idx]
+                word = _get_word(decoder_vocab, word_idx)
                 sentences[i].append(word)
         for sent in sentences:
             print(' '.join(sent))
@@ -238,7 +241,16 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
     return allHyp, allScores
 
 
-def compute_bleu(hyps, scores, targets):
+def write_translation_preds(hyps, targets, preds_file_path, decoder_vocab):
+    with open(preds_file_path, "a") as f:
+        for i in range(len(hyps)):
+            hyp, target = hyps[i], targets[i]
+            hyp_sentence = ' '.join([_get_word(decoder_vocab, i) for i in hyp])
+            target_sentence = ' '.join([_get_word(decoder_vocab, i) for i in target])
+            f.write('{}\t{}\n'.format(hyp_sentence, target_sentence))
+
+
+def compute_bleu(hyps, scores, targets, decoder_vocab):
     # masking is handled by hardcoded check for zeros.
     relevant_targets = targets['words'].cpu().numpy()[1:]
     bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
@@ -246,8 +258,10 @@ def compute_bleu(hyps, scores, targets):
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
-                              targets):
+                              targets, preds_file_path):
     hyps, scores = beam_search(decoder, encoder_outputs, encoder_outputs_mask)
+    targets = [[i for i in target if i != 0] for target in targets]
     bleu_score = compute_bleu(hyps, scores, targets)
+    write_translation_preds(hyps, targets, preds_file_path, decoder_vocab=decoder.vocab)
 
     return bleu_score

@@ -1159,6 +1159,7 @@ class MTTask(SequenceGenerationTask):
         self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
+
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a machine translation split '''
         def _make_instance(input, target):
