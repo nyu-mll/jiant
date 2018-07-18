@@ -50,7 +50,7 @@ class SentenceEncoder(Model):
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
-                 sep_embs_for_skip=False, initializer=InitializerApplicator()):
+                 initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
@@ -66,7 +66,6 @@ class SentenceEncoder(Model):
         self._cove = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.sep_embs_for_skip = sep_embs_for_skip
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
         if dropout > 0:
@@ -77,7 +76,7 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def forward(self, sent, task):
+    def forward(self, sent):
         # pylint: disable=arguments-differ
         """
         Args:
@@ -86,20 +85,16 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        # embeddings
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
-        task_sent_embs = self._dropout(task_sent_embs)
-        
-        # the rest of the model
+
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
+
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
 
         # ELMoLSTM returns all layers, we just want to use the top layer
@@ -107,10 +102,7 @@ class SentenceEncoder(Model):
             sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
-            if self.sep_embs_for_skip:
-                sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
-            else:
-                sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+            sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
@@ -500,7 +492,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                    num_attention_heads=num_attention_heads,
                    use_positional_encoding=use_positional_encoding,
                    dropout_prob=dropout_prob)
-    
+
 
 class ElmoCharacterEncoder(torch.nn.Module):
     """
