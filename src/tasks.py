@@ -489,7 +489,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
+        self.target_indexer = {"words": SingleIdTokenIndexer()}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
