@@ -1011,6 +1011,7 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
+#same as NLITypeProbingTask except indices changed in val
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type)'''
