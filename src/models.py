@@ -14,10 +14,12 @@ from torch.autograd import Variable
 from sklearn.metrics import mean_squared_error
 
 from allennlp.common import Params
-from allennlp.modules import Elmo, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
+from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
+#from allennlp.modules.elmo_lstm import ElmoLstm
+from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder, \
+    ElmoTokenEmbedder
 from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
@@ -25,7 +27,6 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder, \
                                               PytorchSeq2SeqWrapper
 from allennlp.training.metrics import Average
 
-from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
@@ -69,7 +70,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
     # Build embeddings.
-    d_emb, embedder, cove_emb = build_embeddings(args, vocab, tasks, pretrained_embs)
+    d_emb, embedder, cove_emb = build_embeddings(args, vocab, pretrained_embs)
     d_sent = args.d_hid
 
     # Build single sentence encoder: the main component of interest
@@ -89,9 +90,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        bilm, skip_embs=args.skip_embs,
-                                       dropout=args.dropout,
-                                       sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       dropout=args.dropout, cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
@@ -100,15 +99,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
-                                       dropout=args.dropout, sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       dropout=args.dropout, cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, cove_layer=cove_emb,
-                                       sep_embs_for_skip=args.sep_embs_for_skip)
+                                       skip_embs=args.skip_embs, cove_layer=cove_emb)
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
     d_sent += args.skip_embs * d_emb
@@ -166,7 +163,7 @@ def get_task_whitelist(args):
   log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s"%(str(train_task_names), str(eval_clf_names)))
   return train_task_names, eval_clf_names
 
-def build_embeddings(args, vocab, tasks, pretrained_embs=None):
+def build_embeddings(args, vocab, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
     d_emb, d_char = 0, args.d_char
 
@@ -226,27 +223,21 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
+            #elmo_embedder = elmo_embedder._elmo._elmo_lstm._token_embedder
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
             d_emb += 512
         else:
-            log.info("\tUsing full ELMo! (separate scalars/task)")
-            if args.sep_embs_for_skip:
-                # one representation per task
-                reps = tasks
-            else:
-                # no unique rep for each task
-                reps = []
-            elmo_embedder = ElmoTokenEmbedderWrapper(
-                options_file=ELMO_OPT_PATH,
-                weight_file=ELMO_WEIGHTS_PATH,
-                # Include pretrain task
-                num_output_representations=len(reps) + 1,
-                dropout=args.dropout)
+            log.info("\tUsing full ELMo!")
+            elmo_embedder = ElmoTokenEmbedder(options_file=ELMO_OPT_PATH,
+                                              weight_file=ELMO_WEIGHTS_PATH,
+                                              dropout=args.dropout)
             d_emb += 1024
+
         token_embedder["elmo"] = elmo_embedder
-    embedder = ElmoTextFieldEmbedder(token_embedder, reps)
+
+    embedder = BasicTextFieldEmbedder(token_embedder)
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, cove_emb
 
@@ -435,8 +426,6 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.sep_embs_for_skip = args.sep_embs_for_skip
-
 
     def forward(self, task, batch, predict=False):
         '''
@@ -497,7 +486,7 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+        sent_embs, sent_mask = self.sent_encoder(batch['input1'])
         # pass to a task specific classifier
         classifier = self._get_classifier(task)
         logits = classifier(sent_embs, sent_mask)
@@ -537,8 +526,8 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
+        sent1, mask1 = self.sent_encoder(batch['input1'])
+        sent2, mask2 = self.sent_encoder(batch['input2'])
         classifier = self._get_classifier(task)
         logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
@@ -583,8 +572,8 @@ class MultiTaskModel(nn.Module):
         ''' For caption and image ranking. This implementation is intended for Reddit'''
         out = {}
         # feed forwarding inputs through sentence encoders
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
+        sent1, mask1 = self.sent_encoder(batch['input1'])
+        sent2, mask2 = self.sent_encoder(batch['input2'])
         # pooler for both Input and Response
         sent_pooler = getattr(self, "%s_mdl" % task.name)
         sent_dnn = getattr(self, "%s_Response_mdl" % task.name) # dnn for Response
@@ -622,7 +611,7 @@ class MultiTaskModel(nn.Module):
     def _vae_forward(self, batch, task, predict):
         ''' For translation, denoising, maybe language modeling? '''
         out = {}
-        sent, sent_mask = self.sent_encoder(batch['inputs'], task)
+        sent, sent_mask = self.sent_encoder(batch['inputs'])
         out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, VAETask):
@@ -641,7 +630,7 @@ class MultiTaskModel(nn.Module):
     def _seq_gen_forward(self, batch, task, predict):
         ''' For variational autoencoder '''
         out = {}
-        sent, sent_mask = self.sent_encoder(batch['inputs'], task)
+        sent, sent_mask = self.sent_encoder(batch['inputs'])
         out['n_exs'] = get_batch_size(batch)
 
         if isinstance(task, (MTTask, Reddit_MTTask)):
@@ -667,7 +656,7 @@ class MultiTaskModel(nn.Module):
 
         out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
-            sent, mask = sent_encoder(batch['inputs'], task)
+            sent, mask = sent_encoder(batch['inputs'])
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
             sent = sent[:,1:-1,:]
             hid2tag = self._get_classifier(task)
@@ -724,7 +713,7 @@ class MultiTaskModel(nn.Module):
     def _grounded_classification_forward(self, batch, task, predict):
         out = {}
         # embed the sentence, embed the image, map and classify
-        sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'])
         batch_size = get_batch_size_from_field(batch['input1'])
         out['n_exs'] = batch_size
 
@@ -761,7 +750,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def get_elmo_mixing_weights(self, tasks=[]):
+    def get_elmo_mixing_weights(self, mix_id=0):
         ''' Get elmo mixing weights from text_field_embedder,
         since elmo should be in the same place every time.
 
@@ -773,16 +762,9 @@ class MultiTaskModel(nn.Module):
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
         '''
-        params = {}
         if self.elmo:
-            if not self.sep_embs_for_skip:
-                tasks = [None]
-            else:
-                tasks = [None] + tasks
-            for task in tasks:
-                if task:
-                    params[task.name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
-                else:
-                    params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
+            params = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, mix_id)
+        else:
+            params = {}
         return params
 
