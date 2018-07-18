@@ -179,6 +179,8 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
 
         dec_states = (trg_h_t, trg_c_t)
 
+         # be careful if you want to change this - the orientation doesn't
+         # work if you switch dims in view() and remove transpose()
         word_lk = F.softmax(logits, dim=1).view(  # softmax is not really necessary
             beam_size,
             remaining_sents,
