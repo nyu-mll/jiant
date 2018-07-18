@@ -962,14 +962,15 @@ class MultiNLITask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
                            s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
+
+        # Warning to anyone who edits this: The reference label is column *15*, not 11 as above.
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
-                                    s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
-        # val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-        #                                s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map,
-        #                                skip_rows=1)
-        # val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
-        # val_data = tuple(val_data)
-        val_data = val_matched_data
+                                    s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map, skip_rows=1)
+        val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
+                                       s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map,
+                                       skip_rows=1)
+        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = tuple(val_data)
 
         te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
                                    s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
