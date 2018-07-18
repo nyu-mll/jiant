@@ -234,6 +234,9 @@ def main(cl_arguments):
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
         for task in eval_tasks:
+            # Skip mnli-diagnostic
+            if task.name == 'mnli-diagnostic':
+                continue
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>

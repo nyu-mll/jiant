@@ -382,6 +382,8 @@ def parse_task_list_arg(task_list):
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
+    # We don't want mnli-diagnostic in train_task_names
+    train_task_names = list(filter(('mnli-diagnostic').__ne__, train_task_names))
     ''' Load tasks '''
     task_names = sorted(set(train_task_names + eval_task_names))
     assert path is not None

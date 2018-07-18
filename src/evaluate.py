@@ -25,7 +25,10 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
                 task_idxs += batch['idx'].data.tolist()
                 batch.pop('idx', None)
             out = model.forward(task, batch, predict=True)
-            n_examples += out["n_exs"]
+            # We don't want mnli-diagnostic to affect the micro and macro average.
+            # Accuracy of mnli-diagnostic is hardcoded to 0.
+            if task.name != "mnli-diagnostic":
+                n_examples += out["n_exs"]
             # get predictions
             if 'preds' in out:
                 preds = out['preds']
