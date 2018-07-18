@@ -40,7 +40,6 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
     all_preds = {}
     n_examples_overall = 0
     for task in tasks:
-        log.info("Evaluating on: %s", task.name)
         n_examples = 0
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
@@ -50,6 +49,7 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
+
             # get predictions
             if 'preds' not in out:
                 continue
