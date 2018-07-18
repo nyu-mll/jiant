@@ -198,8 +198,6 @@ class SamplingMultiTaskTrainer():
         and the current score, check if current score is
         best so far and if out of patience.
         '''
-        # Note (Shuning): Don't use metric history, and make sure we don't update it when we
-        #   update the agent. It should only cover the big validation runs, not our little ones.
         patience = self._patience + 1
         best_fn = min if should_decrease else max
         best_score = best_fn(metric_history)
@@ -586,7 +584,6 @@ class SamplingMultiTaskTrainer():
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
-
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
         self._model.eval()
@@ -694,6 +691,7 @@ class SamplingMultiTaskTrainer():
     def _validate_bandit(self, tasks, batch_size):
         ''' Bandit Intermediate Validation
             Validate on all tasks for a few batches and return losses
+            Do not check or update metric_hitory
         '''
 
         n_batches_perTask =self.bandit.val_batch
