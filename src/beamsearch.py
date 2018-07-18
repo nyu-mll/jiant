@@ -3,6 +3,7 @@ from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from torch.autograd import Variable
 import torch.nn.functional as F
 
+from . import bleu_scoring
 
 BEAM_SIZE = 3
 
@@ -22,7 +23,6 @@ class Beam(object):
         self.done = False
         self.vocab = vocab
 
-        self.pad = self.vocab.get_token_index(START_SYMBOL, "targets")
         self.bos = self.vocab.get_token_index(START_SYMBOL, "targets")
         self.eos = self.vocab.get_token_index(END_SYMBOL, "targets")
         self.tt = torch.cuda if cuda else torch
@@ -34,7 +34,7 @@ class Beam(object):
         self.prevKs = []
 
         # The outputs at each time-step.
-        self.nextYs = [self.tt.LongTensor(size).fill_(self.pad)]
+        self.nextYs = [self.tt.LongTensor(size).fill_(self.bos)]
         self.nextYs[0][0] = self.bos
 
         # The attentions (matrix) for each time.
@@ -103,18 +103,15 @@ class Beam(object):
     #
     #     * `k` - the position in the beam to construct.
     #
-    # Returns.
-    #
-    #     1. The hypothesis
-    #     2. The attention at each time step.
+    # Returns the top hypothesis
     def get_hyp(self, k):
         """Get hypotheses."""
         hyp = []
-        # print(len(self.prevKs), len(self.nextYs), len(self.attn))
         for j in range(len(self.prevKs) - 1, -1, -1):
-            hyp.append(self.nextYs[j + 1][k])
+            word_idx = int(self.nextYs[j + 1][k].item())
+            if word_idx != self.bos:
+                hyp.append(word_idx)
             k = self.prevKs[j][k]
-
         return hyp[::-1]
 
     def print_sentences(self, decoder_vocab):
@@ -177,8 +174,8 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
         )
 
         transition_probs = F.softmax(logits, dim=1)
-         # be careful if you want to change this - the orientation doesn't
-         # work if you switch dims in view() and remove transpose()
+        # be careful if you want to change this - the orientation doesn't
+        # work if you switch dims in view() and remove transpose()
         word_lk = transition_probs.view(
             beam_size,
             remaining_sents,
@@ -226,17 +223,13 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
 
         remaining_sents = len(active)
 
-    #  (4) package everything up
-
+    # package final best hypotheses
     allHyp, allScores = [], []
-    n_best = 1
-
     for b in range(batch_size):
-        scores, ks = beam[b].sort_best()
-
-        allScores += [scores[:n_best]]
-        hyps = zip(*[beam[b].get_hyp(k) for k in ks[:n_best]])
-        allHyp += [hyps]
+        scores, sort_idx = beam[b].sort_best()
+        allScores.append(scores[0])
+        best_hyp = beam[b].get_hyp(sort_idx[0])
+        allHyp.append(best_hyp)
 
     if debug:
         for b in beam:
@@ -246,7 +239,10 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
 
 
 def compute_bleu(hyps, scores, targets):
-    return 0  # TODO
+    # masking is handled by hardcoded check for zeros.
+    relevant_targets = targets['words'].cpu().numpy()[1:]
+    bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
+    return bleu_score
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,

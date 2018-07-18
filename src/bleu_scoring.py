@@ -1,20 +1,17 @@
 # most of this code is adapted from
 # https://github.com/MaximumEntropy/Seq2Seq-PyTorch/blob/master/evaluate.py
 
-import torch
-import torch.nn.functional as F
-from torch.autograd import Variable
-from data_utils import get_minibatch, get_autoencode_minibatch
 from collections import Counter
 import math
 import numpy as np
-import subprocess
 import sys
 
 
 def bleu_stats(hypothesis, reference):
     """Compute statistics for BLEU."""
     stats = []
+    # handle masking, sorry
+    reference = [x for x in reference if x != 0]
     stats.append(len(hypothesis))
     stats.append(len(reference))
     for n in range(1, 5):
@@ -31,18 +28,22 @@ def bleu_stats(hypothesis, reference):
 
 def bleu(stats):
     """Compute BLEU given n-gram statistics."""
-    if len(filter(lambda x: x == 0, stats)) > 0:
-        return 0
     (c, r) = stats[:2]
-    log_bleu_prec = sum(
-        [math.log(float(x) / y) for x, y in zip(stats[2::2], stats[3::2])]
-    ) / 4.
-    return math.exp(min([0, 1 - float(r) / c]) + log_bleu_prec)
+    try:
+        log_bleu_terms = [math.log(float(x) / y) for x, y in zip(stats[2::2], stats[3::2]) if x > 0 and y > 0]
+        log_bleu_prec = sum(log_bleu_terms) / 4. if log_bleu_terms else 0
+        return math.exp(min([0, 1 - float(r) / c]) + log_bleu_prec)
+    except ValueError:
+        print(sys.exc_info()[0], stats)
+        return 0
 
 
-def get_bleu(hypotheses, reference):
+def get_bleu(hypotheses, reference, debug=True):
     """Get validation BLEU score for dev set."""
     stats = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
     for hyp, ref in zip(hypotheses, reference):
         stats += np.array(bleu_stats(hyp, ref))
-    return 100 * bleu(stats)
+    bleu_score = 100 * bleu(stats)
+    if debug:
+        print(bleu_score)
+    return bleu_score

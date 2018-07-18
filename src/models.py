@@ -641,11 +641,10 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            # TODO - update when bleu scoring is ready
-            # if not task.training:
-            #     # bleu scoring
-            #     bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
-            #     task.scorer2(bleu_score)
+            if True:  # not self.training:
+                # bleu scoring
+                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
+                # task.scorer2(bleu_score)
 
             return out
 

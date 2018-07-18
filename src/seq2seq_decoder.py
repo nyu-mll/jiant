@@ -71,8 +71,9 @@ class Seq2SeqDecoder(Model):
         self._dropout = torch.nn.Dropout(p=dropout)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
-        # this line is very important - feel free to check it a third time
-        # idempotent / safe to run in place
+        # very important - feel free to check it a third time
+        # idempotent / safe to run in place. encoder_outputs_mask should never
+        # change
         encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
         decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
@@ -191,7 +192,7 @@ class Seq2SeqDecoder(Model):
             # complain.
             # Fixme
 
-            # need to use zero-masking instead of -inf for attention
+            # important - need to use zero-masking instead of -inf for attention
             encoder_outputs = encoder_outputs.clone()
             encoder_outputs.data.masked_fill_(
                 1 - encoder_outputs_mask.byte().data, 0.0)
