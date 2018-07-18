@@ -47,7 +47,7 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
 # Edge probing suite.
-ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2', 
+ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
                   'edges-dpr']
 
 # DEPRECATED: use @register_task in tasks.py instead.
@@ -356,7 +356,7 @@ def build_tasks(args):
                                                       fraction=args.training_data_fraction)
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)        
+                                                      fraction=1.0)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
 
