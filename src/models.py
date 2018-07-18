@@ -29,6 +29,7 @@ from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoT
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
+from . import beamsearch
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -277,11 +278,13 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (MTTask, Reddit_MTTask)):
+        attention = args.get("mt_attention", "bilinear")
+        log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
+                                 'target_namespace': 'targets',
+                                 'attention': attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -652,6 +655,12 @@ class MultiTaskModel(nn.Module):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
+
+            if not self.training:
+                # bleu scoring
+                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
+                task.scorer2(bleu_score)
+
             return out
 
         if 'targs' in batch:
@@ -789,4 +798,3 @@ class MultiTaskModel(nn.Module):
                 else:
                     params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
         return params
-

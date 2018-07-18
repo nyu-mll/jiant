@@ -18,6 +18,7 @@ import json
 import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
+from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -1171,7 +1172,7 @@ class MTTask(SequenceGenerationTask):
     def __init__(self, path, max_seq_len, name='MTTask'):
         super().__init__(name)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorer2 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1192,22 +1193,27 @@ class MTTask(SequenceGenerationTask):
         return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))
+                                        targ_fn=targ_fn_startend)
         self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
-                                      targ_fn=lambda t: t.split(' '))
+                                      targ_fn=targ_fn_startend)
         self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
-                                       targ_fn=lambda t: t.split(' '))
+                                       targ_fn=targ_fn_startend)
 
         log.info("\tFinished loading MT data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        try:
+            bleu_score = self.scorer2.get_metric(reset)
+        except BaseException:
+            bleu_score = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score}
 
 
 class WikiInsertionsTask(MTTask):
