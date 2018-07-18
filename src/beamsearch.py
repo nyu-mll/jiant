@@ -3,6 +3,8 @@ from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from torch.autograd import Variable
 import torch.nn.functional as F
 
+from . import bleu_scoring
+
 BEAM_SIZE = 3
 
 
@@ -238,7 +240,6 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
 
 def compute_bleu(hyps, scores, targets):
     # masking is handled by hardcoded check for zeros.
-    from . import bleu_scoring  # hack only import when used
     relevant_targets = targets['words'].cpu().numpy()[1:]
     bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
     return bleu_score
