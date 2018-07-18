@@ -46,6 +46,10 @@ from .tasks import POSTaggingTask, CCGTaggingTask
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
+# Edge probing suite.
+ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
+                  'edges-dpr']
+
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -352,7 +356,7 @@ def build_tasks(args):
                                                       fraction=args.training_data_fraction)
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)        
+                                                      fraction=1.0)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
 
@@ -382,6 +386,8 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
+        if task_name == 'edges-all':
+            task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue
         else:
