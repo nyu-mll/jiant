@@ -387,7 +387,6 @@ class SamplingMultiTaskTrainer():
         all_tr_metrics = {}
         while not should_stop:
             self._model.train()
-
             # randomly select a task
             task = samples[n_pass % (validation_interval)]
             task_info = task_infos[task.name]
@@ -481,8 +480,8 @@ class SamplingMultiTaskTrainer():
                 log.info("Validating...")
                 preds_file_path_dict = {task.name: os.path.join(
                     self._serialization_dir,
-                    "preds_{}{}_{}_epoch_{}.th".format(
-                        time.date(), task.name, phase, epoch))
+                    "preds_{}{}_{}_epoch_{}.txt".format(
+                        time.time(), task.name, phase, epoch))
                 }
                 all_val_metrics, should_save, new_best_macro = self._validate(
                     epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
@@ -501,11 +500,12 @@ class SamplingMultiTaskTrainer():
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
-                elmo_params = self._model.get_elmo_mixing_weights()
+                elmo_params = self._model.get_elmo_mixing_weights(tasks)
                 if elmo_params:
-                    log.info("ELMo mixing weights:")
-                    for layer, param in elmo_params.items():
-                        log.info("\t%s: %.6f", layer, param)
+                    for task_name, task_params in elmo_params.items():
+                        log.info("ELMo mixing weights for {}:".format(task_name))
+                        log.info("\t" + ", ".join(["{}: {:.6f}".format(layer, float(param))
+                                                   for layer, param in task_params.items()]))
 
                 all_tr_metrics = {}
                 samples = random.choices(

@@ -143,10 +143,9 @@ def main(cl_arguments):
                         any(train_task.val_metric_decreases for train_task in train_tasks)),
                    "Attempting multitask training with a mix of increasing and decreasing metrics. "
                    "This is not currently supported. (We haven't set it up yet.)")
-
-    tasks = train_tasks + eval_tasks
+    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x:x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-
+    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
@@ -233,9 +232,16 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
+        # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
+        elmo_scalars = [(n, p) for n, p in model.named_parameters() if
+                        "scalar_mix" in n and "scalar_mix_0" not in n]
+        # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
+        assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
+                       "Error: ELMo scalars loaded and will be updated in train_for_eval but "
+                       "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,

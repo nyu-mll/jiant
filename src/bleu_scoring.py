@@ -12,7 +12,6 @@ print("Warning -- this is a preliminary version of BLEU scoring, it has not been
 def bleu_stats(hypothesis, reference):
     """Compute statistics for BLEU."""
     stats = []
-    # handle masking, sorry
     stats.append(len(hypothesis))
     stats.append(len(reference))
     for n in range(1, 5):

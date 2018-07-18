@@ -1,7 +1,7 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-from typing import Dict, List, Optional, Union, Iterable
+from typing import Dict, List, Sequence, Optional, Union, Iterable
 
 import copy
 import os
@@ -44,6 +44,13 @@ def copy_iter(elems):
     for elem in elems:
         yield copy.deepcopy(elem)
 
+def wrap_singleton_string(item: Union[Sequence, str]):
+    ''' Wrap a single string as a list. '''
+    if isinstance(item, str):
+        # Can't check if iterable, because a string is an iterable of
+        # characters, which is not what we want.
+        return [item]
+    return item
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
     ''' Helper function to load a model state
@@ -59,7 +66,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
 
-    assert_for_log(not (skip_task_models and strict), 
+    assert_for_log(not (skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.")
 
     for name, param in model.named_parameters():
@@ -83,22 +90,26 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     logging.info("Loaded model state from %s", state_path)
 
 
-def get_elmo_mixing_weights(text_field_embedder, mix_id=0):
+def get_elmo_mixing_weights(text_field_embedder, task=None):
     ''' Get elmo mixing weights from text_field_embedder,
     since elmo should be in the same place every time.
 
     args:
         - text_field_embedder
-        - mix_id: if we learned multiple mixing weights, which one we want
-            to extract, usually 0
+        - task: task which gets indexed to the correct mix_id
 
     returns:
         - params Dict[str:float]: dictionary maybe layers to scalar params
     '''
     elmo = text_field_embedder.token_embedder_elmo._elmo
+    if task:
+        mix_id = text_field_embedder.task_map[task.name]
+    else:
+        mix_id = text_field_embedder.task_map["@pretrain@"]
     mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
     params = {'layer%d' % layer_id: p.item() for layer_id, p in \
               enumerate(mixer.scalar_parameters.parameters())}
+    params['gamma'] = mixer.gamma
     return params
 
 
