@@ -44,9 +44,11 @@ def copy_iter(elems):
     for elem in elems:
         yield copy.deepcopy(elem)
 
-def wrap_singleton(item: Union[Sequence, str]):
-    ''' Wrap a single item as a list. '''
+def wrap_singleton_string(item: Union[Sequence, str]):
+    ''' Wrap a single string as a list. '''
     if isinstance(item, str):
+        # Can't check if iterable, because a string is an iterable of
+        # characters, which is not what we want.
         return [item]
     return item
 

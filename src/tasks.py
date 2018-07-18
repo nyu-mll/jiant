@@ -362,7 +362,7 @@ class EdgeProbingTask(Task):
         span1s = [t['span1'] for t in record['targets']]
         span2s = [t['span2'] for t in record['targets']]
         # Always use multilabel targets, so be sure each label is a list.
-        labels = [utils.wrap_singleton(t['label'])
+        labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
 
         d = {}

@@ -198,7 +198,7 @@ class EdgeClassifierModule(nn.Module):
 
         Args:
             logits: [total_num_targets, n_classes] Tensor of float scores
-            labels: [total_num_targets, n_classes] Tensor of k-hot targets
+            labels: [total_num_targets, n_classes] Tensor of sparse binary targets
 
         Returns:
             loss: scalar Tensor
