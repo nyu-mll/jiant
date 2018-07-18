@@ -505,11 +505,14 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
-        for split, path in self.files_by_split:
+        for split in self.files_by_split:
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
+            path = self.files_by_split[split]
+            self.example_counts[split] = 0
             for sent in self.load_data(path):
+                self.example_counts[split] += 1
                 yield sent
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -519,10 +522,11 @@ class WikiTextLMTask(LanguageModelingTask):
         super().__init__(name)
         #self._iters_by_split = self.load_data(path, max_seq_len)
         #self.sentences = self.train_data_text + self.val_data_text
-        self.files_by_split = [('train', os.path.join(path, "train.txt")), ('val', os.path.join(path, "valid.txt")), ('test', os.path.join(path, "test.txt"))]
+        self.files_by_split = {'train': os.path.join(path, "train.txt"), 'val': os.path.join(path, "valid.txt"), 'test':os.path.join(path, "test.txt") }
         self.max_seq_len = max_seq_len
-
-    def laod_data(self, path):
+        self.example_counts = {}
+    
+    def load_data(self, path):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -556,7 +560,7 @@ class BWBLMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
 
-    def laod_data(self, path):
+    def load_data(self, path):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
