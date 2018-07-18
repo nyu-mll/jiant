@@ -501,23 +501,15 @@ class LanguageModelingTask(SequenceGenerationTask):
 
         Split should be one of 'train', 'val', or 'test'.
         '''
-        return self._iters_by_split[split]
-
-    def _stream_txt(self, path, max_seq_len):
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if toks == '':
-                    continue
-                yield process_sentence(toks, max_seq_len)
+        return self.load_data(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
-        for split, iter in self._iters_by_split.items():
+        for split, path in self.files_by_split:
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
-            for sent in iter:
+            for sent in self.load_data(path):
                 yield sent
 
 class WikiTextLMTask(LanguageModelingTask):
@@ -525,22 +517,12 @@ class WikiTextLMTask(LanguageModelingTask):
 
     def __init__(self, path, max_seq_len, name="wiki"):
         super().__init__(name)
-        self._iters_by_split = self.load_data(path, max_seq_len)
+        #self._iters_by_split = self.load_data(path, max_seq_len)
         #self.sentences = self.train_data_text + self.val_data_text
+        self.files_by_split = [('train', os.path.join(path, "train.txt")), ('val', os.path.join(path, "valid.txt")), ('test', os.path.join(path, "test.txt"))]
+        self.max_seq_len = max_seq_len
 
-    def load_data(self, path, max_seq_len):
-        iters_by_split = collections.OrderedDict()
-        files_by_split = [('train', os.path.join(path, "train.txt")), ('val', os.path.join(path, "valid.txt")), ('test', os.path.join(path, "test.txt"))]
-        for split, filename in files_by_split:
-            #  # Lazy-load using RepeatableIterator.
-            #  loader = functools.partial(utils.load_json_data,
-            #                             filename=filename)
-            #  iter = serialize.RepeatableIterator(loader)
-            iter = list(self._stream_txt(filename, max_seq_len))
-            iters_by_split[split] = iter
-        return iters_by_split
-
-    def _stream_txt(self, path, max_seq_len):
+    def laod_data(self, path):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -548,7 +530,7 @@ class WikiTextLMTask(LanguageModelingTask):
                     continue
                 # hard code to fix unk symbol
                 toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
-                sent = process_sentence(toks, max_seq_len)
+                sent = process_sentence(toks, self.max_seq_len)
                 for i in range(0, len(sent)):
                     if sent[i] == 'UNKNOWN':
                         sent[i] = '@@UNKNOWN@@'
@@ -574,13 +556,13 @@ class BWBLMTask(WikiTextLMTask):
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
 
-    def _stream_txt(self, path, max_seq_len):
+    def laod_data(self, path):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if toks == '':
                     continue
-                yield process_sentence(toks, max_seq_len)
+                yield process_sentence(toks, self.max_seq_len)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
