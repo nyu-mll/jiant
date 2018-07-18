@@ -239,6 +239,7 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
@@ -460,38 +461,59 @@ class RankingTask(Task):
 class LanguageModelingTask(SequenceGenerationTask):
     ''' Generic language modeling task '''
 
-    def __init__(self, name):
+    def __init__(self, path, max_seq_len, name):
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
+        self.max_seq_len = max_seq_len
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")}
+        self.files_by_split = {'train': os.path.join(path, "train.txt"),
+                               'val': os.path.join(path, "valid.txt"),
+                               'test':os.path.join(path, "test.txt")}
 
-    def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text. '''
-        # Special case for LM: split_text is a single list.
-        return len(split_text)
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            #example_counts[split] = len(open(split_path).read().count('\n'))
+            example_counts[split] = sum(1 for line in open(split_path))
+        self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split.
+    def load_data(self, path):
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                # hard code to fix unk symbol
+                # why do we need to do this twice?
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, self.max_seq_len)
+                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                yield sent
 
-        Split is a single list of sentences here.
-        '''
-        if "chars" not in indexers:
-            targs_indexers = {"words": SingleIdTokenIndexer()}
-        else:
-            targs_indexers = indexers
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split by indexing and creating fields.
+        Split is a single list of sentences here. '''
+        targ_indexer = self.target_indexer
         def _make_instance(sent):
+            ''' Forward targs adds <s> as a target for input </s>
+            and bwd targs adds </s> as a target for input <s>
+            to avoid issues with needing to strip extra tokens
+            in the input for each direction '''
             d = {}
             d["input"] = _sentence_to_text_field(sent, indexers)
             #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
-            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
-            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targ_indexer)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targ_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
@@ -510,51 +532,25 @@ class LanguageModelingTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            self.example_counts[split] = 0
             for sent in self.load_data(path):
-                self.example_counts[split] += 1
                 yield sent
 
-class WikiTextLMTask(LanguageModelingTask):
-    ''' Language modeling task on Wikitext '''
 
-    def __init__(self, path, max_seq_len, name="wiki"):
-        super().__init__(name)
-        #self._iters_by_split = self.load_data(path, max_seq_len)
-        #self.sentences = self.train_data_text + self.val_data_text
-        self.files_by_split = {'train': os.path.join(path, "train.txt"), 'val': os.path.join(path, "valid.txt"), 'test':os.path.join(path, "test.txt") }
-        self.max_seq_len = max_seq_len
-        self.example_counts = {}
-    
-    def load_data(self, path):
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if toks == '':
-                    continue
-                # hard code to fix unk symbol
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
-                sent = process_sentence(toks, self.max_seq_len)
-                for i in range(0, len(sent)):
-                    if sent[i] == 'UNKNOWN':
-                        sent[i] = '@@UNKNOWN@@'
-                yield sent
-
-class WikiText2LMTask(WikiTextLMTask):
+class WikiText2LMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext 2'''
 
     def __init__(self, path, max_seq_len, name="wiki2"):
         super().__init__(path, max_seq_len, name)
 
 
-class WikiText103LMTask(WikiTextLMTask):
+class WikiText103LMTask(LanguageModelingTask):
     ''' Language modeling task on Wikitext 103'''
 
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
 
 
-class BWBLMTask(WikiTextLMTask):
+class BWBLMTask(LanguageModelingTask):
     ''' Language modeling task on Billion Word Benchmark'''
 
     def __init__(self, path, max_seq_len, name="bwb"):

@@ -40,8 +40,8 @@ from .tasks import \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask 
-from .tasks import POSTaggingTask, CCGTaggingTask 
+    MultiNLITravelTask, MultiNLITelephoneTask
+from .tasks import POSTaggingTask, CCGTaggingTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
