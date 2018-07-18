@@ -68,7 +68,9 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     representations, we take ``TokenEmbedders`` with corresponding names.  Each ``TokenEmbedders``
     embeds its input, and the result is concatenated in an arbitrary order.
     """
-    def __init__(self, token_embedders: Dict[str, TokenEmbedder], tasks) -> None:
+    def __init__(self, token_embedders: Dict[str, TokenEmbedder], tasks,
+                 elmo_chars_only=False,
+                 sep_embs_for_skip=False) -> None:
         super(ElmoTextFieldEmbedder, self).__init__()
         self._token_embedders = token_embedders
         for key, embedder in token_embedders.items():
@@ -77,6 +79,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         self.task_map = {task.name:(i+1) for i, task in enumerate(tasks)}
         # pretrain task is a special, privileged task
         self.task_map["@pretrain@"] = 0
+        self.elmo_chars_only = elmo_chars_only
+        self.sep_embs_for_skip = sep_embs_for_skip
 
     @overrides
     def get_output_dim(self) -> int:
@@ -101,10 +105,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             for _ in range(num_wrapping_dims):
                 embedder = TimeDistributed(embedder)
             token_vectors = embedder(tensor)
-            if key == "elmo":
-                # We always pass the task_name into the forward step, but sometimes we want to
-                # ignore it (if we don't want separate scalars) and default to @pretrain@
-                if task_name in self.task_map:
+            if key == "elmo" and not self.elmo_chars_only:
+                if self.sep_embs_for_skip:
                     token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
                 else:
                     token_vectors = token_vectors['elmo_representations'][self.task_map["@pretrain@"]]
