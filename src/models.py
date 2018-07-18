@@ -265,7 +265,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (MTTask, Reddit_MTTask)):
-        attention = args.mt_attention if hasattr(args, 'mt_attention') else "bilinear"
+        attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -641,10 +641,11 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            if False:  # TODO - update when bleu scoring is ready
-                # bleu scoring
-                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
-                # task.scorer2(bleu_score)
+            # TODO - update when bleu scoring is ready
+            # if not task.training:
+            #     # bleu scoring
+            #     bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs'])
+            #     task.scorer2(bleu_score)
 
             return out
 
