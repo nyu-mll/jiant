@@ -19,11 +19,11 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
-
 from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
 from . import config
-
+from .banditSampling import Bandit, softmax
+import numpy as np
 
 def build_trainer_params(args, task_names):
     ''' Build trainer parameters, possibly loading task specific parameters '''
@@ -190,6 +190,8 @@ class SamplingMultiTaskTrainer():
             self._TB_validation_log = SummaryWriter(
                 os.path.join(self._TB_dir, "val"))
 
+        self.bandit = None
+
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
         Given a task, the history of the performance on that task,
@@ -216,6 +218,7 @@ class SamplingMultiTaskTrainer():
 
     def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params, phase):
         # Task bookkeeping
+
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
@@ -232,6 +235,12 @@ class SamplingMultiTaskTrainer():
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
+
+            # iterator for bandit validation
+            # if weighting_method == 'bandit' and self.bandit.val_generation == 'dynamic':
+            bandit_val_generator = BasicIterator(batch_size, instances_per_epoch=batch_size)(
+                task.val_data, num_epochs=None, shuffle=True, cuda_device=self._cuda_device)
+            task_info['bandit_val_generator'] = bandit_val_generator
 
             task_info['iterator'] = iterator
 
@@ -307,6 +316,8 @@ class SamplingMultiTaskTrainer():
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of '))
         elif 'softmax_' in weighting_method:
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
+        elif weighting_method == 'bandit':
+            log.info("Sampling tasks using multi-armed bandit")
 
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
@@ -378,10 +389,11 @@ class SamplingMultiTaskTrainer():
         log.info ("Weighting details: ")
         log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
-        normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
-        log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
 
-        samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+        if weighting_method != 'bandit':
+            normalized_sample_weights  = np.array([i/sum(sample_weights) for i in sample_weights])
+            log.info ("normalized_sample_weights: " + np.array_str(normalized_sample_weights,precision = 4) )
+            samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
@@ -389,7 +401,14 @@ class SamplingMultiTaskTrainer():
             self._model.train()
 
             # randomly select a task
-            task = samples[n_pass % (validation_interval)]
+            if weighting_method != 'bandit':
+                task = samples[n_pass % (validation_interval)]
+            # bandit sampling a task
+            elif weighting_method == 'bandit':
+                self.bandit.chooseAction()
+                task = tasks[self.bandit.action]
+                log.info ("Action: " + self.bandit.mapping[self.bandit.action])
+
             task_info = task_infos[task.name]
             if task_info['stopped']:
                 continue
@@ -399,6 +418,7 @@ class SamplingMultiTaskTrainer():
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
             tr_loss = task_info['loss']
+
             for batch in itertools.islice(tr_generator, n_batches_per_pass):
                 n_batches_since_val += 1
                 total_batches_trained += 1
@@ -413,6 +433,7 @@ class SamplingMultiTaskTrainer():
                     loss *= (max_weight / task_info['n_tr_batches'])
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
+
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -453,6 +474,23 @@ class SamplingMultiTaskTrainer():
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
+
+            # Bandit Validation: very short
+            if weighting_method == 'bandit':
+
+                validate_bandit_losses = np.array(self._validate_bandit(tasks, batch_size))/self.bandit.val_batch
+                log.info("  loss: " + np.array_str(validate_bandit_losses,precision =4))
+                # negative average valiation loss of all trained tasks
+                reward = -np.mean(validate_bandit_losses)
+                self.bandit.update_actionValue(reward)
+
+                log.info ("Reward: %.6f", reward)
+                log.info("  tasks: "+str([task.name for task in tasks]))
+                log.info("  qvalue: " + np.array_str(self.bandit.Q,precision =4))
+                if self.bandit.explore_method == 'boltzmann':
+                    action_prob = softmax(self.bandit.temp,self.bandit.Q)
+                    log.info("  action_prob: " + np.array_str(action_prob,precision =4))
+
 
             # Validation
             if n_pass % (validation_interval) == 0:
@@ -496,6 +534,13 @@ class SamplingMultiTaskTrainer():
                 lrs = self._get_lr()
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
+
+                # log bandit: qvalue
+                if weighting_method == 'bandit':
+                    log.info("Task action value:")
+                    for taskname, Qvalue in zip([task.name for task in tasks], self.bandit.Q):
+                        log.info("  %s qvalue: %.4f", taskname, Qvalue)
+
                 elmo_params = self._model.get_elmo_mixing_weights()
                 if elmo_params:
                     log.info("ELMo mixing weights:")
@@ -503,10 +548,12 @@ class SamplingMultiTaskTrainer():
                         log.info("\t%s: %.6f", layer, param)
 
                 all_tr_metrics = {}
-                samples = random.choices(
-                    tasks,
-                    weights=sample_weights,
-                    k=validation_interval)  # pylint: disable=no-member
+
+                if weighting_method != 'bandit':
+                    samples = random.choices(
+                        tasks,
+                        weights=sample_weights,
+                        k=validation_interval)  # pylint: disable=no-member
 
                 if should_save:
                     self._save_checkpoint(
@@ -641,6 +688,46 @@ class SamplingMultiTaskTrainer():
 
         return all_val_metrics, should_save, new_best_macro
 
+    def _validate_bandit(self, tasks, batch_size):
+        ''' Bandit Intermediate Validation
+            Validate on all tasks for a few batches and return losses
+            Do not check or update metric_hitory
+        '''
+
+        n_batches_perTask =self.bandit.val_batch
+        task_infos  = self._task_infos
+        self._model.eval()
+        all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
+
+        validation_losses = []
+
+        # Get validation numbers for each task
+        for task in tasks:
+            n_examples, batch_num = 0, 0
+            task_info = task_infos[task.name]
+
+            if self.bandit.val_generation =='static':
+                val_generator = BasicIterator(batch_size, instances_per_epoch= batch_size)(
+                    task.val_data, num_epochs=self.bandit.val_batch, shuffle=False,
+                    cuda_device=self._cuda_device)
+            elif self.bandit.val_generation =='dynamic':
+                val_generator = task_info['bandit_val_generator']
+
+            n_val_batches = n_batches_perTask
+            all_val_metrics["%s_loss" % task.name] = 0.0
+
+            for batch in itertools.islice(val_generator, n_batches_perTask):
+                batch_num += 1
+                out = self._forward(batch, task=task, for_training=False)
+                loss = out["loss"]
+                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+                n_examples += out["n_exs"]
+
+            validation_losses.append( all_val_metrics["%s_loss" % task.name] )
+
+        return validation_losses
+
+
     def _get_lr(self):
         if self._g_optimizer is not None:
             lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
@@ -748,6 +835,8 @@ class SamplingMultiTaskTrainer():
         torch.save(model_state, model_path)
 
         if phase != "eval":
+            # TODO (Shuning): Make sure the state of the agent is included in training state.
+            # This probably includes at least the Q values and the history of rewards.
             torch.save(
                 training_state,
                 os.path.join(
@@ -890,6 +979,8 @@ class SamplingMultiTaskTrainer():
             self._metric_infos[metric_name]['stopped'] = metric_state['stopped']
             self._metric_infos[metric_name]['best'] = metric_state['best']
 
+        # TODO (Shuning): Make sure this can correctly load the state of the agent.
+        # (The Q variables and the history, I guess?)
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]
 
@@ -917,7 +1008,7 @@ class SamplingMultiTaskTrainer():
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
-        ''' Generator trainer from parameters.  '''
+        ''' Generate trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
         val_interval = params.pop("val_interval", 100)
