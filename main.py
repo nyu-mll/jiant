@@ -52,7 +52,7 @@ def handle_arguments(cl_arguments):
     parser.add_argument('--tensorboard_port', type=int, default=6006)
 
     parser.add_argument('--bandit_config_file', '-bc', type=str, required=False,
-                            help="Config file (.conf) for model parameters.")
+                            help="Config file (.conf) for bandit parameters.")
     parser.add_argument('--bandit_overrides', '-bo', type=str, default=None,
                             help="Parameter overrides, as valid HOCON string.")
 
@@ -200,16 +200,14 @@ def main(cl_arguments):
         trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                             args.run_dir,
                                                             should_decrease)
-        ## bandit config ##
+        # Bandit config #
         if cl_args.bandit_config_file != None:
             actions = [task.name for task in train_tasks]
             bandit_args = config.params_from_file(cl_args.bandit_config_file, cl_args.bandit_overrides)
             bandit_params = build_bandit_params (bandit_args)
             bandit = build_bandit (bandit_params, actions)
             trainer.bandit = bandit
-
             log.info("Bandit parsed args: \n%s", bandit_args)
-        ### bandit config ##
 
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         best_epochs = trainer.train(train_tasks, stop_metric,
