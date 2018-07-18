@@ -14,15 +14,6 @@ from allennlp.modules.span_extractors import \
 
 from typing import Dict, Iterable, List
 
-
-def to_onehot(labels: torch.Tensor, n_classes: int):
-    """ Convert integer-valued labels to one-hot targets. """
-    binary_targets = torch.zeros([labels.shape[0], n_classes],
-                                 dtype=torch.int64, device=labels.device)
-    ridx = torch.arange(labels.shape[0], dtype=torch.int64)
-    binary_targets[ridx, labels] = 1
-    return binary_targets
-
 class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
 
@@ -36,12 +27,9 @@ class EdgeClassifierModule(nn.Module):
         - Only considers the explicit set of spans in inputs; does not consider
         all other spans as negatives. (So, this won't work for argument
         _identification_ yet.)
-        - Spans are represented by endpoints, and pooled by projecting each
-        side and adding the project span1 and span2 representations (this is
-        equivalent to concat + linear layer).
 
     TODO: consider alternate span-pooling operators: max or mean-pooling,
-    soft-head pooling, or SegRNN.
+    or SegRNN.
 
     TODO: add span-expansion to negatives, one of the following modes:
         - all-spans (either span1 or span2), treating not-seen as negative
@@ -150,6 +138,8 @@ class EdgeClassifierModule(nn.Module):
 
         # Compute loss if requested.
         if 'labels' in batch:
+            # Labels is [batch_size, num_targets, n_classes],
+            # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
             out['loss'] = self.compute_loss(logits[span_mask],
                                             batch['labels'][span_mask],
@@ -182,13 +172,18 @@ class EdgeClassifierModule(nn.Module):
 
 
     def get_predictions(self, logits: torch.Tensor):
+        """Return class probabilities, same shape as logits.
+
+        Args:
+            logits: [batch_size, num_targets, n_classes]
+
+        Returns:
+            probs: [batch_size, num_targets, n_classes]
+        """
         if self.loss_type == 'softmax':
-            # For softmax loss, return argmax predictions.
-            # [batch_size, num_targets]
-            return logits.max(dim=2)[1]  # argmax
+            raise NotImplementedError("Softmax loss not fully supported.")
+            return F.softmax(logits, dim=2)
         elif self.loss_type == 'sigmoid':
-            # For sigmoid loss, return class probabilities.
-            # [batch_size, num_targets, n_classes]
             return F.sigmoid(logits)
         else:
             raise ValueError("Unsupported loss type '%s' "
@@ -203,32 +198,30 @@ class EdgeClassifierModule(nn.Module):
 
         Args:
             logits: [total_num_targets, n_classes] Tensor of float scores
-            labels: [total_num_targets] Tensor of int targets
+            labels: [total_num_targets, n_classes] Tensor of sparse binary targets
 
         Returns:
             loss: scalar Tensor
         """
-        # Accuracy scorer can handle multiclass natively.
-        task.acc_scorer(logits, labels)
+        binary_preds = logits.ge(0).long()  # {0,1}
 
-        # Matthews and F1 need binary targets, as does sigmoid loss.
-        # [total_num_targets, n_classes] LongTensor
-        binary_targets = to_onehot(labels, n_classes=logits.shape[1])
-
-        # Matthews coefficient computed on {0,1} labels.
-        task.mcc_scorer(logits.ge(0).long(), binary_targets)
+        # Matthews coefficient and accuracy computed on {0,1} labels.
+        task.mcc_scorer(binary_preds, labels)
+        task.acc_scorer(binary_preds, labels.long())
 
         # F1Measure() expects [total_num_targets, n_classes, 2]
         # to compute binarized F1.
         binary_scores = torch.stack([-1*logits, logits], dim=2)
-        task.f1_scorer(binary_scores, binary_targets)
+        task.f1_scorer(binary_scores, labels)
 
         if self.loss_type == 'softmax':
-            # softmax over each row.
-            return F.cross_entropy(logits, flat_labels)
+            raise NotImplementedError("Softmax loss not fully supported.")
+            # Expect exactly one target, convert to indices.
+            assert labels.shape[1] == 1  # expect a single target
+            return F.cross_entropy(logits, labels)
         elif self.loss_type == 'sigmoid':
             return F.binary_cross_entropy(F.sigmoid(logits),
-                                          binary_targets.float())
+                                          labels.float())
         else:
             raise ValueError("Unsupported loss type '%s' "
                              "for edge probing." % loss_type)

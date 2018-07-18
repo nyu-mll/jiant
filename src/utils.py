@@ -1,7 +1,7 @@
 """
 Assorted utilities for working with neural networks in AllenNLP.
 """
-from typing import Dict, List, Optional, Union, Iterable
+from typing import Dict, List, Sequence, Optional, Union, Iterable
 
 import copy
 import os
@@ -44,6 +44,13 @@ def copy_iter(elems):
     for elem in elems:
         yield copy.deepcopy(elem)
 
+def wrap_singleton_string(item: Union[Sequence, str]):
+    ''' Wrap a single string as a list. '''
+    if isinstance(item, str):
+        # Can't check if iterable, because a string is an iterable of
+        # characters, which is not what we want.
+        return [item]
+    return item
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
     ''' Helper function to load a model state
