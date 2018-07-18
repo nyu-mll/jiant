@@ -18,6 +18,7 @@ import json
 import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
+from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -1049,6 +1050,29 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
+@register_task('nli-alt', 'NLI-Prob/')
+class NLITypeProbingAltTask(NLITypeProbingTask):
+    ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
+
+    def __init__(self, path, max_seq_len, name="nli-alt", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
+                        idx_idx = 0, s1_idx=3, s2_idx=4, targ_idx=5, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NLI-alt probing data.")
 
 class MultiNLIAltTask(MultiNLITask):
     ''' Task class for Multi-Genre Natural Language Inference.
@@ -1188,7 +1212,7 @@ class MTTask(SequenceGenerationTask):
     def __init__(self, path, max_seq_len, name='MTTask'):
         super().__init__(name)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorer2 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1209,22 +1233,27 @@ class MTTask(SequenceGenerationTask):
         return instances  # lazy iterator
 
     def load_data(self, path, max_seq_len):
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
         self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=lambda t: t.split(' '))
+                                        targ_fn=targ_fn_startend)
         self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
-                                      targ_fn=lambda t: t.split(' '))
+                                      targ_fn=targ_fn_startend)
         self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
                                        s1_idx=0, s2_idx=None, targ_idx=1,
-                                       targ_fn=lambda t: t.split(' '))
+                                       targ_fn=targ_fn_startend)
 
         log.info("\tFinished loading MT data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        try:
+            bleu_score = self.scorer2.get_metric(reset)
+        except BaseException:
+            bleu_score = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score}
 
 
 class WikiInsertionsTask(MTTask):
