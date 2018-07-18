@@ -494,7 +494,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targs_indexers)
             d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targs_indexers)
             return Instance(d)
-        
+
         for sent in split:
             yield _make_instance(sent)
 
@@ -1151,7 +1151,7 @@ class MTTask(SequenceGenerationTask):
     def __init__(self, path, max_seq_len, name='MTTask'):
         super().__init__(name)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorer2 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1188,7 +1188,11 @@ class MTTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        try:
+            bleu_score = self.scorer2.get_metric(reset)
+        except BaseException:
+            bleu_score = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score}
 
 
 class WikiInsertionsTask(MTTask):

@@ -38,7 +38,7 @@ def bleu(stats):
         return 0
 
 
-def get_bleu(hypotheses, reference, debug=True):
+def get_bleu(hypotheses, reference, debug=False):
     """Get validation BLEU score for dev set."""
     stats = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
     for hyp, ref in zip(hypotheses, reference):
