@@ -410,7 +410,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task_cls = task_info[0]
             kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob':  # this task takes additional kw
+            if name == 'nli-prob' or name=='nli-alt':  # this task takes additional kw
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
