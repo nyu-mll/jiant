@@ -190,7 +190,6 @@ class Seq2SeqDecoder(Model):
             # Fixme
 
             # important - need to use zero-masking instead of -inf for attention
-            encoder_outputs = encoder_outputs.clone()
             encoder_outputs.data.masked_fill_(
                 1 - encoder_outputs_mask.byte().data, 0.0)
 
