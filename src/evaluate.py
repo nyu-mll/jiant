@@ -30,7 +30,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
-    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str']
+    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = preprocess.ALL_GLUE_TASKS + ['wmt']
     model.eval()
@@ -132,13 +132,18 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     def _write_preds_with_pd(preds_df: pd.DataFrame, pred_file: str,
                              write_type=int):
         """ Write TSV file in GLUE format, using Pandas. """
+        required_cols = ['index', 'prediction']
         if strict_glue_format:
-            cols_to_write = ['index', 'prediction']
+            cols_to_write = required_cols
             quoting = QUOTE_NONE
             log.info("Task '%s', split '%s': writing %s in "
                      "strict GLUE format.", task_name, split_name, pred_file)
         else:
-            cols_to_write = ['index', 'prediction', 'sentence_1', 'sentence_2']
+            all_cols = set(preds_df.columns)
+            # make sure we write index and prediction as first columns,
+            # then all the other ones we can find.
+            cols_to_write = (required_cols +
+                             sorted(list(all_cols.difference(required_cols))))
             quoting = QUOTE_MINIMAL
         preds_df.to_csv(pred_file, sep="\t", index=False, float_format="%.3f",
                         quoting=quoting, columns=cols_to_write)
@@ -160,11 +165,13 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     _add_default_column(preds_df, 'idx', -1)
     _add_default_column(preds_df, 'sent1_str', "")
     _add_default_column(preds_df, 'sent2_str', "")
+    _add_default_column(preds_df, 'labels', -1)
     # Rename columns to match output headers.
     preds_df.rename({"idx": "index",
                      "preds": "prediction",
                      "sent1_str": "sentence_1",
-                     "sent2_str": "sentence_2"},
+                     "sent2_str": "sentence_2",
+                     "labels": "true_label"},
                     axis='columns', inplace=True)
 
     if task_name == 'mnli' and split_name == 'test':  # 9796 + 9847 + 1104 = 20747
@@ -203,8 +210,8 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
 
 def write_results(results, results_file, run_name):
     ''' Aggregate results by appending results to results_file '''
+    all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for
+                                 metric, score in results.items()])
     with open(results_file, 'a') as results_fh:
-        all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for
-                                     metric, score in results.items()])
         results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
     log.info(all_metrics_str)

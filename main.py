@@ -276,8 +276,10 @@ def main(cl_arguments):
             evaluate.write_preds(te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)
         run_name = args.get("run_name", os.path.basename(args.run_dir))
-        evaluate.write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
-                               run_name=run_name)
+
+        results_tsv = os.path.join(args.exp_dir, "results.tsv")
+        log.info("Writing results for split 'val' to %s", results_tsv)
+        evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
     log.info("Done!")
 
