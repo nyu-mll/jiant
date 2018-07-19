@@ -261,6 +261,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Coreference on OntoNotes corpus. Two labels.
+@register_task('edges-coref-ontonotes', rel_path='edges/ontonotes-coref',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # PTB constituency membership.
 @register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
                label_file="labels.txt", files_by_split={
