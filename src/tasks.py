@@ -1209,6 +1209,60 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
+class Wiki103_MTTask(MTTask):
+    def __init__(self, path, max_seq_len, name='wiki103_mt'):
+        super().__init__(path, max_seq_len, name)
+        self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
+        self.target_sentences =  self.train_data_text[1:] + self.val_data_text[1:]
+
+    def load_data(self, path, max_seq_len):
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WikiText")
+
+    def load_txt(self, path, max_seq_len):
+        data = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, max_seq_len)
+                for i in range(0, len(sent)):
+                    if sent[i] == 'UNKNOWN':
+                        sent[i] = '@@UNKNOWN@@'
+                data.append(sent)
+                #data.append(process_sentence(toks, max_seq_len))
+        return data
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+
+        Split is a single list of sentences here.
+        '''
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+        def _make_instance(prev_sent, sent):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
+            d["targs"] = _sentence_to_text_field(sent, targs_indexers)
+            return Instance(d)
+        #import ipdb
+        for i in range(1, len(split)):
+            #ipdb.set_trace()
+            yield _make_instance(split[i-1], split[i])
+
 
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
