@@ -527,6 +527,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         return {'perplexity': math.exp(nll)}
 
     def load_data(self, path):
+        ''' Rather than return a whole list of examples, stream them '''
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -633,30 +634,52 @@ class RedditTask(RankingTask):
         ''' '''
         super(RedditTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
+        #self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = True
+        self.val_metric_decreases = False
+        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
+                               split in ["train", "valid", "test"]}
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
 
     def load_data(self, path, max_seq_len):
         ''' Load data '''
-        print("Loading data")
         print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
         path = '//nfs/jsalt/home/raghu/'
-        tr_data = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
-        print("FINISHED LOADING TRAIN DATA")
-        dev_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
-        print("FINISHED LOADING dev DATA")
-        test_data = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, targ_idx=None, skip_rows=0)
-        print("FINISHED LOADING test DATA")
-        self.train_data_text = tr_data
-        self.val_data_text = dev_data
-        self.test_data_text = test_data
-        log.info("\tFinished loading Temporary Reddit data.")
+        with open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if not row[2] or not row[3]:
+                    continue
+                sent1 = process_sentence(row[2], max_seq_len)
+                sent2 = process_sentence(row[3], max_seq_len)
+                targ = 1
+                yield (sent1, sent2, targ)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for sent in self.load_data(path):
+                yield sent
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            #example_counts[split] = len(open(split_path).read().count('\n'))
+            example_counts[split] = sum(1 for line in open(split_path))
+        self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
