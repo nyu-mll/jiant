@@ -345,6 +345,27 @@ class EdgeProbingTask(Task):
                  total_ctr - skip_ctr, skip_ctr, total_ctr,
                  filename)
 
+    @staticmethod
+    def merge_preds(record: Dict, preds: Dict) -> Dict:
+        """ Merge predictions into record, in-place.
+
+        List-valued predictions should align to targets,
+        and are attached to the corresponding target entry.
+
+        Non-list predictions are attached to the top-level record.
+        """
+        record['preds'] = {}
+        for target in record['targets']:
+            target['preds'] = {}
+        for key, val in preds.items():
+            if isinstance(val, list):
+                assert len(val) == len(record['targets'])
+                for i, target in enumerate(record['targets']):
+                    target['preds'][key] = val[i]
+            # non-list predictions, attach to top-level preds
+            record['preds'][key] = val
+        return record
+
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():

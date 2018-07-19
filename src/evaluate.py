@@ -137,8 +137,10 @@ def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
 
-def _write_edge_preds(task: tasks_module.Task, preds_df: pd.DataFrame,
-                      pred_dir: str, split_name: str):
+def _write_edge_preds(task: tasks_module.EdgeProbingTask,
+                      preds_df: pd.DataFrame,
+                      pred_dir: str, split_name: str,
+                      join_with_input: bool=True):
     ''' Write predictions for edge probing task.
 
     This reads the task data and joins with predictions,
@@ -147,14 +149,26 @@ def _write_edge_preds(task: tasks_module.Task, preds_df: pd.DataFrame,
 
     Predictions are saved as JSON with one record per line.
     '''
-    preds_file = os.path.join(pred_dir, "{task.name}_{split_name}.json")
+    preds_file = os.path.join(pred_dir, f"{task.name}_{split_name}.json")
     # Each row of 'preds' is a NumPy object, need to convert to list for
     # serialization.
     preds_df = preds_df.copy()
     preds_df['preds'] = [a.tolist() for a in preds_df['preds']]
+    if join_with_input:
+        preds_df.set_index(['idx'], inplace=True)
+        # Load input data and join by row index.
+        log.info("Task '%s': joining predictions with input split '%s'",
+                 task.name, split_name)
+        records = task.get_split_text(split_name)
+        # TODO: update this with more prediction types, when available.
+        records = (task.merge_preds(r, {'proba': preds_df.at[i, 'preds']})
+                   for i, r in enumerate(records))
+    else:
+        records = (row.to_dict() for _, row in preds_df.iterrows())
+
     with open(preds_file, 'w') as fd:
-        for _, row in preds_df.iterrows():
-            fd.write(json.dumps(row.to_dict()))
+        for record in records:
+            fd.write(json.dumps(record))
             fd.write("\n")
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
