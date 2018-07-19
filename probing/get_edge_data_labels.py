@@ -34,12 +34,15 @@ def retokenize_file(fname):
             fd.write("\n")
 
 def count_labels(fname: str) -> Type[collections.Counter]:
-    labels = collections.Counter()
+    label_ctr = collections.Counter()
     record_iter = utils.load_json_data(fname)
     for record in tqdm(record_iter):
         for target in record['targets']:
-            labels.update([target['label']])
-    return labels
+            label = target['label']
+            if isinstance(label, str):
+                label = [label]
+            label_ctr.update(label)
+    return label_ctr
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -47,24 +50,24 @@ def main(args):
                         help="Output file.")
     parser.add_argument('-i', dest='inputs', type=str, nargs="+",
                         help="Input files.")
+    parser.add_argument('-s', dest='special_tokens', type=str,
+                        nargs="*", default=["-"],
+                        help="Additional special tokens to add at beginning "
+                             "of vocab list.")
     args = parser.parse_args(args)
 
-    labels = collections.Counter()
+    label_ctr = collections.Counter()
     for fname in args.inputs:
         log.info("Counting labels in %s", fname)
-        labels.update(count_labels(fname))
-    all_labels = sorted(labels.keys())
-    log.info("Found %d labels in total", len(all_labels))
+        label_ctr.update(count_labels(fname))
+    all_labels = args.special_tokens + sorted(label_ctr.keys())
+    log.info("%d labels in total (%d special + %d found)",
+             len(all_labels), len(args.special_tokens), len(label_ctr))
     with open(args.output, 'w') as fd:
         for label in all_labels:
             fd.write(label + "\n")
 
 if __name__ == '__main__':
-    try:
-        main(sys.argv[1:])
-    except BaseException:
-        # Make sure we log the trace for any crashes before exiting.
-        log.exception("Fatal error in main():")
-        sys.exit(1)
+    main(sys.argv[1:])
     sys.exit(0)
 

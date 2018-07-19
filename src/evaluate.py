@@ -2,39 +2,75 @@
 import os
 import logging as log
 
+import pandas as pd
+from csv import QUOTE_NONE, QUOTE_MINIMAL
+
 import torch
 from allennlp.data.iterators import BasicIterator
+from . import tasks
+from . import preprocess
 from .tasks import RegressionTask, STSBTask, JOCITask
 
-def evaluate(model, tasks, batch_size, cuda_device, split="val"):
+from typing import List, Sequence, Tuple, Dict
+
+def _coerce_list(preds) -> List:
+    if isinstance(preds, torch.Tensor):
+        return preds.data.tolist()
+    else:
+        return list(preds)
+
+def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
+    if write_preds_arg == 0:
+        return []
+    elif write_preds_arg == 1:
+        return ['test']
+    else:
+        return write_preds_arg.split(",")
+
+def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
+             cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
+    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
+    # Enforce that these tasks have the 'idx' field set.
+    IDX_REQUIRED_TASK_NAMES = preprocess.ALL_GLUE_TASKS + ['wmt']
     model.eval()
     iterator = BasicIterator(batch_size)
 
-    all_metrics, all_preds = {"micro_avg": 0.0, "macro_avg": 0.0}, {}
+    all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
+    all_preds = {}
     n_examples_overall = 0
     for task in tasks:
         n_examples = 0
-        task_preds, task_idxs = [], []
+        task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         for batch in generator:
-            if 'idx' in batch:  # for sorting examples
-                task_idxs += batch['idx'].data.tolist()
-                batch.pop('idx', None)
+
             out = model.forward(task, batch, predict=True)
             n_examples += out["n_exs"]
 
             # get predictions
-            if 'preds' in out:
-                preds = out['preds']
-                if isinstance(preds, torch.Tensor):
-                    preds = preds.data.tolist()
-                assert isinstance(preds, list), "Convert predictions to list!"
-                task_preds += preds
-        # task_preds should be a list of length = # examples.
-        # for GLUE tasks, entries should be single scalars.
+            if 'preds' not in out:
+                continue
+            preds = _coerce_list(out['preds'])
+            assert isinstance(preds, list), "Convert predictions to list!"
+            cols = {"preds": preds}
+            if task.name in IDX_REQUIRED_TASK_NAMES:
+                assert 'idx' in batch, (f"'idx' field missing from batches "
+                                        "for task {task.name}!")
+            for field in FIELDS_TO_EXPORT:
+                if field in batch:
+                    cols[field] = _coerce_list(batch[field])
+            # Transpose data using Pandas
+            df = pd.DataFrame(cols)
+            task_preds.append(df)
+        # task_preds will be a DataFrame with columns
+        # ['preds'] + FIELDS_TO_EXPORT
+        # for GLUE tasks, preds entries should be single scalars.
+
+        # Combine task_preds from each batch to a single DataFrame.
+        task_preds = pd.concat(task_preds, ignore_index=True)
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -44,13 +80,11 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
         all_metrics["macro_avg"] += all_metrics[task.val_metric]
         n_examples_overall += n_examples
 
-        # Store predictions, possibly sorting them if
-        if task_idxs:
-            assert len(task_idxs) == len(task_preds), (
-                "Number of indices != number of predictions!")
-            idxs_and_preds = [(idx, pred) for idx, pred in zip(task_idxs, task_preds)]
-            idxs_and_preds.sort(key=lambda x: x[0])
-            task_preds = [p for _, p in idxs_and_preds]
+        # Store predictions, sorting by index if given.
+        if 'idx' in task_preds.columns:
+            log.info("Task '%s': sorting predictions by 'idx'", task.name)
+            task_preds.sort_values(by=['idx'], inplace=True)
+
         all_preds[task.name] = task_preds
 
     all_metrics["micro_avg"] /= n_examples_overall
@@ -58,63 +92,153 @@ def evaluate(model, tasks, batch_size, cuda_device, split="val"):
 
     return all_metrics, all_preds
 
-def write_preds(all_preds, pred_dir):
+def write_preds(all_preds, pred_dir, split_name, strict_glue_format=False) -> None:
+    for task_name, preds_df in all_preds.items():
+        if task_name in preprocess.ALL_GLUE_TASKS + ['wmt']:
+            # Strict mode: strict GLUE format (no extra cols)
+            strict = (strict_glue_format and task_name in preprocess.ALL_GLUE_TASKS)
+            write_glue_preds(task_name, preds_df, pred_dir, split_name,
+                             strict_glue_format=strict)
+            log.info("Task '%s': Wrote predictions to %s", task_name, pred_dir)
+        else:
+            log.warning("Task '%s' not supported by write_preds().",
+                        task_name)
+            continue
+    log.info("Wrote all preds for split '%s' to %s", split_name, pred_dir)
+    return
+
+
+GLUE_NAME_MAP = {'cola': 'CoLA',
+                 'diagnostic': 'AX',
+                 'mnli-mm': 'MNLI-mm',
+                 'mnli-m': 'MNLI-m',
+                 'mrpc': 'MRPC',
+                 'qnli': 'QNLI',
+                 'qqp': 'QQP',
+                 'rte': 'RTE',
+                 'sst': 'SST-2',
+                 'sts-b': 'STS-B',
+                 'wnli': 'WNLI'}
+
+def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
+    if strict_glue_format and task_name in GLUE_NAME_MAP:
+        file = GLUE_NAME_MAP[task_name] + ".tsv"
+    else:
+        file = "%s_%s.tsv" % (task_name, split_name)
+    return os.path.join(pred_dir, file)
+
+def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
+                     pred_dir: str, split_name: str,
+                     strict_glue_format: bool=False):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
 
-    TODO: clean this up, remove special cases & hard-coded dataset sizes.
+    Use strict_glue_format to guarantee compatibility with GLUE website.
 
     Args:
-        - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
-            Assumes that predictions are sorted (if necessary).
-            For tasks with sentence predictions, we assume they've been mapped back to strings.
+        task_name: task name
+        preds_df: predictions DataFrame for a single task, as returned by
+            evaluate().
+        pred_dir: directory to write predictions
+        split_name: name of this split ('train', 'val', or 'test')
+        strict_glue_format: if true, writes format compatible with GLUE
+            website.
     '''
-    def write_preds_to_file(preds, pred_file, pred_map=None, write_type=int):
-        ''' Write preds to pred_file '''
-        with open(pred_file, 'w') as pred_fh:
-            pred_fh.write("index\tprediction\n")
-            for idx, pred in enumerate(preds):
-                if pred_map is not None or write_type == str:
-                    pred = pred_map[pred]
-                    pred_fh.write("%d\t%s\n" % (idx, pred))
-                elif write_type == float:
-                    pred_fh.write("%d\t%.3f\n" % (idx, pred))
-                elif write_type == int:
-                    pred_fh.write("%d\t%d\n" % (idx, pred))
+    def _apply_pred_map(preds_df, pred_map, key='prediction'):
+        """ Apply preds_map, in-place. """
+        preds_df[key] = [pred_map[p] for p in preds_df[key]]
 
-    for task, preds in all_preds.items():
-        if not preds: # catch empty lists
-            continue
+    def _write_preds_with_pd(preds_df: pd.DataFrame, pred_file: str,
+                             write_type=int):
+        """ Write TSV file in GLUE format, using Pandas. """
 
-        if task == 'mnli': # 9796 + 9847 + 1104 = 20747
-            assert len(preds) == 20747, "Missing predictions for MNLI!"
-            pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
-            write_preds_to_file(preds[:9796], os.path.join(pred_dir, "%s-m.tsv" % task), pred_map)
-            write_preds_to_file(preds[9796:19643], os.path.join(pred_dir, "%s-mm.tsv" % task),
-                                pred_map=pred_map)
-            write_preds_to_file(preds[19643:], os.path.join(pred_dir, "diagnostic.tsv"), pred_map)
-        elif task in ['rte', 'qnli']:
-            pred_map = {0: 'not_entailment', 1: 'entailment'}
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), pred_map)
-        elif task in ['sts-b']:
-            preds = [min(max(0., pred * 5.), 5.) for pred in preds]
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=float)
-        elif task in ['wmt']:
-            # convert each prediction to a single string if we find a list of tokens
-            if isinstance(preds[0], list):
-                assert isinstance(preds[0][0], str)
-                preds = [' '.join(pred) for pred in preds]
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task), write_type=str)
+        required_cols = ['index', 'prediction']
+        if strict_glue_format:
+            cols_to_write = required_cols
+            quoting = QUOTE_NONE
+            log.info("Task '%s', split '%s': writing %s in "
+                     "strict GLUE format.", task_name, split_name, pred_file)
         else:
-            write_preds_to_file(preds, os.path.join(pred_dir, "%s.tsv" % task))
-    log.info("Wrote predictions to %s", pred_dir)
-    return
+            all_cols = set(preds_df.columns)
+            # make sure we write index and prediction as first columns,
+            # then all the other ones we can find.
+            cols_to_write = (required_cols +
+                             sorted(list(all_cols.difference(required_cols))))
+            quoting = QUOTE_MINIMAL
+        preds_df.to_csv(pred_file, sep="\t", index=False, float_format="%.3f",
+                        quoting=quoting, columns=cols_to_write)
+
+    if len(preds_df) == 0:  # catch empty lists
+        log.warning("Task '%s': predictions are empty!", task_name)
+        return
+
+    def _add_default_column(df, name: str, val):
+        """ Ensure column exists and missing values = val. """
+        if not name in df:
+            df[name] = val
+        df[name].fillna(value=val, inplace=True)
+
+    preds_df = preds_df.copy()
+    _add_default_column(preds_df, 'idx', -1)
+    _add_default_column(preds_df, 'sent1_str', "")
+    _add_default_column(preds_df, 'sent2_str', "")
+    _add_default_column(preds_df, 'labels', -1)
+    # Rename columns to match output headers.
+    preds_df.rename({"idx": "index",
+                     "preds": "prediction",
+                     "sent1_str": "sentence_1",
+                     "sent2_str": "sentence_2",
+                     "labels": "true_label"},
+                    axis='columns', inplace=True)
+
+    if task_name == 'mnli' and split_name == 'test':  # 9796 + 9847 + 1104 = 20747
+        assert len(preds_df) == 20747, "Missing predictions for MNLI!"
+        log.info("There are %d examples in MNLI, 20747 were expected",
+                 len(preds_df))
+        pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
+        _apply_pred_map(preds_df, pred_map, 'prediction')
+        _write_preds_with_pd(preds_df.iloc[:9796],
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('mnli-m', pred_dir, split_name, strict_glue_format)))
+        _write_preds_with_pd(preds_df.iloc[9796:19643],
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('mnli-mm', pred_dir, split_name, strict_glue_format)))
+        _write_preds_with_pd(preds_df.iloc[19643:],
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('diagnostic', pred_dir, split_name, strict_glue_format)))
+
+    elif task_name in ['rte', 'qnli']:
+        pred_map = {0: 'not_entailment', 1: 'entailment'}
+        _apply_pred_map(preds_df, pred_map, 'prediction')
+        _write_preds_with_pd(preds_df,
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format))
+    elif task_name in ['sts-b']:
+        preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
+                                  for pred in preds_df['prediction']]
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+            write_type=float)
+    elif task_name in ['wmt']:
+        # convert each prediction to a single string if we find a list of tokens
+        if isinstance(preds_df['prediction'][0], list):
+            assert isinstance(preds_df['prediction'][0][0], str)
+            preds_df['prediction'] = [' '.join(pred)
+                                      for pred in preds_df['prediction']]
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+            write_type=str)
+    else:
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
+             write_type=int)
+
+    log.info("Wrote predictions for task: %s", task_name)
 
 
 def write_results(results, results_file, run_name):
     ''' Aggregate results by appending results to results_file '''
+    all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for
+                                 metric, score in results.items()])
     with open(results_file, 'a') as results_fh:
-        all_metrics_str = ', '.join(['%s: %.3f' % (metric, score) for
-                                     metric, score in results.items()])
         results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
     log.info(all_metrics_str)
