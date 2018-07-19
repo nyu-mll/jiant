@@ -43,7 +43,7 @@ for path in sys.argv[1:]:
         train_m = re.match('Training model on tasks: (.*)', line)
         if train_m:
           found_tasks = train_m.groups()[0]
-          if train_tasks is not None:
+          if train_tasks is not None and found_tasks != train_tasks:
             print("WARNING: Multiple starts to training tasks. Skipping %s and using last."%(found_tasks))
           train_tasks = found_tasks
 
