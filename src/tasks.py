@@ -1021,7 +1021,7 @@ class MultiNLITask(PairClassificationTask):
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
-    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
+    def __init__(self, path, max_seq_len, name="nli-prob", probe_path=None):
         super(NLITypeProbingTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         #  self.use_classifier = 'mnli'  # use .conf params instead
@@ -1032,7 +1032,7 @@ class NLITypeProbingTask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
+        val_data = load_tsv(os.path.join(path, "word_permute_both.dev"), max_seq_len,
                         s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
