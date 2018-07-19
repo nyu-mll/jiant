@@ -6,8 +6,6 @@ import math
 import numpy as np
 import sys
 
-print("Warning -- this is a preliminary version of BLEU scoring, it has not been verified!")
-
 
 def bleu_stats(hypothesis, reference):
     """Compute statistics for BLEU."""

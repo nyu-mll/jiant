@@ -464,6 +464,7 @@ class SequenceGenerationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
+        log.warning("preliminary version of BLEU scoring, it has not been verified!")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
