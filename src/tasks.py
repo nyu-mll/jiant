@@ -64,34 +64,38 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
-
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - pair_input (int)
         - tok2idx (dict)
-
     Returns:
     '''
-    def _make_instance(input1, input2, labels, idx=None):
+    def _make_instance(input1, input2, labels, idx):
         d = {}
         d["input1"] = _sentence_to_text_field(input1, indexers)
+        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if input2:
             d["input2"] = _sentence_to_text_field(input2, indexers)
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
         else:
             d["labels"] = NumericField(labels)
 
-        if idx is not None:  # numbered test examples
-            d["idx"] = LabelField(idx, label_namespace="idxs",
-                                  skip_indexing=True)
+        d["idx"] = LabelField(idx, label_namespace="idxs",
+                              skip_indexing=True)
+
         return Instance(d)
 
+    split = list(split)
     if not is_pair:  # dummy iterator for input2
-        split = list(split)
         split[1] = itertools.repeat(None)
-    # Map over columns: input2, (input2), labels, (idx)
+    if len(split) < 4:  # counting iterator for idx
+        assert len(split) == 3
+        split.append(itertools.count())
+
+    # Map over columns: input2, (input2), labels, idx
     instances = map(_make_instance, *split)
     #  return list(instances)
     return instances  # lazy iterator
@@ -249,6 +253,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# PTB constituency membership.
+@register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
+               label_file="labels.txt", files_by_split={
+                    'train': "ptb_train.json" + _tokenizer_suffix,
+                    'val': "ptb_dev.json" + _tokenizer_suffix,
+                    'test': "ptb_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
 
@@ -264,7 +275,8 @@ class EdgeProbingTask(Task):
                  name: str,
                  label_file: str=None,
                  files_by_split: Dict[str,str]=None,
-                 is_symmetric: bool=False):
+                 is_symmetric: bool=False,
+                 single_sided: bool=False):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
@@ -281,6 +293,7 @@ class EdgeProbingTask(Task):
             is_symmetric: if true, span1 and span2 are assumed to be the same
                 type and share parameters. Otherwise, we learn a separate
                 projection layer and attention weight for each.
+            single_sided: if true, only use span1.
         """
         super().__init__(name)
 
@@ -293,6 +306,7 @@ class EdgeProbingTask(Task):
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
+        self.single_sided = single_sided
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
@@ -352,18 +366,21 @@ class EdgeProbingTask(Task):
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
         text = _sentence_to_text_field(tokens, indexers)
-        span1s = [t['span1'] for t in record['targets']]
-        span2s = [t['span2'] for t in record['targets']]
-        # Always use multilabel targets, so be sure each label is a list.
-        labels = [utils.wrap_singleton_string(t['label'])
-                  for t in record['targets']]
 
         d = {}
         d['input1'] = text
+
+        span1s = [t['span1'] for t in record['targets']]
         d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
                                  for s in span1s])
-        d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
-                                 for s in span2s])
+        if not self.single_sided:
+            span2s = [t['span2'] for t in record['targets']]
+            d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
+                                     for s in span2s])
+
+        # Always use multilabel targets, so be sure each label is a list.
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
         d['labels'] = ListField([MultiLabelField(label_set,
                                      label_namespace=self._label_namespace,
                                      skip_indexing=False)
@@ -389,14 +406,14 @@ class EdgeProbingTask(Task):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        mcc = self.mcc_scorer.get_metric(reset)
-        acc = self.acc_scorer.get_metric(reset)
+        metrics = {}
+        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
+        metrics['acc'] = self.acc_scorer.get_metric(reset)
         precision, recall, f1 = self.f1_scorer.get_metric(reset)
-        return {'mcc': mcc,
-                'accuracy': acc,
-                'f1': f1,
-                'precision': precision,
-                'recall': recall}
+        metrics['precision'] = precision
+        metrics['recall'] = recall
+        metrics['f1'] = f1
+        return metrics
 
 
 class PairRegressionTask(RegressionTask):
@@ -779,6 +796,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -792,6 +810,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
