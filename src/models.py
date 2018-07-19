@@ -474,7 +474,7 @@ class MultiTaskModel(nn.Module):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
             # Just get embeddings and invoke task module.
-            sent_embs, sent_mask = self.sent_encoder(batch['input1'])
+            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
             module = getattr(self, "%s_mdl" % task.name)
             out = module.forward(batch, sent_embs, sent_mask,
                                  task, predict)
