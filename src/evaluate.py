@@ -110,6 +110,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         elif isinstance(task, tasks_module.EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
+            log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task_name)
