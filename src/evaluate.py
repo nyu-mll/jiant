@@ -108,6 +108,25 @@ def write_preds(all_preds, pred_dir, split_name, strict_glue_format=False) -> No
     return
 
 
+GLUE_NAME_MAP = {'cola': 'CoLA',
+                 'diagnostic': 'AX',
+                 'mnli-mm': 'MNLI-mm',
+                 'mnli-m': 'MNLI-m',
+                 'mrpc': 'MRPC',
+                 'qnli': 'QNLI',
+                 'qqp': 'QQP',
+                 'rte': 'RTE',
+                 'sst': 'SST-2',
+                 'sts-b': 'STS-B',
+                 'wnli': 'WNLI'}
+
+def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
+    if strict_glue_format and task_name in GLUE_NAME_MAP:
+        file = GLUE_NAME_MAP[task_name] + ".tsv"
+    else:
+        file = "%s_%s.tsv" % (task_name, split_name)
+    return os.path.join(pred_dir, file)
+
 def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                      pred_dir: str, split_name: str,
                      strict_glue_format: bool=False):
@@ -132,6 +151,7 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     def _write_preds_with_pd(preds_df: pd.DataFrame, pred_file: str,
                              write_type=int):
         """ Write TSV file in GLUE format, using Pandas. """
+
         required_cols = ['index', 'prediction']
         if strict_glue_format:
             cols_to_write = required_cols
@@ -151,9 +171,6 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     if len(preds_df) == 0:  # catch empty lists
         log.warning("Task '%s': predictions are empty!", task_name)
         return
-
-    default_pred_file = os.path.join(pred_dir,
-                                     "%s__%s.tsv" % (task_name, split_name))
 
     def _add_default_column(df, name: str, val):
         """ Ensure column exists and missing values = val. """
@@ -181,29 +198,39 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
         _write_preds_with_pd(preds_df.iloc[:9796],
-                             os.path.join(pred_dir, "%s-m.tsv" % task_name))
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('mnli-m', pred_dir, split_name, strict_glue_format)))
         _write_preds_with_pd(preds_df.iloc[9796:19643],
-                             os.path.join(pred_dir, "%s-mm.tsv" % task_name))
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('mnli-mm', pred_dir, split_name, strict_glue_format)))
         _write_preds_with_pd(preds_df.iloc[19643:],
-                             os.path.join(pred_dir, "diagnostic.tsv"))
+                             os.path.join(pred_dir, 
+                             _get_pred_filename('diagnostic', pred_dir, split_name, strict_glue_format)))
 
     elif task_name in ['rte', 'qnli']:
         pred_map = {0: 'not_entailment', 1: 'entailment'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
-        _write_preds_with_pd(preds_df, default_pred_file)
+        _write_preds_with_pd(preds_df,
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format))
     elif task_name in ['sts-b']:
         preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
                                   for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df, default_pred_file, write_type=float)
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+            write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
         if isinstance(preds_df['prediction'][0], list):
             assert isinstance(preds_df['prediction'][0][0], str)
             preds_df['prediction'] = [' '.join(pred)
                                       for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df, default_pred_file, write_type=str)
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+            write_type=str)
     else:
-        _write_preds_with_pd(preds_df, default_pred_file, write_type=int)
+        _write_preds_with_pd(preds_df, 
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
+             write_type=int)
 
     log.info("Wrote predictions for task: %s", task_name)
 
