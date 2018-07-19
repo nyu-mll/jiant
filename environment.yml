@@ -8,8 +8,10 @@ dependencies:
     - numpy=1.14.5
     - nltk=3.2.5
     - scikit-learn=0.19.1
+    - pandas=0.23.0
     - pip:
         - allennlp==0.5.1
         - ipdb
         - tensorboard
         - tensorboardX==1.2
+        - sendgrid==5.4.1
