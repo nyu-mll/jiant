@@ -35,7 +35,8 @@ for path in sys.argv[1:]:
           found_eval = True
         else:
           if found_eval:
-            assert (results_line is None), "Multiple GLUE evals found."
+            if results_line is not None:
+              print("WARNING: Multiple GLUE evals found. Skipping all but last.")
             results_line = line.strip()
           found_eval = False
 
@@ -43,7 +44,7 @@ for path in sys.argv[1:]:
         if train_m:
           found_tasks = train_m.groups()[0]
           if train_tasks is not None:
-            assert (found_tasks == train_tasks), "Multiple starts to training tasks, but tasks don't match: %s vs. %s."%(train_tasks, found_tasks)
+            print("WARNING: Multiple starts to training tasks. Skipping %s and using last."%(found_tasks))
           train_tasks = found_tasks
 
         do_m = re.match('"dropout": (.*),', line)
