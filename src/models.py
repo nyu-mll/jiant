@@ -278,11 +278,8 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (MTTask, Reddit_MTTask)):
-<<<<<<< HEAD
-=======
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
->>>>>>> master
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
@@ -606,21 +603,15 @@ class MultiTaskModel(nn.Module):
         sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
         sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
         cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1))
-        labels = torch.eye(len(cos_simi))
+        cos_simi_backward = cos_simi.transpose(0,1)
+        labels = torch.arange(len(cos_simi), dtype=torch.long).cuda()
 
-        # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
-        cos_simi_pos = torch.diag(cos_simi)
-        cos_simi_neg = torch.diag(cos_simi, diagonal=1)
-        cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
-        labels_pos = torch.diag(labels)
-        labels_neg = torch.diag(labels, diagonal=1)
-        labels = torch.cat([labels_pos, labels_neg], dim=0)
-        labels = labels.cuda()
-        #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
-        total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
-        out['loss'] = total_loss
+        total_loss = torch.nn.CrossEntropyLoss()(cos_simi, labels) # one-way loss
+        total_loss_rev = torch.nn.CrossEntropyLoss()(cos_simi_backward, labels) #reverse 
+        out['loss'] = total_loss + total_loss_rev
 
-        pred = F.sigmoid(cos_simi).round()
+        pred = torch.nn.Softmax(dim=1)(cos_simi)
+        pred = torch.argmax(pred, dim=1)
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
         out["n_exs"] = len(labels)
