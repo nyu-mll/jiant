@@ -655,7 +655,7 @@ class RedditTask(RankingTask):
         with open(path, 'r') as txt_fh:
             for row in txt_fh:
                 row = row.strip().split('\t')
-                if not row[2] or not row[3]:
+                if len(row) < 4 or not row[2] or not row[3]:
                     continue
                 sent1 = process_sentence(row[2], self.max_seq_len)
                 sent2 = process_sentence(row[3], self.max_seq_len)
@@ -686,9 +686,9 @@ class RedditTask(RankingTask):
         def _make_instance(input1, input2, labels):
             d = {}
             d["input1"] = _sentence_to_text_field(input1, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d["input2"] = _sentence_to_text_field(input2, indexers)
-            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
             return Instance(d)
