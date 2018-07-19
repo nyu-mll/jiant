@@ -114,12 +114,16 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
 
-    Use strict_glue_format to guarantee compatibility with
+    Use strict_glue_format to guarantee compatibility with GLUE website.
 
     Args:
-        - all_preds (Dict[str:list]): dictionary mapping task names to predictions.
-            Assumes that predictions are sorted (if necessary).
-            For tasks with sentence predictions, we assume they've been mapped back to strings.
+        task_name: task name
+        preds_df: predictions DataFrame for a single task, as returned by
+            evaluate().
+        pred_dir: directory to write predictions
+        split_name: name of this split ('train', 'val', or 'test')
+        strict_glue_format: if true, writes format compatible with GLUE
+            website.
     '''
     def _apply_pred_map(preds_df, pred_map, key='prediction'):
         """ Apply preds_map, in-place. """
