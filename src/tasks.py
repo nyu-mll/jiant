@@ -560,7 +560,7 @@ class RedditTask(RankingTask):
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = True
+        self.val_metric_decreases = False
 
     def load_data(self, path, max_seq_len):
         ''' Load data '''
