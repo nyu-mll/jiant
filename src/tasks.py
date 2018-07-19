@@ -223,14 +223,6 @@ class PairClassificationTask(ClassificationTask):
         return process_single_pair_task_split(split, indexers, is_pair=True)
 
 
-class NLIProbingTask(PairClassificationTask):
-    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
-
-    def __init__(self, name, n_classes):
-        super().__init__(name)
-        #  self.use_classifier = 'mnli'  # use .conf params instead
-
-
 # Make sure we load the properly-retokenized versions.
 _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
@@ -1588,6 +1580,29 @@ class VAETask(SequenceGenerationTask):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
+
+class MNLIVisTask(PairClassificationTask):
+    ''' Task class for NLI Recast Data'''
+
+    def __init__(self, path, max_seq_len, name="mnli-train-vis"):
+        super(MNLIVisTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'mnli_train_spatial_subset.txt'), max_seq_len,
+                        s1_idx=8, s2_idx=9, skip_rows=0, targ_idx=11, targ_map=targ_map)
+        val_data = load_tsv(os.path.join(path, 'mnli_train_spatial_subset.txt'), max_seq_len,
+                        s1_idx=8, s2_idx=9, skip_rows=0, targ_idx=11, targ_map=targ_map)
+        te_data = load_tsv(os.path.join(path, 'mnli_train_spatial_subset.txt'), max_seq_len,
+                        s1_idx=8, s2_idx=9, skip_rows=0, targ_idx=11, targ_map=targ_map)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading visual mnli probing data.")
 
 class RecastNLITask(PairClassificationTask):
     ''' Task class for NLI Recast Data'''
