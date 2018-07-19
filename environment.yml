@@ -9,6 +9,7 @@ dependencies:
     - nltk=3.2.5
     - scikit-learn=0.19.1
     - pandas=0.23.0
+    - pytz=2017.3
     - pip:
         - allennlp==0.5.1
         - ipdb
