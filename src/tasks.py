@@ -64,34 +64,38 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
-
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - pair_input (int)
         - tok2idx (dict)
-
     Returns:
     '''
-    def _make_instance(input1, input2, labels, idx=None):
+    def _make_instance(input1, input2, labels, idx):
         d = {}
         d["input1"] = _sentence_to_text_field(input1, indexers)
+        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if input2:
             d["input2"] = _sentence_to_text_field(input2, indexers)
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
         else:
             d["labels"] = NumericField(labels)
 
-        if idx is not None:  # numbered test examples
-            d["idx"] = LabelField(idx, label_namespace="idxs",
-                                  skip_indexing=True)
+        d["idx"] = LabelField(idx, label_namespace="idxs",
+                              skip_indexing=True)
+
         return Instance(d)
 
+    split = list(split)
     if not is_pair:  # dummy iterator for input2
-        split = list(split)
         split[1] = itertools.repeat(None)
-    # Map over columns: input2, (input2), labels, (idx)
+    if len(split) < 4:  # counting iterator for idx
+        assert len(split) == 3
+        split.append(itertools.count())
+
+    # Map over columns: input2, (input2), labels, idx
     instances = map(_make_instance, *split)
     #  return list(instances)
     return instances  # lazy iterator
@@ -787,6 +791,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -800,6 +805,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             s2_idx=9,
             targ_idx=11,
             targ_map=targ_map,
+            idx_idx=0,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
