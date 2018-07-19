@@ -40,12 +40,15 @@ from .tasks import \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask, MNLIVisTask 
-
-from .tasks import POSTaggingTask, CCGTaggingTask 
+    MultiNLITravelTask, MultiNLITelephoneTask
+from .tasks import POSTaggingTask, CCGTaggingTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
+
+# Edge probing suite.
+ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
+                  'edges-dpr']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
@@ -346,16 +349,25 @@ def build_tasks(args):
     eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                  fraction=args.training_data_fraction)
+        # When using training_data_fraction, we need modified iterators for use
+        # only on training datasets at pretraining time.
+        if args.training_data_fraction < 1 and task.name in train_task_names:
+            log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=args.training_data_fraction)
+        else:
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=1.0)
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+
         if task.name in train_task_names:
             train_tasks.append(task)
         if task.name in eval_task_names:
             if args.training_data_fraction < 1 and task.name in train_task_names:
-                # Rebuild the iterator so you see the full dataset in the eval training
+                # Rebuild the iterator so we see the full dataset in the eval training
                 # phase.
+                log.info("Creating un-trimmed eval training version of " + task.name + " train.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
@@ -375,6 +387,8 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
+        elif task_name == 'edges-all':
+            task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue
         else:
@@ -403,7 +417,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task_cls = task_info[0]
             kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob':  # this task takes additional kw
+            if name == 'nli-prob' or name=='nli-alt':  # this task takes additional kw
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path

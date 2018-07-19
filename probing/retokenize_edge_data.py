@@ -21,14 +21,12 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 from src import utils
 from src import retokenize
 
-def retokenize_record(record, inplace=True):
-    """Retokenize edge probing examples.
+def retokenize_record(record):
+    """Retokenize edge probing examples. Modifies in-place.
 
     This can be slow, so recommended to use as a pre-processing step.
     See retokenize_edge_data.py.
     """
-    if not inplace:
-        record = copy.deepcopy(record)
     text = record['text']
     moses_tokens = utils.TOKENIZER.tokenize(text)
     cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
@@ -60,11 +58,6 @@ def main(args):
         retokenize_file(fname)
 
 if __name__ == '__main__':
-    try:
-        main(sys.argv[1:])
-    except BaseException:
-        # Make sure we log the trace for any crashes before exiting.
-        log.exception("Fatal error in main():")
-        sys.exit(1)
+    main(sys.argv[1:])
     sys.exit(0)
 
