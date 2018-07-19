@@ -386,7 +386,7 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
-        if task_name == 'edges-all':
+        elif task_name == 'edges-all':
             task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue
