@@ -370,12 +370,15 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
-    def make_instance(self, record, indexers) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
         text = _sentence_to_text_field(tokens, indexers)
 
         d = {}
+        d["idx"] = LabelField(idx, label_namespace="idxs",
+                              skip_indexing=True)
+
         d['input1'] = text
 
         span1s = [t['span1'] for t in record['targets']]
@@ -397,8 +400,8 @@ class EdgeProbingTask(Task):
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        _map_fn = lambda r: self.make_instance(r, indexers)
-        return map(_map_fn, records)
+        _map_fn = lambda r, idx: self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
 
     def get_all_labels(self) -> List[str]:
         return self.all_labels
