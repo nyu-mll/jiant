@@ -52,7 +52,7 @@ ALL_NLI_PROBING_TASKS = ['nli-prob']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr']
+                  'edges-dpr', 'edges-coref-ontonotes']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
