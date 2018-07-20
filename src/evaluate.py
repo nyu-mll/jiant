@@ -104,7 +104,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         # Tasks that use _write_glue_preds:
         glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS 
                             + preprocess.ALL_GLUE_TASKS + ['wmt'])
-        if task_name in glue_style_tasks:
+        if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (strict_glue_format and task.name in preprocess.ALL_GLUE_TASKS)
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
@@ -116,7 +116,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         else:
             log.warning("Task '%s' not supported by write_preds().",
-                        task_name)
+                        task.name)
             continue
     log.info("Wrote all preds for split '%s' to %s", split_name, pred_dir)
     return

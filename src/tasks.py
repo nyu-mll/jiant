@@ -404,8 +404,7 @@ class EdgeProbingTask(Task):
         text = _sentence_to_text_field(tokens, indexers)
 
         d = {}
-        d["idx"] = LabelField(idx, label_namespace="idxs",
-                              skip_indexing=True)
+        d["idx"] = MetadataField(idx)
 
         d['input1'] = text
 
