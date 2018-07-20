@@ -1344,8 +1344,9 @@ class DisSentTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, prefix, name="dissent"):
         super().__init__(name, 8)  # 8 classes, for 8 discource markers
         self.max_seq_len = max_seq_len
-        self.files_by_split = {split: os.path.join(path, "%s.%s" % (prefix, split))\
-                               for split in ["train", "valid", "test"]}
+        self.files_by_split = {"train": os.path.join(path, "%s.train" % prefix),
+                               "val": os.path.join(path, "%s.valid" % prefix),
+                               "test": os.path.join(path, "%s.test" % prefix)}
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
@@ -1363,7 +1364,7 @@ class DisSentTask(PairClassificationTask):
                     continue
                 sent1 = process_sentence(row[0], self.max_seq_len)
                 sent2 = process_sentence(row[1], self.max_seq_len)
-                targ = row[2]
+                targ = int(row[2])
                 yield (sent1, sent2, targ)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
