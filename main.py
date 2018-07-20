@@ -96,9 +96,6 @@ def main(cl_arguments):
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
-    args['local_log_path'] = args.get('local_log_path',
-                                      os.path.join(args.run_dir,
-                                                   args.log_file))
     log.getLogger().addHandler(log.FileHandler(args.local_log_path))
 
     if cl_args.remote_log:
