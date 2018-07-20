@@ -101,7 +101,10 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             continue
 
         preds_df = all_preds[task.name]
-        if task.name in preprocess.ALL_GLUE_TASKS + ['wmt']:
+        # Tasks that use _write_glue_preds:
+        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS 
+                            + preprocess.ALL_GLUE_TASKS + ['wmt'])
+        if task_name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (strict_glue_format and task.name in preprocess.ALL_GLUE_TASKS)
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
