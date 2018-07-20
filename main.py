@@ -26,8 +26,8 @@ from src.utils import assert_for_log, maybe_make_dir, load_model_state
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
-from src.evaluate import evaluate, write_results, write_preds
 from src.tasks import NLITypeProbingTask
+from src import evaluate
 
 
 def handle_arguments(cl_arguments):
@@ -108,7 +108,11 @@ def main(cl_arguments):
         from src import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
-        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
+        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args,
+                                             timestamp=True)
+
+    if EMAIL_NOTIFIER:
+        EMAIL_NOTIFIER(body="", prefix="Starting")
 
     _try_logging_git_info()
 
@@ -143,10 +147,9 @@ def main(cl_arguments):
                         any(train_task.val_metric_decreases for train_task in train_tasks)),
                    "Attempting multitask training with a mix of increasing and decreasing metrics. "
                    "This is not currently supported. (We haven't set it up yet.)")
-
-    tasks = train_tasks + eval_tasks
+    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x:x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-
+    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
@@ -233,9 +236,16 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.train_for_eval:
+        # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
+        elmo_scalars = [(n, p) for n, p in model.named_parameters() if
+                        "scalar_mix" in n and "scalar_mix_0" not in n]
+        # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
+        assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
+                       "Error: ELMo scalars loaded and will be updated in train_for_eval but "
+                       "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in eval_tasks:
             pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
@@ -256,16 +266,24 @@ def main(cl_arguments):
     if args.do_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, _ = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-        if args.write_preds:
-            if len(tasks) == 1 and isinstance(tasks[0], NLITypeProbingTask):
-                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "val")
-            else:
-                _, te_preds = evaluate(model, tasks, args.batch_size, args.cuda, "test")
-            write_preds(te_preds, args.run_dir)
+        val_results, val_preds = evaluate.evaluate(model, tasks,
+                                                   args.batch_size,
+                                                   args.cuda, "val")
 
-        write_results(val_results, os.path.join(args.exp_dir, "results.tsv"),
-                      args.run_dir.split('/')[-1])
+        splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
+        if 'val' in splits_to_write:
+            evaluate.write_preds(val_preds, args.run_dir, 'val',
+                                 strict_glue_format=args.write_strict_glue_format)
+        if 'test' in splits_to_write:
+            _, te_preds = evaluate.evaluate(model, tasks,
+                                            args.batch_size, args.cuda, "test")
+            evaluate.write_preds(te_preds, args.run_dir, 'test',
+                                 strict_glue_format=args.write_strict_glue_format)
+        run_name = args.get("run_name", os.path.basename(args.run_dir))
+
+        results_tsv = os.path.join(args.exp_dir, "results.tsv")
+        log.info("Writing results for split 'val' to %s", results_tsv)
+        evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
     log.info("Done!")
 

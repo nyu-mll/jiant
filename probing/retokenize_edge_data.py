@@ -58,11 +58,6 @@ def main(args):
         retokenize_file(fname)
 
 if __name__ == '__main__':
-    try:
-        main(sys.argv[1:])
-    except BaseException:
-        # Make sure we log the trace for any crashes before exiting.
-        log.exception("Fatal error in main():")
-        sys.exit(1)
+    main(sys.argv[1:])
     sys.exit(0)
 
