@@ -46,6 +46,10 @@ from .tasks import POSTaggingTask, CCGTaggingTask
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
+# people are mostly using nli-prob for now, but we will change to
+# using individual tasks later, so better to have as a list
+ALL_NLI_PROBING_TASKS = ['nli-prob']
+
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
                   'edges-dpr']
