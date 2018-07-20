@@ -44,6 +44,21 @@ from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
 from .cnns.inception import inception_v3
 
+class PassThroughPhraseLayer(nn.Module):
+    ''' Dummy phrase layer that just passes-through representations from a
+    lower level. Exists solely for API compatibility. '''
+    def __init__(self, input_dim: int):
+        super(PassThroughPhraseLayer, self).__init__()
+        self.input_dim = input_dim
+
+    def get_input_dim(self):
+        return self.input_dim
+
+    def get_output_dim(self):
+        return self.input_dim
+
+    def forward(self, embs, mask):
+        return embs
 
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
@@ -97,7 +112,7 @@ class SentenceEncoder(Model):
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
         task_sent_embs = self._dropout(task_sent_embs)
-        
+
         # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
@@ -501,7 +516,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
                    num_attention_heads=num_attention_heads,
                    use_positional_encoding=use_positional_encoding,
                    dropout_prob=dropout_prob)
-    
+
 
 class ElmoCharacterEncoder(torch.nn.Module):
     """
