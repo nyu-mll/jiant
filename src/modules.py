@@ -67,7 +67,6 @@ class SentenceEncoder(Model):
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
                  sep_embs_for_skip=False, initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
-        dropout = float(dropout)
 
         if text_field_embedder is None:
             self._text_field_embedder = lambda x: x
