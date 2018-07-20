@@ -328,10 +328,11 @@ def build_tasks(args):
                                             relative_path, log_prefix=log_prefix)
             if force_reindex or not cache_found:
                 # Re-index from scratch.
-                if cache_found:
-                    os.remove(os.path.join(args.exp_dir, relative_path))
                 record_file = _get_serialized_record_path(task.name, split,
                                                           preproc_dir)
+                if os.path.exists(record_file) and os.path.islink(record_file):
+                    os.remove(record_file)
+
                 _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
