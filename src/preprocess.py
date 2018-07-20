@@ -82,7 +82,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit': (RedditTask, 'Reddit/'),
              'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
@@ -276,8 +276,6 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
-    utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
