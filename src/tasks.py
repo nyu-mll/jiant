@@ -633,8 +633,6 @@ class RedditTask(RankingTask):
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
         super(RedditTask, self).__init__(name, 2)
-        #self.load_data(path, max_seq_len)
-        #self.sentences = self.train_data_text[0] + self.train_data_text[1]  + self.val_data_text[0] + self.val_data_text[1]
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -1339,143 +1337,102 @@ class WikiInsertionsTask(MTTask):
         ppl = self.scorer1.get_metric(reset)
         return {'perplexity': ppl}
 
-class DisSentBWBSingleTask(PairClassificationTask):
+
+class DisSentTask(PairClassificationTask):
+    ''' Task class for DisSent, dataset agnostic '''
+
+    def __init__(self, path, max_seq_len, prefix, name="dissent"):
+        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        self.max_seq_len = max_seq_len
+        self.files_by_split = {"train": os.path.join(path, "%s.train" % prefix),
+                               "val": os.path.join(path, "%s.valid" % prefix),
+                               "test": os.path.join(path, "%s.test" % prefix)}
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
+
+    def load_data(self, path):
+        ''' Load data '''
+        with open(path, 'r') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) != 3 or not (row[0] and row[1] and row[2]):
+                    continue
+                sent1 = process_sentence(row[0], self.max_seq_len)
+                sent2 = process_sentence(row[1], self.max_seq_len)
+                targ = int(row[2])
+                yield (sent1, sent2, targ)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for sent1, sent2, _ in self.load_data(path):
+                yield sent1
+                yield sent2
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in open(split_path))
+        self.example_counts = example_counts
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _make_instance(input1, input2, labels):
+            d = {}
+            d["input1"] = _sentence_to_text_field(input1, indexers)
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+            return Instance(d)
+
+        for sent1, sent2, trg in split:
+            yield _make_instance(sent1, sent2, trg)
+
+
+class DisSentBWBSingleTask(DisSentTask):
     ''' Task class for DisSent with the Billion Word Benchmark'''
-
     def __init__(self, path, max_seq_len, name="dissentbwb"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "bwb.dissent.single_sent.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'bwb.dissent.single_sent.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        super().__init__(path, max_seq_len, "bwb.dissent.single_sent", name)
 
 
-class DisSentWikiSingleTask(PairClassificationTask):
+class DisSentWikiSingleTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-
     def __init__(self, path, max_seq_len, name="dissentwiki"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "wikitext.dissent.single_sent.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.single_sent.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
-class DisSentWikiFullTask(PairClassificationTask):
+class DisSentWikiFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-
     def __init__(self, path, max_seq_len, name="dissentwikifull"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
+        super().__init__(path, max_seq_len, "wikitext.dissent", name)
 
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "wikitext.dissent.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
 
-class DisSentWikiBigFullTask(PairClassificationTask):
+class DisSentWikiBigFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-
     def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "wikitext.dissent.big.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "wikitext.dissent.big.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'wikitext.dissent.big.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
 
 
-
-
-class DisSentWikiBigTask(PairClassificationTask):
+class DisSentWikiBigTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-
     def __init__(self, path, max_seq_len, name="dissentbig"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "big.dissent.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "big.dissent.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'big.dissent.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        super().__init__(path, max_seq_len, "big.dissent", name)
 
 
-class DisSentWikiHugeTask(PairClassificationTask):
+class DisSentWikiHugeTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-
     def __init__(self, path, max_seq_len, name="dissenthuge"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "huge.train"), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        val_data = load_tsv(os.path.join(path, "huge.valid"), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
-        te_data = load_tsv(os.path.join(path, 'huge.test'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading DisSent data.")
+        super().__init__(path, max_seq_len, "huge", name)
 
 
 class WeakGroundedTask(PairClassificationTask):
