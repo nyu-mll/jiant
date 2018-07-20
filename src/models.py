@@ -304,7 +304,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, SequenceGenerationTask):
     elif isinstance(task, (MTTask, Reddit_MTTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
