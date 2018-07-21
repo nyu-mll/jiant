@@ -46,10 +46,12 @@ from .tasks import STSBTask, CoLATask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask
 from .tasks import EdgeProbingTask
+
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
-    SingleClassifier, PairClassifier, CNNEncoder
+    SingleClassifier, PairClassifier, CNNEncoder, \
+    PassThroughPhraseLayer
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -110,8 +112,21 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
+    elif args.sent_enc == 'pass':
+        # Expose word representation layer (GloVe, ELMo, etc.) directly.
+        assert_for_log(not args.skip_embs, f"skip_embs not supported with "
+                                            "'{args.sent_enc}' encoder")
+        #  phrase_layer = lambda embs, mask: embs  # pass-through
+        phrase_layer = PassThroughPhraseLayer(rnn_params['input_size'])
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       phrase_layer, skip_embs=False,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       cove_layer=cove_emb)
+        d_sent = d_emb
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
+
     d_sent += args.skip_embs * d_emb
 
     # Build model and classifiers

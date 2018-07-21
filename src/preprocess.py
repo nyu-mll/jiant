@@ -46,9 +46,13 @@ from .tasks import POSTaggingTask, CCGTaggingTask
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli']
 
+# people are mostly using nli-prob for now, but we will change to
+# using individual tasks later, so better to have as a list
+ALL_NLI_PROBING_TASKS = ['nli-prob']
+
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr']
+                  'edges-dpr', 'edges-coref-ontonotes']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
@@ -82,7 +86,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit': (RedditTask, 'Reddit/'),
              'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
@@ -276,8 +280,6 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
-    utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
@@ -332,6 +334,9 @@ def build_tasks(args):
                 # Re-index from scratch.
                 record_file = _get_serialized_record_path(task.name, split,
                                                           preproc_dir)
+                if os.path.exists(record_file) and os.path.islink(record_file):
+                    os.remove(record_file)
+
                 _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
@@ -386,7 +391,7 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
-        if task_name == 'edges-all':
+        elif task_name == 'edges-all':
             task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue

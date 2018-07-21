@@ -30,6 +30,7 @@ pushd "${PWD%jiant*}jiant"
 # Load defaults.conf for any missing params, then model param file,
 # then eval_existing.conf to override paths & eval config.
 # Finally, apply custom overrides defined above.
+# To add email notifications, add an additional argument:
+#   --notify my_email@example.com
 python main.py -c config/defaults.conf ${PARAM_FILE} config/edgeprobe_existing.conf \
-    # --notify iftenney@gmail.com \
     -o "${OVERRIDES}" --remote_log

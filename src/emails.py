@@ -6,6 +6,8 @@ import sys
 import os
 import socket
 import logging as log
+import datetime
+import pytz
 
 import sendgrid
 from sendgrid.helpers import mail
@@ -23,6 +25,8 @@ if SENDGRID_API_KEY is None:
 DEFAULT_SENDER=mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com",
                           name="JSALT Sentence Representative")
 
+LOCALTZ = pytz.timezone("US/Eastern")
+
 def make_message(to: str, subject: str, body: str) -> mail.Mail:
     to_email = mail.Email(to)
     content = mail.Content("text/plain", body)
@@ -35,7 +39,7 @@ def send_message(message: mail.Mail):
 
 ##
 # Implementation-specific logic.
-def get_notifier(to: str, args):
+def get_notifier(to: str, args, timestamp=True):
     """ Get a notification handler to call on exit.
 
     Args:
@@ -55,6 +59,10 @@ def get_notifier(to: str, args):
         subject = subj_tmpl.format(prefix=prefix, host=hostname,
                                    exp_name=args.exp_name,
                                    run_name=args.run_name)
+        if timestamp:
+            now = datetime.datetime.now(LOCALTZ)
+            now = now.strftime("%Y-%m-%d %H:%M:%S")
+            subject += f" ({now:s} {LOCALTZ.zone:s})"
         body += "\n\n Experiment log: {:s}".format(args.local_log_path)
         try:
             from src import gcp
