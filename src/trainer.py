@@ -339,9 +339,10 @@ class SamplingMultiTaskTrainer():
                 checkpoint_pattern = os.path.join(
                     self._serialization_dir, "*_{}_*.th".format(phase))
                 assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
-                               "There are existing checkpoints here which will be overwritten. "
+                               "There are existing checkpoints in %s which will be overwritten. "
                                "Use load_model = 1 to load the checkpoints instead. "
-                               "If you don't want them, delete them or change your experiment name.")
+                               "If you don't want them, delete them or change your experiment name." %
+                               self._serialization_dir)
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
