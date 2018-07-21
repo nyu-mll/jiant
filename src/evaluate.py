@@ -94,7 +94,7 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
 def write_preds(all_preds, pred_dir, split_name, strict_glue_format=False) -> None:
     for task_name, preds_df in all_preds.items():
-        if task_name in preprocess.ALL_GLUE_TASKS + ['wmt']:
+        if task_name in preprocess.ALL_NLI_PROBING_TASKS + preprocess.ALL_GLUE_TASKS + ['wmt']:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (strict_glue_format and task_name in preprocess.ALL_GLUE_TASKS)
             write_glue_preds(task_name, preds_df, pred_dir, split_name,
