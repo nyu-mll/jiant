@@ -85,8 +85,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
-    if sum([isinstance(task, LanguageModelingTask) for task in tasks]):
-        assert_for_log(args.sent_enc == 'rnn', "Only RNNLM supported!")
+    if sum([isinstance(task, LanguageModelingTask) for task in tasks]) or \
+            args.sent_enc == 'bilm':
+        assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
         if args.elmo:
             assert_for_log(args.elmo_chars_only, "LM with full ELMo not supported")
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
