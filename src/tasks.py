@@ -1188,7 +1188,9 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                                          skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idx",
                                          skip_indexing=True)
-            d['sent1str'] = MetadataField(" ".join(input1[1:-1]))
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+
 
             # adds keys to dict "d" for every possible type in the column
             create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
