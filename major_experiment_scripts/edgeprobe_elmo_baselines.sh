@@ -5,7 +5,7 @@
 # we do this as a series of sequential runs, with one task per run.
 
 function run_exp() {
-    OVERRIDES="exp_name=edgeprobe-bare-chars, run_name=$1"
+    OVERRIDES="exp_name=edgeprobe-bare-chars2, run_name=$1"
     OVERRIDES+=", train_tasks=$1"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
