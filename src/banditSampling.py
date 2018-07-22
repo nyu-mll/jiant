@@ -19,7 +19,11 @@ class Bandit():
         # constant step-size for update
         self.stepSize = stepSize
         # intialize action value: optimistic if large value
-        self.Q = np.array([float(initialQ)] * self.k)
+        #self.Q = np.array([float(initialQ)] * self.k)
+        if isinstance(initialQ,int) or isinstance(initialQ,float):
+            self.Q = np.array([float(initialQ)] * self.k)
+        elif isinstance(initialQ,list) and len(initialQ) == selk.k:
+            self.Q = np.array(initialQ)
 
         # method specific param
         self.explore_method = explore_method
