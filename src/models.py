@@ -97,8 +97,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
+        log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
+        log.info("Using BoW architecture for shared encoder!")
         d_sent = d_emb
     elif args.sent_enc == 'rnn':
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
@@ -107,12 +109,14 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        dropout=args.dropout, sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
         d_sent = 2 * args.d_hid
+        log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
+        log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == 'pass':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(not args.skip_embs, f"skip_embs not supported with "
@@ -125,6 +129,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
         d_sent = d_emb
+        log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
 
