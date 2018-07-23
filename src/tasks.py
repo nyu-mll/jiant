@@ -1313,6 +1313,7 @@ class MTTask(SequenceGenerationTask):
             unk_ratio_macroavg = self.scorer3.get_metric(reset)
         except BaseException:
             bleu_score = 0
+            unk_ratio_macroavg = 0
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 

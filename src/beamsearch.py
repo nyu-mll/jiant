@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 from . import bleu_scoring
+import numpy as np
 
 BEAM_SIZE = 5
 
