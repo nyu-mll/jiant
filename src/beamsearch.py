@@ -251,7 +251,6 @@ def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_voc
 
 
 def compute_bleu(hyps, scores, relevant_targets):
-    # masking is handled by hardcoded check for zeros.
     bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
     return bleu_score
 
@@ -261,6 +260,7 @@ def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
     hyps, scores = beam_search(decoder, encoder_outputs, encoder_outputs_mask)
 
     # important - preprocess targets for relevant targets
+    # masking is handled by hardcoded check for zeros.
     relevant_targets = [[int(wordidx.item()) for i, wordidx in enumerate(target) if wordidx != 0 and i > 0] for target in targets]
 
     bleu_score = compute_bleu(hyps, scores, relevant_targets)
