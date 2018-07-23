@@ -5,8 +5,8 @@
 # we do this as a series of sequential runs, with one task per run.
 
 function run_exp() {
-    OVERRIDES="exp_name=elmo-chars-$1, run_name=run"
-    OVERRIDES+=", train_tasks=$1"
+    OVERRIDES="exp_name=elmo-full-$1, run_name=run"
+    OVERRIDES+=", train_tasks=$1, elmo_chars_only=0"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
         --remote_log --notify iftenney@gmail.com
