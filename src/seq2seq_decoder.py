@@ -190,6 +190,8 @@ class Seq2SeqDecoder(Model):
             # Fixme
 
             # important - need to use zero-masking instead of -inf for attention
+            # I've checked that doing this doesn't significantly increase time
+            # per batch, but should consider only doing once
             encoder_outputs.data.masked_fill_(
                 1 - encoder_outputs_mask.byte().data, 0.0)
 

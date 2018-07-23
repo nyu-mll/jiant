@@ -479,8 +479,13 @@ class SamplingMultiTaskTrainer():
 
                 # Validate
                 log.info("Validating...")
+                preds_file_path_dict = {task.name: os.path.join(
+                    self._serialization_dir,
+                    "preds_{}{}_{}_epoch_{}.txt".format(
+                        time.time(), task.name, phase, epoch))
+                }
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
+                    epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -536,7 +541,7 @@ class SamplingMultiTaskTrainer():
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
+    def _validate(self, epoch, tasks, batch_size, preds_file_path_dict, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -550,6 +555,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks:
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
+            task.preds_file_path = preds_file_path_dict[task.name]
 
             if self._val_data_limit >= 0:
                 max_data_points = min(task.n_val_examples, self._val_data_limit)
