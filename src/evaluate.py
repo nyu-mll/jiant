@@ -80,17 +80,17 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         all_metrics["macro_avg"] += all_metrics[task.val_metric]
         n_examples_overall += n_examples
 
+        if not task_preds:
+            log.warning("Task %s: has no predictions!", task.name)
+            continue
+
         # Combine task_preds from each batch to a single DataFrame.
-        if task_preds:
-            task_preds = pd.concat(task_preds, ignore_index=True)
-
-
-            # Store predictions, sorting by index if given.
-            if 'idx' in task_preds.columns:
-                log.info("Task '%s': sorting predictions by 'idx'", task.name)
-                task_preds.sort_values(by=['idx'], inplace=True)
-
-            all_preds[task.name] = task_preds
+        task_preds = pd.concat(task_preds, ignore_index=True)
+        # Store predictions, sorting by index if given.
+        if 'idx' in task_preds.columns:
+            log.info("Task '%s': sorting predictions by 'idx'", task.name)
+            task_preds.sort_values(by=['idx'], inplace=True)
+        all_preds[task.name] = task_preds
 
     all_metrics["micro_avg"] /= n_examples_overall
     all_metrics["macro_avg"] /= len(tasks)
