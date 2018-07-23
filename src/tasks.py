@@ -538,7 +538,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
-                if toks == '':
+                if not toks:
                     continue
                 # hard code to fix unk symbol
                 # why do we need to do this twice?
