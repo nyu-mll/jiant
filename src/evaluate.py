@@ -2,16 +2,16 @@
 import os
 import logging as log
 
+import json
 import pandas as pd
 from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
 from allennlp.data.iterators import BasicIterator
-from . import tasks
+from . import tasks as tasks_module
 from . import preprocess
-from .tasks import RegressionTask, STSBTask, JOCITask
 
-from typing import List, Sequence, Tuple, Dict
+from typing import List, Sequence, Iterable, Tuple, Dict
 
 def _coerce_list(preds) -> List:
     if isinstance(preds, torch.Tensor):
@@ -27,7 +27,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
     else:
         return write_preds_arg.split(",")
 
-def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
+def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
     FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
@@ -92,17 +92,31 @@ def evaluate(model, tasks: Sequence[tasks.Task], batch_size: int,
 
     return all_metrics, all_preds
 
-def write_preds(all_preds, pred_dir, split_name, strict_glue_format=False) -> None:
-    for task_name, preds_df in all_preds.items():
-        if task_name in preprocess.ALL_NLI_PROBING_TASKS + preprocess.ALL_GLUE_TASKS + ['wmt']:
+def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_name,
+                strict_glue_format=False) -> None:
+    for task in tasks:
+        if not task.name in all_preds:
+            log.warning("Task '%s': missing predictions for split '%s'",
+                        task.name, split_name)
+            continue
+
+        preds_df = all_preds[task.name]
+        # Tasks that use _write_glue_preds:
+        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS 
+                            + preprocess.ALL_GLUE_TASKS + ['wmt'])
+        if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
-            strict = (strict_glue_format and task_name in preprocess.ALL_GLUE_TASKS)
-            write_glue_preds(task_name, preds_df, pred_dir, split_name,
+            strict = (strict_glue_format and task.name in preprocess.ALL_GLUE_TASKS)
+            _write_glue_preds(task.name, preds_df, pred_dir, split_name,
                              strict_glue_format=strict)
-            log.info("Task '%s': Wrote predictions to %s", task_name, pred_dir)
+            log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
+        elif isinstance(task, tasks_module.EdgeProbingTask):
+            # Edge probing tasks, have structured output.
+            _write_edge_preds(task, preds_df, pred_dir, split_name)
+            log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         else:
             log.warning("Task '%s' not supported by write_preds().",
-                        task_name)
+                        task.name)
             continue
     log.info("Wrote all preds for split '%s' to %s", split_name, pred_dir)
     return
@@ -127,9 +141,43 @@ def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
 
-def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
-                     pred_dir: str, split_name: str,
-                     strict_glue_format: bool=False):
+def _write_edge_preds(task: tasks_module.EdgeProbingTask,
+                      preds_df: pd.DataFrame,
+                      pred_dir: str, split_name: str,
+                      join_with_input: bool=True):
+    ''' Write predictions for edge probing task.
+
+    This reads the task data and joins with predictions,
+    taking the 'idx' field to represent the line number in the (preprocessed)
+    task data file.
+
+    Predictions are saved as JSON with one record per line.
+    '''
+    preds_file = os.path.join(pred_dir, f"{task.name}_{split_name}.json")
+    # Each row of 'preds' is a NumPy object, need to convert to list for
+    # serialization.
+    preds_df = preds_df.copy()
+    preds_df['preds'] = [a.tolist() for a in preds_df['preds']]
+    if join_with_input:
+        preds_df.set_index(['idx'], inplace=True)
+        # Load input data and join by row index.
+        log.info("Task '%s': joining predictions with input split '%s'",
+                 task.name, split_name)
+        records = task.get_split_text(split_name)
+        # TODO: update this with more prediction types, when available.
+        records = (task.merge_preds(r, {'proba': preds_df.at[i, 'preds']})
+                   for i, r in enumerate(records))
+    else:
+        records = (row.to_dict() for _, row in preds_df.iterrows())
+
+    with open(preds_file, 'w') as fd:
+        for record in records:
+            fd.write(json.dumps(record))
+            fd.write("\n")
+
+def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
+                      pred_dir: str, split_name: str,
+                      strict_glue_format: bool=False):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
 
@@ -198,13 +246,13 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
         _write_preds_with_pd(preds_df.iloc[:9796],
-                             os.path.join(pred_dir, 
+                             os.path.join(pred_dir,
                              _get_pred_filename('mnli-m', pred_dir, split_name, strict_glue_format)))
         _write_preds_with_pd(preds_df.iloc[9796:19643],
-                             os.path.join(pred_dir, 
+                             os.path.join(pred_dir,
                              _get_pred_filename('mnli-mm', pred_dir, split_name, strict_glue_format)))
         _write_preds_with_pd(preds_df.iloc[19643:],
-                             os.path.join(pred_dir, 
+                             os.path.join(pred_dir,
                              _get_pred_filename('diagnostic', pred_dir, split_name, strict_glue_format)))
 
     elif task_name in ['rte', 'qnli']:
@@ -215,8 +263,8 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
     elif task_name in ['sts-b']:
         preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
                                   for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df, 
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+        _write_preds_with_pd(preds_df,
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
             write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
@@ -224,11 +272,11 @@ def write_glue_preds(task_name: str, preds_df: pd.DataFrame,
             assert isinstance(preds_df['prediction'][0][0], str)
             preds_df['prediction'] = [' '.join(pred)
                                       for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df, 
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format), 
+        _write_preds_with_pd(preds_df,
+            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
             write_type=str)
     else:
-        _write_preds_with_pd(preds_df, 
+        _write_preds_with_pd(preds_df,
             _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
              write_type=int)
 

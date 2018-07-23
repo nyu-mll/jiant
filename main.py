@@ -269,12 +269,12 @@ def main(cl_arguments):
 
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
-            evaluate.write_preds(val_preds, args.run_dir, 'val',
+            evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
                                  strict_glue_format=args.write_strict_glue_format)
         if 'test' in splits_to_write:
             _, te_preds = evaluate.evaluate(model, tasks,
                                             args.batch_size, args.cuda, "test")
-            evaluate.write_preds(te_preds, args.run_dir, 'test',
+            evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)
         run_name = args.get("run_name", os.path.basename(args.run_dir))
 
