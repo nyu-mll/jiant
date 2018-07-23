@@ -5,13 +5,16 @@ import torch.nn.functional as F
 
 from . import bleu_scoring
 
-BEAM_SIZE = 3
+BEAM_SIZE = 5
 
 
 """Beam search implementation in PyTorch."""
 # Takes care of beams, back pointers, and scores.
 # Code borrowed from PyTorch OpenNMT example
 # https://github.com/pytorch/examples/blob/master/OpenNMT/onmt/Beam.py
+
+def _get_word(decoder_vocab, word_idx):
+    return decoder_vocab._index_to_token['targets'][word_idx]
 
 
 class Beam(object):
@@ -120,7 +123,7 @@ class Beam(object):
             ys = self.nextYs[t]
             for i in range(self.size):
                 word_idx = int(ys[i].item())
-                word = decoder_vocab._index_to_token['targets'][word_idx]
+                word = _get_word(decoder_vocab, word_idx)
                 sentences[i].append(word)
         for sent in sentences:
             print(' '.join(sent))
@@ -238,16 +241,29 @@ def beam_search(decoder, encoder_outputs, encoder_outputs_mask, beam_size=BEAM_S
     return allHyp, allScores
 
 
-def compute_bleu(hyps, scores, targets):
-    # masking is handled by hardcoded check for zeros.
-    relevant_targets = targets['words'].cpu().numpy()[1:]
+def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_vocab):
+    with open(preds_file_path, "a") as f:
+        for i in range(len(hyps)):
+            hyp, target = hyps[i], relevant_targets[i]
+            hyp_sentence = ' '.join([_get_word(decoder_vocab, i) for i in hyp])
+            target_sentence = ' '.join([_get_word(decoder_vocab, i) for i in target])
+            f.write('{}\t{}\n'.format(hyp_sentence, target_sentence))
+
+
+def compute_bleu(hyps, scores, relevant_targets):
     bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
     return bleu_score
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
-                              targets):
+                              targets, preds_file_path):
     hyps, scores = beam_search(decoder, encoder_outputs, encoder_outputs_mask)
-    bleu_score = compute_bleu(hyps, scores, targets)
+
+    # important - preprocess targets for relevant targets
+    # masking is handled by hardcoded check for zeros.
+    relevant_targets = [[int(wordidx.item()) for i, wordidx in enumerate(target) if wordidx != 0 and i > 0] for target in targets]
+
+    bleu_score = compute_bleu(hyps, scores, relevant_targets)
+    write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_vocab=decoder.vocab)
 
     return bleu_score
