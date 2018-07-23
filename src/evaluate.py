@@ -72,9 +72,6 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
 
-        # Combine task_preds from each batch to a single DataFrame.
-        task_preds = pd.concat(task_preds, ignore_index=True)
-
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
@@ -83,11 +80,16 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         all_metrics["macro_avg"] += all_metrics[task.val_metric]
         n_examples_overall += n_examples
 
+        if not task_preds:
+            log.warning("Task %s: has no predictions!", task.name)
+            continue
+
+        # Combine task_preds from each batch to a single DataFrame.
+        task_preds = pd.concat(task_preds, ignore_index=True)
         # Store predictions, sorting by index if given.
         if 'idx' in task_preds.columns:
             log.info("Task '%s': sorting predictions by 'idx'", task.name)
             task_preds.sort_values(by=['idx'], inplace=True)
-
         all_preds[task.name] = task_preds
 
     all_metrics["micro_avg"] /= n_examples_overall
@@ -105,7 +107,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS 
+        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS
                             + preprocess.ALL_GLUE_TASKS + ['wmt'])
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
