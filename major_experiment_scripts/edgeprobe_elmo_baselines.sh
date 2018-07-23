@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Script to run edge probing on ELMo-only.
-# Because we learn a single set of ELMo weights during initial training,
-# we do this as a series of sequential runs, with one task per run.
+# Script to run edge probing on ELMo char-CNN only.
+# Run as separate experiments, since datasets are disjoint anyway.
 
 function run_exp() {
     OVERRIDES="exp_name=elmo-chars-$1, run_name=run"
