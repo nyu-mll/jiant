@@ -562,7 +562,6 @@ class LanguageModelingTask(SequenceGenerationTask):
             d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targ_indexer)
             d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targ_indexer)
             return Instance(d)
-
         for sent in split:
             yield _make_instance(sent)
 
@@ -1278,7 +1277,6 @@ class MTTask(SequenceGenerationTask):
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
-
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a machine translation split '''
