@@ -227,4 +227,4 @@ class EdgeClassifierModule(nn.Module):
                                           labels.float())
         else:
             raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % loss_type)
+                             "for edge probing." % self.loss_type)

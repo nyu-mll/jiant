@@ -268,12 +268,34 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
-# PTB constituency membership.
+# Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
+# updated. Don't trust results yet.
+@register_task('edges-dep-labeling', rel_path='edges/dep',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.json" + _tokenizer_suffix,
+                    'val': "dev.json" + _tokenizer_suffix,
+                    'test': "test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+# PTB constituency membership / labeling.
 @register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
                label_file="labels.txt", files_by_split={
                     'train': "ptb_train.json" + _tokenizer_suffix,
                     'val': "ptb_dev.json" + _tokenizer_suffix,
                     'test': "ptb_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# CCG tagging (tokens only).
+@register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
+               label_file="labels.txt", files_by_split={
+                    'train': "ccg.tag.train" + _tokenizer_suffix,
+                    'val': "ccg.tag.dev" + _tokenizer_suffix,
+                    'test': "ccg.tag.test" + _tokenizer_suffix,
+               }, single_sided=True)
+# CCG parsing (constituent labeling).
+@register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
+               label_file="labels.txt", files_by_split={
+                    'train': "ccg.parse.train" + _tokenizer_suffix,
+                    'val': "ccg.parse.dev" + _tokenizer_suffix,
+                    'test': "ccg.parse.test" + _tokenizer_suffix,
                }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
@@ -352,6 +374,27 @@ class EdgeProbingTask(Task):
                  total_ctr - skip_ctr, skip_ctr, total_ctr,
                  filename)
 
+    @staticmethod
+    def merge_preds(record: Dict, preds: Dict) -> Dict:
+        """ Merge predictions into record, in-place.
+
+        List-valued predictions should align to targets,
+        and are attached to the corresponding target entry.
+
+        Non-list predictions are attached to the top-level record.
+        """
+        record['preds'] = {}
+        for target in record['targets']:
+            target['preds'] = {}
+        for key, val in preds.items():
+            if isinstance(val, list):
+                assert len(val) == len(record['targets'])
+                for i, target in enumerate(record['targets']):
+                    target['preds'][key] = val[i]
+            # non-list predictions, attach to top-level preds
+            record['preds'][key] = val
+        return record
+
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
@@ -377,12 +420,14 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
-    def make_instance(self, record, indexers) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
         text = _sentence_to_text_field(tokens, indexers)
 
         d = {}
+        d["idx"] = MetadataField(idx)
+
         d['input1'] = text
 
         span1s = [t['span1'] for t in record['targets']]
@@ -404,8 +449,8 @@ class EdgeProbingTask(Task):
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        _map_fn = lambda r: self.make_instance(r, indexers)
-        return map(_map_fn, records)
+        _map_fn = lambda r, idx: self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
 
     def get_all_labels(self) -> List[str]:
         return self.all_labels
@@ -538,7 +583,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
-                if toks == '':
+                if not toks:
                     continue
                 # hard code to fix unk symbol
                 # why do we need to do this twice?
