@@ -15,7 +15,7 @@ for path in sys.argv[1:]:
             if not "mnli-diagnostic" in line:
                 continue
 
-            name, results = line.strip().split('  ', 1)
+            name, results = line.strip().split(None, 1)
 
             coarse = {}
             fine = defaultdict(dict)
