@@ -35,10 +35,12 @@ for path in sys.argv[1:]:
           found_eval = True
         else:
           if found_eval:
-            if results_line is not None:
-              print("WARNING: Multiple GLUE evals found. Skipping all but last.")
-            results_line = line.strip()
-          found_eval = False
+            # safe number to prune out lines we don't care about. we usually have at least 10 fields in those lines
+            if len(line.strip().split()) > 10:
+              if results_line is not None:
+                print("WARNING: Multiple GLUE evals found. Skipping all but last.")
+              results_line = line.strip()
+              found_eval = False
 
         train_m = re.match('Training model on tasks: (.*)', line)
         if train_m:
