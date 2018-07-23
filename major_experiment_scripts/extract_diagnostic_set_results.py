@@ -27,11 +27,11 @@ for path in sys.argv[1:]:
                 if 'accuracy' in dataset or 'mnli-diagnostic' not in dataset or dataset == "":
                     continue
                 subset = dataset.split('mnli-diagnostic_', 1)[1]
-                broad_subset, narrow_subset = subset.split('__')
-                if narrow_subset == 'missing': # TODO: This may get renamed at some point.
-                    coarse[broad_subset] = value
+                sp = subset.split('__')
+                if len(sp) == 1 or sp[1] == 'missing':
+                    coarse[sp[0]] = value
                 else:
-                    fine[broad_subset][narrow_subset] = value
+                    fine[sp[0]][sp[1]] = value
 
             for key in sorted(coarse.keys()):
                 outstr += "%.02f\t" % coarse[key]
