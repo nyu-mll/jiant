@@ -680,7 +680,6 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
-
 class RedditTask(RankingTask):
     ''' Task class for Reddit data.  '''
 
@@ -754,10 +753,10 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-class RedditTask_Softmax(RedditTask):
-    ''' Task class for Reddit with softmax '''
-    def __init__(self, path, max_seq_len, name="reddit_softmax"):     
-        super(RedditTask_Softmax, self).__init__(name, 2)
+#class RedditTask_Softmax(RedditTask):
+#    ''' Task class for Reddit with softmax '''
+#    def __init__(self, path, max_seq_len, name="reddit_softmax"):     
+#        super(RedditTask_Softmax, self).__init__(name, 2)
 
 
 class Reddit_MTTask(SequenceGenerationTask):

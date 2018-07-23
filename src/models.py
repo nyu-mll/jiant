@@ -655,8 +655,8 @@ class MultiTaskModel(nn.Module):
         sent2_rep = sent_dnn(sent2_rep_pool)
 
         #  if 1:
-        sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
-        sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
+        #sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
+        #sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
         cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1))
         if task.name == 'reddit_softmax':
             cos_simi_backward = cos_simi.transpose(0,1)
@@ -668,7 +668,7 @@ class MultiTaskModel(nn.Module):
     
             pred = torch.nn.Softmax(dim=1)(cos_simi)
             pred = torch.argmax(pred, dim=1)
-        if task.name == 'reddit':
+        else:
             labels = torch.eye(len(cos_simi))
 
             # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
