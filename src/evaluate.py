@@ -243,6 +243,9 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
         assert len(preds_df) == 20747, "Missing predictions for MNLI!"
         log.info("There are %d examples in MNLI, 20747 were expected",
                  len(preds_df))
+        # Sort back to original order. Otherwise mismatched, matched and diagnostic would be mixed together
+        # Mismatched, matched and diagnostic all begin by index 0.
+        preds_df.sort_index(inplace=True)
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
         _write_preds_with_pd(preds_df.iloc[:9796],

@@ -1122,7 +1122,6 @@ class MultiNLITask(PairClassificationTask):
                                       s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
-        te_data[3] = list(range(len(te_data[3])))
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
