@@ -1261,6 +1261,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         collected_metrics["accuracy"] = 0
         def collect_metrics(ix_to_tag_dict, tag_group):
             for index, tag in ix_to_tag_dict.items():
+                # Index 0 is used for missing data, here it will be used for score of the whole category.
                 if index == 0:
                     scorer_str = 'scorer__%s' % tag_group
                     scorer = getattr(self, scorer_str)
