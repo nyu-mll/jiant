@@ -18,7 +18,7 @@ try:
 except BaseException:
     log.info("fastText library not found!")
 
-import _pickle as pkl
+import _pickle as pkl  #  :(
 
 from . import serialize
 from . import utils
@@ -40,15 +40,20 @@ from .tasks import \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask
-from .tasks import POSTaggingTask, CCGTaggingTask
+    MultiNLITravelTask, MultiNLITelephoneTask 
+from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli']
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
+
+# people are mostly using nli-prob for now, but we will change to
+# using individual tasks later, so better to have as a list
+ALL_NLI_PROBING_TASKS = ['nli-prob']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr']
+                  'edges-dpr', 'edges-coref-ontonotes',
+                  'edges-dep-labeling']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
@@ -63,6 +68,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
              'mnli-telephone': (MultiNLITelephoneTask, 'MNLI/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
+             'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
@@ -82,7 +88,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'reddit': (RedditTask, 'reddit_comments_replies/'),
+             'reddit': (RedditTask, 'Reddit/'),
              'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
@@ -276,8 +282,6 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    prepreproc_dir = os.path.join(args.exp_dir, "prepreproc")
-    utils.maybe_make_dir(prepreproc_dir)
     tasks, train_task_names, eval_task_names = \
         get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
@@ -332,6 +336,9 @@ def build_tasks(args):
                 # Re-index from scratch.
                 record_file = _get_serialized_record_path(task.name, split,
                                                           preproc_dir)
+                if os.path.exists(record_file) and os.path.islink(record_file):
+                    os.remove(record_file)
+
                 _index_split(task, split, indexers, vocab, record_file)
 
         # Delete in-memory data - we'll lazy-load from disk later.
@@ -396,6 +403,8 @@ def parse_task_list_arg(task_list):
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
+    # We don't want mnli-diagnostic in train_task_names
+    train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
     task_names = sorted(set(train_task_names + eval_task_names))
     assert path is not None
