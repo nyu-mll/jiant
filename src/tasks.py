@@ -17,6 +17,7 @@ import logging as log
 import json
 import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
+import torch
 
 from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
@@ -33,7 +34,7 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate
+from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, **kw):
@@ -1127,6 +1128,151 @@ class MultiNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
+
+
+class MultiNLIDiagnosticTask(PairClassificationTask):
+    ''' Task class for diagnostic on MNLI'''
+
+    def __init__(self, path, max_seq_len, name="mnli-diagnostics"):
+        super().__init__(name, 3) # 3 is number of labels
+        self.load_data_and_create_scorers(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+        
+    def load_data_and_create_scorers(self, path, max_seq_len):
+        '''load MNLI diagnostics data. The tags for every column are loaded as indices.
+        They will be converted to bools in preprocess_split function'''
+
+        # Will create separate scorer for every tag. tag_group is the name of the column it will have its own scorer
+        def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
+            setattr(self, 'scorer__%s' % tag_group, scorer(arg_to_scorer))
+            for index, tag in tags_dict.items():
+                # 0 is missing value
+                if index == 0:
+                    continue
+                setattr(self,"scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+
+
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        diag_data_dic = load_diagnostic_tsv(os.path.join(path, 'diagnostic-full.tsv'), max_seq_len,
+                           s1_idx=5, s2_idx=6, targ_idx=7, targ_map=targ_map, skip_rows=1)
+
+        self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
+        self.ix_to_pr_ar_str_dic = diag_data_dic['ix_to_pr_ar_str_dic']
+        self.ix_to_logic_dic = diag_data_dic['ix_to_logic_dic']
+        self.ix_to_knowledge_dic = diag_data_dic['ix_to_knowledge_dic']
+
+        # Train, val, test splits are same. We only need one split but the code probably expects all splits to be present.
+        self.train_data_text = (diag_data_dic['sents1'], diag_data_dic['sents2'], \
+                                diag_data_dic['targs'], diag_data_dic['idxs'], diag_data_dic['lex_sem'], \
+                                diag_data_dic['pr_ar_str'], diag_data_dic['logic'], \
+                                diag_data_dic['knowledge'])
+        self.val_data_text = self.train_data_text
+        self.test_data_text = self.train_data_text
+        log.info("\tFinished loading MNLI Diagnostics data.")
+
+        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, 'lex_sem')
+        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, 'logic')
+        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, 'knowledge')
+        log.info("\tFinished creating Score functions for Diagnostics data.")
+
+
+
+    def update_diagnostic_metrics(self, logits, labels, batch):
+        # Updates scorer for every tag in a given column (tag_group) and also the the scorer for the column itself.
+        def update_scores_for_tag_group(ix_to_tags_dic,tag_group):
+            for ix, tag in ix_to_tags_dic.items():
+                # 0 is for missing tag so here we use it to update scorer for the column itself (tag_group).
+                if ix == 0:
+                    # This will contain 1s on positions where at least one of the tags of this column is present.
+                    mask = batch[tag_group]
+                    scorer_str = "scorer__%s" % tag_group
+                # This branch will update scorers of individual tags in the column
+                else:
+                    # batch contains_field for every tag. It's either 0 or 1.
+                    mask = batch["%s__%s" % (tag_group, tag)]
+                    scorer_str = "scorer__%s__%s" % (tag_group, tag)
+
+                # This will take only values for which the tag is true.
+                indices_to_pull =  torch.nonzero(mask)
+                # No example in the batch is labeled with the tag.
+                if indices_to_pull.size()[0] == 0:
+                    continue
+                sub_labels = labels[indices_to_pull[:,0]]
+                sub_logits = logits[indices_to_pull[:,0]]
+                scorer = getattr(self, scorer_str)
+                scorer(sub_logits, sub_labels)
+            return
+
+        # Updates scorers for each tag.
+        update_scores_for_tag_group(self.ix_to_lex_sem_dic, 'lex_sem')
+        update_scores_for_tag_group(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        update_scores_for_tag_group(self.ix_to_logic_dic, 'logic')
+        update_scores_for_tag_group(self.ix_to_knowledge_dic, 'knowledge')
+
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+
+        def create_labels_from_tags(fields_dict,ix_to_tag_dict, tag_arr, tag_group):
+            # If there is something in this row then tag_group should be set to 1.
+            is_tag_group = 1 if len(tag_arr) != 0 else 0
+            fields_dict[tag_group] = LabelField(is_tag_group, label_namespace=tag_group,
+                                         skip_indexing=True)
+            # For every possible tag in the column set 1 if the tag is present for this example, 0 otherwise.
+            for ix,tag in ix_to_tag_dict.items():
+                if ix == 0:
+                    continue
+                is_present = 1 if ix in tag_arr else 0
+                fields_dict['%s__%s' % (tag_group, tag)] = LabelField(is_present, label_namespace= '%s__%s' % (tag_group, tag),
+                                         skip_indexing=True)
+            return
+
+        def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            d["input1"] = _sentence_to_text_field(input1, indexers)
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(label, label_namespace="labels",
+                                         skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idx",
+                                         skip_indexing=True)
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+
+
+            # adds keys to dict "d" for every possible type in the column
+            create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
+            create_labels_from_tags(d, self.ix_to_pr_ar_str_dic, pr_ar_str, 'pr_ar_str')
+            create_labels_from_tags(d, self.ix_to_logic_dic, logic, 'logic')
+            create_labels_from_tags(d, self.ix_to_knowledge_dic, knowledge, 'knowledge')
+
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {}
+        # We do not compute accuracy for this dataset but the eval function requires this key.
+        collected_metrics["accuracy"] = 0
+        def collect_metrics(ix_to_tag_dict, tag_group):
+            for index, tag in ix_to_tag_dict.items():
+                if index == 0:
+                    scorer_str = 'scorer__%s' % tag_group
+                else:
+                    scorer_str = 'scorer__%s__%s' % (tag_group, tag)
+                scorer = getattr(self, scorer_str)
+                collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+
+        collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
+        collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
+        collect_metrics(self.ix_to_logic_dic, 'logic')
+        collect_metrics(self.ix_to_knowledge_dic, 'knowledge')
+        return collected_metrics
 
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''

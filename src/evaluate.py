@@ -40,6 +40,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     all_preds = {}
     n_examples_overall = 0
     for task in tasks:
+        log.info("Evaluating on: %s", task.name)
         n_examples = 0
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
@@ -48,8 +49,10 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         for batch in generator:
 
             out = model.forward(task, batch, predict=True)
-            n_examples += out["n_exs"]
-
+            # We don't want mnli-diagnostic to affect the micro and macro average.
+            # Accuracy of mnli-diagnostic is hardcoded to 0.
+            if task.name != "mnli-diagnostic":
+                n_examples += out["n_exs"]
             # get predictions
             if 'preds' not in out:
                 continue
