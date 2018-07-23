@@ -245,6 +245,9 @@ def main(cl_arguments):
                        "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in eval_tasks:
             # Skip mnli-diagnostic
+            # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
+            # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
+            # "is_probing_task is global flag specific to a run, not to a task.
             if task.name == 'mnli-diagnostic':
                 continue
             pred_module = getattr(model, "%s_mdl" % task.name)
