@@ -241,6 +241,12 @@ def main(cl_arguments):
                        "Error: ELMo scalars loaded and will be updated in train_for_eval but "
                        "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in eval_tasks:
+            # Skip mnli-diagnostic
+            # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
+            # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
+            # "is_probing_task is global flag specific to a run, not to a task.
+            if task.name == 'mnli-diagnostic':
+                continue
             pred_module = getattr(model, "%s_mdl" % task.name)
             to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
