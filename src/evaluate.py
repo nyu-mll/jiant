@@ -70,7 +70,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         # for GLUE tasks, preds entries should be single scalars.
 
         # Combine task_preds from each batch to a single DataFrame.
-        task_preds = pd.concat(task_preds, ignore_index=True)
+        if task_preds:
+            task_preds = pd.concat(task_preds, ignore_index=True)
 
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
@@ -85,7 +86,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
             log.info("Task '%s': sorting predictions by 'idx'", task.name)
             task_preds.sort_values(by=['idx'], inplace=True)
 
-        all_preds[task.name] = task_preds
+        if task_preds:
+            all_preds[task.name] = task_preds
 
     all_metrics["micro_avg"] /= n_examples_overall
     all_metrics["macro_avg"] /= len(tasks)
@@ -102,7 +104,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS 
+        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS
                             + preprocess.ALL_GLUE_TASKS + ['wmt'])
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
