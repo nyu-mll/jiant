@@ -556,6 +556,7 @@ class SamplingMultiTaskTrainer():
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
             task.preds_file_path = preds_file_path_dict[task.name]
+            task.unk_ratio_validation = 0
 
             if self._val_data_limit >= 0:
                 max_data_points = min(task.n_val_examples, self._val_data_limit)
