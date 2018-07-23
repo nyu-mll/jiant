@@ -1139,6 +1139,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
+        
     def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data. The tags for every column are loaded as indices.
         They will be converted to bools in preprocess_split function'''

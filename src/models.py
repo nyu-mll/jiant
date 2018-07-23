@@ -162,7 +162,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     # Actually construct modules.
     for task in tasks_to_build:
         # If the name of the task is different than the classifier it should use then skip the module creation.
-        if task.name != (getattr(model,'%s_task_params' % task.name)).params['use_classifier']:
+        if task.name != model._get_task_params(task.name).get('use_classifier', task.name):
             continue
         build_module(task, model, d_sent, d_emb, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
