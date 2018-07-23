@@ -18,7 +18,7 @@ try:
 except BaseException:
     log.info("fastText library not found!")
 
-import _pickle as pkl
+import _pickle as pkl  #  :(
 
 from . import serialize
 from . import utils
@@ -52,7 +52,8 @@ ALL_NLI_PROBING_TASKS = ['nli-prob']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr', 'edges-coref-ontonotes']
+                  'edges-dpr', 'edges-coref-ontonotes',
+                  'edges-dep-labeling']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
