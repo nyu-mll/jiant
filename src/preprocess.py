@@ -106,6 +106,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
              'reddit_softmax': (RedditTask, 'Reddit_2008/')
              'reddit_3.4G': (RedditTask, 'Reddit_3.4G/')
+             'reddit_13G': (RedditTask, 'Reddit_13G/')  
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
