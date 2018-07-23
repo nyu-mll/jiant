@@ -1263,10 +1263,12 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             for index, tag in ix_to_tag_dict.items():
                 if index == 0:
                     scorer_str = 'scorer__%s' % tag_group
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics['%s' % (tag_group)] = scorer.get_metric(reset)
                 else:
                     scorer_str = 'scorer__%s__%s' % (tag_group, tag)
-                scorer = getattr(self, scorer_str)
-                collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
 
         collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
         collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
