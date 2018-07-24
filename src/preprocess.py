@@ -325,8 +325,8 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
-    if args.reload_indexing and not reindex_tasks:
-        log.warn("Flag reload_indexing was set, but no tasks are set to reindex (use args.reindex_tasks = \"task1,task2,...\"")
+    utils.assert_for_log(not (args.reload_indexing and not reindex_tasks),
+                         "Flag reload_indexing was set, but no tasks are set to reindex (use -o \"args.reindex_tasks = \"task1,task2,...\"\")")
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
