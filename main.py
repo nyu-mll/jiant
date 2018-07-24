@@ -269,16 +269,16 @@ def main(cl_arguments):
     if args.do_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, val_preds = evaluate.evaluate(model, tasks,
+        val_results, val_preds = evaluate.evaluate(model, eval_tasks,
                                                    args.batch_size,
                                                    args.cuda, "val")
 
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
-            evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
+            evaluate.write_preds(eval_tasks, val_preds, args.run_dir, 'val',
                                  strict_glue_format=args.write_strict_glue_format)
         if 'test' in splits_to_write:
-            _, te_preds = evaluate.evaluate(model, tasks,
+            _, te_preds = evaluate.evaluate(model, eval_tasks,
                                             args.batch_size, args.cuda, "test")
             evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)
