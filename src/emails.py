@@ -62,7 +62,7 @@ def get_notifier(to: str, args):
         # Add timestamp.
         now = datetime.datetime.now(LOCALTZ)
         now = now.strftime("%Y-%m-%d %H:%M:%S")
-        body = f"{now:s} {LOCALTZ.zone:s}\n" + body
+        body = f"{now:s} {LOCALTZ.zone:s}\n\n" + body
 
         # Add log info.
         body += "\n\n Experiment log: {:s}".format(args.local_log_path)
