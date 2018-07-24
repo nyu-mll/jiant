@@ -2,9 +2,67 @@
 import numpy as np
 from overrides import overrides
 from allennlp.training.metrics.metric import Metric
-from sklearn.metrics import matthews_corrcoef
+from sklearn.metrics import matthews_corrcoef, confusion_matrix
 from scipy.stats import pearsonr, spearmanr
 import torch
+
+@Metric.register("fastMatthews")
+class FastMatthews(Metric):
+    """Fast version of Matthews correlation.
+
+    Computes confusion matrix on each batch, and computes MCC from this when
+    get_metric() is called. Should match the numbers from the Correlation()
+    class, but will be much faster and use less memory on large datasets.
+    """
+    def __init__(self, n_classes=2):
+        assert n_classes >= 2
+        self.n_classes = n_classes
+        self.reset()
+
+    def __call__(self, predictions, labels):
+        # Convert from Tensor if necessary
+        if isinstance(predictions, torch.Tensor):
+            predictions = predictions.cpu().numpy()
+        if isinstance(labels, torch.Tensor):
+            labels = labels.cpu().numpy()
+
+        assert predictions.dtype in [np.int32, np.int64, int]
+        assert labels.dtype in [np.int32, np.int64, int]
+
+        C = confusion_matrix(labels.ravel(), predictions.ravel())
+        assert C.shape == (2,2)
+        self._C += C
+
+    def mcc_from_confmat(self, C):
+        # Code below from
+        # https://github.com/scikit-learn/scikit-learn/blob/ed5e127b/sklearn/metrics/classification.py#L460
+        t_sum = C.sum(axis=1, dtype=np.float64)
+        p_sum = C.sum(axis=0, dtype=np.float64)
+        n_correct = np.trace(C, dtype=np.float64)
+        n_samples = p_sum.sum()
+        cov_ytyp = n_correct * n_samples - np.dot(t_sum, p_sum)
+        cov_ypyp = n_samples ** 2 - np.dot(p_sum, p_sum)
+        cov_ytyt = n_samples ** 2 - np.dot(t_sum, t_sum)
+        mcc = cov_ytyp / np.sqrt(cov_ytyt * cov_ypyp)
+
+        if np.isnan(mcc):
+            return 0.
+        else:
+            return mcc
+
+    def get_metric(self, reset=False):
+        # Compute Matthews correlation from confusion matrix.
+        # see https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+        correlation = self.mcc_from_confmat(self._C)
+        if reset:
+            self.reset()
+        return correlation
+
+    @overrides
+    def reset(self):
+        self._C = np.zeros((self.n_classes, self.n_classes),
+                           dtype=np.int64)
+
 
 @Metric.register("correlation")
 class Correlation(Metric):

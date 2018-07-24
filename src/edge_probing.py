@@ -209,7 +209,7 @@ class EdgeClassifierModule(nn.Module):
         binary_preds = logits.ge(0).long()  # {0,1}
 
         # Matthews coefficient and accuracy computed on {0,1} labels.
-        task.mcc_scorer(binary_preds, labels)
+        task.mcc_scorer(binary_preds, labels.long())
         task.acc_scorer(binary_preds, labels.long())
 
         # F1Measure() expects [total_num_targets, n_classes, 2]

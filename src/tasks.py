@@ -23,7 +23,7 @@ from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
-from .allennlp_mods.correlation import Correlation
+from .allennlp_mods.correlation import Correlation, FastMatthews
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
@@ -354,10 +354,9 @@ class EdgeProbingTask(Task):
 
         # Scorers
         #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
-        self.mcc_scorer = Correlation("matthews")
+        self.mcc_scorer = FastMatthews()
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
-        #  self.val_metric = "%s_accuracy" % self.name
         self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
