@@ -259,11 +259,10 @@ def _build_embeddings(args, vocab, emb_file: str):
 def _build_vocab(args, tasks, vocab_path: str):
     ''' Build vocabulary from scratch, reading data from tasks. '''
     log.info("\tBuilding vocab from scratch")
-    ### FIXME MAGIC NUMBER
     max_v_sizes = {
         'word': args.max_word_v_size,
         'char': args.max_char_v_size,
-        'target': 20000, # TODO target max size
+        'target': args.max_targ_word_v_size
     }
     word2freq, char2freq, target2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
@@ -326,6 +325,8 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
+    utils.assert_for_log(not (args.reload_indexing and not reindex_tasks),
+                         "Flag reload_indexing was set, but no tasks are set to reindex (use -o \"args.reindex_tasks = \"task1,task2,...\"\")")
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
@@ -496,7 +497,7 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
     targets_by_freq.sort(key=lambda x: x[1], reverse=True)
     for target, _ in targets_by_freq[:max_v_sizes['target']]:
-        vocab.add_token_to_namespace(target, 'targets') # TODO namespace
+        vocab.add_token_to_namespace(target, 'targets')
     return vocab
 
 def add_task_label_vocab(vocab, task):
