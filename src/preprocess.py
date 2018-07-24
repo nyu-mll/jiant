@@ -40,7 +40,7 @@ from .tasks import \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask 
+    MultiNLITravelTask, MultiNLITelephoneTask
 from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -52,7 +52,8 @@ ALL_NLI_PROBING_TASKS = ['nli-prob']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr', 'edges-coref-ontonotes',
+                  'edges-dpr', 'edges-ner-conll2003',
+                  'edges-coref-ontonotes',
                   'edges-dep-labeling']
 
 # DEPRECATED: use @register_task in tasks.py instead.
