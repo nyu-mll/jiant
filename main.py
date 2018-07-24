@@ -105,8 +105,7 @@ def main(cl_arguments):
         from src import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
-        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args,
-                                             timestamp=True)
+        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
 
     if EMAIL_NOTIFIER:
         EMAIL_NOTIFIER(body="Starting run.", prefix="")
