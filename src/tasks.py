@@ -558,12 +558,14 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
-        self.max_seq_len = max_seq_len
+        self.max_seq_len = 100 #max_seq_len
+        self.min_seq_len = 10
         self.target_indexer = {"words": SingleIdTokenIndexer()}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
-
+        #log.info("USING MAX SEQ LEN %d", self.max_seq_len)
+        #log.info("USING MIN SEQ LEN %d", self.min_seq_len)
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -580,16 +582,18 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
+        unk_tok = '<unk>' # '@@UNKNOWN@@'
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
-                if not toks:
+                if not toks or len(toks) < self.min_seq_len:
                     continue
-                # hard code to fix unk symbol
-                # why do we need to do this twice?
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                # WikiText103 preprocesses unknowns as @@UNKNOWN@@
+                # which gets tokenized as '@', '@', 'UNKNOWN', ...
+                # We replace to avoid that
+                toks = toks.replace(unk_tok, 'UNKNOWN')
                 sent = process_sentence(toks, self.max_seq_len)
-                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                sent = [unk_tok if t == 'UNKNOWN' else t for t in sent]
                 yield sent
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -612,7 +616,6 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
-
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self.load_data(self.files_by_split[split])
@@ -1137,7 +1140,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        
+
     def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data. The tags for every column are loaded as indices.
         They will be converted to bools in preprocess_split function'''
