@@ -339,9 +339,10 @@ class SamplingMultiTaskTrainer():
                 checkpoint_pattern = os.path.join(
                     self._serialization_dir, "*_{}_*.th".format(phase))
                 assert_for_log(len(glob.glob(checkpoint_pattern)) == 0,
-                               "There are existing checkpoints here which will be overwritten. "
+                               "There are existing checkpoints in %s which will be overwritten. "
                                "Use load_model = 1 to load the checkpoints instead. "
-                               "If you don't want them, delete them or change your experiment name.")
+                               "If you don't want them, delete them or change your experiment name." %
+                               self._serialization_dir)
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
@@ -478,8 +479,12 @@ class SamplingMultiTaskTrainer():
 
                 # Validate
                 log.info("Validating...")
+                preds_file_path_dict = {task.name: os.path.join(
+                    self._serialization_dir,
+                    "preds_{}{}_{}_epoch_{}.txt".format(
+                        time.time(), task.name, phase, epoch)) for task in tasks}
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
+                    epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -535,7 +540,7 @@ class SamplingMultiTaskTrainer():
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
+    def _validate(self, epoch, tasks, batch_size, preds_file_path_dict, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -549,6 +554,7 @@ class SamplingMultiTaskTrainer():
         for task in tasks:
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
+            task.preds_file_path = preds_file_path_dict[task.name]
 
             if self._val_data_limit >= 0:
                 max_data_points = min(task.n_val_examples, self._val_data_limit)

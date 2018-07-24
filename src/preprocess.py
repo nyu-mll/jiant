@@ -18,7 +18,7 @@ try:
 except BaseException:
     log.info("fastText library not found!")
 
-import _pickle as pkl
+import _pickle as pkl  #  :(
 
 from . import serialize
 from . import utils
@@ -41,10 +41,10 @@ from .tasks import \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
     MultiNLITravelTask, MultiNLITelephoneTask
-from .tasks import POSTaggingTask, CCGTaggingTask
+from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli']
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
@@ -52,7 +52,9 @@ ALL_NLI_PROBING_TASKS = ['nli-prob']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr', 'edges-coref-ontonotes']
+                  'edges-dpr', 'edges-ner-conll2003',
+                  'edges-coref-ontonotes',
+                  'edges-dep-labeling']
 
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
@@ -67,6 +69,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
              'mnli-telephone': (MultiNLITelephoneTask, 'MNLI/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
+             'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
@@ -402,6 +405,8 @@ def parse_task_list_arg(task_list):
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
+    # We don't want mnli-diagnostic in train_task_names
+    train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
     task_names = sorted(set(train_task_names + eval_task_names))
     assert path is not None
