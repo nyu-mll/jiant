@@ -11,32 +11,19 @@ function run_exp() {
         --remote_log --notify iftenney@gmail.com
 }
 
-# function run_exp_full() {
-#     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
-#     OVERRIDES+=", train_tasks=$1, elmo_chars_only=0"
-#     python main.py --config_file config/edgeprobe_bare.conf \
-#         -o "${OVERRIDES}" \
-#         --remote_log --notify iftenney@gmail.com
-# }
-
 set -eux
 
 cd $(dirname $0)
 pushd "${PWD%jiant*}/jiant"
 
-# run_exp "edges-srl-conll2005"
-# run_exp "edges-spr2"
-# run_exp "edges-dpr"
-# run_exp "edges-coref-ontonotes"
-# run_exp "edges-dep-labeling"
+run_exp "edges-srl-conll2005"
+run_exp "edges-spr2"
+run_exp "edges-dpr"
+run_exp "edges-coref-ontonotes"
+run_exp "edges-dep-labeling"
 
 run_exp "edges-ner-conll2003"
 run_exp "edges-constituent-ptb"
-run_exp "edges-ccg-tag"
+# run_exp "edges-ccg-tag"
 
 sudo poweroff
-
-# # Temp to run these on workstation.
-# run_exp_full "edges-ner-conll2003"
-# run_exp_full "edges-constituent-ptb"
-# run_exp_full "edges-ccg-tag"
