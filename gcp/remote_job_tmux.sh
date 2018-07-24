@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Convenience script to execute a command (such as a training script) remotely 
-# on a worker instance. 
+# Convenience script to execute a command (such as a training script) remotely
+# on a worker instance.
 
-# This version creates a tmux session on the remote machine and runs the command 
-# in it. This gives persistence: if you disconnect from the remote machine, the 
+# This version creates a tmux session on the remote machine and runs the command
+# in it. This gives persistence: if you disconnect from the remote machine, the
 # job will continue running.
-# 
-# To exit the tmux session on the remote host, press Ctrl+b followed by the 'd' 
+#
+# To exit the tmux session on the remote host, press Ctrl+b followed by the 'd'
 # key. To re-attach, you can ssh to the remote host and run:
 #   tmux attach -t <job_name>
 # Or run this script with the command 'A'
-# 
+#
 # To kill a target job and its associated tmux session, run with the command 'K'.
 
 # Usage: ./remote_job_tmux.sh <instance_name> <job_name> <command> [<zone>]

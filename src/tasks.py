@@ -269,6 +269,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Entity type labeling on CoNLL 2003.
+@register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
+               label_file="labels.txt", files_by_split={
+                    'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
+                    'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
+                    'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
 # Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
 # updated. Don't trust results yet.
 @register_task('edges-dep-labeling', rel_path='edges/dep',
@@ -287,16 +294,16 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.tag.train" + _tokenizer_suffix,
-                    'val': "ccg.tag.dev" + _tokenizer_suffix,
-                    'test': "ccg.tag.test" + _tokenizer_suffix,
+                    'train': "ccg.tag.train.json" + _tokenizer_suffix,
+                    'val': "ccg.tag.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.tag.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # CCG parsing (constituent labeling).
 @register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.parse.train" + _tokenizer_suffix,
-                    'val': "ccg.parse.dev" + _tokenizer_suffix,
-                    'test': "ccg.parse.test" + _tokenizer_suffix,
+                    'train': "ccg.parse.train.json" + _tokenizer_suffix,
+                    'val': "ccg.parse.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.parse.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
@@ -366,6 +373,7 @@ class EdgeProbingTask(Task):
         for record in utils.load_json_data(filename):
             total_ctr += 1
             # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
             if not record.get('targets', None):
                 skip_ctr += 1
                 continue

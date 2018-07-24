@@ -105,11 +105,10 @@ def main(cl_arguments):
         from src import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
-        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args,
-                                             timestamp=True)
+        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
 
     if EMAIL_NOTIFIER:
-        EMAIL_NOTIFIER(body="", prefix="Starting")
+        EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _try_logging_git_info()
 
@@ -269,16 +268,16 @@ def main(cl_arguments):
     if args.do_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, val_preds = evaluate.evaluate(model, tasks,
+        val_results, val_preds = evaluate.evaluate(model, eval_tasks,
                                                    args.batch_size,
                                                    args.cuda, "val")
 
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
-            evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
+            evaluate.write_preds(eval_tasks, val_preds, args.run_dir, 'val',
                                  strict_glue_format=args.write_strict_glue_format)
         if 'test' in splits_to_write:
-            _, te_preds = evaluate.evaluate(model, tasks,
+            _, te_preds = evaluate.evaluate(model, eval_tasks,
                                             args.batch_size, args.cuda, "test")
             evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)
@@ -295,7 +294,7 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
         if EMAIL_NOTIFIER is not None:
-            EMAIL_NOTIFIER(body="Woohoo!", prefix="Successful")
+            EMAIL_NOTIFIER(body="Run completed successfully!", prefix="")
     except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
