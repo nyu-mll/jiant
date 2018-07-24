@@ -482,8 +482,7 @@ class SamplingMultiTaskTrainer():
                 preds_file_path_dict = {task.name: os.path.join(
                     self._serialization_dir,
                     "preds_{}{}_{}_epoch_{}.txt".format(
-                        time.time(), task.name, phase, epoch))
-                }
+                        time.time(), task.name, phase, epoch)) for task in tasks}
                 all_val_metrics, should_save, new_best_macro = self._validate(
                     epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
 
