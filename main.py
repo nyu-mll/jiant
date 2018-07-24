@@ -105,11 +105,10 @@ def main(cl_arguments):
         from src import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
-        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args,
-                                             timestamp=True)
+        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
 
     if EMAIL_NOTIFIER:
-        EMAIL_NOTIFIER(body="", prefix="Starting")
+        EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _try_logging_git_info()
 
@@ -295,7 +294,7 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
         if EMAIL_NOTIFIER is not None:
-            EMAIL_NOTIFIER(body="Woohoo!", prefix="Successful")
+            EMAIL_NOTIFIER(body="Run completed successfully!", prefix="")
     except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")
