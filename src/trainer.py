@@ -314,6 +314,7 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
 
+        '''
         if scaling_method == 'max':
             # divide by # batches, multiply by max # batches
             log.info("Scaling losses to largest task")
@@ -322,6 +323,7 @@ class SamplingMultiTaskTrainer():
             log.info("Scaling losses to the smallest task")
         elif scaling_method == 'unit':
             log.info("Dividing losses by number of training batches")
+        '''
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
@@ -409,6 +411,12 @@ class SamplingMultiTaskTrainer():
             scaling_weights = [1/math.log(task.n_train_examples)/max_example for task in tasks]
         elif scaling_method in ['uniform','none']:
             scaling_weights = [1]* len(tasks)
+        elif 'epoch_' in scaling_method:
+            epoches = scaling_method.strip('epoch_').split('_')
+            assert len(epoches) == len(tasks), "Loss Scaling Error: epoch number not match."
+            epoches = [int(epoch) for epoch in epoches]
+            max_epoch = max(epoches)
+            scaling_weights = [epoch /max_epoch for epoch in epoches]
 
         task_names = [task.name for task in tasks]
         scaling_weights = dict(zip(task_names,scaling_weights))
@@ -684,20 +692,15 @@ class SamplingMultiTaskTrainer():
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
-            #print (task)
-            #print ('C1: ', hasattr(task, 'name'))
-            #print ('C2: ', g_scheduler is None)
+
             #if hasattr(task, 'name') and g_scheduler is None:
             #    scheduler = task_infos[task.name]['scheduler']
             if task not in ['micro', 'macro'] and g_scheduler is None:
                 scheduler = task_infos[task]['scheduler']
-                #print ('a')
             elif g_scheduler is not None and task == 'macro':
                 scheduler = g_scheduler
-                #print ('b')
             else:
                 scheduler = None
-                #print ('c')
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Advancing scheduler.")
                 scheduler.step(this_epoch_metric, epoch)
