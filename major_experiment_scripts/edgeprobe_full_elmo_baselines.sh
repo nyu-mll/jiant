@@ -5,7 +5,7 @@
 
 function run_exp() {
     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
-    OVERRIDES+=", train_tasks=$1, elmo_chars_only=0"
+    OVERRIDES+=", eval_tasks=$1, elmo_chars_only=0"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
         --remote_log --notify iftenney@gmail.com
@@ -25,5 +25,3 @@ run_exp "edges-dep-labeling"
 run_exp "edges-ner-conll2003"
 run_exp "edges-constituent-ptb"
 # run_exp "edges-ccg-tag"
-
-sudo poweroff
