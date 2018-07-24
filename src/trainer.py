@@ -588,8 +588,13 @@ class SamplingMultiTaskTrainer():
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
             all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+            if task.val_metric_decreases and len(tasks) > 1:
+                all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] / 250.) * n_examples
+                all_val_metrics["macro_avg"] += (1 - all_val_metrics[task.val_metric] / 250.)
+            else:
+                # triggers for single-task cases and during MTL when task val metric increases
+                all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+                all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
             n_examples_overall += n_examples
 
             # Reset training progress
