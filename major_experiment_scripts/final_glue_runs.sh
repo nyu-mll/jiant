@@ -94,13 +94,14 @@ JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_on
 
 # TODO: Roma - Add if ready.
 
-
 ## CCG (Note: For use in the NLI probing paper only) ##
 
 # TODO: Tom - This look right?
 
 JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+#### Only commands below this point may be edited after Wednesday 7/24 ####
 
 ## MTL ##
 
