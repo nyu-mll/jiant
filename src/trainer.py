@@ -417,6 +417,9 @@ class SamplingMultiTaskTrainer():
             epoches = [int(epoch) for epoch in epoches]
             max_epoch = max(epoches)
             scaling_weights = [epoch /max_epoch for epoch in epoches]
+        elif scaling_method == 'min_inverse':
+            min_example = min([1/task.n_train_examples for task in tasks])
+            scaling_weights = [1/task.n_train_examples/min_example for task in tasks]
 
         task_names = [task.name for task in tasks]
         scaling_weights = dict(zip(task_names,scaling_weights))
