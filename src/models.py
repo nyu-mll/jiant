@@ -36,7 +36,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, Reddit_MTTask, Wiki103_MTTask
+    GroundedTask, MTTask, RedditTask, Reddit_MTTask, Wiki103_Seq2Seq
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -302,7 +302,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, Wiki103_MTTask):
+    elif isinstance(task, Wiki103_Seq2Seq):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -723,7 +723,7 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            if not self.training and not isinstance(task, Wiki103_MTTask):
+            if not self.training and not isinstance(task, Wiki103_Seq2Seq):
                 # bleu scoring
                 bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
                 task.scorer2(bleu_score)

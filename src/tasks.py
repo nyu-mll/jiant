@@ -1513,7 +1513,7 @@ class MTTask(SequenceGenerationTask):
             bleu_score = 0
         return {'perplexity': ppl, 'bleu_score': bleu_score}
 
-class Wiki103_MTTask(MTTask):
+class Wiki103_Seq2Seq(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
         self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
