@@ -714,7 +714,6 @@ class MultiTaskModel(nn.Module):
 
     def _seq_gen_forward(self, batch, task, predict):
         ''' For variational autoencoder '''
-        #import ipdb; ipdb.set_trace()
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)

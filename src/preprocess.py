@@ -463,6 +463,7 @@ def get_words(tasks):
             for char in list(word):
                 char2freq[char] += 1
         return
+
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
         for sentence in task.get_sentences():
