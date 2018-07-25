@@ -108,9 +108,27 @@ JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola\", v
 
 # Non-GLUE MTL
 # TODO: Alex - Finish once task list is final (and make sure val_interval is a 1000 x N tasks)
+# TODO(Alex): set hyperparam for weighting tasks with decreasing metrics (e.g. ppl for LM, MT) relative to increasing metrics.
+# AW: still waiting for confirmation that the follow tasks are good to go:
+#   - wmt
+#   - reddit
+#   - dae
+#   - grounded: double check with task to use
+
+# Monster run with everything we've got
+JIANT_OVERRIDES="train_tasks = \"wmt,bwb,wiki103,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Do a run w/o LM so we can use full ELMo
+JIANT_OVERRIDES="train_tasks = \"wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-nolm-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-nolm-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # All MTL
 # TODO: Alex - Finish once task list is final (and make sure val_interval is a 1000 x N tasks)
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,bwb,wiki103,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Runs w/o LM so we can use full ELMo
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-nolm-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-nolm-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## Target task learning curves ##
 
