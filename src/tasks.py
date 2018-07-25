@@ -1516,6 +1516,9 @@ class MTTask(SequenceGenerationTask):
 class Wiki103_Seq2Seq(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
+        # for skip-thoughts setting, all source sentences are sentences that 
+        # followed by another sentence (which are all but the last one). 
+        # Similar for self.target_sentences
         self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
         self.target_sentences =  self.train_data_text[1:] + self.val_data_text[1:]
 
