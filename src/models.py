@@ -307,7 +307,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
+                                 'max_decoding_steps': args.max_word_v_size,
                                  'target_namespace': 'tokens',
                                  'attention': attention,
                                  'dropout': args.dropout,
