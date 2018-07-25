@@ -84,6 +84,6 @@ for path in sys.argv[1:]:
       output += '\t\t\t%s' % diagnostic_results_formatted[-1] # Use the most recent evaluation.
     print(output)
 
-  except BufferError as e:
+  except BaseException as e:
     print("Error:", e, path)
 
