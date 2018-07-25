@@ -314,16 +314,22 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:
             log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
 
-        '''
-        if scaling_method == 'max':
-            # divide by # batches, multiply by max # batches
-            log.info("Scaling losses to largest task")
-        elif scaling_method == 'min':
-            # divide by # batches, multiply by fewest # batches
-            log.info("Scaling losses to the smallest task")
-        elif scaling_method == 'unit':
-            log.info("Dividing losses by number of training batches")
-        '''
+        if scaling_method in ['uniform','none']:
+            log.info("Weighting losses uniformly")
+        elif scaling_method == 'max_proportional':
+            log.info("Weighting losses proportional to number of training examples, normalized by max weight")
+        elif scaling_method == 'max_proportional_log':
+            log.info("Weighting losses proportional to log number of training examples, normalized by max weight")
+        elif 'max_power_' in scaling_method:
+            log.info("Weighting losses with power %s, normalized by max weight.",scaling_method.strip('max_power_'))
+        elif scaling_method == 'max_inverse_log':
+            log.info("Weighting losses inverse to log number of training examples, normalized by max weight")
+        elif scaling_method == 'max_inverse':
+            log.info("Weighting losses inverse to number of training examples, normalized by max weight")
+        # eg. epoch_9_18_1_11_18_2_14_16_1
+        elif 'epoch_' in scaling_method:
+            log.info("Weighting losses based on best epoches for each task from a previous uniform run, normalizd by max epoch")
+
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
@@ -392,8 +398,9 @@ class SamplingMultiTaskTrainer():
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-
-        if scaling_method == 'max_proportional':
+        if scaling_method in ['uniform','none']:
+            scaling_weights = [1]* len(tasks)
+        elif scaling_method == 'max_proportional':
             max_example = max([task.n_train_examples for task in tasks])
             scaling_weights = [task.n_train_examples/max_example for task in tasks]
         elif scaling_method == 'max_proportional_log':
@@ -403,23 +410,18 @@ class SamplingMultiTaskTrainer():
             power = float(scaling_method.strip('max_power_'))
             max_example = max([task.n_train_examples**power for task in tasks])
             scaling_weights = [task.n_train_examples**power /max_example for task in tasks]
-        elif scaling_method == 'max_inverse':
-            max_example = max([1/task.n_train_examples for task in tasks])
-            scaling_weights = [1/task.n_train_examples/max_example for task in tasks]
         elif scaling_method == 'max_inverse_log':
             max_example = max([1/math.log(task.n_train_examples) for task in tasks])
             scaling_weights = [1/math.log(task.n_train_examples)/max_example for task in tasks]
-        elif scaling_method in ['uniform','none']:
-            scaling_weights = [1]* len(tasks)
+        elif scaling_method == 'max_inverse':
+            max_example = max([1/task.n_train_examples for task in tasks])
+            scaling_weights = [1/task.n_train_examples/max_example for task in tasks]
         elif 'epoch_' in scaling_method:
             epoches = scaling_method.strip('epoch_').split('_')
             assert len(epoches) == len(tasks), "Loss Scaling Error: epoch number not match."
             epoches = [int(epoch) for epoch in epoches]
             max_epoch = max(epoches)
             scaling_weights = [epoch /max_epoch for epoch in epoches]
-        elif scaling_method == 'min_inverse':
-            min_example = min([1/task.n_train_examples for task in tasks])
-            scaling_weights = [1/task.n_train_examples/min_example for task in tasks]
 
         task_names = [task.name for task in tasks]
         scaling_weights = dict(zip(task_names,scaling_weights))
@@ -451,29 +453,8 @@ class SamplingMultiTaskTrainer():
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
-                '''
-                if scaling_method == 'unit' and weighting_method == 'proportional':
-                    loss /= task_info['n_tr_batches']
-                elif scaling_method == 'max' and weighting_method == 'proportional':
-                    loss *= (max_weight / task_info['n_tr_batches'])
-                elif scaling_method == 'min' and weighting_method == 'proportional':
-                    loss *= (min_weight / task_info['n_tr_batches'])
 
-                if scaling_method == 'max_proportional':
-                    max_example = max([task.n_train_examples for task in tasks])
-                    loss *= task.n_train_examples/max_example
-                elif scaling_method == 'max_proportional_log':
-                    max_example = max([math.log(task.n_train_examples) for task in tasks])
-                    loss *= math.log(task.n_train_examples)/max_example
-                elif 'max_power_' in scaling_method:
-                    power = float(scaling_method.strip('max_power_'))
-                    max_example = max([task.n_train_examples**power for task in tasks])
-                    loss *= task.n_train_examples**power /max_example
-                '''
-                #log.info('loss before: '+ str(loss))
-                #log.info('%s: %f', task.name, scaling_weights[task.name])
                 loss *= scaling_weights[task.name]
-                #log.info('loss after: '+ str(loss))
 
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
@@ -695,9 +676,6 @@ class SamplingMultiTaskTrainer():
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
-
-            #if hasattr(task, 'name') and g_scheduler is None:
-            #    scheduler = task_infos[task.name]['scheduler']
             if task not in ['micro', 'macro'] and g_scheduler is None:
                 scheduler = task_infos[task]['scheduler']
             elif g_scheduler is not None and task == 'macro':
@@ -988,7 +966,7 @@ class SamplingMultiTaskTrainer():
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
-        ''' Generator trainer from parameters.  '''
+        ''' Generate trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
         val_interval = params.pop("val_interval", 100)
