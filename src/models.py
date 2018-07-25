@@ -332,6 +332,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
 
     elif isinstance(task, GroundedTask):
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
+        pooler = build_image_sent_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, pooler)
+
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
@@ -387,6 +390,9 @@ def build_reddit_module(task, d_inp, params):
     #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return pooler, dnn_ResponseModel
 
+def build_image_sent_module(task, d_inp, params):
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    return pooler
 
 def build_single_sentence_module(task, d_inp, params):
     ''' Build a single classifier '''
@@ -508,7 +514,8 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
-            out = self._grounded_classification_forward(batch, task, predict)
+            out = self._grounded_contrastive_one_forward(batch, task, predict)
+            #out = self._rsa_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         else:
@@ -789,45 +796,56 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _grounded_classification_forward(self, batch, task, predict):
-        out = {}
-        # embed the sentence, embed the image, map and classify
+    def _grounded_contrastive_one_forward(self, batch, task, predict):
+        
+        out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
-        batch_size = get_batch_size_from_field(batch['input1'])
+        batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task)
+
+        sent_rep = sent_pooler(sent_emb, sent_mask)
 
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
-        labels = batch['labels'].cpu().squeeze(-1)
-        labels = [int(item) for item in labels.data.numpy()]
 
-        cos = task.metric_fn
-        flags = Variable(torch.ones(batch_size))
+        img_seq = [torch.tensor(task.img_encoder.forward(int(ids[img_idx]))[0], dtype=torch.float32).cuda() for img_idx in range(len(ids))]
 
-        img_idx, preds, img_seq,sent_seq = 0, [], [], []
-        for sent in sent_emb.split(1):
-            seq_len = sent.size()[1]
-            sent = task.pooler(sent.view(seq_len, -1))
-            sent = torch.div(torch.sum(sent, dim=0), seq_len).cuda().reshape((1, -1))
-            img_feat = torch.tensor(task.img_encoder.forward(int(ids[img_idx])), dtype=torch.float32).cuda()
-            img_seq.append(img_feat); sent_seq.append(sent); img_idx += 1
-            sim = cos(sent, img_feat).cuda()
-            preds.append(sim.cpu().data.numpy()[0])
+        loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
+        softmax = nn.Softmax(); 
+        distance = nn.PairwiseDistance(p=1, eps=1e-06); cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        acc = []
 
-        img_emb = torch.stack(img_seq, dim=0); sent_emb = torch.stack(sent_seq, dim=0)
-        metric = np.mean(preds)
-        task.scorer1.__call__(metric)
-        out['logits'] = torch.tensor(preds, dtype=torch.float32).reshape(1, -1)
+        loss_fn = nn.L1Loss()
+        # contrastive against n samples (n = {2, 3}), temperature
+        samples, temp = batch_size-1, 0.001
+        for sent_idx in range(batch_size):
+            sent = sent_rep[sent_idx].reshape(1, -1).cuda()
+            img = img_seq[sent_idx].reshape(1, -1).cuda()
+            labels = [0 for i in range(samples)]; labels[0] = 1
+            labels = torch.tensor(labels, dtype=torch.float32)
+            mat = [cos(sent, img).cpu().data.numpy()[0]]
+            while(len(mat) < samples):
+                r = sent_idx
+                while (r == sent_idx):
+                    r = np.random.randint(batch_size, size=(1,1))[0][0]
+                img = img_seq[r].reshape(1, -1).cuda()
+                mat.append(cos(sent, img).cpu().data.numpy()[0])
+                #mat.append(distance(sent, img).cpu().data.numpy()[0])
 
-        cos = task.loss_fn; flags = Variable(torch.ones(batch_size))
-        out['loss'] = cos(
-            torch.tensor(
-                sent_emb.reshape(batch_size, -1), dtype=torch.float), torch.tensor(
-                img_emb, dtype=torch.float).reshape(batch_size, -1), flags)
+            mat = torch.tensor(mat, dtype=torch.float32)
+            dist = softmax(Variable(torch.tensor(mat, dtype=torch.float32)))
 
-        if predict:
-            out['preds'] = preds
+            max_idx = np.argmax(dist.data.numpy())
+            loss.add(loss_fn(mat, labels))
 
+            preds = [0 for i in range(samples)]; preds[max_idx] = 1
+            if max_idx == 0: acc.append(1)
+            else: acc.append(0)
+
+        out['loss'] = loss
+        task.scorer1.__call__(np.mean(acc))
         return out
+    
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder,
