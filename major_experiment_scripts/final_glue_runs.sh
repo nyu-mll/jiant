@@ -80,8 +80,6 @@ JIANT_OVERRIDES="train_tasks = reddit, run_name = reddit-elmo, elmo_chars_only =
 
 ## MSCOCO ##
 
-# TODO: Move images/features to one fixed directory
-
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
