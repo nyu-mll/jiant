@@ -719,9 +719,7 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(
-                target_tokens=batch['targs'],
-                encoder_outs=sent,
-                encoder_out_mask=sent_mask,
+                sent, sent_mask, batch['targs']
             ))
             task.scorer1(out['loss'].item())  # nll_loss
 

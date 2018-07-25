@@ -113,7 +113,7 @@ class LSTMDecoder(nn.Module):
             self.additional_fc = Linear(hidden_size, out_embed_dim)
         self.fc_out = Linear(out_embed_dim, num_embeddings, dropout=dropout_out)
 
-    def forward(self, target_tokens, encoder_outs, encoder_out_mask):
+    def forward(self, encoder_outs, encoder_out_mask, target_tokens):
         # very important - prev_tokens vs target_tokens
         # please also check this carefully, as well as _get_loss
         full_target_words = target_tokens["words"]

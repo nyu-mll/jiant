@@ -414,7 +414,7 @@ class SamplingMultiTaskTrainer():
                 elif scaling_method == 'min' and weighting_method == 'proportional':
                     loss *= (min_weight / task_info['n_tr_batches'])
                 loss.backward()
-                assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
+                # assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
