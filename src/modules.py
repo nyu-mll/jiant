@@ -804,7 +804,7 @@ class CNNEncoder(Model):
         Args: img_id that maps image -> sentence pairs in respective datasets.
         '''
 
-        f = open('/nfs/jsalt/home/roma/CNN/all_feats/' + str(img_id) + '.json', 'r')
+        f = open('/nfs/jsalt/home/roma/mscoco/grounded/feats/' + str(img_id) + '.json', 'r')
         for line in f: feat_dict = json.loads(line)
         idx = list(feat_dict.keys())[0]
         return feat_dict[idx]
