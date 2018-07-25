@@ -31,6 +31,7 @@ from allennlp.data.fields import TextField, LabelField, \
         SpanField, ListField, MetadataField
 from .allennlp_mods.numeric_field import NumericField
 from .allennlp_mods.multilabel_field import MultiLabelField
+from allennlp.nn.util import get_text_field_mask
 
 from . import serialize
 from . import utils
@@ -1145,7 +1146,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        
+
     def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data. The tags for every column are loaded as indices.
         They will be converted to bools in preprocess_split function'''
@@ -1478,13 +1479,15 @@ class MTTask(SequenceGenerationTask):
         self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
+
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a machine translation split '''
         def _make_instance(input, target):
              d = {}
              d["inputs"] = _sentence_to_text_field(input, indexers)
-             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+             d["targs"] = _sentence_to_text_field(target, self.target_indexer)
              return Instance(d)
+
         # Map over columns: inputs, targs
         instances = map(_make_instance, split[0], split[2])
         #  return list(instances)
@@ -1506,12 +1509,20 @@ class MTTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
+        nll_loss = self.scorer1.get_metric(reset)
         try:
             bleu_score = self.scorer2.get_metric(reset)
         except BaseException:
             bleu_score = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score}
+
+        try:
+            ppl = math.exp(nll_loss)
+        except OverflowError:
+            ppl = float('inf')
+        return {
+            'perplexity': ppl,
+            'bleu_score': bleu_score,
+        }
 
 
 class WikiInsertionsTask(MTTask):

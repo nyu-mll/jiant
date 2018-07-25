@@ -57,7 +57,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
 from .seq2seq_decoder import Seq2SeqDecoder
-
+from . import fairseq_decoder
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -303,16 +303,22 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (MTTask, Reddit_MTTask)):
-        attention = args.get("mt_attention", "bilinear")
-        log.info("using {} attention".format(attention))
-        decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
-                                 'target_namespace': 'targets',
-                                 'attention': attention,
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
-        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
+        # attention = args.get("mt_attention", "bilinear")
+        # log.info("using {} attention".format(attention))
+        # decoder_params = Params({'input_dim': d_sent,
+        #                          'target_embedding_dim': 300,
+        #                          'max_decoding_steps': 200,
+        #                          'target_namespace': 'targets',
+        #                          'attention': attention,
+        #                          'dropout': args.dropout,
+        #                          'scheduled_sampling_ratio': 0.0})
+        decoder = fairseq_decoder.LSTMDecoder(
+            vocab=vocab,
+            num_embeddings=vocab.get_vocab_size("targets"),
+            encoder_output_units=d_sent,
+            hidden_size=d_sent,
+            padding_idx=0,  # TODO: don't hardcode this
+        )
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
@@ -689,7 +695,11 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, VAETask):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out = decoder.forward(sent, sent_mask, batch['targs'])
+            out = decoder.forward(
+                prev_output_tokens=batch['targs'],
+                encoder_outs=sent,
+                encoder_padding_mask=sent_mask,
+            )
             task.scorer1(math.exp(out['loss'].item()))
             return out
         if 'targs' in batch:
@@ -708,13 +718,17 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out.update(decoder.forward(sent, sent_mask, batch['targs']))
-            task.scorer1(math.exp(out['loss'].item()))
+            out.update(decoder.forward(
+                target_tokens=batch['targs'],
+                encoder_outs=sent,
+                encoder_out_mask=sent_mask,
+            ))
+            task.scorer1(out['loss'].item())  # nll_loss
 
-            if not self.training:
-                # bleu scoring
-                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
-                task.scorer2(bleu_score)
+            # if not self.training:
+            #     # bleu scoring
+            #     bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
+            #     task.scorer2(bleu_score)
 
             return out
 

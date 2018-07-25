@@ -1,13 +1,17 @@
 # adapted from https://github.com/pytorch/fairseq/blob/master/fairseq/models/lstm.py
 # changes:
 #   - deleted everything related to incremental state
+#   - add _get_loss to LSTMDecoder (please check in detail)
+#   - change decoder initialization to ours
+
+# differences from Seq2SeqDecoder:
+#   - very important: instead of mask we're using the padding idx for masking
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fairseq import options, utils
-
+# these four functions are direct copies
 
 def Linear(in_features, out_features, bias=True, dropout=0):
     """Weight-normalized Linear layer (input: N x T x C)"""
@@ -17,12 +21,11 @@ def Linear(in_features, out_features, bias=True, dropout=0):
         m.bias.data.uniform_(-0.1, 0.1)
     return m
 
-def Embedding(num_embeddings, embedding_dim, padding_idx):
+def FairseqEmbedding(num_embeddings, embedding_dim, padding_idx):
     m = nn.Embedding(num_embeddings, embedding_dim, padding_idx=padding_idx)
     nn.init.uniform_(m.weight, -0.1, 0.1)
     nn.init.constant_(m.weight[padding_idx], 0)
     return m
-
 
 def LSTM(input_size, hidden_size, **kwargs):
     m = nn.LSTM(input_size, hidden_size, **kwargs)
@@ -69,25 +72,27 @@ class AttentionLayer(nn.Module):
         x = (attn_scores.unsqueeze(2) * source_hids).sum(dim=0)
 
         x = F.tanh(self.output_proj(torch.cat((x, input), dim=1)))
+
         return x, attn_scores
 
 
 class LSTMDecoder(nn.Module):
     """LSTM decoder."""
     def __init__(
-        self, dictionary, embed_dim=512, hidden_size=512, out_embed_dim=512,
+        self, num_embeddings, padding_idx, vocab, embed_dim=300, hidden_size=1024, out_embed_dim=1024,
         num_layers=1, dropout_in=0.1, dropout_out=0.1, attention=True,
-        encoder_embed_dim=512, encoder_output_units=512, pretrained_embed=None,
+        encoder_output_units=1024, pretrained_embed=None,
     ):
-        super().__init__(dictionary)
+        super().__init__()
         self.dropout_in = dropout_in
         self.dropout_out = dropout_out
         self.hidden_size = hidden_size
 
-        num_embeddings = len(dictionary)
-        padding_idx = dictionary.pad()
+        self.vocab = vocab
+        self.padding_idx = padding_idx
+
         if pretrained_embed is None:
-            self.embed_tokens = Embedding(num_embeddings, embed_dim, padding_idx)
+            self.embed_tokens = FairseqEmbedding(num_embeddings, embed_dim, padding_idx)
         else:
             self.embed_tokens = pretrained_embed
 
@@ -108,15 +113,15 @@ class LSTMDecoder(nn.Module):
             self.additional_fc = Linear(hidden_size, out_embed_dim)
         self.fc_out = Linear(out_embed_dim, num_embeddings, dropout=dropout_out)
 
-    def forward(self, prev_output_tokens, encoder_out_dict):
-        encoder_out = encoder_out_dict['encoder_out']
-        encoder_padding_mask = encoder_out_dict['encoder_padding_mask']
+    def forward(self, target_tokens, encoder_outs, encoder_out_mask):
+        # very important - prev_tokens vs target_tokens
+        # please also check this carefully, as well as _get_loss
+        full_target_words = target_tokens["words"]
+        prev_output_tokens = full_target_words[:, :-1]
+        target_output_tokens = full_target_words[:, 1:]
 
         bsz, seqlen = prev_output_tokens.size()
-
-        # get outputs from encoder
-        encoder_outs, _, _ = encoder_out[:3]
-        srclen = encoder_outs.size(0)
+        srclen = encoder_outs.size(1)
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
@@ -125,12 +130,21 @@ class LSTMDecoder(nn.Module):
         # B x T x C -> T x B x C
         x = x.transpose(0, 1)
 
-        _, encoder_hiddens, encoder_cells = encoder_out[:3]
+        # pass encoder context (our code)
+        encoder_padding_mask = 1 - encoder_out_mask.byte().data
+        encoder_outs.data.masked_fill_(encoder_padding_mask, -float('inf'))
+        decoder_hidden = encoder_outs.new_zeros(encoder_padding_mask.size(0), self.hidden_size)
+        decoder_context = encoder_outs.max(dim=1)[0]
         num_layers = len(self.layers)
-        prev_hiddens = [encoder_hiddens[i] for i in range(num_layers)]
-        prev_cells = [encoder_cells[i] for i in range(num_layers)]
-        input_feed = x.data.new(bsz, self.encoder_output_units).zero_()
+        prev_hiddens = [decoder_hidden for i in range(num_layers)]
+        prev_cells = [decoder_context for i in range(num_layers)]
 
+        # set up encoder outputs for attention
+        encoder_outs_a = encoder_outs.clone()
+        encoder_outs_a.data.masked_fill_(encoder_padding_mask, -float(0.0))
+        encoder_outs_t, encoder_padding_mask_t = encoder_outs_a.transpose(0, 1), encoder_padding_mask.transpose(0, 1).squeeze(-1)
+
+        input_feed = x.data.new(bsz, self.encoder_output_units).zero_()
         attn_scores = x.data.new(srclen, seqlen, bsz).zero_()
         outs = []
         for j in range(seqlen):
@@ -150,7 +164,7 @@ class LSTMDecoder(nn.Module):
 
             # apply attention using the last layer's hidden state
             if self.attention is not None:
-                out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
+                out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs_t, encoder_padding_mask_t)
             else:
                 out = hidden
             out = F.dropout(out, p=self.dropout_out, training=self.training)
@@ -167,17 +181,35 @@ class LSTMDecoder(nn.Module):
         # T x B x C -> B x T x C
         x = x.transpose(1, 0)
 
-        # srclen x tgtlen x bsz -> bsz x tgtlen x srclen
-        attn_scores = attn_scores.transpose(0, 2)
-
         # project back to size of vocabulary
         if hasattr(self, 'additional_fc'):
             x = self.additional_fc(x)
             x = F.dropout(x, p=self.dropout_out, training=self.training)
         x = self.fc_out(x)
 
-        return x, attn_scores
+        output_dict = {
+            "logits": x,
+            "loss": self._get_loss(logits=x, target=target_output_tokens),
+        }
+
+        return output_dict
 
     def max_positions(self):
         """Maximum output length supported by the decoder."""
         return int(1e5)  # an arbitrary large number
+
+    def _get_loss(self, logits, target):
+        # adapted from fairseq/criterions/cross_entropy.py
+        # extremely important code
+        # size_average = True (will not average over ignore_index rows)
+        lprobs = self.get_normalized_log_probs(logits)
+        lprobs = lprobs.view(-1, lprobs.size(-1))
+        target = target.contiguous().view(-1,)
+        loss_size_average = F.nll_loss(
+            lprobs, target, size_average=True, ignore_index=self.padding_idx,
+            reduce=True)  # have checked padding_idx
+        return loss_size_average
+
+    def get_normalized_log_probs(self, logits):
+        """Get normalized log probs from a net's output."""
+        return F.log_softmax(logits, dim=-1)
