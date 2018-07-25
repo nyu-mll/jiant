@@ -29,8 +29,6 @@ JIANT_OVERRIDES="train_tasks = wnli, run_name = wnli-elmo, elmo_chars_only = 0, 
 JIANT_OVERRIDES="train_tasks = mrpc, run_name = mrpc-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = mrpc, run_name = mrpc-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-# TODO: Berlin - Set this up so attention is not used during training on the next four pairs of runs. Use final.conf if possible. Verify that it works.
-
 JIANT_OVERRIDES="train_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-alt-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-alt-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
