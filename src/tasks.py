@@ -23,7 +23,7 @@ from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
-from .allennlp_mods.correlation import Correlation
+from .allennlp_mods.correlation import Correlation, FastMatthews
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
@@ -269,6 +269,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Entity type labeling on CoNLL 2003.
+@register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
+               label_file="labels.txt", files_by_split={
+                    'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
+                    'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
+                    'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
 # Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
 # updated. Don't trust results yet.
 @register_task('edges-dep-labeling', rel_path='edges/dep',
@@ -287,16 +294,16 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.tag.train" + _tokenizer_suffix,
-                    'val': "ccg.tag.dev" + _tokenizer_suffix,
-                    'test': "ccg.tag.test" + _tokenizer_suffix,
+                    'train': "ccg.tag.train.json" + _tokenizer_suffix,
+                    'val': "ccg.tag.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.tag.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # CCG parsing (constituent labeling).
 @register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.parse.train" + _tokenizer_suffix,
-                    'val': "ccg.parse.dev" + _tokenizer_suffix,
-                    'test': "ccg.parse.test" + _tokenizer_suffix,
+                    'train': "ccg.parse.train.json" + _tokenizer_suffix,
+                    'val': "ccg.parse.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.parse.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
@@ -354,10 +361,9 @@ class EdgeProbingTask(Task):
 
         # Scorers
         #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
-        self.mcc_scorer = Correlation("matthews")
+        self.mcc_scorer = FastMatthews()
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
-        #  self.val_metric = "%s_accuracy" % self.name
         self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
@@ -367,6 +373,7 @@ class EdgeProbingTask(Task):
         for record in utils.load_json_data(filename):
             total_ctr += 1
             # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
             if not record.get('targets', None):
                 skip_ctr += 1
                 continue
@@ -559,12 +566,14 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
-        self.max_seq_len = max_seq_len
+        self.max_seq_len = 100 #max_seq_len
+        self.min_seq_len = 0
         self.target_indexer = {"words": SingleIdTokenIndexer()}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
-
+        #log.info("USING MAX SEQ LEN %d", self.max_seq_len)
+        #log.info("USING MIN SEQ LEN %d", self.min_seq_len)
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -581,16 +590,20 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
+        unk_tok = '<unk>' # '@@UNKNOWN@@'
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                # hard code to fix unk symbol
-                # why do we need to do this twice?
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                # WikiText103 preprocesses unknowns as '<unk>'
+                # which gets tokenized as '@', '@', 'UNKNOWN', ...
+                # We replace to avoid that
+                toks = toks.replace(unk_tok, 'UNKNOWN')
                 sent = process_sentence(toks, self.max_seq_len)
-                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                sent = [unk_tok if t == 'UNKNOWN' else t for t in sent]
+                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
+                    continue
                 yield sent
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -613,7 +626,6 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
-
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self.load_data(self.files_by_split[split])
@@ -648,6 +660,7 @@ class BWBLMTask(LanguageModelingTask):
 
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
+        self.max_seq_len = max_seq_len
 
     def load_data(self, path):
         with open(path) as txt_fh:
@@ -1138,7 +1151,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        
+
     def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data. The tags for every column are loaded as indices.
         They will be converted to bools in preprocess_split function'''
@@ -1261,12 +1274,15 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         collected_metrics["accuracy"] = 0
         def collect_metrics(ix_to_tag_dict, tag_group):
             for index, tag in ix_to_tag_dict.items():
+                # Index 0 is used for missing data, here it will be used for score of the whole category.
                 if index == 0:
                     scorer_str = 'scorer__%s' % tag_group
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics['%s' % (tag_group)] = scorer.get_metric(reset)
                 else:
                     scorer_str = 'scorer__%s__%s' % (tag_group, tag)
-                scorer = getattr(self, scorer_str)
-                collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
 
         collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
         collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')

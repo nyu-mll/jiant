@@ -121,6 +121,7 @@ class SentenceEncoder(Model):
         if isinstance(self._phrase_layer, BiLMEncoder):
             sent_enc = sent_enc[-1]
         sent_enc = self._dropout(sent_enc)
+
         if self.skip_embs:
             if self.sep_embs_for_skip:
                 sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
