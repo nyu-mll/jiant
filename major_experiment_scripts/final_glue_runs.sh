@@ -52,8 +52,8 @@ JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_
 # TODO: Edouard/Katherin/Raghu - Are there any model variants you want to try? Contrastive version?
 # TODO: Edouard/Katherin/Raghu - Please add the binary classification variant, both with and without elmo
 
-JIANT_OVERRIDES="train_tasks = wmt, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt, run_name = wmt-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt, run_name = wmt-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## LM ##
 
