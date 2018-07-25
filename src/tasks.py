@@ -572,8 +572,6 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
-        #log.info("USING MAX SEQ LEN %d", self.max_seq_len)
-        #log.info("USING MIN SEQ LEN %d", self.min_seq_len)
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
