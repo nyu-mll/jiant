@@ -173,8 +173,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
-    log.info("Total number of parameters: {}".format(param_count))
-    log.info("Number of trainable parameters: {}".format(trainable_param_count))
+            log.info(">> Trainable param %s: %s = %d", name,
+                     str(param.size()), np.prod(param.size()))
+    log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
+    log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
+        ct=trainable_param_count))
     return model
 
 def get_task_whitelist(args):
