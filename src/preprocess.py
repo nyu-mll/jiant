@@ -25,8 +25,8 @@ from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
-    QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
+    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
+    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
     PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
@@ -61,7 +61,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
              'qqp': (QQPTask, 'QQP'),
+             'qqp-alt': (QQPAltTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
+             'sts-b-alt': (STSBAltTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
              'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
@@ -71,6 +73,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
              'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
+             'qnli-alt': (QNLIAltTask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
