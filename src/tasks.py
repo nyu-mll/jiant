@@ -567,7 +567,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = 100 #max_seq_len
-        self.min_seq_len = 10
+        self.min_seq_len = 0
         self.target_indexer = {"words": SingleIdTokenIndexer()}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
@@ -594,14 +594,16 @@ class LanguageModelingTask(SequenceGenerationTask):
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
-                if not toks or len(toks) < self.min_seq_len:
+                if not toks:
                     continue
-                # WikiText103 preprocesses unknowns as @@UNKNOWN@@
+                # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
                 toks = toks.replace(unk_tok, 'UNKNOWN')
                 sent = process_sentence(toks, self.max_seq_len)
                 sent = [unk_tok if t == 'UNKNOWN' else t for t in sent]
+                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
+                    continue
                 yield sent
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -658,6 +660,7 @@ class BWBLMTask(LanguageModelingTask):
 
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
+        self.max_seq_len = max_seq_len
 
     def load_data(self, path):
         with open(path) as txt_fh:
