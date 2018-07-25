@@ -1549,7 +1549,8 @@ class Wiki103_MTTask(MTTask):
 
         Subclass can override this if data is not stored in column format.
         '''
-        return len(split_text)
+        # pair setences# = sent# - 1
+        return len(split_text) - 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a language modeling split.
