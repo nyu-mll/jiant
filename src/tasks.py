@@ -275,7 +275,7 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
                     'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
                     'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
-               }, single_sided=True)
+               }, single_sided=True, detect_spans=True)
 # Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
 # updated. Don't trust results yet.
 @register_task('edges-dep-labeling', rel_path='edges/dep',

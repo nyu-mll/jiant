@@ -50,6 +50,7 @@ class EdgeClassifierModule(nn.Module):
         self.span_pooling = task_params['cls_span_pooling']
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
+        self.detect_spans = task.detect_spans
 
         self.proj_dim = task_params['d_hid']
         # Separate projection for span1, span2.
@@ -109,7 +110,7 @@ class EdgeClassifierModule(nn.Module):
             out: dict(str -> Tensor)
         """
         out = {}
-
+        print (sent_embs.size(), sent_mask.size(), sent_mask[0], batch.keys())
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
 
@@ -120,6 +121,7 @@ class EdgeClassifierModule(nn.Module):
 
         # Span extraction.
         span_mask = (batch['span1s'][:,:,0] != -1)  # [batch_size, num_targets] bool
+        print (batch['span1s'].size(), batch['span2s'].size(), batch['labels'].size(), batch['labels'][0])
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
