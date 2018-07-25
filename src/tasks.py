@@ -1535,13 +1535,11 @@ class Wiki103_MTTask(MTTask):
                 toks = row.strip()
                 if toks == '':
                     continue
+                # hard code to fix unk symbol
                 toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
                 sent = process_sentence(toks, max_seq_len)
-                for i in range(0, len(sent)):
-                    if sent[i] == 'UNKNOWN':
-                        sent[i] = '@@UNKNOWN@@'
+                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
                 data.append(sent)
-                #data.append(process_sentence(toks, max_seq_len))
         return data
 
     def get_num_examples(self, split_text):
@@ -1563,9 +1561,7 @@ class Wiki103_MTTask(MTTask):
             d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
             d["targs"] = _sentence_to_text_field(sent, targs_indexers)
             return Instance(d)
-        #import ipdb
         for i in range(1, len(split)):
-            #ipdb.set_trace()
             yield _make_instance(split[i-1], split[i])
 
 
