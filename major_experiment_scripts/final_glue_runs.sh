@@ -69,8 +69,6 @@ JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo, elmo_chars
 
 ## DisSent ##
 
-# TODO: Tom - Make sure this is the same dataset as wiki103 above. (I might have gotten the task name wrong.)
-
 JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -96,8 +94,6 @@ JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_on
 # TODO: Roma - Add if ready.
 
 ## CCG (Note: For use in the NLI probing paper only) ##
-
-# TODO: Tom - This look right?
 
 JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
