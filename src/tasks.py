@@ -294,16 +294,16 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.tag.train" + _tokenizer_suffix,
-                    'val': "ccg.tag.dev" + _tokenizer_suffix,
-                    'test': "ccg.tag.test" + _tokenizer_suffix,
+                    'train': "ccg.tag.train.json" + _tokenizer_suffix,
+                    'val': "ccg.tag.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.tag.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # CCG parsing (constituent labeling).
 @register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.parse.train" + _tokenizer_suffix,
-                    'val': "ccg.parse.dev" + _tokenizer_suffix,
-                    'test': "ccg.parse.test" + _tokenizer_suffix,
+                    'train': "ccg.parse.train.json" + _tokenizer_suffix,
+                    'val': "ccg.parse.dev.json" + _tokenizer_suffix,
+                    'test': "ccg.parse.test.json" + _tokenizer_suffix,
                }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
