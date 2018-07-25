@@ -61,8 +61,8 @@ JIANT_OVERRIDES="train_tasks = wmt, run_name = wmt-elmo, elmo_chars_only = 0, se
 
 # Note: ELMo can't combine with language modeling, so there are no ELMo runs.
 
-JIANT_OVERRIDES="train_tasks = bwb, run_name = bwb-lm-noelmo, elmo_chars_only = 1, lr = 0.001, val_interval = 2000" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo, elmo_chars_only = 1, lr = 0.001, val_interval = 2000" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = bwb, run_name = bwb-lm-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # TODO: Yinghui/Raghu - Add runs for skip-thought style training and contrastive training, both with and without elmo
 
