@@ -3,12 +3,14 @@
 # Script to run edge probing on ELMo-only.
 # Run as separate experiments, since datasets are disjoint anyway.
 
+NOTIFY_EMAIL=$1
+
 function run_exp() {
     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
     OVERRIDES+=", eval_tasks=$1, elmo_chars_only=0"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
-        --remote_log --notify iftenney@gmail.com
+        --remote_log --notify "$NOTIFY_EMAIL"
 }
 
 set -eux
