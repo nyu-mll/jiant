@@ -110,7 +110,7 @@ class SentenceEncoder(Model):
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
-        task_sent_embs = self._dropout(task_sent_embs)
+        # task_sent_embs = self._dropout(task_sent_embs)
 
         # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
@@ -211,11 +211,11 @@ class Classifier(nn.Module):
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
         elif cls_type == 'mlp':
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
         elif cls_type == 'fancy_mlp':  # what they did in Infersent
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
                                        nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
