@@ -763,21 +763,30 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_forward(self, batch, task, predict):
-        ''' For language modeling? '''
+        ''' For language modeling '''
         out = {}
-        b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = b_size #get_batch_size(batch['input'])
         assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
                        "Not using LM for language modeling task!")
+        assert_for_log('targs' in batch and 'words' in batch['targs'],
+                       "Batch missing target words!")
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
+        b_size, seq_len = batch['targs']['words'].size()
+        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
+        out['n_exs'] = (b_size * seq_len - n_pad) * 2
+
         sent, mask = sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+
+        # Split encoder outputs by direction
         split = int(self.sent_encoder._phrase_layer.get_output_dim() / 2)
         fwd, bwd = sent[:, :, :split], sent[:, :, split:split*2]
-        if split * 2 < sent.size(2):
+        if split * 2 < sent.size(2): # skip embeddings
            out_embs = sent[:, :, split*2:]
            fwd = torch.cat([fwd, out_embs], dim=2)
            bwd = torch.cat([bwd, out_embs], dim=2)
+
+        # Forward and backward logits and targs
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         logits_fwd = hid2voc(fwd).view(b_size * seq_len, -1)
         logits_bwd = hid2voc(bwd).view(b_size * seq_len, -1)
@@ -786,19 +795,11 @@ class MultiTaskModel(nn.Module):
         trg_fwd = batch['targs']['words'].view(-1)
         trg_bwd = batch['targs_b']['words'].view(-1)
         targs = torch.cat([trg_fwd, trg_bwd], dim=0)
-
-        assert logits.size(0) == targs.size(0), "N predictions and n targets differ!"
-
-        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-        #out['fwd_loss'] = F.cross_entropy(logits_fwd, trg_fwd, ignore_index=pad_idx)
-        #out['bwd_loss'] = F.cross_entropy(logits_bwd, trg_bwd, ignore_index=pad_idx)
-        #print ("fwd {}bwd {}".format(out['fwd_loss'], out['bwd_loss']))
-        #out['loss'] = (out['fwd_loss'] + out['bwd_loss']) / 2
+        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         if predict:
             pass
-
         return out
 
     def _grounded_classification_forward(self, batch, task, predict):
