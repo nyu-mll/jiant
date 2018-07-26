@@ -758,7 +758,8 @@ class CNNEncoder(Model):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
         self.model = self._load_model(model_name)
-
+        self.feat_path = path + '/all_feats/'
+        
     def _load_model(self, model_name):
         if model_name == 'alexnet':
             model = alexnet(pretrained=True)
@@ -803,8 +804,7 @@ class CNNEncoder(Model):
         '''
         Args: img_id that maps image -> sentence pairs in respective datasets.
         '''
-
-        f = open('/nfs/jsalt/home/roma/mscoco/grounded/feats/' + str(img_id) + '.json', 'r')
+        f = open(self.feat_path + str(img_id) + '.json', 'r')
         for line in f: feat_dict = json.loads(line)
         idx = list(feat_dict.keys())[0]
         return feat_dict[idx]

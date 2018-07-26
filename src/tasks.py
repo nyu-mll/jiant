@@ -1764,12 +1764,14 @@ class GroundedTask(Task):
         val = load_mscoco(val_dict, val, val_ids)
         test = load_mscoco(te_dict, test, test_ids)
 
-        log.info("All train samples: " + str(len(train[0])))
+        self.tr_data = train
+        self.val_data = val
+        self.te_data = test
+        self.train_data_text = train
+        self.val_data_text = val
+        self.test_data_text = test
 
-        self.tr_data = train; self.val_data = val; self.te_data = test
-        self.train_data_text = train; self.val_data_text = val; self.test_data_text = test
-
-        log.info('Train: ' + str(len(train)) + ', Val: ' + str(len(val)) + ', Test: ' + str(len(test)))
+        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
         log.info("\nFinished loading MSCOCO data!")
 
 class VAETask(SequenceGenerationTask):

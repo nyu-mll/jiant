@@ -514,8 +514,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, GroundedTask):
-            out = self._grounded_contrastive_one_forward(batch, task, predict)
-            #out = self._rsa_forward(batch, task, predict)
+            out = self._grounded_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         else:
@@ -796,8 +795,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _grounded_contrastive_one_forward(self, batch, task, predict):
-        
+    def _grounded_forward(self, batch, task, predict):
         out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)
@@ -811,8 +809,8 @@ class MultiTaskModel(nn.Module):
         img_seq = [torch.tensor(task.img_encoder.forward(int(ids[img_idx]))[0], dtype=torch.float32).cuda() for img_idx in range(len(ids))]
 
         loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
-        softmax = nn.Softmax(); 
-        distance = nn.PairwiseDistance(p=1, eps=1e-06); cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        softmax = nn.Softmax()
+        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
         acc = []
 
         loss_fn = nn.L1Loss()
@@ -821,7 +819,7 @@ class MultiTaskModel(nn.Module):
         for sent_idx in range(batch_size):
             sent = sent_rep[sent_idx].reshape(1, -1).cuda()
             img = img_seq[sent_idx].reshape(1, -1).cuda()
-            labels = [0 for i in range(samples)]; labels[0] = 1
+            labels = [1] + [0] * (samples - 1)
             labels = torch.tensor(labels, dtype=torch.float32)
             mat = [cos(sent, img).cpu().data.numpy()[0]]
             while(len(mat) < samples):
@@ -830,7 +828,6 @@ class MultiTaskModel(nn.Module):
                     r = np.random.randint(batch_size, size=(1,1))[0][0]
                 img = img_seq[r].reshape(1, -1).cuda()
                 mat.append(cos(sent, img).cpu().data.numpy()[0])
-                #mat.append(distance(sent, img).cpu().data.numpy()[0])
 
             mat = torch.tensor(mat, dtype=torch.float32)
             dist = softmax(Variable(torch.tensor(mat, dtype=torch.float32)))
@@ -838,12 +835,12 @@ class MultiTaskModel(nn.Module):
             max_idx = np.argmax(dist.data.numpy())
             loss.add(loss_fn(mat, labels))
 
-            preds = [0 for i in range(samples)]; preds[max_idx] = 1
-            if max_idx == 0: acc.append(1)
-            else: acc.append(0)
+            preds = [0 for i in range(samples)]
+            preds[max_idx] = 1
+            acc.append(1 if max_idx == 0 else 0)
 
         out['loss'] = loss
-        task.scorer1.__call__(np.mean(acc))
+        task.scorer1(np.mean(acc))
         return out
     
 
