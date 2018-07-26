@@ -36,7 +36,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, Reddit_MTTask
+    GroundedTask, MTTask, RedditTask, Reddit_Seq2Seq, Wiki103_Seq2Seq
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -302,7 +302,19 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (MTTask, Reddit_MTTask)):
+    elif isinstance(task, Wiki103_Seq2Seq):
+        attention = args.get("mt_attention", "bilinear")
+        log.info("using {} attention".format(attention))
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': args.max_seq_len,
+                                 'target_namespace': 'tokens',
+                                 'attention': attention,
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
+        setattr(model, '%s_decoder' % task.name, decoder)
+    elif isinstance(task, (MTTask, Reddit_Seq2Seq)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -603,8 +615,11 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
 
-        if task.name in ['reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
-            sent1_new = torch.cat([sent1, sent1], 0)
+        if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
+            # By default, input data has only positive pairs, following logic 
+            # creates negative pairs and appends to positive pairs. Negative pairs are creates by rotating sent2
+            # Note that we need to rorate corresponding mask also. *_new contain positive and negative pairs
+            sent1_new = torch.cat([sent1, sent1], 0) 
             mask1_new = torch.cat([mask1, mask1], 0)
             sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
             mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
@@ -733,15 +748,16 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, (MTTask, Reddit_MTTask)):
+        if isinstance(task, (MTTask, Reddit_Seq2Seq)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            if not self.training:
+            if not self.training and not isinstance(task, Wiki103_Seq2Seq):
                 # bleu scoring
-                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
+                bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
                 task.scorer2(bleu_score)
+                task.scorer3(unk_ratio_macroavg)
 
             return out
 

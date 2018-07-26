@@ -34,8 +34,8 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask, RedditTask_PairClassi, MTdata_PairClassi, \
-    MTdataRankingTask
+    RedditTask, Reddit_Seq2Seq, RedditTask_PairClassi, MTdata_PairClassi, \
+    Wiki103_Seq2Seq, Wiki103_Classif, MTdataRankingTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
@@ -80,6 +80,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
+             'wiki103_s2s': (Wiki103_Seq2Seq, 'WikiText103/'), 
+             'wiki103_classif': (Wiki103_Classif, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
@@ -93,7 +95,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'Reddit_2008/'),
              'reddit_dummy': (RedditTask, 'Reddit_2008_TestSample/'),
-             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
+             'reddit_s2s': (Reddit_Seq2Seq, 'Reddit_2008/'),
+             'reddit_s2s_3.4G': (Reddit_Seq2Seq, 'Reddit_3.4G/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
@@ -111,6 +114,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'reddit_3.4G': (RedditTask, 'Reddit_3.4G/'),
              'reddit_13G': (RedditTask, 'Reddit_13G/'),
              'reddit_pair_classif': (RedditTask_PairClassi, 'Reddit_2008/'),
+             'reddit_pair_classif_3.4G': (RedditTask_PairClassi, 'Reddit_3.4G/'),
              'reddit_pair_classif_mini': (RedditTask_PairClassi, 'Reddit_2008_TestSample/'),
              'mt_pair_classif': (MTdata_PairClassi, 'wmt14_en_de_local/'),
              'mt_pair_classif_mini': (MTdata_PairClassi, 'wmt14_en_de_mini/'),
@@ -270,11 +274,10 @@ def _build_embeddings(args, vocab, emb_file: str):
 def _build_vocab(args, tasks, vocab_path: str):
     ''' Build vocabulary from scratch, reading data from tasks. '''
     log.info("\tBuilding vocab from scratch")
-    ### FIXME MAGIC NUMBER
     max_v_sizes = {
         'word': args.max_word_v_size,
         'char': args.max_char_v_size,
-        'target': 20000, # TODO target max size
+        'target': args.max_targ_word_v_size
     }
     word2freq, char2freq, target2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
@@ -337,6 +340,8 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
+    utils.assert_for_log(not (args.reload_indexing and not reindex_tasks),
+                         "Flag reload_indexing was set, but no tasks are set to reindex (use -o \"args.reindex_tasks = \"task1,task2,...\"\")")
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
@@ -507,7 +512,7 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
     targets_by_freq.sort(key=lambda x: x[1], reverse=True)
     for target, _ in targets_by_freq[:max_v_sizes['target']]:
-        vocab.add_token_to_namespace(target, 'targets') # TODO namespace
+        vocab.add_token_to_namespace(target, 'targets')
     return vocab
 
 def add_task_label_vocab(vocab, task):

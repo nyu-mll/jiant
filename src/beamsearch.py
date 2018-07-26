@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 from . import bleu_scoring
+import numpy as np
 
 BEAM_SIZE = 5
 
@@ -256,14 +257,17 @@ def compute_bleu(hyps, scores, relevant_targets):
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
-                              targets, preds_file_path):
+                              targets, preds_file_path, task):
     hyps, scores = beam_search(decoder, encoder_outputs, encoder_outputs_mask)
 
     # important - preprocess targets for relevant targets
     # masking is handled by hardcoded check for zeros.
     relevant_targets = [[int(wordidx.item()) for i, wordidx in enumerate(target) if wordidx != 0 and i > 0] for target in targets]
 
+    targets_unk_ratio = [len([i for i in target if i == decoder._unk_index]) / len(target) for target in targets]
+    unk_ratio_macroavg = np.mean(targets_unk_ratio)
+
     bleu_score = compute_bleu(hyps, scores, relevant_targets)
     write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_vocab=decoder.vocab)
 
-    return bleu_score
+    return bleu_score, unk_ratio_macroavg

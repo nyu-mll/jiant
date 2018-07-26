@@ -39,7 +39,7 @@ def send_message(message: mail.Mail):
 
 ##
 # Implementation-specific logic.
-def get_notifier(to: str, args, timestamp=True):
+def get_notifier(to: str, args):
     """ Get a notification handler to call on exit.
 
     Args:
@@ -59,10 +59,12 @@ def get_notifier(to: str, args, timestamp=True):
         subject = subj_tmpl.format(prefix=prefix, host=hostname,
                                    exp_name=args.exp_name,
                                    run_name=args.run_name)
-        if timestamp:
-            now = datetime.datetime.now(LOCALTZ)
-            now = now.strftime("%Y-%m-%d %H:%M:%S")
-            subject += f" ({now:s} {LOCALTZ.zone:s})"
+        # Add timestamp.
+        now = datetime.datetime.now(LOCALTZ)
+        now = now.strftime("%Y-%m-%d %H:%M:%S")
+        body = f"{now:s} {LOCALTZ.zone:s}\n\n" + body
+
+        # Add log info.
         body += "\n\n Experiment log: {:s}".format(args.local_log_path)
         try:
             from src import gcp
@@ -70,6 +72,8 @@ def get_notifier(to: str, args, timestamp=True):
                      gcp.get_remote_log_url(args.remote_log_name))
         except Exception as e:
             log.info("Unable to generate remote log URL - not on GCP?")
+
+        # Add experiment args.
         body += "\n\n Parsed experiment args: {:s}".format(str(args))
         message = make_message(to, subject, body)
         log.info("Sending notification email to %s with subject: \n\t%s",
