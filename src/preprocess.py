@@ -34,7 +34,9 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask
+    RedditTask, Reddit_MTTask, RedditTask_PairClassi, MTdata_PairClassi, \
+    MTdataRankingTask
+
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -107,7 +109,12 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
              'reddit_softmax': (RedditTask, 'Reddit_2008/'),
              'reddit_3.4G': (RedditTask, 'Reddit_3.4G/'),
-             'reddit_13G': (RedditTask, 'Reddit_13G/')  
+             'reddit_13G': (RedditTask, 'Reddit_13G/'),
+             'reddit_pair_classif': (RedditTask_PairClassi, 'Reddit_2008/'),
+             'reddit_pair_classif_mini': (RedditTask_PairClassi, 'Reddit_2008_TestSample/'),
+             'mt_pair_classif': (MTdata_PairClassi, 'wmt14_en_de_local/'),
+             'mt_pair_classif_mini': (MTdata_PairClassi, 'wmt14_en_de_mini/'),
+             'mt_data_ranking': (MTdataRankingTask, 'wmt14_en_de_local/')
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
