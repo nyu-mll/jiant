@@ -325,6 +325,7 @@ class SamplingMultiTaskTrainer():
         task_names = [task.name for task in tasks]
         task_examples = np.array([task.n_train_examples for task in tasks])
         task_batches = np.array([task_infos[task.name]['n_tr_batches'] for task in tasks])
+        log.info ("Task training example: " + str(dict(zip(task_names,task_examples))))
 
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
@@ -359,11 +360,9 @@ class SamplingMultiTaskTrainer():
             sample_weights = np.exp(task_examples / weighting_temp)
             log.info("Sampling tasks with %s.", weighting_method.replace('_',' of temperature '))
 
-        log.info ("Weighting details: ")
-        log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]))
-        log.info ("weighting_method: " + weighting_method)
         normalized_sample_weights  = np.array(sample_weights) / sum(sample_weights)
-        log.info ("normalized_sample_weights: " + np.array_str(normalized_sample_weights, precision=4))
+        log.info ("Using weighting method: %s, with normalized sample weights %s ",
+            weighting_method,np.array_str(normalized_sample_weights, precision=4))
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
