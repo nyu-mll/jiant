@@ -52,7 +52,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    PassThroughPhraseLayer
+    NullPhraseLayer
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -118,18 +118,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'pass':
+    elif args.sent_enc == 'null':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(not args.skip_embs, f"skip_embs not supported with "
-                                            "'{args.sent_enc}' encoder")
-        #  phrase_layer = lambda embs, mask: embs  # pass-through
-        phrase_layer = PassThroughPhraseLayer(rnn_params['input_size'])
+        assert_for_log(args.skip_embs, f"skip_embs must be set for "
+                                        "'{args.sent_enc}' encoder")
+        phrase_layer = NullPhraseLayer(rnn_params['input_size'])
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       phrase_layer, skip_embs=False,
+                                       phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
-        d_sent = d_emb
+        d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
