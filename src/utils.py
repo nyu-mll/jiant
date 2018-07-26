@@ -114,7 +114,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
 
 
 def get_batch_size(batch):
-    ''' Given a batch with unknown text_fields, get the batch size '''
+    ''' Given a batch with unknown text_fields, get an estimate of batch size '''
     batch_field = batch['inputs'] if 'inputs' in batch else batch['input1']
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]

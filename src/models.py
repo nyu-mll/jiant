@@ -52,7 +52,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    PassThroughPhraseLayer
+    NullPhraseLayer
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -78,6 +78,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
+
+    # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
+    # So, embedding modules and classifier modules should not apply dropout there.
     tfm_params = Params({'input_dim': d_emb, 'hidden_dim': args.d_hid,
                          'projection_dim': args.d_tproj,
                          'feedforward_hidden_dim': args.d_ff,
@@ -118,18 +121,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'pass':
+    elif args.sent_enc == 'null':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(not args.skip_embs, f"skip_embs not supported with "
-                                            "'{args.sent_enc}' encoder")
-        #  phrase_layer = lambda embs, mask: embs  # pass-through
-        phrase_layer = PassThroughPhraseLayer(rnn_params['input_size'])
+        assert_for_log(args.skip_embs, f"skip_embs must be set for "
+                                        "'{args.sent_enc}' encoder")
+        phrase_layer = NullPhraseLayer(rnn_params['input_size'])
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       phrase_layer, skip_embs=False,
+                                       phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
-        d_sent = d_emb
+        d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
@@ -252,7 +254,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         for task in tasks:
             setattr(task, "_classifier_name", getattr(args, task.name).get("use_classifier", task.name))
         classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))
-        # one representation per classifier specified in task
+        # one representation per classifier specified in task, and the pretrain "task"
         num_reps = 1 + len(classifiers)
         log.info("Classifiers:{}".format(classifiers))
     else:
@@ -274,10 +276,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
                 weight_file=ELMO_WEIGHTS_PATH,
-                # Include pretrain task
                 num_output_representations=num_reps,
-                dropout=args.dropout)
+                # Dropout is added by the sentence encoder later.
+                dropout=0.)
             d_emb += 1024
+
         token_embedder["elmo"] = elmo_embedder
     embedder = ElmoTextFieldEmbedder(token_embedder, classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
@@ -770,21 +773,30 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_forward(self, batch, task, predict):
-        ''' For language modeling? '''
+        ''' For language modeling '''
         out = {}
-        b_size, seq_len = batch['targs']['words'].size()
         sent_encoder = self.sent_encoder
-        out['n_exs'] = b_size #get_batch_size(batch['input'])
         assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
                        "Not using LM for language modeling task!")
+        assert_for_log('targs' in batch and 'words' in batch['targs'],
+                       "Batch missing target words!")
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
+        b_size, seq_len = batch['targs']['words'].size()
+        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
+        out['n_exs'] = (b_size * seq_len - n_pad) * 2
+
         sent, mask = sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+
+        # Split encoder outputs by direction
         split = int(self.sent_encoder._phrase_layer.get_output_dim() / 2)
         fwd, bwd = sent[:, :, :split], sent[:, :, split:split*2]
-        if split * 2 < sent.size(2):
+        if split * 2 < sent.size(2): # skip embeddings
            out_embs = sent[:, :, split*2:]
            fwd = torch.cat([fwd, out_embs], dim=2)
            bwd = torch.cat([bwd, out_embs], dim=2)
+
+        # Forward and backward logits and targs
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         logits_fwd = hid2voc(fwd).view(b_size * seq_len, -1)
         logits_bwd = hid2voc(bwd).view(b_size * seq_len, -1)
@@ -793,19 +805,11 @@ class MultiTaskModel(nn.Module):
         trg_fwd = batch['targs']['words'].view(-1)
         trg_bwd = batch['targs_b']['words'].view(-1)
         targs = torch.cat([trg_fwd, trg_bwd], dim=0)
-
-        assert logits.size(0) == targs.size(0), "N predictions and n targets differ!"
-
-        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-        #out['fwd_loss'] = F.cross_entropy(logits_fwd, trg_fwd, ignore_index=pad_idx)
-        #out['bwd_loss'] = F.cross_entropy(logits_bwd, trg_bwd, ignore_index=pad_idx)
-        #print ("fwd {}bwd {}".format(out['fwd_loss'], out['bwd_loss']))
-        #out['loss'] = (out['fwd_loss'] + out['bwd_loss']) / 2
+        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         if predict:
             pass
-
         return out
 
     def _grounded_classification_forward(self, batch, task, predict):
