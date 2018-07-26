@@ -1,6 +1,8 @@
 import re
 import sys
+import os
 import datetime
+from extract_diagnostic_set_results import get_strings
 
 # Pro tip: To copy the results of this script from the terminal in Mac OS, use command-alt-shift-c. That'll copy the tabs as tabs, not spaces.
 
@@ -72,8 +74,16 @@ for path in sys.argv[1:]:
     for mv in results_line.strip().split(','):
       metric, value = mv.split(':')
       cols[metric.strip()] = '%.02f'%(100*float(value.strip()))
+    output = '\t'.join([cols[c] for c in col_order])
 
-    print('\t'.join([cols[c] for c in col_order]))
+    # Extract diagnostic set results, which are in results.tsv. Rediculous, but this is probably the path of least resistance.
+    results_path = os.path.join(os.path.join(os.path.dirname(path), os.pardir), 'results.tsv')
+    run_name = os.path.basename(os.path.dirname(path))
+    diagnostic_results_formatted = get_strings(results_path, run_name)
+    if len(diagnostic_results_formatted) > 0:
+      output += '\t\t\t%s' % diagnostic_results_formatted[-1] # Use the most recent evaluation.
+    print(output)
+
   except BaseException as e:
     print("Error:", e, path)
 

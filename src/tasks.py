@@ -1471,6 +1471,7 @@ class MTTask(SequenceGenerationTask):
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = Average()
+        self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1509,9 +1510,65 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         try:
             bleu_score = self.scorer2.get_metric(reset)
+            unk_ratio_macroavg = self.scorer3.get_metric(reset)
         except BaseException:
             bleu_score = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score}
+            unk_ratio_macroavg = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+class Wiki103_Seq2Seq(MTTask):
+    def __init__(self, path, max_seq_len, name='wiki103_mt'):
+        super().__init__(path, max_seq_len, name)
+        # for skip-thoughts setting, all source sentences are sentences that 
+        # followed by another sentence (which are all but the last one). 
+        # Similar for self.target_sentences
+        self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
+        self.target_sentences =  self.train_data_text[1:] + self.val_data_text[1:]
+
+    def load_data(self, path, max_seq_len):
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WikiText")
+
+    def load_txt(self, path, max_seq_len):
+        data = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                # hard code to fix unk symbol
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, max_seq_len)
+                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                data.append(sent)
+        return data
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        # pair setences# = sent# - 1
+        return len(split_text) - 1
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+
+        Split is a single list of sentences here.
+        '''
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+        def _make_instance(prev_sent, sent):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
+            d["targs"] = _sentence_to_text_field(sent, targs_indexers)
+            return Instance(d)
+        for i in range(1, len(split)):
+            yield _make_instance(split[i-1], split[i])
 
 
 class WikiInsertionsTask(MTTask):
