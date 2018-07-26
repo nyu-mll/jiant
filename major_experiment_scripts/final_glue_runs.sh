@@ -91,10 +91,6 @@ JIANT_OVERRIDES="train_tasks = reddit, run_name = reddit-elmo, elmo_chars_only =
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-## DAE ##
-
-# TODO: Roma - Add if ready.
-
 ## CCG (Note: For use in the NLI probing paper only) ##
 
 JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
