@@ -110,7 +110,7 @@ class SentenceEncoder(Model):
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
         sent_embs = self._dropout(sent_embs)
-        # task_sent_embs = self._dropout(task_sent_embs)
+        task_sent_embs = self._dropout(task_sent_embs)
 
         # the rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
