@@ -1471,6 +1471,7 @@ class MTTask(SequenceGenerationTask):
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = Average()
+        self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1509,9 +1510,11 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         try:
             bleu_score = self.scorer2.get_metric(reset)
+            unk_ratio_macroavg = self.scorer3.get_metric(reset)
         except BaseException:
             bleu_score = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score}
+            unk_ratio_macroavg = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 class Wiki103_Seq2Seq(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
