@@ -48,11 +48,14 @@ JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_
 
 ## MT ##
 
-JIANT_OVERRIDES="train_tasks = wmt14_en_ru, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt14_en_ru, run_name = wmt-noelmo, elmo_chars_only = 0, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_ru_classif, run_name = wmt-noelmo, elmo_chars_only = 1, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_ru_classif, run_name = wmt-noelmo, elmo_chars_only = 0, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-noelmo, elmo_chars_only = 1, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-noelmo, elmo_chars_only = 0, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = wmt14_en_ru, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_ru, run_name = wmt-noelmo, elmo_chars_only = 0, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 
 JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
