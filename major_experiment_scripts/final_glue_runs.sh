@@ -58,14 +58,6 @@ JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-elmo, elmo_
 JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-# Classification
-
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-en-ru-class-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-en-ru-class-elmo, elmo_chars_only = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-
-JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-en-de-class-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-en-de-class-elmo, elmo_chars_only = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-
 ## Reddit ##
 
 # TODO: Add attn vs. noattn comparisons.
