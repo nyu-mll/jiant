@@ -211,11 +211,11 @@ class Classifier(nn.Module):
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
         elif cls_type == 'mlp':
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
         elif cls_type == 'fancy_mlp':  # what they did in Infersent
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
                                        nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
