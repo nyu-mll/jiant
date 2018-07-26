@@ -881,6 +881,15 @@ class QQPTask(PairClassificationTask):
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
                 'precision': pcs, 'recall': rcl}
 
+class QQPAltTask(QQPTask):
+    ''' Task class for Quora Question Pairs. 
+
+    Identical to QQPTask class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="qqp-alt"):
+        '''QQP'''
+        super(QQPAltTask, self).__init__(path, max_seq_len, name)
 
 class MultiNLISingleGenreTask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
@@ -1081,6 +1090,15 @@ class STSBTask(PairRegressionTask):
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
+class STSBAltTask(STSBTask):
+    ''' Task class for Sentence Textual Similarity Benchmark. 
+
+    Identical to STSBTask class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="sts_benchmark-alt"):
+        '''STSB'''
+        super(STSBAltTask, self).__init__(path, max_seq_len, name)
 
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
@@ -1402,6 +1420,14 @@ class QNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
 
+class QNLIAltTask(QNLITask):
+    ''' Task class for SQuAD NLI
+    Identical to SQuAD NLI class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="squad-alt"):
+        '''QNLI'''
+        super(QNLIAltTask, self).__init__(path, max_seq_len, name)
 
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
