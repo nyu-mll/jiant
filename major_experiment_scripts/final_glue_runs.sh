@@ -83,8 +83,8 @@ JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-elmo, elmo
 
 # TODO: Raghu - Make sure this is set up to use the largest dataset that we're easily able to use.
 
-JIANT_OVERRIDES="train_tasks = reddit, run_name = reddit-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = reddit, run_name = reddit-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # TODO: Yinghui/Raghu - Add runs for skip-thought style training and contrastive training. Should follow the same pattern as LM above.
 
