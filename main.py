@@ -270,8 +270,7 @@ def main(cl_arguments):
         log.info("Evaluating...")
         val_results, val_preds = evaluate.evaluate(model, eval_tasks,
                                                    args.batch_size,
-                                                   args.cuda, "val",
-                                                   run_dir=args.run_dir)
+                                                   args.cuda, "val")
 
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
