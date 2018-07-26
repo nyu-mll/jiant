@@ -61,7 +61,10 @@ class PassThroughPhraseLayer(nn.Module):
         return embs
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM.
+
+    NB: Do not apply dropout to the input of this module. Will be applied internally.
+    '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
@@ -205,7 +208,9 @@ class Pooler(nn.Module):
 
 
 class Classifier(nn.Module):
-    ''' Classifier with a linear projection before pooling '''
+    ''' Classifier with a linear projection before pooling.
+
+    NB: Expects dropout to have already been applied to its input. '''
 
     def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
