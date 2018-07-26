@@ -729,7 +729,7 @@ class MultiTaskModel(nn.Module):
             if not self.training and not isinstance(task, Wiki103_Seq2Seq):
                 # bleu scoring
                 bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
-                # task.scorer2(bleu_score)
+                task.scorer2(bleu_score)
                 task.scorer3(unk_ratio_macroavg)
 
             return out
