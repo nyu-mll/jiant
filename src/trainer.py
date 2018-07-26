@@ -248,12 +248,6 @@ class SamplingMultiTaskTrainer():
             task_info['n_batches_since_val'] = 0
             task_info['optimizer'] = Optimizer.from_params(train_params,
                                                            copy.deepcopy(optimizer_params))
-            '''
-            task_optimizer_params=copy.deepcopy(optimizer_params)
-            if task.name == 'sst': task_optimizer_params['lr'] = 0.0001*10
-            elif task.name == 'wnli': task_optimizer_params['lr'] = 0.0001/10
-            task_info['optimizer'] = Optimizer.from_params(train_params,task_optimizer_params)
-            '''
             task_info['scheduler'] = LearningRateScheduler.from_params(
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
@@ -328,7 +322,7 @@ class SamplingMultiTaskTrainer():
             log.info("Weighting losses inverse to number of training examples, normalized by max weight")
         # eg. epoch_9_18_1_11_18_2_14_16_1
         elif 'epoch_' in scaling_method:
-            log.info("Weighting losses based on best epoches for each task from a previous uniform run, normalizd by max epoch")
+            log.info("Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch")
 
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
@@ -417,11 +411,11 @@ class SamplingMultiTaskTrainer():
             max_example = max([1/task.n_train_examples for task in tasks])
             scaling_weights = [1/task.n_train_examples/max_example for task in tasks]
         elif 'epoch_' in scaling_method:
-            epoches = scaling_method.strip('epoch_').split('_')
-            assert len(epoches) == len(tasks), "Loss Scaling Error: epoch number not match."
-            epoches = [int(epoch) for epoch in epoches]
-            max_epoch = max(epoches)
-            scaling_weights = [epoch /max_epoch for epoch in epoches]
+            epochs = scaling_method.strip('epoch_').split('_')
+            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            epochs = map(int,epochs)
+            max_epoch = max(epochs)
+            scaling_weights = [epoch /max_epoch for epoch in epochs]
 
         task_names = [task.name for task in tasks]
         scaling_weights = dict(zip(task_names,scaling_weights))
