@@ -14,6 +14,7 @@
 
 ## GLUE tasks as pretraining ##
 
+# Sam is running the next 12.
 JIANT_OVERRIDES="train_tasks = cola, run_name = cola-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = cola, run_name = cola-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -46,6 +47,7 @@ JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = st
 
 ## Random BiLSTM, no pretraining ##
 
+# Sam is running.
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -83,6 +85,7 @@ JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-elmo,
 
 # Classification
 
+# Pending task object creation. Raghu: Remove this comment when done.
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -108,6 +111,7 @@ JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-noattn-elmo, 
 
 # Classification (DiscSent-style. Which is not DisSent style. Aaagh.)
 
+# Pending task object creation. Raghu: Remove this comment when done.
 JIANT_OVERRIDES="train_tasks = wiki103_classif, run_name = wiki103-cl-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103_classif, run_name = wiki103-cl-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
