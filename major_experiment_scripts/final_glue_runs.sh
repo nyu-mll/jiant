@@ -63,17 +63,25 @@ JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-elmo, elmo_
 
 ## Reddit ##
 
-# TODO: Add attn vs. noattn comparisons.
+# Seq2seq No attention
 
-# Seq2seq
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noattn-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0, mt_attention=none" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noattn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0, mt_attention=none" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Seq2seq with attention
 
-# Classification
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0, mt_attention=bilinear" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0, mt_attention=bilinear" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Classification no attention
+
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noattn-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noattn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Classification with attention
+
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-attn-noelmo, elmo_chars_only = 1, pair_attn = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## LM ##
 
