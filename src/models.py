@@ -269,7 +269,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 weight_file=ELMO_WEIGHTS_PATH,
                 # Include pretrain task
                 num_output_representations=len(reps) + 1,
-                dropout=0.)
+                dropout=args.dropout)
             d_emb += 1024
         token_embedder["elmo"] = elmo_embedder
 
