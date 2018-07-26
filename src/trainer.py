@@ -354,15 +354,15 @@ class SamplingMultiTaskTrainer():
         elif 'power_' in weighting_method:
             weighting_power = float(weighting_method.strip('power_'))
             sample_weights = task_examples ** weighting_power
-            log.info("Sampling tasks with %s.", weighting_method.replace('_',' of '))
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of '))
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = np.exp(task_examples / weighting_temp)
-            log.info("Sampling tasks with %s.", weighting_method.replace('_',' of temperature '))
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
 
         normalized_sample_weights  = np.array(sample_weights) / sum(sample_weights)
         log.info ("Using weighting method: %s, with normalized sample weights %s ",
-            weighting_method,np.array_str(normalized_sample_weights, precision=4))
+            weighting_method, np.array_str(normalized_sample_weights, precision=4))
 
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
