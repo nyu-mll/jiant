@@ -1,11 +1,8 @@
 from collections import defaultdict
-import sys
+import argparse
 
 # Pro tip: To copy the results of this script from the terminal in Mac OS, use command-alt-shift-c. That'll copy the tabs as tabs, not spaces.
 
-if len(sys.argv) < 2:
-    print("Usage: python extract_results.py results.tsv")
-    exit(0)
 
 def get_strings(path, row_filter=None):
     ''' Extract tab-delimited results in a fixed order for each run in a results.tsv file.
@@ -52,8 +49,16 @@ def get_strings(path, row_filter=None):
         strings.append(outstr)
     return strings
 
+def get_args():
+    parser = argparse.ArgumentParser(description='Extract GLUE results from log files.')
+    parser.add_argument('log_files', type=str, nargs='+',
+                    help='One or more tsv files to parse. Files are seperated by white space')
+    args = parser.parse_args()
+    return args
+
 if __name__ == '__main__':
-    for path in sys.argv[1:]:
+    args = get_args()
+    for path in args.log_files:
         try:
             print(path)
             strings = get_strings(path)

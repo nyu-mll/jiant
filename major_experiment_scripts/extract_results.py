@@ -1,14 +1,15 @@
 import re
-import sys
 import os
 import datetime
+import argparse
 from extract_diagnostic_set_results import get_strings
 
 # Pro tip: To copy the results of this script from the terminal in Mac OS, use command-alt-shift-c. That'll copy the tabs as tabs, not spaces.
 
-if len(sys.argv) < 2:
-  print("Usage: python extract_results.py log.log")
-  exit(0)
+parser = argparse.ArgumentParser(description='Extract GLUE results from log files.')
+parser.add_argument('log_files', type=str, nargs='+',
+                    help='One or more log files to parse. Files are seperated by white space')
+args = parser.parse_args()
 
 col_order = ['date', 'train_tasks', 'dropout', 'elmo', 'cola_mcc', 'sst_accuracy', 'mrpc_accuracy', 'mrpc_f1', 'sts-b_pearsonr', 'sts-b_spearmanr', 'mnli_accuracy', 'qnli_accuracy', 'rte_accuracy', 'wnli_accuracy', 'qqp_accuracy', 'qqp_f1', 'path']
 
@@ -18,7 +19,7 @@ today = datetime.datetime.now()
 # looking at all lines is overkill, but just in case we change the format later, 
 # or if there is more junk after the eval line
 
-for path in sys.argv[1:]:
+for path in args.log_files:
   try:
     cols = {c : '' for c in col_order}
     cols['date'] =  today.strftime("%m/%d/%Y")
