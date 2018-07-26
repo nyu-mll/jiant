@@ -616,7 +616,10 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
 
         if task.name in ['reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
-            sent1_new = torch.cat([sent1, sent1], 0)
+            # By default, input data has only positive pairs, following logic 
+            # creates negative pairs and appends to positive pairs. Negative pairs are creates by rotating sent2
+            # Note that we need to rorate corresponding mask also. *_new contain positive and negative pairs
+            sent1_new = torch.cat([sent1, sent1], 0) 
             mask1_new = torch.cat([mask1, mask1], 0)
             sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
             mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
