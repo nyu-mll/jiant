@@ -36,7 +36,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, Reddit_MTTask
+    GroundedTask, MTTask, RedditTask, Reddit_MTTask, Wiki103_Seq2Seq
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -52,7 +52,7 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    PassThroughPhraseLayer
+    NullPhraseLayer
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -118,18 +118,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        skip_embs=args.skip_embs, cove_layer=cove_emb,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'pass':
+    elif args.sent_enc == 'null':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(not args.skip_embs, f"skip_embs not supported with "
-                                            "'{args.sent_enc}' encoder")
-        #  phrase_layer = lambda embs, mask: embs  # pass-through
-        phrase_layer = PassThroughPhraseLayer(rnn_params['input_size'])
+        assert_for_log(args.skip_embs, f"skip_embs must be set for "
+                                        "'{args.sent_enc}' encoder")
+        phrase_layer = NullPhraseLayer(rnn_params['input_size'])
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       phrase_layer, skip_embs=False,
+                                       phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
-        d_sent = d_emb
+        d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
@@ -302,6 +301,18 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, Wiki103_Seq2Seq):
+        attention = args.get("mt_attention", "bilinear")
+        log.info("using {} attention".format(attention))
+        decoder_params = Params({'input_dim': d_sent,
+                                 'target_embedding_dim': 300,
+                                 'max_decoding_steps': args.max_seq_len,
+                                 'target_namespace': 'tokens',
+                                 'attention': attention,
+                                 'dropout': args.dropout,
+                                 'scheduled_sampling_ratio': 0.0})
+        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
+        setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, (MTTask, Reddit_MTTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
@@ -711,10 +722,11 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            if not self.training:
+            if not self.training and not isinstance(task, Wiki103_Seq2Seq):
                 # bleu scoring
-                bleu_score = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
+                bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
                 task.scorer2(bleu_score)
+                task.scorer3(unk_ratio_macroavg)
 
             return out
 
