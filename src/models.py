@@ -78,6 +78,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
+
+    # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
+    # So, embedding modules and classifier modules should not apply dropout there.
     tfm_params = Params({'input_dim': d_emb, 'hidden_dim': args.d_hid,
                          'projection_dim': args.d_tproj,
                          'feedforward_hidden_dim': args.d_ff,
@@ -268,7 +271,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 weight_file=ELMO_WEIGHTS_PATH,
                 # Include pretrain task
                 num_output_representations=len(reps) + 1,
-                dropout=args.dropout)
+                # Dropout is added by the sentence encoder later.
+                dropout=0.)
             d_emb += 1024
         token_embedder["elmo"] = elmo_embedder
 
