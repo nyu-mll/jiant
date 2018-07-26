@@ -68,7 +68,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     representations, we take ``TokenEmbedders`` with corresponding names.  Each ``TokenEmbedders``
     embeds its input, and the result is concatenated in an arbitrary order.
     """
-    def __init__(self, token_embedders: Dict[str, TokenEmbedder], tasks,
+    def __init__(self, token_embedders: Dict[str, TokenEmbedder], classifiers,
                  elmo_chars_only=False,
                  sep_embs_for_skip=False) -> None:
         super(ElmoTextFieldEmbedder, self).__init__()
@@ -76,7 +76,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         for key, embedder in token_embedders.items():
             name = 'token_embedder_%s' % key
             self.add_module(name, embedder)
-        self.task_map = {task.name:(i+1) for i, task in enumerate(tasks)}
+        self.task_map = {classifier:(i+1) for i, classifier in enumerate(classifiers)}
         # pretrain task is a special, privileged task
         self.task_map["@pretrain@"] = 0
         self.elmo_chars_only = elmo_chars_only
@@ -90,7 +90,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         return output_dim
 
     def forward(self, text_field_input: Dict[str, torch.Tensor],
-                task_name: str = "@pretrain@", num_wrapping_dims: int = 0) -> torch.Tensor:
+                classifier_name: str = "@pretrain@", num_wrapping_dims: int = 0) -> torch.Tensor:
         if self._token_embedders.keys() != text_field_input.keys():
             message = "Mismatched token keys: %s and %s" % (str(self._token_embedders.keys()),
                                                             str(text_field_input.keys()))
@@ -107,7 +107,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             token_vectors = embedder(tensor)
             if key == "elmo" and not self.elmo_chars_only:
                 if self.sep_embs_for_skip:
-                    token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
+                    token_vectors = token_vectors['elmo_representations'][self.task_map[classifier_name]]
                 else:
                     token_vectors = token_vectors['elmo_representations'][self.task_map["@pretrain@"]]
 

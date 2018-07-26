@@ -247,11 +247,18 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
     # Handle elmo
     if args.sep_embs_for_skip:
-        # one representation per task
-        reps = tasks
+        # need deterministic list of tasks based on their ``use_classifier`` attribute (
+        # which defaults to the task name if it doesn't exist.
+        classifiers = sorted(list(
+            set(map(lambda x:getattr(args, x.name).get("use_classifier", x.name),
+                    tasks))))
+        # one representation per classifier specified in task
+        num_reps = 1 + len(classifiers)
+        log.info("Classifiers:{}".format(classifiers))
     else:
-        # no unique rep for each task
-        reps = []
+        # everyone shares the same scalars
+        classifiers = []
+        num_reps = 1
     if args.elmo:
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
@@ -268,12 +275,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 options_file=ELMO_OPT_PATH,
                 weight_file=ELMO_WEIGHTS_PATH,
                 # Include pretrain task
-                num_output_representations=len(reps) + 1,
+                num_output_representations=num_reps,
                 dropout=args.dropout)
             d_emb += 1024
         token_embedder["elmo"] = elmo_embedder
-
-    embedder = ElmoTextFieldEmbedder(token_embedder, reps,
+    embedder = ElmoTextFieldEmbedder(token_embedder, classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 
