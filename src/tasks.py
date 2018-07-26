@@ -321,7 +321,9 @@ class EdgeProbingTask(Task):
                  label_file: str=None,
                  files_by_split: Dict[str,str]=None,
                  is_symmetric: bool=False,
-                 single_sided: bool=False):
+                 single_sided: bool=False,
+                 detect_spans: bool=False,
+    ):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
@@ -339,6 +341,7 @@ class EdgeProbingTask(Task):
                 type and share parameters. Otherwise, we learn a separate
                 projection layer and attention weight for each.
             single_sided: if true, only use span1.
+            detect_spans: if true, create a dense matrix to consider all spans
         """
         super().__init__(name)
 
@@ -352,6 +355,7 @@ class EdgeProbingTask(Task):
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
+        self.detect_spans = detect_spans
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))

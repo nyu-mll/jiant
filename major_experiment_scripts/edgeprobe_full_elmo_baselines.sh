@@ -8,7 +8,7 @@ function run_exp() {
     OVERRIDES+=", eval_tasks=$1, elmo_chars_only=0"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
-        --remote_log --notify iftenney@gmail.com
+        --remote_log
 }
 
 set -eux
@@ -16,12 +16,12 @@ set -eux
 cd $(dirname $0)
 pushd "${PWD%jiant*}/jiant"
 
-run_exp "edges-srl-conll2005"
-run_exp "edges-spr2"
-run_exp "edges-dpr"
-run_exp "edges-coref-ontonotes"
-run_exp "edges-dep-labeling"
+# run_exp "edges-srl-conll2005"
+# run_exp "edges-spr2"
+# run_exp "edges-dpr"
+# run_exp "edges-coref-ontonotes"
+# run_exp "edges-dep-labeling"
 
 run_exp "edges-ner-conll2003"
-run_exp "edges-constituent-ptb"
+# run_exp "edges-constituent-ptb"
 # run_exp "edges-ccg-tag"

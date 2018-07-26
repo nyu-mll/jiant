@@ -50,6 +50,7 @@ class EdgeClassifierModule(nn.Module):
         self.span_pooling = task_params['cls_span_pooling']
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
+        self.max_seq_len = 250 # hardcoded to be big #task.max_seq_len
         self.detect_spans = task.detect_spans
 
         self.proj_dim = task_params['d_hid']
@@ -82,6 +83,9 @@ class EdgeClassifierModule(nn.Module):
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
                                                          task_params)
+        if self.detect_spans:
+            index_array = np.array([[[i, j] for j in range(self.max_seq_len)] for i in range(self.max_seq_len)])
+            self.index_array = torch.from_numpy(index_array)
 
     def forward(self, batch: Dict,
                 sent_embs: torch.Tensor,
@@ -110,8 +114,8 @@ class EdgeClassifierModule(nn.Module):
             out: dict(str -> Tensor)
         """
         out = {}
-        print (sent_embs.size(), sent_mask.size(), sent_mask[0], batch.keys())
         batch_size = sent_embs.shape[0]
+        seq_len = sent_embs.shape[1]
         out['n_inputs'] = batch_size
 
         # Apply projection layers for each span.
@@ -121,11 +125,24 @@ class EdgeClassifierModule(nn.Module):
 
         # Span extraction.
         span_mask = (batch['span1s'][:,:,0] != -1)  # [batch_size, num_targets] bool
-        print (batch['span1s'].size(), batch['span2s'].size(), batch['labels'].size(), batch['labels'][0])
         out['mask'] = span_mask
-        total_num_targets = span_mask.sum()
+        if self.detect_spans:
+            total_num_targets = batch_size * seq_len * seq_len
+        else:
+            total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
         out['n_exs'] = total_num_targets  # used by trainer.py
+        
+        if self.detect_spans:
+            _kw = dict(sequence_mask=sent_mask.long())
+            candidate_spans = self.index_array[:seq_len, :seq_len].repeat(batch_size, 1, 1, 1)
+            # [batch_size * seq_len * seq_len * 2] ints
+            assert self.single_sided, "that use case isn't ready yet"
+            span_embs = self.span_extractors[1](se_proj1,
+                                                candidate_spans,
+                                                **_kw) # [batch_size * seq_len * seq_len * emb_size]
+            print (span_embs.size())
+            labels = # TODO
 
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
