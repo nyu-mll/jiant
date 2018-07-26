@@ -796,7 +796,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _grounded_forward(self, batch, task, predict):
-        out, neg = {}, []
+        out, img_seq = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
@@ -806,10 +806,12 @@ class MultiTaskModel(nn.Module):
 
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
 
-        img_seq = [torch.tensor(task.img_encoder.forward(int(ids[img_idx]))[0], dtype=torch.float32).cuda() for img_idx in range(len(ids))]
+        for img_idx in ids:
+            img_rep = task.img_encoder.forward(int(img_idx))[0]
+            img_seq.append(torch.tensor(img_rep, dtype=torch.float32).cuda())
 
         loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
-        softmax = nn.Softmax()
+        softmax = nn.Softmax(dim=0)
         cos = nn.CosineSimilarity(dim=1, eps=1e-6)
         acc = []
 
