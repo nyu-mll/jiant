@@ -40,7 +40,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     iterator = BasicIterator(batch_size)
 
     for task in tasks:
-        task.preds_file_path = os.path.join(run_dir, "preds{}_{}_eval.txt".format(time.time(), task.name))
+        if isinstance(task, tasks_module.MTTask):
+            task.preds_file_path = os.path.join(run_dir, "preds{}_{}_eval.txt".format(time.time(), task.name))
 
     all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
     all_preds = {}
