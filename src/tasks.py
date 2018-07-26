@@ -760,13 +760,13 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-class Reddit_MTTask(SequenceGenerationTask):
-    ''' Same as Machine Translation Task except for the load_data function'''
-
-    def __init__(self, path, max_seq_len, name='Reddit_MTTask'):
+class Reddit_Seq2Seq(SequenceGenerationTask):
+    ''' Task for seq2seq using reddit data '''
+    def __init__(self, path, max_seq_len, name='reddit_s2s'):
         super().__init__(name)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorer2 = Average()
+        self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -784,27 +784,32 @@ class Reddit_MTTask(SequenceGenerationTask):
         # Map over columns: inputs, targs
         instances = map(_make_instance, split[0], split[2])
         #  return list(instances)
-        return instances  # lazy iterator
+        return instances  # lazy iterator    
 
     def load_data(self, path, max_seq_len):
-        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
-        path = '//nfs/jsalt/home/raghu/'
-        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
+        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
                                         s1_idx=2, s2_idx=None, targ_idx=3,
-                                        targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                        targ_fn=targ_fn_startend)
+        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
                                       s1_idx=2, s2_idx=None, targ_idx=3,
-                                      targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
+                                      targ_fn=targ_fn_startend)
+        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
                                        s1_idx=2, s2_idx=None, targ_idx=3,
-                                       targ_fn=lambda t: t.split(' '))
+                                       targ_fn=targ_fn_startend)
 
         log.info("\tFinished loading MT data.")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        try:
+            bleu_score = self.scorer2.get_metric(reset)
+            unk_ratio_macroavg = self.scorer3.get_metric(reset)
+        except BaseException:
+            bleu_score = 0
+            unk_ratio_macroavg = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
 class CoLATask(SingleClassificationTask):

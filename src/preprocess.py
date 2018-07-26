@@ -34,7 +34,7 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask, Wiki103_Seq2Seq 
+    RedditTask, Reddit_Seq2Seq, Wiki103_Seq2Seq 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -90,8 +90,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'reddit': (RedditTask, 'Reddit/'),
-             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
+             'reddit': (RedditTask, 'Reddit_2008/'),
+             'reddit_s2s': (Reddit_Seq2Seq, 'Reddit_2008/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
