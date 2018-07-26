@@ -301,7 +301,7 @@ def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_voc
             hyp_sentence = []
             for word_idx in hyps[i, 1:]:
                 hyp_sentence.append(
-                    _get_word(decoder_vocab, i)
+                    _get_word(decoder_vocab, word_idx)
                 )
                 if word_idx == decoder_vocab.get_token_index(END_SYMBOL, "targets"):
                     break
