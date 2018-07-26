@@ -399,8 +399,9 @@ class EdgeProbingTask(Task):
                 assert len(val) == len(record['targets'])
                 for i, target in enumerate(record['targets']):
                     target['preds'][key] = val[i]
-            # non-list predictions, attach to top-level preds
-            record['preds'][key] = val
+            else:
+                # non-list predictions, attach to top-level preds
+                record['preds'][key] = val
         return record
 
     def load_data(self):
