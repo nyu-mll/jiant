@@ -34,8 +34,8 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask, RedditTask_PairClassi, MTdata_PairClassi, \
-    Wiki103_Seq2Seq
+    RedditTask, Reddit_Seq2Seq, RedditTask_PairClassi, MTdata_PairClassi, \
+    Wiki103_Seq2Seq, Wiki103_Classif
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -80,6 +80,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'wiki103_s2s': (Wiki103_Seq2Seq, 'WikiText103/'), 
+             'wiki103_classif': (Wiki103_Classif, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),

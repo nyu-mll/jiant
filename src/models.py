@@ -615,7 +615,7 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
 
-        if task.name in ['reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
+        if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
             # By default, input data has only positive pairs, following logic 
             # creates negative pairs and appends to positive pairs. Negative pairs are creates by rotating sent2
             # Note that we need to rorate corresponding mask also. *_new contain positive and negative pairs
