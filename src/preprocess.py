@@ -111,6 +111,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'reddit_3.4G': (RedditTask, 'Reddit_3.4G/'),
              'reddit_13G': (RedditTask, 'Reddit_13G/'),
              'reddit_pair_classif': (RedditTask_PairClassi, 'Reddit_2008/'),
+             'reddit_pair_classif_3.4G': (RedditTask_PairClassi, 'Reddit_3.4G/'),
              'reddit_pair_classif_mini': (RedditTask_PairClassi, 'Reddit_2008_TestSample/'),
              'mt_pair_classif': (MTdata_PairClassi, 'wmt14_en_de_local/'),
              'mt_pair_classif_mini': (MTdata_PairClassi, 'wmt14_en_de_mini/')
