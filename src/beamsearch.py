@@ -278,9 +278,8 @@ def greedy_search(decoder, encoder_outputs, encoder_outputs_mask, debug=False):
         word_lk = transition_probs.view(
             batch_size,
             -1
-        ).transpose(0, 1).contiguous()
-
-        scores, gen_indices[:, i] = word_lk.max(0)  # TODO calculate scores
+        )
+        scores, gen_indices[:, i] = word_lk.max(1)  # TODO calculate scores
 
     def _print_sentence(indices):
         sent = [_get_word(decoder.vocab, word_idx.item()) for word_idx in indices[1:]]
