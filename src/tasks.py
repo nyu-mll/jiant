@@ -1415,7 +1415,7 @@ class QNLIAltTask(QNLITask):
     Identical to SQuAD NLI class, but it can be handy to have two when controlling model settings.
     '''
 
-    def __init__(self, path, max_seq_len, name="squad"):
+    def __init__(self, path, max_seq_len, name="squad-alt"):
         '''QNLI'''
         super(QNLIAltTask, self).__init__(path, max_seq_len, name)
 
