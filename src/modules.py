@@ -44,21 +44,20 @@ from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
 from .cnns.inception import inception_v3
 
-class PassThroughPhraseLayer(nn.Module):
-    ''' Dummy phrase layer that just passes-through representations from a
-    lower level. Exists solely for API compatibility. '''
+class NullPhraseLayer(nn.Module):
+    ''' Dummy phrase layer that does nothing. Exists solely for API compatibility. '''
     def __init__(self, input_dim: int):
-        super(PassThroughPhraseLayer, self).__init__()
+        super(NullPhraseLayer, self).__init__()
         self.input_dim = input_dim
 
     def get_input_dim(self):
         return self.input_dim
 
     def get_output_dim(self):
-        return self.input_dim
+        return 0
 
     def forward(self, embs, mask):
-        return embs
+        return None
 
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
@@ -120,12 +119,14 @@ class SentenceEncoder(Model):
         # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, BiLMEncoder):
             sent_enc = sent_enc[-1]
-        sent_enc = self._dropout(sent_enc)
+        if sent_enc is not None:
+            sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
-            if self.sep_embs_for_skip:
-                sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
+            skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            if isinstance(self._phrase_layer, NullPhraseLayer):
+                sent_enc = skip_vec
             else:
-                sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+                sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
