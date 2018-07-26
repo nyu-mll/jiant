@@ -720,8 +720,8 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, (MTTask, Reddit_MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
-            out.update(decoder.forward(sent, sent_mask, batch['targs']))
-            task.scorer1(math.exp(out['loss'].item()))
+            # out.update(decoder.forward(sent, sent_mask, batch['targs']))
+            # task.scorer1(math.exp(out['loss'].item()))
 
             if not self.training and not isinstance(task, Wiki103_Seq2Seq):
                 # bleu scoring
