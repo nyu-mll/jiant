@@ -48,44 +48,55 @@ JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_
 
 ## MT ##
 
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-noelmo, elmo_chars_only = 1, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-noelmo, elmo_chars_only = 0, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# TODO: Add attn vs. noattn comparisons.
 
-JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-noelmo, elmo_chars_only = 1, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-noelmo, elmo_chars_only = 0, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Seq2seq
 
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-noelmo, elmo_chars_only = 0, lr = 0.001, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-elmo, elmo_chars_only = 0, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-noelmo, elmo_chars_only = 1, lr = 0.001, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_targ_word_v_size = 43000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Classification
 
-# MT data pair classification
-JIANT_OVERRIDES="train_tasks = mt_pair_classif, run_name = wmt-pair-classif-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = mt_pair_classif, run_name = wmt-pair-classif-elmo, elmo_chars_only = 0, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-en-ru-class-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt17_en_ru_classif, run_name = wmt-en-ru-class-elmo, elmo_chars_only = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-# Reddit seq2seq
-JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm=1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-en-de-class-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wmt14_en_de_classif, run_name = wmt-en-de-class-elmo, elmo_chars_only = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-## Reddit pair classification ##
-JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+## Reddit ##
 
+# TODO: Add attn vs. noattn comparisons.
+
+# Seq2seq
+
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noelmo, elmo_chars_only = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_word_v_size = 40000, max_grad_norm = 1.0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Classification
+
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## LM ##
 
+# Standard LM training
 # Note: ELMo can't combine with language modeling, so there are no ELMo runs.
 
 JIANT_OVERRIDES="train_tasks = bwb, run_name = bwb-lm-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+# Seq2seq (Skip-Thought)
+
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-noelmo, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-JIANT_OVERRIDES="train_tasks = wiki103_classif, run_name = wiki103-cl-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = wiki103_classif, run_name = wiki103-cl-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Classification (DiscSent-style. Which is not DisSent style. Aaagh.)
+
+JIANT_OVERRIDES="train_tasks = wiki103_class, run_name = wiki103-cl-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = wiki103_class, run_name = wiki103-cl-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## DisSent ##
 
