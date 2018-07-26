@@ -249,9 +249,9 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.sep_embs_for_skip:
         # need deterministic list of tasks based on their ``use_classifier`` attribute (
         # which defaults to the task name if it doesn't exist.
-        classifiers = sorted(list(
-            set(map(lambda x:getattr(args, x.name).get("use_classifier", x.name),
-                    tasks))))
+        for task in tasks:
+            setattr(task, "_classifier_name", getattr(args, task.name).get("use_classifier", task.name))
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))
         # one representation per classifier specified in task
         num_reps = 1 + len(classifiers)
         log.info("Classifiers:{}".format(classifiers))

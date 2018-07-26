@@ -22,7 +22,7 @@ from allennlp.modules import Elmo
 class ElmoTokenEmbedderWrapper(TokenEmbedder):
     """
     Wraps the Elmo call so that the parameters are saved correctly
-    
+
     Forwards all calls to Elmo
     """
     def __init__(self,
@@ -57,10 +57,11 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
 @TextFieldEmbedder.register("elmo")
 class ElmoTextFieldEmbedder(TextFieldEmbedder):
     """
-    forward() now accepts task as an argument, which tells the embedder which ELMo representation
-    to return. init() also requires a list of tasks (i.e. the number of tasks that need their own
-    ELMo scalars).
-    
+    forward() now accepts classifier name as an argument, which tells the embedder which ELMo representation
+    to return. init() also requires a list of classifier names (i.e. the number of tasks that need their own
+    ELMo scalars). These are names (strings) and not necessarily the same as task names (e.g. mnli for
+    mnli-diagnostic.
+
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
     :class:`~allennlp.data.TokenIndexer`.  As the data produced by a

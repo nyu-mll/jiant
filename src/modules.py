@@ -103,7 +103,7 @@ class SentenceEncoder(Model):
         """
         # embeddings
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
