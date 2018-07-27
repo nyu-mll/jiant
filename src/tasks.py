@@ -65,6 +65,16 @@ def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
 
+def _atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
+    ''' Replace bad tokenize that will be split by tokenizer with a
+    placeholder token. Tokenize, and then substitute the placeholder
+    with the *first* nonatomic token in the list. '''
+    for nonatomic_tok in nonatomic_toks:
+        sent = sent.replace(nonatomic_tok, atomic_tok)
+    sent = process_sentence(sent, max_seq_len)
+    sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
+    return sent
+
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -642,7 +652,7 @@ class WikiTextLMTask(LanguageModelingTask):
 
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
-        unk_tok_orig = '<unk>'
+        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -651,10 +661,7 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                toks = toks.replace(unk_tok_orig, UNK_TOK_ALLENNLP)
-                toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
-                sent = process_sentence(toks, self.max_seq_len)
-                sent = [UNK_TOK_ALLENNLP if t == UNK_TOK_ATOMIC else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, self.max_seq_len)
                 # we also filtering out headers (artifact of the data)
                 # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
@@ -1704,16 +1711,13 @@ class Wiki103Classification(PairClassificationTask):
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them
         See WikiTextLMTask for an explanation of the preproc'''
-        unk_tok_orig = '<unk>'
+        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                toks = toks.replace(unk_tok_orig, UNK_TOK_ALLENNLP)
-                toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
-                sent = process_sentence(toks, self.max_seq_len)
-                sent = [UNK_TOK_ALLENNLP if t == UNK_TOK_ATOMIC else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, self.max_seq_len)
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -1780,19 +1784,13 @@ class Wiki103Seq2SeqTask(MTTask):
         ''' Rather than return a whole list of examples, stream them
         See WikiTextLMTask for an explanation of the preproc'''
         data = []
-        unk_tok_orig = '<unk>'
+        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                # WikiText103 preprocesses unknowns as '<unk>'
-                # which gets tokenized as '@', '@', 'UNKNOWN', ...
-                # We replace to avoid that
-                toks = toks.replace(unk_tok_orig, UNK_TOK_ALLENNLP)
-                toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
-                sent = process_sentence(toks, max_seq_len)
-                sent = [UNK_TOK_ALLENNLP if t == UNK_TOK_ATOMIC else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, max_seq_len)
                 data.append(sent)
         return data
 
