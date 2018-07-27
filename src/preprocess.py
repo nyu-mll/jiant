@@ -115,6 +115,7 @@ NAME2INFO.update(tasks_module.REGISTRY)
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
+UNK_TOK = "@@UNKNOWN@@"
 
 ALL_SPLITS = ['train', 'val', 'test']
 

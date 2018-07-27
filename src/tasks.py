@@ -35,7 +35,10 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 from . import serialize
 from . import utils
 from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
-import codecs 
+import codecs
+
+UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
+UNK_TOK_ATOMIC = "UNKNOWN" # an unk token that won't get split by tokenizers
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, **kw):
@@ -61,6 +64,16 @@ def register_task(name, rel_path, **kw):
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
+
+def _atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
+    ''' Replace bad tokenize that will be split by tokenizer with a
+    placeholder token. Tokenize, and then substitute the placeholder
+    with the *first* nonatomic token in the list. '''
+    for nonatomic_tok in nonatomic_toks:
+        sent = sent.replace(nonatomic_tok, atomic_tok)
+    sent = process_sentence(sent, max_seq_len)
+    sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
+    return sent
 
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
     '''
@@ -639,7 +652,7 @@ class WikiTextLMTask(LanguageModelingTask):
 
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
-        unk_tok = '<unk>' # '@@UNKNOWN@@'
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -648,9 +661,9 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                toks = toks.replace(unk_tok, 'UNKNOWN')
-                sent = process_sentence(toks, self.max_seq_len)
-                sent = [unk_tok if t == 'UNKNOWN' else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                # we also filtering out headers (artifact of the data)
+                # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -667,6 +680,9 @@ class WikiText103LMTask(WikiTextLMTask):
 
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
+        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
+                               'val': os.path.join(path, "valid.sentences.txt"),
+                               'test':os.path.join(path, "test.sentences.txt")}
 
 
 class BWBLMTask(LanguageModelingTask):
@@ -700,10 +716,10 @@ class SSTTask(SingleClassificationTask):
 
 
 @register_task('reddit', rel_path='Reddit_2008/')
-@register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/') 
+@register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
-@register_task('reddit_13G', rel_path='Reddit_13G/') 
-@register_task('reddit_softmax', rel_path='Reddit_2008/') 
+@register_task('reddit_13G', rel_path='Reddit_13G/')
+@register_task('reddit_softmax', rel_path='Reddit_2008/')
 class RedditTask(RankingTask):
     ''' Task class for Reddit data.  '''
 
@@ -779,7 +795,7 @@ class RedditTask(RankingTask):
 @register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
 @register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
 class MTDataRankingTask(RedditTask):
-    ''' Task class for MT data to do ranking/classification 
+    ''' Task class for MT data to do ranking/classification
         RedditTask and MTDataRankingTask are same except data
     '''
 
@@ -787,7 +803,7 @@ class MTDataRankingTask(RedditTask):
         ''' '''
         super().__init__(path, max_seq_len, name)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}       
+                                split in ["train", "val", "test"]}
 
     def load_data(self, path):
         ''' Load data '''
@@ -808,7 +824,7 @@ class MTDataRankingTask(RedditTask):
             example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
         self.example_counts = example_counts
 
-    
+
 @register_task('reddit_pair_classif', rel_path='Reddit_2008/')
 @register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
@@ -881,18 +897,18 @@ class RedditPairClassificationTask(PairClassificationTask):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
-    
+
 @register_task('mt_pair_classif', rel_path='wmt14_en_de_local/')
 @register_task('mt_pair_classif_dummy', rel_path='wmt14_en_de_mini/')
 class MTDataPairClassificationTask(RedditPairClassificationTask):
-    ''' Task class for MT data pair classification using standard setup. 
+    ''' Task class for MT data pair classification using standard setup.
         RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
     '''
     def __init__(self, path, max_seq_len, name="mt_data_PairClassi"):
         ''' '''
         super().__init__(path, max_seq_len, name)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}       
+                                split in ["train", "val", "test"]}
 
     def load_data(self, path):
         ''' Load data '''
@@ -905,7 +921,7 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
                 sent2 = process_sentence(row[1], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
-    
+
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
@@ -979,7 +995,7 @@ class QQPTask(PairClassificationTask):
                 'precision': pcs, 'recall': rcl}
 
 class QQPAltTask(QQPTask):
-    ''' Task class for Quora Question Pairs. 
+    ''' Task class for Quora Question Pairs.
 
     Identical to QQPTask class, but it can be handy to have two when controlling model settings.
     '''
@@ -1188,7 +1204,7 @@ class STSBTask(PairRegressionTask):
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
 class STSBAltTask(STSBTask):
-    ''' Task class for Sentence Textual Similarity Benchmark. 
+    ''' Task class for Sentence Textual Similarity Benchmark.
 
     Identical to STSBTask class, but it can be handy to have two when controlling model settings.
     '''
@@ -1672,7 +1688,7 @@ class RedditSeq2SeqTask(MTTask):
         log.info("\tFinished loading reddit data.")
 
 
-@register_task('wiki103_classif', rel_path='WikiText103/') 
+@register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
     '''Pair Classificaiton Task using Wiki103'''
     def __init__(self, path, max_seq_len, name="wiki103_classif"):
@@ -1680,10 +1696,11 @@ class Wiki103Classification(PairClassificationTask):
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.files_by_split = {'train': os.path.join(path, "train.txt"),
-                               'val': os.path.join(path, "valid.txt"),
-                               'test':os.path.join(path, "test.txt")}
+        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
+                               'val': os.path.join(path, "valid.sentences.txt"),
+                               'test':os.path.join(path, "test.sentences.txt")}
         self.max_seq_len = max_seq_len
+        self.min_seq_len = 0
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
@@ -1692,15 +1709,17 @@ class Wiki103Classification(PairClassificationTask):
         return self.load_data(self.files_by_split[split])
 
     def load_data(self, path):
+        ''' Rather than return a whole list of examples, stream them
+        See WikiTextLMTask for an explanation of the preproc'''
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                # hard code to solve UNK symbol
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
-                sent = process_sentence(toks, self.max_seq_len)
-                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
+                    continue
                 yield sent
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -1746,32 +1765,32 @@ class Wiki103Classification(PairClassificationTask):
 class Wiki103Seq2SeqTask(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
-        # for skip-thoughts setting, all source sentences are sentences that 
-        # followed by another sentence (which are all but the last one). 
+        # for skip-thoughts setting, all source sentences are sentences that
+        # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
         self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
-        self.target_sentences =  self.train_data_text[1:] + self.val_data_text[1:]
+        self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
 
     def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.sentences.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.sentences.txt"), max_seq_len)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading WikiText")
 
     def load_txt(self, path, max_seq_len):
+        ''' Rather than return a whole list of examples, stream them
+        See WikiTextLMTask for an explanation of the preproc'''
         data = []
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
-                if toks == '':
+                if not toks:
                     continue
-                # hard code to fix unk symbol
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
-                sent = process_sentence(toks, max_seq_len)
-                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, max_seq_len)
                 data.append(sent)
         return data
 
@@ -2018,9 +2037,9 @@ class GroundedTask(Task):
     def load_data(self, path, max_seq_len):
         ''' Map sentences to image ids
             Keep track of caption ids just in case '''
-        
+
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        
+
         with open(os.path.join(path, "train_idx.txt"), 'r') as f:
             train_ids = [item.strip() for item in f.readlines()]
         with open(os.path.join(path, "val_idx.txt"), 'r') as f:
@@ -2039,7 +2058,7 @@ class GroundedTask(Task):
             te_dict = json.loads(line)
         with open(os.path.join(path, "feat_map.json")) as fd:
             keymap = json.load(fd)
-            
+
         def load_mscoco(data_dict, data_list, img_idxs):
             for img_idx in img_idxs:
                 newimg_id = 'mscoco/grounded/' + img_idx + '.json'
@@ -2127,7 +2146,7 @@ class GroundedSWTask(Task):
     def load_data(self, path, max_seq_len):
         ''' Map sentences to image ids
             Keep track of caption ids just in case '''
-        
+
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
 
         def get_data(dataset, data):
@@ -2139,7 +2158,7 @@ class GroundedSWTask(Task):
                 data[1].append(int(items[1]))
                 data[2].append(int(items[2]))
             return data
-        
+
         train = get_data('shapeworld/train', train)
         val = get_data('shapeworld/val', val)
         test = get_data('shapeworld/test', test)
