@@ -786,7 +786,6 @@ class MTdataRankingTask(RankingTask):
 
     def load_data(self, path):
         ''' Load data '''
-        #with open(path, 'r') as txt_fh:
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 row = row.strip().split('\t')
@@ -812,7 +811,6 @@ class MTdataRankingTask(RankingTask):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
         self.example_counts = example_counts
 

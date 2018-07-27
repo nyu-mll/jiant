@@ -673,7 +673,10 @@ class MultiTaskModel(nn.Module):
 
 
     def _ranking_forward(self, batch, task, predict):
-        ''' For caption and image ranking. This implementation is intended for Reddit'''
+        ''' For caption and image ranking. This implementation is intended for Reddit
+            This implementation assumes only positive pairs exist in input data. 
+            Negative pairs are created within batch.
+        '''
         out = {}
         # feed forwarding inputs through sentence encoders
         sent1, mask1 = self.sent_encoder(batch['input1'], task)
@@ -685,9 +688,6 @@ class MultiTaskModel(nn.Module):
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
 
-        #  if 1:
-        #sent1_rep = sent1_rep/sent1_rep.norm(dim=1)[:, None]
-        #sent2_rep = sent2_rep/sent2_rep.norm(dim=1)[:, None]
         cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0,1))
         if task.name == 'reddit_softmax':
             cos_simi_backward = cos_simi.transpose(0,1)
@@ -710,7 +710,6 @@ class MultiTaskModel(nn.Module):
             labels_neg = torch.diag(labels, diagonal=1)
             labels = torch.cat([labels_pos, labels_neg], dim=0)
             labels = labels.cuda()
-            #total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
             total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
     
