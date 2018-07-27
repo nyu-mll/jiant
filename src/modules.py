@@ -809,7 +809,7 @@ class CNNEncoder(Model):
         '''
         Args: img_id that maps image -> sentence pairs in respective datasets.
         '''
-        f = open(self.feat_path + str(img_id) + '.json', 'r')
-        for line in f: feat_dict = json.loads(line)
-        idx = list(feat_dict.keys())[0]
-        return feat_dict[idx]
+
+        with open(self.feat_path + str(img_id) + '.json') as fd:
+            feat_dict = json.load(fd)
+        return feat_dict[list(feat_dict.keys())[0]] # has one key

@@ -854,7 +854,7 @@ class MultiTaskModel(nn.Module):
             max_idx = np.argmax(dist.data.numpy())
             loss.add(loss_fn(mat, labels))
 
-            preds = [0 for i in range(samples)]
+            preds = [0] * samples
             preds[max_idx] = 1
             acc.append(1 if max_idx == 0 else 0)
 

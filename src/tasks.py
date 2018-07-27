@@ -1897,7 +1897,7 @@ class GroundedSWTask(Task):
         elif metric_name is 'cos_sim':
             metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
         else:
-            print('Undefined metric name!')
+            log.warning('Undefined metric name!')
             metric = 0
 
         return metric
