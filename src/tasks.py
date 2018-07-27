@@ -698,7 +698,7 @@ class RedditTask(RankingTask):
 
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
-        super(RedditTask, self).__init__(name, 2)
+        super().__init__(name, 2)
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -801,7 +801,7 @@ class MTDataRankingTask(RedditTask):
 @register_task('reddit_pair_classif', rel_path='Reddit_2008/')
 @register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
-class RedditTaskPairClassification(PairClassificationTask):
+class RedditPairClassificationTask(PairClassificationTask):
     ''' Task class for Reddit data.  '''
 
     def __init__(self, path, max_seq_len, name="reddit_PairClassi"):
@@ -873,9 +873,9 @@ class RedditTaskPairClassification(PairClassificationTask):
     
 @register_task('mt_pair_classif', rel_path='wmt14_en_de_local/')
 @register_task('mt_pair_classif_dummy', rel_path='wmt14_en_de_mini/')
-class MTDataPairClassification(RedditTaskPairClassification):
+class MTDataPairClassificationTask(RedditPairClassificationTask):
     ''' Task class for MT data pair classification using standard setup. 
-        RedditTaskPairClassification and MTDataPairClassification are same tasks with different data
+        RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
     '''
     def __init__(self, path, max_seq_len, name="mt_data_PairClassi"):
         ''' '''
@@ -1616,7 +1616,7 @@ class MTTask(SequenceGenerationTask):
 @register_task('reddit_s2s', rel_path='Reddit_2008/')
 @register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/')
 @register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/')
-class RedditSeq2Seq(MTTask):
+class RedditSeq2SeqTask(MTTask):
     ''' Task for seq2seq using reddit data '''
     def __init__(self, path, max_seq_len, name='reddit_s2s'):
         super().__init__(path, max_seq_len, name)
@@ -1706,7 +1706,7 @@ class Wiki103Classification(PairClassificationTask):
 
 
 @register_task('wiki103_s2s', rel_path='WikiText103/')
-class Wiki103Seq2Seq(MTTask):
+class Wiki103Seq2SeqTask(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
         # for skip-thoughts setting, all source sentences are sentences that 
