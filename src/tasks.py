@@ -35,6 +35,7 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 from . import serialize
 from . import utils
 from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+import codecs 
 
 REGISTRY = {}  # Do not edit manually!
 def register_task(name, rel_path, **kw):
@@ -698,12 +699,17 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+@register_task('reddit', rel_path='Reddit_2008/')
+@register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/') 
+@register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
+@register_task('reddit_13G', rel_path='Reddit_13G/') 
+@register_task('reddit_softmax', rel_path='Reddit_2008/') 
 class RedditTask(RankingTask):
     ''' Task class for Reddit data.  '''
 
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
-        super(RedditTask, self).__init__(name, 2)
+        super().__init__(name, 2)
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -746,7 +752,6 @@ class RedditTask(RankingTask):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
@@ -771,51 +776,142 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-class Reddit_MTTask(SequenceGenerationTask):
-    ''' Same as Machine Translation Task except for the load_data function'''
+@register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
+@register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
+class MTDataRankingTask(RedditTask):
+    ''' Task class for MT data to do ranking/classification 
+        RedditTask and MTDataRankingTask are same except data
+    '''
 
-    def __init__(self, path, max_seq_len, name='Reddit_MTTask'):
-        super().__init__(name)
-        self.scorer1 = Average()
+    def __init__(self, path, max_seq_len, name="mt_data_classif"):
+        ''' '''
+        super().__init__(path, max_seq_len, name)
+        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
+                                split in ["train", "val", "test"]}       
+
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                sent1 = process_sentence(row[0], self.max_seq_len)
+                sent2 = process_sentence(row[1], self.max_seq_len)
+                targ = 1
+                yield (sent1, sent2, targ)
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
+        self.example_counts = example_counts
+
+    
+@register_task('reddit_pair_classif', rel_path='Reddit_2008/')
+@register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
+@register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
+class RedditPairClassificationTask(PairClassificationTask):
+    ''' Task class for Reddit data.  '''
+
+    def __init__(self, path, max_seq_len, name="reddit_PairClassi"):
+        ''' '''
+        super().__init__(name, 2)
         self.scorer2 = None
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+        self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for \
+                               split in ["train", "val", "test"]}
+        self.max_seq_len = max_seq_len
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
+
+    def load_data(self, path):
+        ''' Load data '''
+        with open(path, 'r') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 4 or not row[2] or not row[3]:
+                    continue
+                sent1 = process_sentence(row[2], self.max_seq_len)
+                sent2 = process_sentence(row[3], self.max_seq_len)
+                targ = 1
+                yield (sent1, sent2, targ)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for sent1, sent2, _ in self.load_data(path):
+                yield sent1
+                yield sent2
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in open(split_path))
+        self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a machine translation split '''
-        def _make_instance(input, target):
-             d = {}
-             d["inputs"] = _sentence_to_text_field(input, indexers)
-             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
-             return Instance(d)
-        # Map over columns: inputs, targs
-        instances = map(_make_instance, split[0], split[2])
-        #  return list(instances)
-        return instances  # lazy iterator
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _make_instance(input1, input2, labels):
+            d = {}
+            d["input1"] = _sentence_to_text_field(input1, indexers)
+            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+            return Instance(d)
 
-    def load_data(self, path, max_seq_len):
-        print("LOADING REDDIT DATA FROM A DIFF LOCATION COMPARED TO REST OF THE TEAM. PLEASE CHANGE")
-        path = '//nfs/jsalt/home/raghu/'
-        self.train_data_text = load_tsv(os.path.join(path, 'train_2008_Random_200Samples.csv'), max_seq_len,
-                                        s1_idx=2, s2_idx=None, targ_idx=3,
-                                        targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
-                                      s1_idx=2, s2_idx=None, targ_idx=3,
-                                      targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'dev_2008_Random_200Samples.csv'), max_seq_len,
-                                       s1_idx=2, s2_idx=None, targ_idx=3,
-                                       targ_fn=lambda t: t.split(' '))
-
-        log.info("\tFinished loading MT data.")
+        for sent1, sent2, trg in split:
+            yield _make_instance(sent1, sent2, trg)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
+    
+@register_task('mt_pair_classif', rel_path='wmt14_en_de_local/')
+@register_task('mt_pair_classif_dummy', rel_path='wmt14_en_de_mini/')
+class MTDataPairClassificationTask(RedditPairClassificationTask):
+    ''' Task class for MT data pair classification using standard setup. 
+        RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
+    '''
+    def __init__(self, path, max_seq_len, name="mt_data_PairClassi"):
+        ''' '''
+        super().__init__(path, max_seq_len, name)
+        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
+                                split in ["train", "val", "test"]}       
+
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                sent1 = process_sentence(row[0], self.max_seq_len)
+                sent2 = process_sentence(row[1], self.max_seq_len)
+                targ = 1
+                yield (sent1, sent2, targ)
+    
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
+        self.example_counts = example_counts
 
 
 class CoLATask(SingleClassificationTask):
@@ -1553,7 +1649,101 @@ class MTTask(SequenceGenerationTask):
             unk_ratio_macroavg = 0
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
-class Wiki103_Seq2Seq(MTTask):
+
+@register_task('reddit_s2s', rel_path='Reddit_2008/')
+@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/')
+@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/')
+class RedditSeq2SeqTask(MTTask):
+    ''' Task for seq2seq using reddit data '''
+    def __init__(self, path, max_seq_len, name='reddit_s2s'):
+        super().__init__(path, max_seq_len, name)
+
+    def load_data(self, path, max_seq_len):
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
+        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
+                                        s1_idx=2, s2_idx=None, targ_idx=3,
+                                        targ_fn=targ_fn_startend)
+        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
+                                      s1_idx=2, s2_idx=None, targ_idx=3,
+                                      targ_fn=targ_fn_startend)
+        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
+                                       s1_idx=2, s2_idx=None, targ_idx=3,
+                                       targ_fn=targ_fn_startend)
+        log.info("\tFinished loading reddit data.")
+
+
+@register_task('wiki103_classif', rel_path='WikiText103/') 
+class Wiki103Classification(PairClassificationTask):
+    '''Pair Classificaiton Task using Wiki103'''
+    def __init__(self, path, max_seq_len, name="wiki103_classif"):
+        super().__init__(name, 2)
+        self.scorer2 = None
+        self.val_metric = "%s_accuracy" % self.name
+        self.val_metric_decreases = False
+        self.files_by_split = {'train': os.path.join(path, "train.txt"),
+                               'val': os.path.join(path, "valid.txt"),
+                               'test':os.path.join(path, "test.txt")}
+        self.max_seq_len = max_seq_len
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
+
+    def load_data(self, path):
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                # hard code to solve UNK symbol
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, self.max_seq_len)
+                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                yield sent
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for sent in self.load_data(path):
+                yield sent
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+        Split is a single list of sentences here.
+        '''
+        def _make_instance(input1, input2, labels):
+            d = {}
+            d["input1"] = _sentence_to_text_field(input1, indexers)
+            d["input2"] = _sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+            return Instance(d)
+        first = True
+        for sent in split:
+            if first:
+                prev_sent = sent
+                first = False
+                continue
+            yield _make_instance(prev_sent, sent, 1)
+            prev_sent = sent
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            # pair sentence # = sent # - 1
+            example_counts[split] = sum(1 for line in open(split_path)) - 1
+        self.example_counts = example_counts
+
+
+@register_task('wiki103_s2s', rel_path='WikiText103/')
+class Wiki103Seq2SeqTask(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
         # for skip-thoughts setting, all source sentences are sentences that 
@@ -1606,6 +1796,7 @@ class Wiki103_Seq2Seq(MTTask):
             return Instance(d)
         for i in range(1, len(split)):
             yield _make_instance(split[i-1], split[i])
+
 
 
 class WikiInsertionsTask(MTTask):
