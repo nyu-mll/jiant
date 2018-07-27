@@ -78,10 +78,14 @@ class Seq2SeqDecoder(Model):
         # very important - feel free to check it a third time
         # idempotent / safe to run in place. encoder_outputs_mask should never
         # change
-        #encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
+        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+            encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
-        decoder_context = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
-        decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
+            decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+            decoder_context = encoder_outputs.max(dim=1)[0]
+        else:
+            decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
+            decoder_context = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
 
         return decoder_hidden, decoder_context
 
