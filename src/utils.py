@@ -103,7 +103,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     '''
     elmo = text_field_embedder.token_embedder_elmo._elmo
     if task:
-        mix_id = text_field_embedder.task_map[task.name]
+        mix_id = text_field_embedder.task_map[task._classifier_name]
     else:
         mix_id = text_field_embedder.task_map["@pretrain@"]
     mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
