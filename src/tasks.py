@@ -760,26 +760,16 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-class MTDataRankingTask(RankingTask):
-    ''' Task class for Reddit data.  '''
+class MTDataRankingTask(RedditTask):
+    ''' Task class for MT data to do ranking/classification 
+        RedditTask and MTDataRankingTask are same except data
+    '''
 
     def __init__(self, path, max_seq_len, name="mt_data_classif"):
         ''' '''
-        super(MTDataRankingTask, self).__init__(name, 2)
-        self.scorer1 = Average() #CategoricalAccuracy()
-        self.scorer2 = None
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
+        super().__init__(path, max_seq_len, name)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
                                 split in ["train", "val", "test"]}       
-        self.max_seq_len = max_seq_len
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
 
     def load_data(self, path):
         ''' Load data '''
@@ -793,95 +783,12 @@ class MTDataRankingTask(RankingTask):
                 targ = 1
                 yield (sent1, sent2, targ)
 
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
-                yield sent1
-                yield sent2
-
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
         self.example_counts = example_counts
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = _sentence_to_text_field(input1, indexers)
-            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = _sentence_to_text_field(input2, indexers)
-            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels",
-                                     skip_indexing=True)
-            return Instance(d)
-
-        for sent1, sent2, trg in split:
-            yield _make_instance(sent1, sent2, trg)
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
-
-
-class RedditSeq2Seq(SequenceGenerationTask):
-    ''' Task for seq2seq using reddit data '''
-    def __init__(self, path, max_seq_len, name='reddit_s2s'):
-        super().__init__(name)
-        self.scorer1 = Average()
-        self.scorer2 = Average()
-        self.scorer3 = Average()
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a machine translation split '''
-        def _make_instance(input, target):
-             d = {}
-             d["inputs"] = _sentence_to_text_field(input, indexers)
-             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
-             return Instance(d)
-        # Map over columns: inputs, targs
-        instances = map(_make_instance, split[0], split[2])
-        #  return list(instances)
-        return instances  # lazy iterator    
-
-    def load_data(self, path, max_seq_len):
-        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
-                                        s1_idx=2, s2_idx=None, targ_idx=3,
-                                        targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
-                                      s1_idx=2, s2_idx=None, targ_idx=3,
-                                      targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
-                                       s1_idx=2, s2_idx=None, targ_idx=3,
-                                       targ_fn=targ_fn_startend)
-
-        log.info("\tFinished loading MT data.")
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        try:
-            bleu_score = self.scorer2.get_metric(reset)
-            unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        except BaseException:
-            bleu_score = 0
-            unk_ratio_macroavg = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
     
 class RedditTaskPairClassi(PairClassificationTask):
@@ -957,30 +864,15 @@ class RedditTaskPairClassi(PairClassificationTask):
         return {'accuracy': acc}
     
 
-class MTDataPairClassi(PairClassificationTask):
-    ''' Task class for MT data. Did not inherit from RedditTaskPairClassi as I am not sure.
-        RedditTaskPairClassi and MTDataPairClassi classes have same functionality except for load_data
-        and self.files_by_split    
-     '''
-
+class MTDataPairClassi(RedditTaskPairClassi):
+    ''' Task class for MT data pair classification using standard setup. 
+        RedditTaskPairClassi and MTDataPairClassi are same tasks with different data
+    '''
     def __init__(self, path, max_seq_len, name="mt_data_PairClassi"):
         ''' '''
-        super(MTDataPairClassi, self).__init__(name, 2)
-        #self.scorer1 = Average() #CategoricalAccuracy()
-        self.scorer2 = None
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
+        super().__init__(path, max_seq_len, name)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
                                 split in ["train", "val", "test"]}       
-
-        self.max_seq_len = max_seq_len
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
 
     def load_data(self, path):
         ''' Load data '''
@@ -995,44 +887,12 @@ class MTDataPairClassi(PairClassificationTask):
                 targ = 1
                 yield (sent1, sent2, targ)
     
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
-                yield sent1
-                yield sent2
-
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
         self.example_counts = example_counts
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = _sentence_to_text_field(input1, indexers)
-            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = _sentence_to_text_field(input2, indexers)
-            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels",
-                                     skip_indexing=True)
-            return Instance(d)
-
-        for sent1, sent2, trg in split:
-            yield _make_instance(sent1, sent2, trg)
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
 
 
 class CoLATask(SingleClassificationTask):
@@ -1743,6 +1603,26 @@ class MTTask(SequenceGenerationTask):
             bleu_score = 0
             unk_ratio_macroavg = 0
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+
+class RedditSeq2Seq(MTTask):
+    ''' Task for seq2seq using reddit data '''
+    def __init__(self, path, max_seq_len, name='reddit_s2s'):
+        super().__init__(path, max_seq_len, name)
+
+    def load_data(self, path, max_seq_len):
+        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
+        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
+                                        s1_idx=2, s2_idx=None, targ_idx=3,
+                                        targ_fn=targ_fn_startend)
+        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
+                                      s1_idx=2, s2_idx=None, targ_idx=3,
+                                      targ_fn=targ_fn_startend)
+        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
+                                       s1_idx=2, s2_idx=None, targ_idx=3,
+                                       targ_fn=targ_fn_startend)
+        log.info("\tFinished loading reddit data.")
+
 
 class Wiki103Classif(PairClassificationTask):
     '''Pair Classificaiton Task using Wiki103'''
