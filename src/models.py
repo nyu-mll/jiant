@@ -253,13 +253,26 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         # which defaults to the task name if it doesn't exist.
         for task in tasks:
             setattr(task, "_classifier_name", getattr(args, task.name).get("use_classifier", task.name))
-        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  # these are tasks that could potentially be added
+        classifier_save_path = args.run_dir + "/classifier_task_map.json"
+        if os.path.isfile(classifier_save_path):
+            loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
+        else:
+            # no file exists, so start with only pretrain
+            loaded_classifiers = {"@pretrain@": 0}
+        max_number_classifiers = max(loaded_classifiers.values())
+        offset = 1
+        for classifier in classifiers:
+            if classifier not in loaded_classifiers:
+                loaded_classifiers[classifier] = max_number_classifiers + offset
+                offset += 1
         # one representation per classifier specified in task, and the pretrain "task"
-        num_reps = 1 + len(classifiers)
-        log.info("Classifiers:{}".format(classifiers))
+        log.info("Classifiers:{}".format(loaded_classifiers))
+        open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+        num_reps = 1 + max(loaded_classifiers.values())
     else:
         # everyone shares the same scalars
-        classifiers = []
+        loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
     if args.elmo:
         log.info("Loading ELMo from files:")
@@ -282,7 +295,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 1024
 
         token_embedder["elmo"] = elmo_embedder
-    embedder = ElmoTextFieldEmbedder(token_embedder, classifiers,
+    embedder = ElmoTextFieldEmbedder(token_embedder, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 

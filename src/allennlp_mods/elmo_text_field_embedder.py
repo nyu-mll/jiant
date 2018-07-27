@@ -77,9 +77,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         for key, embedder in token_embedders.items():
             name = 'token_embedder_%s' % key
             self.add_module(name, embedder)
-        self.task_map = {classifier:(i+1) for i, classifier in enumerate(classifiers)}
+        self.task_map = classifiers
         # pretrain task is a special, privileged task
-        self.task_map["@pretrain@"] = 0
         self.elmo_chars_only = elmo_chars_only
         self.sep_embs_for_skip = sep_embs_for_skip
 
