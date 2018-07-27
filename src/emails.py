@@ -23,7 +23,7 @@ if SENDGRID_API_KEY is None:
     SENDGRID_API_KEY = _read_key_file(SENDGRID_KEY_PATH)
 
 DEFAULT_SENDER=mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com",
-                          name="JSALT Sentence Representative")
+                          name="Cookie Monster")
 
 LOCALTZ = pytz.timezone("US/Eastern")
 
