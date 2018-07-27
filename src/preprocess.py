@@ -20,20 +20,22 @@ except BaseException:
 
 import _pickle as pkl  #  :(
 
+from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
-    QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
+    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
+    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
     PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
     DisSentWikiHugeTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask
+    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
+    GroundedSWTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
@@ -61,7 +63,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
              'qqp': (QQPTask, 'QQP'),
+             'qqp-alt': (QQPAltTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
+             'sts-b-alt': (STSBAltTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
              'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
@@ -71,6 +75,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
              'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
+             'qnli-alt': (QNLIAltTask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
@@ -102,6 +107,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
@@ -285,6 +291,10 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
+    for task in tasks:
+        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        setattr(task, "_classifier_name",
+                task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')

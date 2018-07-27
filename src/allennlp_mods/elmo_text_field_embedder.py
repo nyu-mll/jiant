@@ -22,7 +22,7 @@ from allennlp.modules import Elmo
 class ElmoTokenEmbedderWrapper(TokenEmbedder):
     """
     Wraps the Elmo call so that the parameters are saved correctly
-    
+
     Forwards all calls to Elmo
     """
     def __init__(self,
@@ -57,10 +57,11 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
 @TextFieldEmbedder.register("elmo")
 class ElmoTextFieldEmbedder(TextFieldEmbedder):
     """
-    forward() now accepts task as an argument, which tells the embedder which ELMo representation
-    to return. init() also requires a list of tasks (i.e. the number of tasks that need their own
-    ELMo scalars).
-    
+    forward() now accepts classifier name as an argument, which tells the embedder which ELMo representation
+    to return. init() also requires a dict of classifier names (i.e. the number of tasks that need their own
+    ELMo scalars). which map to an int corresponding to their elmo scalars in the elmo object. These are 
+    names (strings) and not necessarily the same as task names (e.g. mnli for mnli-diagnostic).
+
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
     :class:`~allennlp.data.TokenIndexer`.  As the data produced by a
@@ -68,7 +69,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     representations, we take ``TokenEmbedders`` with corresponding names.  Each ``TokenEmbedders``
     embeds its input, and the result is concatenated in an arbitrary order.
     """
-    def __init__(self, token_embedders: Dict[str, TokenEmbedder], tasks,
+    def __init__(self, token_embedders: Dict[str, TokenEmbedder],
+                 classifiers: Dict[str, int],
                  elmo_chars_only=False,
                  sep_embs_for_skip=False) -> None:
         super(ElmoTextFieldEmbedder, self).__init__()
@@ -76,9 +78,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         for key, embedder in token_embedders.items():
             name = 'token_embedder_%s' % key
             self.add_module(name, embedder)
-        self.task_map = {task.name:(i+1) for i, task in enumerate(tasks)}
+        self.task_map = classifiers
         # pretrain task is a special, privileged task
-        self.task_map["@pretrain@"] = 0
         self.elmo_chars_only = elmo_chars_only
         self.sep_embs_for_skip = sep_embs_for_skip
 
@@ -90,7 +91,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
         return output_dim
 
     def forward(self, text_field_input: Dict[str, torch.Tensor],
-                task_name: str = "@pretrain@", num_wrapping_dims: int = 0) -> torch.Tensor:
+                classifier_name: str = "@pretrain@", num_wrapping_dims: int = 0) -> torch.Tensor:
         if self._token_embedders.keys() != text_field_input.keys():
             message = "Mismatched token keys: %s and %s" % (str(self._token_embedders.keys()),
                                                             str(text_field_input.keys()))
@@ -107,7 +108,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             token_vectors = embedder(tensor)
             if key == "elmo" and not self.elmo_chars_only:
                 if self.sep_embs_for_skip:
-                    token_vectors = token_vectors['elmo_representations'][self.task_map[task_name]]
+                    token_vectors = token_vectors['elmo_representations'][self.task_map[classifier_name]]
                 else:
                     token_vectors = token_vectors['elmo_representations'][self.task_map["@pretrain@"]]
 
