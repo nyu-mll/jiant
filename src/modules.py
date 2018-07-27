@@ -755,28 +755,16 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
 
 class CNNEncoder(Model):
-    ''' Given an image, get image features from last layer of specified CNN '''
+    ''' Given an image, get image features from last layer of specified CNN
+        e.g., Resnet101, AlexNet, InceptionV3
+        New! Preprocessed and indexed image features, so just load from json!'''
 
     def __init__(self, model_name, path, model=None):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
         self.model = self._load_model(model_name)
-
-
-        # New loader
-        '''
-        self.feat_dict = self._load_features_from_json(path, 'train')
-        self.feat_dict.update(self._load_features_from_json(path, 'val'))
-        self.feat_dict.update(self._load_features_from_json(path, 'test'))
-        '''
-
-        '''
-        # Old loader
-        self.feat_dict = self._load_features(path, 'train')
-        self.feat_dict.update(self._load_features(path, 'val'))
-        self.feat_dict.update(self._load_features(path, 'test'))
-        '''
-
+        self.feat_path = path + '/all_feats/'
+        
     def _load_model(self, model_name):
         if model_name == 'alexnet':
             model = alexnet(pretrained=True)
@@ -785,21 +773,6 @@ class CNNEncoder(Model):
         elif model_name == 'resnet':
             model = resnet101(pretrained=True)
         return model
-
-    def _load_features_from_json(self, path, dataset):
-        print('Loading CNN features for: ' + str(dataset))
-        if dataset == 'train':
-            f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '_lines.json', 'r')
-            feat_dict = {}
-            for line in f:
-                temp = json.loads(line)
-                feat_dict[temp['img_id']] = temp['feat']
-        else:
-            f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '.json', 'r')
-            for line in f:
-                feat_dict = json.loads(line)
-
-        return feat_dict
 
     def _load_features(self, path, dataset):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -822,6 +795,7 @@ class CNNEncoder(Model):
                 os.path.join(
                     train_dataset.root,
                     d))]
+        
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
 
@@ -832,11 +806,10 @@ class CNNEncoder(Model):
         return feat_dict
 
     def forward(self, img_id):
-        """
-        Args:
-            - img_id that maps image -> sentence pairs in respective datasets.
-        """
+        '''
+        Args: img_id that maps image -> sentence pairs in respective datasets.
+        '''
 
-        f = open('/nfs/jsalt/home/roma/CNN/feat/' + str(img_id) + '.json', 'r')
-        for line in f: feat_dict = json.loads(line)
-        return feat_dict['feat']
+        with open(self.feat_path + str(img_id) + '.json') as fd:
+            feat_dict = json.load(fd)
+        return feat_dict[list(feat_dict.keys())[0]] # has one key

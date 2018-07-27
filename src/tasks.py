@@ -1766,7 +1766,6 @@ class WeakGroundedTask(PairClassificationTask):
 class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
-    ''' Specify metric name as 'cos_sim' or 'abs_diff' '''
 
     def __init__(self, path, max_seq_len, name="grounded"):
         ''' Do stuff '''
@@ -1781,14 +1780,7 @@ class GroundedTask(Task):
             self.val_data_text[1]
         self.path = path
         self.img_encoder = None
-        self.loss_fn = nn.CosineEmbeddingLoss()
-        self.metric_fn = nn.PairwiseDistance(p=1, eps=1e-6)
-        self.val_metric_decreases = True
-        '''
-        self.metric_fn = nn.CosineSimilarity(dim=1, eps=1e-6)
         self.val_metric_decreases = False
-        '''
-
 
     def _compute_metric(self, metric_name, tensor1, tensor2):
         '''Metrics for similarity in image space'''
@@ -1814,12 +1806,10 @@ class GroundedTask(Task):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         '''
         Convert a dataset of sentences into padded sequences of indices.
-
         Args:
             - split (list[list[str]]): list of inputs (possibly pair) and outputs
             - pair_input (int)
             - tok2idx (dict)
-
         Returns:
         '''
         def _make_instance(sent, label, ids):
@@ -1835,11 +1825,10 @@ class GroundedTask(Task):
 
 
     def load_data(self, path, max_seq_len):
-        '''Map sentences to image ids (keep track of sentence ids just in case)'''
-
-        # changed for temp
+        ''' Map sentences to image ids
+            Keep track of caption ids just in case '''
+        
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-
         train_ids = [item for item in os.listdir(os.path.join(path, "train")) if '.DS' not in item]
         val_ids = [item for item in os.listdir(os.path.join(path, "val")) if '.DS' not in item]
         test_ids = [item for item in os.listdir(os.path.join(path, "test")) if '.DS' not in item]
@@ -1853,95 +1842,21 @@ class GroundedTask(Task):
         f = open(os.path.join(path, "test.json"), 'r')
         for line in f:
             te_dict = json.loads(line)
+        with open(os.path.join(path, "feat_map.json")) as fd:
+            keymap = json.load(fd)
+            
+        def load_mscoco(data_dict, data_list, img_idxs):
+            for img_idx in img_idxs:
+                newimg_id = 'mscoco/grounded/' + img_idx + '.json'
+                for caption_id in data_dict[img_idx]['captions']:
+                    data_list[0].append(data_dict[img_idx]['captions'][caption_id])
+                    data_list[1].append(1)
+                    data_list[2].append(int(keymap[newimg_id]))
+            return data_list
 
-        for img_id in train_ids:
-            for caption_id in tr_dict[img_id]['captions']:
-                train[0].append(tr_dict[img_id]['captions'][caption_id])
-                train[1].append(1)
-                train[2].append(int(img_id))
-                # train[2].append(caption_id)
-        for img_id in val_ids:
-            for caption_id in val_dict[img_id]['captions']:
-                val[0].append(val_dict[img_id]['captions'][caption_id])
-                val[1].append(1)
-                val[2].append(int(img_id))
-                # val[2].append(caption_id)
-        for img_id in test_ids:
-            for caption_id in te_dict[img_id]['captions']:
-                test[0].append(te_dict[img_id]['captions'][caption_id])
-                test[1].append(1)
-                test[2].append(int(img_id))
-                # test[2].append(caption_id)
-
-        log.info("Positive train samples: " + str(len(train[0])))
-
-
-
-        ''' Shapeworld data '''
-
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/train.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            train[0].append(items[0])
-            train[1].append(int(items[1]))
-            train[2].append(int(items[2]))
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/val.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            val[0].append(items[0])
-            val[1].append(int(items[1]))
-            val[2].append(int(items[2]))
-
-        f = open("/nfs/jsalt/home/roma/shapeworld/test.tsv", 'r')
-        for line in f:
-            items = line.strip().split('\t')
-            test[0].append(items[0])
-            test[1].append(int(items[1]))
-            test[2].append(int(items[2]))
-
-
-        r = 5
-        train_ids = list(repeat(train_ids, r)); test_ids = list(repeat(test_ids, r)); val_ids = list(repeat(val_ids, r));
-        train_ids = [item for sublist in train_ids for item in sublist]
-        test_ids = [item for sublist in test_ids for item in sublist]
-        val_ids = [item for sublist in val_ids for item in sublist]
-
-        for img_id in train_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(train_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = tr_dict[train_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            train[0].append(caption); train[1].append(0); train[2].append(int(img_id))
-
-        for img_id in val_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(val_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = val_dict[val_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            val[0].append(caption); val[1].append(0); val[2].append(int(img_id))
-
-        for img_id in test_ids:
-            rand_id = img_id
-            while (rand_id == img_id):
-                rand_id = np.random.randint(len(test_ids), size=(1,1))[0][0]
-            caption_id = np.random.randint(5, size=(1,1))[0][0]
-            captions = te_dict[test_ids[rand_id]]['captions']; caption_ids = list(captions.keys())
-            caption = captions[caption_ids[caption_id]]
-            test[0].append(caption); test[1].append(0); test[2].append(int(img_id))
-
-
-
-
-
-        #np.random.shuffle(train); np.random.shuffle(test); np.random.shuffle(val)
-
-        log.info("All train samples: " + str(len(train[0])))
+        train = load_mscoco(tr_dict, train, train_ids)
+        val = load_mscoco(val_dict, val, val_ids)
+        test = load_mscoco(te_dict, test, test_ids)
 
         self.tr_data = train
         self.val_data = val
@@ -1949,8 +1864,100 @@ class GroundedTask(Task):
         self.train_data_text = train
         self.val_data_text = val
         self.test_data_text = test
-        log.info('Train: ' + str(len(train)) + ' , Val: ' + str(len(val)) + ', Test: ' + str(len(test)))
-        log.info("\tFinished loading MSCOCO data.")
+
+        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info("\nFinished loading MSCOCO data!")
+
+class GroundedSWTask(Task):
+    ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
+    ''' Defined new metric function from AllenNLP Average '''
+
+    def __init__(self, path, max_seq_len, name="groundedsw"):
+        ''' Do stuff '''
+        super(GroundedSWTask, self).__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_metric" % self.name
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + \
+            self.val_data_text[0]
+        self.ids = self.train_data_text[1] + \
+            self.val_data_text[1]
+        self.path = path
+        self.img_encoder = None
+        self.val_metric_decreases = False
+
+    def _compute_metric(self, metric_name, tensor1, tensor2):
+        '''Metrics for similarity in image space'''
+
+        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
+
+        if metric_name is 'abs_diff':
+            metric = np.mean(np1 - np2)
+        elif metric_name is 'cos_sim':
+            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
+        else:
+            log.warning('Undefined metric name!')
+            metric = 0
+
+        return metric
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metric = self.scorer1.get_metric(reset)
+
+        return {'metric': metric}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        '''
+        Convert a dataset of sentences into padded sequences of indices.
+        Args:
+            - split (list[list[str]]): list of inputs (possibly pair) and outputs
+            - pair_input (int)
+            - tok2idx (dict)
+        Returns:
+        '''
+        def _make_instance(sent, label, ids):
+            input1 = _sentence_to_text_field(sent, indexers)
+            label = NumericField(label)
+            ids = NumericField(ids)
+            return Instance({"input1": input1, "labels": label, "ids": ids})
+
+        # Map over columns: input1, labels, ids
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+
+    def load_data(self, path, max_seq_len):
+        ''' Map sentences to image ids
+            Keep track of caption ids just in case '''
+        
+        train, val, test = ([], [], []), ([], [], []), ([], [], [])
+
+        def get_data(dataset, data):
+            f = open(path + dataset + ".tsv", 'r')
+            for line in f:
+                items = line.strip().split('\t')
+                if len(items) < 3 or items[1] == '0': continue
+                data[0].append(items[0])
+                data[1].append(int(items[1]))
+                data[2].append(int(items[2]))
+            return data
+        
+        train = get_data('shapeworld/train', train)
+        val = get_data('shapeworld/val', val)
+        test = get_data('shapeworld/test', test)
+
+        self.tr_data = train
+        self.val_data = val
+        self.te_data = test
+        self.train_data_text = train
+        self.val_data_text = val
+        self.test_data_text = test
+
+        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info("\nFinished loading SW data!")
 
 class VAETask(SequenceGenerationTask):
     '''Variational Autoencoder (with corrupted input) Task'''
