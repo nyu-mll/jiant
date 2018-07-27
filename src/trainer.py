@@ -368,37 +368,29 @@ class SamplingMultiTaskTrainer():
 
         if scaling_method == 'uniform':
             scaling_weights = [1] * len(tasks)
-            log.info("Weighting losses uniformly.")
         elif scaling_method == 'max_proportional':
             scaling_weights = task_examples
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses proportional to number of training examples, normalized by max weight.")
         elif scaling_method == 'max_proportional_log':
             scaling_weights = np.log(task_examples)
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses proportional to log number of training examples, normalized by max weight.")
         elif 'max_power_' in scaling_method:
             scaling_power = float(scaling_method.strip('max_power_'))
             scaling_weights = task_examples ** scaling_power
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses with power %s, normalized by max weight.", str(scaling_power))
         elif scaling_method == 'max_inverse_log':
             scaling_weights = 1 / np.log(task_examples)
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses inverse to log number of training examples, normalized by max weight.")
         elif scaling_method == 'max_inverse':
             scaling_weights = 1 / task_examples
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses inverse to number of training examples, normalized by max weight.")
-        # eg. 'epoch_9_18_1_11_18_2_14_16_1'
-        elif 'epoch_' in scaling_method:
-            epochs = scaling_method.strip('epoch_').split('_')
+        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
+        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
+        elif 'max_epoch_' in scaling_method:
+            epochs = scaling_method.strip('max_epoch_').split('_')
             assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
-            scaling_weights = np.array(list(map(int,epochs)))
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-            log.info("Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max weight.")
+            scaling_weights = np.array(list(map(int, epochs)))
 
-        scaling_weights = dict(zip(task_names,scaling_weights))
+        # normalized by max weight
+        if 'max' in scaling_method:
+            scaling_weights = scaling_weights / np.max(scaling_weights)
+
+        scaling_weights = dict(zip(task_names, scaling_weights))
         log.info("Using loss scaling method: %s, with weights %s", scaling_method, str(scaling_weights))
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
