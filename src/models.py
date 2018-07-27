@@ -610,8 +610,11 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _positive_pair_sentence_forward(self, batch, task, predict):
-        ''' forward function written specially for cases where we have only postive pairs in input data
-            Negative pairs are created by rotating either sent1 or sent2
+        ''' forward function written specially for cases where we have only +ve pairs in input data
+            -ve pairs are created by rotating either sent1 or sent2. 
+            Ex: [1,2,3,4] after rotation by 2 positions [3,4,1,2]
+            Assumption is each example in sent1 has only one corresponding example in sent2 which is +ve
+            So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         '''
         out = {}
         # embed the sentence
