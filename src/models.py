@@ -257,6 +257,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
         else:
             # no file exists, so start with only pretrain
+            assert_for_log(args.do_train,
+                           "Error: {} should already exist.".format(classifier_save_path))
             loaded_classifiers = {"@pretrain@": 0}
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
