@@ -69,7 +69,8 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     representations, we take ``TokenEmbedders`` with corresponding names.  Each ``TokenEmbedders``
     embeds its input, and the result is concatenated in an arbitrary order.
     """
-    def __init__(self, token_embedders: Dict[str, TokenEmbedder], classifiers,
+    def __init__(self, token_embedders: Dict[str, TokenEmbedder],
+                 classifiers: Dict[str, int],
                  elmo_chars_only=False,
                  sep_embs_for_skip=False) -> None:
         super(ElmoTextFieldEmbedder, self).__init__()
