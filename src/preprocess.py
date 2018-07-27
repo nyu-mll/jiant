@@ -20,6 +20,7 @@ except BaseException:
 
 import _pickle as pkl  #  :(
 
+from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
@@ -34,7 +35,7 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask, Wiki103_Seq2Seq 
+    RedditTask, Reddit_MTTask, Wiki103_Seq2Seq, GroundedSWTask
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -108,6 +109,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
+
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
@@ -291,6 +294,10 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
+    for task in tasks:
+        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        setattr(task, "_classifier_name",
+                task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')

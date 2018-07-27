@@ -26,7 +26,7 @@ for path in args.log_files:
     cols['path'] = path
     results_line = None
     found_eval = False
-    train_tasks = None
+    train_tasks = ""
     dropout = None
     elmo = None
 
@@ -48,7 +48,7 @@ for path in args.log_files:
         train_m = re.match('Training model on tasks: (.*)', line)
         if train_m:
           found_tasks = train_m.groups()[0]
-          if train_tasks is not None and found_tasks != train_tasks:
+          if train_tasks is not "" and found_tasks != train_tasks:
             print("WARNING: Multiple sets of training tasks found. Skipping %s and reporting last."%(found_tasks))
           train_tasks = found_tasks
 
