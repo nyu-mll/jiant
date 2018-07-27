@@ -249,11 +249,32 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
     # Handle elmo
     if args.sep_embs_for_skip:
-        # one representation per task
-        reps = tasks
+        # need deterministic list of tasks based on their ``use_classifier`` attribute (
+        # which defaults to the task name if it doesn't exist.
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  # these are tasks that could potentially be added
+        classifier_save_path = args.run_dir + "/classifier_task_map.json"
+        if os.path.isfile(classifier_save_path):
+            loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
+        else:
+            # no file exists, so start with only pretrain
+            assert_for_log(args.do_train,
+                           "Error: {} should already exist.".format(classifier_save_path))
+            loaded_classifiers = {"@pretrain@": 0}
+        max_number_classifiers = max(loaded_classifiers.values())
+        offset = 1
+        for classifier in classifiers:
+            if classifier not in loaded_classifiers:
+                loaded_classifiers[classifier] = max_number_classifiers + offset
+                offset += 1
+        # one representation per classifier specified in task, and the pretrain "task"
+        log.info("Classifiers:{}".format(loaded_classifiers))
+        open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+        num_reps = 1 + max(loaded_classifiers.values())
     else:
-        # no unique rep for each task
-        reps = []
+        # everyone shares the same scalars.
+        # not used if self.elmo_chars_only = 1 (i.e. no elmo)
+        loaded_classifiers = {"@pretrain@": 0}
+        num_reps = 1
     if args.elmo:
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
@@ -269,14 +290,13 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
                 weight_file=ELMO_WEIGHTS_PATH,
-                # Include pretrain task
-                num_output_representations=len(reps) + 1,
+                num_output_representations=num_reps,
                 # Dropout is added by the sentence encoder later.
                 dropout=0.)
             d_emb += 1024
-        token_embedder["elmo"] = elmo_embedder
 
-    embedder = ElmoTextFieldEmbedder(token_embedder, reps,
+        token_embedder["elmo"] = elmo_embedder
+    embedder = ElmoTextFieldEmbedder(token_embedder, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 

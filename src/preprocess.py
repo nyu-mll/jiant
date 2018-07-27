@@ -20,6 +20,7 @@ except BaseException:
 
 import _pickle as pkl  #  :(
 
+from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
@@ -293,6 +294,10 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
+    for task in tasks:
+        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        setattr(task, "_classifier_name",
+                task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')
