@@ -34,8 +34,8 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_Seq2Seq, RedditTask_PairClassi, MTdata_PairClassi, \
-    Wiki103_Seq2Seq, Wiki103_Classif, MTdataRankingTask
+    RedditTask, RedditSeq2Seq, RedditTaskPairClassi, MTDataPairClassi, \
+    Wiki103Seq2Seq, Wiki103Classif, MTDataRankingTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
@@ -80,8 +80,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
-             'wiki103_s2s': (Wiki103_Seq2Seq, 'WikiText103/'), 
-             'wiki103_classif': (Wiki103_Classif, 'WikiText103/'),
+             'wiki103_s2s': (Wiki103Seq2Seq, 'WikiText103/'), 
+             'wiki103_classif': (Wiki103Classif, 'WikiText103/'),
              'pdtb': (PDTBTask, 'PDTB/'),
              'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
@@ -95,8 +95,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
              'reddit': (RedditTask, 'Reddit_2008/'),
              'reddit_dummy': (RedditTask, 'Reddit_2008_TestSample/'),
-             'reddit_s2s': (Reddit_Seq2Seq, 'Reddit_2008/'),
-             'reddit_s2s_3.4G': (Reddit_Seq2Seq, 'Reddit_3.4G/'),
+             'reddit_s2s': (RedditSeq2Seq, 'Reddit_2008/'),
+             'reddit_s2s_3.4G': (RedditSeq2Seq, 'Reddit_3.4G/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
@@ -113,12 +113,12 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'reddit_softmax': (RedditTask, 'Reddit_2008/'),
              'reddit_3.4G': (RedditTask, 'Reddit_3.4G/'),
              'reddit_13G': (RedditTask, 'Reddit_13G/'),
-             'reddit_pair_classif': (RedditTask_PairClassi, 'Reddit_2008/'),
-             'reddit_pair_classif_3.4G': (RedditTask_PairClassi, 'Reddit_3.4G/'),
-             'reddit_pair_classif_mini': (RedditTask_PairClassi, 'Reddit_2008_TestSample/'),
-             'mt_pair_classif': (MTdata_PairClassi, 'wmt14_en_de_local/'),
-             'mt_pair_classif_mini': (MTdata_PairClassi, 'wmt14_en_de_mini/'),
-             'mt_data_ranking': (MTdataRankingTask, 'wmt14_en_de_local/')
+             'reddit_pair_classif': (RedditTaskPairClassi, 'Reddit_2008/'),
+             'reddit_pair_classif_3.4G': (RedditTaskPairClassi, 'Reddit_3.4G/'),
+             'reddit_pair_classif_mini': (RedditTaskPairClassi, 'Reddit_2008_TestSample/'),
+             'mt_pair_classif': (MTDataPairClassi, 'wmt14_en_de_local/'),
+             'mt_pair_classif_mini': (MTDataPairClassi, 'wmt14_en_de_mini/'),
+             'mt_data_ranking': (MTDataRankingTask, 'wmt14_en_de_local/')
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
