@@ -34,7 +34,7 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask
+    RedditTask, Reddit_MTTask, GroundedSWTask
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -104,6 +104,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
+
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)

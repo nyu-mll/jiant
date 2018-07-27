@@ -1774,6 +1774,97 @@ class GroundedTask(Task):
         log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
         log.info("\nFinished loading MSCOCO data!")
 
+class GroundedSWTask(Task):
+    ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
+    ''' Defined new metric function from AllenNLP Average '''
+
+    def __init__(self, path, max_seq_len, name="groundedsw"):
+        ''' Do stuff '''
+        super(GroundedSWTask, self).__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_metric" % self.name
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + \
+            self.val_data_text[0]
+        self.ids = self.train_data_text[1] + \
+            self.val_data_text[1]
+        self.path = path
+        self.img_encoder = None
+        self.val_metric_decreases = False
+
+    def _compute_metric(self, metric_name, tensor1, tensor2):
+        '''Metrics for similarity in image space'''
+
+        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
+
+        if metric_name is 'abs_diff':
+            metric = np.mean(np1 - np2)
+        elif metric_name is 'cos_sim':
+            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
+        else:
+            print('Undefined metric name!')
+            metric = 0
+
+        return metric
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metric = self.scorer1.get_metric(reset)
+
+        return {'metric': metric}
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        '''
+        Convert a dataset of sentences into padded sequences of indices.
+        Args:
+            - split (list[list[str]]): list of inputs (possibly pair) and outputs
+            - pair_input (int)
+            - tok2idx (dict)
+        Returns:
+        '''
+        def _make_instance(sent, label, ids):
+            input1 = _sentence_to_text_field(sent, indexers)
+            label = NumericField(label)
+            ids = NumericField(ids)
+            return Instance({"input1": input1, "labels": label, "ids": ids})
+
+        # Map over columns: input1, labels, ids
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+
+    def load_data(self, path, max_seq_len):
+        ''' Map sentences to image ids
+            Keep track of caption ids just in case '''
+        
+        train, val, test = ([], [], []), ([], [], []), ([], [], [])
+
+        def get_data(dataset, data):
+            f = open(path + dataset + ".tsv", 'r')
+            for line in f:
+                items = line.strip().split('\t')
+                if len(items) < 3 or items[1] == '0': continue
+                data[0].append(items[0])
+                data[1].append(int(items[1]))
+                data[2].append(int(items[2]))
+            return data
+        
+        train = get_data('shapeworld/train', train)
+        val = get_data('shapeworld/val', val)
+        test = get_data('shapeworld/test', test)
+
+        self.tr_data = train
+        self.val_data = val
+        self.te_data = test
+        self.train_data_text = train
+        self.val_data_text = val
+        self.test_data_text = test
+
+        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info("\nFinished loading SW data!")
+
 class VAETask(SequenceGenerationTask):
     '''Variational Autoencoder (with corrupted input) Task'''
 

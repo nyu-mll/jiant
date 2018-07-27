@@ -36,7 +36,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, Reddit_MTTask
+    GroundedTask, MTTask, RedditTask, Reddit_MTTask, GroundedSWTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -330,7 +330,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
 
-    elif isinstance(task, GroundedTask):
+    elif isinstance(task, (GroundedTask, GroundedSWTask)):
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         pooler = build_image_sent_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
@@ -513,7 +513,7 @@ class MultiTaskModel(nn.Module):
                                  task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, GroundedTask):
+        elif isinstance(task, (GroundedTask, GroundedSWTask)):
             out = self._grounded_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
