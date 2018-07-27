@@ -42,6 +42,9 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
     all_preds = {}
     n_examples_overall = 0
+    
+    assert len(tasks) > 0 , "Configured to evaluate, but specified no task to evaluate."
+
     for task in tasks:
         log.info("Evaluating on: %s, split: %s", task.name, split)
         last_log = time.time()
