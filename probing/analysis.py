@@ -113,8 +113,8 @@ class Predictions(object):
         return self._target_df_wide
 
     def _make_long_target_df(self):
-        print("Generating long-form target DataFrame. May be slow...")
         wide_df = self.target_df_wide
+        print("Generating long-form target DataFrame. May be slow...")
         # Melt to wide, using dummy 'index' column as unique key.
         # All cols not starting with stubnames are kept as id_vars.
         long_df = pd.wide_to_long(wide_df.reset_index(),
