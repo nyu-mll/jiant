@@ -723,6 +723,8 @@ class MultiTaskModel(nn.Module):
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
+            # Commented out for final run (still needs this for further debugging).
+            # We don't want to write predictions during training.
             #if not self.training and not isinstance(task, Wiki103_Seq2Seq):
             #    # bleu scoring
             #    bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
