@@ -2020,12 +2020,13 @@ class GroundedTask(Task):
             Keep track of caption ids just in case '''
         
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        f = open(os.path.join(path, "train_idx.txt"), 'r')
-        train_ids = [item.strip() for item in f.readlines()]
-        f = open(os.path.join(path, "val_idx.txt"), 'r')
-        val_ids = [item.strip() for item in f.readlines()]
-        f = open(os.path.join(path, "test_idx.txt"), 'r')
-        test_ids = [item.strip() for item in f.readlines()]
+        
+        with open(os.path.join(path, "train_idx.txt"), 'r') as f:
+            train_ids = [item.strip() for item in f.readlines()]
+        with open(os.path.join(path, "val_idx.txt"), 'r') as f:
+            val_ids = [item.strip() for item in f.readlines()]
+        with open(os.path.join(path, "test_idx.txt"), 'r') as f:
+            test_ids = [item.strip() for item in f.readlines()]
 
         f = open(os.path.join(path, "train.json"), 'r')
         for line in f:
