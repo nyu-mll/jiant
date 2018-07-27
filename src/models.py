@@ -960,7 +960,7 @@ class MultiTaskModel(nn.Module):
                 tasks = [None] + tasks
             for task in tasks:
                 if task:
-                    params[task.name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
+                    params[task._classifier_name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
                 else:
                     params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
         return params
