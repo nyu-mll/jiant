@@ -1748,9 +1748,8 @@ class GroundedTask(Task):
         f = open(os.path.join(path, "test.json"), 'r')
         for line in f:
             te_dict = json.loads(line)
-        f = open(os.path.join(path, "feat_map.json"), 'r')
-        for line in f:
-            keymap = json.loads(line)
+        with open(os.path.join(path, "feat_map.json")) as fd:
+            keymap = json.load(fd)
             
         def load_mscoco(data_dict, data_list, img_idxs):
             for img_idx in img_idxs:
