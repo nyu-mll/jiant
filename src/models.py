@@ -824,7 +824,7 @@ class MultiTaskModel(nn.Module):
             labels = [1] + [0] * (samples - 1)
             labels = torch.tensor(labels, dtype=torch.float32)
             mat = [cos(sent, img).cpu().data.numpy()[0]]
-            while(len(mat) < samples):
+            for _ in range(len(mat), samples):
                 r = sent_idx
                 while (r == sent_idx):
                     r = np.random.randint(batch_size, size=(1,1))[0][0]

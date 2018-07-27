@@ -1757,7 +1757,8 @@ class GroundedTask(Task):
                 newimg_id = 'mscoco/grounded/' + img_idx + '.json'
                 for caption_id in data_dict[img_idx]['captions']:
                     data_list[0].append(data_dict[img_idx]['captions'][caption_id])
-                    data_list[1].append(1); data_list[2].append(int(keymap[newimg_id]))
+                    data_list[1].append(1)
+                    data_list[2].append(int(keymap[newimg_id]))
             return data_list
 
         train = load_mscoco(tr_dict, train, train_ids)
