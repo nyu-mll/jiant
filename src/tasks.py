@@ -655,6 +655,8 @@ class WikiTextLMTask(LanguageModelingTask):
                 toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
                 sent = process_sentence(toks, self.max_seq_len)
                 sent = [UNK_TOK_ALLENNLP if t == UNK_TOK_ATOMIC else t for t in sent]
+                # we also filtering out headers (artifact of the data)
+                # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -671,6 +673,9 @@ class WikiText103LMTask(WikiTextLMTask):
 
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
+        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
+                               'val': os.path.join(path, "valid.sentences.txt"),
+                               'test':os.path.join(path, "test.sentences.txt")}
 
 
 class BWBLMTask(LanguageModelingTask):
@@ -1684,9 +1689,9 @@ class Wiki103Classification(PairClassificationTask):
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.files_by_split = {'train': os.path.join(path, "train.txt"),
-                               'val': os.path.join(path, "valid.txt"),
-                               'test':os.path.join(path, "test.txt")}
+        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
+                               'val': os.path.join(path, "valid.sentences.txt"),
+                               'test':os.path.join(path, "test.sentences.txt")}
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
 
@@ -1697,16 +1702,14 @@ class Wiki103Classification(PairClassificationTask):
         return self.load_data(self.files_by_split[split])
 
     def load_data(self, path):
-        ''' Rather than return a whole list of examples, stream them '''
+        ''' Rather than return a whole list of examples, stream them
+        See WikiTextLMTask for an explanation of the preproc'''
         unk_tok_orig = '<unk>'
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                # WikiText103 preprocesses unknowns as '<unk>'
-                # which gets tokenized as '@', '@', 'UNKNOWN', ...
-                # We replace to avoid that
                 toks = toks.replace(unk_tok_orig, UNK_TOK_ALLENNLP)
                 toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
                 sent = process_sentence(toks, self.max_seq_len)
@@ -1763,19 +1766,20 @@ class Wiki103Seq2SeqTask(MTTask):
         # Similar for self.target_sentences
         self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
         self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
-        self.min_seq_len = 0
 
     def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.sentences.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.sentences.txt"), max_seq_len)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading WikiText")
 
     def load_txt(self, path, max_seq_len):
-        ''' Rather than return a whole list of examples, stream them '''
+        ''' Rather than return a whole list of examples, stream them
+        See WikiTextLMTask for an explanation of the preproc'''
+        data = []
         unk_tok_orig = '<unk>'
         with open(path) as txt_fh:
             for row in txt_fh:
@@ -1789,9 +1793,8 @@ class Wiki103Seq2SeqTask(MTTask):
                 toks = toks.replace(UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC)
                 sent = process_sentence(toks, max_seq_len)
                 sent = [UNK_TOK_ALLENNLP if t == UNK_TOK_ATOMIC else t for t in sent]
-                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
-                    continue
-                yield sent
+                data.append(sent)
+        return data
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
