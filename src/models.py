@@ -251,8 +251,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.sep_embs_for_skip:
         # need deterministic list of tasks based on their ``use_classifier`` attribute (
         # which defaults to the task name if it doesn't exist.
-        for task in tasks:
-            setattr(task, "_classifier_name", getattr(args, task.name).get("use_classifier", task.name))
         classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  # these are tasks that could potentially be added
         classifier_save_path = args.run_dir + "/classifier_task_map.json"
         if os.path.isfile(classifier_save_path):
