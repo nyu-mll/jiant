@@ -71,6 +71,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                              'weight_decay': 0})
 
     if 'transformer' in params['sent_enc']:
+        assert False, "Transformer is not yet tested, still in experimental stage :-("
         schd_params = Params({'type': 'noam',
                               'model_size': params['d_hid'],
                               'warmup_steps': params['warmup'],
