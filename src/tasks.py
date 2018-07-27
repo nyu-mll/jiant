@@ -688,6 +688,11 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+@register_task('reddit', rel_path='Reddit_2008/')
+@register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/') 
+@register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
+@register_task('reddit_13G', rel_path='Reddit_13G/') 
+@register_task('reddit_softmax', rel_path='Reddit_2008/') 
 class RedditTask(RankingTask):
     ''' Task class for Reddit data.  '''
 
@@ -760,6 +765,8 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
+@register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
+@register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
 class MTDataRankingTask(RedditTask):
     ''' Task class for MT data to do ranking/classification 
         RedditTask and MTDataRankingTask are same except data
@@ -791,13 +798,15 @@ class MTDataRankingTask(RedditTask):
         self.example_counts = example_counts
 
     
-class RedditTaskPairClassi(PairClassificationTask):
+@register_task('reddit_pair_classif', rel_path='Reddit_2008/')
+@register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
+@register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
+class RedditTaskPairClassification(PairClassificationTask):
     ''' Task class for Reddit data.  '''
 
     def __init__(self, path, max_seq_len, name="reddit_PairClassi"):
         ''' '''
-        super(RedditTaskPairClassi, self).__init__(name, 2)
-        #self.scorer1 = Average() #CategoricalAccuracy()
+        super().__init__(name, 2)
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -839,7 +848,6 @@ class RedditTaskPairClassi(PairClassificationTask):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
@@ -863,10 +871,11 @@ class RedditTaskPairClassi(PairClassificationTask):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
     
-
-class MTDataPairClassi(RedditTaskPairClassi):
+@register_task('mt_pair_classif', rel_path='wmt14_en_de_local/')
+@register_task('mt_pair_classif_dummy', rel_path='wmt14_en_de_mini/')
+class MTDataPairClassification(RedditTaskPairClassification):
     ''' Task class for MT data pair classification using standard setup. 
-        RedditTaskPairClassi and MTDataPairClassi are same tasks with different data
+        RedditTaskPairClassification and MTDataPairClassification are same tasks with different data
     '''
     def __init__(self, path, max_seq_len, name="mt_data_PairClassi"):
         ''' '''
@@ -876,7 +885,6 @@ class MTDataPairClassi(RedditTaskPairClassi):
 
     def load_data(self, path):
         ''' Load data '''
-        #with open(path, 'r') as txt_fh:
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 row = row.strip().split('\t')
@@ -1605,6 +1613,9 @@ class MTTask(SequenceGenerationTask):
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
+@register_task('reddit_s2s', rel_path='Reddit_2008/')
+@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/')
+@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/')
 class RedditSeq2Seq(MTTask):
     ''' Task for seq2seq using reddit data '''
     def __init__(self, path, max_seq_len, name='reddit_s2s'):
@@ -1624,10 +1635,11 @@ class RedditSeq2Seq(MTTask):
         log.info("\tFinished loading reddit data.")
 
 
-class Wiki103Classif(PairClassificationTask):
+@register_task('wiki103_classif', rel_path='WikiText103/') 
+class Wiki103Classification(PairClassificationTask):
     '''Pair Classificaiton Task using Wiki103'''
     def __init__(self, path, max_seq_len, name="wiki103_classif"):
-        super(Wiki103Classif, self).__init__(name, 2)
+        super().__init__(name, 2)
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -1692,6 +1704,8 @@ class Wiki103Classif(PairClassificationTask):
             example_counts[split] = sum(1 for line in open(split_path)) - 1
         self.example_counts = example_counts
 
+
+@register_task('wiki103_s2s', rel_path='WikiText103/')
 class Wiki103Seq2Seq(MTTask):
     def __init__(self, path, max_seq_len, name='wiki103_mt'):
         super().__init__(path, max_seq_len, name)
