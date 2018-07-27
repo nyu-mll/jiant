@@ -58,9 +58,9 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
 class ElmoTextFieldEmbedder(TextFieldEmbedder):
     """
     forward() now accepts classifier name as an argument, which tells the embedder which ELMo representation
-    to return. init() also requires a list of classifier names (i.e. the number of tasks that need their own
-    ELMo scalars). These are names (strings) and not necessarily the same as task names (e.g. mnli for
-    mnli-diagnostic.
+    to return. init() also requires a dict of classifier names (i.e. the number of tasks that need their own
+    ELMo scalars). which map to an int corresponding to their elmo scalars in the elmo object. These are 
+    names (strings) and not necessarily the same as task names (e.g. mnli for mnli-diagnostic).
 
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
