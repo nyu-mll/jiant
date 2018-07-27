@@ -652,7 +652,7 @@ class WikiTextLMTask(LanguageModelingTask):
 
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
-        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -661,7 +661,7 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, self.max_seq_len)
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
                 # we also filtering out headers (artifact of the data)
                 # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
@@ -1711,13 +1711,13 @@ class Wiki103Classification(PairClassificationTask):
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them
         See WikiTextLMTask for an explanation of the preproc'''
-        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, self.max_seq_len)
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -1784,13 +1784,13 @@ class Wiki103Seq2SeqTask(MTTask):
         ''' Rather than return a whole list of examples, stream them
         See WikiTextLMTask for an explanation of the preproc'''
         data = []
-        bad_toks = [UNK_TOK_ALLENNLP, '<unk>']
+        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, bad_toks, max_seq_len)
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, max_seq_len)
                 data.append(sent)
         return data
 
@@ -2039,7 +2039,7 @@ class GroundedTask(Task):
             Keep track of caption ids just in case '''
 
         train, val, test = ([], [], []), ([], [], []), ([], [], [])
-        
+
         with open(os.path.join(path, "train_idx.txt"), 'r') as f:
             train_ids = [item.strip() for item in f.readlines()]
         with open(os.path.join(path, "val_idx.txt"), 'r') as f:
