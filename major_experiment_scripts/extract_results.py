@@ -38,8 +38,8 @@ for path in args.log_files:
           found_eval = True
         else:
           if found_eval:
-            # safe number to prune out lines we don't care about. we usually have at least 10 fields in those lines
-            if len(line.strip().split()) > 10:
+            # only result line starts with "micro_avg:"
+            if re.match("^micro_avg:",line):
               if results_line is not None:
                 print("WARNING: Multiple GLUE evals found. Skipping all but last.")
               results_line = line.strip()
