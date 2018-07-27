@@ -269,7 +269,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
         num_reps = 1 + max(loaded_classifiers.values())
     else:
-        # everyone shares the same scalars
+        # everyone shares the same scalars.
+        # not used if self.elmo_chars_only = 1 (i.e. no elmo)
         loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
     if args.elmo:
