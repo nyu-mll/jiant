@@ -504,7 +504,10 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
-            out = self._pair_sentence_forward(batch, task, predict)
+            if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
+                out = self._positive_pair_sentence_forward(batch, task, predict)
+            else:
+                out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, VAETask):
@@ -606,6 +609,43 @@ class MultiTaskModel(nn.Module):
             out['preds'] = predicted
         return out
 
+    def _positive_pair_sentence_forward(self, batch, task, predict):
+        ''' forward function written specially for cases where we have only postive pairs in input data
+            Negative pairs are created by rotating either sent1 or sent2
+        '''
+        out = {}
+        # embed the sentence
+        sent1, mask1 = self.sent_encoder(batch['input1'], task)
+        sent2, mask2 = self.sent_encoder(batch['input2'], task)
+        classifier = self._get_classifier(task)
+
+        # Negative pairs are created by rotating sent2
+        # Note that we need to rotate corresponding mask also. *_new contain positive and negative pairs
+        sent1_new = torch.cat([sent1, sent1], 0) 
+        mask1_new = torch.cat([mask1, mask1], 0)
+        sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
+        mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
+        logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)        
+        out['logits'] = logits 
+        out['n_exs'] = len(sent1_new)
+        labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
+        labels = torch.tensor(labels, dtype=torch.long).cuda()
+        out['loss'] = F.cross_entropy(logits, labels) 
+        task.scorer1(logits, labels)
+        if task.scorer2 is not None:
+            task.scorer2(logits, labels) 
+       
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
+        return out
+
 
     def _pair_sentence_forward(self, batch, task, predict):
         out = {}
@@ -615,50 +655,32 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
 
-        if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
-            # By default, input data has only positive pairs, following logic 
-            # creates negative pairs and appends to positive pairs. Negative pairs are creates by rotating sent2
-            # Note that we need to rorate corresponding mask also. *_new contain positive and negative pairs
-            sent1_new = torch.cat([sent1, sent1], 0) 
-            mask1_new = torch.cat([mask1, mask1], 0)
-            sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
-            mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
-            logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)        
-            out['logits'] = logits 
-            out['n_exs'] = len(sent1_new)
-            labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
-            labels = torch.tensor(labels, dtype=torch.long).cuda()
-            out['loss'] = F.cross_entropy(logits, labels) 
-            task.scorer1(logits, labels)
-            if task.scorer2 is not None:
-                task.scorer2(logits, labels) 
-        else:
-            logits = classifier(sent1, sent2, mask1, mask2)
-            out['logits'] = logits
-            out['n_exs'] = get_batch_size(batch)
+        logits = classifier(sent1, sent2, mask1, mask2)
+        out['logits'] = logits
+        out['n_exs'] = get_batch_size(batch)
 
-            if 'labels' in batch:
-                labels = batch['labels']
-                labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
-                if isinstance(task, JOCITask):
-                    logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
-                    out['loss'] = F.mse_loss(logits, labels)
-                    logits_np = logits.data.cpu().numpy()
-                    labels_np = labels.data.cpu().numpy()
-                    task.scorer1(mean_squared_error(logits_np, labels_np))
-                    task.scorer2(logits_np, labels_np)
-                elif isinstance(task, STSBTask):
-                    logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
-                    out['loss'] = F.mse_loss(logits, labels)
-                    logits_np = logits.data.cpu().numpy()
-                    labels_np = labels.data.cpu().numpy()
-                    task.scorer1(logits_np, labels_np)
-                    task.scorer2(logits_np, labels_np)
-                else:
-                    out['loss'] = F.cross_entropy(logits, labels)
-                    task.scorer1(logits, labels)
-                    if task.scorer2 is not None:
-                        task.scorer2(logits, labels)
+        if 'labels' in batch:
+            labels = batch['labels']
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
+            if isinstance(task, JOCITask):
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                out['loss'] = F.mse_loss(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(mean_squared_error(logits_np, labels_np))
+                task.scorer2(logits_np, labels_np)
+            elif isinstance(task, STSBTask):
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                out['loss'] = F.mse_loss(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(logits_np, labels_np)
+                task.scorer2(logits_np, labels_np)
+            else:
+                out['loss'] = F.cross_entropy(logits, labels)
+                task.scorer1(logits, labels)
+                if task.scorer2 is not None:
+                    task.scorer2(logits, labels)
 
         if predict:
             if isinstance(task, RegressionTask):
