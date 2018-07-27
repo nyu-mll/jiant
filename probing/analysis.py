@@ -142,11 +142,13 @@ class Predictions(object):
         # Load vocabulary
         exp_dir = os.path.dirname(run_dir.rstrip("/"))
         vocab_path = os.path.join(exp_dir, "vocab")
+        print("Loading vocabulary from %s" % vocab_path)
         vocab = Vocabulary.from_files(vocab_path)
         label_namespace = f"{task_name}_labels"
 
         # Load predictions
         preds_file = os.path.join(run_dir, f"{task_name}_{split_name}.json")
+        print("Loading predictions from %s" % preds_file)
         return cls(vocab, utils.load_json_data(preds_file),
                    label_namespace=label_namespace)
 
