@@ -44,24 +44,26 @@ from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
 from .cnns.inception import inception_v3
 
-class PassThroughPhraseLayer(nn.Module):
-    ''' Dummy phrase layer that just passes-through representations from a
-    lower level. Exists solely for API compatibility. '''
+class NullPhraseLayer(nn.Module):
+    ''' Dummy phrase layer that does nothing. Exists solely for API compatibility. '''
     def __init__(self, input_dim: int):
-        super(PassThroughPhraseLayer, self).__init__()
+        super(NullPhraseLayer, self).__init__()
         self.input_dim = input_dim
 
     def get_input_dim(self):
         return self.input_dim
 
     def get_output_dim(self):
-        return self.input_dim
+        return 0
 
     def forward(self, embs, mask):
-        return embs
+        return None
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM.
+
+    NB: Do not apply dropout to the input of this module. Will be applied internally.
+    '''
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
@@ -101,7 +103,8 @@ class SentenceEncoder(Model):
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
-        # embeddings
+        # Embeddings
+        # Note: These highway layers are identity by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
         task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
         if self._cove is not None:
@@ -112,7 +115,7 @@ class SentenceEncoder(Model):
         sent_embs = self._dropout(sent_embs)
         task_sent_embs = self._dropout(task_sent_embs)
 
-        # the rest of the model
+        # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
@@ -120,12 +123,14 @@ class SentenceEncoder(Model):
         # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, BiLMEncoder):
             sent_enc = sent_enc[-1]
-        sent_enc = self._dropout(sent_enc)
+        if sent_enc is not None:
+            sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
-            if self.sep_embs_for_skip:
-                sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
+            skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            if isinstance(self._phrase_layer, NullPhraseLayer):
+                sent_enc = skip_vec
             else:
-                sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+                sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
@@ -204,18 +209,20 @@ class Pooler(nn.Module):
 
 
 class Classifier(nn.Module):
-    ''' Classifier with a linear projection before pooling '''
+    ''' Classifier with a linear projection before pooling.
+
+    NB: Expects dropout to have already been applied to its input. '''
 
     def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
         elif cls_type == 'mlp':
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
         elif cls_type == 'fancy_mlp':  # what they did in Infersent
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
                                        nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
@@ -326,14 +333,12 @@ class AttnPairEncoder(Model):
         s2_s1_vectors = util.weighted_sum(s1, s2_s1_attn)
         # batch_size, seq_len, 4*enc_dim
         s2_w_context = torch.cat([s2, s2_s1_vectors], 2)
-        s2_w_context = self._dropout(s2_w_context)
 
         # s1 representation, using same attn method as for the s2 representation
         s1_s2_attn = util.last_dim_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
         # Shape: (batch_size, s1_length, encoding_dim)
         s1_s2_vectors = util.weighted_sum(s2, s1_s2_attn)
         s1_w_context = torch.cat([s1, s1_s2_vectors], 2)
-        s1_w_context = self._dropout(s1_w_context)
 
         modeled_s1 = self._dropout(self._modeling_layer(s1_w_context, s1_mask))
         modeled_s2 = self._dropout(self._modeling_layer(s2_w_context, s2_mask))

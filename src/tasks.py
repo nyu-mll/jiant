@@ -399,8 +399,9 @@ class EdgeProbingTask(Task):
                 assert len(val) == len(record['targets'])
                 for i, target in enumerate(record['targets']):
                     target['preds'][key] = val[i]
-            # non-list predictions, attach to top-level preds
-            record['preds'][key] = val
+            else:
+                # non-list predictions, attach to top-level preds
+                record['preds'][key] = val
         return record
 
     def load_data(self):
@@ -567,11 +568,11 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
+        self.min_seq_len = 0
         self.target_indexer = {"words": SingleIdTokenIndexer()}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
-
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -587,18 +588,12 @@ class LanguageModelingTask(SequenceGenerationTask):
         return {'perplexity': math.exp(nll)}
 
     def load_data(self, path):
-        ''' Rather than return a whole list of examples, stream them '''
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                # hard code to fix unk symbol
-                # why do we need to do this twice?
-                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
-                sent = process_sentence(toks, self.max_seq_len)
-                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
-                yield sent
+                yield process_sentence(toks, self.max_seq_len)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a language modeling split by indexing and creating fields.
@@ -620,7 +615,6 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
-
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self.load_data(self.files_by_split[split])
@@ -636,14 +630,38 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield sent
 
 
-class WikiText2LMTask(LanguageModelingTask):
+class WikiTextLMTask(LanguageModelingTask):
+    ''' Language modeling on a Wikitext dataset '''
+
+    def __init__(self, path, max_seq_len, name="wiki"):
+        super().__init__(path, max_seq_len, name)
+
+    def load_data(self, path):
+        ''' Rather than return a whole list of examples, stream them '''
+        unk_tok = '<unk>' # '@@UNKNOWN@@'
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                # WikiText103 preprocesses unknowns as '<unk>'
+                # which gets tokenized as '@', '@', 'UNKNOWN', ...
+                # We replace to avoid that
+                toks = toks.replace(unk_tok, 'UNKNOWN')
+                sent = process_sentence(toks, self.max_seq_len)
+                sent = [unk_tok if t == 'UNKNOWN' else t for t in sent]
+                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
+                    continue
+                yield sent
+
+class WikiText2LMTask(WikiTextLMTask):
     ''' Language modeling task on Wikitext 2'''
 
     def __init__(self, path, max_seq_len, name="wiki2"):
         super().__init__(path, max_seq_len, name)
 
 
-class WikiText103LMTask(LanguageModelingTask):
+class WikiText103LMTask(WikiTextLMTask):
     ''' Language modeling task on Wikitext 103'''
 
     def __init__(self, path, max_seq_len, name="wiki103"):
@@ -656,13 +674,6 @@ class BWBLMTask(LanguageModelingTask):
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
 
-    def load_data(self, path):
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if toks == '':
-                    continue
-                yield process_sentence(toks, self.max_seq_len)
 
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -871,6 +882,15 @@ class QQPTask(PairClassificationTask):
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
                 'precision': pcs, 'recall': rcl}
 
+class QQPAltTask(QQPTask):
+    ''' Task class for Quora Question Pairs. 
+
+    Identical to QQPTask class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="qqp-alt"):
+        '''QQP'''
+        super(QQPAltTask, self).__init__(path, max_seq_len, name)
 
 class MultiNLISingleGenreTask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
@@ -1071,6 +1091,15 @@ class STSBTask(PairRegressionTask):
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
+class STSBAltTask(STSBTask):
+    ''' Task class for Sentence Textual Similarity Benchmark. 
+
+    Identical to STSBTask class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="sts_benchmark-alt"):
+        '''STSB'''
+        super(STSBAltTask, self).__init__(path, max_seq_len, name)
 
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
@@ -1145,7 +1174,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-        
+
     def load_data_and_create_scorers(self, path, max_seq_len):
         '''load MNLI diagnostics data. The tags for every column are loaded as indices.
         They will be converted to bools in preprocess_split function'''
@@ -1392,6 +1421,14 @@ class QNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
 
+class QNLIAltTask(QNLITask):
+    ''' Task class for SQuAD NLI
+    Identical to SQuAD NLI class, but it can be handy to have two when controlling model settings.
+    '''
+
+    def __init__(self, path, max_seq_len, name="squad-alt"):
+        '''QNLI'''
+        super(QNLIAltTask, self).__init__(path, max_seq_len, name)
 
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
@@ -1471,6 +1508,7 @@ class MTTask(SequenceGenerationTask):
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = Average()
+        self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
@@ -1509,9 +1547,65 @@ class MTTask(SequenceGenerationTask):
         ppl = self.scorer1.get_metric(reset)
         try:
             bleu_score = self.scorer2.get_metric(reset)
+            unk_ratio_macroavg = self.scorer3.get_metric(reset)
         except BaseException:
             bleu_score = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score}
+            unk_ratio_macroavg = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+class Wiki103_Seq2Seq(MTTask):
+    def __init__(self, path, max_seq_len, name='wiki103_mt'):
+        super().__init__(path, max_seq_len, name)
+        # for skip-thoughts setting, all source sentences are sentences that 
+        # followed by another sentence (which are all but the last one). 
+        # Similar for self.target_sentences
+        self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
+        self.target_sentences =  self.train_data_text[1:] + self.val_data_text[1:]
+
+    def load_data(self, path, max_seq_len):
+        tr_data = self.load_txt(os.path.join(path, "train.txt"), max_seq_len)
+        val_data = self.load_txt(os.path.join(path, "valid.txt"), max_seq_len)
+        te_data = self.load_txt(os.path.join(path, "test.txt"), max_seq_len)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WikiText")
+
+    def load_txt(self, path, max_seq_len):
+        data = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if toks == '':
+                    continue
+                # hard code to fix unk symbol
+                toks = toks.replace('@@UNKNOWN@@', 'UNKNOWN')
+                sent = process_sentence(toks, max_seq_len)
+                sent = ['@@UNKNOWN@@' if t == 'UNKNOWN' else t for t in sent]
+                data.append(sent)
+        return data
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+
+        Subclass can override this if data is not stored in column format.
+        '''
+        # pair setences# = sent# - 1
+        return len(split_text) - 1
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a language modeling split.
+
+        Split is a single list of sentences here.
+        '''
+        targs_indexers = {"words": SingleIdTokenIndexer()}
+        def _make_instance(prev_sent, sent):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
+            d["targs"] = _sentence_to_text_field(sent, targs_indexers)
+            return Instance(d)
+        for i in range(1, len(split)):
+            yield _make_instance(split[i-1], split[i])
 
 
 class WikiInsertionsTask(MTTask):
