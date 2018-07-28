@@ -473,16 +473,25 @@ def get_words(tasks):
                 char2freq[char] += 1
         return
 
+    def count_target_sentence(sentence):
+        for word in sentence:
+            target2freq[word] += 1
+
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
-        for sentence in task.get_sentences():
-            count_sentence(sentence)
+        if isinstance(task, MTEnRuTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                count_sentence(src_sent)
+                count_target_sentence(tgt_sent)
+        else:
+            for sentence in task.get_sentences():
+                count_sentence(sentence)
 
     for task in tasks:
         if hasattr(task, "target_sentences"):
             for sentence in task.target_sentences:
-                for word in sentence:
-                    target2freq[word] += 1
+                count_target_sentence(sentence)
+
 
     log.info("\tFinished counting words")
     return word2freq, char2freq, target2freq
