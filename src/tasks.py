@@ -1709,8 +1709,7 @@ class MTEnRuTask(SequenceGenerationTask):
                 continue
             path = self.files_by_split[split]
             for sent1, sent2 in self.load_data(path):
-                yield sent1
-                yield sent2
+                yield sent1, sent2
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
