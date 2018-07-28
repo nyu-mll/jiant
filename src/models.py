@@ -961,28 +961,26 @@ class MultiTaskModel(nn.Module):
 
         img_emb = torch.stack(img_seq, dim=0);
         sent1_rep = sent_rep; sent2_rep = img_emb
-        
-        if 1:
-            sent1_rep = F.normalize(sent1_rep, 2, 1)
-            sent2_rep = F.normalize(sent2_rep, 2, 1)
-            cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
-            labels = torch.eye(len(cos_simi))
 
-            scale = 1/(len(cos_simi) - 1)
-            weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
-            weights = weights.view(-1).cuda()
+        sent1_rep = F.normalize(sent1_rep, 2, 1)
+        sent2_rep = F.normalize(sent2_rep, 2, 1)
+        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+        labels = torch.eye(len(cos_simi))
 
+        scale = 1/(len(cos_simi) - 1)
+        weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+        weights = weights.view(-1).cuda()
 
-            cos_simi = cos_simi.view(-1)
-            labels = labels.view(-1).cuda()
-            pred = F.sigmoid(cos_simi).round()
+        cos_simi = cos_simi.view(-1)
+        labels = labels.view(-1).cuda()
+        pred = F.sigmoid(cos_simi).round()
 
-            total_loss = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
-            out['loss'] = total_loss
-            total_correct = torch.sum(pred == labels)
-            batch_acc = total_correct.item()/len(labels)
-            out["n_exs"] = len(labels)
-            task.scorer1.__call__(batch_acc)
+        out['loss'] = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+        total_correct = torch.sum(pred == labels)
+        batch_acc = total_correct.item()/len(labels)
+        task.scorer1.__call__(batch_acc)
+
+            
         return out
     
     def get_elmo_mixing_weights(self, tasks=[]):
