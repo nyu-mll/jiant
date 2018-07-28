@@ -966,7 +966,7 @@ class MultiTaskModel(nn.Module):
         mat_mul = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
         labels = torch.eye(len(mat_mul))
 
-        scale = 1/(len(cos_simi) - 1)
+        scale = 1/(len(mat_mul) - 1)
         weights = scale * torch.ones(mat_mul.shape) - (scale-1) * torch.eye(len(mat_mul))
         weights = weights.view(-1).cuda()
 
