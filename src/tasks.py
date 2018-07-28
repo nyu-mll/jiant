@@ -1625,8 +1625,9 @@ class MTTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+        self._label_namespace = self.name + "_tokens"
+        self.max_targ_v_size = 20000
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a machine translation split '''
@@ -1642,10 +1643,10 @@ class MTTask(SequenceGenerationTask):
 
     def load_data(self, path, max_seq_len):
         targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
+        self.train_data_text = load_tsv(os.path.join(path, 'train_mini.txt'), max_seq_len,
                                         s1_idx=0, s2_idx=None, targ_idx=1,
                                         targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
+        self.val_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
                                       s1_idx=0, s2_idx=None, targ_idx=1,
                                       targ_fn=targ_fn_startend)
         self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
@@ -1664,6 +1665,17 @@ class MTTask(SequenceGenerationTask):
             bleu_score = 0
             unk_ratio_macroavg = 0
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+    def get_all_labels(self) -> List[str]:
+        ''' Build vocabulary and return it as a list '''
+        word2freq = collections.defaultdict(int)
+        trg_sents = self.train_data_text[2] + self.val_data_text[2]
+        for sent in trg_sents:
+            for word in sent:
+                word2freq[word] += 1
+        words_by_freq = [(word, freq) for word, freq in word2freq.items()]
+        words_by_freq.sort(key=lambda x: x[1], reverse=True)
+        return [w for w, _ in words_by_freq[:self.max_targ_v_size]]
 
 
 @register_task('reddit_s2s', rel_path='Reddit_2008/')
@@ -1768,8 +1780,9 @@ class Wiki103Seq2SeqTask(MTTask):
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
-        self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
-        self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
+        self.sentences = self.train_data_text + self.val_data_text
+        #self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
         tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
@@ -1807,11 +1820,11 @@ class Wiki103Seq2SeqTask(MTTask):
 
         Split is a single list of sentences here.
         '''
-        targs_indexers = {"words": SingleIdTokenIndexer()}
+        target_indexer = self.target_indexer
         def _make_instance(prev_sent, sent):
             d = {}
             d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
-            d["targs"] = _sentence_to_text_field(sent, targs_indexers)
+            d["targs"] = _sentence_to_text_field(sent, target_indexer)
             return Instance(d)
         for i in range(1, len(split)):
             yield _make_instance(split[i-1], split[i])
