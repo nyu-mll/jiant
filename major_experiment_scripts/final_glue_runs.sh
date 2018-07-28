@@ -129,9 +129,10 @@ JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_on
 
 ## CCG (Note: For use in the NLI probing paper only) ##
 
-# Pending fix from Jan (or Tom).
-JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+# Until a fix from Alex, this needs to run in its own directory due to a vocabulary bug.
+# Sam is running.
+JIANT_OVERRIDES="train_tasks = ccg, exp_name = final-ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = ccg, exp_name = final-ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 #### Only commands below this point may be edited after Wednesday 7/24 ####
 
