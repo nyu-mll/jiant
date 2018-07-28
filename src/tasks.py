@@ -2283,11 +2283,9 @@ class TaggingTask(Task):
     def __init__(self, name, num_tags):
         super().__init__(name)
         self.num_tags = num_tags + 2 # add unknown and padding
-        ## TODO check if this is good metric
-        self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = True
+        self.val_metric_decreases = False
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
