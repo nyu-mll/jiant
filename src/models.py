@@ -963,18 +963,18 @@ class MultiTaskModel(nn.Module):
 
         sent1_rep = F.normalize(sent1_rep, 2, 1)
         sent2_rep = F.normalize(sent2_rep, 2, 1)
-        cos_simi = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
-        labels = torch.eye(len(cos_simi))
+        mat_mul = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+        labels = torch.eye(len(mat_mul))
 
         scale = 1/(len(cos_simi) - 1)
-        weights = scale * torch.ones(cos_simi.shape) - (scale-1) * torch.eye(len(cos_simi))
+        weights = scale * torch.ones(mat_mul.shape) - (scale-1) * torch.eye(len(mat_mul))
         weights = weights.view(-1).cuda()
 
-        cos_simi = cos_simi.view(-1)
+        mat_mul = mat_mul.view(-1)
         labels = labels.view(-1).cuda()
-        pred = F.sigmoid(cos_simi).round()
+        pred = F.sigmoid(mat_mul).round()
 
-        out['loss'] = torch.nn.BCEWithLogitsLoss(weight=weights)(cos_simi, labels)
+        out['loss'] = torch.nn.BCEWithLogitsLoss(weight=weights)(mat_mul, labels)
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
         task.scorer1.__call__(batch_acc)
