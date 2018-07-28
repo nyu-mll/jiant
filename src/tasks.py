@@ -2285,7 +2285,7 @@ class TaggingTask(Task):
         self.num_tags = num_tags + 2 # add unknown and padding
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = True
+        self.val_metric_decreases = False
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
