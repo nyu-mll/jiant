@@ -123,7 +123,7 @@ JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-elmo, elmo
 
 ## MSCOCO ##
 
-# Sam is running.
+# Pending fix from Roma.
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
