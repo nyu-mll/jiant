@@ -81,8 +81,18 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
                 logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     if skip_task_models:
-        keys_to_skip = [key for key in model_state if "_mdl" in key]
-        logging.info("Not restoring task-specific parameters.")
+        if skip_task_models == 1 or skip_task_models == True:
+            keys_to_skip = [key for key in model_state if "_mdl" in key]
+            logging.info("Not restoring any task-specific parameters.")
+        else:
+            keys_to_skip = []
+            for task in skip_task_models.split(","):
+                new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
+                if new_keys_to_skip:
+                    logging.info("Not restoring task-specific parameters for task: %s" % task)
+                    keys_to_skip += new_keys_to_skip 
+                else:
+                    logging.info("Not restoring task-specific parameters for task: %s (because none were found)" % task)
         for key in keys_to_skip:
             del model_state[key]
 
