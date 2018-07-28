@@ -2286,13 +2286,9 @@ class TaggingTask(Task):
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-<<<<<<< HEAD
         self.all_labels = [str(i) for i in range(self.num_tags)]
         self._label_namespace = self.name + "_labels"
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
-=======
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
->>>>>>> master
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
         self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
