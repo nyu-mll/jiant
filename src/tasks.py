@@ -1666,9 +1666,9 @@ class MTTask(SequenceGenerationTask):
         return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
-@register_task('mt_data_en_ru', rel_path='wmt17_en_ru/') 
+@register_task('mt_data_en_ru', rel_path='wmt17_en_ru/')
 class MTEnRuTask(SequenceGenerationTask):
-    ''' Task class for Reddit data.  '''
+    ''' Task class for wmt17_en_ru data.  '''
 
     def __init__(self, path, max_seq_len, name="MT_EnRu_data"):
         ''' '''
@@ -1745,7 +1745,7 @@ class MTEnRuTask(SequenceGenerationTask):
 @register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
 @register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
 class MTDataRankingTask(RedditTask):
-    ''' Task class for MT data to do ranking/classification 
+    ''' Task class for MT data to do ranking/classification
         RedditTask and MTDataRankingTask are same except data
     '''
 
@@ -1753,7 +1753,7 @@ class MTDataRankingTask(RedditTask):
         ''' '''
         super().__init__(path, max_seq_len, name)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}       
+                                split in ["train", "val", "test"]}
 
     def load_data(self, path):
         ''' Load data '''
