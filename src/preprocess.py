@@ -315,12 +315,11 @@ def build_tasks(args):
     vocab = Vocabulary.from_files(vocab_path)
     log.info("\tLoaded vocab from %s", vocab_path)
 
-    word_v_size = vocab.get_vocab_size('tokens')
-    char_v_size = vocab.get_vocab_size('chars')
-    target_v_size = vocab.get_vocab_size('targets')
-    log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
-             word_v_size, char_v_size, target_v_size)
-    args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
+    for namespace, mapping in vocab._index_to_token.items():
+        log.info("\tVocab namespace %s: size %d", namespace, len(mapping))
+    log.info("\tFinished building vocab.")
+    args.max_word_v_size = vocab.get_vocab_size('tokens')
+    args.max_char_v_size = vocab.get_vocab_size('chars')
 
     # 3) build / load word vectors
     word_embs = None

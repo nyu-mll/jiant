@@ -583,7 +583,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer()}
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
@@ -2286,7 +2286,9 @@ class TaggingTask(Task):
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+        self.all_labels = [str(i) for i in range(self.num_tags)]
+        self._label_namespace = self.name + "_labels"
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
         self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
@@ -2309,12 +2311,17 @@ class TaggingTask(Task):
         instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
         return instances
 
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
 class POSTaggingTask(TaggingTask):
     def __init__(self, path, max_seq_len, name="pos"):
         super().__init__(name, 45) # 45 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+        self.all_labels = list(set([l for ll in self.train_data_text[2] for l in ll] + \
+                                   [l for ll in self.val_data_text[2] for l in ll] + \
+                                   [l for ll in self.test_data_text[2] for l in ll]))
 
 
     def load_data(self, path, max_seq_len):
@@ -2337,8 +2344,6 @@ class CCGTaggingTask(TaggingTask):
         super().__init__(name, 1363) # 1363 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-
 
 
     def load_data(self, path, max_seq_len):
