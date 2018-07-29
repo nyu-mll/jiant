@@ -792,39 +792,6 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-@register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
-@register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
-class MTDataRankingTask(RedditTask):
-    ''' Task class for MT data to do ranking/classification
-        RedditTask and MTDataRankingTask are same except data
-    '''
-
-    def __init__(self, path, max_seq_len, name="mt_data_classif"):
-        ''' '''
-        super().__init__(path, max_seq_len, name)
-        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
-        self.example_counts = example_counts
-
-
 @register_task('reddit_pair_classif', rel_path='Reddit_2008/')
 @register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
