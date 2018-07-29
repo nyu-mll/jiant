@@ -52,7 +52,7 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         return [item]
     return item
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
+def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state
 
     Parameters
@@ -60,7 +60,9 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     model: The model object to populate with loaded parameters.
     state_path: The path to a model_state checkpoint.
     gpu_id: The GPU to use. -1 for no GPU.
-    skip_task_models: If set, load only the task-independent parameters.
+    skip_task_models: If set, skip task-specific parameters for these tasks.
+        This does not necessarily skip loading ELMo scalar weights, but I (Sam) sincerely
+        doubt that this matters.
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     '''
@@ -81,8 +83,14 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
                 logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     if skip_task_models:
-        keys_to_skip = [key for key in model_state if "_mdl" in key]
-        logging.info("Not restoring task-specific parameters.")
+        keys_to_skip = []
+        for task in skip_task_models:
+            new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
+            if new_keys_to_skip:
+                logging.info("Skipping task-specific parameters for task: %s" % task)
+                keys_to_skip += new_keys_to_skip 
+            else:
+                logging.info("Found no task-specific parameters to skip for task: %s" % task)
         for key in keys_to_skip:
             del model_state[key]
 
