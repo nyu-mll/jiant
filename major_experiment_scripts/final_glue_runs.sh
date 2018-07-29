@@ -43,16 +43,25 @@ JIANT_OVERRIDES="train_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-el
 JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+# Restore runs. Used as a workaround to a loading bug.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte\", train_tasks = rte, run_name = rte-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte\", train_tasks = cola, run_name = cola-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte\", train_tasks = sst, run_name = sst-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte\", train_tasks = wnli, run_name = wnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte\", train_tasks = mrpc, run_name = mrpc-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
 ## Random BiLSTM, no pretraining ##
 
 # Sam is running.
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+# Restore runs. Used as a workaround to a loading bug.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sts-b,wnli\", train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
 ## MT ##
 
 # Seq2seq
-
 
 JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-attn-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -60,7 +69,6 @@ JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-attn-noelmo
 JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Seq2seq no attention
-
 
 JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-noattn-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wmt17_en_ru, run_name = wmt-en-ru-s2s-noattn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -71,12 +79,10 @@ JIANT_OVERRIDES="train_tasks = wmt14_en_de, run_name = wmt-en-de-s2s-noattn-elmo
 
 # Seq2seq no attention
 
-
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noattn-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-noattn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Seq2seq with attention
-
 
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -99,12 +105,10 @@ JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo, elmo_chars
 
 # Seq2seq (Skip-Thought)
 
-
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-attn-noelmo, elmo_chars_only = 1, lr = 0.001, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-attn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, mt_attention = bilinear, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Seq2seq (Skip-Thought), no attention
-
 
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-noattn-noelmo, elmo_chars_only = 1, lr = 0.001, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103_s2s, run_name = wiki103-s2s-noattn-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, mt_attention = none, max_seq_len = 64, batch_size = 24" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
