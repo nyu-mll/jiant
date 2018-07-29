@@ -792,39 +792,6 @@ class RedditTask(RankingTask):
         return {'accuracy': acc}
 
 
-@register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
-@register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
-class MTDataRankingTask(RedditTask):
-    ''' Task class for MT data to do ranking/classification
-        RedditTask and MTDataRankingTask are same except data
-    '''
-
-    def __init__(self, path, max_seq_len, name="mt_data_classif"):
-        ''' '''
-        super().__init__(path, max_seq_len, name)
-        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
-        self.example_counts = example_counts
-
-
 @register_task('reddit_pair_classif', rel_path='Reddit_2008/')
 @register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
@@ -1653,6 +1620,81 @@ class MTTask(SequenceGenerationTask):
                                        targ_fn=targ_fn_startend)
 
         log.info("\tFinished loading MT data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        try:
+            bleu_score = self.scorer2.get_metric(reset)
+            unk_ratio_macroavg = self.scorer3.get_metric(reset)
+        except BaseException:
+            bleu_score = 0
+            unk_ratio_macroavg = 0
+        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+
+@register_task('mt_data_en_ru', rel_path='wmt17_en_ru/')
+class MTEnRuTask(SequenceGenerationTask):
+    ''' Task class for wmt17_en_ru data.  '''
+
+    def __init__(self, path, max_seq_len, name="MT_EnRu_data"):
+        ''' '''
+        super().__init__(name)
+        self.scorer1 = Average()
+        self.scorer2 = Average()
+        self.scorer3 = Average()
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
+                                                    split in ["train", "val", "test"]}
+        self.max_seq_len = max_seq_len
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
+
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                sent1 = process_sentence(row[0], self.max_seq_len)
+                sent2 = process_sentence(row[1], self.max_seq_len)
+                yield (sent1, sent2)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for sent1, sent2 in self.load_data(path):
+                yield sent1, sent2
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
+        self.example_counts = example_counts
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _make_instance(input, target):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(input, indexers)
+            d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+            return Instance(d)
+
+        for sent1, sent2 in split:
+            yield _make_instance(sent1, sent2)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
