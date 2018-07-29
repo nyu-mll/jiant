@@ -37,7 +37,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask
+    GroundedSWTask, MTEnRuTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -338,7 +338,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, (MTTask, RedditSeq2SeqTask)):
+    elif isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -553,7 +553,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, (GroundedTask, GroundedSWTask)):
-            out = self._grounded_forward(batch, task, predict)
+            out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         else:
@@ -641,7 +641,7 @@ class MultiTaskModel(nn.Module):
 
     def _positive_pair_sentence_forward(self, batch, task, predict):
         ''' forward function written specially for cases where we have only +ve pairs in input data
-            -ve pairs are created by rotating either sent1 or sent2. 
+            -ve pairs are created by rotating either sent1 or sent2.
             Ex: [1,2,3,4] after rotation by 2 positions [3,4,1,2]
             Assumption is each example in sent1 has only one corresponding example in sent2 which is +ve
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
@@ -654,20 +654,20 @@ class MultiTaskModel(nn.Module):
 
         # Negative pairs are created by rotating sent2
         # Note that we need to rotate corresponding mask also. *_new contain positive and negative pairs
-        sent1_new = torch.cat([sent1, sent1], 0) 
+        sent1_new = torch.cat([sent1, sent1], 0)
         mask1_new = torch.cat([mask1, mask1], 0)
         sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
         mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
-        logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)        
-        out['logits'] = logits 
+        logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
+        out['logits'] = logits
         out['n_exs'] = len(sent1_new)
         labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
         labels = torch.tensor(labels, dtype=torch.long).cuda()
-        out['loss'] = F.cross_entropy(logits, labels) 
+        out['loss'] = F.cross_entropy(logits, labels)
         task.scorer1(logits, labels)
         if task.scorer2 is not None:
-            task.scorer2(logits, labels) 
-       
+            task.scorer2(logits, labels)
+
         if predict:
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:
@@ -729,7 +729,7 @@ class MultiTaskModel(nn.Module):
 
     def _ranking_forward(self, batch, task, predict):
         ''' For caption and image ranking. This implementation is intended for Reddit
-            This implementation assumes only positive pairs exist in input data. 
+            This implementation assumes only positive pairs exist in input data.
             Negative pairs are created within batch.
         '''
         out = {}
@@ -747,11 +747,11 @@ class MultiTaskModel(nn.Module):
         if task.name == 'reddit_softmax':
             cos_simi_backward = cos_simi.transpose(0,1)
             labels = torch.arange(len(cos_simi), dtype=torch.long).cuda()
-    
+
             total_loss = torch.nn.CrossEntropyLoss()(cos_simi, labels) # one-way loss
-            total_loss_rev = torch.nn.CrossEntropyLoss()(cos_simi_backward, labels) #reverse 
+            total_loss_rev = torch.nn.CrossEntropyLoss()(cos_simi_backward, labels) #reverse
             out['loss'] = total_loss + total_loss_rev
-    
+
             pred = torch.nn.Softmax(dim=1)(cos_simi)
             pred = torch.argmax(pred, dim=1)
         else:
@@ -767,7 +767,7 @@ class MultiTaskModel(nn.Module):
             labels = labels.cuda()
             total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
-    
+
             pred = F.sigmoid(cos_simi).round()
 
         total_correct = torch.sum(pred == labels)
@@ -802,16 +802,18 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, (MTTask, RedditSeq2SeqTask)):
+        if isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
 
-            if not self.training and not isinstance(task, Wiki103Seq2SeqTask):
-                # bleu scoring
-                bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path)
-                # task.scorer2(bleu_score)
-                task.scorer3(unk_ratio_macroavg)
+            # Commented out for final run (still needs this for further debugging).
+            # We don't want to write predictions during training.
+            #if not self.training and not isinstance(task, Wiki103_Seq2Seq):
+            #    # bleu scoring
+            #    bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
+            #    task.scorer2(bleu_score)
+            #    task.scorer3(unk_ratio_macroavg)
 
             return out
 
@@ -824,12 +826,11 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _tagger_forward(self, batch, task, predict):
-        ''' For language modeling? '''
+        ''' For sequence tagging '''
         out = {}
         b_size, seq_len, _ = batch['inputs']['elmo'].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
-
         out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch['inputs'], task)
@@ -844,7 +845,7 @@ class MultiTaskModel(nn.Module):
 
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
-        task.scorer1(out['loss'].item())
+        task.scorer1(logits, targs)
         return out
 
     def _lm_forward(self, batch, task, predict):
@@ -936,7 +937,48 @@ class MultiTaskModel(nn.Module):
         out['loss'] = loss
         task.scorer1(np.mean(acc))
         return out
-    
+
+    def _grounded_ranking_bce_forward(self, batch, task, predict):
+        ''' Binary Cross Entropy Loss
+            Create sentence, image representation.
+        '''
+        
+        out, neg = {}, []
+        sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
+        batch_size = get_batch_size(batch)
+        out['n_exs'] = batch_size
+        sent_pooler = self._get_classifier(task) 
+        sent_rep = sent_pooler(sent_emb, sent_mask)
+        loss_fn = nn.L1Loss()
+        ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
+        img_seq = []
+
+        for img_idx in ids:
+            img_rep = task.img_encoder.forward(int(img_idx))[0]
+            img_seq.append(torch.tensor(img_rep, dtype=torch.float32).cuda())
+
+        img_emb = torch.stack(img_seq, dim=0);
+        sent1_rep = sent_rep; sent2_rep = img_emb
+
+        sent1_rep = F.normalize(sent1_rep, 2, 1)
+        sent2_rep = F.normalize(sent2_rep, 2, 1)
+        mat_mul = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
+        labels = torch.eye(len(mat_mul))
+
+        scale = 1/(len(mat_mul) - 1)
+        weights = scale * torch.ones(mat_mul.shape) - (scale-1) * torch.eye(len(mat_mul))
+        weights = weights.view(-1).cuda()
+
+        mat_mul = mat_mul.view(-1)
+        labels = labels.view(-1).cuda()
+        pred = F.sigmoid(mat_mul).round()
+
+        out['loss'] = loss_fn(mat_mul, labels)
+        total_correct = torch.sum(pred == labels)
+        batch_acc = total_correct.item()/len(labels)
+        task.scorer1.__call__(batch_acc)
+            
+        return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder,
@@ -958,7 +1000,7 @@ class MultiTaskModel(nn.Module):
                 tasks = [None] + tasks
             for task in tasks:
                 if task:
-                    params[task.name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
+                    params[task._classifier_name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
                 else:
                     params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
         return params
