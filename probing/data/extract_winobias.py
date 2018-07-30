@@ -49,13 +49,9 @@ def process_file(fname):
     links = []
     sent_id, sent = line[0], line[1:]
     spans, new_sent = get_span_idx(line[1:])
-    try:
-      assert len(spans) == 2, "dun goofed {} {}".format(spans, line)
-    except:
-      print ("dun goofed {} {}".format(spans, line))
-      pass
     links.append((spans[0], spans[1], 1))
     if len(spans) == 3:
+      print ("has three spans... {} {}".format(spans, line))
       links.append((spans[0], spans[2], 1))
       links.append((spans[1], spans[2], 1))
     jsons.append(jsonify(' '.join(new_sent), links, fname + ":" + str(sent_id)))
