@@ -250,7 +250,8 @@ class Classifier(nn.Module):
     @classmethod
     def from_params(cls, d_inp, n_classes, params):
         return cls(d_inp, n_classes, cls_type=params["cls_type"],
-                   dropout=params["dropout"], d_hid=params["d_hid"])
+                   dropout=params["dropout"], d_hid=params["d_hid"],
+                   use_legacy_broken_dropout=params["use_legacy_broken_dropout"])
 
 
 class SingleClassifier(nn.Module):
