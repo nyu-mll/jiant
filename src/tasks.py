@@ -1584,7 +1584,7 @@ class PDTBTask(PairClassificationTask):
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 
-    def __init__(self, path, max_seq_len, name):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name):
         ''' '''
         super().__init__(name)
         self.scorer1 = Average()
@@ -1594,7 +1594,7 @@ class MTTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = 100000 # TODO(Alex): cmdline arg
+        self.max_targ_v_size = max_targ_v_size
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
                                                     split in ["train", "val", "test"]}
@@ -1663,33 +1663,41 @@ class MTTask(SequenceGenerationTask):
         return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
-@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/')
+@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
 class MTTaskEnRu(MTTask):
-    def __init__(self, path, max_seq_len, name='mt_en_ru'):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_ru'):
         ''' MT En-Ru'''
-        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
         self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
                                "val": os.path.join(path, "valid.txt"),
                                "test": os.path.join(path, "test.txt")}
 
 
-@register_task('wmt14_en_de', rel_path='wmt14_en_de/')
+@register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
 class MTTaskEnDe(MTTask):
-    def __init__(self, path, max_seq_len, name='mt_en_de'):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_de'):
         ''' MT En-De'''
-        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+
         self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
                                "val": os.path.join(path, "valid_mini.txt"),
                                "test": os.path.join(path, "test.txt")}
 
 
-@register_task('reddit_s2s', rel_path='Reddit_2008/')
-@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/')
-@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/')
+@register_task('reddit_s2s', rel_path='Reddit_2008/', max_targ_v_size=0)
+@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/', max_targ_v_size=0)
+@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/', max_targ_v_size=0)
 class RedditSeq2SeqTask(MTTask):
-    ''' Task for seq2seq using reddit data '''
-    def __init__(self, path, max_seq_len, name='reddit_s2s'):
-        super().__init__(path, max_seq_len, name)
+    ''' Task for seq2seq using reddit data
+
+    Note: max_targ_v_size doesn't do anything here b/c the
+    target is in English'''
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='reddit_s2s'):
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
         targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
@@ -1778,15 +1786,17 @@ class Wiki103Classification(PairClassificationTask):
         self.example_counts = example_counts
 
 
-@register_task('wiki103_s2s', rel_path='WikiText103/')
+@register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
 class Wiki103Seq2SeqTask(MTTask):
-    def __init__(self, path, max_seq_len, name='wiki103_mt'):
-        super().__init__(path, max_seq_len, name)
+    ''' Skipthought objective on Wiki103 '''
+
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='wiki103_mt'):
+        ''' Note: max_targ_v_size does nothing here '''
+        super().__init__(path, max_seq_len, max_targ_v_size, name)
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
         self.sentences = self.train_data_text + self.val_data_text
-        #self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
@@ -1839,8 +1849,8 @@ class Wiki103Seq2SeqTask(MTTask):
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
 
-    def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
-        super().__init__(path, max_seq_len, name)
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='WikiInsertionTask'):
+        super().__init__(path, max_seq_len, max_targ_v_size, name)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name

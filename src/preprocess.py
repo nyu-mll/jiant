@@ -289,7 +289,8 @@ def build_tasks(args):
         get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
-                  nli_prob_probe_path=args['nli-prob'].probe_path)
+                  nli_prob_probe_path=args['nli-prob'].probe_path,
+                  max_targ_v_size=args.max_targ_word_v_size)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
         setattr(task, "_classifier_name",
@@ -410,7 +411,8 @@ def parse_task_list_arg(task_list):
     return task_names
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
+              scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
+              max_targ_v_size=20000):
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
@@ -437,6 +439,9 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
+            elif name in ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
+                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']:
+                kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
