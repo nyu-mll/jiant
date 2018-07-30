@@ -21,6 +21,7 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 
+from .modules import Pooler
 
 class Seq2SeqDecoder(Model):
     """
@@ -45,6 +46,7 @@ class Seq2SeqDecoder(Model):
         # end symbol as a way to indicate the end of the decoded sequence.
         self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
         self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
+        self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
@@ -55,6 +57,8 @@ class Seq2SeqDecoder(Model):
         # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
+
+        self._sent_pooler = Pooler.from_params(input_dim, input_dim, False)
 
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(input_dim, input_dim)
@@ -74,10 +78,14 @@ class Seq2SeqDecoder(Model):
         # very important - feel free to check it a third time
         # idempotent / safe to run in place. encoder_outputs_mask should never
         # change
-        encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
+        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+            encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
-        decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
-        decoder_context = encoder_outputs.max(dim=1)[0]
+            decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+            decoder_context = encoder_outputs.max(dim=1)[0]
+        else:
+            decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
+            decoder_context = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
 
         return decoder_hidden, decoder_context
 
