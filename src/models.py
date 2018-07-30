@@ -281,7 +281,12 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.elmo:
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
+        if args.elmo_model == 'random':
+            log.info("ELMO_RANDOM_WEIGHTS_PATH = %s", ELMO_RANDOM_WEIGHTS_PATH)
+        elif args.elmo_model == 'ortho':
+            log.info("ELMO_ORTHO_WEIGHTS_PATH = %s", ELMO_ORTHO_WEIGHTS_PATH)
+        else:
+            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
@@ -290,12 +295,10 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
-            assert not(args.random_elmo and args.ortho_elmo), "Both random_elmo and ortho_elmo overrides are turned on. \
-                                                                    Which one do you mean?"
-            if args.random_elmo:
+            if args.elmo_model == 'random':
                 log.info("Using full ELMo, with randomized RNN weights.")
                 weight_file=ELMO_RANDOM_WEIGHTS_PATH
-            elif args.ortho_elmo:
+            elif args.elmo_model == 'ortho':
                 log.info("Using full ELMo, with (semi) orthogonal matrices as weights.")
                 weight_file=ELMO_ORTHO_WEIGHTS_PATH
             else:
