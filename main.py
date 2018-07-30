@@ -172,6 +172,13 @@ def main(cl_arguments):
         steps_log.append("Re-training model for individual eval tasks")
         assert_for_log(args.eval_val_interval % args.bpp_base == 0,
                        "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
+        assert_for_log(len(set(train_tasks).intersection(eval_tasks)) == 0 \
+                        or args.allow_reuse_of_pretraining_parameters \
+                        or args.do_train == 0,
+                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
+                        "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
+                        "  train with do_train = 1, train_for_eval = 0, stop, and restart with\n"
+                        "  do_train = 0 and train_for_eval = 1.")
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
@@ -208,7 +215,7 @@ def main(cl_arguments):
     else:
         strict = False
 
-    if args.train_for_eval:
+    if args.train_for_eval and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models. 
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
