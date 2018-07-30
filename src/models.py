@@ -942,11 +942,12 @@ class MultiTaskModel(nn.Module):
         ''' Binary Cross Entropy Loss
             Create sentence, image representation.
         '''
+        
         out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
-        sent_pooler = self._get_classifier(task)
+        sent_pooler = self._get_classifier(task) 
         sent_rep = sent_pooler(sent_emb, sent_mask)
         loss_fn = nn.L1Loss()
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
@@ -976,7 +977,7 @@ class MultiTaskModel(nn.Module):
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
         task.scorer1.__call__(batch_acc)
-
+            
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
