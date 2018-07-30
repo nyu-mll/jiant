@@ -33,7 +33,7 @@ from .tasks import \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
     DisSentWikiHugeTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, MTTaskEnRu, MTTaskEnDe, BWBLMTask, WikiInsertionsTask, \
+    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     GroundedSWTask
 
