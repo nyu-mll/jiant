@@ -83,7 +83,7 @@ def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_voc
 
 
 def compute_bleu(hyps, scores, relevant_targets):
-    return None  # TODO: replace with nltk bleu scoring
+    raise NotImplementedError("BLEU score not yet working!")
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
