@@ -290,6 +290,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
+            assert not(args.random_elmo and args.ortho_elmo), "Both random_elmo and ortho_elmo overrides are turned on. \
+                                                                    Which one do you mean?"
             if args.random_elmo:
                 log.info("Using full ELMo, with randomized RNN weights.")
                 weight_file=ELMO_RANDOM_WEIGHTS_PATH
