@@ -84,8 +84,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
-             'wmt17_en_ru': (MTTask, 'wmt17_en_ru'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
@@ -268,10 +266,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     max_v_sizes = {
         'word': args.max_word_v_size,
         'char': args.max_char_v_size,
-        'target': args.max_targ_word_v_size
     }
-    word2freq, char2freq, target2freq = get_words(tasks)
-    vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
+    word2freq, char2freq = get_words(tasks)
+    vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
     vocab.save_to_files(vocab_path)
@@ -462,9 +459,9 @@ def get_words(tasks):
     Get all words for all tasks for all splits for all sentences
     Return dictionary mapping words to frequencies.
     '''
-    word2freq, char2freq, target2freq = defaultdict(int), defaultdict(int), defaultdict(int)
+    word2freq, char2freq = defaultdict(int), defaultdict(int)
 
-    def count_sentence(sentence):
+    def update_vocab_freqs(sentence):
         '''Update counts for words in the sentence'''
         for word in sentence:
             word2freq[word] += 1
@@ -472,22 +469,27 @@ def get_words(tasks):
                 char2freq[char] += 1
         return
 
+
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
-        for sentence in task.get_sentences():
-            count_sentence(sentence)
+        if isinstance(task, MTTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                update_vocab_freqs(src_sent)
+        else:
+            for sentence in task.get_sentences():
+                update_vocab_freqs(sentence)
 
     for task in tasks:
         if hasattr(task, "target_sentences"):
             for sentence in task.target_sentences:
-                for word in sentence:
-                    target2freq[word] += 1
+                update_target_vocab_freqs(sentence)
+
 
     log.info("\tFinished counting words")
-    return word2freq, char2freq, target2freq
+    return word2freq, char2freq
 
 
-def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
@@ -503,10 +505,6 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     for char, _ in chars_by_freq[:max_v_sizes['char']]:
         vocab.add_token_to_namespace(char, 'chars')
 
-    targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
-    targets_by_freq.sort(key=lambda x: x[1], reverse=True)
-    for target, _ in targets_by_freq[:max_v_sizes['target']]:
-        vocab.add_token_to_namespace(target, 'targets')
     return vocab
 
 def add_task_label_vocab(vocab, task):
@@ -527,7 +525,7 @@ def add_task_label_vocab(vocab, task):
     '''
     if not hasattr(task, 'get_all_labels'):
         return
-    namespace = task.name + "_labels"
+    namespace = task.name + "_labels" if not hasattr(task, "_label_namespace") else task._label_namespace
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)

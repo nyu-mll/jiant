@@ -556,7 +556,8 @@ class SequenceGenerationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
-        log.warning("preliminary version of BLEU scoring, it has not been verified!")
+        log.warning("BLEU scoring is turned off (current code in progress)."
+        "Please use outputed prediction files to score offline")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -790,39 +791,6 @@ class RedditTask(RankingTask):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
-
-
-@register_task('mt_data_ranking', rel_path='wmt14_en_de_local/')
-@register_task('mt_data_ranking_dummy', rel_path='wmt14_en_de_mini/')
-class MTDataRankingTask(RedditTask):
-    ''' Task class for MT data to do ranking/classification
-        RedditTask and MTDataRankingTask are same except data
-    '''
-
-    def __init__(self, path, max_seq_len, name="mt_data_classif"):
-        ''' '''
-        super().__init__(path, max_seq_len, name)
-        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
-                                split in ["train", "val", "test"]}
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
-        self.example_counts = example_counts
 
 
 @register_task('reddit_pair_classif', rel_path='Reddit_2008/')
@@ -1616,66 +1584,103 @@ class PDTBTask(PairClassificationTask):
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 
-    def __init__(self, path, max_seq_len, name='MTTask'):
+    def __init__(self, path, max_seq_len, name):
+        ''' '''
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = Average()
         self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = 20000
+        self.max_targ_v_size = 100000 # TODO(Alex): cmdline arg
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
+        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
+                                                    split in ["train", "val", "test"]}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a machine translation split '''
-        def _make_instance(input, target):
-             d = {}
-             d["inputs"] = _sentence_to_text_field(input, indexers)
-             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
-             return Instance(d)
-        # Map over columns: inputs, targs
-        instances = map(_make_instance, split[0], split[2])
-        #  return list(instances)
-        return instances  # lazy iterator
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
 
-    def load_data(self, path, max_seq_len):
-        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train_mini.txt'), max_seq_len,
-                                        s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'valid_mini.txt'), max_seq_len,
-                                      s1_idx=0, s2_idx=None, targ_idx=1,
-                                      targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
-                                       s1_idx=0, s2_idx=None, targ_idx=1,
-                                       targ_fn=targ_fn_startend)
-
-        log.info("\tFinished loading MT data.")
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        try:
-            bleu_score = self.scorer2.get_metric(reset)
-            unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        except BaseException:
-            bleu_score = 0
-            unk_ratio_macroavg = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self.load_data(self.files_by_split[split])
 
     def get_all_labels(self) -> List[str]:
         ''' Build vocabulary and return it as a list '''
         word2freq = collections.defaultdict(int)
-        trg_sents = self.train_data_text[2] + self.val_data_text[2]
-        for sent in trg_sents:
-            for word in sent:
-                word2freq[word] += 1
+        for split in ["train", "val"]:
+            for _, sent in self.load_data(self.files_by_split[split]):
+                for word in sent:
+                    word2freq[word] += 1
         words_by_freq = [(word, freq) for word, freq in word2freq.items()]
         words_by_freq.sort(key=lambda x: x[1], reverse=True)
         return [w for w, _ in words_by_freq[:self.max_targ_v_size]]
+
+
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 2 or not row[0] or not row[1]:
+                    continue
+                sent1 = process_sentence(row[0], self.max_seq_len)
+                sent2 = process_sentence(row[1], self.max_seq_len)
+                yield (sent1, sent2)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split in self.files_by_split:
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            yield from self.load_data(path)
+
+    def count_examples(self):
+        ''' Compute here b/c we're streaming the sentences. '''
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(1 for line in codecs.open(split_path, 'r', 'utf-8', errors='ignore'))
+        self.example_counts = example_counts
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _make_instance(input, target):
+            d = {}
+            d["inputs"] = _sentence_to_text_field(input, indexers)
+            d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
+            return Instance(d)
+
+        for sent1, sent2 in split:
+            yield _make_instance(sent1, sent2)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        ppl = self.scorer1.get_metric(reset)
+        unk_ratio_macroavg = self.scorer3.get_metric(reset)
+        return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+
+@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/')
+class MTTaskEnRu(MTTask):
+    def __init__(self, path, max_seq_len, name='mt_en_ru'):
+        ''' MT En-Ru'''
+        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
+                               "val": os.path.join(path, "valid.txt"),
+                               "test": os.path.join(path, "test.txt")}
+
+
+@register_task('wmt14_en_de', rel_path='wmt14_en_de/')
+class MTTaskEnDe(MTTask):
+    def __init__(self, path, max_seq_len, name='mt_en_de'):
+        ''' MT En-De'''
+        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
+                               "val": os.path.join(path, "valid_mini.txt"),
+                               "test": os.path.join(path, "test.txt")}
 
 
 @register_task('reddit_s2s', rel_path='Reddit_2008/')
