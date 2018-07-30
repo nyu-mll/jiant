@@ -12,7 +12,6 @@ import subprocess
 import random
 import sys
 import time
-import ipdb as pdb
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -140,7 +139,6 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    pdb.set_trace()
     assert_for_log(not (len(train_tasks) > 1 and
                         any(train_task.val_metric_decreases for train_task in train_tasks)),
                    "Attempting multitask training with a mix of increasing and decreasing metrics. "
