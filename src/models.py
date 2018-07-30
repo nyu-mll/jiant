@@ -938,12 +938,10 @@ class MultiTaskModel(nn.Module):
         task.scorer1(np.mean(acc))
         return out
 
-
     def _grounded_ranking_bce_forward(self, batch, task, predict):
         ''' Binary Cross Entropy Loss
             Create sentence, image representation.
         '''
-
         out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)

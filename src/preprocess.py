@@ -33,11 +33,7 @@ from .tasks import \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
     DisSentWikiHugeTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-<<<<<<< HEAD
     GroundedTask, MTTask, MTTaskEnRu, MTTaskEnDe, BWBLMTask, WikiInsertionsTask, \
-=======
-    GroundedTask, MTTask, MTEnRuTask, BWBLMTask, WikiInsertionsTask, \
->>>>>>> master
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     GroundedSWTask
 
@@ -88,13 +84,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-<<<<<<< HEAD
              'wmt14_en_de': (MTTaskEnDe, 'wmt14_en_de'),
              'wmt17_en_ru': (MTTaskEnRu, 'wmt17_en_ru'),
-=======
-             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
-             'wmt17_en_ru': (MTEnRuTask, 'wmt17_en_ru'),
->>>>>>> master
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
