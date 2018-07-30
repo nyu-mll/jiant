@@ -1658,9 +1658,9 @@ class MTTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
+        avg_nll = self.scorer1.get_metric(reset)
         unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
+        return {'perplexity': math.exp(avg_nll), 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
 @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
@@ -2347,9 +2347,9 @@ class POSTaggingTask(TaggingTask):
         super().__init__(name, 45) # 45 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.all_labels = list(set([l for ll in self.train_data_text[2] for l in ll] + \
-                                   [l for ll in self.val_data_text[2] for l in ll] + \
-                                   [l for ll in self.test_data_text[2] for l in ll]))
+        self.all_labels = list(set(itertools.chain.from_iterable(self.train_data_text[2] + \
+                                                                 self.val_data_text[2] + \
+                                                                 self.test_data_text[2])))
 
 
     def load_data(self, path, max_seq_len):

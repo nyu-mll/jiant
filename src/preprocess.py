@@ -58,6 +58,10 @@ ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
                   'edges-coref-ontonotes',
                   'edges-dep-labeling']
 
+# Tasks for which we need to construct task-specific vocabularies
+ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
+                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
+
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -439,8 +443,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
-            elif name in ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']:
+            elif name in ALL_TARG_VOC_TASKS:
                 kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
