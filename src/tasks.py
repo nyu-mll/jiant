@@ -556,7 +556,8 @@ class SequenceGenerationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
-        log.warning("preliminary version of BLEU scoring, it has not been verified!")
+        log.warning("BLEU scoring is turned off (current code in progress)."
+        "Please use outputed prediction files to score offline")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -1583,61 +1584,7 @@ class PDTBTask(PairClassificationTask):
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 
-    def __init__(self, path, max_seq_len, name='MTTask'):
-        super().__init__(name)
-        self.scorer1 = Average()
-        self.scorer2 = Average()
-        self.scorer3 = Average()
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a machine translation split '''
-        def _make_instance(input, target):
-             d = {}
-             d["inputs"] = _sentence_to_text_field(input, indexers)
-             d["targs"] = _sentence_to_text_field(target, self.target_indexer)  # this line changed
-             return Instance(d)
-        # Map over columns: inputs, targs
-        instances = map(_make_instance, split[0], split[2])
-        #  return list(instances)
-        return instances  # lazy iterator
-
-    def load_data(self, path, max_seq_len):
-        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train.txt'), max_seq_len,
-                                        s1_idx=0, s2_idx=None, targ_idx=1,
-                                        targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'valid.txt'), max_seq_len,
-                                      s1_idx=0, s2_idx=None, targ_idx=1,
-                                      targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'test.txt'), max_seq_len,
-                                       s1_idx=0, s2_idx=None, targ_idx=1,
-                                       targ_fn=targ_fn_startend)
-
-        log.info("\tFinished loading MT data.")
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        try:
-            bleu_score = self.scorer2.get_metric(reset)
-            unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        except BaseException:
-            bleu_score = 0
-            unk_ratio_macroavg = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
-
-
-@register_task('mt_data_en_ru', rel_path='wmt17_en_ru/')
-class MTEnRuTask(SequenceGenerationTask):
-    ''' Task class for wmt17_en_ru data.  '''
-
-    def __init__(self, path, max_seq_len, name="MT_EnRu_data"):
+    def __init__(self, path, max_seq_len, name):
         ''' '''
         super().__init__(name)
         self.scorer1 = Average()
@@ -1675,8 +1622,7 @@ class MTEnRuTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent1, sent2 in self.load_data(path):
-                yield sent1, sent2
+            yield from self.load_data(path)
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -1699,13 +1645,22 @@ class MTEnRuTask(SequenceGenerationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         ppl = self.scorer1.get_metric(reset)
-        try:
-            bleu_score = self.scorer2.get_metric(reset)
-            unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        except BaseException:
-            bleu_score = 0
-            unk_ratio_macroavg = 0
-        return {'perplexity': ppl, 'bleu_score': bleu_score, 'unk_ratio_macroavg': unk_ratio_macroavg}
+        unk_ratio_macroavg = self.scorer3.get_metric(reset)
+        return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+
+@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/')
+class MTTaskEnRu(MTTask):
+    def __init__(self, path, max_seq_len, name='mt_en_ru'):
+        ''' MT En-Ru'''
+        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+
+
+@register_task('wmt14_en_de', rel_path='wmt14_en_de/')
+class MTTaskEnDe(MTTask):
+    def __init__(self, path, max_seq_len, name='mt_en_de'):
+        ''' MT En-De'''
+        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
 
 
 @register_task('reddit_s2s', rel_path='Reddit_2008/')
