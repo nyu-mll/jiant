@@ -29,7 +29,7 @@ from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoT
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
-from . import beamsearch
+#from . import beamsearch
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -37,7 +37,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask, MTEnRuTask
+    GroundedSWTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -353,7 +353,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
+    elif isinstance(task, (MTTask, RedditSeq2SeqTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -817,7 +817,7 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
+        if isinstance(task, (MTTask, RedditSeq2SeqTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(math.exp(out['loss'].item()))
@@ -957,12 +957,12 @@ class MultiTaskModel(nn.Module):
         ''' Binary Cross Entropy Loss
             Create sentence, image representation.
         '''
-        
+
         out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
-        sent_pooler = self._get_classifier(task) 
+        sent_pooler = self._get_classifier(task)
         sent_rep = sent_pooler(sent_emb, sent_mask)
         loss_fn = nn.L1Loss()
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
@@ -992,7 +992,7 @@ class MultiTaskModel(nn.Module):
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
         task.scorer1.__call__(batch_acc)
-            
+
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
