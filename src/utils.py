@@ -1094,4 +1094,3 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
-
