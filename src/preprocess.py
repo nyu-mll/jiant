@@ -33,7 +33,7 @@ from .tasks import \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
     DisSentWikiHugeTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, MTEnRuTask, BWBLMTask, WikiInsertionsTask, \
+    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
     GroundedSWTask
 
@@ -84,8 +84,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
-             'wmt17_en_ru': (MTEnRuTask, 'wmt17_en_ru'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
@@ -480,9 +478,7 @@ def get_words(tasks):
 
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
-        if isinstance(task, MTEnRuTask):
-            # TODO: replace this with MTTask
-            # rename MTEnRuTask to MTTask and regenerate indices, pickles
+        if isinstance(task, MTTask):
             for src_sent, tgt_sent in task.get_sentences():
                 update_vocab_freqs(src_sent)
                 update_target_vocab_freqs(tgt_sent)
