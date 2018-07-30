@@ -263,6 +263,9 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             # no file exists, so start with only pretrain
             assert_for_log(args.do_train or args.allow_missing_task_map,
                            "Error: {} should already exist.".format(classifier_save_path))
+            if args.allow_missing_task_map:
+                log.warning("Warning: classifier task-map not found in model"
+                            " directory. Creating a new one from scratch.")
             loaded_classifiers = {"@pretrain@": 0}
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
