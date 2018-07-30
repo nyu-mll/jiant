@@ -213,20 +213,32 @@ class Classifier(nn.Module):
 
     NB: Expects dropout to have already been applied to its input. '''
 
-    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512, use_legacy_broken_dropout=False):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
         elif cls_type == 'mlp':
-            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
-                                       nn.Tanh(), nn.LayerNorm(d_hid),
-                                       nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
+            if use_legacy_broken_dropout:
+                classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+                                           nn.Tanh(), nn.LayerNorm(d_hid),
+                                           nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
+            else:
+                classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
+                                           nn.Tanh(), nn.LayerNorm(d_hid),
+                                           nn.Dropout(dropout), nn.Linear(d_hid, n_classes))                
         elif cls_type == 'fancy_mlp':  # what they did in Infersent
-            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
-                                       nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
-                                       nn.Linear(d_hid, d_hid), nn.Tanh(),
-                                       nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
-                                       nn.Linear(d_hid, n_classes))
+            if use_legacy_broken_dropout:
+                classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+                                           nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
+                                           nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                           nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
+                                           nn.Linear(d_hid, n_classes))
+            else:
+                classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
+                                           nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
+                                           nn.Linear(d_hid, d_hid), nn.Tanh(),
+                                           nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
+                                           nn.Linear(d_hid, n_classes))
         else:
             raise ValueError("Classifier type %s not found" % type)
         self.classifier = classifier

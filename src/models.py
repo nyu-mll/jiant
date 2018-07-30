@@ -396,6 +396,7 @@ def get_task_specific_params(args, task_name):
     params['d_hid'] = _get_task_attr("classifier_hid_dim")
     params['d_proj'] = _get_task_attr("d_proj")
     params['shared_pair_attn'] = args.shared_pair_attn
+    params['use_legacy_broken_dropout'] = args.use_legacy_broken_dropout
     if args.shared_pair_attn:
         params['attn'] = args.pair_attn
         params['d_hid_attn'] = args.d_hid_attn
