@@ -556,7 +556,8 @@ class SequenceGenerationTask(Task):
         self.scorer2 = None
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
-        log.warning("preliminary version of BLEU scoring, it has not been verified!")
+        log.warning("BLEU scoring is turned off (current code in progress)."
+        "Please use outputed prediction files to score offline")
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -1621,8 +1622,7 @@ class MTTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent1, sent2 in self.load_data(path):
-                yield sent1, sent2
+            yield from self.load_data(path)
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -1649,15 +1649,17 @@ class MTTask(SequenceGenerationTask):
         return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
+@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/')
 class MTTaskEnRu(MTTask):
     def __init__(self, path, max_seq_len, name='mt_en_ru'):
-        ''' MT En-Ru - keeping these separate so can use task.name as identifier'''
+        ''' MT En-Ru'''
         super().__init__(path=path, max_seq_len=max_seq_len, name=name)
 
 
+@register_task('wmt14_en_de', rel_path='wmt14_en_de/')
 class MTTaskEnDe(MTTask):
     def __init__(self, path, max_seq_len, name='mt_en_de'):
-        ''' MT En-De - keeping these separate so can use task.name as identifier'''
+        ''' MT En-De'''
         super().__init__(path=path, max_seq_len=max_seq_len, name=name)
 
 
