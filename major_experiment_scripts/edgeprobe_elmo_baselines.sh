@@ -3,12 +3,21 @@
 # Script to run edge probing on ELMo char-CNN only.
 # Run as separate experiments, since datasets are disjoint anyway.
 
+<<<<<<< HEAD
+=======
+NOTIFY_EMAIL=$1
+
+>>>>>>> master
 function run_exp() {
     OVERRIDES="exp_name=elmo-chars-$1, run_name=run"
     OVERRIDES+=", eval_tasks=$1"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
+<<<<<<< HEAD
         --remote_log --notify iftenney@gmail.com
+=======
+        --remote_log --notify "$NOTIFY_EMAIL"
+>>>>>>> master
 }
 
 set -eux
