@@ -5,6 +5,7 @@ import math
 import copy
 import json
 import logging as log
+import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -332,7 +333,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, Wiki103Seq2SeqTask):
+    elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -344,13 +345,13 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, (MTTask, RedditSeq2SeqTask)):
+    elif isinstance(task, MTTask):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'targets',
+                                 'target_namespace': task._label_namespace if hasattr(task, "_label_namespace") else "targets",
                                  'attention': attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
@@ -529,6 +530,7 @@ class MultiTaskModel(nn.Module):
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
+        pdb.set_trace()
         if self.utilization is not None:
             if 'input1' in batch:
                 self.utilization(get_batch_utilization(batch['input1']))
