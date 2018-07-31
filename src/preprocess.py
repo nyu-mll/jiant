@@ -35,7 +35,7 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, MTEnRuTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    GroundedSWTask
+    GroundedSWTask, NLITypeProbingAltTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
@@ -50,7 +50,7 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation']
+ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
@@ -98,8 +98,10 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
+             'nli-alt': (NLITypeProbingAltTask, '/'),
              'nps': (NPSTask, 'nps/'),
              'vae': (VAETask, 'VAE'),
+             'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
              'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),

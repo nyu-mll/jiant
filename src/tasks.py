@@ -1460,7 +1460,6 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading preposition swap data.")
 
-
 @register_task('nps', 'nps/')
 class NPSTask(PairClassificationTask):
 
