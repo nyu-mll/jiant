@@ -228,6 +228,8 @@ class Comparison(object):
         _ABS_DIFF_COL = f"abs_diff_{metric:s}"
         _REL_DIFF_COL = f"rel_diff_{metric:s}"
 
+        # Long-form data, for paired bar chart.
+        # TODO: switch to using wide-form for all?
         long_df = self.long_scores.copy()
         long_df['row_key'] = list(zip(long_df['label'], long_df['run']))
         long_df['fmt_score'] = long_df[_SCORE_COL].map(
@@ -235,25 +237,18 @@ class Comparison(object):
         )
         long_ds = bokeh.models.ColumnDataSource(data=long_df)
 
+        # Wide-form data, for counts & comparison metrics.
         wide_df = self.wide_scores.copy()
         wide_df['_diff_label_offset'] = 10 * np.sign(wide_df[_ABS_DIFF_COL])
         wide_df['_count_diff_offset'] = -1.25 * wide_df['_diff_label_offset']
 
         # Formatting label text
-        #  wide_df['_net_diff_count_label_text'] = [f"~ {s:d} ex" if s else ""
-        #                                           for s in wide_df['net_diffs']]
         wide_df['_net_diff_count_label_text'] = wide_df['net_diffs'].map(
-            lambda s: "~ {:d} ex".format(s) if s else ""
-        )
-        #  wide_df['_abs_diff_label_text'] = [f"{s:.02f}" for s in wide_df[_ABS_DIFF_COL]]
-        #  wide_df['_rel_diff_label_text'] = [f"({s:.02f})" if s else "" for s in
-        #                                     wide_df[_REL_DIFF_COL]]
+            lambda s: "~ {:d} ex".format(s) if s else "")
         wide_df['_abs_diff_label_text'] = wide_df[_ABS_DIFF_COL].map(
-            lambda s: "{:.02f}".format(s)
-        )
+            lambda s: "{:.02f}".format(s))
         wide_df['_rel_diff_label_text'] = wide_df[_REL_DIFF_COL].map(
-            lambda s: "({:.02f})".format(s) if s else ""
-        )
+            lambda s: "({:.02f})".format(s) if s else "")
         wide_ds = bokeh.models.ColumnDataSource(data=wide_df)
 
         # Prepare shared categorical axis
@@ -284,7 +279,6 @@ class Comparison(object):
                                              source=long_ds, **label_kw)
         p1.add_layout(score_labels)
         p1.xaxis.major_label_orientation = 1
-        # p1.y_range.end = 1.10
         p1.yaxis.bounds = (0,1)
 
         # Second plot: absolute diffs
@@ -348,15 +342,15 @@ class Comparison(object):
 
         # Fix labels for SPR case, labels are long
         if max(map(len, labels)) > 10:
+            # Top plot: rotate labels, add height.
+            p1.xaxis.group_label_orientation = np.pi/2
             p1.plot_height += 150
-            p3.plot_height += 75
-            #  p1.xaxis.group_text_color = None
-            #  p1.xaxis.group_text_font_size = "0pt"
+            # Middle plot: hide labels.
             p2.xaxis.group_text_color = None
             p2.xaxis.group_text_font_size = "0pt"
-            p1.xaxis.group_label_orientation = np.pi/2
-            #  p2.xaxis.group_label_orientation = np.pi/2
+            # Bottom plot: rotate labels, add height.
             p3.xaxis.group_label_orientation = np.pi/2
+            p3.plot_height += 75
 
         # Create plot layout.
         plots = bokeh.layouts.gridplot([p1, p2, p3], ncols=1,
