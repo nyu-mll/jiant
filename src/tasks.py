@@ -1608,14 +1608,15 @@ class MTTask(SequenceGenerationTask):
 
     def get_all_labels(self) -> List[str]:
         ''' Build vocabulary and return it as a list '''
-        word2freq = collections.defaultdict(int)
+        word2freq = collections.Counter()
         for split in ["train", "val"]:
             for _, sent in self.load_data(self.files_by_split[split]):
                 for word in sent:
                     word2freq[word] += 1
-        words_by_freq = [(word, freq) for word, freq in word2freq.items()]
-        words_by_freq.sort(key=lambda x: x[1], reverse=True)
-        return [w for w, _ in words_by_freq[:self.max_targ_v_size]]
+        #words_by_freq = [(word, freq) for word, freq in word2freq.items()]
+        #words_by_freq.sort(key=lambda x: x[1], reverse=True)
+        #return [w for w, _ in words_by_freq[:self.max_targ_v_size]]
+        return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
 
 
     def load_data(self, path):
@@ -2315,7 +2316,7 @@ class TaggingTask(Task):
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.all_labels = [str(i) for i in range(self.num_tags)]
-        self._label_namespace = self.name + "_labels"
+        self._label_namespace = self.name + "_tags"
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
@@ -2347,9 +2348,9 @@ class POSTaggingTask(TaggingTask):
         super().__init__(name, 45) # 45 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.all_labels = list(set(itertools.chain.from_iterable(self.train_data_text[2] + \
-                                                                 self.val_data_text[2] + \
-                                                                 self.test_data_text[2])))
+        labels = itertools.chain(self.train_data_text[2], self.val_data_text[2],
+                                 self.test_data_text[2])
+        self.all_labels = list(set(itertools.chain.from_iterable(labels)))
 
 
     def load_data(self, path, max_seq_len):

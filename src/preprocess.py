@@ -443,7 +443,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
-            elif name in ALL_TARG_VOC_TASKS:
+            if name in ALL_TARG_VOC_TASKS:
                 kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
@@ -533,7 +533,9 @@ def add_task_label_vocab(vocab, task):
     '''
     if not hasattr(task, 'get_all_labels'):
         return
-    namespace = task.name + "_labels" if not hasattr(task, "_label_namespace") else task._label_namespace
+    utils.assert_for_log(hasattr(task, "_label_namespace"),
+                         "Task %s is missing method `_label_namespace`!" % task.name)
+    namespace = task._label_namespace
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
