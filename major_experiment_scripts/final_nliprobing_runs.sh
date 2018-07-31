@@ -20,10 +20,10 @@ python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -
 python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
 
 # TODO(Roma) Spatial, Quantifiers, Appearence, Comparators
-python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
-python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
-python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
-python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = spatial, eval_tasks = nli-alt, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli, nli-prob {probe_path = /nfs/jsalt/home/roma/probing/NLI-Prob/spatial.tsv}"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = quant, eval_tasks = nli-alt, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli, nli-prob {probe_path = /nfs/jsalt/home/roma/probing/NLI-Prob/quant.tsv}"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = appear, eval_tasks = nli-alt, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli, nli-prob {probe_path = /nfs/jsalt/home/roma/probing/NLI-Prob/appear.tsv}"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = compare, eval_tasks = nli-alt, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli, nli-prob {probe_path = /nfs/jsalt/home/roma/probing/NLI-Prob/compare.tsv}"
 
 # TODO(Alexis) Implicatives, Factives, Neutrals
 python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = ???, eval_tasks = ???, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
