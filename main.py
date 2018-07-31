@@ -140,7 +140,7 @@ def main(cl_arguments):
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
     if any([t.val_metric_decreases for t in train_tasks]) and any([not t.val_metric_decreases for t in train_tasks]):
-        log.warn("Mixing training tasks with increasing and decreasing val metrics!")
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
     tasks = sorted(set(train_tasks + eval_tasks), key=lambda x: x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))

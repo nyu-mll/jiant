@@ -350,7 +350,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': task._label_namespace if hasattr(task, "_label_namespace") else "targets",
+                                 'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
                                  'attention': attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
