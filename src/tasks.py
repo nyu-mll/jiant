@@ -262,6 +262,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
+@register_task('edges-srl-conll2012', rel_path='edges/srl_conll2012',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # SPR2, as an edge-labeling task (multilabel).
 @register_task('edges-spr2', rel_path='edges/spr2',
                label_file="labels.txt", files_by_split={
@@ -283,12 +290,28 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Re-processed version of the above, via AllenNLP data loaders.
+@register_task('edges-coref-ontonotes-conll',
+               rel_path='edges/ontonotes-coref-conll',
+               label_file="labels.txt", files_by_split={
+                    'train': "coref_conll_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "coref_conll_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "coref_conll_ontonotes_en_test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # Entity type labeling on CoNLL 2003.
 @register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
                label_file="labels.txt", files_by_split={
                     'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
                     'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
                     'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Entity type labeling on OntoNotes.
+@register_task('edges-ner-ontonotes',
+               rel_path='edges/ontonotes-ner',
+               label_file="labels.txt", files_by_split={
+                    'train': "ner_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
 # updated. Don't trust results yet.
@@ -304,6 +327,14 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "ptb_train.json" + _tokenizer_suffix,
                     'val': "ptb_dev.json" + _tokenizer_suffix,
                     'test': "ptb_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Constituency membership / labeling on OntoNotes.
+@register_task('edges-constituent-ontonotes',
+               rel_path='edges/ontonotes-constituents',
+               label_file="labels.txt", files_by_split={
+                    'train': "consts_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "consts_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "consts_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
