@@ -1613,9 +1613,6 @@ class MTTask(SequenceGenerationTask):
             for _, sent in self.load_data(self.files_by_split[split]):
                 for word in sent:
                     word2freq[word] += 1
-        #words_by_freq = [(word, freq) for word, freq in word2freq.items()]
-        #words_by_freq.sort(key=lambda x: x[1], reverse=True)
-        #return [w for w, _ in words_by_freq[:self.max_targ_v_size]]
         return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
 
 
