@@ -811,7 +811,7 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, (MTTask, RedditSeq2SeqTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
-            task.scorer1(math.exp(out['loss'].item()))
+            task.scorer1(out['loss'].item())
 
             # Commented out for final run (still needs this for further debugging).
             # We don't want to write predictions during training.
