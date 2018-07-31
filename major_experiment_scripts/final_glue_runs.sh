@@ -184,7 +184,6 @@ JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola\", v
 JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola\", val_interval = 9000, run_name = mtl-glue-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Non-GLUE MTL
-# TODO: Alex - Finish once task list is final (and make sure val_interval is a 1000 x N tasks)
 # TODO(Alex): set hyperparam for weighting tasks with decreasing metrics (e.g. ppl for LM, MT) relative to increasing metrics.
 #   - wmt: wmt17_en_ru, wmt14_en_de
 #   - reddit: reddit_s2s_3.4G, reddit_pair_classif_3.4G
