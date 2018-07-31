@@ -42,7 +42,7 @@ from .tasks import \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask
+    MultiNLITravelTask, MultiNLITelephoneTask, NLITypeProbingAltTask
 from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -99,6 +99,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'vae': (VAETask, 'VAE'),
+             'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
              'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
