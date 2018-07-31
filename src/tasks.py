@@ -691,6 +691,7 @@ class BWBLMTask(LanguageModelingTask):
 
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
+        self.max_seq_len = max_seq_len
 
 
 class SSTTask(SingleClassificationTask):

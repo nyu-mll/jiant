@@ -764,7 +764,7 @@ class CNNEncoder(Model):
         self.model_name = model_name
         self.model = self._load_model(model_name)
         self.feat_path = path + '/all_feats/'
-        
+
     def _load_model(self, model_name):
         if model_name == 'alexnet':
             model = alexnet(pretrained=True)
@@ -795,7 +795,7 @@ class CNNEncoder(Model):
                 os.path.join(
                     train_dataset.root,
                     d))]
-        
+
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
 
