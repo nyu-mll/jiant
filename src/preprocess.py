@@ -20,13 +20,14 @@ except BaseException:
 
 import _pickle as pkl  #  :(
 
+from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, RTETask, \
-    QNLITask, SNLITask, SSTTask, STSBTask, WNLITask, \
+    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
+    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
     PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
     DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
@@ -34,7 +35,8 @@ from .tasks import \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    RedditTask, Reddit_MTTask
+    GroundedSWTask
+
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
@@ -61,7 +63,9 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
              'mrpc': (MRPCTask, 'MRPC/'),
              'qqp': (QQPTask, 'QQP'),
+             'qqp-alt': (QQPAltTask, 'QQP'),
              'sts-b': (STSBTask, 'STS-B/'),
+             'sts-b-alt': (STSBAltTask, 'STS-B/'),
              'mnli': (MultiNLITask, 'MNLI/'),
              'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
              'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
@@ -71,6 +75,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
              'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
              'qnli': (QNLITask, 'QNLI/'),
+             'qnli-alt': (QNLIAltTask, 'QNLI/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
@@ -79,7 +84,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'pdtb': (PDTBTask, 'PDTB/'),
-             'wmt14_en_de': (MTTask, 'wmt14_en_de'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
@@ -89,8 +93,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'reddit': (RedditTask, 'Reddit/'),
-             'reddit_MTtask': (Reddit_MTTask, 'reddit_comments_replies_MT/'),
              'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
@@ -104,12 +106,14 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 SPECIALS = [SOS_TOK, EOS_TOK]
+UNK_TOK = "@@UNKNOWN@@"
 
 ALL_SPLITS = ['train', 'val', 'test']
 
@@ -287,6 +291,10 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path)
+    for task in tasks:
+        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        setattr(task, "_classifier_name",
+                task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
     vocab_path = os.path.join(args.exp_dir, 'vocab')
@@ -455,7 +463,7 @@ def get_words(tasks):
     '''
     word2freq, char2freq, target2freq = defaultdict(int), defaultdict(int), defaultdict(int)
 
-    def count_sentence(sentence):
+    def update_vocab_freqs(sentence):
         '''Update counts for words in the sentence'''
         for word in sentence:
             word2freq[word] += 1
@@ -463,16 +471,26 @@ def get_words(tasks):
                 char2freq[char] += 1
         return
 
+    def update_target_vocab_freqs(sentence):
+        for word in sentence:
+            target2freq[word] += 1
+        return
+
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
-        for sentence in task.get_sentences():
-            count_sentence(sentence)
+        if isinstance(task, MTTask):
+            for src_sent, tgt_sent in task.get_sentences():
+                update_vocab_freqs(src_sent)
+                update_target_vocab_freqs(tgt_sent)
+        else:
+            for sentence in task.get_sentences():
+                update_vocab_freqs(sentence)
 
     for task in tasks:
         if hasattr(task, "target_sentences"):
             for sentence in task.target_sentences:
-                for word in sentence:
-                    target2freq[word] += 1
+                update_target_vocab_freqs(sentence)
+
 
     log.info("\tFinished counting words")
     return word2freq, char2freq, target2freq
