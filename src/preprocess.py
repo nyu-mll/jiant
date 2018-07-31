@@ -50,7 +50,7 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-alt']
+ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
