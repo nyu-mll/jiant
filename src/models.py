@@ -5,7 +5,6 @@ import math
 import copy
 import json
 import logging as log
-import ipdb as pdb
 
 import torch
 import torch.nn as nn
@@ -530,7 +529,6 @@ class MultiTaskModel(nn.Module):
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
-        pdb.set_trace()
         if self.utilization is not None:
             if 'input1' in batch:
                 self.utilization(get_batch_utilization(batch['input1']))
