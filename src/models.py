@@ -286,15 +286,10 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         num_reps = 1
     if args.elmo:
         log.info("Loading ELMo from files:")
-        log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        if args.elmo_model == 'random':
-            log.info("ELMO_RANDOM_WEIGHTS_PATH = %s", ELMO_RANDOM_WEIGHTS_PATH)
-        elif args.elmo_model == 'ortho':
-            log.info("ELMO_ORTHO_WEIGHTS_PATH = %s", ELMO_ORTHO_WEIGHTS_PATH)
-        else:
-            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
+            log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
+            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
@@ -303,15 +298,19 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             log.info("\tUsing full ELMo! (separate scalars/task)")
             if args.elmo_model == 'random':
                 log.info("Using full ELMo, with randomized RNN weights.")
+                log.info("ELMO_RANDOM_WEIGHTS_PATH = %s", ELMO_RANDOM_WEIGHTS_PATH)
                 weight_file=ELMO_RANDOM_WEIGHTS_PATH
             elif args.elmo_model == 'ortho':
                 log.info("Using full ELMo, with (semi) orthogonal matrices as weights.")
+                log.info("ELMO_ORTHO_WEIGHTS_PATH = %s", ELMO_ORTHO_WEIGHTS_PATH)
                 weight_file=ELMO_ORTHO_WEIGHTS_PATH
             else:
+                log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
                 weight_file=ELMO_WEIGHTS_PATH
+            log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
-                weight_file=ELMO_WEIGHTS_PATH,
+                weight_file=weight_file,
                 num_output_representations=num_reps,
                 # Dropout is added by the sentence encoder later.
                 dropout=0.)
