@@ -208,6 +208,7 @@ class Comparison(object):
                       on=["label", "true_count"],
                       suffixes=("_base", "_expt"))
         df['abs_diff_f1'] = (df["f1_score_expt"] - df["f1_score_base"])
+        # Compute relative error reduction
         df['rel_diff_f1'] = (df['abs_diff_f1'] / (1 - df["f1_score_base"]))
         # Net diffs, computed from accuracy
         df['net_diffs'] = (np.abs(df['acc_score_expt'] - df['acc_score_base'])
