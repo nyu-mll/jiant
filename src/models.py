@@ -178,8 +178,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
-    log.info("Total number of parameters: {}".format(param_count))
-    log.info("Number of trainable parameters: {}".format(trainable_param_count))
+            log.info(">> Trainable param %s: %s = %d", name,
+                     str(param.size()), np.prod(param.size()))
+    log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
+    log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
+        ct=trainable_param_count))
     return model
 
 def get_task_whitelist(args):
@@ -260,8 +263,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
         else:
             # no file exists, so start with only pretrain
-#            assert_for_log(args.do_train,
-#                           "Error: {} should already exist.".format(classifier_save_path))
+            assert_for_log(args.do_train or args.allow_missing_task_map,
+                           "Error: {} should already exist.".format(classifier_save_path))
+            if args.allow_missing_task_map:
+                log.warning("Warning: classifier task map not found in model"
+                            " directory. Creating a new one from scratch.")
             loaded_classifiers = {"@pretrain@": 0}
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
