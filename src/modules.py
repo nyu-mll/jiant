@@ -221,7 +221,7 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp':  # what they did in Infersent
+        elif cls_type == 'fancy_mlp':  # What they did in Infersent. 
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
