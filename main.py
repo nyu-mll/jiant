@@ -217,7 +217,7 @@ def main(cl_arguments):
 
     if args.train_for_eval and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
-        # optimizer, we shouldn't load parameters for those models. 
+        # optimizer, we shouldn't load parameters for those models.
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
         # during the train_for_eval phase.
         task_names_to_avoid_loading = [task.name for task in eval_tasks]
@@ -226,7 +226,7 @@ def main(cl_arguments):
 
     if not args.load_eval_checkpoint == "none":
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, 
+        load_model_state(model, args.load_eval_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already

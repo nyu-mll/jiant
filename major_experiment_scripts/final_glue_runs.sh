@@ -43,6 +43,7 @@ JIANT_OVERRIDES="train_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-el
 JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+
 # Restore runs. Used as a workaround to a loading bug.
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,rte\", run_name = rte-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,cola\", run_name = cola-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -51,7 +52,7 @@ JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagno
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,mrpc\", run_name = mrpc-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"wnli,mnli-diagnostic\", train_tasks = \"glue,mnli-alt\", mnli-alt_pair_attn = 0, run_name = mnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,sts-b-alt\", sts-b-alt_pair_attn = 0, run_name = sts-b-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,qnli-alt\", qnli-alt_pair_attn = 0, run_name = qnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sts-b,wnli,mnli-diagnostic\", train_tasks = \"glue,qnli-alt\", qnli-alt_pair_attn = 0, run_name = qnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"qnli,sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,qqp-alt\", qqp-alt_pair_attn = 0, run_name = qqp-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Second-phase restore runs. Used as a workaround to a loading bug.
@@ -68,6 +69,7 @@ JIANT_OVERRIDES="do_train = 0, eval_tasks = \"rte,mnli-diagnostic\", train_tasks
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"wnli,mnli-diagnostic\", train_tasks = \"glue,wnli\", run_name = wnli-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"mrpc,mnli-diagnostic\", train_tasks = \"glue,mrpc\", run_name = mrpc-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+
 ## Random BiLSTM, no pretraining ##
 
 # Sam is running.
@@ -78,7 +80,13 @@ JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sts-b,wnli\", train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Second-phase restore runs. Used as a workaround to a loading bug.
-JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,sst,mnli,qnli,qqp,rte,mrpc,mnli-diagnostic\", train_tasks = \"glue\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,mnli,qnli,qqp,rte,mrpc,mnli-diagnostic\", train_tasks = \"glue\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Restarts for NLI probing.
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart2, elmo_chars_only = 1, random_seed = 1111" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart3, elmo_chars_only = 1, random_seed = 2222" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart4, elmo_chars_only = 1, random_seed = 3333" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart5, elmo_chars_only = 1, random_seed = 4444" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 
 ## MT ##
@@ -184,28 +192,27 @@ JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola\", v
 JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola\", val_interval = 9000, run_name = mtl-glue-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Non-GLUE MTL
-# TODO: Alex - Finish once task list is final (and make sure val_interval is a 1000 x N tasks)
 # TODO(Alex): set hyperparam for weighting tasks with decreasing metrics (e.g. ppl for LM, MT) relative to increasing metrics.
-# AW: still waiting for confirmation that the follow tasks are good to go:
-#   - wmt
-#   - reddit
-#   - dae
-#   - grounded: double check with task to use
+#   - wmt: wmt17_en_ru, wmt14_en_de
+#   - reddit: reddit_s2s_3.4G, reddit_pair_classif_3.4G
+#   - lm: wiki103, bwb
+#   - skipthought: wiki103_s2s
+#   - discsent: wiki103_classif
+#   - dissent: dissentwikifullbig
+#   - grounded: grounded
 
 # Monster run with everything we've got.
-JIANT_OVERRIDES="train_tasks = \"wmt,bwb,wiki103,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 10000, run_name = mtl-nonglue-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # Do a run w/o LM so we can use full ELMo.
-JIANT_OVERRIDES="train_tasks = \"wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-nolm-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = \"wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-nonglue-nolm-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 8000, run_name = mtl-nonglue-nolm-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 8000, run_name = mtl-nonglue-nolm-noelmo, elmo_chars_only = 0, seq_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # All MTL
-# TODO: Alex - Finish once task list is final (and make sure val_interval is a 1000 x N tasks).
-JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,bwb,wiki103,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 19000, run_name = mtl-alltasks-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
-# Runs w/o LM so we can use full ELMo.
-JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-nolm-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt,dissentwikifullbig,reddit,grounded\", val_interval = TODO, run_name = mtl-alltasks-nolm-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 17000, run_name = mtl-alltasks-all-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = \"mnli,mrpc,qnli,sst,sts-b,rte,wnli,qqp,cola,wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded\", val_interval = 17000, run_name = mtl-alltasks-all-noelmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## Target task learning curves ##
 
