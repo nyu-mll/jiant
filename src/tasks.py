@@ -1695,6 +1695,7 @@ class RedditSeq2SeqTask(MTTask):
     def __init__(self, path, max_seq_len, max_targ_v_size, name='reddit_s2s'):
         super().__init__(path=path, max_seq_len=max_seq_len,
                          max_targ_v_size=max_targ_v_size, name=name)
+        self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
@@ -1795,6 +1796,7 @@ class Wiki103Seq2SeqTask(MTTask):
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
         self.sentences = self.train_data_text + self.val_data_text
+        self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
