@@ -1463,7 +1463,7 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         log.info("\tFinished loading preposition swap data.")
 
 
-@register_task('nli-alt', 'NLI-Prob/')
+@register_task('nli-alt', '/nfs/jsalt/exp/alexis-probing/results/TURKED')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
 
