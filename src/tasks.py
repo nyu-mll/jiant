@@ -1670,7 +1670,7 @@ class MTTaskEnRu(MTTask):
         ''' MT En-Ru'''
         super().__init__(path=path, max_seq_len=max_seq_len,
                          max_targ_v_size=max_targ_v_size, name=name)
-        self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
                                "val": os.path.join(path, "valid.txt"),
                                "test": os.path.join(path, "test.txt")}
 
@@ -1682,8 +1682,8 @@ class MTTaskEnDe(MTTask):
         super().__init__(path=path, max_seq_len=max_seq_len,
                          max_targ_v_size=max_targ_v_size, name=name)
 
-        self.files_by_split = {"train": os.path.join(path, "train_mini.txt"),
-                               "val": os.path.join(path, "valid_mini.txt"),
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
+                               "val": os.path.join(path, "valid.txt"),
                                "test": os.path.join(path, "test.txt")}
 
 
