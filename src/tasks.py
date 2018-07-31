@@ -1419,7 +1419,7 @@ class NLITypeProbingTask(PairClassificationTask):
 @register_task('nli-prob-negation', 'NLI-Prob/')
 class NLITypeProbingTaskNeg(PairClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
+    def __init__(self, path, max_seq_len, name="nli-prob-negation", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTaskNeg, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -1441,7 +1441,7 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
 @register_task('nli-prob-prepswap', 'NLI-Prob/')
 class NLITypeProbingTaskPrepswap(PairClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
+    def __init__(self, path, max_seq_len, name="nli-prob-prepswap", probe_path="probe_dummy.tsv"):
         super(NLITypeProbingTaskPrepswap, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
