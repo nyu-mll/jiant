@@ -3,8 +3,9 @@ from allennlp.data.dataset_readers.dataset_utils.span_utils import bio_tags_to_s
 import sys
 import numpy as np
 import json
+from ptb_process import sent_to_dict
 
-TYPE="consts" # fill in with "ner" or "const"
+TYPE="const" # fill in with "ner" or "const"
 
 ontonotes = Ontonotes()
 file_path = sys.argv[1] # e.g. test/train/development/conll-test: /nfs/jsalt/home/pitrack/ontonotes/ontonotes/conll-formatted-ontonotes-5.0-12/conll-formatted-ontonotes-5.0/data/development
@@ -14,6 +15,7 @@ ontonotes_reader = ontonotes.dataset_iterator(file_path=sys.argv[1])
 counter = []
 num_span_pairs = 0
 num_entities = 0
+skip_counter = 0
 
 def jsonify(spans, sentence, two_targets=False):
     global num_span_pairs
@@ -45,19 +47,24 @@ def get_ners(sentence):
 
 
 def nltk_tree_to_spans(nltk_tree):
-    # TODO
     # Input: nltk.tree
     # Output: List[(Str, (Int, Int))] of labelled spans
     # where the first element of the tuple is a string
     # and the second is a [begin, end) tuple specifying the span
-    pass
+    span_dict = sent_to_dict(nltk_tree)
+    return span_dict
     
 
 def get_consts(sentence):
-    global counter
-    spans = nltk_tree_to_spans(sentence.parse_tree)
-    counter.append(len(spans))
-    return spans
+    global counter, skip_counter
+    try:
+        span_dict = nltk_tree_to_spans(sentence.parse_tree)
+    except Exception as e:
+        skip_counter += 1
+        return jsonify([], sentence)
+    counter.append(len(span_dict['targets']))
+    span_dict["source"] = "{} {}".format(sentence.document_id, sentence.sentence_id)
+    return span_dict
 
 def find_links(span_list):
   pairs = []
@@ -82,12 +89,14 @@ for sentence in ontonotes_reader:
     # named entity label
     if TYPE == "ner":
         spans = get_ners(sentence)
+        out_file.write(json.dumps(jsonify(spans, sentence, two_targets=False)))
     elif TYPE == "const":
-        spans = get_consts(sentence)
+        spans_dict = get_consts(sentence)
+        out_file.write(json.dumps(spans_dict))
     elif TYPE == "coref":
         spans = get_corefs(sentence)
         num_entities += len(sentence.coref_spans)
-    out_file.write(json.dumps(jsonify(spans, sentence, two_targets=(TYPE=="coref"))))
+        out_file.write(json.dumps(jsonify(spans, sentence, two_targets=True)))
     out_file.write("\n")
 
 print ("num entities:{}".format(sum(counter)))
@@ -96,3 +105,4 @@ print ("hist: {}".format(np.histogram(counter)))
 print ("num sents: {}".format(sent_counter))
 print ("num_span_pairs: {}".format(num_span_pairs))
 print ("also num ents: {}".format(num_entities))
+print ("skipped: {}".format(skip_counter))
