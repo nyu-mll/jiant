@@ -82,6 +82,12 @@ JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sts-b,wnli\", train_tasks = none, 
 # Second-phase restore runs. Used as a workaround to a loading bug.
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,mnli,qnli,qqp,rte,mrpc,mnli-diagnostic\", train_tasks = \"glue\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+# Restarts for NLI probing.
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart2, elmo_chars_only = 1, random_seed = 1111" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart3, elmo_chars_only = 1, random_seed = 2222" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart4, elmo_chars_only = 1, random_seed = 3333" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, eval_tasks = mnli, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo-restart5, elmo_chars_only = 1, random_seed = 4444" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
 
 ## MT ##
 
