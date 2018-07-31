@@ -1416,6 +1416,53 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
+@register_task('nli-prob-negation', 'NLI-Prob/')
+class NLITypeProbingTaskNeg(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskNeg, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'1': 0, '2': 1, '0': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'all.neg.turk.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=0, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading negation data.")
+
+@register_task('nli-prob-prepswap', 'NLI-Prob/')
+class NLITypeProbingTaskPrepswap(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskPrepswap, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'1': 0, '2': 1, '0': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'all.swap.turk.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=0, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading preposition swap data.")
+
+
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
@@ -1431,7 +1478,7 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
         val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
-                        idx_idx = 0, s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=0)
+                        idx_idx = 0, s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
 
