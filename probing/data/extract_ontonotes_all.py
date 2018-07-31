@@ -4,25 +4,35 @@ import sys
 import numpy as np
 import json
 
-TYPE=# fill in with "ner" or "const"
+TYPE="consts" # fill in with "ner" or "const"
 
 ontonotes = Ontonotes()
-file_path = sys.argv[1] # e.g. test/train/development: /nfs/jsalt/home/pitrack/ontonotes/ontonotes/conll-formatted-ontonotes-5.0-12/conll-formatted-ontonotes-5.0/data/development
+file_path = sys.argv[1] # e.g. test/train/development/conll-test: /nfs/jsalt/home/pitrack/ontonotes/ontonotes/conll-formatted-ontonotes-5.0-12/conll-formatted-ontonotes-5.0/data/development
 out_file = open(sys.argv[2], 'w+')
 ontonotes_reader = ontonotes.dataset_iterator(file_path=sys.argv[1])
 
 counter = []
+num_span_pairs = 0
+num_entities = 0
 
-def jsonify(ners, sentence):
+def jsonify(spans, sentence, two_targets=False):
+    global num_span_pairs
     new_entry = {}
     new_entry["text"] = " ".join(sentence.words)
     def correct(span):
+        global num_span_pairs
+        num_span_pairs += 1
         # spans are of form (label, (begin, end)) (inclusive)
         # and get converted to (right-exclusive)
         #   {"span1": [begin, end], "label": label}
-        return {"span1": [span[1][0], span[1][1] + 1],
-                "label": span[0]}
-    new_entry["targets"] = [correct(span) for span in ners]
+        if two_targets:
+            return {"span1": [span[1][0], span[1][1] + 1],
+                    "span2": [span[2][0], span[2][1] + 1],
+                    "label": span[0]}
+        else:
+            return {"span1": [span[1][0], span[1][1] + 1],
+                    "label": span[0]}
+    new_entry["targets"] = [correct(span) for span in spans]
     new_entry["source"] = "{} {}".format(sentence.document_id, sentence.sentence_id)
     return new_entry
 
@@ -49,6 +59,22 @@ def get_consts(sentence):
     counter.append(len(spans))
     return spans
 
+def find_links(span_list):
+  pairs = []
+  for i, span_1 in enumerate(span_list):
+    for span_2 in span_list[i+1:]:
+        pairs.append((str(int(span_1[0] == span_2[0])),
+                      span_1[1],
+                      span_2[1]))
+  return pairs
+
+
+def get_corefs(sentence):
+    global counter
+    spans = find_links(list(sentence.coref_spans))
+    counter.append(len(spans))
+    return spans
+
 sent_counter = 0
 for sentence in ontonotes_reader:
     sent_counter += 1
@@ -56,12 +82,17 @@ for sentence in ontonotes_reader:
     # named entity label
     if TYPE == "ner":
         spans = get_ners(sentence)
-    elif TYPE == "constituents":
+    elif TYPE == "const":
         spans = get_consts(sentence)
-    out_file.write(json.dumps(jsonify(spans, sentence)))
+    elif TYPE == "coref":
+        spans = get_corefs(sentence)
+        num_entities += len(sentence.coref_spans)
+    out_file.write(json.dumps(jsonify(spans, sentence, two_targets=(TYPE=="coref"))))
     out_file.write("\n")
 
 print ("num entities:{}".format(sum(counter)))
 print ("some stats mn|std|md: {} {} {}".format(np.mean(counter), np.std(counter), np.median(counter)))
 print ("hist: {}".format(np.histogram(counter)))
 print ("num sents: {}".format(sent_counter))
+print ("num_span_pairs: {}".format(num_span_pairs))
+print ("also num ents: {}".format(num_entities))
