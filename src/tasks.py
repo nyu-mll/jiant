@@ -1460,7 +1460,6 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading preposition swap data.")
 
-
 @register_task('nps', 'nps/')
 class NPSTask(PairClassificationTask):
 
@@ -1486,7 +1485,7 @@ class NPSTask(PairClassificationTask):
 
 
 
-@register_task('nli-alt', '/nfs/jsalt/exp/alexis-probing/results/TURKED')
+@register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
 
