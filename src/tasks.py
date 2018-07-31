@@ -19,7 +19,7 @@ import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 import torch
 
-from allennlp.common.util import START_SYMBOL, END_SYMBOL
+import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -1624,9 +1624,14 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                yield (sent1, sent2)
+                src_sent = process_sentence(row[0], self.max_seq_len)
+                # target sentence sos_tok, eos_tok need to match Seq2SeqDecoder class
+                tgt_sent = process_sentence(
+                    row[1], self.max_seq_len,
+                    sos_tok=allennlp_util.START_SYMBOL,
+                    eos_tok=allennlp_util.END_SYMBOL,
+                )
+                yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
