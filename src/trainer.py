@@ -43,6 +43,7 @@ def build_trainer_params(args, task_names):
         params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
+    params['dec_val_scale'] = _get_task_attr('dec_val_scale')
 
     return Params(params)
 
@@ -96,6 +97,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
+                           'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
                                                    copy.deepcopy(train_params))
@@ -107,7 +109,7 @@ class SamplingMultiTaskTrainer():
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
-                 training_data_fraction=1.0):
+                 dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
@@ -172,6 +174,7 @@ class SamplingMultiTaskTrainer():
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
 
         self._task_infos = None
@@ -589,8 +592,13 @@ class SamplingMultiTaskTrainer():
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
             all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+            if task.val_metric_decreases and len(tasks) > 1:
+                all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] / self._dec_val_scale) * n_examples
+                all_val_metrics["macro_avg"] += (1 - all_val_metrics[task.val_metric] / self._dec_val_scale)
+            else:
+                # triggers for single-task cases and during MTL when task val metric increases
+                all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+                all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
             n_examples_overall += n_examples
 
             # Reset training progress
@@ -937,6 +945,7 @@ class SamplingMultiTaskTrainer():
         no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
@@ -948,4 +957,5 @@ class SamplingMultiTaskTrainer():
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
+                                        dec_val_scale=dec_val_scale,
                                         training_data_fraction=training_data_fraction)
