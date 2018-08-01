@@ -69,7 +69,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
-
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
@@ -285,18 +284,24 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.elmo:
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
+            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
+            if args.elmo_weight_file_path != 'none':
+                assert os.path.exists(args.elmo_weight_file_path), "ELMo weight file path \"" + args.elmo_weight_file_path + "\" does not exist."
+                weight_file = args.elmo_weight_file_path
+            else:
+                weight_file = ELMO_WEIGHTS_PATH
+            log.info("ELMO_WEIGHTS_PATH = %s", weight_file)
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
-                weight_file=ELMO_WEIGHTS_PATH,
+                weight_file=weight_file,
                 num_output_representations=num_reps,
                 # Dropout is added by the sentence encoder later.
                 dropout=0.)
