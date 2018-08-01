@@ -32,7 +32,7 @@ def main(args):
     np.random.seed(args.seed)
     ELMo_weight_filename = args.output_filename #ELMo weights file to be written.
 
-    assert elmo_model == 'random' or elmo_model == 'ortho', "Failed to recognize flag elmo_model = " + elmo_model
+    assert elmo_model in ['random', 'ortho'], "Failed to recognize flag elmo_model = " + elmo_model
 
     #ELMo_weight_filename = 'elmo_2x4096_512_2048cnn_2xhighway_weights_' + elmo_model + '_seed_' + str(args.seed) + '.hdf5' #Name of ELMo-weights file to be written.
 

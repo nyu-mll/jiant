@@ -69,10 +69,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
-if args.elmo_weight_file_path != 'none':
-    assert os.path.exists(args.elmo_weight_file_path), "ELMo weight file path \"" + args.elmo_weight_file_path + "\" does not exist."
-    ELMO_WEIGHTS_PATH = args.elmo_weight_file_path
-
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
@@ -297,6 +293,9 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
+            if args.elmo_weight_file_path != 'none':
+                assert os.path.exists(args.elmo_weight_file_path), "ELMo weight file path \"" + args.elmo_weight_file_path + "\" does not exist."
+                ELMO_WEIGHTS_PATH = args.elmo_weight_file_path
             log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
             elmo_embedder = ElmoTokenEmbedderWrapper(
