@@ -101,7 +101,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
-        d_sent = 2 * args.d_hid
+        d_sent = args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
@@ -323,7 +323,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
-        d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
@@ -855,7 +854,18 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_forward(self, batch, task, predict):
-        ''' For language modeling '''
+        """Forward pass for LM model
+        Args: 
+            batch: indexed input data
+            task: (Task obejct)
+            predict: (boolean) predict mode (not supported)
+        return: 
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                - 'loss': size average CE loss
+        """
         out = {}
         sent_encoder = self.sent_encoder
         assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
