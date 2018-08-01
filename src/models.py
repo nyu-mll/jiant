@@ -860,7 +860,18 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_forward(self, batch, task, predict):
-        ''' For language modeling '''
+        """Forward pass for LM model
+        Args: 
+            batch: indexed input data
+            task: (Task obejct)
+            predict: (boolean) predict mode (not supported)
+        return: 
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                - 'loss': size average CE loss
+        """
         out = {}
         sent_encoder = self.sent_encoder
         assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),

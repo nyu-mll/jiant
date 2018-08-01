@@ -611,9 +611,22 @@ class RankingTask(Task):
 
 
 class LanguageModelingTask(SequenceGenerationTask):
-    ''' Generic language modeling task '''
+    """Generic language modeling task
+    See base class: SequenceGenerationTask
+    Attributes:
+        max_seq_len: (int) maximum sequence length
+        min_seq_len: (int) minimum sequence length
+        target_indexer: (Indexer Obejct) Indexer used for target
+        files_by_split: (dict) files for three data split (train, val, test)
+    """
 
     def __init__(self, path, max_seq_len, name):
+        """Init class
+        Args: 
+            path: (str) path that the data files are stored
+            max_seq_len: (int) maximum length of one sequence
+            name: (str) task name
+        """
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = None
@@ -627,19 +640,27 @@ class LanguageModelingTask(SequenceGenerationTask):
                                'test':os.path.join(path, "test.txt")}
 
     def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
+        """Computes number of samples
+        Assuming every line is one example. 
+        """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        """Get metrics specific to the task
+        Args: 
+            reset: (boolean) reset any accumulators or internal state
+        """
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
 
     def load_data(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path 
+        """
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -648,9 +669,11 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield process_sentence(toks, self.max_seq_len)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split by indexing and creating fields.
-        Split is a single list of sentences here. '''
-        targ_indexer = self.target_indexer
+        """Process a language modeling split by indexing and creating fields.
+        Args: 
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
         def _make_instance(sent):
             ''' Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
@@ -658,21 +681,22 @@ class LanguageModelingTask(SequenceGenerationTask):
             in the input for each direction '''
             d = {}
             d["input"] = _sentence_to_text_field(sent, indexers)
-            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
-            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targ_indexer)
-            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targ_indexer)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], self.target_indexer)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
 
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-        Split should be one of 'train', 'val', or 'test'.
-        '''
+        """Get split text as iterable of records.
+        Args:
+            split: (str) should be one of 'train', 'val', or 'test'.
+        """
         return self.load_data(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
+        """Yield sentences, used to compute vocabulary.
+        """
         for split in self.files_by_split:
             # Don't use test set for vocab building.
             if split.startswith("test"):
@@ -683,7 +707,9 @@ class LanguageModelingTask(SequenceGenerationTask):
 
 
 class WikiTextLMTask(LanguageModelingTask):
-    ''' Language modeling on a Wikitext dataset '''
+    """ Language modeling on a Wikitext dataset 
+    See base class: LanguageModelingTask
+    """
 
     def __init__(self, path, max_seq_len, name="wiki"):
         super().__init__(path, max_seq_len, name)
@@ -714,8 +740,9 @@ class WikiText2LMTask(WikiTextLMTask):
 
 
 class WikiText103LMTask(WikiTextLMTask):
-    ''' Language modeling task on Wikitext 103'''
-
+    """Language modeling task on Wikitext 103
+    See base class: WikiTextLMTask
+    """
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
         self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
@@ -724,8 +751,9 @@ class WikiText103LMTask(WikiTextLMTask):
 
 
 class BWBLMTask(LanguageModelingTask):
-    ''' Language modeling task on Billion Word Benchmark'''
-
+    """Language modeling task on Billion Word Benchmark
+    See base class: LanguageModelingTask
+    """
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
         self.max_seq_len = max_seq_len
