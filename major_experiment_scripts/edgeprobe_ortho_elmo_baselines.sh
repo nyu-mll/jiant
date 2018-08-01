@@ -6,12 +6,15 @@
 NOTIFY_EMAIL=$1
 
 function run_exp() {
-    OVERRIDES="exp_name=elmo-ortho-$1, run_name=run"
-    OVERRIDES+=", train_tasks=$1, elmo_chars_only=0"
-    OVERRIDES+=", eval_tasks=$1, elmo_model=ortho"
-    python main.py --config_file config/edgeprobe_bare.conf \
-        -o "${OVERRIDES}" \
-        --remote_log --notify "$NOTIFY_EMAIL"
+    for i in {0...2}
+    do
+        OVERRIDES="exp_name=elmo-ortho-$1, run_name=run_seed_$i"
+        OVERRIDES+=", train_tasks=$1, elmo_chars_only=0"
+        OVERRIDES+=", eval_tasks=$1, elmo_weight_file_path=/nfs/jsalt/home/berlin/elmo_2x4096_512_2048cnn_2xhighway_weights_ortho_seed_$i"
+        python main.py --config_file config/edgeprobe_bare.conf \
+            -o "${OVERRIDES}" \
+            --remote_log --notify "$NOTIFY_EMAIL"
+    done
 }
 
 set -eux

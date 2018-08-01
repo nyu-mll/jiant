@@ -69,8 +69,9 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
-ELMO_RANDOM_WEIGHTS_PATH = "/nfs/jsalt/home/berlin/elmo_2x4096_512_2048cnn_2xhighway_weights_random.hdf5"
-ELMO_ORTHO_WEIGHTS_PATH = "/nfs/jsalt/home/berlin/elmo_2x4096_512_2048cnn_2xhighway_weights_ortho.hdf5"
+if args.elmo_weight_file_path != 'none':
+    assert os.path.exists(args.elmo_weight_file_path), "ELMo weight file path \"" + args.elmo_weight_file_path + "\" does not exist."
+    ELMO_WEIGHTS_PATH = args.elmo_weight_file_path
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
@@ -296,21 +297,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
-            if args.elmo_model == 'random':
-                log.info("Using full ELMo, with randomized RNN weights.")
-                log.info("ELMO_RANDOM_WEIGHTS_PATH = %s", ELMO_RANDOM_WEIGHTS_PATH)
-                weight_file=ELMO_RANDOM_WEIGHTS_PATH
-            elif args.elmo_model == 'ortho':
-                log.info("Using full ELMo, with weights being (semi) orthogonal random matrices.")
-                log.info("ELMO_ORTHO_WEIGHTS_PATH = %s", ELMO_ORTHO_WEIGHTS_PATH)
-                weight_file=ELMO_ORTHO_WEIGHTS_PATH
-            else:
-                log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
-                weight_file=ELMO_WEIGHTS_PATH
+            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
-                weight_file=weight_file,
+                weight_file=ELMO_WEIGHTS_PATH,
                 num_output_representations=num_reps,
                 # Dropout is added by the sentence encoder later.
                 dropout=0.)
@@ -346,7 +337,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, Wiki103Seq2SeqTask):
+    elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -358,13 +349,13 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, (MTTask, RedditSeq2SeqTask)):
+    elif isinstance(task, MTTask):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'targets',
+                                 'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
                                  'attention': attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
@@ -825,7 +816,7 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, (MTTask, RedditSeq2SeqTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
-            task.scorer1(math.exp(out['loss'].item()))
+            task.scorer1(out['loss'].item())
 
             # Commented out for final run (still needs this for further debugging).
             # We don't want to write predictions during training.
