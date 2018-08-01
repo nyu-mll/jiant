@@ -136,7 +136,9 @@ class SentenceEncoder(Model):
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
-    ''' Wrapper around BiLM to give it an interface to comply with SentEncoder '''
+    """Wrapper around BiLM to give it an interface to comply with SentEncoder
+    See base class: ElmoLstm
+    """
     def get_input_dim(self):
         return self.input_size
 
