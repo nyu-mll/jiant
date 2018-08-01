@@ -16,7 +16,7 @@ python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "
 python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = negation, eval_tasks = nli-prob-negation, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, nli-prob-negation_use_classifier=mnli"
 
 # TODO(Tom) NPs 
-python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = nps_final, eval_tasks = nps, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, ${PROBING_TASK}_use_classifier=mnli"
+python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = nps_final, eval_tasks = nps, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, nps_use_classifier=mnli"
 
 # TODO(Roma) Spatial, Quantifiers, Appearence, Comparators
 python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = , eval_tasks = nli-alt, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}/spatial, nli-alt_use_classifier=mnli, nli-prob {probe_path = /nfs/jsalt/share/glue_data/roma-probing/probing/NLI-Prob/spatial.tsv}"
