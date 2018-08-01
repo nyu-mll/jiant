@@ -313,13 +313,19 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
                     'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
-# Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
-# updated. Don't trust results yet.
+# Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
 @register_task('edges-dep-labeling', rel_path='edges/dep',
                label_file="labels.txt", files_by_split={
                     'train': "train.json" + _tokenizer_suffix,
                     'val': "dev.json" + _tokenizer_suffix,
                     'test': "test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+# Dependency edge labeling on English Web Treebank (UD).
+@register_task('edges-dep-labeling-ewt', rel_path='edges/dep_ewt',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
 # PTB constituency membership / labeling.
 @register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
