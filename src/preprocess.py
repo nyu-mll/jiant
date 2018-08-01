@@ -58,6 +58,10 @@ ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
                   'edges-coref-ontonotes',
                   'edges-dep-labeling']
 
+# Tasks for which we need to construct task-specific vocabularies
+ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
+                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
+
 # DEPRECATED: use @register_task in tasks.py instead.
 NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'cola': (CoLATask, 'CoLA/'),
@@ -266,10 +270,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     max_v_sizes = {
         'word': args.max_word_v_size,
         'char': args.max_char_v_size,
-        'target': args.max_targ_word_v_size
     }
-    word2freq, char2freq, target2freq = get_words(tasks)
-    vocab = get_vocab(word2freq, char2freq, target2freq, max_v_sizes)
+    word2freq, char2freq = get_words(tasks)
+    vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
     vocab.save_to_files(vocab_path)
@@ -290,7 +293,8 @@ def build_tasks(args):
         get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
-                  nli_prob_probe_path=args['nli-prob'].probe_path)
+                  nli_prob_probe_path=args['nli-prob'].probe_path,
+                  max_targ_v_size=args.max_targ_word_v_size)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
         setattr(task, "_classifier_name",
@@ -313,12 +317,11 @@ def build_tasks(args):
     vocab = Vocabulary.from_files(vocab_path)
     log.info("\tLoaded vocab from %s", vocab_path)
 
-    word_v_size = vocab.get_vocab_size('tokens')
-    char_v_size = vocab.get_vocab_size('chars')
-    target_v_size = vocab.get_vocab_size('targets')
-    log.info("\tFinished building vocab. Using %d words, %d chars, %d targets.",
-             word_v_size, char_v_size, target_v_size)
-    args.max_word_v_size, args.max_char_v_size = word_v_size, char_v_size
+    for namespace, mapping in vocab._index_to_token.items():
+        log.info("\tVocab namespace %s: size %d", namespace, len(mapping))
+    log.info("\tFinished building vocab.")
+    args.max_word_v_size = vocab.get_vocab_size('tokens')
+    args.max_char_v_size = vocab.get_vocab_size('chars')
 
     # 3) build / load word vectors
     word_embs = None
@@ -412,7 +415,8 @@ def parse_task_list_arg(task_list):
     return task_names
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1, nli_prob_probe_path=None):
+              scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
+              max_targ_v_size=20000):
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
@@ -439,6 +443,8 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
+            if name in ALL_TARG_VOC_TASKS:
+                kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
             pkl.dump(task, open(pkl_path, 'wb'))
@@ -461,7 +467,7 @@ def get_words(tasks):
     Get all words for all tasks for all splits for all sentences
     Return dictionary mapping words to frequencies.
     '''
-    word2freq, char2freq, target2freq = defaultdict(int), defaultdict(int), defaultdict(int)
+    word2freq, char2freq = defaultdict(int), defaultdict(int)
 
     def update_vocab_freqs(sentence):
         '''Update counts for words in the sentence'''
@@ -471,17 +477,12 @@ def get_words(tasks):
                 char2freq[char] += 1
         return
 
-    def update_target_vocab_freqs(sentence):
-        for word in sentence:
-            target2freq[word] += 1
-        return
 
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
         if isinstance(task, MTTask):
             for src_sent, tgt_sent in task.get_sentences():
                 update_vocab_freqs(src_sent)
-                update_target_vocab_freqs(tgt_sent)
         else:
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
@@ -493,10 +494,10 @@ def get_words(tasks):
 
 
     log.info("\tFinished counting words")
-    return word2freq, char2freq, target2freq
+    return word2freq, char2freq
 
 
-def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
+def get_vocab(word2freq, char2freq, max_v_sizes):
     '''Build vocabulary'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
@@ -512,10 +513,6 @@ def get_vocab(word2freq, char2freq, target2freq, max_v_sizes):
     for char, _ in chars_by_freq[:max_v_sizes['char']]:
         vocab.add_token_to_namespace(char, 'chars')
 
-    targets_by_freq = [(target, freq) for target, freq in target2freq.items()]
-    targets_by_freq.sort(key=lambda x: x[1], reverse=True)
-    for target, _ in targets_by_freq[:max_v_sizes['target']]:
-        vocab.add_token_to_namespace(target, 'targets')
     return vocab
 
 def add_task_label_vocab(vocab, task):
@@ -536,7 +533,9 @@ def add_task_label_vocab(vocab, task):
     '''
     if not hasattr(task, 'get_all_labels'):
         return
-    namespace = task.name + "_labels"
+    utils.assert_for_log(hasattr(task, "_label_namespace"),
+                         "Task %s is missing method `_label_namespace`!" % task.name)
+    namespace = task._label_namespace
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
