@@ -32,8 +32,8 @@ def get_preds(data_dir, meta_data, models, binary=False):
                 pred = int(row['prediction'])
                 gold = int(row['true_label'])
                 if binary:
-                    pred = 0 if pred <= 1 else 1
-                    gold = 0 if gold <= 1 else 1
+                    pred = 0 if pred in [0, 2] else 1
+                    gold = 0 if gold in [0, 2] else 1
                 tid, pid, desc = meta_data[run_name][idx]
                 if tid not in accs[model][run_name]:
                     accs[model][run_name][tid] = {}
@@ -78,6 +78,6 @@ if __name__ == '__main__':
     all_models = ['random', 'grounded', 'nli', 'ccg', 'lm', 'mt', 'reddit']
     data_dir = sys.argv[1]
     meta_data = get_metadata(data_dir)
-    preds = get_preds(data_dir, meta_data, all_models, binary=True)
+    preds = get_preds(data_dir, meta_data, all_models, binary=False)
     compute_accs(preds)
 
