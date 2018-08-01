@@ -19,7 +19,7 @@ import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 import torch
 
-from allennlp.common.util import START_SYMBOL, END_SYMBOL
+import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -262,6 +262,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.wsj.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
+@register_task('edges-srl-conll2012', rel_path='edges/srl_conll2012',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # SPR2, as an edge-labeling task (multilabel).
 @register_task('edges-spr2', rel_path='edges/spr2',
                label_file="labels.txt", files_by_split={
@@ -283,12 +290,28 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# Re-processed version of the above, via AllenNLP data loaders.
+@register_task('edges-coref-ontonotes-conll',
+               rel_path='edges/ontonotes-coref-conll',
+               label_file="labels.txt", files_by_split={
+                    'train': "coref_conll_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "coref_conll_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "coref_conll_ontonotes_en_test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # Entity type labeling on CoNLL 2003.
 @register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
                label_file="labels.txt", files_by_split={
                     'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
                     'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
                     'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Entity type labeling on OntoNotes.
+@register_task('edges-ner-ontonotes',
+               rel_path='edges/ontonotes-ner',
+               label_file="labels.txt", files_by_split={
+                    'train': "ner_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
 # updated. Don't trust results yet.
@@ -304,6 +327,14 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "ptb_train.json" + _tokenizer_suffix,
                     'val': "ptb_dev.json" + _tokenizer_suffix,
                     'test': "ptb_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Constituency membership / labeling on OntoNotes.
+@register_task('edges-constituent-ontonotes',
+               rel_path='edges/ontonotes-constituents',
+               label_file="labels.txt", files_by_split={
+                    'train': "consts_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "consts_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "consts_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
@@ -584,7 +615,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer()}
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test':os.path.join(path, "test.txt")}
@@ -691,6 +722,7 @@ class BWBLMTask(LanguageModelingTask):
 
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
+        self.max_seq_len = max_seq_len
 
 
 class SSTTask(SingleClassificationTask):
@@ -1584,7 +1616,7 @@ class PDTBTask(PairClassificationTask):
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 
-    def __init__(self, path, max_seq_len, name):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name):
         ''' '''
         super().__init__(name)
         self.scorer1 = Average()
@@ -1592,10 +1624,12 @@ class MTTask(SequenceGenerationTask):
         self.scorer3 = Average()
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
+        self.max_seq_len = max_seq_len
+        self._label_namespace = self.name + "_tokens"
+        self.max_targ_v_size = max_targ_v_size
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for \
                                                     split in ["train", "val", "test"]}
-        self.max_seq_len = max_seq_len
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
@@ -1604,6 +1638,16 @@ class MTTask(SequenceGenerationTask):
         '''
         return self.load_data(self.files_by_split[split])
 
+    def get_all_labels(self) -> List[str]:
+        ''' Build vocabulary and return it as a list '''
+        word2freq = collections.Counter()
+        for split in ["train", "val"]:
+            for _, sent in self.load_data(self.files_by_split[split]):
+                for word in sent:
+                    word2freq[word] += 1
+        return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
+
+
     def load_data(self, path):
         ''' Load data '''
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
@@ -1611,9 +1655,14 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                yield (sent1, sent2)
+                src_sent = process_sentence(row[0], self.max_seq_len)
+                # target sentence sos_tok, eos_tok need to match Seq2SeqDecoder class
+                tgt_sent = process_sentence(
+                    row[1], self.max_seq_len,
+                    sos_tok=allennlp_util.START_SYMBOL,
+                    eos_tok=allennlp_util.END_SYMBOL,
+                )
+                yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
@@ -1644,32 +1693,47 @@ class MTTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
+        avg_nll = self.scorer1.get_metric(reset)
         unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        return {'perplexity': ppl, 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
+        return {'perplexity': math.exp(avg_nll), 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
-@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/')
+@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
 class MTTaskEnRu(MTTask):
-    def __init__(self, path, max_seq_len, name='mt_en_ru'):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_ru'):
         ''' MT En-Ru'''
-        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
+                               "val": os.path.join(path, "valid.txt"),
+                               "test": os.path.join(path, "test.txt")}
 
 
-@register_task('wmt14_en_de', rel_path='wmt14_en_de/')
+@register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
 class MTTaskEnDe(MTTask):
-    def __init__(self, path, max_seq_len, name='mt_en_de'):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_de'):
         ''' MT En-De'''
-        super().__init__(path=path, max_seq_len=max_seq_len, name=name)
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
+                               "val": os.path.join(path, "valid.txt"),
+                               "test": os.path.join(path, "test.txt")}
 
 
-@register_task('reddit_s2s', rel_path='Reddit_2008/')
-@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/')
-@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/')
+@register_task('reddit_s2s', rel_path='Reddit_2008/', max_targ_v_size=0)
+@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/', max_targ_v_size=0)
+@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/', max_targ_v_size=0)
 class RedditSeq2SeqTask(MTTask):
-    ''' Task for seq2seq using reddit data '''
-    def __init__(self, path, max_seq_len, name='reddit_s2s'):
-        super().__init__(path, max_seq_len, name)
+    ''' Task for seq2seq using reddit data
+
+    Note: max_targ_v_size doesn't do anything here b/c the
+    target is in English'''
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='reddit_s2s'):
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+        self._label_namespace = None
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
         targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
@@ -1758,15 +1822,19 @@ class Wiki103Classification(PairClassificationTask):
         self.example_counts = example_counts
 
 
-@register_task('wiki103_s2s', rel_path='WikiText103/')
+@register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
 class Wiki103Seq2SeqTask(MTTask):
-    def __init__(self, path, max_seq_len, name='wiki103_mt'):
-        super().__init__(path, max_seq_len, name)
+    ''' Skipthought objective on Wiki103 '''
+
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='wiki103_mt'):
+        ''' Note: max_targ_v_size does nothing here '''
+        super().__init__(path, max_seq_len, max_targ_v_size, name)
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
-        self.sentences = self.train_data_text[:-1] + self.val_data_text[:-1]
-        self.target_sentences = self.train_data_text[1:] + self.val_data_text[1:]
+        self.sentences = self.train_data_text + self.val_data_text
+        self._label_namespace = None
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
 
     def load_data(self, path, max_seq_len):
         tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
@@ -1804,11 +1872,11 @@ class Wiki103Seq2SeqTask(MTTask):
 
         Split is a single list of sentences here.
         '''
-        targs_indexers = {"words": SingleIdTokenIndexer()}
+        target_indexer = self.target_indexer
         def _make_instance(prev_sent, sent):
             d = {}
             d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
-            d["targs"] = _sentence_to_text_field(sent, targs_indexers)
+            d["targs"] = _sentence_to_text_field(sent, target_indexer)
             return Instance(d)
         for i in range(1, len(split)):
             yield _make_instance(split[i-1], split[i])
@@ -1818,8 +1886,8 @@ class Wiki103Seq2SeqTask(MTTask):
 class WikiInsertionsTask(MTTask):
     '''Task which predicts a span to insert at a given index'''
 
-    def __init__(self, path, max_seq_len, name='WikiInsertionTask'):
-        super().__init__(path, max_seq_len, name)
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='WikiInsertionTask'):
+        super().__init__(path, max_seq_len, max_targ_v_size, name)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
@@ -2283,7 +2351,9 @@ class TaggingTask(Task):
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="targets")} # TODO namespace
+        self.all_labels = [str(i) for i in range(self.num_tags)]
+        self._label_namespace = self.name + "_tags"
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
         self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
@@ -2306,12 +2376,17 @@ class TaggingTask(Task):
         instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
         return instances
 
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
 class POSTaggingTask(TaggingTask):
     def __init__(self, path, max_seq_len, name="pos"):
         super().__init__(name, 45) # 45 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
+        labels = itertools.chain(self.train_data_text[2], self.val_data_text[2],
+                                 self.test_data_text[2])
+        self.all_labels = list(set(itertools.chain.from_iterable(labels)))
 
 
     def load_data(self, path, max_seq_len):
@@ -2334,8 +2409,6 @@ class CCGTaggingTask(TaggingTask):
         super().__init__(name, 1363) # 1363 tags
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-
 
 
     def load_data(self, path, max_seq_len):
