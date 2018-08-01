@@ -301,7 +301,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 log.info("ELMO_RANDOM_WEIGHTS_PATH = %s", ELMO_RANDOM_WEIGHTS_PATH)
                 weight_file=ELMO_RANDOM_WEIGHTS_PATH
             elif args.elmo_model == 'ortho':
-                log.info("Using full ELMo, with (semi) orthogonal matrices as weights.")
+                log.info("Using full ELMo, with weights being (semi) orthogonal random matrices.")
                 log.info("ELMO_ORTHO_WEIGHTS_PATH = %s", ELMO_ORTHO_WEIGHTS_PATH)
                 weight_file=ELMO_ORTHO_WEIGHTS_PATH
             else:

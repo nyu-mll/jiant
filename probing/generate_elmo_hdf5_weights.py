@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Helper script to generate ELMo weights file, where RNN weights are either randomized or orthogonalized..
+# Helper script to generate ELMo weights file, where RNN weights are either randomized or randomized+orthogonalized..
 # Uses h5py to read in default ELMo weights file, make copy of it, and modify and save the copy.
 #
 # Usage:
@@ -22,10 +22,14 @@ def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', dest='elmo_model', type=str, required=True,
                         help="Type of ELMo weights: random or ortho.")
+    parser.add_argument('-s', dest='seed', type=int, required=True, default=0
+                        help="Random seed for modifying RNN weights.")
     args = parser.parse_args(args)
 
     elmo_model = args.elmo_model #Type of ELMo RNN weights: 'random' or 'ortho'.
-    ELMo_weight_filename = 'elmo_2x4096_512_2048cnn_2xhighway_weights_' + elmo_model + '.hdf5' #Name of ELMo-weights file to be written.
+    np.random.seed(args.seed)
+
+    ELMo_weight_filename = 'elmo_2x4096_512_2048cnn_2xhighway_weights_' + elmo_model + '_seed_' + str(args.seed) + '.hdf5' #Name of ELMo-weights file to be written.
 
     ELMo_weight_file = h5py_utils.copy_h5py_file(ELMO_WEIGHTS_PATH, ELMo_weight_filename)
 
@@ -35,12 +39,10 @@ def main(args):
     for i in range(2): #BI-LSTM, so two RNNs
         for path in list_of_paths_to_LSTM_weights:
             weight_tensor = ELMo_weight_file['RNN_' + str(i) +  '/RNN/MultiRNNCell/' + path]
-            #In case when we want to randomize RNN weights (bias-term weights are randomized in both 'random' and 'ortho'):
-            if elmo_model == 'random' or path.endswith("/B"): 
-                shape = weight_tensor.shape
-                weight_tensor[...] = np.random.normal(0, 1, list(shape))
+            shape = weight_tensor.shape
+            weight_tensor[...] = np.random.normal(0, 1, list(shape))
             #In case when we want to convert RNN weights to orthogonal matrices:
-            elif elmo_model == 'ortho': 
+            if elmo_model == 'ortho': 
                 weight_torch_tensor = torch.tensor(np.array(weight_tensor[...]))
                 weight_tensor[...] = (torch.nn.init.orthogonal_(weight_torch_tensor)).numpy()
             else:
