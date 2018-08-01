@@ -101,7 +101,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_emb)
-        d_sent = args.d_hid
+        d_sent = 2 * args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
@@ -323,6 +323,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
+        d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
