@@ -23,7 +23,6 @@ JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_
 # Standard LM training
 # Note: ELMo can't combine with language modeling, so there are no ELMo runs.
 
-# Alex is running.
 JIANT_OVERRIDES="train_tasks = bwb, run_name = bwb-lm-noelmo-xl, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final_xl.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = wiki103, run_name = wiki103-lm-noelmo-xl, elmo_chars_only = 1, lr = 0.001" JIANT_CONF="config/final_xl.conf" sbatch nyu_cilvr_cluster.sbatch
 
