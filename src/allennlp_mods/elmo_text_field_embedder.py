@@ -62,9 +62,6 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     ELMo scalars). which map to an int corresponding to their elmo scalars in the elmo object. These are
     names (strings) and not necessarily the same as task names (e.g. mnli for mnli-diagnostic).
 
-    Code that has been modified from the allennlp implementation indicated below in comments with !
-
-
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
     :class:`~allennlp.data.TokenIndexer`.  As the data produced by a
