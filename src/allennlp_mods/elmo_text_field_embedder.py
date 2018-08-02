@@ -62,6 +62,9 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     ELMo scalars). which map to an int corresponding to their elmo scalars in the elmo object. These are 
     names (strings) and not necessarily the same as task names (e.g. mnli for mnli-diagnostic).
 
+    Code that has been modified from the allennlp implementation indicated below in comments with !
+
+
     This is a ``TextFieldEmbedder`` that wraps a collection of :class:`TokenEmbedder` objects.  Each
     ``TokenEmbedder`` embeds or encodes the representation output from one
     :class:`~allennlp.data.TokenIndexer`.  As the data produced by a
@@ -71,17 +74,16 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     """
     def __init__(self, token_embedders: Dict[str, TokenEmbedder],
                  classifiers: Dict[str, int],
-                 elmo_chars_only=False,
-                 sep_embs_for_skip=False) -> None:
+                 elmo_chars_only=False,            #! Flag ensuring we are using real ELMo
+                 sep_embs_for_skip=False) -> None: #! Flag indicating separate scalars per task
         super(ElmoTextFieldEmbedder, self).__init__()
         self._token_embedders = token_embedders
         for key, embedder in token_embedders.items():
             name = 'token_embedder_%s' % key
             self.add_module(name, embedder)
-        self.task_map = classifiers
-        # pretrain task is a special, privileged task
-        self.elmo_chars_only = elmo_chars_only
-        self.sep_embs_for_skip = sep_embs_for_skip
+        self.task_map = classifiers                #! map handling classifier_name -> scalar idx
+        self.elmo_chars_only = elmo_chars_only     #! Save above flag
+        self.sep_embs_for_skip = sep_embs_for_skip #! Save above flag
 
     @overrides
     def get_output_dim(self) -> int:
@@ -106,6 +108,11 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             for _ in range(num_wrapping_dims):
                 embedder = TimeDistributed(embedder)
             token_vectors = embedder(tensor)
+            
+            #! If we want separate scalars/task, figure out which representation to use, since
+            #! embedder create a representation for _all_ sets of scalars. This can be optimized
+            #! with more wrapper classes but we compute all of them for now.
+            #! The shared ELMo scalar weights version all use the @pretrain@ embeddings.
             if key == "elmo" and not self.elmo_chars_only:
                 if self.sep_embs_for_skip:
                     token_vectors = token_vectors['elmo_representations'][self.task_map[classifier_name]]
