@@ -394,13 +394,13 @@ class MultiComparison(object):
         self.long_scores = pd.concat(self.scores_by_name.values())
 
 
-    def plot_scores(self, task_name, metric="f1", row_height=400):
+    def plot_scores(self, task_name, metric="f1",
+                    sort_field="expt_headroom", sort_run=None,
+                    sort_ascending=False, row_height=400):
         import bokeh
         import bokeh.plotting as bp
 
         _SCORE_COL = f"{metric:s}_score"
-        _ABS_DIFF_COL = f"abs_diff_{metric:s}"
-        _REL_DIFF_COL = f"rel_diff_{metric:s}"
 
         # Long-form data, for grouped bar chart.
         long_df = self.long_scores.copy()
@@ -411,12 +411,15 @@ class MultiComparison(object):
         long_ds = bokeh.models.ColumnDataSource(data=long_df)
 
         # Single scored run, for plotting counts.
-        wide_ds = bokeh.models.ColumnDataSource(
-            data=list(self.scores_by_name.values())[0])
+        sort_run = sort_run or list(self.scores_by_name.keys())[0]
+        wide_df = self.scores_by_name[sort_run]
+        wide_ds = bokeh.models.ColumnDataSource(data=wide_df)
 
         # Prepare shared categorical axis
         runs = sorted(long_df['run'].unique())
-        labels = sorted(long_df['label'].unique())
+        labels = wide_df.sort_values(by=sort_field,
+                                     ascending=sort_ascending)['label']
+        #  labels = sorted(long_df['label'].unique())
         categories = list(itertools.product(labels, runs))
 
         palette = bokeh.palettes.Spectral6
@@ -479,7 +482,8 @@ class MultiComparison(object):
                                       toolbar_location="left",
                                       merge_tools=True,
                                       sizing_mode="fixed")
+        header_txt = f"{task_name}, sorted by '{sort_run}.{sort_field}'"
         header = bokeh.models.Div(
-            text=f"<h1>{task_name}</h1>",
+            text=f"<h1>{header_txt}</h1>",
             width=600)
         return bokeh.layouts.column(header, plots)
