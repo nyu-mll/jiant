@@ -48,9 +48,9 @@ class Predictions(object):
                 d = {'label': utils.wrap_singleton_string(t['label']),
                      'idx': idx}
                 if 'span1' in t:
-                    d['span1'] = t['span1']
+                    d['span1'] = tuple(t['span1'])
                 if 'span2' in t:
-                    d['span2'] = t['span2']
+                    d['span2'] = tuple(t['span2'])
                 d.update(_get_nested_vals(t, 'info'))
                 d.update(_get_nested_vals(t, 'preds'))
                 tr_records.append(d)
