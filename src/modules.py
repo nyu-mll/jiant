@@ -99,14 +99,16 @@ class SentenceEncoder(Model):
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
-
+            - task (Task): Used by the _text_field_embedder to pick the correct output
+                           ELMo representation.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
         # Embeddings
         # Note: These highway layers are identity by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
+        # task_sent_embs only used if sep_embs_for_skip
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name)) 
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
@@ -126,6 +128,7 @@ class SentenceEncoder(Model):
         if sent_enc is not None:
             sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
+            # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec

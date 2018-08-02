@@ -250,35 +250,39 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     else:
         log.info("\tNot using character embeddings!")
 
-    # Handle elmo
+    # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
+    # then we need count and reliably map each classifier to an index used by allennlp internal ELMo.
     if args.sep_embs_for_skip:
-        # need deterministic list of tasks based on their ``use_classifier`` attribute (
-        # which defaults to the task name if it doesn't exist.
-        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  # these are tasks that could potentially be added
+        # Determine a deterministic list of classifier names to use for each task.
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  
+        # Reload existing classifier map, if it exists.
         classifier_save_path = args.run_dir + "/classifier_task_map.json"
         if os.path.isfile(classifier_save_path):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
         else:
-            # no file exists, so start with only pretrain
+            # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
+            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
+            # classiifer task map.
             assert_for_log(args.do_train or args.allow_missing_task_map,
                            "Error: {} should already exist.".format(classifier_save_path))
             if args.allow_missing_task_map:
                 log.warning("Warning: classifier task map not found in model"
                             " directory. Creating a new one from scratch.")
-            loaded_classifiers = {"@pretrain@": 0}
+            loaded_classifiers = {"@pretrain@": 0} # default is always @pretrain@
+        # Add the new tasks and update map, keeping the internal ELMo index consistent.
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
         for classifier in classifiers:
             if classifier not in loaded_classifiers:
                 loaded_classifiers[classifier] = max_number_classifiers + offset
                 offset += 1
-        # one representation per classifier specified in task, and the pretrain "task"
         log.info("Classifiers:{}".format(loaded_classifiers))
         open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+        # Every index in classifiers needs to correspond to a valid ELMo output representation.
         num_reps = 1 + max(loaded_classifiers.values())
     else:
-        # everyone shares the same scalars.
-        # not used if self.elmo_chars_only = 1 (i.e. no elmo)
+        # All tasks share the same scalars.
+        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
         loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
     if args.elmo:
@@ -577,6 +581,7 @@ class MultiTaskModel(nn.Module):
 
     def _get_classifier(self, task):
         """ Get task-specific classifier, as set in build_module(). """
+        # TODO: replace this logic with task._classifier_name?
         task_params = self._get_task_params(task.name)
         use_clf = task_params['use_classifier']
         if use_clf in [None, "", "none"]:
@@ -1003,13 +1008,10 @@ class MultiTaskModel(nn.Module):
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
-        ''' Get elmo mixing weights from text_field_embedder,
-        since elmo should be in the same place every time.
+        ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.
 
         args:
-            - text_field_embedder
-            - mix_id: if we learned multiple mixing weights, which one we want
-                to extract, usually 0
+           - tasks (List[Task]): list of tasks that we want to get  ELMo scalars for.
 
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
