@@ -1018,23 +1018,13 @@ class MultiTaskModel(nn.Module):
         '''
         params = {}
         if self.elmo:
-            try:
-                params["@pretrain@"] = get_elmo_mixing_weights(
-                    self.sent_encoder._text_field_embedder, task=None)
-            except:
-                log.warning("Warning: @pretrain@ weights expected but an "
-                            "error occurred. Skipping...")
-            if self.sep_embs_for_skip:
-                for task in tasks:
-                    try:
-                        params[task._classifier_name] = get_elmo_mixing_weights(
-                            self.sent_encoder._text_field_embedder, task=task)
-                    except:
-                        if hasattr(task, "_classifier_name"):
-                            log.warning("Warning: {} weights expected".format(task._classifier_name)
-                                        " but an error occurred. Skipping...")
-                        else:
-                            log.warning("Warning: {} should have a ".format(task.name)
-                                        "_classifier_name but doesn't! Skipping...")
-
+            if not self.sep_embs_for_skip:
+                tasks = [None]
+            else:
+                tasks = [None] + tasks
+            for task in tasks:
+                if task:
+                    params[task._classifier_name] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=task)
+                else:
+                    params["@pretrain@"] = get_elmo_mixing_weights(self.sent_encoder._text_field_embedder, task=None)
         return params
