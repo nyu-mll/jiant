@@ -130,14 +130,12 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
-            print ("skip size before skip!!{}".format(skip_vec.size()))
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
             else:
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-        print ("size after concat!!{}".format(sent_enc.size()))
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
