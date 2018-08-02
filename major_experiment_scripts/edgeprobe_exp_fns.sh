@@ -5,7 +5,8 @@
 # experiment script as:
 # 
 #   export NOTIFY_EMAIL="yourname@gmail.com"
-#   source edgeprobe_exp_fns.sh
+#   pushd /path/to/jiant
+#   source major_experiment_scripts/edgeprobe_exp_fns.sh
 #   elmo_chars_exp edges-srl-conll2005
 #   elmo_full_exp edges-srl-conll2005
 #   elmo_ortho_exp edges-srl-conll2005 0
