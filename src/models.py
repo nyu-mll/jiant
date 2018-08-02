@@ -342,11 +342,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
-                                 'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': 'tokens',
                                  'attention': attention,
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
+                                 'dropout': args.dropout})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, MTTask):
@@ -354,11 +352,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
                                  'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
                                  'attention': attention,
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
+                                 'dropout': args.dropout})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
@@ -369,11 +365,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, VAETask):
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
                                  'target_namespace': 'tokens',
                                  'attention': 'bilinear',
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
+                                 'dropout': args.dropout})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
 
