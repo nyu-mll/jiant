@@ -100,12 +100,11 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
     ''' Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task. 
-    Should never be used in a critical training pathway, as it stops program execution if 
-    something goes wrong (e.g. task is malformed, resulting in KeyError).
+    Stops program execution if something goes wrong (e.g. task is malformed, resulting in KeyError).
 
     args:
-        - text_field_embedder: ElmoTextFieldEmbedder: the embedder used during the run
-        - task: Task: a Task object with a populated `_classifier_name` attribute.
+        - text_field_embedder (ElmoTextFieldEmbedder): the embedder used during the run
+        - task (Task): a Task object with a populated `_classifier_name` attribute.
 
     returns:
         Dict[str, float]: dictionary with the values of each layer weight and of the scaling
