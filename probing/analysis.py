@@ -396,7 +396,8 @@ class MultiComparison(object):
 
     def plot_scores(self, task_name, metric="f1",
                     sort_field="expt_headroom", sort_run=None,
-                    sort_ascending=False, row_height=400):
+                    sort_ascending=False, row_height=400,
+                    cmap=None):
         import bokeh
         import bokeh.plotting as bp
 
@@ -416,15 +417,22 @@ class MultiComparison(object):
         wide_ds = bokeh.models.ColumnDataSource(data=wide_df)
 
         # Prepare shared categorical axis
-        runs = sorted(long_df['run'].unique())
+        #  runs = sorted(long_df['run'].unique())
+        runs = list(self.scores_by_name.keys())
         labels = wide_df.sort_values(by=sort_field,
                                      ascending=sort_ascending)['label']
         #  labels = sorted(long_df['label'].unique())
         categories = list(itertools.product(labels, runs))
 
-        palette = bokeh.palettes.Spectral6
+        if cmap:
+            palette = [cmap[name] for name in runs]
+        else:
+            #  palette = bokeh.palettes.Spectral6
+            #  palette = bokeh.palettes.Category10[len(runs)]
+            palette = bokeh.palettes.Category20[len(runs)]
+            #  palette = bokeh.palettes.Set2[len(runs)]
         fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
-        width = 25*len(categories) + 10*len(self.scores_by_name)
+        width = 30*len(categories) + 10*len(self.scores_by_name)
         tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
 
         # Top plot: score bars
