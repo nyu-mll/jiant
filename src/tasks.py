@@ -1426,10 +1426,11 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
             self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'all.neg.turk.newlabels.tsv'), max_seq_len,
-                        s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
 
