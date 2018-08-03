@@ -62,11 +62,13 @@ def register_task(name, rel_path, **kw):
 
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
+    ''' Helper function to map a sequence of tokens into a sequence of
+    AllenNLP Tokens, then wrap in a TextField with the given indexers '''
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
 
 def _atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
-    ''' Replace bad tokenize that will be split by tokenizer with a
+    ''' Replace tokens that will be split by tokenizer with a
     placeholder token. Tokenize, and then substitute the placeholder
     with the *first* nonatomic token in the list. '''
     for nonatomic_tok in nonatomic_toks:
@@ -79,11 +81,14 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
+
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - pair_input (int)
         - tok2idx (dict)
+
     Returns:
+        - instances (list[Instance]): a list of AllenNLP Instances with fields
     '''
     def _make_instance(input1, input2, labels, idx):
         d = {}
@@ -622,7 +627,7 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def __init__(self, path, max_seq_len, name):
         """Init class
-        Args: 
+        Args:
             path: (str) path that the data files are stored
             max_seq_len: (int) maximum length of one sequence
             name: (str) task name
@@ -641,7 +646,7 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def count_examples(self):
         """Computes number of samples
-        Assuming every line is one example. 
+        Assuming every line is one example.
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
@@ -650,7 +655,7 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task
-        Args: 
+        Args:
             reset: (boolean) reset any accumulators or internal state
         """
         nll = self.scorer1.get_metric(reset)
@@ -659,7 +664,7 @@ class LanguageModelingTask(SequenceGenerationTask):
     def load_data(self, path):
         """Loading data file and tokenizing the text
         Args:
-            path: (str) data file path 
+            path: (str) data file path
         """
         with open(path) as txt_fh:
             for row in txt_fh:
@@ -670,7 +675,7 @@ class LanguageModelingTask(SequenceGenerationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
-        Args: 
+        Args:
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
         """
@@ -707,7 +712,7 @@ class LanguageModelingTask(SequenceGenerationTask):
 
 
 class WikiTextLMTask(LanguageModelingTask):
-    """ Language modeling on a Wikitext dataset 
+    """ Language modeling on a Wikitext dataset
     See base class: LanguageModelingTask
     """
 

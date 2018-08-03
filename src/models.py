@@ -254,7 +254,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # then we need count and reliably map each classifier to an index used by allennlp internal ELMo.
     if args.sep_embs_for_skip:
         # Determine a deterministic list of classifier names to use for each task.
-        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))
         # Reload existing classifier map, if it exists.
         classifier_save_path = args.run_dir + "/classifier_task_map.json"
         if os.path.isfile(classifier_save_path):
@@ -532,8 +532,11 @@ class MultiTaskModel(nn.Module):
         Pass inputs to correct forward pass
 
         Args:
-            - task
-            - batch
+            - task (tasks.Task): task for which batch is drawn
+            - batch (Dict[str:Dict[str:Tensor]]): dictionary of (field, indexing) pairs,
+                where indexing is a dict of the index namespace and the actual indices.
+            - predict (Bool): passed to task specific forward(). If true, forward()
+                should return predictions.
 
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
@@ -866,11 +869,11 @@ class MultiTaskModel(nn.Module):
 
     def _lm_forward(self, batch, task, predict):
         """Forward pass for LM model
-        Args: 
+        Args:
             batch: indexed input data
             task: (Task obejct)
             predict: (boolean) predict mode (not supported)
-        return: 
+        return:
             out: (dict)
                 - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
                             first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
