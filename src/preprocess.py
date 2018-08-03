@@ -101,7 +101,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'nli-alt': (NLITypeProbingAltTask, '/'),
-             'nps': (NPSTask, 'nps/'),
+             'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
              'vae': (VAETask, 'VAE'),
              'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
