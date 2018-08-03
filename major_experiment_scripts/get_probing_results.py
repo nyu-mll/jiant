@@ -11,7 +11,6 @@ def pad(s, l=30):
 def get_metadata(data_dir):
     meta_data = {}
     for f in os.listdir("%s/meta"%data_dir):
-        #print("Getting metadata for", f)
         run_name = f.rsplit('.', 1)[0]
         meta_data[run_name] = {}
         for row in csv.DictReader(codecs.open('%s/meta/%s'%(data_dir, f), encoding='utf-8'), delimiter='\t'):
@@ -21,11 +20,9 @@ def get_metadata(data_dir):
 def get_preds(data_dir, meta_data, models, binary=False): 
     accs = {}
     for model in models:
-        #print("Processing predictions for model", model)
         accs[model] = {}
         for f in os.listdir('%s/%s'%(data_dir, model)):
             run_name = f.rsplit('.', 1)[0]
-            #print("Processing run name", run_name)
             accs[model][run_name] = {}
             for row in csv.DictReader(codecs.open('%s/%s/%s'%(data_dir, model, f), encoding='utf-8'), delimiter='\t'):
                 idx = row['index']
@@ -69,10 +66,6 @@ def compute_accs(accs):
             print("%s\t%s\t%.03f\t%d\t%.03f\t%d\t%.03f"%(pad(run), pad(model),
                       total_pcnt, total_acc[1], tuple_pcnt, tuple_acc[1], rand_tup))
         print("")
-            #for desc in by_desc:
-            #    pcnt = by_desc[desc][0]/by_desc[desc][1]
-            #    print("%s\t%s\t%.03f\t%d\t--\t--\t--"%(pad('%s_%s'%(run, desc)), pad(model),
-            #             pcnt, by_desc[desc][1]))
 
 if __name__ == '__main__':
     all_models = ['random', 'grounded', 'nli', 'ccg', 'lm', 'mt', 'reddit', 'shapeworld']
