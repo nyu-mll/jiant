@@ -1,4 +1,15 @@
-'''Preprocessing functions and pipeline'''
+'''Preprocessing functions and pipeline
+
+The pipeline is three steps
+    1) create / load tasks, which includes
+        a) load raw data
+        b) tokenize raw data
+    2) create / load all vocabularies (word, char, task-specific target vocabs)
+        a) count tokens of a vocab
+        b) take the N most frequent tokens
+    3) index all the data using appropriate indexers
+        We save indexed data to streamable Records to save memory.
+'''
 import io
 import os
 import sys
@@ -112,15 +123,16 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
              'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
+# !!!!!!! NOTE: You should not be adding anything else manually to NAME2INFO.
+# !!!!!!! Use the decorator @register_task instead.
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
 
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-SPECIALS = [SOS_TOK, EOS_TOK]
-UNK_TOK = "@@UNKNOWN@@"
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>" # NOTE: these are not that same as AllenNLP SOS, EOS tokens
+SPECIALS = [SOS_TOK, EOS_TOK] # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
+UNK_TOK = "@@UNKNOWN@@" # AllenNLP unk token
 
 ALL_SPLITS = ['train', 'val', 'test']
-
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
@@ -169,6 +181,8 @@ def _indexed_instance_generator(instance_iter, vocab):
 
 def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
+    Only works if Instances have fields 'input1' and 'input2'.
+    All other fields will keep their tokens in memory.
 
     Args:
         instance: AllenNLP Instance. Modified in-place.
@@ -251,7 +265,8 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
     return False
 
 def _build_embeddings(args, vocab, emb_file: str):
-    ''' Build word embeddings from from scratch. '''
+    ''' Build word embeddings from scratch (as opposed to loading them from a pickle),
+    possibly using a fastText model or precomputed fastText / GloVe embeddings. '''
     log.info("\tBuilding embeddings from scratch")
     if args.fastText:
         word_embs, _ = get_fastText_model(vocab, args.d_word,
@@ -266,6 +281,9 @@ def _build_embeddings(args, vocab, emb_file: str):
 
 def _build_vocab(args, tasks, vocab_path: str):
     ''' Build vocabulary from scratch, reading data from tasks. '''
+    # NOTE: task-specific target vocabulary should be counted in the task object
+    # and provided via `task.all_labels()`. The namespace should be task-specific,
+    # i.e. not something generic like "targets".
     log.info("\tBuilding vocab from scratch")
     max_v_sizes = {
         'word': args.max_word_v_size,
@@ -417,6 +435,7 @@ def parse_task_list_arg(task_list):
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
               max_targ_v_size=20000):
+    ''' Actually build or load (from pickles) the tasks. '''
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
@@ -487,18 +506,21 @@ def get_words(tasks):
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
 
+    # This branch is meant for tasks that have *English* target sentences
+    # (or more generally, same language source and target sentences)
+    # Tasks with different language source and target sentences should
+    # count and return the vocab in a `task.all_labels()` method.
     for task in tasks:
         if hasattr(task, "target_sentences"):
             for sentence in task.target_sentences:
                 update_target_vocab_freqs(sentence)
-
 
     log.info("\tFinished counting words")
     return word2freq, char2freq
 
 
 def get_vocab(word2freq, char2freq, max_v_sizes):
-    '''Build vocabulary'''
+    '''Build vocabulary by selecting the most frequent tokens'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
         vocab.add_token_to_namespace(special, 'tokens')
@@ -540,8 +562,10 @@ def add_task_label_vocab(vocab, task):
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
+
 def get_embeddings(vocab, vec_file, d_word):
-    '''Get embeddings for the words in vocab'''
+    '''Get embeddings for the words in vocab from a file of precomputed vectors.
+    Works for fastText and GloVe embedding files. '''
     word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
     with io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
