@@ -75,9 +75,9 @@ def compute_accs(accs):
             #             pcnt, by_desc[desc][1]))
 
 if __name__ == '__main__':
-    all_models = ['random', 'grounded', 'nli', 'ccg', 'lm', 'mt', 'reddit']
+    all_models = ['random', 'grounded', 'nli', 'ccg', 'lm', 'mt', 'reddit', 'shapeworld']
     data_dir = sys.argv[1]
     meta_data = get_metadata(data_dir)
-    preds = get_preds(data_dir, meta_data, all_models, binary=False)
+    preds = get_preds(data_dir, meta_data, all_models, binary=True)
     compute_accs(preds)
 
