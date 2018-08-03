@@ -29,7 +29,7 @@ from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoT
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
-from . import beamsearch
+#from . import beamsearch
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -37,7 +37,7 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     SequenceGenerationTask, LanguageModelingTask, \
     PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
     GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask, MTEnRuTask
+    GroundedSWTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
@@ -68,7 +68,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
@@ -176,8 +175,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
-    log.info("Total number of parameters: {}".format(param_count))
-    log.info("Number of trainable parameters: {}".format(trainable_param_count))
+            log.info(">> Trainable param %s: %s = %d", name,
+                     str(param.size()), np.prod(param.size()))
+    log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
+    log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
+        ct=trainable_param_count))
     return model
 
 def get_task_whitelist(args):
@@ -248,49 +250,62 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     else:
         log.info("\tNot using character embeddings!")
 
-    # Handle elmo
+    # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
+    # then we need count and reliably map each classifier to an index used by allennlp internal ELMo.
     if args.sep_embs_for_skip:
-        # need deterministic list of tasks based on their ``use_classifier`` attribute (
-        # which defaults to the task name if it doesn't exist.
-        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  # these are tasks that could potentially be added
+        # Determine a deterministic list of classifier names to use for each task.
+        classifiers = sorted(set(map(lambda x:x._classifier_name, tasks)))  
+        # Reload existing classifier map, if it exists.
         classifier_save_path = args.run_dir + "/classifier_task_map.json"
         if os.path.isfile(classifier_save_path):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
         else:
-            # no file exists, so start with only pretrain
-            assert_for_log(args.do_train,
+            # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
+            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
+            # classiifer task map.
+            assert_for_log(args.do_train or args.allow_missing_task_map,
                            "Error: {} should already exist.".format(classifier_save_path))
-            loaded_classifiers = {"@pretrain@": 0}
+            if args.allow_missing_task_map:
+                log.warning("Warning: classifier task map not found in model"
+                            " directory. Creating a new one from scratch.")
+            loaded_classifiers = {"@pretrain@": 0} # default is always @pretrain@
+        # Add the new tasks and update map, keeping the internal ELMo index consistent.
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
         for classifier in classifiers:
             if classifier not in loaded_classifiers:
                 loaded_classifiers[classifier] = max_number_classifiers + offset
                 offset += 1
-        # one representation per classifier specified in task, and the pretrain "task"
         log.info("Classifiers:{}".format(loaded_classifiers))
         open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+        # Every index in classifiers needs to correspond to a valid ELMo output representation.
         num_reps = 1 + max(loaded_classifiers.values())
     else:
-        # everyone shares the same scalars.
-        # not used if self.elmo_chars_only = 1 (i.e. no elmo)
+        # All tasks share the same scalars.
+        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
         loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
     if args.elmo:
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
         if args.elmo_chars_only:
             log.info("\tUsing ELMo character CNN only!")
+            log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             elmo_embedder = ElmoCharacterEncoder(options_file=ELMO_OPT_PATH,
                                                  weight_file=ELMO_WEIGHTS_PATH,
                                                  requires_grad=False)
             d_emb += 512
         else:
             log.info("\tUsing full ELMo! (separate scalars/task)")
+            if args.elmo_weight_file_path != 'none':
+                assert os.path.exists(args.elmo_weight_file_path), "ELMo weight file path \"" + args.elmo_weight_file_path + "\" does not exist."
+                weight_file = args.elmo_weight_file_path
+            else:
+                weight_file = ELMO_WEIGHTS_PATH
+            log.info("ELMO_WEIGHTS_PATH = %s", weight_file)
             elmo_embedder = ElmoTokenEmbedderWrapper(
                 options_file=ELMO_OPT_PATH,
-                weight_file=ELMO_WEIGHTS_PATH,
+                weight_file=weight_file,
                 num_output_representations=num_reps,
                 # Dropout is added by the sentence encoder later.
                 dropout=0.)
@@ -326,7 +341,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, EdgeProbingTask):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, Wiki103Seq2SeqTask):
+    elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
@@ -338,13 +353,13 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
-    elif isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
+    elif isinstance(task, MTTask):
         attention = args.get("mt_attention", "bilinear")
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
                                  'max_decoding_steps': 200,
-                                 'target_namespace': 'targets',
+                                 'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
                                  'attention': attention,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
@@ -566,6 +581,7 @@ class MultiTaskModel(nn.Module):
 
     def _get_classifier(self, task):
         """ Get task-specific classifier, as set in build_module(). """
+        # TODO: replace this logic with task._classifier_name?
         task_params = self._get_task_params(task.name)
         use_clf = task_params['use_classifier']
         if use_clf in [None, "", "none"]:
@@ -802,10 +818,10 @@ class MultiTaskModel(nn.Module):
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, (MTTask, RedditSeq2SeqTask, MTEnRuTask)):
+        if isinstance(task, (MTTask, RedditSeq2SeqTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
-            task.scorer1(math.exp(out['loss'].item()))
+            task.scorer1(out['loss'].item())
 
             # Commented out for final run (still needs this for further debugging).
             # We don't want to write predictions during training.
@@ -849,7 +865,18 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_forward(self, batch, task, predict):
-        ''' For language modeling '''
+        """Forward pass for LM model
+        Args: 
+            batch: indexed input data
+            task: (Task obejct)
+            predict: (boolean) predict mode (not supported)
+        return: 
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                - 'loss': size average CE loss
+        """
         out = {}
         sent_encoder = self.sent_encoder
         assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
@@ -942,12 +969,12 @@ class MultiTaskModel(nn.Module):
         ''' Binary Cross Entropy Loss
             Create sentence, image representation.
         '''
-        
+
         out, neg = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
         batch_size = get_batch_size(batch)
         out['n_exs'] = batch_size
-        sent_pooler = self._get_classifier(task) 
+        sent_pooler = self._get_classifier(task)
         sent_rep = sent_pooler(sent_emb, sent_mask)
         loss_fn = nn.L1Loss()
         ids = batch['ids'].cpu().squeeze(-1).data.numpy().tolist()
@@ -977,17 +1004,14 @@ class MultiTaskModel(nn.Module):
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
         task.scorer1.__call__(batch_acc)
-            
+
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
-        ''' Get elmo mixing weights from text_field_embedder,
-        since elmo should be in the same place every time.
+        ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.
 
         args:
-            - text_field_embedder
-            - mix_id: if we learned multiple mixing weights, which one we want
-                to extract, usually 0
+           - tasks (List[Task]): list of tasks that we want to get  ELMo scalars for.
 
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params

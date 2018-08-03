@@ -99,14 +99,16 @@ class SentenceEncoder(Model):
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
-
+            - task (Task): Used by the _text_field_embedder to pick the correct output
+                           ELMo representation.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
         """
         # Embeddings
         # Note: These highway layers are identity by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
+        # task_sent_embs only used if sep_embs_for_skip
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name)) 
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
@@ -126,6 +128,7 @@ class SentenceEncoder(Model):
         if sent_enc is not None:
             sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
+            # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
@@ -136,7 +139,9 @@ class SentenceEncoder(Model):
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
-    ''' Wrapper around BiLM to give it an interface to comply with SentEncoder '''
+    """Wrapper around BiLM to give it an interface to comply with SentEncoder
+    See base class: ElmoLstm
+    """
     def get_input_dim(self):
         return self.input_size
 
@@ -221,7 +226,7 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp':  # what they did in Infersent
+        elif cls_type == 'fancy_mlp':  # What they did in Infersent. 
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
@@ -764,7 +769,7 @@ class CNNEncoder(Model):
         self.model_name = model_name
         self.model = self._load_model(model_name)
         self.feat_path = path + '/all_feats/'
-        
+
     def _load_model(self, model_name):
         if model_name == 'alexnet':
             model = alexnet(pretrained=True)
@@ -795,7 +800,7 @@ class CNNEncoder(Model):
                 os.path.join(
                     train_dataset.root,
                     d))]
-        
+
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
 
