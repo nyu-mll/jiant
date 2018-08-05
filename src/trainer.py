@@ -26,7 +26,9 @@ from . import config
 
 
 def build_trainer_params(args, task_names):
-    ''' Build trainer parameters, possibly loading task specific parameters '''
+    ''' In an act of not great code design, we wrote this helper function which
+    extracts trainer parameters from args. In particular, we want to search args
+    for task specific training parameters. '''
     _get_task_attr = lambda attr_name: config.get_task_attr(args, task_names,
                                                             attr_name)
     params = {}
@@ -43,12 +45,13 @@ def build_trainer_params(args, task_names):
         params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
+    params['dec_val_scale'] = _get_task_attr('dec_val_scale')
 
     return Params(params)
 
 
 def build_trainer(params, model, run_dir, metric_should_decrease=True):
-    '''Build a trainer.
+    '''Build a trainer from params.
 
     Parameters
     ----------
@@ -71,6 +74,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                              'weight_decay': 0})
 
     if 'transformer' in params['sent_enc']:
+        assert False, "Transformer is not yet tested, still in experimental stage :-("
         schd_params = Params({'type': 'noam',
                               'model_size': params['d_hid'],
                               'warmup_steps': params['warmup'],
@@ -95,6 +99,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
+                           'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
                                                    copy.deepcopy(train_params))
@@ -106,7 +111,7 @@ class SamplingMultiTaskTrainer():
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
                  no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
-                 training_data_fraction=1.0):
+                 dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
@@ -171,6 +176,7 @@ class SamplingMultiTaskTrainer():
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
 
         self._task_infos = None
@@ -192,7 +198,7 @@ class SamplingMultiTaskTrainer():
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
-        Given a task, the history of the performance on that task,
+        Given a the history of the performance on a metric
         and the current score, check if current score is
         best so far and if out of patience.
         '''
@@ -215,7 +221,29 @@ class SamplingMultiTaskTrainer():
         return best_so_far, out_of_patience
 
     def _setup_training(self, tasks, batch_size, train_params, optimizer_params, scheduler_params, phase):
-        # Task bookkeeping
+        ''' Set up the trainer by initializing task_infos and metric_infos, which
+        track necessary information about the training status of each task and metric respectively.
+
+        Returns:
+            - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info contains:
+                - iterator: a task specific (because it uses that task's fields to dynamically batch) batcher
+                - n_tr_batches: the number of training batches
+                - tr_generator: generator object that returns the batches, set to repeat indefinitely
+                - loss: the accumulated loss (during training or validation)
+                - n_batches_since_val: number of batches trained on since the last validation
+                - total_batches_trained: number of batches trained over all validation checks
+                - optimizer: a task specific optimizer, not used if the global optimizer is not None
+                - scheduler: a task specific scheduler, not used if the global optimizer is not None
+                - stopped: a bool indicating if that task is stopped or not (if it ran out of patience or hit min lr)
+                - last_log: the time we last logged progress for the task
+
+            - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
+                Each metric should be the validation metric of a task, except {micro/macro}_avg,
+                which are privileged to get an aggregate multi-task score. Each dict contains:
+                - hist (List[float]): previous values of the metric
+                - stopped (Bool): whether or not that metric is stopped or not
+                - best (Tuple(Int, Dict)): information on the best value of that metric and when it happened
+        '''
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
@@ -267,6 +295,7 @@ class SamplingMultiTaskTrainer():
               shared_optimizer=1, load_model=1, phase="main"):
         """
         The main training loop.
+        Training will stop if we run out of patience or hit the minimum learning rate.
 
         Parameters
         ----------
@@ -319,7 +348,8 @@ class SamplingMultiTaskTrainer():
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
-        if shared_optimizer:
+
+        if shared_optimizer: # if shared_optimizer, ignore task_specific optimizers
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
@@ -350,6 +380,7 @@ class SamplingMultiTaskTrainer():
                 if parameter.requires_grad:
                     parameter.register_hook(clip_function)
 
+        # Calculate per task sampling weights
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
@@ -375,21 +406,19 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
-
         log.info ("Weighting details: ")
         log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
         normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
         log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
 
+        # Sample the tasks to train on. Do it all at once (val_interval) for MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
-
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
+        log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            # randomly select a task
-            task = samples[n_pass % (validation_interval)]
+            task = samples[n_pass % (validation_interval)] # randomly select a task
             task_info = task_infos[task.name]
             if task_info['stopped']:
                 continue
@@ -456,6 +485,8 @@ class SamplingMultiTaskTrainer():
 
             # Validation
             if n_pass % (validation_interval) == 0:
+
+                # Dump and log all of our current info
                 epoch = int(n_pass / validation_interval)
                 log.info("***** Pass %d / Epoch %d *****", n_pass, epoch)
                 # Get metrics for all training progress so far
@@ -472,7 +503,6 @@ class SamplingMultiTaskTrainer():
                         all_tr_metrics["%s_loss" % task.name] = 0.0
                     log.info("%s: trained on %d batches, %.3f epochs", task.name,
                              n_batches_since_val, n_batches_since_val / task_info['n_tr_batches'])
-
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric(reset=True)
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
@@ -497,16 +527,17 @@ class SamplingMultiTaskTrainer():
                     log.info("\tvalidation: %3f", value)
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
-                lrs = self._get_lr()
+                lrs = self._get_lr() # log LR
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
                 elmo_params = self._model.get_elmo_mixing_weights(tasks)
-                if elmo_params:
+                if elmo_params: # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
                         log.info("\t" + ", ".join(["{}: {:.6f}".format(layer, float(param))
                                                    for layer, param in task_params.items()]))
 
+                # Reset training preogress
                 all_tr_metrics = {}
                 samples = random.choices(
                     tasks,
@@ -522,7 +553,7 @@ class SamplingMultiTaskTrainer():
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
-        ''' Ad hoc helper function to print results after finishing training '''
+        ''' Helper function to print results after finishing training '''
         results = {}
         for task in tasks:
             task_info = task_infos[task.name]
@@ -556,6 +587,7 @@ class SamplingMultiTaskTrainer():
             task_info = task_infos[task.name]
             task.preds_file_path = preds_file_path_dict[task.name]
 
+            # to speed up training, we evaluate on a subset of validation data
             if self._val_data_limit >= 0:
                 max_data_points = min(task.n_val_examples, self._val_data_limit)
             else:
@@ -588,8 +620,13 @@ class SamplingMultiTaskTrainer():
             for name, value in task_metrics.items():
                 all_val_metrics["%s_%s" % (task.name, name)] = value
             all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+            if task.val_metric_decreases and len(tasks) > 1:
+                all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] / self._dec_val_scale) * n_examples
+                all_val_metrics["macro_avg"] += (1 - all_val_metrics[task.val_metric] / self._dec_val_scale)
+            else:
+                # triggers for single-task cases and during MTL when task val metric increases
+                all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+                all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
             n_examples_overall += n_examples
 
             # Reset training progress
@@ -648,6 +685,7 @@ class SamplingMultiTaskTrainer():
         return all_val_metrics, should_save, new_best_macro
 
     def _get_lr(self):
+        ''' Get learning rate from the optimizer we're using '''
         if self._g_optimizer is not None:
             lrs = {'global_lr': self._g_optimizer.param_groups[0]['lr']}
         else:
@@ -692,11 +730,13 @@ class SamplingMultiTaskTrainer():
         return should_stop
 
     def _forward(self, batch, for_training, task=None):
+        ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = batch
         return self._model.forward(task, tensor_batch)
 
     def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use
+        ''' format some metrics as a string '''
         return ', '.join(["%s: %.4f" % (name, value) for name, value in metrics.items()]) + " ||"
 
     def _unmark_previous_best(self, phase, epoch):
@@ -936,6 +976,7 @@ class SamplingMultiTaskTrainer():
         no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
@@ -947,4 +988,5 @@ class SamplingMultiTaskTrainer():
                                         min_lr=min_lr, no_tqdm=no_tqdm,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
+                                        dec_val_scale=dec_val_scale,
                                         training_data_fraction=training_data_fraction)

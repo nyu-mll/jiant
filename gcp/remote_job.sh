@@ -24,7 +24,7 @@ FULL_COMMAND="bash -l -c \"${COMMAND}\""
 
 set -x
 gcloud compute ssh --project jsalt-sentence-rep --zone "$ZONE" \
-  "${INSTANCE_NAME}" --command="${FULL_COMMAND}"
+  "${INSTANCE_NAME}" --command="${FULL_COMMAND}" -- -t
 
 set +x
 echo "Remote command completed successfully."

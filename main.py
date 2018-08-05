@@ -105,11 +105,10 @@ def main(cl_arguments):
         from src import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
-        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args,
-                                             timestamp=True)
+        EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
 
     if EMAIL_NOTIFIER:
-        EMAIL_NOTIFIER(body="", prefix="Starting")
+        EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _try_logging_git_info()
 
@@ -140,13 +139,12 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    assert_for_log(not (len(train_tasks) > 1 and
-                        any(train_task.val_metric_decreases for train_task in train_tasks)),
-                   "Attempting multitask training with a mix of increasing and decreasing metrics. "
-                   "This is not currently supported. (We haven't set it up yet.)")
-    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x:x.name)
+    if any([t.val_metric_decreases for t in train_tasks]) and any([not t.val_metric_decreases for t in train_tasks]):
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
+    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x: x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
+
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
@@ -160,6 +158,8 @@ def main(cl_arguments):
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
+        assert_for_log(not args.do_train,
+                       "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
@@ -173,6 +173,13 @@ def main(cl_arguments):
         steps_log.append("Re-training model for individual eval tasks")
         assert_for_log(args.eval_val_interval % args.bpp_base == 0,
                        "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
+        assert_for_log(len(set(train_tasks).intersection(eval_tasks)) == 0 \
+                        or args.allow_reuse_of_pretraining_parameters \
+                        or args.do_train == 0,
+                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
+                        "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
+                        "  train with do_train = 1, train_for_eval = 0, stop, and restart with\n"
+                        "  do_train = 0 and train_for_eval = 1.")
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
@@ -209,22 +216,32 @@ def main(cl_arguments):
     else:
         strict = False
 
+    if args.train_for_eval and not args.allow_reuse_of_pretraining_parameters:
+        # If we're training models for evaluation, which is always done from scratch with a fresh
+        # optimizer, we shouldn't load parameters for those models.
+        # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
+        # during the train_for_eval phase.
+        task_names_to_avoid_loading = [task.name for task in eval_tasks]
+    else:
+        task_names_to_avoid_loading = []
+
     if not args.load_eval_checkpoint == "none":
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, args.cuda, args.skip_task_models, strict=strict)
+        load_model_state(model, args.load_eval_checkpoint,
+                         args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
         eval_best = glob.glob(os.path.join(args.run_dir,
                                            "model_state_eval_best.th"))
         if len(eval_best) > 0:
-            load_model_state(model, eval_best[0], args.cuda, args.skip_task_models, strict=strict)
+            load_model_state(model, eval_best[0], args.cuda, task_names_to_avoid_loading, strict=strict)
         else:
             macro_best = glob.glob(os.path.join(args.run_dir,
                                                 "model_state_main_epoch_*.best_macro.th"))
             if len(macro_best) > 0:
                 assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-                load_model_state(model, macro_best[0], args.cuda, args.skip_task_models, strict=strict)
+                load_model_state(model, macro_best[0], args.cuda, task_names_to_avoid_loading, strict=strict)
             else:
                 assert_for_log(
                     args.allow_untrained_encoder_parameters,
@@ -260,11 +277,14 @@ def main(cl_arguments):
                                        to_train, opt_params, schd_params,
                                        args.shared_optimizer, load_model=False, phase="eval")
 
+            # Now that we've trained a model, revert to the normal checkpoint logic for this task.
+            task_names_to_avoid_loading.remove(task.name)
+
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda, skip_task_models=False, strict=strict)
+            load_model_state(model, layer_path, args.cuda, skip_task_models=task_names_to_avoid_loading, strict=strict)
 
     if args.do_eval:
         # Evaluate #
@@ -295,7 +315,7 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
         if EMAIL_NOTIFIER is not None:
-            EMAIL_NOTIFIER(body="Woohoo!", prefix="Successful")
+            EMAIL_NOTIFIER(body="Run completed successfully!", prefix="")
     except BaseException as e:
         # Make sure we log the trace for any crashes before exiting.
         log.exception("Fatal error in main():")

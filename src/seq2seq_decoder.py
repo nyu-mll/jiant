@@ -21,6 +21,7 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 
+from .modules import Pooler
 
 class Seq2SeqDecoder(Model):
     """
@@ -36,6 +37,7 @@ class Seq2SeqDecoder(Model):
                  attention: str = "none",
                  dropout: float = 0.0,
                  scheduled_sampling_ratio: float = 0.0) -> None:
+        # TODO: max_decoding_steps, scheduled_sampling_ratio are not used and should be deleted
         super(Seq2SeqDecoder, self).__init__(vocab)
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
@@ -45,6 +47,7 @@ class Seq2SeqDecoder(Model):
         # end symbol as a way to indicate the end of the decoded sequence.
         self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
         self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
+        self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
@@ -55,6 +58,8 @@ class Seq2SeqDecoder(Model):
         # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
+
+        self._sent_pooler = Pooler.from_params(input_dim, input_dim, False)
 
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(input_dim, input_dim)
@@ -71,13 +76,24 @@ class Seq2SeqDecoder(Model):
         self._dropout = torch.nn.Dropout(p=dropout)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
+        """
+        Initialization of the decoder state, based on the encoder output.
+        Parameters
+        ----------
+        encoder_outputs: torch.FloatTensor, [bs, T, h]
+        encoder_outputs_mask: torch.LongTensor, [bs, T, 1]
+        """
         # very important - feel free to check it a third time
         # idempotent / safe to run in place. encoder_outputs_mask should never
         # change
-        encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
+        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+            encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
-        decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
-        decoder_context = encoder_outputs.max(dim=1)[0]
+            decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+            decoder_context = encoder_outputs.max(dim=1)[0]
+        else:
+            decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
+            decoder_context = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
 
         return decoder_hidden, decoder_context
 
@@ -88,16 +104,15 @@ class Seq2SeqDecoder(Model):
                 target_tokens: Dict[str, torch.LongTensor] = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
-        Decoder logic for producing the entire target sequence.
+        Decoder logic for producing the entire target sequence at train time.
 
         Parameters
         ----------
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
-        target_tokens : Dict[str, torch.LongTensor], optional (default = None)
-           Output of ``Textfield.as_array()`` applied on target ``TextField``. We assume that the
-           target tokens are also represented as a ``TextField``.
+        target_tokens : Dict[str, torch.LongTensor]
         """
+        # TODO: target_tokens is not optional.
         batch_size, _, _ = encoder_outputs.size()
 
         if target_tokens is not None:
@@ -143,6 +158,15 @@ class Seq2SeqDecoder(Model):
                       decoder_input,
                       decoder_hidden,
                       decoder_context):
+        """
+        Applies one step of the decoder. This is used by beam search.
+
+        Parameters
+        ----------
+        decoder_input: torch.FloatTensor
+        decoder_hidden: torch.FloatTensor
+        decoder_context: torch.FloatTensor
+        """
         decoder_hidden, decoder_context = self._decoder_cell(
             decoder_input, (decoder_hidden, decoder_context))
 
@@ -160,7 +184,7 @@ class Seq2SeqDecoder(Model):
         Given the input indices for the current timestep of the decoder, and all the encoder
         outputs, compute the input at the current timestep.  Note: This method is agnostic to
         whether the indices are gold indices or the predictions made by the decoder at the last
-        timestep. So, this can be used even if we're doing some kind of scheduled sampling.
+        timestep.
 
         If we're not using attention, the output of this method is just an embedding of the input
         indices.  If we are, the output will be a concatentation of the embedding and an attended
@@ -187,7 +211,6 @@ class Seq2SeqDecoder(Model):
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
-            # Fixme
 
             # important - need to use zero-masking instead of -inf for attention
             # I've checked that doing this doesn't significantly increase time
@@ -250,6 +273,7 @@ class Seq2SeqDecoder(Model):
         This method trims the output predictions to the first end symbol, replaces indices with
         corresponding tokens, and adds a field called ``predicted_tokens`` to the ``output_dict``.
         """
+        # TODO: this method is not used and should be deleted
         predicted_indices = output_dict["predictions"]
         if not isinstance(predicted_indices, numpy.ndarray):
             predicted_indices = predicted_indices.detach().cpu().numpy()
@@ -271,14 +295,7 @@ class Seq2SeqDecoder(Model):
         max_decoding_steps = params.pop("max_decoding_steps")
         target_namespace = params.pop("target_namespace", "targets")
         target_embedding_dim = params.pop("target_embedding_dim")
-        # If no attention function is specified, we should not use attention, not attention with
-        # default similarity function.
         attention = params.pop("attention", "none")
-        #attention_function_type = params.pop("attention_function", None)
-        # if attention_function_type is not None:
-        #    attention_function = SimilarityFunction.from_params(attention_function_type)
-        # else:
-        #    attention_function = None
         dropout = params.pop_float("dropout", 0.0)
         scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
         params.assert_empty(cls.__name__)

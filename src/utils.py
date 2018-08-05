@@ -52,7 +52,7 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         return [item]
     return item
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=True):
+def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state
 
     Parameters
@@ -60,7 +60,9 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
     model: The model object to populate with loaded parameters.
     state_path: The path to a model_state checkpoint.
     gpu_id: The GPU to use. -1 for no GPU.
-    skip_task_models: If set, load only the task-independent parameters.
+    skip_task_models: If set, skip task-specific parameters for these tasks.
+        This does not necessarily skip loading ELMo scalar weights, but I (Sam) sincerely
+        doubt that this matters.
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     '''
@@ -81,8 +83,14 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
                 logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     if skip_task_models:
-        keys_to_skip = [key for key in model_state if "_mdl" in key]
-        logging.info("Not restoring task-specific parameters.")
+        keys_to_skip = []
+        for task in skip_task_models:
+            new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
+            if new_keys_to_skip:
+                logging.info("Skipping task-specific parameters for task: %s" % task)
+                keys_to_skip += new_keys_to_skip
+            else:
+                logging.info("Found no task-specific parameters to skip for task: %s" % task)
         for key in keys_to_skip:
             del model_state[key]
 
@@ -91,19 +99,21 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=False, strict=T
 
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
-    ''' Get elmo mixing weights from text_field_embedder,
-    since elmo should be in the same place every time.
+    ''' Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task. 
+    Stops program execution if something goes wrong (e.g. task is malformed, resulting in KeyError).
 
     args:
-        - text_field_embedder
-        - task: task which gets indexed to the correct mix_id
+        - text_field_embedder (ElmoTextFieldEmbedder): the embedder used during the run
+        - task (Task): a Task object with a populated `_classifier_name` attribute.
 
     returns:
-        - params Dict[str:float]: dictionary maybe layers to scalar params
+        Dict[str, float]: dictionary with the values of each layer weight and of the scaling
+                          factor.
     '''
+    # TODO: rename variables to be more descriptive (mix_id -> task_id, mixer -> task_weights)
     elmo = text_field_embedder.token_embedder_elmo._elmo
     if task:
-        mix_id = text_field_embedder.task_map[task.name]
+        mix_id = text_field_embedder.task_map[task._classifier_name]
     else:
         mix_id = text_field_embedder.task_map["@pretrain@"]
     mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
@@ -114,7 +124,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
 
 
 def get_batch_size(batch):
-    ''' Given a batch with unknown text_fields, get the batch size '''
+    ''' Given a batch with unknown text_fields, get an estimate of batch size '''
     batch_field = batch['inputs'] if 'inputs' in batch else batch['input1']
     keys = [k for k in batch_field.keys()]
     batch_size = batch_field[keys[0]].size()[0]
@@ -145,15 +155,15 @@ def unescape_moses(moses_tokens):
     '''
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
-def process_sentence(sent, max_seq_len):
+def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     if isinstance(sent, str):
-        return [SOS_TOK] + TOKENIZER.tokenize(sent)[:max_seq_len] + [EOS_TOK]
+        return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
-        return [SOS_TOK] + sent[:max_seq_len] + [EOS_TOK]
+        return [sos_tok] + sent[:max_seq_len] + [eos_tok]
 
 
 def truncate(sents, max_seq_len, sos, eos):
@@ -1094,4 +1104,3 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
-

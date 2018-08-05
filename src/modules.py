@@ -1,4 +1,6 @@
-''' Different model components to use in building the overall model '''
+''' Different model components to use in building the overall model.
+
+The main component of interest is SentenceEncoder, which all the models use. '''
 import os
 import sys
 import json
@@ -44,24 +46,24 @@ from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
 from .cnns.inception import inception_v3
 
-class PassThroughPhraseLayer(nn.Module):
-    ''' Dummy phrase layer that just passes-through representations from a
-    lower level. Exists solely for API compatibility. '''
+class NullPhraseLayer(nn.Module):
+    ''' Dummy phrase layer that does nothing. Exists solely for API compatibility. '''
     def __init__(self, input_dim: int):
-        super(PassThroughPhraseLayer, self).__init__()
+        super(NullPhraseLayer, self).__init__()
         self.input_dim = input_dim
 
     def get_input_dim(self):
         return self.input_dim
 
     def get_output_dim(self):
-        return self.input_dim
+        return 0
 
     def forward(self, embs, mask):
-        return embs
+        return None
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM '''
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM. '''
+    # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
@@ -97,13 +99,18 @@ class SentenceEncoder(Model):
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
-
+            - task (Task): Used by the _text_field_embedder to pick the correct output
+                           ELMo representation.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
+                TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
+            - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
-        # embeddings
+        # Embeddings
+        # Note: These highway layers are identity by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task.name))
+        # task_sent_embs only used if sep_embs_for_skip
+        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
         if self._cove is not None:
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove(sent['words'], sent_lens)
@@ -112,7 +119,7 @@ class SentenceEncoder(Model):
         sent_embs = self._dropout(sent_embs)
         task_sent_embs = self._dropout(task_sent_embs)
 
-        # the rest of the model
+        # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
@@ -120,18 +127,23 @@ class SentenceEncoder(Model):
         # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, BiLMEncoder):
             sent_enc = sent_enc[-1]
-        sent_enc = self._dropout(sent_enc)
+        if sent_enc is not None:
+            sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
-            if self.sep_embs_for_skip:
-                sent_enc = torch.cat([sent_enc, task_sent_embs], dim=-1)
+            # Use skip connection with original sentence embs or task sentence embs
+            skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            if isinstance(self._phrase_layer, NullPhraseLayer):
+                sent_enc = skip_vec
             else:
-                sent_enc = torch.cat([sent_enc, sent_embs], dim=-1)
+                sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
-    ''' Wrapper around BiLM to give it an interface to comply with SentEncoder '''
+    """Wrapper around BiLM to give it an interface to comply with SentEncoder
+    See base class: ElmoLstm
+    """
     def get_input_dim(self):
         return self.input_size
 
@@ -139,6 +151,9 @@ class BiLMEncoder(ElmoLstm):
         return self.hidden_size * 2
 
 class BoWSentEncoder(Model):
+    ''' Bag-of-words sentence encoder '''
+    # NOTE: hasn't been tested in recent memory
+
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
 
@@ -149,21 +164,13 @@ class BoWSentEncoder(Model):
     def forward(self, sent):
         # pylint: disable=arguments-differ
         """
-        Parameters
-        ----------
-        question : Dict[str, torch.LongTensor]
-            From a ``TextField``.
-        passage : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this passage contains the answer to the
-            question, and predicts the beginning and ending positions of the answer within the
-            passage.
+        Args:
+            - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
 
         Returns
-        -------
-        pair_rep : torch.FloatTensor?
-            Tensor representing the final output of the BiDAF model
-            to be plugged into the next module
-
+            - word_embs (torch.FloatTensor): (b_size, seq_len, d_emb)
+                TODO: check what the padded values in word_embs are (0 or -inf or something else?)
+            - word_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         word_embs = self._text_field_embedder(sent)
         word_mask = util.get_text_field_mask(sent).float()
@@ -204,18 +211,19 @@ class Pooler(nn.Module):
 
 
 class Classifier(nn.Module):
-    ''' Classifier with a linear projection before pooling '''
+    ''' Logistic regression or MLP classifier '''
+    # NOTE: Expects dropout to have already been applied to its input.
 
     def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
         elif cls_type == 'mlp':
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp':  # what they did in Infersent
-            classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_inp, d_hid),
+        elif cls_type == 'fancy_mlp':  # What they did in Infersent.
+            classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
                                        nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
@@ -235,7 +243,7 @@ class Classifier(nn.Module):
 
 
 class SingleClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules '''
+    ''' Thin wrapper around a set of modules. For single-sentence classification. '''
 
     def __init__(self, pooler, classifier):
         super(SingleClassifier, self).__init__()
@@ -249,7 +257,7 @@ class SingleClassifier(nn.Module):
 
 
 class PairClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules '''
+    ''' Thin wrapper around a set of modules. For sentence pair classification. '''
 
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
@@ -326,28 +334,16 @@ class AttnPairEncoder(Model):
         s2_s1_vectors = util.weighted_sum(s1, s2_s1_attn)
         # batch_size, seq_len, 4*enc_dim
         s2_w_context = torch.cat([s2, s2_s1_vectors], 2)
-        s2_w_context = self._dropout(s2_w_context)
 
         # s1 representation, using same attn method as for the s2 representation
         s1_s2_attn = util.last_dim_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
         # Shape: (batch_size, s1_length, encoding_dim)
         s1_s2_vectors = util.weighted_sum(s2, s1_s2_attn)
         s1_w_context = torch.cat([s1, s1_s2_vectors], 2)
-        s1_w_context = self._dropout(s1_w_context)
 
         modeled_s1 = self._dropout(self._modeling_layer(s1_w_context, s1_mask))
         modeled_s2 = self._dropout(self._modeling_layer(s2_w_context, s2_mask))
         return modeled_s1, modeled_s2
-
-        '''
-        modeled_s1.data.masked_fill_(1 - s1_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
-        modeled_s2.data.masked_fill_(1 - s2_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
-        s1_attn = modeled_s1.max(dim=1)[0]
-        s2_attn = modeled_s2.max(dim=1)[0]
-
-        return torch.cat([s1_attn, s2_attn, torch.abs(s1_attn - s2_attn),
-                          s1_attn * s2_attn], 1)
-        '''
 
     @classmethod
     def from_params(cls, vocab, params):
@@ -518,7 +514,8 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
 
 
 class ElmoCharacterEncoder(torch.nn.Module):
-    """
+    """Just the ELMo character encoder that we ripped so we could use alone.
+
     Compute context sensitive token representation using pretrained biLM.
 
     This embedder has input character ids of size (batch_size, sequence_length, 50)
@@ -750,27 +747,15 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
 
 class CNNEncoder(Model):
-    ''' Given an image, get image features from last layer of specified CNN '''
+    ''' Given an image, get image features from last layer of specified CNN
+        e.g., Resnet101, AlexNet, InceptionV3
+        New! Preprocessed and indexed image features, so just load from json!'''
 
     def __init__(self, model_name, path, model=None):
         super(CNNEncoder, self).__init__(model_name)
         self.model_name = model_name
         self.model = self._load_model(model_name)
-
-
-        # New loader
-        '''
-        self.feat_dict = self._load_features_from_json(path, 'train')
-        self.feat_dict.update(self._load_features_from_json(path, 'val'))
-        self.feat_dict.update(self._load_features_from_json(path, 'test'))
-        '''
-
-        '''
-        # Old loader
-        self.feat_dict = self._load_features(path, 'train')
-        self.feat_dict.update(self._load_features(path, 'val'))
-        self.feat_dict.update(self._load_features(path, 'test'))
-        '''
+        self.feat_path = path + '/all_feats/'
 
     def _load_model(self, model_name):
         if model_name == 'alexnet':
@@ -780,21 +765,6 @@ class CNNEncoder(Model):
         elif model_name == 'resnet':
             model = resnet101(pretrained=True)
         return model
-
-    def _load_features_from_json(self, path, dataset):
-        print('Loading CNN features for: ' + str(dataset))
-        if dataset == 'train':
-            f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '_lines.json', 'r')
-            feat_dict = {}
-            for line in f:
-                temp = json.loads(line)
-                feat_dict[temp['img_id']] = temp['feat']
-        else:
-            f = open('/nfs/jsalt/home/roma/CNN/' + dataset + '.json', 'r')
-            for line in f:
-                feat_dict = json.loads(line)
-
-        return feat_dict
 
     def _load_features(self, path, dataset):
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -817,6 +787,7 @@ class CNNEncoder(Model):
                 os.path.join(
                     train_dataset.root,
                     d))]
+
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
 
@@ -827,11 +798,10 @@ class CNNEncoder(Model):
         return feat_dict
 
     def forward(self, img_id):
-        """
-        Args:
-            - img_id that maps image -> sentence pairs in respective datasets.
-        """
+        '''
+        Args: img_id that maps image -> sentence pairs in respective datasets.
+        '''
 
-        f = open('/nfs/jsalt/home/roma/CNN/feat/' + str(img_id) + '.json', 'r')
-        for line in f: feat_dict = json.loads(line)
-        return feat_dict['feat']
+        with open(self.feat_path + str(img_id) + '.json') as fd:
+            feat_dict = json.load(fd)
+        return feat_dict[list(feat_dict.keys())[0]] # has one key
