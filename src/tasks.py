@@ -1773,6 +1773,10 @@ class RedditSeq2SeqTask(MTTask):
                          max_targ_v_size=max_targ_v_size, name=name)
         self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
+        self.files_by_split = {"train": os.path.join(path, "train.csv"),
+                               "val": os.path.join(path, "val.csv"),
+                               "test": os.path.join(path, "test.csv")}
+
 
     def load_data(self, path, max_seq_len):
         targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
@@ -1954,15 +1958,15 @@ class WikiInsertionsTask(MTTask):
 
 
 class DisSentTask(PairClassificationTask):
-    ''' Task class for DisSent, dataset agnostic. 
+    ''' Task class for DisSent, dataset agnostic.
         Based on Nie, Bennett, and Goodman (2017), but with different datasets.
     '''
 
-    def __init__(self, path, max_seq_len, prefix, name="dissent"): 
+    def __init__(self, path, max_seq_len, prefix, name="dissent"):
         ''' There are 8 classes because there are 8 discourse markers in
             the dataset (and, but, because, if, when, before, though, so)
         '''
-        super().__init__(name, 8) 
+        super().__init__(name, 8)
         self.max_seq_len = max_seq_len
         self.files_by_split = {"train": os.path.join(path, "%s.train" % prefix),
                                "val": os.path.join(path, "%s.valid" % prefix),
@@ -2046,7 +2050,7 @@ class DisSentWikiBigFullTask(DisSentTask):
 
 
 class DisSentWikiBigTask(DisSentTask):
-    ''' Task class for DisSent with a large Wikipedia dump considering clauses from within a single 
+    ''' Task class for DisSent with a large Wikipedia dump considering clauses from within a single
         sentence or across two sentences'''
     def __init__(self, path, max_seq_len, name="dissentbig"):
         super().__init__(path, max_seq_len, "big.dissent", name)
@@ -2443,7 +2447,7 @@ class POSTaggingTask(TaggingTask):
 
 
     def load_data(self, path, max_seq_len):
-        '''Process the dataset located at each data file. 
+        '''Process the dataset located at each data file.
            The target needs to be split into tokens because
            it is a sequence (one tag per input token). '''
         tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
@@ -2472,7 +2476,7 @@ class CCGTaggingTask(TaggingTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at each data file.
            The target needs to be split into tokens because
-           it is a sequence (one tag per input token). '''    
+           it is a sequence (one tag per input token). '''
         tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
         val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
