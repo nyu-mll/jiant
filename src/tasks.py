@@ -1488,6 +1488,76 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
+@register_task('nli-prob-negation', 'NLI-Prob/')
+class NLITypeProbingTaskNeg(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-negation", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskNeg, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading negation data.")
+
+@register_task('nli-prob-prepswap', 'NLI-Prob/')
+class NLITypeProbingTaskPrepswap(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-prepswap", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskPrepswap, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'all.prepswap.turk.newlabels.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading preposition swap data.")
+
+@register_task('nps', 'nps/')
+class NPSTask(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nps", probe_path="probe_dummy.tsv"):
+        super(NPSTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NP/S data.")
+
+
+
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
@@ -1499,11 +1569,11 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
             self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        targ_map = {'0': 0, '1': 1, '2': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
         val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
-                        idx_idx = 0, s1_idx=3, s2_idx=4, targ_idx=5, targ_map=targ_map, skip_rows=0)
+                        idx_idx = 0, s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
 
@@ -2016,43 +2086,25 @@ class DisSentTask(PairClassificationTask):
 
 
 class DisSentBWBSingleTask(DisSentTask):
-    ''' Task class for DisSent with the Billion Word Benchmark'''
+    ''' Task class for DisSent with the Billion Word Benchmark
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentbwb"):
         super().__init__(path, max_seq_len, "bwb.dissent.single_sent", name)
 
 
 class DisSentWikiSingleTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwiki"):
         super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
-class DisSentWikiFullTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
-        or across two sentences'''
-    def __init__(self, path, max_seq_len, name="dissentwikifull"):
-        super().__init__(path, max_seq_len, "wikitext.dissent", name)
-
-
 class DisSentWikiBigFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
-        or across two sentences; this is the same as DisSentWikiFullTask but with more examples'''
+        or across two sentences.
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
         super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
-
-
-class DisSentWikiBigTask(DisSentTask):
-    ''' Task class for DisSent with a large Wikipedia dump considering clauses from within a single
-        sentence or across two sentences'''
-    def __init__(self, path, max_seq_len, name="dissentbig"):
-        super().__init__(path, max_seq_len, "big.dissent", name)
-
-
-class DisSentWikiHugeTask(DisSentTask):
-    ''' Task class for DisSent with a large dataset created by combining the data from
-        DisSentWikiBigTask and DisSentBWBSingleTask '''
-    def __init__(self, path, max_seq_len, name="dissenthuge"):
-        super().__init__(path, max_seq_len, "huge", name)
 
 
 class WeakGroundedTask(PairClassificationTask):
@@ -2423,36 +2475,6 @@ class TaggingTask(Task):
 
     def get_all_labels(self) -> List[str]:
         return self.all_labels
-
-class POSTaggingTask(TaggingTask):
-    ''' Part of speech tagging as a task.
-        Using the part of speech tags from the Penn Treebank. '''
-
-    def __init__(self, path, max_seq_len, name="pos"):
-        ''' There are 45 possible part of speech tags in the Penn Treebank dataset. '''
-        super().__init__(name, 45) # 45 tags
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        labels = itertools.chain(self.train_data_text[2], self.val_data_text[2],
-                                 self.test_data_text[2])
-        self.all_labels = list(set(itertools.chain.from_iterable(labels)))
-
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at each data file.
-           The target needs to be split into tokens because
-           it is a sequence (one tag per input token). '''
-        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading POSTagging data.")
-
 
 
 class CCGTaggingTask(TaggingTask):
