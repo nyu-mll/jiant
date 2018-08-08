@@ -1847,19 +1847,19 @@ class RedditSeq2SeqTask(MTTask):
                                "val": os.path.join(path, "val.csv"),
                                "test": os.path.join(path, "test.csv")}
 
-
-    def load_data(self, path, max_seq_len):
-        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
-                                        s1_idx=2, s2_idx=None, targ_idx=3,
-                                        targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
-                                      s1_idx=2, s2_idx=None, targ_idx=3,
-                                      targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
-                                       s1_idx=2, s2_idx=None, targ_idx=3,
-                                       targ_fn=targ_fn_startend)
-        log.info("\tFinished loading reddit data.")
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 4 or not row[2] or not row[3]:
+                    continue
+                src_sent = process_sentence(row[2], self.max_seq_len)
+                tgt_sent = process_sentence(row[3], self.max_seq_len,
+                    sos_tok=allennlp_util.START_SYMBOL,
+                    eos_tok=allennlp_util.END_SYMBOL,
+                )
+                yield (src_sent, tgt_sent)
 
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
@@ -1945,32 +1945,24 @@ class Wiki103Seq2SeqTask(MTTask):
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
-        self.sentences = self.train_data_text + self.val_data_text
+        self._nonatomic_toks = [UNK_TOK_ALLENNLP, '<unk>']
         self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
+        self.files_by_split = {"train": os.path.join(path, "train.sentences.txt"),
+                               "val": os.path.join(path, "valid.sentences.txt"),
+                               "test": os.path.join(path, "test.sentences.txt")}
 
-    def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.sentences.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.sentences.txt"), max_seq_len)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading WikiText")
-
-    def load_txt(self, path, max_seq_len):
-        ''' Rather than return a whole list of examples, stream them
-        See WikiTextLMTask for an explanation of the preproc'''
-        data = []
-        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
-        with open(path) as txt_fh:
+    def load_data(self, path):
+        ''' Load data '''
+        nonatomic_toks = self._nonatomic_toks
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, max_seq_len)
-                data.append(sent)
-        return data
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks,
+                                        self._max_seq_len)
+                yield sent
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
