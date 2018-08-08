@@ -2094,43 +2094,25 @@ class DisSentTask(PairClassificationTask):
 
 
 class DisSentBWBSingleTask(DisSentTask):
-    ''' Task class for DisSent with the Billion Word Benchmark'''
+    ''' Task class for DisSent with the Billion Word Benchmark
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentbwb"):
         super().__init__(path, max_seq_len, "bwb.dissent.single_sent", name)
 
 
 class DisSentWikiSingleTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwiki"):
         super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
-class DisSentWikiFullTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
-        or across two sentences'''
-    def __init__(self, path, max_seq_len, name="dissentwikifull"):
-        super().__init__(path, max_seq_len, "wikitext.dissent", name)
-
-
 class DisSentWikiBigFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
-        or across two sentences; this is the same as DisSentWikiFullTask but with more examples'''
+        or across two sentences.
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
         super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
-
-
-class DisSentWikiBigTask(DisSentTask):
-    ''' Task class for DisSent with a large Wikipedia dump considering clauses from within a single
-        sentence or across two sentences'''
-    def __init__(self, path, max_seq_len, name="dissentbig"):
-        super().__init__(path, max_seq_len, "big.dissent", name)
-
-
-class DisSentWikiHugeTask(DisSentTask):
-    ''' Task class for DisSent with a large dataset created by combining the data from
-        DisSentWikiBigTask and DisSentBWBSingleTask '''
-    def __init__(self, path, max_seq_len, name="dissenthuge"):
-        super().__init__(path, max_seq_len, "huge", name)
 
 
 class WeakGroundedTask(PairClassificationTask):
@@ -2501,36 +2483,6 @@ class TaggingTask(Task):
 
     def get_all_labels(self) -> List[str]:
         return self.all_labels
-
-class POSTaggingTask(TaggingTask):
-    ''' Part of speech tagging as a task.
-        Using the part of speech tags from the Penn Treebank. '''
-
-    def __init__(self, path, max_seq_len, name="pos"):
-        ''' There are 45 possible part of speech tags in the Penn Treebank dataset. '''
-        super().__init__(name, 45) # 45 tags
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        labels = itertools.chain(self.train_data_text[2], self.val_data_text[2],
-                                 self.test_data_text[2])
-        self.all_labels = list(set(itertools.chain.from_iterable(labels)))
-
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at each data file.
-           The target needs to be split into tokens because
-           it is a sequence (one tag per input token). '''
-        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading POSTagging data.")
-
 
 
 class CCGTaggingTask(TaggingTask):
