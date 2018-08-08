@@ -1983,9 +1983,14 @@ class Wiki103Seq2SeqTask(MTTask):
             d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
             d["targs"] = _sentence_to_text_field(sent, target_indexer)
             return Instance(d)
-        for i in range(1, len(split)):
-            yield _make_instance(split[i-1], split[i])
 
+        prev_sent = None
+        for sent in splits:
+            if prev_sent is None:
+                prev_sent = sent
+                continue
+            yield _make_instance(prev_sent, sent)
+            prev_sent = sent
 
 
 class WikiInsertionsTask(MTTask):
