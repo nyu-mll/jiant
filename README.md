@@ -51,24 +51,30 @@ python main.py --config_file config/demo.conf --overrides "exp_name = my_exp, ru
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Overall the directory structure looks like:
+Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Experiment directories are written in ``project_dir``. Overall the directory structure looks like:
 
 ```
-exp1/ (e.g. training and evaluating on Task1 and Task2)
- |-- preproc/ # shared indexed data of Task1 and Task2
- |-- vocab/ # shared vocabulary built from examples from Task1 and Task 2
- |-- Task1/ # shared Task1 class object
- |-- Task2/ # shared Task2 class object
- |-- run1/ # run directory with some hyperparameter settings
- |-- run2/ # run directory with some different hyperparameter settings
- |-- [...]
-exp2/ (e.g. training and evaluating on Task1 and Task3)
- |-- preproc/
- |-- vocab/ 
- |-- Task1/
- |-- Task3/
- |-- run1/
- |-- [...]
+project_dir
+|-- exp1/ (e.g. training and evaluating on Task1 and Task2)
+|   |-- preproc/ # shared indexed data of Task1 and Task2
+|   |-- vocab/ # shared vocabulary built from examples from Task1 and Task 2
+|   |-- Task1/ # shared Task1 class object
+|   |-- Task2/ # shared Task2 class object
+|   |-- run1/ # run directory with some hyperparameter settings
+|   |-- run2/ # run directory with some different hyperparameter settings
+|   |
+|   [...]
+|
+|-- exp2/ (e.g. training and evaluating on Task1 and Task3)
+|  |-- preproc/
+|  |-- vocab/ 
+|  |-- Task1/
+|  |-- Task3/
+|  |-- run1/
+|  |
+|  [...]
+|
+[...]
 ```
 
 You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). Though, if you are using the preconfigured GCP instance templates these may already be set!
