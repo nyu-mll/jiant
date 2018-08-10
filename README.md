@@ -66,18 +66,18 @@ project_dir
 |   [...]
 |
 |-- exp2/ (e.g. training and evaluating on Task1 and Task3)
-|  |-- preproc/
-|  |-- vocab/ 
-|  |-- Task1/
-|  |-- Task3/
-|  |-- run1/
-|  |
-|  [...]
+|   |-- preproc/
+|   |-- vocab/ 
+|   |-- Task1/
+|   |-- Task3/
+|   |-- run1/
+|   |
+|   [...]
 |
 [...]
 ```
 
-You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). Though, if you are using the preconfigured GCP instance templates these may already be set!
+You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script) and word embeddings (see later sections) respectively. Though, if you are using the preconfigured GCP instance templates these may already be set!
 
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
 
