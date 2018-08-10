@@ -31,7 +31,17 @@ The repo contains a convenience python script for downloading all GLUE data and 
 python download_glue_data.py --data_dir glue_data --tasks all
 ```
 
-For other pretraining task data, contact the person in charge.
+We also make use of many other data sources, including:
+
+- translation: WMT'14 EN-DE, WMT'17 EN-RU # TODO(Edouard,Katherin)
+- language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset) # TODO(Yinghui): describe preprocessing done or make preprocessed data available?
+- image captioning: # TODO(Roma)
+- Reddit: # TODO(Raghu)
+- DisSent: # TODO(Tom): describe preprocessing done or make preprocessed data available?
+- Recast data: # TODO(Ellie?,Adam?)
+- CCG: # TODO(Tom)
+
+To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
 ## Running
 
@@ -51,15 +61,20 @@ Because preprocessing is expensive, we often want to run multiple experiments us
 - exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
     - [...]
 
-You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). (Although note that on GCP these may already be set!)
+You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). Though, if you are using the preconfigured GCP instance templates these may already be set!
 
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the option ``reload_vocab = 1``.
+To force reindexing of a task's data, use the option ``reload_index = 1`` and set ``reindex_tasks`` to the names of the tasks to be reindexed, e.g. ``reindex_tasks="sst,mnli"``.
 
 ## Model
 
-To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
+The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks.
 
+We also include an experimental, untested option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly.
+
+Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
+To see the full set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
 
 ## Trainer
 
@@ -111,8 +126,7 @@ Note: The current training procedure is task-agnostic: we randomly sample a task
 To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
 To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
 fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-To activate fastText model within our framework, set the flag ``fastText 1``
-If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic; use the pretrained vectors.
+To activate fastText model within our framework, set the flag ``fastText = 1``
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
@@ -120,7 +134,9 @@ Download the pretrained vectors located [here](https://fasttext.cc/docs/en/engli
 
 We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
 To use ELMo, set ``elmo`` to 1.
-<!-- To use ELMo without GloVe, additionally set ``elmo_no_glove`` to 1. -->
+To use only the _character-level CNN word encoder_ from ELMo by use `elmo_chars_only = 1` (set by default).
+
+TODO(Ian/Alex): specify how to use local or custom ELMo weights.
 
 ### GloVe
 
@@ -131,13 +147,6 @@ To use GloVe vectors, download and extract the relevant files and set ``word_emb
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
 To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove`` to 1.
-
-## Annoying AllenNLP Things
-
-To turn off the verbosity, you'll need to go in your AllenNLP location and create or turn on a ``quiet`` option, e.g. in ``allennlp/common/params.py``, line 186 set ``quiet=True``.
-Other common and verbose locations include ``allennlp/nn/initializers.py`` (many calls to ``logger``) and ``allennlp/common/params.py`` (`pop()`` will print param values often).
-
-To avoid needing to reconstruct vocabulary switching from using character embeddings <> not using character embeddings, using ELMo <> not using ELMo, [TODO]
 
 ## Getting Help
 
