@@ -102,6 +102,8 @@ The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whe
 
 If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, e.g. ``weighting_method = uniform`` or ``weighting_method = proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training. 
 
+For multi-task training, we allow for a global optimizer (and scheduler) or per-task optimizer (and scheduler). In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro average will be well-behaved.
+
 Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_train, train_for_eval, do_eval``.
 Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
