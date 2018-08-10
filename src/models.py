@@ -45,7 +45,7 @@ from .tasks import STSBTask, CoLATask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
     PairOrdinalRegressionTask, JOCITask, \
     WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, POSTaggingTask, CCGTaggingTask, \
+    GroundedTask, TaggingTask, CCGTaggingTask, \
     MultiNLIDiagnosticTask
 from .tasks import EdgeProbingTask
 

@@ -1960,8 +1960,8 @@ class Wiki103Seq2SeqTask(MTTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks,
-                                        self._max_seq_len)
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
+                                        self.max_seq_len)
                 yield sent
 
     def get_num_examples(self, split_text):
@@ -1985,7 +1985,7 @@ class Wiki103Seq2SeqTask(MTTask):
             return Instance(d)
 
         prev_sent = None
-        for sent in splits:
+        for sent in split:
             if prev_sent is None:
                 prev_sent = sent
                 continue
