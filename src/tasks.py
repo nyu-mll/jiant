@@ -1907,9 +1907,7 @@ class Wiki103Classification(PairClassificationTask):
                 yield sent
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split.
-        Split is a single list of sentences here.
-        '''
+        ''' Process a language modeling split.  Split is a single list of sentences here.  '''
         def _make_instance(input1, input2, labels):
             d = {}
             d["input1"] = _sentence_to_text_field(input1, indexers)
@@ -2245,8 +2243,8 @@ class GroundedTask(Task):
         self.val_data_text = val
         self.test_data_text = test
 
-        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
-        log.info("\nFinished loading MSCOCO data!")
+        log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info("\tFinished loading MSCOCO data!")
 
 class GroundedSWTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
