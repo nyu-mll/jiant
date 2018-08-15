@@ -62,11 +62,13 @@ def register_task(name, rel_path, **kw):
 
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
+    ''' Helper function to map a sequence of tokens into a sequence of
+    AllenNLP Tokens, then wrap in a TextField with the given indexers '''
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
 
 def _atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
-    ''' Replace bad tokenize that will be split by tokenizer with a
+    ''' Replace tokens that will be split by tokenizer with a
     placeholder token. Tokenize, and then substitute the placeholder
     with the *first* nonatomic token in the list. '''
     for nonatomic_tok in nonatomic_toks:
@@ -79,11 +81,14 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
+
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
         - pair_input (int)
         - tok2idx (dict)
+
     Returns:
+        - instances (list[Instance]): a list of AllenNLP Instances with fields
     '''
     def _make_instance(input1, input2, labels, idx):
         d = {}
@@ -313,13 +318,19 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
                     'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
-# Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
-# updated. Don't trust results yet.
+# Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
 @register_task('edges-dep-labeling', rel_path='edges/dep',
                label_file="labels.txt", files_by_split={
                     'train': "train.json" + _tokenizer_suffix,
                     'val': "dev.json" + _tokenizer_suffix,
                     'test': "test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+# Dependency edge labeling on English Web Treebank (UD).
+@register_task('edges-dep-labeling-ewt', rel_path='edges/dep_ewt',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
 # PTB constituency membership / labeling.
 @register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
@@ -605,9 +616,22 @@ class RankingTask(Task):
 
 
 class LanguageModelingTask(SequenceGenerationTask):
-    ''' Generic language modeling task '''
+    """Generic language modeling task
+    See base class: SequenceGenerationTask
+    Attributes:
+        max_seq_len: (int) maximum sequence length
+        min_seq_len: (int) minimum sequence length
+        target_indexer: (Indexer Obejct) Indexer used for target
+        files_by_split: (dict) files for three data split (train, val, test)
+    """
 
     def __init__(self, path, max_seq_len, name):
+        """Init class
+        Args:
+            path: (str) path that the data files are stored
+            max_seq_len: (int) maximum length of one sequence
+            name: (str) task name
+        """
         super().__init__(name)
         self.scorer1 = Average()
         self.scorer2 = None
@@ -621,19 +645,27 @@ class LanguageModelingTask(SequenceGenerationTask):
                                'test':os.path.join(path, "test.txt")}
 
     def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
+        """Computes number of samples
+        Assuming every line is one example.
+        """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = len(open(split_path).read().count('\n'))
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        """Get metrics specific to the task
+        Args:
+            reset: (boolean) reset any accumulators or internal state
+        """
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
 
     def load_data(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -642,9 +674,11 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield process_sentence(toks, self.max_seq_len)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split by indexing and creating fields.
-        Split is a single list of sentences here. '''
-        targ_indexer = self.target_indexer
+        """Process a language modeling split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
         def _make_instance(sent):
             ''' Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
@@ -652,21 +686,22 @@ class LanguageModelingTask(SequenceGenerationTask):
             in the input for each direction '''
             d = {}
             d["input"] = _sentence_to_text_field(sent, indexers)
-            #d["input_bwd"] = _sentence_to_text_field(sent[::-1][:-1], indexers)
-            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], targ_indexer)
-            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], targ_indexer)
+            d["targs"] = _sentence_to_text_field(sent[1:]+[sent[0]], self.target_indexer)
+            d["targs_b"] = _sentence_to_text_field([sent[-1]]+sent[:-1], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
 
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-        Split should be one of 'train', 'val', or 'test'.
-        '''
+        """Get split text as iterable of records.
+        Args:
+            split: (str) should be one of 'train', 'val', or 'test'.
+        """
         return self.load_data(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
+        """Yield sentences, used to compute vocabulary.
+        """
         for split in self.files_by_split:
             # Don't use test set for vocab building.
             if split.startswith("test"):
@@ -677,7 +712,9 @@ class LanguageModelingTask(SequenceGenerationTask):
 
 
 class WikiTextLMTask(LanguageModelingTask):
-    ''' Language modeling on a Wikitext dataset '''
+    """ Language modeling on a Wikitext dataset
+    See base class: LanguageModelingTask
+    """
 
     def __init__(self, path, max_seq_len, name="wiki"):
         super().__init__(path, max_seq_len, name)
@@ -708,8 +745,9 @@ class WikiText2LMTask(WikiTextLMTask):
 
 
 class WikiText103LMTask(WikiTextLMTask):
-    ''' Language modeling task on Wikitext 103'''
-
+    """Language modeling task on Wikitext 103
+    See base class: WikiTextLMTask
+    """
     def __init__(self, path, max_seq_len, name="wiki103"):
         super().__init__(path, max_seq_len, name)
         self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
@@ -718,8 +756,9 @@ class WikiText103LMTask(WikiTextLMTask):
 
 
 class BWBLMTask(LanguageModelingTask):
-    ''' Language modeling task on Billion Word Benchmark'''
-
+    """Language modeling task on Billion Word Benchmark
+    See base class: LanguageModelingTask
+    """
     def __init__(self, path, max_seq_len, name="bwb"):
         super().__init__(path, max_seq_len, name)
         self.max_seq_len = max_seq_len
@@ -1449,6 +1488,76 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
+@register_task('nli-prob-negation', 'NLI-Prob/')
+class NLITypeProbingTaskNeg(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-negation", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskNeg, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading negation data.")
+
+@register_task('nli-prob-prepswap', 'NLI-Prob/')
+class NLITypeProbingTaskPrepswap(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-prepswap", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTaskPrepswap, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'all.prepswap.turk.newlabels.tsv'), max_seq_len,
+                        s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading preposition swap data.")
+
+@register_task('nps', 'nps/')
+class NPSTask(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="nps", probe_path="probe_dummy.tsv"):
+        super(NPSTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NP/S data.")
+
+
+
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
@@ -1460,11 +1569,11 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
             self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        targ_map = {'0': 0, '1': 1, '2': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
         val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
-                        idx_idx = 0, s1_idx=3, s2_idx=4, targ_idx=5, targ_map=targ_map, skip_rows=0)
+                        idx_idx = 0, s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                         s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
 
@@ -1734,19 +1843,23 @@ class RedditSeq2SeqTask(MTTask):
                          max_targ_v_size=max_targ_v_size, name=name)
         self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
+        self.files_by_split = {"train": os.path.join(path, "train.csv"),
+                               "val": os.path.join(path, "val.csv"),
+                               "test": os.path.join(path, "test.csv")}
 
-    def load_data(self, path, max_seq_len):
-        targ_fn_startend = lambda t: [START_SYMBOL] + t.split(' ') + [END_SYMBOL]
-        self.train_data_text = load_tsv(os.path.join(path, 'train.csv'), max_seq_len,
-                                        s1_idx=2, s2_idx=None, targ_idx=3,
-                                        targ_fn=targ_fn_startend)
-        self.val_data_text = load_tsv(os.path.join(path, 'val.csv'), max_seq_len,
-                                      s1_idx=2, s2_idx=None, targ_idx=3,
-                                      targ_fn=targ_fn_startend)
-        self.test_data_text = load_tsv(os.path.join(path, 'test.csv'), max_seq_len,
-                                       s1_idx=2, s2_idx=None, targ_idx=3,
-                                       targ_fn=targ_fn_startend)
-        log.info("\tFinished loading reddit data.")
+    def load_data(self, path):
+        ''' Load data '''
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
+            for row in txt_fh:
+                row = row.strip().split('\t')
+                if len(row) < 4 or not row[2] or not row[3]:
+                    continue
+                src_sent = process_sentence(row[2], self.max_seq_len)
+                tgt_sent = process_sentence(row[3], self.max_seq_len,
+                    sos_tok=allennlp_util.START_SYMBOL,
+                    eos_tok=allennlp_util.END_SYMBOL,
+                )
+                yield (src_sent, tgt_sent)
 
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
@@ -1832,32 +1945,24 @@ class Wiki103Seq2SeqTask(MTTask):
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
-        self.sentences = self.train_data_text + self.val_data_text
+        self._nonatomic_toks = [UNK_TOK_ALLENNLP, '<unk>']
         self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
+        self.files_by_split = {"train": os.path.join(path, "train.sentences.txt"),
+                               "val": os.path.join(path, "valid.sentences.txt"),
+                               "test": os.path.join(path, "test.sentences.txt")}
 
-    def load_data(self, path, max_seq_len):
-        tr_data = self.load_txt(os.path.join(path, "train.sentences.txt"), max_seq_len)
-        val_data = self.load_txt(os.path.join(path, "valid.sentences.txt"), max_seq_len)
-        te_data = self.load_txt(os.path.join(path, "test.sentences.txt"), max_seq_len)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading WikiText")
-
-    def load_txt(self, path, max_seq_len):
-        ''' Rather than return a whole list of examples, stream them
-        See WikiTextLMTask for an explanation of the preproc'''
-        data = []
-        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
-        with open(path) as txt_fh:
+    def load_data(self, path):
+        ''' Load data '''
+        nonatomic_toks = self._nonatomic_toks
+        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, max_seq_len)
-                data.append(sent)
-        return data
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks,
+                                        self._max_seq_len)
+                yield sent
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
@@ -1915,10 +2020,15 @@ class WikiInsertionsTask(MTTask):
 
 
 class DisSentTask(PairClassificationTask):
-    ''' Task class for DisSent, dataset agnostic '''
+    ''' Task class for DisSent, dataset agnostic.
+        Based on Nie, Bennett, and Goodman (2017), but with different datasets.
+    '''
 
     def __init__(self, path, max_seq_len, prefix, name="dissent"):
-        super().__init__(name, 8)  # 8 classes, for 8 discource markers
+        ''' There are 8 classes because there are 8 discourse markers in
+            the dataset (and, but, because, if, when, before, though, so)
+        '''
+        super().__init__(name, 8)
         self.max_seq_len = max_seq_len
         self.files_by_split = {"train": os.path.join(path, "%s.train" % prefix),
                                "val": os.path.join(path, "%s.valid" % prefix),
@@ -1946,7 +2056,7 @@ class DisSentTask(PairClassificationTask):
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
         for split in self.files_by_split:
-            # Don't use test set for vocab building.
+            ''' Don't use test set for vocab building. '''
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
@@ -1955,7 +2065,7 @@ class DisSentTask(PairClassificationTask):
                 yield sent2
 
     def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
+        ''' Compute the counts here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(1 for line in open(split_path))
@@ -1976,39 +2086,25 @@ class DisSentTask(PairClassificationTask):
 
 
 class DisSentBWBSingleTask(DisSentTask):
-    ''' Task class for DisSent with the Billion Word Benchmark'''
+    ''' Task class for DisSent with the Billion Word Benchmark
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentbwb"):
         super().__init__(path, max_seq_len, "bwb.dissent.single_sent", name)
 
 
 class DisSentWikiSingleTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwiki"):
         super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
-class DisSentWikiFullTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-    def __init__(self, path, max_seq_len, name="dissentwikifull"):
-        super().__init__(path, max_seq_len, "wikitext.dissent", name)
-
-
 class DisSentWikiBigFullTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
+    ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
+        or across two sentences.
+        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
     def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
         super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
-
-
-class DisSentWikiBigTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-    def __init__(self, path, max_seq_len, name="dissentbig"):
-        super().__init__(path, max_seq_len, "big.dissent", name)
-
-
-class DisSentWikiHugeTask(DisSentTask):
-    ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence'''
-    def __init__(self, path, max_seq_len, name="dissenthuge"):
-        super().__init__(path, max_seq_len, "huge", name)
 
 
 class WeakGroundedTask(PairClassificationTask):
@@ -2343,11 +2439,11 @@ class RecastKGTask(RecastNLITask):
         super(RecastKGTask, self).__init__(path, max_seq_len, name)
 
 class TaggingTask(Task):
-    ''' Generic tagging, one tag per word '''
+    ''' Generic tagging task, one tag per word '''
 
     def __init__(self, name, num_tags):
         super().__init__(name)
-        self.num_tags = num_tags + 2 # add unknown and padding
+        self.num_tags = num_tags + 2 # add tags for unknown and padding
         self.scorer1 = CategoricalAccuracy()
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -2356,6 +2452,7 @@ class TaggingTask(Task):
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
 
     def truncate(self, max_seq_len, sos_tok="<SOS>", eos_tok="<EOS>"):
+        ''' Truncate the data if any sentences are longer than max_seq_len. '''
         self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
                                          sos_tok, eos_tok), self.train_data_text[1]]
         self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
@@ -2379,40 +2476,21 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
-class POSTaggingTask(TaggingTask):
-    def __init__(self, path, max_seq_len, name="pos"):
-        super().__init__(name, 45) # 45 tags
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        labels = itertools.chain(self.train_data_text[2], self.val_data_text[2],
-                                 self.test_data_text[2])
-        self.all_labels = list(set(itertools.chain.from_iterable(labels)))
-
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
-        tr_data = load_tsv(os.path.join(path, "pos_45.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        val_data = load_tsv(os.path.join(path, "pos_45.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        te_data = load_tsv(os.path.join(path, 'pos_45.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading POSTagging data.")
-
-
 
 class CCGTaggingTask(TaggingTask):
+    ''' CCG supertagging as a task.
+        Using the supertags from CCGbank. '''
     def __init__(self, path, max_seq_len, name="ccg"):
-        super().__init__(name, 1363) # 1363 tags
+        ''' There are 1363 supertags in CCGBank. '''
+        super().__init__(name, 1363)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
 
     def load_data(self, path, max_seq_len):
-        '''Process the dataset located at data_file.'''
+        '''Process the dataset located at each data file.
+           The target needs to be split into tokens because
+           it is a sequence (one tag per input token). '''
         tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
         val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
