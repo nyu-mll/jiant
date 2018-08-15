@@ -3,7 +3,7 @@ This repo contains the code for the jiant sentence representation learning model
 
 ## Quick-Start on GCP
 
-If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
+For the JSALT workshop, we used Google Compute Engine as our main compute platform. If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
 
 ```sh
 python main.py --config_file config/demo.conf
@@ -40,6 +40,7 @@ We also make use of many other data sources, including:
 - DisSent: # TODO(Tom): describe preprocessing done or make preprocessed data available?
 - Recast data: # TODO(Ellie?,Adam?)
 - CCG: # TODO(Tom)
+- edge probing data: see `probing/data` for more information
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
@@ -47,29 +48,29 @@ To incorporate the above data, placed the data in the data directory in its own 
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python main.py --config_file config/demo.conf --overrides "exp_name = my_exp, run_name = foobar"
+python main.py --config_file config/demo.conf --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Experiment directories are written in ``project_dir``. Overall the directory structure looks like:
+Because preprocessing is expensive (e.g. building vocab and indexing for very large tasks like WMT or BWB), we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Experiment directories are written in ``project_dir``. Overall the directory structure looks like:
 
 ```
 project_dir
-|-- exp1/ (e.g. training and evaluating on Task1 and Task2)
-|   |-- preproc/ # shared indexed data of Task1 and Task2
-|   |-- vocab/ # shared vocabulary built from examples from Task1 and Task 2
-|   |-- Task1/ # shared Task1 class object
-|   |-- Task2/ # shared Task2 class object
+|-- exp1/ (e.g. training and evaluating on FooTask and BarTask)
+|   |-- preproc/ # shared indexed data of FooTask and BarTask
+|   |-- vocab/ # shared vocabulary built from examples from FooTask and BarTask
+|   |-- FooTask/ # shared FooTask class object
+|   |-- BarTask/ # shared BarTask class object
 |   |-- run1/ # run directory with some hyperparameter settings
 |   |-- run2/ # run directory with some different hyperparameter settings
 |   |
 |   [...]
 |
-|-- exp2/ (e.g. training and evaluating on Task1 and Task3)
+|-- exp2/ (e.g. training and evaluating on FooTask and Task3)
 |   |-- preproc/
 |   |-- vocab/ 
-|   |-- Task1/
-|   |-- Task3/
+|   |-- FooTask/
+|   |-- BazTask/
 |   |-- run1/
 |   |
 |   [...]
@@ -92,13 +93,14 @@ The core model is a shared BiLSTM with task-specific components. When a language
 We also include an experimental, untested option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly.
 
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
-To see the full set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
+To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
 
 ## Trainer
 
 The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and ``bpp_base`` (default: 1) batches of that task's training data is trained on.
 The trainer evaluates the model on the validation data after a fixed number of updates, set by ``val_interval``.
 The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``task_patience`` (default: 1) validation checks.
+Note: "epoch" is generally used to refer to the amount of data between validation checks.
 
 If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, e.g. ``weighting_method = uniform`` or ``weighting_method = proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training. 
 
@@ -107,9 +109,9 @@ For multi-task training, we allow for a global optimizer (and scheduler) or per-
 Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_train, train_for_eval, do_eval``.
 Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
+For example, ``train_tasks = \"sst,mnli,foo\", eval_tasks = \"qnli,bar,sst,mnli,foo\"``.
 Note: if you want to train and evaluate on a task, that task must be in both ``train_tasks`` and ``eval_tasks``.
 
-NB: "epoch" is generally used to refer to the amount of data between validation checks.
 
 
 ## Adding New Tasks
@@ -118,14 +120,14 @@ To add new tasks, you should:
 1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. 
 
 2. Create a class in ``src/tasks.py``, making sure that:
-    - Decorate the task: in the line immediately before ``class MyNewTask():``, add the line ``@register_task(task_name, rel_path='path/to/data')`` where ``task_name`` is the dedesignation for the task used in ``train_tasks, eval_tasks`` and ``rel_path`` is the path to the data in ``data_dir``.
+    - Decorate the task: in the line immediately before ``class MyNewTask():``, add the line ``@register_task(task_name, rel_path='path/to/data')`` where ``task_name`` is the dedesignation for the task used in ``train_tasks, eval_tasks`` and ``rel_path`` is the path to the data in ``data_dir``. See [edge probing tasks](https://github.com/jsalt18-sentence-repl/jiant/blob/master/src/tasks.py#L358) for an example.
     - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, ``WikiTextLMTask``, etc.).
     - The task definition should include the data loader, as a method called ``load_data()`` which stores tokenized but un-indexed data for each split in attributes named ``task.{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code (in ``src/preprocess.py``, see next bullet) expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example. Make sure to call your data loader in initialization!
     - Your task should implement a method ``task.get_sentences()`` that iterates over all text to index in order to build the vocabulary. For some types of tasks, e.g. ``SingleClassificationTask``, you only need set ``task.sentences`` to be a list of sentences (``List[List[str]]``).
-    - Your task should implement a method ``task.count_examples()`` that sets ``task.example_counts`` (``Dict[str:int]``): the number of examples per split (train, val, test).
-    - Your task should implement a method ``task.get_split_text()`` that takes in the name of a split and returns an iterable over the data in that split.
+    - Your task should implement a method ``task.count_examples()`` that sets ``task.example_counts`` (``Dict[str:int]``): the number of examples per split (train, val, test). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/src/tasks.py#L647) for an example.
+    - Your task should implement a method ``task.get_split_text()`` that takes in the name of a split and returns an iterable over the data in that split. This method will be called in preprocessing and passed to ``task.process_split`` (see next bullet).
     - Your task should implement a method ``task.process_split()`` that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(field_name, Field)`` pairs. ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples in ``src/tasks.py``.  The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/models.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
-    - If you task requires task specific label namespaces, e.g. for translation or tagging, you should set the attribute ``task._label_namespace`` to reserve a vocabulary namespace for your task's target labels. We strongly suggest including the task name in the target namespace. Your task should also implement ``task.get_all_labels()``, which returns an iterable over the labels (possibly words, e.g. in the case of MT) in the task-specific namespace.
+    - If you task requires task specific label namespaces, e.g. for translation or tagging, you are required to set the attribute ``task._label_namespace`` to reserve a vocabulary namespace for your task's target labels. We strongly suggest including the task name in the target namespace. Your task should also implement ``task.get_all_labels()``, which returns an iterable over the labels (possibly words, e.g. in the case of MT) in the task-specific namespace.
     - Your task should have attributes ``task.val_metric`` (name of task-specific metric to track during training) and ``task.val_metric_decreases`` (bool, ``True`` if val metric should decrease during training). You should also implement a ``task.get_metrics()`` method that implements the metrics you care about by using AllenNLP ``Scorer`` objects (typically set via ``task.scorer1``, ``task.scorer2``, etc.).
 
 3. In ``src/models.py``, make sure that:
