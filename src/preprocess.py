@@ -398,8 +398,11 @@ def build_tasks(args):
             train_tasks.append(task)
             if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
-                # phase.
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed eval training version of " + task.name + " train.")
+                log.warn("When using un-trimmed eval training version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
@@ -414,8 +417,11 @@ def build_tasks(args):
             eval_tasks.append(task)
             if task.name in train_task_names:
                 # Rebuild the iterator so we see the full dataset in the pretraining
-                # phase.
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
+                log.warn("When using un-trimmed pretraining version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
