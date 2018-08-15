@@ -557,6 +557,8 @@ def add_task_label_vocab(vocab, task):
     utils.assert_for_log(hasattr(task, "_label_namespace"),
                          "Task %s is missing method `_label_namespace`!" % task.name)
     namespace = task._label_namespace
+    if namespace is None:
+        return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)

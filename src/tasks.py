@@ -1960,7 +1960,7 @@ class Wiki103Seq2SeqTask(MTTask):
                     continue
                 sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
                                         self.max_seq_len)
-                yield sent
+                yield (sent, [])
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
