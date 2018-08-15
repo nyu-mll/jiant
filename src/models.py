@@ -552,7 +552,7 @@ class MultiTaskModel(nn.Module):
             out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
-            if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'mt_pair_classif', 'mt_pair_classif_mini']:
+            if task.name in ['wiki103_classif', 'reddit_pair_classif', 'reddit_pair_classif_mini', 'reddit_pair_classif_3.4G', 'mt_pair_classif', 'mt_pair_classif_mini']:
                 out = self._positive_pair_sentence_forward(batch, task, predict)
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
@@ -995,7 +995,7 @@ class MultiTaskModel(nn.Module):
         mat_mul = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0,1))
         labels = torch.eye(len(mat_mul))
 
-        scale = 1/(len(mat_mul) - 1)
+        scale = 1/(len(mat_mul) - 1) if len(mat_mul) > 1 else 1
         weights = scale * torch.ones(mat_mul.shape) - (scale-1) * torch.eye(len(mat_mul))
         weights = weights.view(-1).cuda()
 
