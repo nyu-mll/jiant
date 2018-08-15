@@ -524,7 +524,6 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.reset_elmo_states = args.reset_elmo_states
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
 
