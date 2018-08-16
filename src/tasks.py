@@ -1907,9 +1907,7 @@ class Wiki103Classification(PairClassificationTask):
                 yield sent
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split.
-        Split is a single list of sentences here.
-        '''
+        ''' Process a language modeling split.  Split is a single list of sentences here.  '''
         def _make_instance(input1, input2, labels):
             d = {}
             d["input1"] = _sentence_to_text_field(input1, indexers)
@@ -1960,9 +1958,9 @@ class Wiki103Seq2SeqTask(MTTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks,
-                                        self._max_seq_len)
-                yield sent
+                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
+                                        self.max_seq_len)
+                yield (sent, [])
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
@@ -1983,9 +1981,14 @@ class Wiki103Seq2SeqTask(MTTask):
             d["inputs"] = _sentence_to_text_field(prev_sent, indexers)
             d["targs"] = _sentence_to_text_field(sent, target_indexer)
             return Instance(d)
-        for i in range(1, len(split)):
-            yield _make_instance(split[i-1], split[i])
 
+        prev_sent = None
+        for sent in split:
+            if prev_sent is None:
+                prev_sent = sent
+                continue
+            yield _make_instance(prev_sent, sent)
+            prev_sent = sent
 
 
 class WikiInsertionsTask(MTTask):
@@ -2240,8 +2243,8 @@ class GroundedTask(Task):
         self.val_data_text = val
         self.test_data_text = test
 
-        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
-        log.info("\nFinished loading MSCOCO data!")
+        log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info("\tFinished loading MSCOCO data!")
 
 class GroundedSWTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
