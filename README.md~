@@ -39,7 +39,7 @@ We also make use of many other data sources, including:
 - Reddit: # TODO(Raghu)
 - DisSent: # TODO(Tom): describe preprocessing done or make preprocessed data available?
 - Recast data: # TODO(Ellie?,Adam?)
-- CCG: Details for preparing the corpora are in src/ccg_scripts/README
+- CCG: # TODO(Tom)
 - edge probing data: see `probing/data` for more information
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
