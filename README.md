@@ -37,7 +37,7 @@ We also make use of many other data sources, including:
 - language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use [NLTK toolkit](https://www.nltk.org/) sentence tokenizer to preprocess WikiText103 corpus. 
 - image captioning: # TODO(Roma)
 - Reddit: # TODO(Raghu)
-- DisSent: # TODO(Tom): describe preprocessing done or make preprocessed data available?
+- DisSent: Details for preparing the corpora are in src/dissent_scripts/README 
 - Recast data: # TODO(Ellie?,Adam?)
 - CCG: Details for preparing the corpora are in src/ccg_scripts/README
 - edge probing data: see `probing/data` for more information

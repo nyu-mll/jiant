@@ -1,0 +1,14 @@
+To create the DisSent data:
+- Download the corpus or corpora of your choice; we use the following 2:
+	- WikiText-103: https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset
+	- Billion Word Benchmark: http://www.statmt.org/lm-benchmark/
+- Dependency parse your corpus using the Stanford CoreNLP dependency parser. Create separate files for training, dev, and test sets (but, for each set, there should be just a single file containing all dependency parses). Your command will probably follow this format:
+	java -Xmx2g -cp "*" edu.stanford.nlp.parser.nndep.DependencyParser     -model edu/stanford/nlp/models/parser/nndep/english_UD.gz     -textFile wikitext103.train wikitext103.train.parsed
+- For each of these parse files, run the following command: 
+	python dissent_corpus_maker.py FILENAME.parsed FILENAME.dissent_prelim
+- For each of these output files, run the following command:
+	python dissent_postproc.py FILENAME.dissent_prelim FILENAME.dissent
+
+These final .dissent files will be the files you can use to train the system.
+
+
