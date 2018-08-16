@@ -381,33 +381,59 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
+        "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
     train_tasks = []
     eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
+        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
+        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
         # When using training_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if args.training_data_fraction < 1 and task.name in train_task_names:
             log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
-        else:
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
-
-        if task.name in train_task_names:
             train_tasks.append(task)
-        if task.name in eval_task_names:
-            if args.training_data_fraction < 1 and task.name in train_task_names:
+            if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
-                # phase.
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed eval training version of " + task.name + " train.")
+                log.warn("When using un-trimmed eval training version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
+                eval_tasks.append(task)
+
+        # When using eval_data_fraction, we need modified iterators
+        # only for training datasets at train_for_eval time.
+        elif args.eval_data_fraction < 1 and task.name in eval_task_names:
+            log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=args.eval_data_fraction)
             eval_tasks.append(task)
+            if task.name in train_task_names:
+                # Rebuild the iterator so we see the full dataset in the pretraining
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
+                log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
+                log.warn("When using un-trimmed pretraining version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0)
+                train_tasks.append(task)
+        # When neither eval_data_fraction nor training_data_fraction is specified we use unmodified iterators.
+        else:
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=1.0)
+            if task.name in train_task_names:
+                train_tasks.append(task)
+            if task.name in eval_task_names:
+                eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
