@@ -34,13 +34,13 @@ python download_glue_data.py --data_dir data --tasks all
 We also make use of many other data sources, including:
 
 - translation: WMT'14 EN-DE, WMT'17 EN-RU # TODO(Edouard,Katherin)
-- language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use [NLTK toolkit](https://www.nltk.org/) sentence tokenizer to preprocess WikiText103 corpus. 
-- image captioning: # TODO(Roma)
-- Reddit: # TODO(Raghu)
-- DisSent: Details for preparing the corpora are in src/dissent_scripts/README 
-- Recast data: # TODO(Ellie?,Adam?)
-- CCG: Details for preparing the corpora are in src/ccg_scripts/README
-- edge probing data: see `probing/data` for more information
+- language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use [NLTK toolkit](https://www.nltk.org/) sentence tokenizer to preprocess WikiText103 corpus.
+- image captioning: **# TODO(Roma)**
+- Reddit: **# TODO(Raghu)**
+- DisSent: Details for preparing the corpora are in `src/dissent_scripts/README`
+- Recast data: **# TODO(Ellie?,Adam?)**
+- CCG: Details for preparing the corpora are in `src/ccg_scripts/README`
+- Edge probing: see [`probing/data`](probing/data/README.md) for more information
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
@@ -48,7 +48,8 @@ To incorporate the above data, placed the data in the data directory in its own 
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
-python main.py --config_file config/demo.conf --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
+python main.py --config_file config/demo.conf \
+    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
@@ -85,6 +86,21 @@ To force rereading and reloading of the tasks, perhaps because you changed the f
 To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the option ``reload_vocab = 1``.
 
 To force reindexing of a task's data, use the option ``reload_index = 1`` and set ``reindex_tasks`` to the names of the tasks to be reindexed, e.g. ``reindex_tasks="sst,mnli"``.
+
+### Command-Line Options
+
+All model configuration is handled through the config file system and the `--overrides` flag, but there are also a few command-line arguments that control the behavior of `main.py`. In particular:
+
+`--tensorboard` (or `-t`): use this to run a Tensorboard server while the trainer is running, serving on the port specified by `--tensorboard_port` (default is `6006`).
+
+The trainer will write event data even if this flag is not used, and you can run Tensorboard separately as:
+```
+tensorboard --logdir <exp_dir>/<run_name>/tensorboard
+```
+
+`--notify <email_address>`: use this to enable notification emails via [SendGrid](https://sendgrid.com/). You'll need to make an account, install the library with `pip install sendgrid`, and set the `SENDGRID_API_KEY` environment variable to contain the (text of) the client secret.
+
+`--remote_log` (or `-r`): use this to enable remote logging via Google Stackdriver. This works out-of-the-box if you're running on a Google Cloud Compute instance. If on another machine, you can set up credentials and set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable; see [Stackdriver Logging Client Libraries](https://cloud.google.com/logging/docs/reference/libraries#client-libraries-usage-python).
 
 ## Model
 
