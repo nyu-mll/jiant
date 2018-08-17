@@ -34,7 +34,7 @@ python download_glue_data.py --data_dir data --tasks all
 We also make use of many other data sources, including:
 
 - translation: WMT'14 EN-DE, WMT'17 EN-RU  **# TODO(Edouard,Katherin)**
-- language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use [NLTK toolkit](https://www.nltk.org/) sentence tokenizer to preprocess WikiText103 corpus.
+- language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use English sentence tokenizer from [NLTK toolkit](https://www.nltk.org/) [Punkt Tokenizer Models](http://www.nltk.org/nltk_data/) to preprocess WikiText103 corpus.
 - image captioning: **# TODO(Roma)**
 - Reddit: **# TODO(Raghu)**
 - DisSent: Details for preparing the corpora are in `src/dissent_scripts/README`
