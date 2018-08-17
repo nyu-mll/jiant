@@ -39,6 +39,12 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
+def reset_elmo_states(model):
+    ''' Reset ELMo hidden states if ELMo is detected '''
+    if model.elmo and model.reset_elmo_states:
+        model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+    return
+
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
     for elem in elems:
@@ -99,7 +105,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
 
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
-    ''' Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task. 
+    ''' Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task.
     Stops program execution if something goes wrong (e.g. task is malformed, resulting in KeyError).
 
     args:
