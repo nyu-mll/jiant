@@ -20,7 +20,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 
-from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .utils import device_mapping, assert_for_log, reset_elmo_states  # pylint: disable=import-error
 from .evaluate import evaluate
 from . import config
 
@@ -432,6 +432,8 @@ class SamplingMultiTaskTrainer():
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
+                if self._model.elmo:
+                    assert_for_log(self._model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm._states is None, "Found carried over ELMo states!")
                 output_dict = self._forward(batch, task=task, for_training=True)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
@@ -732,7 +734,9 @@ class SamplingMultiTaskTrainer():
     def _forward(self, batch, for_training, task=None):
         ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = batch
-        return self._model.forward(task, tensor_batch)
+        model_out = self._model.forward(task, tensor_batch)
+        reset_elmo_states(self._model)
+        return model_out
 
     def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use
