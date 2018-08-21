@@ -69,7 +69,7 @@ project_dir
 [...]
 ```
 
-You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script) and word embeddings (see later sections) respectively. Though, if you are using the preconfigured GCP instance templates these may already be set!
+You should also set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script) and word embeddings (optional, not needed when using ELMo, see later sections) respectively.
 
 To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
 
