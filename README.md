@@ -1,16 +1,6 @@
 # JSALT: *J*iant (or *J*SALT) *S*entence *A*ggregating *L*earning *T*hing
 This repo contains the code for the jiant sentence representation learning model used at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team.
 
-## Quick-Start on GCP
-
-For the JSALT workshop, we used Google Compute Engine as our main compute platform. If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
-
-```sh
-python main.py --config_file config/demo.conf
-```
-
-You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
-
 ## Dependencies
 
 Make sure you have installed the packages listed in `environment.yml`.
@@ -180,6 +170,18 @@ To use GloVe vectors, download and extract the relevant files and set ``word_emb
 
 We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
 To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove = 1``.
+
+
+## Quick-Start on GCP (for JSALT internal use only)
+
+For the JSALT workshop, we used Google Compute Engine as our main compute platform. If you're using Google Compute Engine, the private project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Unfortunately, these images are not straightforward to share. To use, clone this repo to your home directory, then test with:
+
+```sh
+python main.py --config_file config/demo.conf
+```
+
+You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+
 
 ## Getting Help
 
