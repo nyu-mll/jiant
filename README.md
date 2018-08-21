@@ -115,7 +115,7 @@ For multi-task training, we allow for a global optimizer (and scheduler) or per-
 Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_train, train_for_eval, do_eval``.
 Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
-For example, ``train_tasks = \"sst,mnli,foo\", eval_tasks = \"qnli,bar,sst,mnli,foo\"``.
+For example, ``train_tasks = \"sst,mnli,foo\", eval_tasks = \"qnli,bar,sst,mnli,foo\"`` (HOCON notation requires escaped quotes in command line arguments).
 Note: if you want to train and evaluate on a task, that task must be in both ``train_tasks`` and ``eval_tasks``.
 
 
