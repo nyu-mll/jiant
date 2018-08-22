@@ -87,9 +87,9 @@ function glove_exp() {
     run_exp "config/edgeprobe_glove.conf" "${OVERRIDES}"
 }
 
-function glove_exp() {
-    # Lexical baseline, probe CoVe + GloVe.
-    # Usage: glove_exp <task_name>
+function cove_exp() {
+    # Probe CoVe, which is concatenated with GloVe per standard usage.
+    # Usage: cove_exp <task_name>
     OVERRIDES="exp_name=cove-$1, run_name=run"
     OVERRIDES+=", eval_tasks=$1"
     run_exp "config/edgeprobe_cove.conf" "${OVERRIDES}"
