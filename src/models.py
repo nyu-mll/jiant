@@ -73,7 +73,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
     # Build embeddings.
-    d_emb, embedder, cove_emb = build_embeddings(args, vocab, tasks, pretrained_embs)
+    d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
     d_sent = args.d_hid
 
     # Build single sentence encoder: the main component of interest
@@ -99,7 +99,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        bilm, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 2 * args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
@@ -111,14 +111,15 @@ def build_model(args, vocab, pretrained_embs, tasks):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
                                        dropout=args.dropout, sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 2 * args.d_hid
         log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, cove_layer=cove_emb,
+                                       skip_embs=args.skip_embs,
+                                       cove_layer=cove_layer,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == 'null':
@@ -130,7 +131,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
@@ -222,18 +223,18 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         log.info("\tNot using word embeddings!")
 
     # Handle cove
+    cove_layer = None
     if args.cove:
         sys.path.append(args.path_to_cove)
         try:
             from cove import MTLSTM as cove_lstm
-            cove_emb = cove_lstm(n_vocab=vocab.get_vocab_size('tokens'),
-                                 vectors=embeddings.weight.data)
-            d_emb += 600
+            cove_layer = cove_lstm(n_vocab=vocab.get_vocab_size('tokens'),
+                                   vectors=embeddings.weight.data)
+            d_emb += 600  # Magic number??
             log.info("\tUsing CoVe embeddings!")
-        except ImportError:
+        except ImportError as e:
             log.info("Failed to import CoVE!")
-    else:
-        cove_emb = None
+            raise e
 
     # Character embeddings
     if args.char_embs:
@@ -317,7 +318,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 
     assert d_emb, "You turned off all the embeddings, ya goof!"
-    return d_emb, embedder, cove_emb
+    return d_emb, embedder, cove_layer
 
 
 def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
