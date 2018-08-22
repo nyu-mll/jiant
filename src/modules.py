@@ -114,6 +114,9 @@ class SentenceEncoder(Model):
         task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
 
         if self._cove_layer is not None:
+            # Slightly wasteful as this repeats the GloVe lookup internally,
+            # but this allows CoVe to be used alongside other embedding models
+            # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)

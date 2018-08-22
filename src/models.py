@@ -190,50 +190,64 @@ def get_task_whitelist(args):
   eval_clf_names = []
   for task_name in eval_task_names:
     override_clf = config.get_task_attr(args, task_name, 'use_classifier')
-    if override_clf == 'none'  or override_clf is None:
+    if override_clf == 'none' or override_clf is None:
       eval_clf_names.append(task_name)
     else:
       eval_clf_names.append(override_clf)
   train_task_names = parse_task_list_arg(args.train_tasks)
-  log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s"%(str(train_task_names), str(eval_clf_names)))
+  log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s",
+           str(train_task_names), str(eval_clf_names))
   return train_task_names, eval_clf_names
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
     d_emb, d_char = 0, args.d_char
 
-    token_embedder = {}
+    token_embedders = {}
     # Word embeddings
+    n_token_vocab = vocab.get_vocab_size('tokens')
     if args.word_embs != 'none':
         if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
-            log.info("\tUsing word embeddings from %s", args.word_embs_file)
             word_embs = pretrained_embs
-            d_word = pretrained_embs.size()[-1]
+            assert word_embs.size()[0] == n_token_vocab
+            d_word = word_embs.size()[1]
+            log.info("\tUsing pre-trained word embeddings: %s",
+                     str(word_embs.size()))
         else:
             log.info("\tLearning word embeddings from scratch!")
             word_embs = None
             d_word = args.d_word
 
-        embeddings = Embedding(vocab.get_vocab_size('tokens'), d_word,
+        embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
                                weight=word_embs, trainable=False,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
-        token_embedder["words"] = embeddings
+        token_embedders["words"] = embeddings
         d_emb += d_word
     else:
+        embeddings = None
         log.info("\tNot using word embeddings!")
 
     # Handle cove
     cove_layer = None
     if args.cove:
-        sys.path.append(args.path_to_cove)
+        assert embeddings is not None
+        assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
+        assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
+            sys.path.append(args.path_to_cove)
             from cove import MTLSTM as cove_lstm
-            cove_layer = cove_lstm(n_vocab=vocab.get_vocab_size('tokens'),
+            # Have CoVe do an internal GloVe lookup, but don't add residual.
+            # We'll do this manually in modules.py; see
+            # SentenceEncoder.forward().
+            cove_layer = cove_lstm(n_vocab=n_token_vocab,
                                    vectors=embeddings.weight.data)
-            d_emb += 600  # Magic number??
+            # Control whether CoVe is trainable.
+            for param in cove_layer.parameters():
+                param.requires_grad = bool(args.cove_fine_tune)
+            d_emb += 600  # 300 x 2 for biLSTM activations
             log.info("\tUsing CoVe embeddings!")
         except ImportError as e:
-            log.info("Failed to import CoVE!")
+            log.info("Failed to import CoVe!")
             raise e
 
     # Character embeddings
@@ -247,7 +261,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder,
                                                dropout=args.dropout_embs)
         d_emb += d_char
-        token_embedder["chars"] = char_embedder
+        token_embedders["chars"] = char_embedder
     else:
         log.info("\tNot using character embeddings!")
 
@@ -312,8 +326,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 dropout=0.)
             d_emb += 1024
 
-        token_embedder["elmo"] = elmo_embedder
-    embedder = ElmoTextFieldEmbedder(token_embedder, loaded_classifiers,
+        token_embedders["elmo"] = elmo_embedder
+
+    # Wrap ELMo and other embedders, and concatenates the resulting
+    # representations alone the last (vector) dimension.
+    embedder = ElmoTextFieldEmbedder(token_embedders, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 
