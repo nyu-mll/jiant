@@ -29,7 +29,7 @@ We also make use of many other data sources, including:
 
 - Translation: WMT'14 EN-DE, WMT'17 EN-RU  **# TODO(Edouard,Katherin)**
 - Language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use English sentence tokenizer from [NLTK toolkit](https://www.nltk.org/) [Punkt Tokenizer Models](http://www.nltk.org/nltk_data/) to preprocess WikiText103 corpus.
-- Image captioning: **# TODO(Roma)**
+- Image captioning: MSCOCO Dataset (http://cocodataset.org/#download). Download links: 2017 Train images [118K/18GB], 2017 Val images [5K/1GB], 2017 Train/Val annotations [241MB]. 
 - Reddit: **# TODO(Raghu)**
 - DisSent: Details for preparing the corpora are in `src/dissent_scripts/README`
 - DNC (Diverse Natural Language Inference Collection), i.e. Recast data: The DNC is currently being prepared for release for EMNLP camera ready. Instructions on how to download the data is forthcoming.
