@@ -348,6 +348,7 @@ def build_tasks(args):
             word_embs = _build_embeddings(args, vocab, emb_file)
         else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
+    log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -590,7 +591,7 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def get_embeddings(vocab, vec_file, d_word):
+def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.
     Works for fastText and GloVe embedding files. '''
     word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
