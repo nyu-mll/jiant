@@ -167,11 +167,12 @@ class BoWSentEncoder(Model):
         self.output_dim = text_field_embedder.get_output_dim()
         initializer(self)
 
-    def forward(self, sent):
+    def forward(self, sent, task):
         # pylint: disable=arguments-differ
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
+            - task: Ignored.
 
         Returns
             - word_embs (torch.FloatTensor): (b_size, seq_len, d_emb)
