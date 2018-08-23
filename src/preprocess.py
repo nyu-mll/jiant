@@ -1,4 +1,15 @@
-'''Preprocessing functions and pipeline'''
+'''Preprocessing functions and pipeline
+
+The pipeline is three steps
+    1) create / load tasks, which includes
+        a) load raw data
+        b) tokenize raw data
+    2) create / load all vocabularies (word, char, task-specific target vocabs)
+        a) count tokens of a vocab
+        b) take the N most frequent tokens
+    3) index all the data using appropriate indexers
+        We save indexed data to streamable Records to save memory.
+'''
 import io
 import os
 import sys
@@ -30,27 +41,27 @@ from .tasks import \
     QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
     PDTBTask, \
     WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
-    DisSentWikiSingleTask, DisSentWikiFullTask, DisSentWikiBigTask, \
-    DisSentWikiHugeTask, DisSentWikiBigFullTask, \
+    DisSentWikiSingleTask, DisSentWikiBigFullTask, \
     JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
     GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
     NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    GroundedSWTask
+    GroundedSWTask, NLITypeProbingAltTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
     RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
     RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
     MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask
-from .tasks import POSTaggingTask, CCGTaggingTask, MultiNLIDiagnosticTask
+    MultiNLITravelTask, MultiNLITelephoneTask, NPSTask
+from .tasks import CCGTaggingTask, MultiNLIDiagnosticTask
+
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob']
+ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
 # Edge probing suite.
 ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
@@ -91,16 +102,15 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
              'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
-             'dissentwikifull': (DisSentWikiFullTask, 'DisSent/wikitext/'),
              'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
-             'dissentbig': (DisSentWikiBigTask, 'DisSent/wikitext/'),
-             'dissenthuge': (DisSentWikiHugeTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
              'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'pos': (POSTaggingTask, 'POS/'),
              'ccg': (CCGTaggingTask, 'CCG/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
+             'nli-alt': (NLITypeProbingAltTask, '/'),
+             'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
              'vae': (VAETask, 'VAE'),
+             'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
              'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
@@ -112,15 +122,16 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
              'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
+# !!!!!!! NOTE: You should not be adding anything else manually to NAME2INFO.
+# !!!!!!! Use the decorator @register_task instead.
 # Add any tasks registered in tasks.py
 NAME2INFO.update(tasks_module.REGISTRY)
 
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-SPECIALS = [SOS_TOK, EOS_TOK]
-UNK_TOK = "@@UNKNOWN@@"
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>" # NOTE: these are not that same as AllenNLP SOS, EOS tokens
+SPECIALS = [SOS_TOK, EOS_TOK] # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
+UNK_TOK = "@@UNKNOWN@@" # AllenNLP unk token
 
 ALL_SPLITS = ['train', 'val', 'test']
-
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
@@ -169,6 +180,8 @@ def _indexed_instance_generator(instance_iter, vocab):
 
 def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
+    Only works if Instances have fields 'input1' and 'input2'.
+    All other fields will keep their tokens in memory.
 
     Args:
         instance: AllenNLP Instance. Modified in-place.
@@ -251,7 +264,8 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
     return False
 
 def _build_embeddings(args, vocab, emb_file: str):
-    ''' Build word embeddings from from scratch. '''
+    ''' Build word embeddings from scratch (as opposed to loading them from a pickle),
+    possibly using a fastText model or precomputed fastText / GloVe embeddings. '''
     log.info("\tBuilding embeddings from scratch")
     if args.fastText:
         word_embs, _ = get_fastText_model(vocab, args.d_word,
@@ -266,6 +280,9 @@ def _build_embeddings(args, vocab, emb_file: str):
 
 def _build_vocab(args, tasks, vocab_path: str):
     ''' Build vocabulary from scratch, reading data from tasks. '''
+    # NOTE: task-specific target vocabulary should be counted in the task object
+    # and provided via `task.all_labels()`. The namespace should be task-specific,
+    # i.e. not something generic like "targets".
     log.info("\tBuilding vocab from scratch")
     max_v_sizes = {
         'word': args.max_word_v_size,
@@ -331,6 +348,7 @@ def build_tasks(args):
             word_embs = _build_embeddings(args, vocab, emb_file)
         else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
+        log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -364,33 +382,59 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
+        "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
     train_tasks = []
     eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
+        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
+        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
         # When using training_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if args.training_data_fraction < 1 and task.name in train_task_names:
             log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
-        else:
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
-
-        if task.name in train_task_names:
             train_tasks.append(task)
-        if task.name in eval_task_names:
-            if args.training_data_fraction < 1 and task.name in train_task_names:
+            if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
-                # phase.
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed eval training version of " + task.name + " train.")
+                log.warn("When using un-trimmed eval training version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
+                eval_tasks.append(task)
+
+        # When using eval_data_fraction, we need modified iterators
+        # only for training datasets at train_for_eval time.
+        elif args.eval_data_fraction < 1 and task.name in eval_task_names:
+            log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=args.eval_data_fraction)
             eval_tasks.append(task)
+            if task.name in train_task_names:
+                # Rebuild the iterator so we see the full dataset in the pretraining
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
+                log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
+                log.warn("When using un-trimmed pretraining version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0)
+                train_tasks.append(task)
+        # When neither eval_data_fraction nor training_data_fraction is specified we use unmodified iterators.
+        else:
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=1.0)
+            if task.name in train_task_names:
+                train_tasks.append(task)
+            if task.name in eval_task_names:
+                eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
@@ -417,6 +461,7 @@ def parse_task_list_arg(task_list):
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
               max_targ_v_size=20000):
+    ''' Actually build or load (from pickles) the tasks. '''
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
     ''' Load tasks '''
@@ -487,18 +532,21 @@ def get_words(tasks):
             for sentence in task.get_sentences():
                 update_vocab_freqs(sentence)
 
+    # This branch is meant for tasks that have *English* target sentences
+    # (or more generally, same language source and target sentences)
+    # Tasks with different language source and target sentences should
+    # count and return the vocab in a `task.all_labels()` method.
     for task in tasks:
         if hasattr(task, "target_sentences"):
             for sentence in task.target_sentences:
                 update_target_vocab_freqs(sentence)
-
 
     log.info("\tFinished counting words")
     return word2freq, char2freq
 
 
 def get_vocab(word2freq, char2freq, max_v_sizes):
-    '''Build vocabulary'''
+    '''Build vocabulary by selecting the most frequent tokens'''
     vocab = Vocabulary(counter=None, max_vocab_size=max_v_sizes)
     for special in SPECIALS:
         vocab.add_token_to_namespace(special, 'tokens')
@@ -536,12 +584,16 @@ def add_task_label_vocab(vocab, task):
     utils.assert_for_log(hasattr(task, "_label_namespace"),
                          "Task %s is missing method `_label_namespace`!" % task.name)
     namespace = task._label_namespace
+    if namespace is None:
+        return
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
-def get_embeddings(vocab, vec_file, d_word):
-    '''Get embeddings for the words in vocab'''
+
+def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
+    '''Get embeddings for the words in vocab from a file of precomputed vectors.
+    Works for fastText and GloVe embedding files. '''
     word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
     with io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
