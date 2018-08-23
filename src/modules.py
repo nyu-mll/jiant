@@ -1,4 +1,6 @@
-''' Different model components to use in building the overall model '''
+''' Different model components to use in building the overall model.
+
+The main component of interest is SentenceEncoder, which all the models use. '''
 import os
 import sys
 import json
@@ -60,10 +62,8 @@ class NullPhraseLayer(nn.Module):
         return None
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM.
-
-    NB: Do not apply dropout to the input of this module. Will be applied internally.
-    '''
+    ''' Given a sequence of tokens, embed each token and pass thru an LSTM. '''
+    # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
@@ -78,12 +78,13 @@ class SentenceEncoder(Model):
             self._text_field_embedder = text_field_embedder
             d_emb = text_field_embedder.get_output_dim()
             self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
+
         self._phrase_layer = phrase_layer
-        d_inp_phrase = phrase_layer.get_input_dim()
-        self._cove = cove_layer
+        self._cove_layer = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
         self.sep_embs_for_skip = sep_embs_for_skip
+        d_inp_phrase = self._phrase_layer.get_input_dim()
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
         if dropout > 0:
@@ -99,19 +100,28 @@ class SentenceEncoder(Model):
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
-
+            - task (Task): Used by the _text_field_embedder to pick the correct output
+                           ELMo representation.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
+                TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
+            - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         # Embeddings
         # Note: These highway layers are identity by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        # task_sent_embs only used if sep_embs_for_skip
         task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
-        if self._cove is not None:
+
+        if self._cove_layer is not None:
+            # Slightly wasteful as this repeats the GloVe lookup internally,
+            # but this allows CoVe to be used alongside other embedding models
+            # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-            sent_cove_embs = self._cove(sent['words'], sent_lens)
+            sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+
         sent_embs = self._dropout(sent_embs)
         task_sent_embs = self._dropout(task_sent_embs)
 
@@ -126,6 +136,7 @@ class SentenceEncoder(Model):
         if sent_enc is not None:
             sent_enc = self._dropout(sent_enc)
         if self.skip_embs:
+            # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
@@ -136,7 +147,9 @@ class SentenceEncoder(Model):
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
-    ''' Wrapper around BiLM to give it an interface to comply with SentEncoder '''
+    """Wrapper around BiLM to give it an interface to comply with SentEncoder
+    See base class: ElmoLstm
+    """
     def get_input_dim(self):
         return self.input_size
 
@@ -144,6 +157,9 @@ class BiLMEncoder(ElmoLstm):
         return self.hidden_size * 2
 
 class BoWSentEncoder(Model):
+    ''' Bag-of-words sentence encoder '''
+    # NOTE: hasn't been tested in recent memory
+
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
 
@@ -154,21 +170,13 @@ class BoWSentEncoder(Model):
     def forward(self, sent):
         # pylint: disable=arguments-differ
         """
-        Parameters
-        ----------
-        question : Dict[str, torch.LongTensor]
-            From a ``TextField``.
-        passage : Dict[str, torch.LongTensor]
-            From a ``TextField``.  The model assumes that this passage contains the answer to the
-            question, and predicts the beginning and ending positions of the answer within the
-            passage.
+        Args:
+            - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
 
         Returns
-        -------
-        pair_rep : torch.FloatTensor?
-            Tensor representing the final output of the BiDAF model
-            to be plugged into the next module
-
+            - word_embs (torch.FloatTensor): (b_size, seq_len, d_emb)
+                TODO: check what the padded values in word_embs are (0 or -inf or something else?)
+            - word_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         word_embs = self._text_field_embedder(sent)
         word_mask = util.get_text_field_mask(sent).float()
@@ -209,9 +217,8 @@ class Pooler(nn.Module):
 
 
 class Classifier(nn.Module):
-    ''' Classifier with a linear projection before pooling.
-
-    NB: Expects dropout to have already been applied to its input. '''
+    ''' Logistic regression or MLP classifier '''
+    # NOTE: Expects dropout to have already been applied to its input.
 
     def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
@@ -221,7 +228,7 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
                                        nn.Dropout(dropout), nn.Linear(d_hid, n_classes))
-        elif cls_type == 'fancy_mlp':  # What they did in Infersent. 
+        elif cls_type == 'fancy_mlp':  # What they did in Infersent.
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
@@ -242,7 +249,7 @@ class Classifier(nn.Module):
 
 
 class SingleClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules '''
+    ''' Thin wrapper around a set of modules. For single-sentence classification. '''
 
     def __init__(self, pooler, classifier):
         super(SingleClassifier, self).__init__()
@@ -256,7 +263,7 @@ class SingleClassifier(nn.Module):
 
 
 class PairClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules '''
+    ''' Thin wrapper around a set of modules. For sentence pair classification. '''
 
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
@@ -343,16 +350,6 @@ class AttnPairEncoder(Model):
         modeled_s1 = self._dropout(self._modeling_layer(s1_w_context, s1_mask))
         modeled_s2 = self._dropout(self._modeling_layer(s2_w_context, s2_mask))
         return modeled_s1, modeled_s2
-
-        '''
-        modeled_s1.data.masked_fill_(1 - s1_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
-        modeled_s2.data.masked_fill_(1 - s2_mask.unsqueeze(dim=-1).byte().data, -float('inf'))
-        s1_attn = modeled_s1.max(dim=1)[0]
-        s2_attn = modeled_s2.max(dim=1)[0]
-
-        return torch.cat([s1_attn, s2_attn, torch.abs(s1_attn - s2_attn),
-                          s1_attn * s2_attn], 1)
-        '''
 
     @classmethod
     def from_params(cls, vocab, params):
@@ -523,7 +520,8 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
 
 
 class ElmoCharacterEncoder(torch.nn.Module):
-    """
+    """Just the ELMo character encoder that we ripped so we could use alone.
+
     Compute context sensitive token representation using pretrained biLM.
 
     This embedder has input character ids of size (batch_size, sequence_length, 50)

@@ -362,3 +362,136 @@ class Comparison(object):
             text=f"<h1>{task_name} sorted by '{sort_field}'</h1>",
             width=600)
         return bokeh.layouts.column(header, plots)
+
+
+class MultiComparison(object):
+    """Similar to Comparison, but handles more than 2 experiments.
+
+    Renders grouped bar plot and count bars, but not diff plot.
+    """
+    def __init__(self, runs_by_name: collections.OrderedDict,
+                 label_filter=lambda label: True):
+        num_labels = {k:len(v.all_labels) for k,v in runs_by_name.items()}
+        assert len(set(num_labels.values())) == 1
+        num_examples = {k:len(v.example_df) for k,v in runs_by_name.items()}
+        assert len(set(num_examples.values())) == 1
+        num_targets = {k:len(v.target_df) for k,v in runs_by_name.items()}
+        assert len(set(num_targets.values())) == 1
+
+        self.runs_by_name = runs_by_name
+
+        self.scores_by_name = collections.OrderedDict()
+        for name, run in self.runs_by_name.items():
+            print("Scoring run '%s'" % name)
+            score_df = run.score_by_label()
+            score_df['run'] = name
+            _mask = score_df['label'].map(label_filter)
+            score_df = score_df[_mask]
+            self.scores_by_name[name] = score_df
+
+        print("Done scoring!")
+
+        self.long_scores = pd.concat(self.scores_by_name.values())
+
+
+    def plot_scores(self, task_name, metric="f1",
+                    sort_field="expt_headroom", sort_run=None,
+                    sort_ascending=False, row_height=400,
+                    cmap=None):
+        import bokeh
+        import bokeh.plotting as bp
+
+        _SCORE_COL = f"{metric:s}_score"
+
+        # Long-form data, for grouped bar chart.
+        long_df = self.long_scores.copy()
+        long_df['row_key'] = list(zip(long_df['label'], long_df['run']))
+        long_df['fmt_score'] = long_df[_SCORE_COL].map(
+            lambda s: "{:.02f}".format(s)
+        )
+        long_ds = bokeh.models.ColumnDataSource(data=long_df)
+
+        # Single scored run, for plotting counts.
+        sort_run = sort_run or list(self.scores_by_name.keys())[0]
+        wide_df = self.scores_by_name[sort_run]
+        wide_ds = bokeh.models.ColumnDataSource(data=wide_df)
+
+        # Prepare shared categorical axis
+        #  runs = sorted(long_df['run'].unique())
+        runs = list(self.scores_by_name.keys())
+        labels = wide_df.sort_values(by=sort_field,
+                                     ascending=sort_ascending)['label']
+        #  labels = sorted(long_df['label'].unique())
+        categories = list(itertools.product(labels, runs))
+
+        if cmap:
+            palette = [cmap[name] for name in runs]
+        else:
+            #  palette = bokeh.palettes.Spectral6
+            #  palette = bokeh.palettes.Category10[len(runs)]
+            palette = bokeh.palettes.Category20[len(runs)]
+            #  palette = bokeh.palettes.Set2[len(runs)]
+        fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
+        width = 30*len(categories) + 10*len(self.scores_by_name)
+        tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
+
+        # Top plot: score bars
+        factor_range = bokeh.models.FactorRange(*categories,
+                                                range_padding=0.5,
+                                                range_padding_units='absolute')
+        p1 = bp.figure(title=f"Performance by label ({task_name})",
+                       x_range=factor_range, y_range=[0,1],
+                       width=width, height=row_height, tools=tools)
+        p1.vbar(x='row_key', top=_SCORE_COL, width=0.95,
+               fill_color=fill_cmap, line_color=None,
+               source=long_ds)
+        label_kw = dict(text_align="right", text_baseline="middle", y_offset=-3,
+                        text_font_size="11pt", angle=90, angle_units='deg')
+        score_labels = bokeh.models.LabelSet(x='row_key', y=_SCORE_COL,
+                                             text="fmt_score",
+                                             source=long_ds, **label_kw)
+        p1.add_layout(score_labels)
+        p1.xaxis.major_label_orientation = 1
+        p1.yaxis.bounds = (0,1)
+
+        # Middle plot: doesn't make sense for n > 2 experiments.
+
+        # Bottom plot: count bars
+        p3 = bp.figure(title=f"Counts by label ({task_name})",
+                       x_range=p1.x_range, width=width, height=row_height,
+                       tools=tools)
+        p3.vbar(x='label', top='true_count', width=1.90,
+                fill_color='orange', line_color=None,
+                source=wide_ds)
+        label_kw = dict(text_align="center", text_baseline="top", y_offset=-5)
+        count_labels = bokeh.models.LabelSet(x='label', y="true_count",
+                                             text="true_count",
+                                             source=wide_ds, **label_kw)
+        p3.add_layout(count_labels)
+        p3.y_range.flipped = True
+        p3.y_range.end = 0
+        p3.y_range.range_padding = 0.20
+        # Hacky: Hide category labels, not needed on this plot.
+        p3.xaxis.major_label_text_color = None
+        p3.xaxis.major_label_text_font_size = "0pt"
+        p3.xaxis.major_tick_line_color = None
+
+        # Fix labels for SPR case, labels are long
+        if max(map(len, labels)) > 10:
+            # Top plot: rotate labels, add height.
+            p1.xaxis.group_label_orientation = np.pi/2
+            p1.plot_height += 150
+            # Bottom plot: rotate labels, add height.
+            p3.xaxis.group_label_orientation = np.pi/2
+            p3.plot_height += 75
+
+        # Create plot layout.
+        plots = bokeh.layouts.gridplot([p1, p3], ncols=1,
+                                      toolbar_location="left",
+                                      merge_tools=True,
+                                      sizing_mode="fixed")
+        header_txt = f"{task_name}, sorted by '{sort_run}.{sort_field}'"
+        header = bokeh.models.Div(
+            text=f"<h1>{header_txt}</h1>",
+            width=600)
+        return bokeh.layouts.column(header, plots)
