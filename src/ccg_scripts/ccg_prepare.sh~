@@ -1,6 +1,3 @@
-#!/bin/bash
-
-pushd $(dirname $0)
 python ccg_proc.py
 python ccg_to_num.py
 python moses_aligner.py ccg_num.train

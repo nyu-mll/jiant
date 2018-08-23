@@ -85,3 +85,13 @@ for line in fi3:
 
     fo3.write(sent + "\t" + " ".join(nums) + "\n")
 
+
+
+
+
+
+
+
+
+
+
