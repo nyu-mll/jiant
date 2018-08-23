@@ -348,7 +348,7 @@ def build_tasks(args):
             word_embs = _build_embeddings(args, vocab, emb_file)
         else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
-    log.info("Trimmed word embeddings: %s", str(word_embs.size()))
+        log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
