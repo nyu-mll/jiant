@@ -105,6 +105,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         log.info("Using BoW architecture for shared encoder!")
+        assert_for_log(not args.skip_embs, "Skip connection not currently supported with `bow` encoder.")
         d_sent = d_emb
     elif args.sent_enc == 'rnn':
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
