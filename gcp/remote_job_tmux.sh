@@ -42,7 +42,7 @@ else
 fi
 
 set -x
-gcloud compute ssh --project jsalt-sentence-rep --zone "$ZONE" \
+gcloud compute ssh --zone "$ZONE" \
   "${INSTANCE_NAME}" --command="${FULL_COMMAND}" -- -t
 
 
