@@ -309,12 +309,7 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
                     'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
                     'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
-<<<<<<< HEAD
                }, single_sided=True, detect_spans=True)
-# Dependency edge labeling on UD treebank. NOTE: data is incomplete, will be
-# updated. Don't trust results yet.
-=======
-               }, single_sided=True)
 # Entity type labeling on OntoNotes.
 @register_task('edges-ner-ontonotes',
                rel_path='edges/ontonotes-ner',
@@ -324,7 +319,6 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
 # Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
->>>>>>> master
 @register_task('edges-dep-labeling', rel_path='edges/dep',
                label_file="labels.txt", files_by_split={
                     'train': "train.json" + _tokenizer_suffix,

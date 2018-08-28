@@ -116,6 +116,7 @@ class EdgeClassifierModule(nn.Module):
         out = {}
         batch_size = sent_embs.shape[0]
         seq_len = sent_embs.shape[1]
+        # seq_len = 30
         out['n_inputs'] = batch_size
 
         # Apply projection layers for each span.
@@ -132,17 +133,28 @@ class EdgeClassifierModule(nn.Module):
             total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
         out['n_exs'] = total_num_targets  # used by trainer.py
-        print (self.detect_spans)
+        # print (self.detect_spans)
         if self.detect_spans:
             _kw = dict(sequence_mask=sent_mask.long())
             candidate_spans = self.index_array[:seq_len, :seq_len].repeat(batch_size, 1, 1, 1)
+            # print (candidate_spans.size())
             # [batch_size * seq_len * seq_len * 2] ints
             assert self.single_sided, "that use case isn't ready yet"
-            span_emb = self.span_extractors[1](se_proj1,
-                                                candidate_spans,
+            unshaped_span_emb = self.span_extractors[1](se_proj1,
+                                                candidate_spans.cuda(),
                                                 **_kw) # [batch_size * seq_len * seq_len * emb_size]
-            print (span_emb.size())
-            labels = 0 # TODO
+            span_emb = unshaped_span_emb.view(batch_size, seq_len * seq_len, -1)
+            # this part is in numpy and can be improved.
+            if 'labels' in batch:
+                label_size = batch['labels'].shape[-1]
+                np_labels = np.zeros([batch_size, seq_len, seq_len, label_size], dtype=np.uint8)
+                for batch_num in range(batch_size):
+                    for span_idx, span in enumerate(batch['span1s'][batch_num]):
+                        if span_mask[batch_num][span_idx] != 0:
+                            np_labels[batch_num][span[0]][span[1]] = batch['labels'][batch_num][span_idx]
+                labels = torch.from_numpy(np_labels).view(batch_size, seq_len * seq_len, -1)
+                # create a new span mask that uses _all_ of it
+                span_mask = torch.ones([batch_size, seq_len * seq_len], dtype=torch.uint8)
         else:
             _kw = dict(sequence_mask=sent_mask.long(),
                        span_indices_mask=span_mask.long())
@@ -153,43 +165,45 @@ class EdgeClassifierModule(nn.Module):
                 span_emb = torch.cat([span1_emb, span2_emb], dim=2)
             else:
                 span_emb = span1_emb
-        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
-        print (batch['span1s'][0], batch['labels'][0], span_mask)
-        label_size = batch['labels'].shape[-1]
-        print (label_size)
-        def flatten_to_1d(batch_seq_len):
-            # return a callable function dependent on seq_len
-            # which will flatten 2d indices to 1d
-            def flatten_with_seq_length(start, end):
-                # takes a size-2 tensor and returns
-                # a size-1 tensor represneting the 1d (flattened) indices
-                return start * batch_seq_len + end
-            return flatten_with_seq_length
-        # map should broadcast correctly and this should turn
-        # batch_size * num_spans * 2 tensor to a batch_size * num_spans * 1 tensor
-        span_starts, span_ends = torch.unbind(batch['span1s'], dim=-1)
-        reshaped_span1s = span_starts.map_(span_ends, flatten_to_1d(seq_len))
+            if 'labels' in batch:
+                labels = batch['labels']
 
-        print (reshaped_span1s.size())
-        print ((span_mask * reshaped_span1s).size())
+        # print (batch['span1s'][0], batch['labels'][0], span_mask)
+        # label_size = batch['labels'].shape[-1]
+        # print (label_size)
+        # def flatten_to_1d(batch_seq_len):
+        #     # return a callable function dependent on seq_len
+        #     # which will flatten 2d indices to 1d
+        #     def flatten_with_seq_length(start, end):
+        #         # takes a size-2 tensor and returns
+        #         # a size-1 tensor represneting the 1d (flattened) indices
+        #         return start * batch_seq_len + end
+        #     return flatten_with_seq_length
+        # # map should broadcast correctly and this should turn
+        # # batch_size * num_spans * 2 tensor to a batch_size * num_spans * 1 tensor
+        # span_starts, span_ends = torch.unbind(batch['span1s'], dim=-1)
+        # print (span_starts.size(), span_ends.size())
+        # reshaped_span1s = span_starts.map_(span_ends, flatten_to_1d(seq_len))
+
+        # print (reshaped_span1s.size())
+        # print ((span_mask * reshaped_span1s).size())
         # print (torch.zeros(batch_size, seq_len, seq_len, label_size).scatter(3, batch['span1s'], batch['labels']))
-        print ("classifier(span1_emb).size: {}".format(self.classifier(span1_emb).size()))
+        # print ("classifier(span1_emb).size: {}".format(self.classifier(span1_emb).size()))
         # [batch_size, num_targets, n_classes]
         logits = self.classifier(span_emb)
-        print ("logits size: {}".format(logits.size()))
         out['logits'] = logits
 
         # Compute loss if requested.
         if 'labels' in batch:
-            print ("true: {}, preds: {}".format(batch['labels'][span_mask].size(),
-                                                logits[span_mask].size()))
+            # print ("true: {}, preds: {}".format(labels[span_mask].size(),
+            #                                     logits[span_mask].size()))
             # Labels is [batch_size, num_targets, n_classes],
             # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
             out['loss'] = self.compute_loss(logits[span_mask],
-                                            batch['labels'][span_mask],
+                                            labels[span_mask].cuda(),
                                             task)
-            print (out['loss'])
+            # print (out['loss'])
 
         if predict:
             # Return preds as a list.
