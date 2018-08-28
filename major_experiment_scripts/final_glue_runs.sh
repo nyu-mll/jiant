@@ -49,10 +49,24 @@ JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagno
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,sst\", run_name = sst-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,wnli\", run_name = wnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,mrpc\", run_name = mrpc-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,mnli-alt\", mnli-alt_pair_attn = 0, run_name = mnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"wnli,mnli-diagnostic\", train_tasks = \"glue,mnli-alt\", mnli-alt_pair_attn = 0, run_name = mnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,sts-b-alt\", sts-b-alt_pair_attn = 0, run_name = sts-b-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,qnli-alt\", qnli-alt_pair_attn = 0, run_name = qnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="do_train = 0, eval_tasks = \"qnli,sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,qqp-alt\", qqp-alt_pair_attn = 0, run_name = qqp-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Second-phase restore runs. Used as a workaround to a loading bug.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mrpc,qnli,mnli,mnli-diagnostic\", train_tasks = \"glue,cola\", run_name = cola-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mrpc,qnli,mnli,mnli-diagnostic\", train_tasks = \"glue,mrpc\", run_name = mrpc-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mrpc,qnli,mnli,mnli-diagnostic\", train_tasks = \"glue,sst\", run_name = sst-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mrpc,qnli,mnli,mnli-diagnostic\", train_tasks = \"glue,wnli\", run_name = wnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mrpc,qnli,mnli,mnli-diagnostic\", train_tasks = \"glue,mnli-alt\", mnli-alt_pair_attn = 0, run_name = mnli-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Pretraining task re-trains. Used to prevent task parameters from being shared between pretraining and target task training.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"cola,mnli-diagnostic\", train_tasks = \"glue,cola\", run_name = cola-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,mnli-diagnostic\", train_tasks = \"glue,sst\", run_name = sst-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"rte,mnli-diagnostic\", train_tasks = \"glue,rte\", run_name = rte-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"wnli,mnli-diagnostic\", train_tasks = \"glue,wnli\", run_name = wnli-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"mrpc,mnli-diagnostic\", train_tasks = \"glue,mrpc\", run_name = mrpc-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## Random BiLSTM, no pretraining ##
 
@@ -145,12 +159,19 @@ JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-elmo, elmo
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
+# Restore runs. Used as a workaround to a loading bug.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,grounded\", run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
 ## CCG (Note: For use in the NLI probing paper only) ##
 
 # Until a fix from Alex, this needs to run in its own directory due to a vocabulary bug.
 # Sam is running.
-JIANT_OVERRIDES="train_tasks = ccg, exp_name = final-ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
-JIANT_OVERRIDES="train_tasks = ccg, exp_name = final-ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = ccg, exp_name = final_ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = ccg, exp_name = final_ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# Restore runs. Used as a workaround to a loading bug.
+JIANT_OVERRIDES="do_train = 0, eval_tasks = \"qnli,sst,sts-b,qqp,wnli,rte,mnli-diagnostic\", train_tasks = \"glue,ccg\",  exp_name = final_ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 #### Only commands below this point may be edited after Wednesday 7/24 ####
 

@@ -83,8 +83,7 @@ def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_voc
 
 
 def compute_bleu(hyps, scores, relevant_targets):
-    bleu_score = bleu_scoring.get_bleu(hyps, relevant_targets)
-    return bleu_score
+    raise NotImplementedError("BLEU score not yet working!")
 
 
 def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
