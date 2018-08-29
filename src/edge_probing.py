@@ -134,9 +134,10 @@ class EdgeClassifierModule(nn.Module):
         out['n_exs'] = total_num_targets  # used by trainer.py
         if self.detect_spans:
             _kw = dict(sequence_mask=sent_mask.long())
+
+            # [batch_size * seq_len * seq_len * 2]
             candidate_spans = self.index_array[:seq_len, :seq_len].repeat(batch_size, 1, 1, 1)
-            # [batch_size * seq_len * seq_len * 2] ints
-            assert self.single_sided, "that use case isn't ready yet"
+            assert self.single_sided, "Span detection currently only implemented for single_sided"
             unshaped_span_emb = self.span_extractors[1](se_proj1,
                                                 candidate_spans.cuda(),
                                                 **_kw) # [batch_size * seq_len * seq_len * emb_size]
@@ -150,7 +151,7 @@ class EdgeClassifierModule(nn.Module):
                     for span_idx, span in enumerate(batch['span1s'][batch_num]):
                         if span_mask[batch_num][span_idx] != 0:
                             np_labels[batch_num][span[0]][span[1]] = batch['labels'][batch_num][span_idx]
-                labels = torch.from_numpy(np_labels).view(batch_size, seq_len * seq_len, -1)
+                labels = torch.from_numpy(np_labels).view(batch_size, seq_len * seq_len, -1).cuda()
                 # create a new span mask that uses _all_ of it
                 span_mask = torch.ones([batch_size, seq_len * seq_len], dtype=torch.uint8)
         else:
@@ -175,7 +176,7 @@ class EdgeClassifierModule(nn.Module):
             # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
             out['loss'] = self.compute_loss(logits[span_mask],
-                                            labels[span_mask].cuda(),
+                                            labels[span_mask],
                                             task)
             # print (out['loss'])
 

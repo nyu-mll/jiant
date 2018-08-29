@@ -309,7 +309,7 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
                     'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
                     'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
-               }, single_sided=True, detect_spans=True)
+               }, single_sided=True)
 # Entity type labeling on OntoNotes.
 @register_task('edges-ner-ontonotes',
                rel_path='edges/ontonotes-ner',
@@ -544,6 +544,39 @@ class EdgeProbingTask(Task):
         metrics['f1'] = f1
         return metrics
 
+# Entity type labeling on CoNLL 2003.
+@register_task('edges-ner-conll2003-sd', rel_path='edges/ner_conll2003',
+               label_file="labels.txt", files_by_split={
+                    'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
+                    'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
+                    'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Entity type labeling on OntoNotes.
+@register_task('edges-ner-ontonotes-sd',
+               rel_path='edges/ontonotes-ner',
+               label_file="labels.txt", files_by_split={
+                    'train': "ner_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+class SpanDetectionTask(EdgeProbingTask):
+    ''' Task class for edge probing
+
+    Same as EdgeProbingTasks but with span detection
+    '''
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str=None,
+                 files_by_split: Dict[str,str]=None,
+                 is_symmetric: bool=False,
+                 single_sided: bool=False,
+    ):
+        super(SpanDetectionTask, self).__init__(path, max_seq_len,
+                                                name, label_file,
+                                                files_by_split,
+                                                is_symmetric,
+                                                single_sided,
+                                                detect_spans=True)
 
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
