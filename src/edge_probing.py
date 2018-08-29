@@ -132,18 +132,17 @@ class EdgeClassifierModule(nn.Module):
             total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
         out['n_exs'] = total_num_targets  # used by trainer.py
-        # print (self.detect_spans)
         if self.detect_spans:
             _kw = dict(sequence_mask=sent_mask.long())
             candidate_spans = self.index_array[:seq_len, :seq_len].repeat(batch_size, 1, 1, 1)
-            # print (candidate_spans.size())
             # [batch_size * seq_len * seq_len * 2] ints
             assert self.single_sided, "that use case isn't ready yet"
             unshaped_span_emb = self.span_extractors[1](se_proj1,
                                                 candidate_spans.cuda(),
                                                 **_kw) # [batch_size * seq_len * seq_len * emb_size]
             span_emb = unshaped_span_emb.view(batch_size, seq_len * seq_len, -1)
-            # this part is in numpy and can be improved.
+            
+            # this part is in numpy; could possibly be moved to preprocessing
             if 'labels' in batch:
                 label_size = batch['labels'].shape[-1]
                 np_labels = np.zeros([batch_size, seq_len, seq_len, label_size], dtype=np.uint8)
@@ -172,8 +171,6 @@ class EdgeClassifierModule(nn.Module):
 
         # Compute loss if requested.
         if 'labels' in batch:
-            # print ("true: {}, preds: {}".format(labels[span_mask].size(),
-            #                                     logits[span_mask].size()))
             # Labels is [batch_size, num_targets, n_classes],
             # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
