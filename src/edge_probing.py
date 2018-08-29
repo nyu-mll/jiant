@@ -50,7 +50,7 @@ class EdgeClassifierModule(nn.Module):
         self.span_pooling = task_params['cls_span_pooling']
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
-        self.max_seq_len = 250 # hardcoded to be big #task.max_seq_len
+        self.max_seq_len = task.max_seq_len
         self.detect_spans = task.detect_spans
 
         self.proj_dim = task_params['d_hid']
@@ -116,7 +116,6 @@ class EdgeClassifierModule(nn.Module):
         out = {}
         batch_size = sent_embs.shape[0]
         seq_len = sent_embs.shape[1]
-        # seq_len = 30
         out['n_inputs'] = batch_size
 
         # Apply projection layers for each span.
@@ -168,28 +167,6 @@ class EdgeClassifierModule(nn.Module):
             if 'labels' in batch:
                 labels = batch['labels']
 
-        # print (batch['span1s'][0], batch['labels'][0], span_mask)
-        # label_size = batch['labels'].shape[-1]
-        # print (label_size)
-        # def flatten_to_1d(batch_seq_len):
-        #     # return a callable function dependent on seq_len
-        #     # which will flatten 2d indices to 1d
-        #     def flatten_with_seq_length(start, end):
-        #         # takes a size-2 tensor and returns
-        #         # a size-1 tensor represneting the 1d (flattened) indices
-        #         return start * batch_seq_len + end
-        #     return flatten_with_seq_length
-        # # map should broadcast correctly and this should turn
-        # # batch_size * num_spans * 2 tensor to a batch_size * num_spans * 1 tensor
-        # span_starts, span_ends = torch.unbind(batch['span1s'], dim=-1)
-        # print (span_starts.size(), span_ends.size())
-        # reshaped_span1s = span_starts.map_(span_ends, flatten_to_1d(seq_len))
-
-        # print (reshaped_span1s.size())
-        # print ((span_mask * reshaped_span1s).size())
-        # print (torch.zeros(batch_size, seq_len, seq_len, label_size).scatter(3, batch['span1s'], batch['labels']))
-        # print ("classifier(span1_emb).size: {}".format(self.classifier(span1_emb).size()))
-        # [batch_size, num_targets, n_classes]
         logits = self.classifier(span_emb)
         out['logits'] = logits
 

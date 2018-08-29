@@ -10,7 +10,7 @@ function run_exp() {
     OVERRIDES+=", eval_tasks=$1"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
-        # --remote_log --notify "$NOTIFY_EMAIL"
+        --remote_log --notify "$NOTIFY_EMAIL"
 }
 
 set -eux
