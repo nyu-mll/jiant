@@ -807,7 +807,7 @@ class MultiTaskModel(nn.Module):
             total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
 
-            pred = F.sigmoid(cos_simi).round()
+            pred = torch.sigmoid(cos_simi).round()
 
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
@@ -1021,7 +1021,7 @@ class MultiTaskModel(nn.Module):
 
         mat_mul = mat_mul.view(-1)
         labels = labels.view(-1).cuda()
-        pred = F.sigmoid(mat_mul).round()
+        pred = torch.sigmoid(mat_mul).round()
 
         out['loss'] = loss_fn(mat_mul, labels)
         total_correct = torch.sum(pred == labels)
