@@ -11,7 +11,6 @@ import logging
 import codecs
 import time
 
-import nltk
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
 import numpy as np
