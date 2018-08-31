@@ -3,6 +3,8 @@ This repo contains the `jiant` sentence representation learning toolkit created 
 
 The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
 
+To reproduce experiments from JSALT (bugs and all) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
+
 ## Dependencies
 
 Make sure you have installed the packages listed in `environment.yml`.
