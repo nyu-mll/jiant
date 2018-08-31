@@ -225,15 +225,6 @@ def model_abbreviated(X, train=False, reuse=False):
 # Custom helper code below this line.
 from typing import List, Dict
 
-def prep_ids(ids_lists: List[List[int]]) -> np.ndarray:
-    """Prepare IDs for OpenAI Transformer model."""
-    x_in = np.zeros((len(ids_lists), n_ctx, 2), dtype=np.int32)
-    x_in[:,:,0] = FILL_ID
-    x_in[:,:,1] = n_vocab + n_special + np.arange(n_ctx)
-    for i, ids in enumerate(ids_lists):
-        x_in[i,1:len(ids)+1,0] = ids
-    return x_in
-
 def load_params(sess, params, shapes_file, params_file_tmpl):
     print("Loading pre-trained params...")
     shapes = json.load(open(shapes_file))

@@ -2,6 +2,8 @@ import os
 
 from typing import List
 
+import numpy as np
+
 from .tf_original import utils as openai_utils
 from .tf_original import text_utils as openai_text_utils
 
@@ -15,6 +17,7 @@ encoder_dict = text_encoder.encoder  # just a dict of text -> id
 reverse_encoder_dict = {v:k for k,v in encoder_dict.items()}
 n_vocab = len(encoder_dict)
 assert n_vocab == 40478
+FILL_ID = n_vocab
 
 def encode(sentences: List[str]) -> List[List[int]]:
     return text_encoder.encode(sentences)
@@ -36,3 +39,25 @@ def decode_full(ids: List[List[int]]) -> List[str]:
 def tokenize(sentence: str):
     ids = encode([sentence])[0]
     return lookup_ids(ids)
+
+def prep_ids(ids_lists: List[List[int]], n_ctx=512, n_special=3) -> np.ndarray:
+    """Prepare IDs for OpenAI Transformer model.
+    
+    Pads using FILL_ID as start, end, and padding fill,
+    and adds positional indices at each position.
+
+    Args:
+        ids_list: list of list of integer token ids
+        n_ctx: max sequence length
+        n_special: number of special tokens to add
+
+    Returns:
+        [batch_size, n_ctx, 2] np.ndarray of int32
+    """
+    x_in = np.zeros((len(ids_lists), n_ctx, 2), dtype=np.int32)
+    x_in[:,:,0] = FILL_ID
+    x_in[:,:,1] = n_vocab + n_special + np.arange(n_ctx)
+    for i, ids in enumerate(ids_lists):
+        x_in[i,1:len(ids)+1,0] = ids[:n_ctx-2]
+    return x_in
+
