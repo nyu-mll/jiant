@@ -12,7 +12,6 @@ import os
 import argparse
 import json
 import collections
-from tqdm import tqdm
 from typing import Type
 
 import logging as log
@@ -28,7 +27,7 @@ def retokenize_file(fname):
     record_iter = list(utils.load_json_data(fname))
     log.info("  saving to %s", new_name)
     with open(new_name, 'w') as fd:
-        for record in tqdm(record_iter):
+        for record in record_iter:
             new_record = retokenize_record(record)
             fd.write(json.dumps(new_record))
             fd.write("\n")
@@ -36,7 +35,7 @@ def retokenize_file(fname):
 def count_labels(fname: str) -> Type[collections.Counter]:
     label_ctr = collections.Counter()
     record_iter = utils.load_json_data(fname)
-    for record in tqdm(record_iter):
+    for record in record_iter:
         for target in record['targets']:
             label = target['label']
             if isinstance(label, str):
