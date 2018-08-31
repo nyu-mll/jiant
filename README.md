@@ -1,19 +1,11 @@
-# JSALT: *J*iant (or *J*SALT) *S*entence *A*ggregating *L*earning *T*hing
-This repo contains the code for jiant sentence representation learning model for the 2018 JSALT Workshop.
+# jiant
+This repo contains the `jiant` sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
-## Quick-Start on GCP
-
-If you're using Google Compute Engine, the project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Clone this repo to your home directory, then test with:
-
-```sh
-python main.py --config_file config/demo.conf
-```
-
-You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
 
 ## Dependencies
 
-Make sure you have installed the packages listed in environment.yml.
+Make sure you have installed the packages listed in `environment.yml`.
 When listed, specific particular package versions are required.
 If you use conda (recommended, [instructions for installing miniconda here](https://conda.io/miniconda.html)), you can create an environment from this package with the following command:
 
@@ -23,122 +15,188 @@ conda env create -f environment.yml
 
 To activate the environment run ``source activate jiant``, and to deactivate run ``source deactivate``
 
+Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
+
 ## Downloading data
 
-The repo contains a convenience python script for downloading all GLUE data and standard splits.
+The repo contains a convenience python script for downloading all [GLUE](https://www.nyu.edu/projects/bowman/glue.pdf) data and standard splits.
 
 ```
-python download_glue_data.py --data_dir glue_data --tasks all
+python download_glue_data.py --data_dir data --tasks all
 ```
 
-For other pretraining task data, contact the person in charge.
+We also make use of many other data sources, including:
+
+- Translation: WMT'14 EN-DE, WMT'17 EN-RU. Scripts to prepare the WMT data are in [`src/wmt_scripts/`](src/wmt_scripts/).
+- Language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use the English sentence tokenizer from [NLTK toolkit](https://www.nltk.org/) [Punkt Tokenizer Models](http://www.nltk.org/nltk_data/) to preprocess WikiText103 corpus. Note that it's only used in breaking paragraphs into sentences. It will use default tokenizer on word level as all other tasks unless otherwise specified. We don't do any preprocessing on BWB corpus.  
+- Image captioning: MSCOCO Dataset (http://cocodataset.org/#download). Specifically we use the following splits: 2017 Train images [118K/18GB], 2017 Val images [5K/1GB], 2017 Train/Val annotations [241MB].
+- Reddit: [reddit_comments dataset](https://bigquery.cloud.google.com/dataset/fh-bigquery:reddit_comments). Specifically we use the 2008 and 2009 tables.
+- DisSent: Details for preparing the corpora are in [`src/dissent_scripts/README`](src/dissent_scripts/README).
+- DNC (Diverse Natural Language Inference Collection), i.e. Recast data: The DNC is currently being prepared for release for EMNLP camera ready. Instructions on how to download the data is forthcoming.
+- CCG: Details for preparing the corpora are in [`src/ccg_scripts/README`](src/ccg_scripts/README).
+- Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
+
+To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
 ## Running
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
 python main.py --config_file config/demo.conf \
-  --overrides "exp_name = my_exp, run_name = foobar"
+    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-Because preprocessing is expensive, we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) and we write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``, usually nested in the experiment directory. Overall the directory structure looks like:
+### Saving Preprocessed Data
 
-- exp1 (e.g. training and evaluating on WikiText and all the GLUE tasks)
-    - run1 (with some hyperparameter settings)
-    - run2 (with possibly the same hyperparameter settings but a different random seed)
-    - run3 (with different hyperparameter settings)
-- exp2 (e.g. training and evaluating on WMT and all the GLUE tasks)
-    - [...]
+Because preprocessing is expensive (e.g. building vocab and indexing for very large tasks like WMT or BWB), we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Experiment directories are written in ``project_dir``. Overall the directory structure looks like:
 
-You should also be sure to set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script and word embeddings (see later sections) respectively). (Although note that on GCP these may already be set!)
+```
+project_dir  # directory for all experiments using jiant
+|-- exp1/  # directory for a set of runs training and evaluating on FooTask and BarTask
+|   |-- preproc/  # shared indexed data of FooTask and BarTask
+|   |-- vocab/  # shared vocabulary built from examples from FooTask and BarTask
+|   |-- FooTask/  # shared FooTask class object
+|   |-- BarTask/  # shared BarTask class object
+|   |-- run1/  # run directory with some hyperparameter settings
+|   |-- run2/  # run directory with some different hyperparameter settings
+|   |
+|   [...]
+|
+|-- exp2/  # directory for a runs with a different set of experiments, potentially using a different branch of the code
+|   |-- preproc/
+|   |-- vocab/ 
+|   |-- FooTask/
+|   |-- BazTask/
+|   |-- run1/
+|   |
+|   [...]
+|
+[...]
+```
 
-To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, use the option ``reload_tasks = 1``.
-To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, use the option ``reload_vocab = 1``.
+You should also set ``data_dir`` and  ``word_embs_file`` options to point to the directories containing the data (e.g. the output of the ``download_glue_data`` script) and word embeddings (optional, not needed when using ELMo, see later sections) respectively.
+
+To force rereading and reloading of the tasks, perhaps because you changed the format or preprocessing of a task, delete the objects in the directories named for the tasks (e.g., `QQP/`) or use the option ``reload_tasks = 1``.
+
+To force rebuilding of the vocabulary, perhaps because you want to include vocabulary for more tasks, delete the objects in `vocab/` or use the option ``reload_vocab = 1``.
+
+To force reindexing of a task's data, delete some or all of the objects in `preproc/` or use the option ``reload_index = 1`` and set ``reindex_tasks`` to the names of the tasks to be reindexed, e.g. ``reindex_tasks=\"sst,mnli\"``. You should do this whenever you rebuild the task objects or vocabularies.
+
+### Command-Line Options
+
+All model configuration is handled through the config file system and the `--overrides` flag, but there are also a few command-line arguments that control the behavior of `main.py`. In particular:
+
+`--tensorboard` (or `-t`): use this to run a [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) server while the trainer is running, serving on the port specified by `--tensorboard_port` (default is `6006`).
+
+The trainer will write event data even if this flag is not used, and you can run Tensorboard separately as:
+```
+tensorboard --logdir <exp_dir>/<run_name>/tensorboard
+```
+
+`--notify <email_address>`: use this to enable notification emails via [SendGrid](https://sendgrid.com/). You'll need to make an account and set the `SENDGRID_API_KEY` environment variable to contain the (text of) the client secret key.
+
+`--remote_log` (or `-r`): use this to enable remote logging via Google Stackdriver. You can set up credentials and set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable; see [Stackdriver Logging Client Libraries](https://cloud.google.com/logging/docs/reference/libraries#client-libraries-usage-python).
 
 ## Model
 
-To see the set of available params, see [config/defaults.conf](config/defaults.conf) and the brief arguments section in [main.py](main.py).
+The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks.
 
+We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly.
+
+Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
+To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
 
 ## Trainer
 
-The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and one batch (to vary the number of batches to train on per sampled task, use the ``bpp_base`` of that task's training data is trained on.
-The trainer evaluates the model on the validation data after a fixed number of updates, set by (``val_interval``).
+The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and ``bpp_base`` (default: 1) batches of that task's training data is trained on.
+The trainer evaluates the model on the validation data after a fixed number of gradient steps, set by ``val_interval``.
 The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``task_patience`` (default: 1) validation checks.
+Note: "epoch" is generally used in comments and variable names to refer to the interval between validation checks, not to a complete pass through any one training set.
 
-If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, with options either ``uniform`` or ``proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training.
+If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, e.g. ``weighting_method = uniform`` or ``weighting_method = proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training. 
 
-Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is trained on all the training tasks, then the best model is loaded, and task-specific components are trained for each of the evaluation tasks. Specify training tasks with ``train_tasks = $TRAIN_TASKS `` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
+For multi-task training, we use a shared global optimizer and LR scheduler for all tasks. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro-average will be well-behaved.
 
-Other training options include:
+We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. 
 
-    - ``optimizer``: (string) anything supported by AllenNLP, but usually just 'adam'
-    - ``lr``: (float) set initial learning rate
-    - ``batch_size``: (int) batch size, usually you want to use the largest possible, which will likely be 64 or 32 for the full model
-    - ``should_train``: set to 0 to skip training
-    - ``load_model``: set to 1 to start training by loading model from most recent checkpoint found in directory
-    - ``force_load_epoch``: (int) after training, force loading from instead of the best epoch found during training (or the most recent if training). Useful if you have a trained model already and just want to evaluate.
+Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is pretrained on all the `training` tasks, then the best model is then loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
+You can control which steps are performed or skipped by setting the flags ``do_train, train_for_eval, do_eval``.
+Specify training tasks with ``train_tasks = $TRAIN_TASKS`` where ``$TRAIN_TASKS`` is a comma-separated list of task names; similarly use ``eval_tasks`` to specify the eval-only tasks.
+For example, ``train_tasks = \"sst,mnli,foo\", eval_tasks = \"qnli,bar,sst,mnli,foo\"`` (HOCON notation requires escaped quotes in command line arguments).
+Note: if you want to train and evaluate on a task, that task must be in both ``train_tasks`` and ``eval_tasks``.
 
-NB: "epoch" is generally used to refer to the amount of data between validation checks.
 
 
 ## Adding New Tasks
 
 To add new tasks, you should:
-1. Add your data in a subfolder in whatever folder contains all your data ``$JIANT_DATA_DIR``. Make sure to add the correct path to the dictionary ``NAME2INFO``, structured ``task_name: (task_class, data_subdirectory)``, at the top of ``preprocess.py``. The ``task_name`` will be the commandline shortcut to train on that task, so keep it short.
 
-2. Create a class in ``src/tasks.py``, making sure that:
-    - Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, etc.).
-    - The task definition should include the data loader, as a method called ``load_data()`` which stores tokenized but un-indexed data for each split in attributes named ``task.{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code (in ``src/preprocess.py``, see next bullet) expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example. Make sure to call your data loader in initialization!
-    - Your task should include an attributes ``task.sentences`` that is a list of all text to index, e.g. for MNLI we have ``self.sentences = self.train_data_text[0] + self.train_data_text[1] + self.val_data_text[0] + ...``. Make sure to set this attribute after calling the data loader!
+1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. 
 
-3. In ``src/tasks.py``, make sure that:
-    - The correct task-specific preprocessing is being used for your task in ``Task.process_split()``. This should be a function that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(field_name, Field)`` pairs.
-    - ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples at the bottom of ``src/preprocess.py``.
-    - The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/models.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
+2. Create a class in ``src/tasks.py``, and make sure that...
 
-4. In ``src/models.py``, make sure that:
-    - The correct task-specific module is being created for your task in ``build_module()``.
-    - Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the ``Instance`` objects you created in preprocessing.
-    - Create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
+    * You decorate the task: in the line immediately before ``class MyNewTask():``, add the line ``@register_task(task_name, rel_path='path/to/data')`` where ``task_name`` is the designation for the task used in ``train_tasks, eval_tasks`` and ``rel_path`` is the path to the data in ``data_dir``. See `EdgeProbingTasks` in [`tasks.py`](src/tasks.py) for an example.
+    * Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, ``WikiTextLMTask``, etc.).
+    * The task definition includes the data loader, as a method called ``load_data()`` which stores tokenized but un-indexed data for each split in attributes named ``task.{train,valid,test}_data_text``. The formatting of each datum can be anything as long as your preprocessing code (in ``src/preprocess.py``, see next bullet) expects that format. Generally data are formatted as lists of inputs and output, e.g. MNLI is formatted as ``[[sentences1]; [sentences2]; [labels]]`` where ``sentences{1,2}`` is a list of the first sentences from each example. Make sure to call your data loader in initialization!
+    * Your task implements a method ``task.get_sentences()`` that iterates over all text to index in order to build the vocabulary. For some types of tasks, e.g. ``SingleClassificationTask``, you only need set ``task.sentences`` to be a list of sentences (``List[List[str]]``).
+    * Your task  implements a method ``task.count_examples()`` that sets ``task.example_counts`` (``Dict[str:int]``): the number of examples per split (train, val, test). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/src/tasks.py#L647) for an example.
+    * Your task  implements a method ``task.get_split_text()`` that takes in the name of a split and returns an iterable over the data in that split. This method will be called in preprocessing and passed to ``task.process_split`` (see next bullet).
+    * Your task  implements a method ``task.process_split()`` that takes in a split of your data and produces a list of AllenNLP ``Instance``s. An ``Instance`` is a wrapper around a dictionary of ``(field_name, Field)`` pairs. ``Field``s are objects to help with data processing (indexing, padding, etc.). Each input and output should be wrapped in a field of the appropriate type (``TextField`` for text, ``LabelField`` for class labels, etc.). For MNLI, we wrap the premise and hypothesis in ``TextField``s and the label in ``LabelField``. See the [AllenNLP tutorial](https://allennlp.org/tutorials) or the examples in ``src/tasks.py``.  The names of the fields, e.g. ``input1``, can be named anything so long as the corresponding code in ``src/models.py`` (see next bullet) expects that named field. However make sure that the values to be predicted are either named ``labels`` (for classification or regression) or ``targs`` (for sequence generation)!
+    * If you task requires task specific label namespaces, e.g. for translation or tagging, you set the attribute ``task._label_namespace`` to reserve a vocabulary namespace for your task's target labels. We strongly suggest including the task name in the target namespace. Your task should also implement ``task.get_all_labels()``, which returns an iterable over the labels (possibly words, e.g. in the case of MT) in the task-specific namespace.
+    * Your task has attributes ``task.val_metric`` (name of task-specific metric to track during training) and ``task.val_metric_decreases`` (bool, ``True`` if val metric should decrease during training). You should also implement a ``task.get_metrics()`` method that implements the metrics you care about by using AllenNLP ``Scorer`` objects (typically set via ``task.scorer1``, ``task.scorer2``, etc.).
+
+3. In ``src/models.py``, make sure that:
+    * The correct task-specific module is being created for your task in ``build_module()``.
+    * Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the ``Instance`` objects you created in preprocessing, as well as a ``predict`` flag that indicates if your forward function should generate predictions or not.
+    * You create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
+    
 Note: The current training procedure is task-agnostic: we randomly sample a task to train on, pass a batch to the model, and receive an output dictionary at least containing a ``loss`` key. Training loss should be calculated within the model; validation metrics should also be computed within AllenNLP ``scorer``s and not in the training loop. So you should *not* need to modify the training loop; please reach out if you think you need to.
 
+Feel free to create a pull request to add an additional task if you expect that it'll be useful to others.
+
 ## Pretrained Embeddings
+
+### ELMo
+
+We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
+To use ELMo, set ``elmo`` to 1.
+By default, AllenNLP will download and cache the pretrained ELMo weights. If you want to use a particular file containing ELMo weights, set ``elmo_weight_file_path = path/to/file``.
+
+To use only the _character-level CNN word encoder_ from ELMo by use `elmo_chars_only = 1`. _This is set by default_.
+
+
+### CoVe
+
+We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
+To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove = 1``.
+
 
 ### FastText
 
 To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
 To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
 fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-To activate fastText model within our framework, set the flag ``fastText 1``
-If you get a segmentation fault running PyTorch and fastText (Sam, Alex), don't panic; use the pretrained vectors.
+To activate fastText model within our framework, set the flag ``fastText = 1``
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
-### ELMo
-
-We use the ELMo implementation provided by [AllenNLP](https://github.com/allenai/allennlp/blob/master/tutorials/how_to/elmo.md).
-To use ELMo, set ``elmo`` to 1.
-<!-- To use ELMo without GloVe, additionally set ``elmo_no_glove`` to 1. -->
-
 ### GloVe
 
-Many of our models make use of [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), in particular the 300-dimensional, 840B version.
-To use GloVe vectors, download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
+To use [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
 
-### CoVe
 
-We use the CoVe implementation provided [here](https://github.com/salesforce/cove).
-To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/repo"`` and set ``cove`` to 1.
+## Quick-Start on GCP (for JSALT internal use only)
 
-## Annoying AllenNLP Things
+For the JSALT workshop, we used Google Compute Engine as our main compute platform. If you're using Google Compute Engine, the private project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Unfortunately, these images are not straightforward to share. To use, clone this repo to your home directory, then test with:
 
-To turn off the verbosity, you'll need to go in your AllenNLP location and create or turn on a ``quiet`` option, e.g. in ``allennlp/common/params.py``, line 186 set ``quiet=True``.
-Other common and verbose locations include ``allennlp/nn/initializers.py`` (many calls to ``logger``) and ``allennlp/common/params.py`` (`pop()`` will print param values often).
+```sh
+python main.py --config_file config/demo.conf
+```
 
-To avoid needing to reconstruct vocabulary switching from using character embeddings <> not using character embeddings, using ELMo <> not using ELMo, [TODO]
+You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+
 
 ## Getting Help
 
-Feel free to contact alexwang _at_ nyu.edu with any questions or comments.
+Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
