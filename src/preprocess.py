@@ -39,13 +39,11 @@ from . import tasks as tasks_module
 from .tasks import \
     CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
     QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
-    PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
-    DisSentWikiSingleTask, DisSentWikiBigFullTask, \
-    JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    GroundedSWTask, NLITypeProbingAltTask
+    WikiText103LMTask, DisSentWikiSingleTask, DisSentWikiBigFullTask, \
+    PairOrdinalRegressionTask, WeakGroundedTask, \
+    GroundedTask, MTTask, BWBLMTask, \
+    NLITypeProbingTask, MultiNLIAltTask, \
+    NLITypeProbingAltTask
 
 from .tasks import \
     RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
@@ -94,13 +92,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
-             'joci': (JOCITask, 'JOCI/'),
-             'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
-             'pdtb': (PDTBTask, 'PDTB/'),
-             'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
-             'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
@@ -109,7 +102,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'nli-alt': (NLITypeProbingAltTask, '/'),
              'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
-             'vae': (VAETask, 'VAE'),
              'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
@@ -120,7 +112,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
-             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
 # !!!!!!! NOTE: You should not be adding anything else manually to NAME2INFO.
 # !!!!!!! Use the decorator @register_task instead.

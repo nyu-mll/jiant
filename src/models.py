@@ -35,15 +35,14 @@ from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
     PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask
+    PairOrdinalRegressionTask, WeakGroundedTask, \
+    GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 
 from .tasks import STSBTask, CoLATask, \
     ClassificationTask, PairClassificationTask, SingleClassificationTask, \
     RegressionTask, PairRegressionTask, RankingTask, \
     SequenceGenerationTask, LanguageModelingTask, MTTask, \
-    PairOrdinalRegressionTask, JOCITask, \
+    PairOrdinalRegressionTask, \
     WeakGroundedTask, GroundedTask, VAETask, \
     GroundedTask, TaggingTask, CCGTaggingTask, \
     MultiNLIDiagnosticTask
@@ -388,28 +387,10 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, '%s_decoder' % task.name, decoder)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-
-    elif isinstance(task, VAETask):
-        decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
-                                 'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
-        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
-        setattr(model, '%s_decoder' % task.name, decoder)
-
-    elif isinstance(task, (GroundedTask, GroundedSWTask)):
-        task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
-        pooler = build_image_sent_module(task, d_sent, task_params)
-        setattr(model, '%s_mdl' % task.name, pooler)
-
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
-
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -450,7 +431,6 @@ def get_task_specific_params(args, task_name):
 
     return Params(params)
 
-
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
     pooler = Pooler.from_params(d_inp, params['d_proj'])
@@ -469,7 +449,6 @@ def build_single_sentence_module(task, d_inp, params):
     pooler = Pooler.from_params(d_inp, params['d_proj'])
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
-
 
 def build_pair_sentence_module(task, d_inp, model, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
@@ -507,7 +486,6 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
     classifier = Classifier.from_params(4 * d_out, n_classes, params)
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
-
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
@@ -590,8 +568,6 @@ class MultiTaskModel(nn.Module):
                                  task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, (GroundedTask, GroundedSWTask)):
-            out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         else:
@@ -734,14 +710,7 @@ class MultiTaskModel(nn.Module):
         if 'labels' in batch:
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
-            if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
-                out['loss'] = F.mse_loss(logits, labels)
-                logits_np = logits.data.cpu().numpy()
-                labels_np = labels.data.cpu().numpy()
-                task.scorer1(mean_squared_error(logits_np, labels_np))
-                task.scorer2(logits_np, labels_np)
-            elif isinstance(task, STSBTask):
+            if isinstance(task, STSBTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
