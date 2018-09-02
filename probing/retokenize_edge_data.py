@@ -12,6 +12,7 @@
 import sys
 import os
 import json
+from tqdm import tqdm
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
