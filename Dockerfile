@@ -4,8 +4,8 @@
 #   docker build -t jiant-sandbox:v1 .
 #   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
 #   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" jiant-sandbox:v1 \
-#      	-e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
-#      	-e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
+#       -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
+#       -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
 #       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
 #       [ ... additional args to main.py ... ]
 #
@@ -31,6 +31,7 @@ RUN apt-get update && yes | apt-get upgrade
 RUN apt-get install -y wget git bzip2
 
 # Install Anaconda
+# TODO: replace with miniconda to reduce image size.
 RUN wget https://repo.anaconda.com/archive/Anaconda3-5.2.0-Linux-x86_64.sh \
   && bash Anaconda3-5.2.0-Linux-x86_64.sh -b \
   && rm Anaconda3-5.2.0-Linux-x86_64.sh

@@ -12,9 +12,15 @@
 # ./run_batch.sh <job_name> "python $JIANT_PATH/main.py \
 #    --config_file $JIANT_PATH/config/demo.conf \
 #    --notify <your_email_address>"
+#
+# The third argument, MODE, can be used to 'replace' an existing job (e.g. if
+# you mis-configured and it failed on startup), or to 'delete' one from the
+# cluster.
 
 NAME=$1
 COMMAND=$2
+MODE=${3:-"create"}    # create, replace, delete
+GPU_TYPE=${4:-"p100"}  # k80 or p100
 
 JOB_NAME="${USER}.${NAME}"
 PROJECT_DIR="/nfs/jsalt/exp/$USER"
@@ -28,7 +34,7 @@ IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v1"
 
 ##
 # Create custom config and create a Kubernetes job.
-cat <<EOF | kubectl create -f -
+cat <<EOF | kubectl ${MODE} -f -
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -43,6 +49,9 @@ spec:
         image: ${IMAGE}
         command: ["bash"]
         args: ["-l", "-c", "$COMMAND"]
+        resources:
+          limits:
+           nvidia.com/gpu: 1
         volumeMounts:
         - mountPath: /nfs/jsalt
           name: nfs-jsalt
@@ -52,6 +61,8 @@ spec:
         env:
         - name: JIANT_PROJECT_PREFIX
           value: ${PROJECT_DIR}
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
       volumes:
       - name: nfs-jsalt
         persistentVolumeClaim:
