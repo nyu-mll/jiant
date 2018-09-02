@@ -37,7 +37,7 @@ def build_trainer_params(args, task_names):
     # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
-                  'no_tqdm', 'cuda', 'keep_all_checkpoints',
+                  'cuda', 'keep_all_checkpoints',
                   'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
@@ -96,7 +96,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'val_interval': params['val_interval'],
                            'max_vals': params['max_vals'],
                            'lr_decay': .99, 'min_lr': params['min_lr'],
-                           'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
                            'dec_val_scale': params['dec_val_scale'],
@@ -110,7 +109,7 @@ class SamplingMultiTaskTrainer():
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
+                 keep_all_checkpoints=False, val_data_limit=5000,
                  dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -150,12 +149,6 @@ class SamplingMultiTaskTrainer():
             this schedule at the end of each epoch. If you use
             :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`,
             this will use the ``val_metric`` provided to determine if learning has plateaued.
-        no_tqdm : ``bool``, optional (default=False)
-            We use ``tqdm`` for log, which will print a nice progress bar that updates in place
-            after every batch.  This is nice if you're running training on a local shell, but can
-            cause problems with log files from, e.g., a docker image running on kubernetes.  If
-            ``no_tqdm`` is ``True``, we will not use tqdm, and instead log batch statistics using
-            ``log.info``, outputting a line at most every 10 seconds.
         keep_all_checkpoints : If set, keep checkpoints from every validation. Otherwise, keep only
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
@@ -182,7 +175,6 @@ class SamplingMultiTaskTrainer():
         self._task_infos = None
         self._metric_infos = None
 
-        self._no_tqdm = no_tqdm
         self._log_interval = 10  # seconds
         self._summary_interval = 100  # num batches between log to tensorboard
         if self._cuda_device >= 0:
@@ -977,7 +969,6 @@ class SamplingMultiTaskTrainer():
         grad_clipping = params.pop("grad_clipping", None)
         lr_decay = params.pop("lr_decay", None)
         min_lr = params.pop("min_lr", None)
-        no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
         dec_val_scale = params.pop("dec_val_scale", 100)
@@ -989,7 +980,7 @@ class SamplingMultiTaskTrainer():
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, no_tqdm=no_tqdm,
+                                        min_lr=min_lr, 
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
                                         dec_val_scale=dec_val_scale,

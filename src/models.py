@@ -360,7 +360,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
-        attention = args.get("mt_attention", "bilinear")
+        attention = args.mt_attention
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -372,7 +372,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, MTTask):
-        attention = args.get("mt_attention", "bilinear")
+        attention = args.mt_attention
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
