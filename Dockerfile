@@ -1,24 +1,26 @@
 # Dockerfile for jiant repo. Currently intended to run in our GCP environment.
 #
 # Usage:
-#   docker build -t <image_name> .
+#   docker build -t jiant-image:v1 .
 #   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
-#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" \
+#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" jiant-image:v1 \
 #       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
 #       [ ... additional args to main.py ... ]
+#
+# Note that --remote_log currently doesn't work with the above command,
+# since the host name seen by main.py is the name of the container, not the
+# name of the host GCE instance.
 
-
-# FROM ubuntu:16.04
+# Use CUDA base image.
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
-# Add Tini
+# Add Tini to handle init.
 ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
 # Update Ubuntu packages
-# RUN apt-get update 
 RUN apt-get update && yes | apt-get upgrade
 
 # Add utils
@@ -35,7 +37,8 @@ ENV PATH /root/anaconda3/bin:$PATH
 # Fix some package issues
 RUN pip install msgpack
 
-# Install TensorFlow 1.8
+# Install latest TensorFlow
+# TODO: pin this to a specific version!
 RUN pip install --upgrade tensorflow-gpu tensorflow-hub
 
 # Install PyTorch 0.4
@@ -55,8 +58,7 @@ RUN pip install python-Levenshtein
 # Install local data files.
 RUN python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 
-##
-# Temporary: set up paths so we can run jiant/main.py
+# Create local dir for NFS mount.
 RUN mkdir -p /nfs/jsalt
 # Set environment vars based on gcp/config/jsalt_paths.1.2.sh
 ENV JSALT_SHARE_DIR "/nfs/jsalt/share"
@@ -70,14 +72,3 @@ ENV FASTTEXT_MODEL_FILE "."
 ENV PATH_TO_COVE "$JSALT_SHARE_DIR/cove"
 ENV ELMO_SRC_DIR "$JSALT_SHARE_DIR/elmo"
 
-
-
-# ##
-# # TEMPORARY: run jupyter so we can inspect the environment
-# RUN mkdir /opt/notebooks
-# RUN jupyter notebook --generate-config --allow-root
-# RUN echo "c.NotebookApp.password = u'sha1:6a3f528eec40:6e896b6e4828f525a6e20e5411cd1c8075d68619'" >> /root/.jupyter/jupyter_notebook_config.py
-# EXPOSE 8888
-# CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/opt/notebooks", "--ip='*'", "--port=8888", "--no-browser"]
-
-# CMD ["bash", "-c" , "sleep 100"]
