@@ -1,11 +1,15 @@
 # Dockerfile for jiant repo. Currently intended to run in our GCP environment.
 #
 # Usage:
-#   docker build -t jiant-image:v1 .
+#   docker build -t jiant-sandbox:v1 .
 #   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
-#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" jiant-image:v1 \
+#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" jiant-sandbox:v1 \
+#      	-e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
+#      	-e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
 #       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
 #       [ ... additional args to main.py ... ]
+#
+# To run on Kubernetes, see gcp/kubernetes/jiant_run.sh
 #
 # Note that --remote_log currently doesn't work with the above command,
 # since the host name seen by main.py is the name of the container, not the
@@ -63,8 +67,6 @@ RUN mkdir -p /nfs/jsalt
 # Set environment vars based on gcp/config/jsalt_paths.1.2.sh
 ENV JSALT_SHARE_DIR "/nfs/jsalt/share"
 ENV JIANT_DATA_DIR "$JSALT_SHARE_DIR/glue_data"
-ENV NFS_PROJECT_PREFIX "/nfs/jsalt/exp/docker"
-ENV JIANT_PROJECT_PREFIX "$NFS_PROJECT_PREFIX"
 ENV GLOVE_EMBS_FILE "$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
 ENV FASTTEXT_EMBS_FILE "$JSALT_SHARE_DIR/fasttext/crawl-300d-2M.vec"
 ENV WORD_EMBS_FILE "$FASTTEXT_EMBS_FILE"
@@ -72,3 +74,6 @@ ENV FASTTEXT_MODEL_FILE "."
 ENV PATH_TO_COVE "$JSALT_SHARE_DIR/cove"
 ENV ELMO_SRC_DIR "$JSALT_SHARE_DIR/elmo"
 
+# Set these manually with -e or via Kuberentes config YAML.
+# ENV NFS_PROJECT_PREFIX "/nfs/jsalt/exp/docker"
+# ENV JIANT_PROJECT_PREFIX "$NFS_PROJECT_PREFIX"
