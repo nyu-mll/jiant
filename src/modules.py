@@ -158,7 +158,6 @@ class BiLMEncoder(ElmoLstm):
 
 class BoWSentEncoder(Model):
     ''' Bag-of-words sentence encoder '''
-    # NOTE: hasn't been tested in recent memory
 
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
