@@ -10,7 +10,6 @@ task.get_metrics() should return {"accuracy": accuracy_val, ... }
 import copy
 import collections
 import itertools
-import functools
 import os
 import math
 import logging as log
@@ -248,14 +247,6 @@ class PairClassificationTask(ClassificationTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True)
-
-
-class NLIProbingTask(PairClassificationTask):
-    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
-
-    def __init__(self, name, n_classes):
-        super().__init__(name)
-        #  self.use_classifier = 'mnli'  # use .conf params instead
 
 
 # Make sure we load the properly-retokenized versions.
@@ -610,9 +601,8 @@ class SequenceGenerationTask(Task):
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
 
-    def __init__(self, name, n_choices):
+    def __init__(self, name):
         super().__init__(name)
-        self.n_choices = n_choices
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -797,7 +787,7 @@ class RedditTask(RankingTask):
 
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
-        super().__init__(name, 2)
+        super().__init__(name)
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name

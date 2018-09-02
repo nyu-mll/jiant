@@ -176,7 +176,6 @@ class SamplingMultiTaskTrainer():
         self._metric_infos = None
 
         self._log_interval = 10  # seconds
-        self._summary_interval = 100  # num batches between log to tensorboard
         if self._cuda_device >= 0:
             self._model = self._model.cuda(self._cuda_device)
 
@@ -503,12 +502,8 @@ class SamplingMultiTaskTrainer():
 
                 # Validate
                 log.info("Validating...")
-                preds_file_path_dict = {task.name: os.path.join(
-                    self._serialization_dir,
-                    "preds_{}{}_{}_epoch_{}.txt".format(
-                        time.time(), task.name, phase, epoch)) for task in tasks}
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
+                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -565,7 +560,7 @@ class SamplingMultiTaskTrainer():
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(self, epoch, tasks, batch_size, preds_file_path_dict, periodic_save=True):
+    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -579,7 +574,6 @@ class SamplingMultiTaskTrainer():
         for task in tasks:
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
-            task.preds_file_path = preds_file_path_dict[task.name]
 
             # to speed up training, we evaluate on a subset of validation data
             if self._val_data_limit >= 0:
@@ -804,17 +798,13 @@ class SamplingMultiTaskTrainer():
                 task_states[task_name]['stopped'] = task_info['stopped']
                 if self._g_optimizer is None:
                     task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-                    sched = task_info['scheduler']
-                    sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                    #'cooldown_counter': sched.cooldown_counter}
+                    sched_params = {}
                     task_states[task_name]['scheduler'] = sched_params
             task_states['global'] = {}
             task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
             if self._g_scheduler is not None:
-                sched = self._g_scheduler
-                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                #'cooldown_counter': sched.cooldown_counter}
+                sched_params = {}
                 task_states['global']['scheduler'] = sched_params
             else:
                 task_states['global']['scheduler'] = None
