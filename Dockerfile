@@ -1,3 +1,13 @@
+# Dockerfile for jiant repo. Currently intended to run in our GCP environment.
+#
+# Usage:
+#   docker build -t <image_name> .
+#   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
+#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" \
+#       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
+#       [ ... additional args to main.py ... ]
+
+
 # FROM ubuntu:16.04
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
@@ -40,16 +50,34 @@ RUN pip install allennlp==0.5.1
 
 # Install misc util packages
 RUN pip install --upgrade google-cloud-logging sendgrid
+RUN pip install python-Levenshtein
 
-# Install some data files.
+# Install local data files.
 RUN python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 
 ##
-# TEMPORARY: run jupyter so we can inspect the environment
-RUN mkdir /opt/notebooks
-RUN jupyter notebook --generate-config --allow-root
-RUN echo "c.NotebookApp.password = u'sha1:6a3f528eec40:6e896b6e4828f525a6e20e5411cd1c8075d68619'" >> /root/.jupyter/jupyter_notebook_config.py
-EXPOSE 8888
-CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/opt/notebooks", "--ip='*'", "--port=8888", "--no-browser"]
+# Temporary: set up paths so we can run jiant/main.py
+RUN mkdir -p /nfs/jsalt
+# Set environment vars based on gcp/config/jsalt_paths.1.2.sh
+ENV JSALT_SHARE_DIR "/nfs/jsalt/share"
+ENV JIANT_DATA_DIR "$JSALT_SHARE_DIR/glue_data"
+ENV NFS_PROJECT_PREFIX "/nfs/jsalt/exp/docker"
+ENV JIANT_PROJECT_PREFIX "$NFS_PROJECT_PREFIX"
+ENV GLOVE_EMBS_FILE "$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
+ENV FASTTEXT_EMBS_FILE "$JSALT_SHARE_DIR/fasttext/crawl-300d-2M.vec"
+ENV WORD_EMBS_FILE "$FASTTEXT_EMBS_FILE"
+ENV FASTTEXT_MODEL_FILE "."
+ENV PATH_TO_COVE "$JSALT_SHARE_DIR/cove"
+ENV ELMO_SRC_DIR "$JSALT_SHARE_DIR/elmo"
+
+
+
+# ##
+# # TEMPORARY: run jupyter so we can inspect the environment
+# RUN mkdir /opt/notebooks
+# RUN jupyter notebook --generate-config --allow-root
+# RUN echo "c.NotebookApp.password = u'sha1:6a3f528eec40:6e896b6e4828f525a6e20e5411cd1c8075d68619'" >> /root/.jupyter/jupyter_notebook_config.py
+# EXPOSE 8888
+# CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/opt/notebooks", "--ip='*'", "--port=8888", "--no-browser"]
 
 # CMD ["bash", "-c" , "sleep 100"]
