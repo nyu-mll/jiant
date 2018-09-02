@@ -29,13 +29,13 @@ python scripts/download_glue_data.py --data_dir data --tasks all
 
 We also make use of many other data sources, including:
 
-- Translation: WMT'14 EN-DE, WMT'17 EN-RU. Scripts to prepare the WMT data are in [`scripts/wmt_scripts/`](scripts/wmt_scripts/).
+- Translation: WMT'14 EN-DE, WMT'17 EN-RU. Scripts to prepare the WMT data are in [`scripts/wmt/`](scripts/wmt/).
 - Language modeling: [Billion Word Benchmark](http://www.statmt.org/lm-benchmark/), [WikiText103](https://einstein.ai/research/the-wikitext-long-term-dependency-language-modeling-dataset). We use the English sentence tokenizer from [NLTK toolkit](https://www.nltk.org/) [Punkt Tokenizer Models](http://www.nltk.org/nltk_data/) to preprocess WikiText103 corpus. Note that it's only used in breaking paragraphs into sentences. It will use default tokenizer on word level as all other tasks unless otherwise specified. We don't do any preprocessing on BWB corpus.  
 - Image captioning: MSCOCO Dataset (http://cocodataset.org/#download). Specifically we use the following splits: 2017 Train images [118K/18GB], 2017 Val images [5K/1GB], 2017 Train/Val annotations [241MB].
 - Reddit: [reddit_comments dataset](https://bigquery.cloud.google.com/dataset/fh-bigquery:reddit_comments). Specifically we use the 2008 and 2009 tables.
-- DisSent: Details for preparing the corpora are in [`scripts/dissent_scripts/README`](scripts/dissent_scripts/README).
+- DisSent: Details for preparing the corpora are in [`scripts/dissent/README`](scripts/dissent/README).
 - DNC (Diverse Natural Language Inference Collection), i.e. Recast data: The DNC is currently being prepared for release for EMNLP camera ready. Instructions on how to download the data is forthcoming.
-- CCG: Details for preparing the corpora are in [`scripts/ccg_scripts/README`](scripts/ccg_scripts/README).
+- CCG: Details for preparing the corpora are in [`scripts/ccg/README`](scripts/ccg/README).
 - Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
