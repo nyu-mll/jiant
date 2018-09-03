@@ -105,6 +105,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
              'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
              'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
+             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
              }
 # !!!!!!! NOTE: You should not be adding anything else manually to NAME2INFO.
 # !!!!!!! Use the decorator @register_task instead.
