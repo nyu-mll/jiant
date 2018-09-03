@@ -35,7 +35,7 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, RedditTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask
+    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -705,7 +705,14 @@ class MultiTaskModel(nn.Module):
         if 'labels' in batch:
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
-            if isinstance(task, STSBTask):
+            if isinstance(task, JOCITask):
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                out['loss'] = F.mse_loss(logits, labels)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(mean_squared_error(logits_np, labels_np))
+                task.scorer2(logits_np, labels_np)
+           elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()

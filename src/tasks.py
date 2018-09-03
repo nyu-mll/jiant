@@ -1659,6 +1659,26 @@ class WNLITask(PairClassificationTask):
         log.info("\tFinished loading Winograd.")
 
 
+class JOCITask(PairOrdinalRegressionTask):
+    '''Class for JOCI ordinal regression task'''
+     def __init__(self, path, max_seq_len, name="joci"):
+        super(JOCITask, self).__init__(name)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+     def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
+                            s1_idx=0, s2_idx=1, targ_idx=2)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len, skip_rows=1,
+                           s1_idx=0, s2_idx=1, targ_idx=2)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading JOCI data.")
+        
+
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 

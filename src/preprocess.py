@@ -43,7 +43,7 @@ from .tasks import \
     NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
     RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
     RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
-    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask
+    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -84,6 +84,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
+             'joci': (JOCITask, 'JOCI/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
