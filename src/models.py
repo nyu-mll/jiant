@@ -28,22 +28,11 @@ from . import config
 from . import edge_probing
 #from . import beamsearch
 
-from .tasks import STSBTask, CoLATask, SSTTask, \
-    PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
-
-from .tasks import STSBTask, CoLATask, \
-    ClassificationTask, PairClassificationTask, SingleClassificationTask, \
-    RegressionTask, PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, MTTask, \
-    PairOrdinalRegressionTask, \
-    WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, CCGTaggingTask, \
-    MultiNLIDiagnosticTask
-from .tasks import EdgeProbingTask
+from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
+    GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, RedditTask, \
+    RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
+    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -384,6 +373,10 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, '%s_decoder' % task.name, decoder)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
+    elif isinstance(task, (GroundedTask, GroundedSWTask)):
+        task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
+        pooler = build_image_sent_module(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, pooler)
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)

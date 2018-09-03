@@ -37,21 +37,13 @@ from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
-    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
-    WikiText103LMTask, DisSentWikiSingleTask, DisSentWikiBigFullTask, \
-    PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, \
-    NLITypeProbingTask, MultiNLIAltTask, \
-    NLITypeProbingAltTask
-
-from .tasks import \
-    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
-    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask, NPSTask
-from .tasks import CCGTaggingTask, MultiNLIDiagnosticTask
+    BWBLMTask, CCGTaggingTask, CoLATask, DisSentWikiBigFullTask, DisSentWikiSingleTask, GroundedTask, \
+    MRPCTask, MTTask, MultiNLIAltTask, MultiNLIDiagnosticTask, MultiNLIFictionTask, MultiNLIGovernmentTask, \
+    MultiNLISlateTask, MultiNLITask, MultiNLITelephoneTask, MultiNLITravelTask, NLITypeProbingAltTask, \
+    NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
+    RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
+    RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
+    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -92,6 +84,7 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'rte': (RTETask, 'RTE/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
+             'joci': (JOCITask, 'JOCI/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
