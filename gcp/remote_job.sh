@@ -22,9 +22,22 @@ fi
 
 FULL_COMMAND="bash -l -c \"${COMMAND}\""
 
+declare -a CL_ARGS
+
+# Use internal ip between GCE instances.
+# We use a DNS lookup to tell if the local host is a GCE instance. See
+# https://stackoverflow.com/questions/30911775/how-to-know-if-a-machine-is-an-google-compute-engine-instance
+dig_response=$(dig +short metadata.google.internal)
+if [[ "$dig_response" != "" ]]; then
+  CL_ARGS+=( --internal-ip )
+fi
+CL_ARGS+=( "${INSTANCE_NAME}" )
+CL_ARGS+=( --command "${FULL_COMMAND}" )
+CL_ARGS+=( --zone "$ZONE")
+CL_ARGS+=( -- -t )
+
 set -x
-gcloud compute ssh --project jsalt-sentence-rep --zone "$ZONE" \
-  "${INSTANCE_NAME}" --command="${FULL_COMMAND}" -- -t
+gcloud beta compute ssh "${CL_ARGS[@]}"
 
 set +x
 echo "Remote command completed successfully."

@@ -187,7 +187,7 @@ class EdgeClassifierModule(nn.Module):
             raise NotImplementedError("Softmax loss not fully supported.")
             return F.softmax(logits, dim=2)
         elif self.loss_type == 'sigmoid':
-            return F.sigmoid(logits)
+            return torch.sigmoid(logits)
         else:
             raise ValueError("Unsupported loss type '%s' "
                              "for edge probing." % loss_type)
@@ -223,7 +223,7 @@ class EdgeClassifierModule(nn.Module):
             assert labels.shape[1] == 1  # expect a single target
             return F.cross_entropy(logits, labels)
         elif self.loss_type == 'sigmoid':
-            return F.binary_cross_entropy(F.sigmoid(logits),
+            return F.binary_cross_entropy(torch.sigmoid(logits),
                                           labels.float())
         else:
             raise ValueError("Unsupported loss type '%s' "
