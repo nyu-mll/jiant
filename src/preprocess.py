@@ -37,23 +37,13 @@ from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
-    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
-    PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
-    DisSentWikiSingleTask, DisSentWikiBigFullTask, \
-    JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    GroundedSWTask, NLITypeProbingAltTask
-
-from .tasks import \
-    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
-    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask, NPSTask
-from .tasks import CCGTaggingTask, MultiNLIDiagnosticTask
+    BWBLMTask, CCGTaggingTask, CoLATask, DisSentWikiBigFullTask, DisSentWikiSingleTask, GroundedTask, \
+    MRPCTask, MTTask, MultiNLIAltTask, MultiNLIDiagnosticTask, MultiNLIFictionTask, MultiNLIGovernmentTask, \
+    MultiNLISlateTask, MultiNLITask, MultiNLITelephoneTask, MultiNLITravelTask, NLITypeProbingAltTask, \
+    NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
+    RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
+    RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
+    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -95,12 +85,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
              'joci': (JOCITask, 'JOCI/'),
-             'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
-             'pdtb': (PDTBTask, 'PDTB/'),
-             'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
-             'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
@@ -109,7 +95,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'nli-alt': (NLITypeProbingAltTask, '/'),
              'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
-             'vae': (VAETask, 'VAE'),
              'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),

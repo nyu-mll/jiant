@@ -1,17 +1,19 @@
 ''' Script for downloading all GLUE data.
 
-Note: for legal reasons, we are unable to host MRPC.
-You can either use the version hosted by the SentEval team, which is already tokenized,
-or you can download the original data from (https://download.microsoft.com/download/D/4/6/D46FF87A-F6B9-4252-AA8B-3604ED519838/MSRParaphraseCorpus.msi) and extract the data from it manually.
-For Windows users, you can run the .msi file. For Mac and Linux users, consider an external library such as 'cabextract' (see below for an example).
-You should then rename and place specific files in a folder (see below for an example).
+Example usage: 
+  python download_glue_data.py --data_dir data --tasks all
 
-mkdir MRPC
-cabextract MSRParaphraseCorpus.msi -d MRPC
-cat MRPC/_2DEC3DBE877E4DB192D17C0256E90F1D | tr -d $'\r' > MRPC/msr_paraphrase_train.txt
-cat MRPC/_D7B391F9EAFF4B1B8BCE8F21B20B1B61 | tr -d $'\r' > MRPC/msr_paraphrase_test.txt
-rm MRPC/_*
-rm MSRParaphraseCorpus.msi
+Note: for legal reasons, we are unable to host MRPC ourselves.
+By default, we use the version hosted by the SentEval team, which is already tokenized. If that becomes unavailable,
+you can download the original data from (https://download.microsoft.com/download/D/4/6/D46FF87A-F6B9-4252-AA8B-3604ED519838/MSRParaphraseCorpus.msi) and extract the data from it manually.
+For Windows users, you can run the .msi file. For Mac and Linux users, you'll need an external library like 'cabextract' (see below for an example).
+
+  mkdir MRPC
+  cabextract MSRParaphraseCorpus.msi -d MRPC
+  cat MRPC/_2DEC3DBE877E4DB192D17C0256E90F1D | tr -d $'\r' > MRPC/msr_paraphrase_train.txt
+  cat MRPC/_D7B391F9EAFF4B1B8BCE8F21B20B1B61 | tr -d $'\r' > MRPC/msr_paraphrase_test.txt
+  rm MRPC/_*
+  rm MSRParaphraseCorpus.msi
 '''
 
 import os
@@ -124,7 +126,7 @@ def main(arguments):
         '--data_dir',
         help='directory to save data to',
         type=str,
-        default='glue_data')
+        default='../glue_data')
     parser.add_argument(
         '-t',
         '--tasks',
