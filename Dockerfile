@@ -9,8 +9,6 @@
 #       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
 #       [ ... additional args to main.py ... ]
 #
-# To run on Kubernetes, see gcp/kubernetes/jiant_run.sh
-#
 # Note that --remote_log currently doesn't work with the above command,
 # since the host name seen by main.py is the name of the container, not the
 # name of the host GCE instance.
