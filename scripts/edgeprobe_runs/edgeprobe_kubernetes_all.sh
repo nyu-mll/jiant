@@ -3,14 +3,14 @@
 # Master script to start a full suite of edge probing experiments on
 # on Kubernetes. Comment out lines below to run only a subset of experiments.
 
-MODE=${1-"create"}
+MODE=${1:-"create"}
 NOTIFY_EMAIL=${2:-"iftenney@gmail.com"}
 PATH_TO_JIANT=${3:-"/nfs/jsalt/home/iftenney/jiant_exp"}
 GPU_TYPE="p100"
 
 function make_kubernetes_command() {
     # Generate shell command to execute in container.
-    # Uses edgeprobe_exp_fns.sh to generate configs; see that file for details 
+    # Uses edgeprobe_exp_fns.sh to generate configs; see that file for details
     # and to define new experiments.
     echo -n "export NOTIFY_EMAIL=${NOTIFY_EMAIL}"
     echo -n "; pushd ${PATH_TO_JIANT}"
