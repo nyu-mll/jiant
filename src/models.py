@@ -361,7 +361,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
-        attention = args.get("mt_attention", "bilinear")
+        attention = args.mt_attention
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -373,7 +373,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, MTTask):
-        attention = args.get("mt_attention", "bilinear")
+        attention = args.mt_attention
         log.info("using {} attention".format(attention))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -807,7 +807,7 @@ class MultiTaskModel(nn.Module):
             total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
 
-            pred = F.sigmoid(cos_simi).round()
+            pred = torch.sigmoid(cos_simi).round()
 
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
@@ -1021,7 +1021,7 @@ class MultiTaskModel(nn.Module):
 
         mat_mul = mat_mul.view(-1)
         labels = labels.view(-1).cuda()
-        pred = F.sigmoid(mat_mul).round()
+        pred = torch.sigmoid(mat_mul).round()
 
         out['loss'] = loss_fn(mat_mul, labels)
         total_correct = torch.sum(pred == labels)
