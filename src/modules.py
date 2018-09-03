@@ -108,7 +108,7 @@ class SentenceEncoder(Model):
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         # Embeddings
-        # Note: These highway layers are identity by default.
+        # Note: These highway modules are actually identity functions by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
         # task_sent_embs only used if sep_embs_for_skip
         task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
@@ -158,7 +158,6 @@ class BiLMEncoder(ElmoLstm):
 
 class BoWSentEncoder(Model):
     ''' Bag-of-words sentence encoder '''
-    # NOTE: hasn't been tested in recent memory
 
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
