@@ -372,6 +372,7 @@ class SamplingMultiTaskTrainer():
                     parameter.register_hook(clip_function)
 
         # Calculate per task sampling weights
+        assert_for_log(len(tasks) > 0, "Error: Expected to sample from 0 tasks.")
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
@@ -397,6 +398,8 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
+        else:
+            assert_for_log(False, "Error: Missing or unknown weighting method.")
         log.info ("Weighting details: ")
         log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
