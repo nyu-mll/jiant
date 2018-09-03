@@ -26,14 +26,12 @@ from allennlp.models.model import Model
 from allennlp.modules import Highway
 from allennlp.modules.matrix_attention import DotProductMatrixAttention
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
-from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
-from allennlp.nn.util import remove_sentence_boundaries, add_sentence_boundary_token_ids, get_device_of
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+from allennlp.nn import util, InitializerApplicator
+from allennlp.nn.util import add_sentence_boundary_token_ids
 from allennlp.modules.token_embedders import Embedding
 from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper, ELMoTokenCharactersIndexer
-from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
-from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
+from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 # StackedSelfAttentionEncoder
 from allennlp.modules.feedforward import FeedForward
