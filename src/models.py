@@ -31,23 +31,11 @@ from . import config
 from . import edge_probing
 #from . import beamsearch
 
-from .tasks import STSBTask, CoLATask, SSTTask, \
-    PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask
-
-from .tasks import STSBTask, CoLATask, \
-    ClassificationTask, PairClassificationTask, SingleClassificationTask, \
-    RegressionTask, PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, MTTask, \
-    PairOrdinalRegressionTask, JOCITask, \
-    WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, CCGTaggingTask, \
-    MultiNLIDiagnosticTask
-from .tasks import EdgeProbingTask
+from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
+    GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, RedditTask, \
+    RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
+    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -388,28 +376,14 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, '%s_decoder' % task.name, decoder)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-
-    elif isinstance(task, VAETask):
-        decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
-                                 'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
-        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
-        setattr(model, '%s_decoder' % task.name, decoder)
-
     elif isinstance(task, (GroundedTask, GroundedSWTask)):
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         pooler = build_image_sent_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
-
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
-
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -450,7 +424,6 @@ def get_task_specific_params(args, task_name):
 
     return Params(params)
 
-
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
     pooler = Pooler.from_params(d_inp, params['d_proj'])
@@ -469,7 +442,6 @@ def build_single_sentence_module(task, d_inp, params):
     pooler = Pooler.from_params(d_inp, params['d_proj'])
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
-
 
 def build_pair_sentence_module(task, d_inp, model, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
@@ -507,7 +479,6 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
     classifier = Classifier.from_params(4 * d_out, n_classes, params)
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
-
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
