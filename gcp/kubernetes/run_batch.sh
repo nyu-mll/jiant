@@ -40,7 +40,7 @@ kind: Job
 metadata:
   name: ${JOB_NAME}
 spec:
-  backoffLimit: 2
+  backoffLimit: 1
   template:
     spec:
       restartPolicy: Never

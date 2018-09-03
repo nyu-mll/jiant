@@ -3,9 +3,9 @@
 # Master script to start a full suite of edge probing experiments on
 # on Kubernetes. Comment out lines below to run only a subset of experiments.
 
-PATH_TO_JIANT=${1:-"/nfs/jsalt/home/iftenney/jiant_exp"}
+MODE=${1-"create"}
 NOTIFY_EMAIL=${2:-"iftenney@gmail.com"}
-MODE="create"
+PATH_TO_JIANT=${3:-"/nfs/jsalt/home/iftenney/jiant_exp"}
 GPU_TYPE="p100"
 
 function make_kubernetes_command() {
@@ -27,7 +27,7 @@ function kuberun() {
     echo ""
 }
 
-kuberun spr2-chars "elmo_chars_exp edges-spr2"
-kuberun spr2-full "elmo_full_exp edges-spr2"
-kuberun spr2-glove "glove_exp edges-spr2"
+# kuberun spr2-chars "elmo_chars_exp edges-spr2"
+# kuberun spr2-full "elmo_full_exp edges-spr2"
+# kuberun spr2-glove "glove_exp edges-spr2"
 kuberun spr2-cove "cove_exp edges-spr2"
