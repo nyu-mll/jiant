@@ -712,7 +712,7 @@ class MultiTaskModel(nn.Module):
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
-           elif isinstance(task, STSBTask):
+            elif isinstance(task, STSBTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
