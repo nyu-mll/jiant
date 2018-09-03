@@ -58,7 +58,6 @@ spec:
         env:
         - name: NFS_PROJECT_PREFIX
           value: ${PROJECT_DIR}
-        env:
         - name: JIANT_PROJECT_PREFIX
           value: ${PROJECT_DIR}
       nodeSelector:
