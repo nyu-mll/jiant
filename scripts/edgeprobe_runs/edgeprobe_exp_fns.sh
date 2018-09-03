@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Library of experiment functions for running main edge-probing experiments.
-# Don't execute this script directly, but instead include at the top of an 
+# Don't execute this script directly, but instead include at the top of an
 # experiment script as:
-# 
+#
 #   export NOTIFY_EMAIL="yourname@gmail.com"
 #   pushd /path/to/jiant
 #   source scripts/edgeprobe_runs/edgeprobe_exp_fns.sh
