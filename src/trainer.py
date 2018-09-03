@@ -329,10 +329,10 @@ class SamplingMultiTaskTrainer():
         log.info ("Training examples per task: " + str(dict(zip(task_names,task_n_train_examples))))
 
         if weighting_method == 'uniform':
-            sample_weights = [1] * len(tasks)
+            sample_weights = [1.0] * len(tasks)
             log.info("Sampling tasks uniformly.")
         elif weighting_method == 'proportional':
-            sample_weights = task_n_train_examples
+            sample_weights = task_n_train_examples.astype(float)
             log.info("Sampling tasks proportional to number of training examples.")
         elif weighting_method == 'proportional_log_batch':
             sample_weights = np.log(task_n_train_batches)
@@ -368,9 +368,9 @@ class SamplingMultiTaskTrainer():
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
         if scaling_method == 'uniform':
-            scaling_weights = [1] * len(tasks)
+            scaling_weights = [1.0] * len(tasks)
         elif scaling_method == 'max_proportional':
-            scaling_weights = task_n_train_examples
+            scaling_weights = task_n_train_examples.astype(float)
         elif scaling_method == 'max_proportional_log':
             scaling_weights = np.log(task_n_train_examples)
         elif 'max_power_' in scaling_method:
@@ -615,10 +615,11 @@ class SamplingMultiTaskTrainer():
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
                 metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
+                task_name = task
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases
-                task = task.name
+                task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
             this_epoch_metric = all_val_metrics[metric]
@@ -627,22 +628,22 @@ class SamplingMultiTaskTrainer():
             is_best_so_far, out_of_patience = \
                 self._check_history(metric_history, this_epoch_metric, metric_decreases)
             if is_best_so_far:
-                log.info("Best model found for %s.", task)
+                log.info("Best model found for %s.", task_name)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)
                 should_save = True
-                if task == 'macro':
+                if task_name == 'macro':
                     new_best_macro = True
             if out_of_patience:
                 if periodic_save:
                     should_save = True
                 metric_infos[metric]['stopped'] = True
-                log.info("Out of patience. Stopped tracking %s", task)
+                log.info("Out of patience. Stopped tracking %s", task_name)
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
-            if task not in ['micro', 'macro'] and g_scheduler is None:
-                scheduler = task_infos[task]['scheduler']
-            elif g_scheduler is not None and task == 'macro':
+            if task_name not in ['micro', 'macro'] and g_scheduler is None:
+                scheduler = task_infos[task_name]['scheduler']
+            elif g_scheduler is not None and task_name == 'macro':
                 scheduler = g_scheduler
             else:
                 scheduler = None
