@@ -507,7 +507,6 @@ class MultiTaskModel(nn.Module):
         ''' Args: sentence encoder '''
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
-        self.combine_method = args.sent_combine_method
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
