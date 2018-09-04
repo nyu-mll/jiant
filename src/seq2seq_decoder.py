@@ -32,6 +32,7 @@ class Seq2SeqDecoder(Model):
                  vocab: Vocabulary,
                  input_dim: int,
                  max_decoding_steps: int,
+                 output_proj_input_dim: int,
                  target_namespace: str = "targets",
                  target_embedding_dim: int = None,
                  attention: str = "none",
@@ -55,7 +56,7 @@ class Seq2SeqDecoder(Model):
         # we're using attention with ``DotProductSimilarity``, this is needed.
         self._decoder_hidden_dim = input_dim
         self._decoder_output_dim = self._decoder_hidden_dim
-        # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
+        self._output_proj_input_dim = output_proj_input_dim
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
@@ -72,7 +73,9 @@ class Seq2SeqDecoder(Model):
             raise Exception("attention not implemented {}".format(attention))
 
         self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
-        self._output_projection_layer = Linear(self._decoder_output_dim, num_classes)
+        if self._output_proj_input_dim != self._decoder_output_dim:
+            self.projection_bottleneck = Linear(self._decoder_output_dim, self._output_proj_input_dim)
+        self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
@@ -135,8 +138,13 @@ class Seq2SeqDecoder(Model):
             decoder_hidden, decoder_context = self._decoder_cell(
                 decoder_input, (decoder_hidden, decoder_context))
 
+            # output projection
+            if hasattr(self, "projection_bottleneck"):
+                proj_input = self.projection_bottleneck(decoder_hidden)
+            else:
+                proj_input = decoder_hidden
             # (batch_size, num_classes)
-            output_projections = self._output_projection_layer(decoder_hidden)
+            output_projections = self._output_projection_layer(proj_input)
 
             # list of (batch_size, 1, num_classes)
             step_logit = output_projections.unsqueeze(1)
@@ -263,32 +271,6 @@ class Seq2SeqDecoder(Model):
         loss = sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
         return loss
 
-    @overrides
-    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """
-        This method overrides ``Model.decode``, which gets called after ``Model.forward``, at test
-        time, to finalize predictions. The logic for the decoder part of the encoder-decoder lives
-        within the ``forward`` method.
-
-        This method trims the output predictions to the first end symbol, replaces indices with
-        corresponding tokens, and adds a field called ``predicted_tokens`` to the ``output_dict``.
-        """
-        # TODO: this method is not used and should be deleted
-        predicted_indices = output_dict["predictions"]
-        if not isinstance(predicted_indices, numpy.ndarray):
-            predicted_indices = predicted_indices.detach().cpu().numpy()
-        all_predicted_tokens = []
-        for indices in predicted_indices:
-            indices = list(indices)
-            # Collect indices till the first end_symbol
-            if self._end_index in indices:
-                indices = indices[:indices.index(self._end_index)]
-            predicted_tokens = [self.vocab.get_token_from_index(x, namespace=self._target_namespace)
-                                for x in indices]
-            all_predicted_tokens.append(predicted_tokens)
-        output_dict["predicted_tokens"] = all_predicted_tokens
-        return output_dict
-
     @classmethod
     def from_params(cls, vocab, params: Params) -> 'SimpleSeq2Seq':
         input_dim = params.pop("input_dim")
@@ -296,6 +278,7 @@ class Seq2SeqDecoder(Model):
         target_namespace = params.pop("target_namespace", "targets")
         target_embedding_dim = params.pop("target_embedding_dim")
         attention = params.pop("attention", "none")
+        output_proj_input_dim = params.pop("output_proj_input_dim", input_dim)
         dropout = params.pop_float("dropout", 0.0)
         scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
         params.assert_empty(cls.__name__)
@@ -305,5 +288,6 @@ class Seq2SeqDecoder(Model):
                    max_decoding_steps=max_decoding_steps,
                    target_namespace=target_namespace,
                    attention=attention,
+                   output_proj_input_dim=output_proj_input_dim,
                    dropout=dropout,
                    scheduled_sampling_ratio=scheduled_sampling_ratio)
