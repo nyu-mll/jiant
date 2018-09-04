@@ -50,10 +50,9 @@ fi
 
 set -x
 gcloud compute instances create "$INSTANCE_NAME" \
-  --project jsalt-sentence-rep --zone "$ZONE" \
-  --source-instance-template "$TEMPLATE"
+  --zone "$ZONE" --source-instance-template "$TEMPLATE"
 set +x
 
 echo "Instance created! Wait a minute or two before attempting to SSH."
-STATUS_URL="https://console.cloud.google.com/compute/instancesDetail/zones/$ZONE/instances/$INSTANCE_NAME?project=jsalt-sentence-rep"
+STATUS_URL="https://console.cloud.google.com/compute/instancesDetail/zones/$ZONE/instances/$INSTANCE_NAME"
 echo "You can monitor status at: $STATUS_URL"

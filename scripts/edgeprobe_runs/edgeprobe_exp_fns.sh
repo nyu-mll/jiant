@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Library of experiment functions for running main edge-probing experiments.
-# Don't execute this script directly, but instead include at the top of an 
+# Don't execute this script directly, but instead include at the top of an
 # experiment script as:
-# 
+#
 #   export NOTIFY_EMAIL="yourname@gmail.com"
 #   pushd /path/to/jiant
-#   source major_experiment_scripts/edgeprobe_exp_fns.sh
+#   source scripts/edgeprobe_runs/edgeprobe_exp_fns.sh
 #   elmo_chars_exp edges-srl-conll2005
 #   elmo_full_exp edges-srl-conll2005
 #   elmo_ortho_exp edges-srl-conll2005 0
@@ -77,3 +77,20 @@ function train_full_exp() {
     run_exp "config/edgeprobe_train.conf" "${OVERRIDES}"
 }
 
+##
+# GloVe and CoVe-based models.
+function glove_exp() {
+    # Lexical baseline, probe GloVe embeddings.
+    # Usage: glove_exp <task_name>
+    OVERRIDES="exp_name=glove-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=$1"
+    run_exp "config/edgeprobe_glove.conf" "${OVERRIDES}"
+}
+
+function cove_exp() {
+    # Probe CoVe, which is concatenated with GloVe per standard usage.
+    # Usage: cove_exp <task_name>
+    OVERRIDES="exp_name=cove-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=$1"
+    run_exp "config/edgeprobe_cove.conf" "${OVERRIDES}"
+}

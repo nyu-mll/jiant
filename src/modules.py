@@ -26,14 +26,12 @@ from allennlp.models.model import Model
 from allennlp.modules import Highway
 from allennlp.modules.matrix_attention import DotProductMatrixAttention
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
-from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
-from allennlp.nn.util import remove_sentence_boundaries, add_sentence_boundary_token_ids, get_device_of
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+from allennlp.nn import util, InitializerApplicator
+from allennlp.nn.util import add_sentence_boundary_token_ids
 from allennlp.modules.token_embedders import Embedding
 from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper, ELMoTokenCharactersIndexer
-from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
-from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
+from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 # StackedSelfAttentionEncoder
 from allennlp.modules.feedforward import FeedForward
@@ -78,12 +76,13 @@ class SentenceEncoder(Model):
             self._text_field_embedder = text_field_embedder
             d_emb = text_field_embedder.get_output_dim()
             self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
+
         self._phrase_layer = phrase_layer
-        d_inp_phrase = phrase_layer.get_input_dim()
-        self._cove = cove_layer
+        self._cove_layer = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
         self.sep_embs_for_skip = sep_embs_for_skip
+        d_inp_phrase = self._phrase_layer.get_input_dim()
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
         if dropout > 0:
@@ -107,15 +106,20 @@ class SentenceEncoder(Model):
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         # Embeddings
-        # Note: These highway layers are identity by default.
+        # Note: These highway modules are actually identity functions by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
         # task_sent_embs only used if sep_embs_for_skip
         task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
-        if self._cove is not None:
+
+        if self._cove_layer is not None:
+            # Slightly wasteful as this repeats the GloVe lookup internally,
+            # but this allows CoVe to be used alongside other embedding models
+            # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-            sent_cove_embs = self._cove(sent['words'], sent_lens)
+            sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+
         sent_embs = self._dropout(sent_embs)
         task_sent_embs = self._dropout(task_sent_embs)
 
@@ -152,7 +156,6 @@ class BiLMEncoder(ElmoLstm):
 
 class BoWSentEncoder(Model):
     ''' Bag-of-words sentence encoder '''
-    # NOTE: hasn't been tested in recent memory
 
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
@@ -161,11 +164,12 @@ class BoWSentEncoder(Model):
         self.output_dim = text_field_embedder.get_output_dim()
         initializer(self)
 
-    def forward(self, sent):
+    def forward(self, sent, task):
         # pylint: disable=arguments-differ
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
+            - task: Ignored.
 
         Returns
             - word_embs (torch.FloatTensor): (b_size, seq_len, d_emb)
