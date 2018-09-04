@@ -372,19 +372,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         setattr(model, '%s_decoder' % task.name, decoder)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
 
-    elif isinstance(task, VAETask):
-        decoder_params = Params({'input_dim': d_sent,
-                                 'decoder_hidden_size': args.d_hid_dec,
-                                 'target_embedding_dim': args.target_embedding_dim,
-                                 'max_decoding_steps': args.max_seq_len,
-                                 'target_namespace': 'tokens',
-                                 'attention': 'bilinear',
-                                 'output_proj_input_dim': args.output_proj_input_dim,
-                                 'dropout': args.dropout,
-                                 'scheduled_sampling_ratio': 0.0})
-        decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
-        setattr(model, '%s_decoder' % task.name, decoder)
-
     elif isinstance(task, (GroundedTask, GroundedSWTask)):
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         pooler = build_image_sent_module(task, d_sent, task_params)
