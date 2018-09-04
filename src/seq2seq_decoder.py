@@ -15,7 +15,7 @@ from allennlp.common import Params
 from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules import TextFieldEmbedder, Seq2SeqEncoder
-from allennlp.modules.attention import LegacyAttention, BilinearAttention
+from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.similarity_functions import SimilarityFunction
 from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
@@ -31,16 +31,14 @@ class Seq2SeqDecoder(Model):
     def __init__(self,
                  vocab: Vocabulary,
                  input_dim: int,
-                 max_decoding_steps: int,
                  target_namespace: str = "targets",
                  target_embedding_dim: int = None,
                  attention: str = "none",
                  dropout: float = 0.0,
-                 scheduled_sampling_ratio: float = 0.0) -> None:
+                 ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
-        self._scheduled_sampling_ratio = scheduled_sampling_ratio
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
@@ -75,6 +73,13 @@ class Seq2SeqDecoder(Model):
         self._dropout = torch.nn.Dropout(p=dropout)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
+        """
+        Initialization of the decoder state, based on the encoder output.
+        Parameters
+        ----------
+        encoder_outputs: torch.FloatTensor, [bs, T, h]
+        encoder_outputs_mask: torch.LongTensor, [bs, T, 1]
+        """
         # very important - feel free to check it a third time
         # idempotent / safe to run in place. encoder_outputs_mask should never
         # change
@@ -96,16 +101,15 @@ class Seq2SeqDecoder(Model):
                 target_tokens: Dict[str, torch.LongTensor] = None) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
-        Decoder logic for producing the entire target sequence.
+        Decoder logic for producing the entire target sequence at train time.
 
         Parameters
         ----------
         encoder_outputs : torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask : torch.LongTensor, [bs, T, 1]
-        target_tokens : Dict[str, torch.LongTensor], optional (default = None)
-           Output of ``Textfield.as_array()`` applied on target ``TextField``. We assume that the
-           target tokens are also represented as a ``TextField``.
+        target_tokens : Dict[str, torch.LongTensor]
         """
+        # TODO: target_tokens is not optional.
         batch_size, _, _ = encoder_outputs.size()
 
         if target_tokens is not None:
@@ -151,6 +155,15 @@ class Seq2SeqDecoder(Model):
                       decoder_input,
                       decoder_hidden,
                       decoder_context):
+        """
+        Applies one step of the decoder. This is used by beam search.
+
+        Parameters
+        ----------
+        decoder_input: torch.FloatTensor
+        decoder_hidden: torch.FloatTensor
+        decoder_context: torch.FloatTensor
+        """
         decoder_hidden, decoder_context = self._decoder_cell(
             decoder_input, (decoder_hidden, decoder_context))
 
@@ -168,7 +181,7 @@ class Seq2SeqDecoder(Model):
         Given the input indices for the current timestep of the decoder, and all the encoder
         outputs, compute the input at the current timestep.  Note: This method is agnostic to
         whether the indices are gold indices or the predictions made by the decoder at the last
-        timestep. So, this can be used even if we're doing some kind of scheduled sampling.
+        timestep.
 
         If we're not using attention, the output of this method is just an embedding of the input
         indices.  If we are, the output will be a concatentation of the embedding and an attended
@@ -195,7 +208,6 @@ class Seq2SeqDecoder(Model):
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
-            # Fixme
 
             # important - need to use zero-masking instead of -inf for attention
             # I've checked that doing this doesn't significantly increase time
@@ -248,47 +260,14 @@ class Seq2SeqDecoder(Model):
         loss = sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
         return loss
 
-    @overrides
-    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """
-        This method overrides ``Model.decode``, which gets called after ``Model.forward``, at test
-        time, to finalize predictions. The logic for the decoder part of the encoder-decoder lives
-        within the ``forward`` method.
-
-        This method trims the output predictions to the first end symbol, replaces indices with
-        corresponding tokens, and adds a field called ``predicted_tokens`` to the ``output_dict``.
-        """
-        predicted_indices = output_dict["predictions"]
-        if not isinstance(predicted_indices, numpy.ndarray):
-            predicted_indices = predicted_indices.detach().cpu().numpy()
-        all_predicted_tokens = []
-        for indices in predicted_indices:
-            indices = list(indices)
-            # Collect indices till the first end_symbol
-            if self._end_index in indices:
-                indices = indices[:indices.index(self._end_index)]
-            predicted_tokens = [self.vocab.get_token_from_index(x, namespace=self._target_namespace)
-                                for x in indices]
-            all_predicted_tokens.append(predicted_tokens)
-        output_dict["predicted_tokens"] = all_predicted_tokens
-        return output_dict
-
     @classmethod
     def from_params(cls, vocab, params: Params) -> 'SimpleSeq2Seq':
         input_dim = params.pop("input_dim")
         max_decoding_steps = params.pop("max_decoding_steps")
         target_namespace = params.pop("target_namespace", "targets")
         target_embedding_dim = params.pop("target_embedding_dim")
-        # If no attention function is specified, we should not use attention, not attention with
-        # default similarity function.
         attention = params.pop("attention", "none")
-        #attention_function_type = params.pop("attention_function", None)
-        # if attention_function_type is not None:
-        #    attention_function = SimilarityFunction.from_params(attention_function_type)
-        # else:
-        #    attention_function = None
         dropout = params.pop_float("dropout", 0.0)
-        scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
         params.assert_empty(cls.__name__)
         return cls(vocab,
                    input_dim=input_dim,
@@ -296,5 +275,4 @@ class Seq2SeqDecoder(Model):
                    max_decoding_steps=max_decoding_steps,
                    target_namespace=target_namespace,
                    attention=attention,
-                   dropout=dropout,
-                   scheduled_sampling_ratio=scheduled_sampling_ratio)
+                   dropout=dropout)

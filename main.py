@@ -139,13 +139,12 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    assert_for_log(not (len(train_tasks) > 1 and
-                        any(train_task.val_metric_decreases for train_task in train_tasks)),
-                   "Attempting multitask training with a mix of increasing and decreasing metrics. "
-                   "This is not currently supported. (We haven't set it up yet.)")
-    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x:x.name)
+    if any([t.val_metric_decreases for t in train_tasks]) and any([not t.val_metric_decreases for t in train_tasks]):
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
+    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x: x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
+
     # Build or load model #
     log.info('Building model...')
     start_time = time.time()
@@ -159,6 +158,8 @@ def main(cl_arguments):
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
+        assert_for_log(not args.do_train,
+                       "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
@@ -217,7 +218,7 @@ def main(cl_arguments):
 
     if args.train_for_eval and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
-        # optimizer, we shouldn't load parameters for those models. 
+        # optimizer, we shouldn't load parameters for those models.
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
         # during the train_for_eval phase.
         task_names_to_avoid_loading = [task.name for task in eval_tasks]
@@ -226,7 +227,7 @@ def main(cl_arguments):
 
     if not args.load_eval_checkpoint == "none":
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint, 
+        load_model_state(model, args.load_eval_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already

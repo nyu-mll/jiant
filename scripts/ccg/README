@@ -1,0 +1,7 @@
+To prepare the CCG data: 
+- Download CCGbank, available at:
+  https://catalog.ldc.upenn.edu/LDC2005T13
+- Place all scripts in this folder (ccg_processing_scripts) into the folder
+  ccgbank_1_1/data/AUTO within CCGbank
+- Run the following line within this directory: ./ccg_prepare.sh
+
