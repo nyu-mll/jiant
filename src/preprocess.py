@@ -277,6 +277,10 @@ def _build_vocab(args, tasks, vocab_path: str):
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
+    if args.openai_transformer:
+        # Add pre-computed BPE vocabulary
+        add_openai_bpe_vocab(vocab)
+
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -303,7 +307,6 @@ def build_tasks(args):
                 task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
-    vocab_path = os.path.join(args.exp_dir, 'vocab')
     indexers = {}
     if not args.word_embs == 'none':
         indexers["words"] = SingleIdTokenIndexer()
@@ -311,7 +314,12 @@ def build_tasks(args):
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.openai_transformer:
+        assert not indexers, ("OpenAI transformer is not supported alongside"
+                              "other indexers!")
+        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
 
+    vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
         _build_vocab(args, tasks, vocab_path)
 
@@ -575,6 +583,12 @@ def add_task_label_vocab(vocab, task):
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
+def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
+    '''Add OpenAI BPE vocabulary for use with pre-tokenized data.'''
+    from .openai_transformer_lm import utils as openai_utils
+    id_to_wordpiece = openai_utils.reverse_encoder_dict
+    for i in range(len(id_to_wordpiece)):
+        vocab.add_token_to_namespace(id_to_wordpiece[i], namespace)
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.

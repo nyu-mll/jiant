@@ -251,6 +251,7 @@ class PairClassificationTask(ClassificationTask):
 
 # Make sure we load the properly-retokenized versions.
 _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
+_openai_bpe_suffix = ".retokenized.OpenAI.BPE"
 # SRL CoNLL 2005, formulated as an edge-labeling task.
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
                label_file="labels.txt", files_by_split={
@@ -271,6 +272,12 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'train': "train.edges.json" + _tokenizer_suffix,
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+@register_task('edges-spr2-openai', rel_path='edges/spr2',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _openai_bpe_suffix,
+                    'val': "dev.edges.json" + _openai_bpe_suffix,
+                    'test': "test.edges.json" + _openai_bpe_suffix,
                }, is_symmetric=False)
 # Definite pronoun resolution. Two labels.
 @register_task('edges-dpr', rel_path='edges/dpr',
