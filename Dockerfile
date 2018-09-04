@@ -64,6 +64,9 @@ RUN python -m spacy download en
 # Install local data files.
 RUN python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 
+# Fix unicode issues in Python3 by setting default text file encoding.
+ENV LANG C.UTF-8
+
 # Create local dir for NFS mount.
 RUN mkdir -p /nfs/jsalt
 # Set environment vars based on gcp/config/jsalt_paths.1.2.sh

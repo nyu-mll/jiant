@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 
 from .tf_original import utils as openai_utils
-from .text_utils import TextEncoder
+from .tf_original.text_utils import TextEncoder
 
 from .pytorch_huggingface import model_pytorch
 
