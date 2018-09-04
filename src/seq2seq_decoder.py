@@ -295,4 +295,3 @@ class Seq2SeqDecoder(Model):
                    output_proj_input_dim=output_proj_input_dim,
                    dropout=dropout,
                    scheduled_sampling_ratio=scheduled_sampling_ratio)
-                   dropout=dropout)
