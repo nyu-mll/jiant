@@ -30,7 +30,7 @@ if [ ! -d "${PROJECT_DIR}" ]; then
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v1"
+IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v2"
 
 ##
 # Create custom config and create a Kubernetes job.

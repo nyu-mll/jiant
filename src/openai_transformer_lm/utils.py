@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 
 from .tf_original import utils as openai_utils
-from .tf_original import text_utils as openai_text_utils
+from .text_utils import TextEncoder
 
 from .pytorch_huggingface import model_pytorch
 
@@ -18,7 +18,7 @@ openai_data_dir = os.path.join(os.path.dirname(openai_utils.__file__),
 encoder_path = os.path.join(openai_data_dir, "encoder_bpe_40000.json")
 bpe_path = os.path.join(openai_data_dir, "vocab_40000.bpe")
 
-text_encoder = openai_text_utils.TextEncoder(encoder_path, bpe_path)
+text_encoder = TextEncoder(encoder_path, bpe_path)
 encoder_dict = text_encoder.encoder  # just a dict of text -> id
 reverse_encoder_dict = {v:k for k,v in encoder_dict.items()}
 N_VOCAB = len(encoder_dict)
