@@ -53,12 +53,6 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 # using individual tasks later, so better to have as a list
 ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
-# Edge probing suite.
-ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr', 'edges-ner-conll2003',
-                  'edges-coref-ontonotes',
-                  'edges-dep-labeling']
-
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
                     'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
@@ -296,7 +290,8 @@ def build_tasks(args):
 
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
-        get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
+        get_tasks(parse_task_list_arg(args.train_tasks),
+                  parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path,
@@ -443,8 +438,6 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
-        elif task_name == 'edges-all':
-            task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue
         else:
@@ -456,8 +449,9 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               max_targ_v_size=20000):
     ''' Actually build or load (from pickles) the tasks. '''
     # We don't want mnli-diagnostic in train_task_names
-    train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
-    ''' Load tasks '''
+    train_task_names = [name for name in train_task_names
+                        if name not in {'mnli-diagnostic'}]
+
     task_names = sorted(set(train_task_names + eval_task_names))
     assert path is not None
     scratch_path = (scratch_path or path)

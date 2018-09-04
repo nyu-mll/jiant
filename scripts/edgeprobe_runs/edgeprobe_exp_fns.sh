@@ -94,3 +94,15 @@ function cove_exp() {
     OVERRIDES+=", eval_tasks=$1"
     run_exp "config/edgeprobe_cove.conf" "${OVERRIDES}"
 }
+
+##
+# OpenAI transformer model.
+function openai_exp() {
+    # Probe the OpenAI transformer model.
+    # Note that we append -openai to the task name to use the
+    # specially-retokenized versions.
+    # Usage: openai_lm_exp <task_name>
+    OVERRIDES="exp_name=openai-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=${1}-openai"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
