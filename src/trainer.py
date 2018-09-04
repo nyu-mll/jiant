@@ -363,12 +363,9 @@ class SamplingMultiTaskTrainer():
         elif weighting_method == 'proportional_log_example':
             sample_weights = np.log(task_n_train_examples)
             log.info("Sampling tasks proportional to log number of training examples.")
-        elif weighting_method == 'inverse_example':
+        elif weighting_method == 'inverse':
             sample_weights = 1 / task_n_train_examples
             log.info("Sampling tasks inverse to number of training examples.")
-        elif weighting_method == 'inverse_batch':
-            sample_weights = 1 / task_n_train_batches
-            log.info("Sampling tasks inverse to number of training batches.")
         elif weighting_method == 'inverse_log_example':
             sample_weights = 1 / np.log(task_n_train_examples)
             log.info("Sampling tasks inverse to log number of training examples.")
