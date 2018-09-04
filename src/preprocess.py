@@ -37,23 +37,13 @@ from . import utils
 from . import tasks as tasks_module
 
 from .tasks import \
-    CoLATask, MRPCTask, MultiNLITask, QQPTask, QQPAltTask, RTETask, \
-    QNLITask, QNLIAltTask, SNLITask, SSTTask, STSBTask, STSBAltTask, WNLITask, \
-    PDTBTask, \
-    WikiText2LMTask, WikiText103LMTask, DisSentBWBSingleTask, \
-    DisSentWikiSingleTask, DisSentWikiBigFullTask, \
-    JOCITask, PairOrdinalRegressionTask, WeakGroundedTask, \
-    GroundedTask, MTTask, BWBLMTask, WikiInsertionsTask, \
-    NLITypeProbingTask, MultiNLIAltTask, VAETask, \
-    GroundedSWTask, NLITypeProbingAltTask
-
-from .tasks import \
-    RecastKGTask, RecastLexicosynTask, RecastWinogenderTask, \
-    RecastFactualityTask, RecastSentimentTask, RecastVerbcornerTask, \
-    RecastVerbnetTask, RecastNERTask, RecastPunTask, TaggingTask, \
-    MultiNLIFictionTask, MultiNLISlateTask, MultiNLIGovernmentTask, \
-    MultiNLITravelTask, MultiNLITelephoneTask, NPSTask
-from .tasks import CCGTaggingTask, MultiNLIDiagnosticTask
+    BWBLMTask, CCGTaggingTask, CoLATask, DisSentWikiBigFullTask, DisSentWikiSingleTask, GroundedTask, \
+    MRPCTask, MTTask, MultiNLIAltTask, MultiNLIDiagnosticTask, MultiNLIFictionTask, MultiNLIGovernmentTask, \
+    MultiNLISlateTask, MultiNLITask, MultiNLITelephoneTask, MultiNLITravelTask, NLITypeProbingAltTask, \
+    NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
+    RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
+    RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
+    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
 
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
@@ -95,12 +85,8 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'snli': (SNLITask, 'SNLI/'),
              'wnli': (WNLITask, 'WNLI/'),
              'joci': (JOCITask, 'JOCI/'),
-             'wiki2': (WikiText2LMTask, 'WikiText2/'),
              'wiki103': (WikiText103LMTask, 'WikiText103/'),
              'bwb': (BWBLMTask, 'BWB/'),
-             'pdtb': (PDTBTask, 'PDTB/'),
-             'wikiins': (WikiInsertionsTask, 'wiki-insertions'),
-             'dissentbwb': (DisSentBWBSingleTask, 'DisSent/bwb/'),
              'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
              'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
              'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
@@ -109,7 +95,6 @@ NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
              'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
              'nli-alt': (NLITypeProbingAltTask, '/'),
              'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
-             'vae': (VAETask, 'VAE'),
              'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
              'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
              'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
@@ -348,6 +333,7 @@ def build_tasks(args):
             word_embs = _build_embeddings(args, vocab, emb_file)
         else:  # load from file
             word_embs = pkl.load(open(emb_file, 'rb'))
+        log.info("Trimmed word embeddings: %s", str(word_embs.size()))
 
     # 4) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
@@ -381,33 +367,59 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
+    assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
+        "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
     train_tasks = []
     eval_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
+        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
+        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
         # When using training_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if args.training_data_fraction < 1 and task.name in train_task_names:
             log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
-        else:
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
-
-        if task.name in train_task_names:
             train_tasks.append(task)
-        if task.name in eval_task_names:
-            if args.training_data_fraction < 1 and task.name in train_task_names:
+            if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
-                # phase.
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed eval training version of " + task.name + " train.")
+                log.warn("When using un-trimmed eval training version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
+                eval_tasks.append(task)
+
+        # When using eval_data_fraction, we need modified iterators
+        # only for training datasets at train_for_eval time.
+        elif args.eval_data_fraction < 1 and task.name in eval_task_names:
+            log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=args.eval_data_fraction)
             eval_tasks.append(task)
+            if task.name in train_task_names:
+                # Rebuild the iterator so we see the full dataset in the pretraining
+                # phase. It will create a deepcopy of the task object
+                # and therefore there could be two tasks with the same name (task.name).
+                log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
+                log.warn("When using un-trimmed pretraining version of train split, "
+                "it creates a deepcopy of task object which is inefficient.")
+                task = copy.deepcopy(task)
+                task.train_data = _get_instance_generator(
+                    task.name, "train", preproc_dir, fraction=1.0)
+                train_tasks.append(task)
+        # When neither eval_data_fraction nor training_data_fraction is specified we use unmodified iterators.
+        else:
+            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
+                                                      fraction=1.0)
+            if task.name in train_task_names:
+                train_tasks.append(task)
+            if task.name in eval_task_names:
+                eval_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
@@ -564,7 +576,7 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def get_embeddings(vocab, vec_file, d_word):
+def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.
     Works for fastText and GloVe embedding files. '''
     word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)

@@ -11,6 +11,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from . import preprocess
+from . import utils
 
 from typing import List, Sequence, Iterable, Tuple, Dict
 
@@ -42,7 +43,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
     all_preds = {}
     n_examples_overall = 0
-    
+
     assert len(tasks) > 0 , "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
@@ -54,7 +55,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
         for batch_idx, batch in enumerate(generator):
-
+            utils.reset_elmo_states(model)
             out = model.forward(task, batch, predict=True)
             # We don't want mnli-diagnostic to affect the micro and macro average.
             # Accuracy of mnli-diagnostic is hardcoded to 0.

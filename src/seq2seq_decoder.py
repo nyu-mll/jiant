@@ -15,7 +15,7 @@ from allennlp.common import Params
 from allennlp.common.util import START_SYMBOL, END_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules import TextFieldEmbedder, Seq2SeqEncoder
-from allennlp.modules.attention import LegacyAttention, BilinearAttention
+from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.similarity_functions import SimilarityFunction
 from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
@@ -38,12 +38,10 @@ class Seq2SeqDecoder(Model):
                  target_embedding_dim: int = None,
                  attention: str = "none",
                  dropout: float = 0.0,
-                 scheduled_sampling_ratio: float = 0.0) -> None:
-        # TODO: max_decoding_steps, scheduled_sampling_ratio are not used and should be deleted
+                 ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
-        self._scheduled_sampling_ratio = scheduled_sampling_ratio
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
@@ -286,7 +284,6 @@ class Seq2SeqDecoder(Model):
         attention = params.pop("attention", "none")
         output_proj_input_dim = params.pop("output_proj_input_dim", input_dim)
         dropout = params.pop_float("dropout", 0.0)
-        scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
         params.assert_empty(cls.__name__)
         return cls(vocab,
                    input_dim=input_dim,
@@ -298,3 +295,4 @@ class Seq2SeqDecoder(Model):
                    output_proj_input_dim=output_proj_input_dim,
                    dropout=dropout,
                    scheduled_sampling_ratio=scheduled_sampling_ratio)
+                   dropout=dropout)

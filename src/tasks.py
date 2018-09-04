@@ -10,7 +10,6 @@ task.get_metrics() should return {"accuracy": accuracy_val, ... }
 import copy
 import collections
 import itertools
-import functools
 import os
 import math
 import logging as log
@@ -248,14 +247,6 @@ class PairClassificationTask(ClassificationTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True)
-
-
-class NLIProbingTask(PairClassificationTask):
-    ''' Generic probing with NLI test data (cannot be used for train or eval)'''
-
-    def __init__(self, name, n_classes):
-        super().__init__(name)
-        #  self.use_classifier = 'mnli'  # use .conf params instead
 
 
 # Make sure we load the properly-retokenized versions.
@@ -610,9 +601,8 @@ class SequenceGenerationTask(Task):
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
 
-    def __init__(self, name, n_choices):
+    def __init__(self, name):
         super().__init__(name)
-        self.n_choices = n_choices
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -737,12 +727,6 @@ class WikiTextLMTask(LanguageModelingTask):
                     continue
                 yield sent
 
-class WikiText2LMTask(WikiTextLMTask):
-    ''' Language modeling task on Wikitext 2'''
-
-    def __init__(self, path, max_seq_len, name="wiki2"):
-        super().__init__(path, max_seq_len, name)
-
 
 class WikiText103LMTask(WikiTextLMTask):
     """Language modeling task on Wikitext 103
@@ -797,7 +781,7 @@ class RedditTask(RankingTask):
 
     def __init__(self, path, max_seq_len, name="reddit"):
         ''' '''
-        super().__init__(name, 2)
+        super().__init__(name)
         self.scorer1 = Average() #CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -1677,13 +1661,11 @@ class WNLITask(PairClassificationTask):
 
 class JOCITask(PairOrdinalRegressionTask):
     '''Class for JOCI ordinal regression task'''
-
     def __init__(self, path, max_seq_len, name="joci"):
         super(JOCITask, self).__init__(name)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
                            s1_idx=0, s2_idx=1, targ_idx=2)
@@ -1695,31 +1677,6 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-
-
-class PDTBTask(PairClassificationTask):
-    ''' Task class for discourse relation prediction using PDTB'''
-
-    def __init__(self, path, max_seq_len, name="pdtb"):
-        ''' Load data and initialize'''
-        super(PDTBTask, self).__init__(name, 99)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        ''' Process the dataset located at path.  '''
-
-        tr_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.train.txt"), max_seq_len,
-                           s1_idx=4, s2_idx=5, targ_idx=3)
-        val_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.dev.txt"), max_seq_len,
-                            s1_idx=4, s2_idx=5, targ_idx=3)
-        te_data = load_tsv(os.path.join(path, "pdtb_sentence_pairs.test.txt"), max_seq_len,
-                           s1_idx=4, s2_idx=5, targ_idx=3)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading PDTB data.")
 
 
 class MTTask(SequenceGenerationTask):
@@ -1971,7 +1928,7 @@ class Wiki103Seq2SeqTask(MTTask):
                     continue
                 sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
                                         self.max_seq_len)
-                yield (sent, [])
+                yield sent, []
 
     def get_num_examples(self, split_text):
         ''' Return number of examples in the result of get_split_text.
@@ -1994,43 +1951,12 @@ class Wiki103Seq2SeqTask(MTTask):
             return Instance(d)
 
         prev_sent = None
-        for sent in split:
+        for sent, _ in split:
             if prev_sent is None:
                 prev_sent = sent
                 continue
             yield _make_instance(prev_sent, sent)
             prev_sent = sent
-
-
-class WikiInsertionsTask(MTTask):
-    '''Task which predicts a span to insert at a given index'''
-
-    def __init__(self, path, max_seq_len, max_targ_v_size, name='WikiInsertionTask'):
-        super().__init__(path, max_seq_len, max_targ_v_size, name)
-        self.scorer1 = Average()
-        self.scorer2 = None
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.target_sentences = self.train_data_text[2] + self.val_data_text[2]
-
-    def load_data(self, path, max_seq_len):
-        self.train_data_text = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                                        s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
-                                        targ_fn=lambda t: t.split(' '))
-        self.val_data_text = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                                      s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
-                                      targ_fn=lambda t: t.split(' '))
-        self.test_data_text = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                                       s1_idx=0, s2_idx=None, targ_idx=3, skip_rows=1,
-                                       targ_fn=lambda t: t.split(' '))
-        log.info("\tFinished loading WikiInsertions data.")
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        ppl = self.scorer1.get_metric(reset)
-        return {'perplexity': ppl}
 
 
 class DisSentTask(PairClassificationTask):
@@ -2097,13 +2023,6 @@ class DisSentTask(PairClassificationTask):
 
         for sent1, sent2, trg in split:
             yield _make_instance(sent1, sent2, trg)
-
-
-class DisSentBWBSingleTask(DisSentTask):
-    ''' Task class for DisSent with the Billion Word Benchmark
-        Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
-    def __init__(self, path, max_seq_len, name="dissentbwb"):
-        super().__init__(path, max_seq_len, "bwb.dissent.single_sent", name)
 
 
 class DisSentWikiSingleTask(DisSentTask):

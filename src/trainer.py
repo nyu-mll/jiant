@@ -20,7 +20,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 
-from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .utils import device_mapping, assert_for_log, reset_elmo_states  # pylint: disable=import-error
 from .evaluate import evaluate
 from . import config
 
@@ -37,7 +37,7 @@ def build_trainer_params(args, task_names):
     # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
-                  'no_tqdm', 'cuda', 'keep_all_checkpoints',
+                  'cuda', 'keep_all_checkpoints',
                   'val_data_limit', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
@@ -96,7 +96,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'val_interval': params['val_interval'],
                            'max_vals': params['max_vals'],
                            'lr_decay': .99, 'min_lr': params['min_lr'],
-                           'no_tqdm': params['no_tqdm'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
                            'dec_val_scale': params['dec_val_scale'],
@@ -110,7 +109,7 @@ class SamplingMultiTaskTrainer():
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 no_tqdm=False, keep_all_checkpoints=False, val_data_limit=5000,
+                 keep_all_checkpoints=False, val_data_limit=5000,
                  dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -150,12 +149,6 @@ class SamplingMultiTaskTrainer():
             this schedule at the end of each epoch. If you use
             :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`,
             this will use the ``val_metric`` provided to determine if learning has plateaued.
-        no_tqdm : ``bool``, optional (default=False)
-            We use ``tqdm`` for log, which will print a nice progress bar that updates in place
-            after every batch.  This is nice if you're running training on a local shell, but can
-            cause problems with log files from, e.g., a docker image running on kubernetes.  If
-            ``no_tqdm`` is ``True``, we will not use tqdm, and instead log batch statistics using
-            ``log.info``, outputting a line at most every 10 seconds.
         keep_all_checkpoints : If set, keep checkpoints from every validation. Otherwise, keep only
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
@@ -182,9 +175,7 @@ class SamplingMultiTaskTrainer():
         self._task_infos = None
         self._metric_infos = None
 
-        self._no_tqdm = no_tqdm
         self._log_interval = 10  # seconds
-        self._summary_interval = 100  # num batches between log to tensorboard
         if self._cuda_device >= 0:
             self._model = self._model.cuda(self._cuda_device)
 
@@ -381,6 +372,7 @@ class SamplingMultiTaskTrainer():
                     parameter.register_hook(clip_function)
 
         # Calculate per task sampling weights
+        assert_for_log(len(tasks) > 0, "Error: Expected to sample from 0 tasks.")
         if weighting_method == 'uniform':
             sample_weights = [1] * len(tasks)
         elif weighting_method == 'proportional':
@@ -406,6 +398,8 @@ class SamplingMultiTaskTrainer():
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
+        else:
+            assert_for_log(False, "Error: Missing or unknown weighting method.")
         log.info ("Weighting details: ")
         log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
         log.info ("weighting_method: " + weighting_method )
@@ -432,6 +426,8 @@ class SamplingMultiTaskTrainer():
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
+                if self._model.elmo:
+                    assert_for_log(self._model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm._states is None, "Found carried over ELMo states!")
                 output_dict = self._forward(batch, task=task, for_training=True)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
@@ -509,12 +505,8 @@ class SamplingMultiTaskTrainer():
 
                 # Validate
                 log.info("Validating...")
-                preds_file_path_dict = {task.name: os.path.join(
-                    self._serialization_dir,
-                    "preds_{}{}_{}_epoch_{}.txt".format(
-                        time.time(), task.name, phase, epoch)) for task in tasks}
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"), preds_file_path_dict=preds_file_path_dict)
+                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -571,7 +563,7 @@ class SamplingMultiTaskTrainer():
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _validate(self, epoch, tasks, batch_size, preds_file_path_dict, periodic_save=True):
+    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -585,7 +577,6 @@ class SamplingMultiTaskTrainer():
         for task in tasks:
             n_examples, batch_num = 0, 0
             task_info = task_infos[task.name]
-            task.preds_file_path = preds_file_path_dict[task.name]
 
             # to speed up training, we evaluate on a subset of validation data
             if self._val_data_limit >= 0:
@@ -732,7 +723,9 @@ class SamplingMultiTaskTrainer():
     def _forward(self, batch, for_training, task=None):
         ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = batch
-        return self._model.forward(task, tensor_batch)
+        model_out = self._model.forward(task, tensor_batch)
+        reset_elmo_states(self._model)
+        return model_out
 
     def _description_from_metrics(self, metrics):
         # pylint: disable=no-self-use
@@ -808,17 +801,13 @@ class SamplingMultiTaskTrainer():
                 task_states[task_name]['stopped'] = task_info['stopped']
                 if self._g_optimizer is None:
                     task_states[task_name]['optimizer'] = task_info['optimizer'].state_dict()
-                    sched = task_info['scheduler']
-                    sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                    #'cooldown_counter': sched.cooldown_counter}
+                    sched_params = {}
                     task_states[task_name]['scheduler'] = sched_params
             task_states['global'] = {}
             task_states['global']['optimizer'] = self._g_optimizer.state_dict() if \
                 self._g_optimizer is not None else None
             if self._g_scheduler is not None:
-                sched = self._g_scheduler
-                sched_params = {}  # {'best': sched.best, 'num_bad_epochs': sched.num_bad_epochs,
-                #'cooldown_counter': sched.cooldown_counter}
+                sched_params = {}
                 task_states['global']['scheduler'] = sched_params
             else:
                 task_states['global']['scheduler'] = None
@@ -973,7 +962,6 @@ class SamplingMultiTaskTrainer():
         grad_clipping = params.pop("grad_clipping", None)
         lr_decay = params.pop("lr_decay", None)
         min_lr = params.pop("min_lr", None)
-        no_tqdm = params.pop("no_tqdm", False)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
         dec_val_scale = params.pop("dec_val_scale", 100)
@@ -985,7 +973,7 @@ class SamplingMultiTaskTrainer():
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, no_tqdm=no_tqdm,
+                                        min_lr=min_lr, 
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
                                         dec_val_scale=dec_val_scale,

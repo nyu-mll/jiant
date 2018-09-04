@@ -16,13 +16,10 @@ from sklearn.metrics import mean_squared_error
 from allennlp.common import Params
 from allennlp.modules import Elmo, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.nn import util
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.modules.similarity_functions import DotProductSimilarity
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder, \
-                                              PytorchSeq2SeqWrapper
+from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
@@ -31,23 +28,11 @@ from . import config
 from . import edge_probing
 #from . import generate_s2s
 
-from .tasks import STSBTask, CoLATask, SSTTask, \
-    PairClassificationTask, SingleClassificationTask, \
-    PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, \
-    PairOrdinalRegressionTask, JOCITask, WeakGroundedTask, \
-    GroundedTask, MTTask, RedditTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask, \
-    GroundedSWTask
-
-from .tasks import STSBTask, CoLATask, \
-    ClassificationTask, PairClassificationTask, SingleClassificationTask, \
-    RegressionTask, PairRegressionTask, RankingTask, \
-    SequenceGenerationTask, LanguageModelingTask, MTTask, \
-    PairOrdinalRegressionTask, JOCITask, \
-    WeakGroundedTask, GroundedTask, VAETask, \
-    GroundedTask, TaggingTask, CCGTaggingTask, \
-    MultiNLIDiagnosticTask
-from .tasks import EdgeProbingTask
+from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
+    GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
+    RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
+    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -73,7 +58,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
     # Build embeddings.
-    d_emb, embedder, cove_emb = build_embeddings(args, vocab, tasks, pretrained_embs)
+    d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
     d_sent = args.d_hid
 
     # Build single sentence encoder: the main component of interest
@@ -99,26 +84,28 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        bilm, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 2 * args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
         sent_encoder = BoWSentEncoder(vocab, embedder)
         log.info("Using BoW architecture for shared encoder!")
+        assert_for_log(not args.skip_embs, "Skip connection not currently supported with `bow` encoder.")
         d_sent = d_emb
     elif args.sent_enc == 'rnn':
         sent_rnn = s2s_e.by_name('lstm').from_params(copy.deepcopy(rnn_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        sent_rnn, skip_embs=args.skip_embs,
                                        dropout=args.dropout, sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 2 * args.d_hid
         log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
-                                       skip_embs=args.skip_embs, cove_layer=cove_emb,
+                                       skip_embs=args.skip_embs,
+                                       cove_layer=cove_layer,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == 'null':
@@ -130,7 +117,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_emb)
+                                       cove_layer=cove_layer)
         d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
@@ -189,51 +176,65 @@ def get_task_whitelist(args):
   eval_clf_names = []
   for task_name in eval_task_names:
     override_clf = config.get_task_attr(args, task_name, 'use_classifier')
-    if override_clf == 'none'  or override_clf is None:
+    if override_clf == 'none' or override_clf is None:
       eval_clf_names.append(task_name)
     else:
       eval_clf_names.append(override_clf)
   train_task_names = parse_task_list_arg(args.train_tasks)
-  log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s"%(str(train_task_names), str(eval_clf_names)))
+  log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s",
+           str(train_task_names), str(eval_clf_names))
   return train_task_names, eval_clf_names
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
     d_emb, d_char = 0, args.d_char
 
-    token_embedder = {}
+    token_embedders = {}
     # Word embeddings
+    n_token_vocab = vocab.get_vocab_size('tokens')
     if args.word_embs != 'none':
         if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
-            log.info("\tUsing word embeddings from %s", args.word_embs_file)
             word_embs = pretrained_embs
-            d_word = pretrained_embs.size()[-1]
+            assert word_embs.size()[0] == n_token_vocab
+            d_word = word_embs.size()[1]
+            log.info("\tUsing pre-trained word embeddings: %s",
+                     str(word_embs.size()))
         else:
             log.info("\tLearning word embeddings from scratch!")
             word_embs = None
             d_word = args.d_word
 
-        embeddings = Embedding(vocab.get_vocab_size('tokens'), d_word,
+        embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
                                weight=word_embs, trainable=False,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
-        token_embedder["words"] = embeddings
+        token_embedders["words"] = embeddings
         d_emb += d_word
     else:
+        embeddings = None
         log.info("\tNot using word embeddings!")
 
     # Handle cove
+    cove_layer = None
     if args.cove:
-        sys.path.append(args.path_to_cove)
+        assert embeddings is not None
+        assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
+        assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
+            sys.path.append(args.path_to_cove)
             from cove import MTLSTM as cove_lstm
-            cove_emb = cove_lstm(n_vocab=vocab.get_vocab_size('tokens'),
-                                 vectors=embeddings.weight.data)
-            d_emb += 600
+            # Have CoVe do an internal GloVe lookup, but don't add residual.
+            # We'll do this manually in modules.py; see
+            # SentenceEncoder.forward().
+            cove_layer = cove_lstm(n_vocab=n_token_vocab,
+                                   vectors=embeddings.weight.data)
+            # Control whether CoVe is trainable.
+            for param in cove_layer.parameters():
+                param.requires_grad = bool(args.cove_fine_tune)
+            d_emb += 600  # 300 x 2 for biLSTM activations
             log.info("\tUsing CoVe embeddings!")
-        except ImportError:
-            log.info("Failed to import CoVE!")
-    else:
-        cove_emb = None
+        except ImportError as e:
+            log.info("Failed to import CoVe!")
+            raise e
 
     # Character embeddings
     if args.char_embs:
@@ -246,7 +247,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         char_embedder = TokenCharactersEncoder(char_embeddings, char_encoder,
                                                dropout=args.dropout_embs)
         d_emb += d_char
-        token_embedder["chars"] = char_embedder
+        token_embedders["chars"] = char_embedder
     else:
         log.info("\tNot using character embeddings!")
 
@@ -311,13 +312,16 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 dropout=0.)
             d_emb += 1024
 
-        token_embedder["elmo"] = elmo_embedder
-    embedder = ElmoTextFieldEmbedder(token_embedder, loaded_classifiers,
+        token_embedders["elmo"] = elmo_embedder
+
+    # Wrap ELMo and other embedders, and concatenates the resulting
+    # representations alone the last (vector) dimension.
+    embedder = ElmoTextFieldEmbedder(token_embedders, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
                                      sep_embs_for_skip=args.sep_embs_for_skip)
 
     assert d_emb, "You turned off all the embeddings, ya goof!"
-    return d_emb, embedder, cove_emb
+    return d_emb, embedder, cove_layer
 
 
 def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
@@ -389,12 +393,10 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         pooler = build_image_sent_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
-
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
-
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -435,7 +437,6 @@ def get_task_specific_params(args, task_name):
 
     return Params(params)
 
-
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
     pooler = Pooler.from_params(d_inp, params['d_proj'])
@@ -454,7 +455,6 @@ def build_single_sentence_module(task, d_inp, params):
     pooler = Pooler.from_params(d_inp, params['d_proj'])
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
-
 
 def build_pair_sentence_module(task, d_inp, model, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
@@ -493,7 +493,6 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
-
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
@@ -524,10 +523,10 @@ class MultiTaskModel(nn.Module):
         ''' Args: sentence encoder '''
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
-        self.combine_method = args.sent_combine_method
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
+        self.reset_elmo_states = args.reset_elmo_states if hasattr(args, "reset_elmo_states") else False
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
 
@@ -791,7 +790,7 @@ class MultiTaskModel(nn.Module):
             total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
             out['loss'] = total_loss
 
-            pred = F.sigmoid(cos_simi).round()
+            pred = torch.sigmoid(cos_simi).round()
 
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item()/len(labels)
@@ -1005,7 +1004,7 @@ class MultiTaskModel(nn.Module):
 
         mat_mul = mat_mul.view(-1)
         labels = labels.view(-1).cuda()
-        pred = F.sigmoid(mat_mul).round()
+        pred = torch.sigmoid(mat_mul).round()
 
         out['loss'] = loss_fn(mat_mul, labels)
         total_correct = torch.sum(pred == labels)
