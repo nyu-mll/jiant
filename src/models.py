@@ -29,7 +29,7 @@ from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoT
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
-#from . import beamsearch
+#from . import generate_s2s
 
 from .tasks import STSBTask, CoLATask, SSTTask, \
     PairClassificationTask, SingleClassificationTask, \
@@ -834,7 +834,7 @@ class MultiTaskModel(nn.Module):
             # We don't want to write predictions during training.
             #if not self.training and not isinstance(task, Wiki103_Seq2Seq):
             #    # bleu scoring
-            #    bleu_score, unk_ratio_macroavg = beamsearch.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
+            #    bleu_score, unk_ratio_macroavg = generate_s2s.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
             #    task.scorer2(bleu_score)
             #    task.scorer3(unk_ratio_macroavg)
 
