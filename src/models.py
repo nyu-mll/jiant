@@ -342,24 +342,26 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
-        log.info("using {} attention".format(args.attention))
+        log.info("using {} attention".format(args.s2s_attention))
         decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
+                                 'decoder_hidden_size': args.d_hid_dec,
+                                 'target_embedding_dim': args.target_embedding_dim,
                                  'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': 'tokens',
-                                 'attention': args.mt_attention,
+                                 'attention': args.s2s_attention,
                                  'output_proj_input_dim': args.output_proj_input_dim,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, MTTask):
-        log.info("using {} attention".format(args.mt_attention))
+        log.info("using {} attention".format(args.s2s_attention))
         decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
+                                 'decoder_hidden_size': args.d_hid_dec,
+                                 'target_embedding_dim': args.target_embedding_dim,
+                                 'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
-                                 'attention': args.mt_attention,
+                                 'attention': args.s2s_attention,
                                  'output_proj_input_dim': args.output_proj_input_dim,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
@@ -372,8 +374,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
 
     elif isinstance(task, VAETask):
         decoder_params = Params({'input_dim': d_sent,
-                                 'target_embedding_dim': 300,
-                                 'max_decoding_steps': 200,
+                                 'decoder_hidden_size': args.d_hid_dec,
+                                 'target_embedding_dim': args.target_embedding_dim,
+                                 'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': 'tokens',
                                  'attention': 'bilinear',
                                  'output_proj_input_dim': args.output_proj_input_dim,
