@@ -41,7 +41,7 @@ task="dep-labeling-ewt"
 # kuberun elmo-full-$task  "elmo_full_exp edges-$task"
 # kuberun glove-$task      "glove_exp edges-$task"
 # kuberun cove-$task       "cove_exp edges-$task"
-kuberun openai-$task     "openai_exp edges-$task"
+# kuberun openai-$task     "openai_exp edges-$task"
 
 task="constituent-ontonotes"
 # kuberun elmo-chars-$task "elmo_chars_exp edges-$task"

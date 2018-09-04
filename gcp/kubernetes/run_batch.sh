@@ -23,10 +23,11 @@ MODE=${3:-"create"}    # create, replace, delete
 GPU_TYPE=${4:-"p100"}  # k80 or p100
 
 JOB_NAME="${USER}.${NAME}"
-PROJECT_DIR="/nfs/jsalt/exp/$USER"
+PROJECT_DIR="/nfs/jsalt/exp/${USER}-batch"
 if [ ! -d "${PROJECT_DIR}" ]; then
   echo "Creating project directory ${PROJECT_DIR}"
   mkdir ${PROJECT_DIR}
+  chmod o+w ${PROJECT_DIR}
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
