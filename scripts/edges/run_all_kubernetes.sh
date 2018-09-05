@@ -3,7 +3,7 @@
 # Master script to start a full suite of edge probing experiments on
 # on Kubernetes. Comment out lines below to run only a subset of experiments.
 #
-# See edgeprobe_exp_fns.sh for the override params, and config/edgeprobe_*.conf
+# See exp_fns.sh for the override params, and config/edgeprobe_*.conf
 # for the base configs.
 
 NOTIFY_EMAIL="iftenney@gmail.com"
@@ -40,7 +40,7 @@ function make_kubernetes_command() {
     # and to define new experiments.
     echo -n "export NOTIFY_EMAIL=${NOTIFY_EMAIL}"
     echo -n "; pushd ${PATH_TO_JIANT}"
-    echo -n "; source scripts/edgeprobe_runs/edgeprobe_exp_fns.sh"
+    echo -n "; source scripts/edges/exp_fns.sh"
     echo -n "; $@"
 }
 
