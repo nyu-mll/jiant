@@ -313,6 +313,12 @@ def build_tasks(args):
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               "other indexers!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+        # Exit if tasks might not be compatible with this tokenization.
+        for task in tasks:
+            if task.name.startswith("edges-"):
+                assert task.name.endswith("-openai"), \
+                    (f"Edge probing task '{task.name:s}' not compatible "
+                      "with OpenAI transformer model; use -openai version.")
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):

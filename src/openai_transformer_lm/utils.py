@@ -120,6 +120,13 @@ class OpenAIEmbedderModule(nn.Module):
         ids[:,:fill_len] = var_ids[:,:fill_len]
         # "Correct" ids to account for different indexing between OpenAI and
         # AllenNLP.
+        # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
+        # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
+        # reserved for padding). In the OpenAI model, index 0 is their own
+        # <unk> token and index 1 is the first real wordpiece, ".".
+        # So, to correct things we should subtract 2, so that AllenNLP's
+        # handling of "." (index 3) gets mapped to what the OpenAI model
+        # expects (index 1).
         ids[ids == 0] = FILL_ID + 2
         ids -= 2
 
