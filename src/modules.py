@@ -108,6 +108,13 @@ class SentenceEncoder(Model):
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
 
+        # General sentence embeddings (for sentence encoder).
+        # Skip this for probing runs that don't need it.
+        if not isinstance(self._phrase_layer, NullPhraseLayer):
+            sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        else:
+            sent_embs = None
+
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
         use_task_sent_embs = self.sep_embs_for_skip
@@ -118,32 +125,27 @@ class SentenceEncoder(Model):
         else:
             task_sent_embs = None
 
-        # General sentence embeddings (for sentence encoder).
-        # Skip this for probing runs that don't need it.
-        if isinstance(self._phrase_layer, NullPhraseLayer):
-            assert task_sent_embs is not None
-            sent_embs = torch.zeros_like(task_sent_embs)
-        else:
-            sent_embs = self._highway_layer(self._text_field_embedder(sent))
-
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
             # but this allows CoVe to be used alongside other embedding models
             # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
-            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            if sent_embs is not None:
+                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             if task_sent_embs is not None:
                 task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
 
-        sent_embs = self._dropout(sent_embs)
+        if sent_embs is not None:
+            sent_embs = self._dropout(sent_embs)
         if task_sent_embs is not None:
             task_sent_embs = self._dropout(task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if sent_embs is not None:
+            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
 
         # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, BiLMEncoder):
@@ -160,6 +162,7 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
+        assert sent_enc is not None
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
