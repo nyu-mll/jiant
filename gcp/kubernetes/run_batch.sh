@@ -13,20 +13,51 @@
 #    --config_file $JIANT_PATH/config/demo.conf \
 #    --notify <your_email_address>"
 #
-# The third argument, MODE, can be used to 'replace' an existing job (e.g. if
-# you mis-configured and it failed on startup), or to 'delete' one from the
-# cluster.
+# You can specify additional arguments as flags:
+#    -m <mode>     # mode is 'create', 'replace', 'delete'
+#    -g <gpu_type>  # e.g. 'k80' or 'p100'
+#    -p <project>   # project folder to group experiments
+#
+# For example:
+# ./run_batch.sh -p demos -m k80 jiant-demo \
+#     "python $JIANT_PATH/main.py --config_file $JIANT_PATH/config/demo.conf"
+#
+# will run as job name 'demos.jiant-demo' and write results to /nfs/jsalt/exp/demos
+#
+set -e
 
+MODE="create"
+GPU_TYPE="p100"
+PROJECT="$USER"
+
+# Handle flags.
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts ":m:g:p:" opt; do
+    case "$opt" in
+    m)	MODE=$OPTARG
+        ;;
+    g)  GPU_TYPE=$OPTARG
+        ;;
+    p)  PROJECT=$OPTARG
+        ;;
+    \? )
+        echo "Invalid flag $opt."
+        exit 1
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Remaining positional args.
 NAME=$1
 COMMAND=$2
-MODE=${3:-"create"}    # create, replace, delete
-GPU_TYPE=${4:-"p100"}  # k80 or p100
 
-JOB_NAME="${USER}.${NAME}"
-PROJECT_DIR="/nfs/jsalt/exp/$USER"
+JOB_NAME="${PROJECT}.${NAME}"
+PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
 if [ ! -d "${PROJECT_DIR}" ]; then
   echo "Creating project directory ${PROJECT_DIR}"
   mkdir ${PROJECT_DIR}
+  chmod -R o+w ${PROJECT_DIR}
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
