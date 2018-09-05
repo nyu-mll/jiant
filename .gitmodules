@@ -1,0 +1,3 @@
+[submodule "src/cove"]
+	path = src/cove
+	url = git@github.com:salesforce/cove.git
