@@ -228,8 +228,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            sys.path.append(args.path_to_cove)
-            from cove import MTLSTM as cove_lstm
+            from .cove.cove import MTLSTM as cove_lstm
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
             # SentenceEncoder.forward().
@@ -518,7 +517,6 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.reset_elmo_states = args.reset_elmo_states if hasattr(args, "reset_elmo_states") else False
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
 

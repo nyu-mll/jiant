@@ -40,7 +40,7 @@ _MOSES_DETOKENIZER = MosesDetokenizer()
 
 def reset_elmo_states(model):
     ''' Reset ELMo hidden states if ELMo is detected '''
-    if model.elmo and model.reset_elmo_states:
+    if model.elmo:
         model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
     return
 

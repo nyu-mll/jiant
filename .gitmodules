@@ -1,3 +1,7 @@
+[submodule "src/cove"]
+	path = src/cove
+  url = git@github.com:salesforce/cove.git
+  ignore = untracked
 [submodule "src/openai_transformer_lm/tf_original"]
 	path = src/openai_transformer_lm/tf_original
 	url = git@github.com:openai/finetune-transformer-lm.git
