@@ -8,6 +8,7 @@ import copy
 import random
 import logging as log
 import itertools
+import numpy as np
 
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -307,35 +308,6 @@ class SamplingMultiTaskTrainer():
         -------
         Validation results
         """
-        if weighting_method == 'uniform':
-            log.info("Sampling tasks uniformly")
-        elif weighting_method == 'proportional':
-            log.info("Sampling tasks proportional to number of training batches")
-        elif weighting_method == 'proportional_log_batch':
-            log.info("Sampling tasks proportional to log number of training batches")
-        elif weighting_method == 'proportional_log_example':
-            log.info("Sampling tasks proportional to log number of training examples")
-        elif weighting_method == 'inverse_example':
-            log.info("Sampling tasks inverse to number of training examples")
-        elif weighting_method == 'inverse_batch':
-            log.info("Sampling tasks inverse to number of training batches")
-        elif weighting_method == 'inverse_log_example':
-            log.info("Sampling tasks inverse to log number of training examples")
-        elif weighting_method == 'inverse_log_batch':
-            log.info("Sampling tasks inverse to log number of training batches")
-        elif 'power_' in weighting_method:
-            log.info("Sampling tasks with %s", weighting_method.replace('_',' of '))
-        elif 'softmax_' in weighting_method:
-            log.info("Sampling tasks with %s", weighting_method.replace('_',' of temperature '))
-
-        if scaling_method == 'max':
-            # divide by # batches, multiply by max # batches
-            log.info("Scaling losses to largest task")
-        elif scaling_method == 'min':
-            # divide by # batches, multiply by fewest # batches
-            log.info("Scaling losses to the smallest task")
-        elif scaling_method == 'unit':
-            log.info("Dividing losses by number of training batches")
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
@@ -373,41 +345,77 @@ class SamplingMultiTaskTrainer():
 
         # Calculate per task sampling weights
         assert_for_log(len(tasks) > 0, "Error: Expected to sample from 0 tasks.")
+
+        task_names = [task.name for task in tasks]
+        task_n_train_examples = np.array([task.n_train_examples for task in tasks])
+        task_n_train_batches = np.array([task_infos[task.name]['n_tr_batches'] for task in tasks])
+        log.info ("Training examples per task: " + str(dict(zip(task_names,task_n_train_examples))))
+
         if weighting_method == 'uniform':
-            sample_weights = [1] * len(tasks)
+            sample_weights = [1.0] * len(tasks)
+            log.info("Sampling tasks uniformly.")
         elif weighting_method == 'proportional':
-            sample_weights = [task_infos[task.name]['n_tr_batches'] for task in tasks]
-            max_weight = max(sample_weights)
-            min_weight = min(sample_weights)
-        elif weighting_method == 'proportional_log_batch':  # log(training batch)
-            sample_weights = [math.log(task_infos[task.name]['n_tr_batches']) for task in tasks]
-        elif weighting_method == 'proportional_log_example':  # log(training example)
-            sample_weights = [math.log(task.n_train_examples) for task in tasks]
-        elif weighting_method == 'inverse_example':  # 1/training example
-            sample_weights = [(1 / task.n_train_examples) for task in tasks]
-        elif weighting_method == 'inverse_batch':  # 1/training batch
-            sample_weights = [(1 / task_infos[task.name]['n_tr_batches']) for task in tasks]
-        elif weighting_method == 'inverse_log_example':  # 1/log(training example)
-            sample_weights = [(1 / math.log(task.n_train_examples)) for task in tasks]
-        elif weighting_method == 'inverse_log_batch':  # 1/log(training batch)
-            sample_weights = [(1 / math.log(task_infos[task.name]['n_tr_batches']))
-                              for task in tasks]
-        elif 'power_' in weighting_method:  # x ^ power
+            sample_weights = task_n_train_examples.astype(float)
+            log.info("Sampling tasks proportional to number of training examples.")
+        elif weighting_method == 'proportional_log_batch':
+            sample_weights = np.log(task_n_train_batches)
+            log.info("Sampling tasks proportional to log number of training batches.")
+        elif weighting_method == 'proportional_log_example':
+            sample_weights = np.log(task_n_train_examples)
+            log.info("Sampling tasks proportional to log number of training examples.")
+        elif weighting_method == 'inverse':
+            sample_weights = 1 / task_n_train_examples
+            log.info("Sampling tasks inverse to number of training examples.")
+        elif weighting_method == 'inverse_log_example':
+            sample_weights = 1 / np.log(task_n_train_examples)
+            log.info("Sampling tasks inverse to log number of training examples.")
+        elif weighting_method == 'inverse_log_batch':
+            sample_weights = 1 / np.log(task_n_train_batches)
+            log.info("Sampling tasks inverse to log number of training batches.")
+        elif 'power_' in weighting_method:
             weighting_power = float(weighting_method.strip('power_'))
-            sample_weights = [(task.n_train_examples ** weighting_power) for task in tasks]
+            sample_weights = task_n_train_examples ** weighting_power
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of '))
         elif 'softmax_' in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip('softmax_'))
-            sample_weights = [math.exp(task.n_train_examples/weighting_temp) for task in tasks]
-        else:
-            assert_for_log(False, "Error: Missing or unknown weighting method.")
-        log.info ("Weighting details: ")
-        log.info ("task.n_train_examples: " + str([(task.name, task.n_train_examples) for task in tasks]) )
-        log.info ("weighting_method: " + weighting_method )
-        normalized_sample_weights  = [i/sum(sample_weights) for i in sample_weights]
-        log.info ("normalized_sample_weights: " + str(normalized_sample_weights) )
+            sample_weights = np.exp(task_n_train_examples / weighting_temp)
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
+
+        normalized_sample_weights  = np.array(sample_weights) / sum(sample_weights)
+        log.info ("Using weighting method: %s, with normalized sample weights %s ",
+            weighting_method, np.array_str(normalized_sample_weights, precision=4))
 
         # Sample the tasks to train on. Do it all at once (val_interval) for MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
+
+        if scaling_method == 'uniform':
+            scaling_weights = [1.0] * len(tasks)
+        elif scaling_method == 'max_proportional':
+            scaling_weights = task_n_train_examples.astype(float)
+        elif scaling_method == 'max_proportional_log':
+            scaling_weights = np.log(task_n_train_examples)
+        elif 'max_power_' in scaling_method:
+            scaling_power = float(scaling_method.strip('max_power_'))
+            scaling_weights = task_n_train_examples ** scaling_power
+        elif scaling_method == 'max_inverse_log':
+            scaling_weights = 1 / np.log(task_n_train_examples)
+        elif scaling_method == 'max_inverse':
+            scaling_weights = 1 / task_n_train_examples
+        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
+        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
+        elif 'max_epoch_' in scaling_method:
+            epochs = scaling_method.strip('max_epoch_').split('_')
+            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            scaling_weights = np.array(list(map(int, epochs)))
+
+        # normalized by max weight
+        if 'max' in scaling_method:
+            scaling_weights = scaling_weights / np.max(scaling_weights)
+
+        scaling_weights = dict(zip(task_names, scaling_weights))
+        log.info("Using loss scaling method: %s, with weights %s", scaling_method, str(scaling_weights))
+
+        log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
@@ -432,12 +440,9 @@ class SamplingMultiTaskTrainer():
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
-                if scaling_method == 'unit' and weighting_method == 'proportional':
-                    loss /= task_info['n_tr_batches']
-                elif scaling_method == 'max' and weighting_method == 'proportional':
-                    loss *= (max_weight / task_info['n_tr_batches'])
-                elif scaling_method == 'min' and weighting_method == 'proportional':
-                    loss *= (min_weight / task_info['n_tr_batches'])
+
+                loss *= scaling_weights[task.name]
+
                 loss.backward()
                 assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
@@ -636,10 +641,11 @@ class SamplingMultiTaskTrainer():
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
                 metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
+                task_name = task
             else:
                 metric = task.val_metric
                 metric_decreases = task.val_metric_decreases
-                task = task.name
+                task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
             this_epoch_metric = all_val_metrics[metric]
@@ -648,22 +654,22 @@ class SamplingMultiTaskTrainer():
             is_best_so_far, out_of_patience = \
                 self._check_history(metric_history, this_epoch_metric, metric_decreases)
             if is_best_so_far:
-                log.info("Best model found for %s.", task)
+                log.info("Best model found for %s.", task_name)
                 metric_infos[metric]['best'] = (epoch, all_val_metrics)
                 should_save = True
-                if task == 'macro':
+                if task_name == 'macro':
                     new_best_macro = True
             if out_of_patience:
                 if periodic_save:
                     should_save = True
                 metric_infos[metric]['stopped'] = True
-                log.info("Out of patience. Stopped tracking %s", task)
+                log.info("Out of patience. Stopped tracking %s", task_name)
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
-            if hasattr(task, 'name') and g_scheduler is None:
-                scheduler = task_infos[task.name]['scheduler']
-            elif g_scheduler is not None and task == 'macro':
+            if task_name not in ['micro', 'macro'] and g_scheduler is None:
+                scheduler = task_infos[task_name]['scheduler']
+            elif g_scheduler is not None and task_name == 'macro':
                 scheduler = g_scheduler
             else:
                 scheduler = None
@@ -952,7 +958,7 @@ class SamplingMultiTaskTrainer():
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
-        ''' Generator trainer from parameters.  '''
+        ''' Generate trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
         val_interval = params.pop("val_interval", 100)
@@ -973,7 +979,7 @@ class SamplingMultiTaskTrainer():
                                         serialization_dir=serialization_dir,
                                         cuda_device=cuda_device, grad_norm=grad_norm,
                                         grad_clipping=grad_clipping, lr_decay=lr_decay,
-                                        min_lr=min_lr, 
+                                        min_lr=min_lr,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
                                         dec_val_scale=dec_val_scale,
