@@ -6,10 +6,33 @@
 # See edgeprobe_exp_fns.sh for the override params, and config/edgeprobe_*.conf
 # for the base configs.
 
-MODE=${1:-"create"}
-NOTIFY_EMAIL=${2:-"iftenney@gmail.com"}
-PATH_TO_JIANT=${3:-"/nfs/jsalt/home/iftenney/jiant_exp"}
+NOTIFY_EMAIL="iftenney@gmail.com"
 GPU_TYPE="p100"
+PROJECT="edgeprobe"
+PATH_TO_JIANT="/nfs/jsalt/home/iftenney/jiant_exp"
+
+# Handle flags.
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+while getopts ":g:p:n:j:" opt; do
+    case "$opt" in
+    g)  GPU_TYPE=$OPTARG
+        ;;
+    p)  PROJECT=$OPTARG
+        ;;
+    n)	NOTIFY_EMAIL=$OPTARG
+        ;;
+    j)  PATH_TO_JIANT=$OPTARG
+        ;;
+    \? )
+        echo "Invalid flag $opt."
+        exit 1
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Remaining positional arguments.
+MODE=$1
 
 function make_kubernetes_command() {
     # Generate shell command to execute in container.
@@ -26,7 +49,8 @@ function kuberun() {
     NAME=$1
     COMMAND=$(make_kubernetes_command $2)
     echo "Job '$NAME': '$COMMAND'"
-    ./gcp/kubernetes/run_batch.sh $NAME "$COMMAND" $MODE $GPU_TYPE
+    ./gcp/kubernetes/run_batch.sh -m $MODE -p ${PROJECT} -g ${GPU_TYPE} \
+        $NAME "$COMMAND"
     echo ""
 }
 
