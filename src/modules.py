@@ -102,7 +102,7 @@ class SentenceEncoder(Model):
                            ELMo representation.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
-                TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
+                the padded values in sent_enc are set to 0
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
         # Embeddings
@@ -129,10 +129,8 @@ class SentenceEncoder(Model):
         sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
 
         # ELMoLSTM returns all layers, we just want to use the top layer
-        if isinstance(self._phrase_layer, BiLMEncoder):
-            sent_enc = sent_enc[-1]
-        if sent_enc is not None:
-            sent_enc = self._dropout(sent_enc)
+        sent_enc = sent_enc[-1] if isinstance(self._phrase_layer, BiLMEncoder) else sent_enc
+        sent_enc = self._dropout(sent_enc) if sent_enc is not None else sent_enc
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
@@ -142,6 +140,8 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
+        pad_mask = 1 - sent_mask.byte().data
+        sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
@@ -193,16 +193,12 @@ class Pooler(nn.Module):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
         pad_mask = 1 - mask.byte().data
-        if sequence.min().item() != float('-inf'):  # this will f up the loss
-            #log.warn('Negative infinity detected')
-            sequence.masked_fill(pad_mask, 0)
-        proj_seq = self.project(sequence)
-
+        proj_seq = self.project(sequence) # linear project each hid state
         if self.pool_type == 'max':
             proj_seq = proj_seq.masked_fill(pad_mask, -float('inf'))
             seq_emb = proj_seq.max(dim=1)[0]
         elif self.pool_type == 'mean':
-            #proj_seq = proj_seq.masked_fill(pad_mask, 0)
+            proj_seq = proj_seq.masked_fill(pad_mask, 0)
             seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
         elif self.pool_type == 'final':
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
