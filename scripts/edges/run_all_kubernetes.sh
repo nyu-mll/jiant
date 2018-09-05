@@ -6,10 +6,11 @@
 # See exp_fns.sh for the override params, and config/edgeprobe_*.conf
 # for the base configs.
 
+set -e
+
 NOTIFY_EMAIL="iftenney@gmail.com"
 GPU_TYPE="p100"
 PROJECT="edgeprobe"
-PATH_TO_JIANT="/nfs/jsalt/home/iftenney/jiant_exp"
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
@@ -32,7 +33,22 @@ done
 shift $((OPTIND-1))
 
 # Remaining positional arguments.
-MODE=$1
+MODE=${1:-"create"}
+
+pushd "${PWD%jiant*}"/jiant
+
+# Make a copy of the current tree in the project directory.
+PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
+if [ ! -d "${PROJECT_DIR}" ]; then
+  echo "Creating project directory ${PROJECT_DIR}"
+  mkdir ${PROJECT_DIR}
+  chmod -R o+w ${PROJECT_DIR}
+fi
+if [[ $MODE != "delete" ]]; then
+  echo "Copying source tree to project dir..."
+  rsync -a --exclude=".git" "./" "${PROJECT_DIR}/jiant"
+fi
+PATH_TO_JIANT="${PROJECT_DIR}/jiant"
 
 function make_kubernetes_command() {
     # Generate shell command to execute in container.
@@ -68,6 +84,11 @@ ALL_TASKS+=( "coref-ontonotes-conll" )
 ALL_TASKS+=( "spr2" )
 ALL_TASKS+=( "dpr" )
 echo "All tasks to run: ${ALL_TASKS[@]}"
+
+if [[ $MODE == "delete" ]]; then
+  # OK to fail to delete some jobs, still try others.
+  set +e
+fi
 
 for task in "${ALL_TASKS[@]}"
 do

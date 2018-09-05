@@ -24,6 +24,7 @@
 #
 # will run as job name 'demos.jiant-demo' and write results to /nfs/jsalt/exp/demos
 #
+set -e
 
 MODE="create"
 GPU_TYPE="p100"
