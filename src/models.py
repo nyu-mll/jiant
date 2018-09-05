@@ -220,8 +220,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            sys.path.append(args.path_to_cove)
-            from cove import MTLSTM as cove_lstm
+            from .cove.cove import MTLSTM as cove_lstm
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
             # SentenceEncoder.forward().
