@@ -59,51 +59,22 @@ function kuberun() {
 # Uncomment the lines you want to run, or comment out those you don't.
 ##
 
-task="dep-labeling-ewt"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
+declare -a ALL_TASKS
+ALL_TASKS+=( "dep-labeling-ewt" )
+ALL_TASKS+=( "constituent-ontonotes" )
+ALL_TASKS+=( "ner-ontonotes" )
+ALL_TASKS+=( "srl-conll2012" )
+ALL_TASKS+=( "coref-ontonotes-conll" )
+ALL_TASKS+=( "spr2" )
+ALL_TASKS+=( "dpr" )
+echo "All tasks to run: ${ALL_TASKS[@]}"
 
-task="constituent-ontonotes"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
+for task in "${ALL_TASKS[@]}"
+do
+  kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
+  kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
+  kuberun elmo-full-$task  "elmo_full_exp edges-$task"
+  kuberun glove-$task      "glove_exp edges-$task"
+  kuberun cove-$task       "cove_exp edges-$task"
+done
 
-task="ner-ontonotes"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
-
-task="srl-conll2012"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
-
-task="coref-ontonotes-conll"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
-
-task="spr2"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
-
-task="dpr"
-kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-kuberun glove-$task      "glove_exp edges-$task"
-kuberun cove-$task       "cove_exp edges-$task"
