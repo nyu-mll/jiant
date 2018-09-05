@@ -8,21 +8,20 @@
 
 set -e
 
-NOTIFY_EMAIL="iftenney@gmail.com"
+# Default arguments.
 GPU_TYPE="p100"
 PROJECT="edgeprobe"
+NOTIFY_EMAIL="iftenney@gmail.com"
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts ":g:p:n:j:" opt; do
+while getopts ":g:p:n:" opt; do
     case "$opt" in
     g)  GPU_TYPE=$OPTARG
         ;;
     p)  PROJECT=$OPTARG
         ;;
     n)	NOTIFY_EMAIL=$OPTARG
-        ;;
-    j)  PATH_TO_JIANT=$OPTARG
         ;;
     \? )
         echo "Invalid flag $opt."
