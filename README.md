@@ -19,6 +19,19 @@ To activate the environment run ``source activate jiant``, and to deactivate run
 
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
+## Submodules
+
+This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
+
+```sh
+git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
+```
+
+If you already cloned and just need to get the submodules, you can do:
+```sh
+git submodule update --init --recursive
+```
+
 ## Downloading data
 
 The repo contains a convenience python script for downloading all [GLUE](https://www.nyu.edu/projects/bowman/glue.pdf) data and standard splits.
