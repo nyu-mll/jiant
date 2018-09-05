@@ -107,9 +107,24 @@ class SentenceEncoder(Model):
         """
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        # task_sent_embs only used if sep_embs_for_skip
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
+
+        # Task-specific sentence embeddings (e.g. custom ELMo weights).
+        # Skip computing this if it won't be used.
+        use_task_sent_embs = self.sep_embs_for_skip
+        if use_task_sent_embs:
+            task_sent_embs = self._highway_layer(
+                                 self._text_field_embedder(
+                                     sent, task._classifier_name))
+        else:
+            task_sent_embs = None
+
+        # General sentence embeddings (for sentence encoder).
+        # Skip this for probing runs that don't need it.
+        if isinstance(self._phrase_layer, NullPhraseLayer):
+            assert task_sent_embs is not None
+            sent_embs = torch.zeros_like(task_sent_embs)
+        else:
+            sent_embs = self._highway_layer(self._text_field_embedder(sent))
 
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
@@ -118,10 +133,12 @@ class SentenceEncoder(Model):
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
             sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+            if task_sent_embs is not None:
+                task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
 
         sent_embs = self._dropout(sent_embs)
-        task_sent_embs = self._dropout(task_sent_embs)
+        if task_sent_embs is not None:
+            task_sent_embs = self._dropout(task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
@@ -136,6 +153,7 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            assert skip_vec is not None
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
             else:
