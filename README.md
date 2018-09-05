@@ -24,7 +24,7 @@ Some requirements may only be needed for specific configurations. If you have tr
 This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
 
 ```sh
-git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git
+git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
 ```
 
 If you already cloned and just need to get the submodules, you can do:
