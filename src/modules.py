@@ -117,8 +117,7 @@ class SentenceEncoder(Model):
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
-        use_task_sent_embs = self.sep_embs_for_skip
-        if use_task_sent_embs:
+        if self.sep_embs_for_skip:
             task_sent_embs = self._highway_layer(
                                  self._text_field_embedder(
                                      sent, task._classifier_name))
