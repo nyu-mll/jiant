@@ -38,7 +38,7 @@ from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
-from .utils import MaskedMultiHeadSelfAttention
+from .utils import MaskedMultiHeadSelfAttention, reset_elmo_states
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -142,6 +142,7 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
+        reset_elmo_states(self)
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):

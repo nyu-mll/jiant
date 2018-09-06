@@ -23,7 +23,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils import get_batch_utilization, get_elmo_mixing_weights
+from .utils import get_batch_utilization, get_elmo_mixing_weights, reset_elmo_states
 from . import config
 from . import edge_probing
 #from . import beamsearch
@@ -651,6 +651,7 @@ class MultiTaskModel(nn.Module):
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         '''
         out = {}
+
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'], task)
         sent2, mask2 = self.sent_encoder(batch['input2'], task)

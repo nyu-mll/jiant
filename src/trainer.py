@@ -21,7 +21,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 
-from .utils import device_mapping, assert_for_log, reset_elmo_states  # pylint: disable=import-error
+from .utils import device_mapping, assert_for_log # pylint: disable=import-error
 from .evaluate import evaluate
 from . import config
 
@@ -730,7 +730,6 @@ class SamplingMultiTaskTrainer():
         ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = batch
         model_out = self._model.forward(task, tensor_batch)
-        reset_elmo_states(self._model)
         return model_out
 
     def _description_from_metrics(self, metrics):

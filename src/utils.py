@@ -38,11 +38,10 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
-def reset_elmo_states(model):
-    ''' Reset ELMo hidden states if ELMo is detected '''
-    if model.elmo:
-        model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
-    return
+def reset_elmo_states(encoder):
+    ''' Reset ELMo hidden states if full ELMo is detected '''
+    if hasattr(encoder._text_field_embedder.token_embedder_elmo, '_elmo'):
+        encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
