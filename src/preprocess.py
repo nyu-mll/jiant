@@ -589,6 +589,10 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     id_to_wordpiece = openai_utils.reverse_encoder_dict
     for i in range(len(id_to_wordpiece)):
         vocab.add_token_to_namespace(id_to_wordpiece[i], namespace)
+    # Add SOS and EOS tokens to *end* of namespace, since this is where the
+    # OpenAI model expects special tokens.
+    vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
+    vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.
