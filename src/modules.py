@@ -93,7 +93,7 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def forward(self, sent, task):
+    def forward(self, sent, task, reset=True):
         # pylint: disable=arguments-differ
         """
         Args:
@@ -105,6 +105,8 @@ class SentenceEncoder(Model):
                 TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
+        if reset:
+            self.reset_states()
 
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
@@ -147,8 +149,9 @@ class SentenceEncoder(Model):
 
     def reset_states(self):
         ''' Reset ELMo if present; reset BiLM (ELMoLSTM) states if present '''
-        if hasattr(self._text_field_embedder.token_embedder_elmo, '_elmo'):
-            encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+        if hasattr(self._text_field_embedder, 'token_embedder_elmo') and \
+                hasattr(self._text_field_embedder.token_embedder_elmo, '_elmo'):
+            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
         if isinstance(self._phrase_layer, BiLMEncoder):
             self._phrase_layer.reset_states()
 
