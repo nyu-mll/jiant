@@ -43,27 +43,42 @@ class EdgeClassifierModule(nn.Module):
             return EndpointSpanExtractor(self.proj_dim,
                                          combination=self.span_pooling)
 
+    def _make_cnn_layer(self, d_inp):
+        """Make a CNN layer as a projection of local context.
+
+        CNN maps [batch_size, max_len, d_inp]
+        to [batch_size, max_len, proj_dim] with no change in length.
+        """
+        k = 1 + 2*self.cnn_context
+        padding = self.cnn_context
+        return nn.Conv1d(d_inp, self.proj_dim, kernel_size=k,
+                         stride=1, padding=padding, dilation=1,
+                         groups=1, bias=True)
+
     def __init__(self, task, d_inp: int, task_params):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
         self.span_pooling = task_params['cls_span_pooling']
+        self.cnn_context = task_params['edgeprobe_cnn_context']
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
 
         self.proj_dim = task_params['d_hid']
         # Separate projection for span1, span2.
+        # Convolution allows using local context outside the span, with
+        # cnn_context = 0 behaving as a per-word linear layer.
         # Use these to reduce dimensionality in case we're enumerating a lot of
         # spans - we want to do this *before* extracting spans for greatest
         # efficiency.
-        self.proj1 = nn.Linear(d_inp, self.proj_dim)
+        self.proj1 = self._make_cnn_layer(d_inp)
         if self.is_symmetric or self.single_sided:
             # Use None as dummy padding for readability,
             # so that we can index projs[1] and projs[2]
             self.projs = [None, self.proj1, self.proj1]
         else:
             # Separate params for span2
-            self.proj2 = nn.Linear(d_inp, self.proj_dim)
+            self.proj2 = self._make_cnn_layer(d_inp)
             self.projs = [None, self.proj1, self.proj2]
 
         # Span extractor, shared for both span1 and span2.
@@ -113,10 +128,11 @@ class EdgeClassifierModule(nn.Module):
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
 
-        # Apply projection layers for each span.
-        se_proj1 = self.projs[1](sent_embs)
+        # Apply projection CNN layer for each span.
+        sent_embs_t = sent_embs.transpose(1,2)  # needed for CNN layer
+        se_proj1 = self.projs[1](sent_embs_t).transpose(2,1).contiguous()
         if not self.single_sided:
-            se_proj2 = self.projs[2](sent_embs)
+            se_proj2 = self.projs[2](sent_embs_t).transpose(2,1).contiguous()
 
         # Span extraction.
         span_mask = (batch['span1s'][:,:,0] != -1)  # [batch_size, num_targets] bool
