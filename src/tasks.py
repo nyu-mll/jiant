@@ -728,6 +728,7 @@ class WikiTextLMTask(LanguageModelingTask):
                 yield sent
 
 
+@register_task('wiki103', rel_path='WikiText103/')
 class WikiText103LMTask(WikiTextLMTask):
     """Language modeling task on Wikitext 103
     See base class: WikiTextLMTask
@@ -739,6 +740,7 @@ class WikiText103LMTask(WikiTextLMTask):
                                'test':os.path.join(path, "test.sentences.txt")}
 
 
+@register_task('bwb', rel_path='BWB/')
 class BWBLMTask(LanguageModelingTask):
     """Language modeling task on Billion Word Benchmark
     See base class: LanguageModelingTask
@@ -748,6 +750,7 @@ class BWBLMTask(LanguageModelingTask):
         self.max_seq_len = max_seq_len
 
 
+@register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
 
@@ -953,6 +956,7 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
         self.example_counts = example_counts
 
 
+@register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
 
@@ -985,6 +989,7 @@ class CoLATask(SingleClassificationTask):
                 'accuracy': self.scorer2.get_metric(reset)}
 
 
+@register_task('qqp', rel_path='QQP/')
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
 
@@ -1017,6 +1022,7 @@ class QQPTask(PairClassificationTask):
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
                 'precision': pcs, 'recall': rcl}
 
+@register_task('qqp-alt', rel_path='QQP/')
 class QQPAltTask(QQPTask):
     ''' Task class for Quora Question Pairs.
 
@@ -1093,6 +1099,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
         return {'accuracy': self.scorer1.get_metric(reset)}
 
 
+@register_task('mnli-fiction', rel_path='MNLI/')
 class MultiNLIFictionTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
@@ -1107,6 +1114,7 @@ class MultiNLIFictionTask(MultiNLISingleGenreTask):
             name=name)
 
 
+@register_task('mnli-slate', rel_path='MNLI/')
 class MultiNLISlateTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
@@ -1115,6 +1123,7 @@ class MultiNLISlateTask(MultiNLISingleGenreTask):
         super(MultiNLISlateTask, self).__init__(path, max_seq_len, genre="slate", name=name)
 
 
+@register_task('mnli-government', rel_path='MNLI/')
 class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
@@ -1129,6 +1138,7 @@ class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
             name=name)
 
 
+@register_task('mnli-telephone', rel_path='MNLI/')
 class MultiNLITelephoneTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
@@ -1143,6 +1153,7 @@ class MultiNLITelephoneTask(MultiNLISingleGenreTask):
             name=name)
 
 
+@register_task('mnli-travel', rel_path='MNLI/')
 class MultiNLITravelTask(MultiNLISingleGenreTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
@@ -1157,6 +1168,7 @@ class MultiNLITravelTask(MultiNLISingleGenreTask):
             name=name)
 
 
+@register_task('mrpc', rel_path='MRPC/')
 class MRPCTask(PairClassificationTask):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 
@@ -1191,6 +1203,7 @@ class MRPCTask(PairClassificationTask):
                 'precision': pcs, 'recall': rcl}
 
 
+@register_task('sts-b', rel_path='STS-B/')
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
@@ -1226,6 +1239,7 @@ class STSBTask(PairRegressionTask):
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
+@register_task('sts-b-alt', rel_path='STS-B/')
 class STSBAltTask(STSBTask):
     ''' Task class for Sentence Textual Similarity Benchmark.
 
@@ -1236,6 +1250,8 @@ class STSBAltTask(STSBTask):
         '''STSB'''
         super(STSBAltTask, self).__init__(path, max_seq_len, name)
 
+
+@register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
 
@@ -1261,6 +1277,7 @@ class SNLITask(PairClassificationTask):
         log.info("\tFinished loading SNLI data.")
 
 
+@register_task('mnli', rel_path='MNLI/')
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
@@ -1300,7 +1317,7 @@ class MultiNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
 
-
+@register_task('mnli-diagnostic', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 
@@ -1448,6 +1465,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_knowledge_dic, 'knowledge')
         return collected_metrics
 
+@register_task('nli-prob', 'NLI-Prob/')
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
@@ -1541,7 +1559,6 @@ class NPSTask(PairClassificationTask):
         log.info("\tFinished loading NP/S data.")
 
 
-
 @register_task('nli-alt', 'NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
@@ -1566,6 +1583,7 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-alt probing data.")
 
+@register_task('mnli-alt', rel_path='MNLI/')
 class MultiNLIAltTask(MultiNLITask):
     ''' Task class for Multi-Genre Natural Language Inference.
 
@@ -1577,6 +1595,7 @@ class MultiNLIAltTask(MultiNLITask):
         super(MultiNLIAltTask, self).__init__(path, max_seq_len, name)
 
 
+@register_task('rte', rel_path='RTE/')
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
@@ -1603,6 +1622,7 @@ class RTETask(PairClassificationTask):
         log.info("\tFinished loading RTE.")
 
 
+@register_task('qnli', rel_path='QNLI/')
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
@@ -1626,6 +1646,7 @@ class QNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
 
+@register_task('qnli-alt', rel_path='QNLI/')
 class QNLIAltTask(QNLITask):
     ''' Task class for SQuAD NLI
     Identical to SQuAD NLI class, but it can be handy to have two when controlling model settings.
@@ -1635,6 +1656,7 @@ class QNLIAltTask(QNLITask):
         '''QNLI'''
         super(QNLIAltTask, self).__init__(path, max_seq_len, name)
 
+@register_task('wnli', rel_path='WNLI/')
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
 
@@ -1659,6 +1681,7 @@ class WNLITask(PairClassificationTask):
         log.info("\tFinished loading Winograd.")
 
 
+@register_task('joci', rel_path='JOCI/')
 class JOCITask(PairOrdinalRegressionTask):
     '''Class for JOCI ordinal regression task'''
     def __init__(self, path, max_seq_len, name="joci"):
@@ -1948,6 +1971,7 @@ class Wiki103Seq2SeqTask(MTTask):
             prev_sent = sent
 
 
+@register_task('dissentwiki', 'DisSent/wikitext/')
 class DisSentTask(PairClassificationTask):
     ''' Task class for DisSent, dataset agnostic.
         Based on Nie, Bennett, and Goodman (2017), but with different datasets.
@@ -2021,6 +2045,7 @@ class DisSentWikiSingleTask(DisSentTask):
         super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
+@register_task('dissentwikifullbig', 'DisSent/wikitext/')
 class DisSentWikiBigFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
         or across two sentences.
@@ -2029,6 +2054,7 @@ class DisSentWikiBigFullTask(DisSentTask):
         super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
 
 
+@register_task('weakgrounded', 'mscoco/weakgrounded/')
 class WeakGroundedTask(PairClassificationTask):
     ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
 
@@ -2056,6 +2082,7 @@ class WeakGroundedTask(PairClassificationTask):
         log.info("\tFinished loading MSCOCO data.")
 
 
+@register_task('grounded', 'mscoco/grounded/')
 class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
@@ -2165,6 +2192,7 @@ class GroundedTask(Task):
         log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
         log.info("\tFinished loading MSCOCO data!")
 
+@register_task('groundedsw', 'mscoco/grounded')
 class GroundedSWTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
@@ -2278,46 +2306,55 @@ class RecastNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading recast probing data.")
 
+@register_task('recast-puns', 'DNC/recast_puns_data')
 class RecastPunTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-puns"):
         super(RecastPunTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-ner', 'DNC/recast_ner_data')
 class RecastNERTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-ner"):
         super(RecastNERTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-verbnet', 'DNC/recast_verbnet_data')
 class RecastVerbnetTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbnet"):
         super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-verbcorner', 'DNC/recast_verbcorner_data')
 class RecastVerbcornerTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbcorner"):
         super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-sentiment', 'DNC/recast_sentiment_data')
 class RecastSentimentTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-sentiment"):
         super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-factuality', 'DNC/recast_factuality_data')
 class RecastFactualityTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-factuality"):
         super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-winogender', 'DNC/manually-recast-winogender')
 class RecastWinogenderTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-winogender"):
         super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-lexicosyntax', 'DNC/lexicosyntactic_recasted')
 class RecastLexicosynTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
         super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
 
+@register_task('recast-kg', 'DNC/kg-relations')
 class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
@@ -2362,6 +2399,7 @@ class TaggingTask(Task):
         return self.all_labels
 
 
+@register_task('ccg', 'CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
