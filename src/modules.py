@@ -38,7 +38,7 @@ from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
-from .utils import MaskedMultiHeadSelfAttention, reset_elmo_states
+from .utils import MaskedMultiHeadSelfAttention
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -60,7 +60,7 @@ class NullPhraseLayer(nn.Module):
         return None
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM. '''
+    ''' Given a sequence of tokens, embed each token and pass thru a sequence encoder. '''
     # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
@@ -105,6 +105,7 @@ class SentenceEncoder(Model):
                 TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
+
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
         sent_embs = self._highway_layer(self._text_field_embedder(sent))
@@ -142,8 +143,14 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-        reset_elmo_states(self)
         return sent_enc, sent_mask
+
+    def reset_states(self):
+        ''' Reset ELMo if present; reset BiLM (ELMoLSTM) states if present '''
+        if hasattr(self._text_field_embedder.token_embedder_elmo, '_elmo'):
+            encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+        if isinstance(self._phrase_layer, BiLMEncoder):
+            self._phrase_layer.reset_states()
 
 class BiLMEncoder(ElmoLstm):
     """Wrapper around BiLM to give it an interface to comply with SentEncoder

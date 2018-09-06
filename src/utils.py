@@ -16,17 +16,15 @@ from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 import numpy as np
 import torch
 from torch.autograd import Variable
-
-from allennlp.common.checks import ConfigurationError
-
-# Masked Multi headed self attention
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
+from allennlp.common.checks import ConfigurationError
 from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
+
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -42,6 +40,8 @@ def reset_elmo_states(encoder):
     ''' Reset ELMo hidden states if full ELMo is detected '''
     if hasattr(encoder._text_field_embedder.token_embedder_elmo, '_elmo'):
         encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+    if hasattr(encoder, '_phrase_layer') and isinstance(encoder._phrase_layer, BiLMEncoder):
+        encoder._phrase_layer.reset_states()
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
