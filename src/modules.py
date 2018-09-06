@@ -124,6 +124,9 @@ class SentenceEncoder(Model):
         else:
             task_sent_embs = None
 
+        # Make sure we're embedding /something/
+        assert (sent_embs is not None) or (task_sent_embs is not None)
+
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
             # but this allows CoVe to be used alongside other embedding models
@@ -164,7 +167,9 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
-            assert skip_vec is not None
+            utils.assert_for_log(skip_vec is not None,
+                "skip_vec is none - perhaps embeddings are not configured "
+                "properly?")
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
             else:

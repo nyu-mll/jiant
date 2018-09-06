@@ -71,10 +71,13 @@ kind: Job
 metadata:
   name: ${JOB_NAME}
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsUser: $UID
+        fsGroup: $GROUPS
       containers:
       - name: jiant-sandbox
         image: ${IMAGE}
