@@ -116,7 +116,17 @@ class SentenceEncoder(Model):
             # but this allows CoVe to be used alongside other embedding models
             # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-            sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
+            # CoVe doesn't use <SOS> or <EOS>, so strip these before running.
+            # Note that we need to also drop the last column so that CoVe returns
+            # the right shape. If all inputs have <EOS> then this will be the
+            # only thing clipped.
+            sent_cove_embs_raw = self._cove_layer(sent['words'][:,1:-1],
+                                                  sent_lens - 2)
+            pad_col = torch.zeros(sent_cove_embs_raw.size()[0], 1,
+                                  sent_cove_embs_raw.size()[2],
+                                  dtype=sent_cove_embs_raw.dtype,
+                                  device=sent_cove_embs_raw.device)
+            sent_cove_embs = torch.cat([pad_col, sent_cove_embs_raw, pad_col], dim=1)
             sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
 
