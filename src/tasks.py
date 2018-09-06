@@ -476,23 +476,25 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
+    def _make_span_field(self, s, text_field, offset=1):
+        return SpanField(s[0]+offset, s[1]-1+offset, text_field)
+
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
-        text = _sentence_to_text_field(tokens, indexers)
+        tokens = [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+        text_field = _sentence_to_text_field(tokens, indexers)
 
         d = {}
         d["idx"] = MetadataField(idx)
 
-        d['input1'] = text
+        d['input1'] = text_field
 
-        span1s = [t['span1'] for t in record['targets']]
-        d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
-                                 for s in span1s])
+        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
+                                 for t in record['targets']])
         if not self.single_sided:
-            span2s = [t['span2'] for t in record['targets']]
-            d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
-                                     for s in span2s])
+            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                     for t in record['targets']])
 
         # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
