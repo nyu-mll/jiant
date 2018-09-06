@@ -61,7 +61,7 @@ if [ ! -d "${PROJECT_DIR}" ]; then
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v1"
+IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v2"
 
 ##
 # Create custom config and create a Kubernetes job.
@@ -71,10 +71,13 @@ kind: Job
 metadata:
   name: ${JOB_NAME}
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsUser: $UID
+        fsGroup: $GROUPS
       containers:
       - name: jiant-sandbox
         image: ${IMAGE}
