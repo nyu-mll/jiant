@@ -23,7 +23,7 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils import get_batch_utilization, get_elmo_mixing_weights, reset_elmo_states
+from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
 #from . import beamsearch
