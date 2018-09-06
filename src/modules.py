@@ -124,6 +124,9 @@ class SentenceEncoder(Model):
         else:
             task_sent_embs = None
 
+        # Make sure we're embedding /something/
+        assert (sent_embs is not None) or (task_sent_embs is not None)
+
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
             # but this allows CoVe to be used alongside other embedding models
