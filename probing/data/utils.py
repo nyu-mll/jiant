@@ -1,0 +1,80 @@
+import json
+import collections
+import numpy as np
+import pandas as pd
+
+from typing import Dict, Iterable, Sequence, Union
+
+def load_json_data(filename: str) -> Iterable:
+    ''' Load JSON records, one per line. '''
+    with open(filename, 'r') as fd:
+        for line in fd:
+            yield json.loads(line)
+
+def write_json_data(filename: str, records: Iterable[Dict]):
+    ''' Write JSON records, one per line. '''
+    with open(filename, 'w') as fd:
+        for record in records:
+            fd.write(json.dumps(record))
+            fd.write("\n")
+
+def wrap_singleton_string(item: Union[Sequence, str]):
+    ''' Wrap a single string as a list. '''
+    if isinstance(item, str):
+        # Can't check if iterable, because a string is an iterable of
+        # characters, which is not what we want.
+        return [item]
+    return item
+
+
+class EdgeProbingDatasetStats(object):
+
+    def __init__(self):
+        self._stats = collections.Counter()
+
+    def update(self, record: Dict):
+        stats = self._stats
+
+        stats['count'] += 1
+        tokens = record['text'].split()
+        stats['token.count'] += len(tokens)
+        stats['token.count2'] += len(tokens)**2  # for computing RMS
+
+        # Target stats
+        targets = record.get('targets', [])
+        stats['targets.count'] += len(targets)
+        for target in targets:
+            labels = wrap_singleton_string(target['label'])
+            stats['targets.label.count'] += len(labels)
+            span1 = target.get('span1', [-1,-1])
+            stats['targets.span1.length'] += (max(span1) - min(span1))
+            span2 = target.get('span2', [-1,-1])
+            stats['targets.span2.length'] += (max(span2) - min(span2))
+
+    def compute(self, record_iter: Iterable[Dict]):
+        for record in record_iter:
+            self.update(record)
+
+    def passthrough(self, record_iter: Iterable[Dict]):
+        for record in record_iter:
+            self.update(record)
+            yield record
+
+    def format(self):
+        stats = self._stats
+        s = pd.Series(dtype=object)
+        s['count'] = stats['count']
+        s['token.count'] = stats['token.count']
+        s['token.mean_count'] = stats['token.count'] / stats['count']
+        s['token.rms_count'] = np.sqrt(stats['token.count2'] / stats['count'])
+        s['targets.count'] = stats['targets.count']
+        s['targets.mean_count'] = stats['targets.count'] / stats['count']
+        s['targets.label.count'] = stats['targets.label.count']
+        s['targets.label.mean_count'] = stats['targets.label.count'] / stats['targets.count']
+        s['targets.span1.mean_length'] = stats['targets.span1.length'] / stats['targets.count']
+        s['targets.span2.mean_length'] = stats['targets.span2.length'] / stats['targets.count']
+        return "Stats:\n%s\n" % str(s)
+
+    def __str__(self):
+        return self.format()
+
