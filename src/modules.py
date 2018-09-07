@@ -62,7 +62,7 @@ class NullPhraseLayer(nn.Module):
         return None
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM. '''
+    ''' Given a sequence of tokens, embed each token and pass thru a sequence encoder. '''
     # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
@@ -95,18 +95,23 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def forward(self, sent, task):
+    def forward(self, sent, task, reset=True):
         # pylint: disable=arguments-differ
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
             - task (Task): Used by the _text_field_embedder to pick the correct output
                            ELMo representation.
+            - reset (Bool): if True, manually reset the states of the ELMo LSTMs present
+                (if using BiLM or ELMo embeddings). Set False, if want to preserve statefulness.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
                 the padded values in sent_enc are set to 0
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
+        if reset:
+            self.reset_states()
+
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
 
@@ -182,6 +187,14 @@ class SentenceEncoder(Model):
         assert sent_enc is not None
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
+
+    def reset_states(self):
+        ''' Reset ELMo if present; reset BiLM (ELMoLSTM) states if present '''
+        if 'token_embedder_elmo' in [name for name, _ in self._text_field_embedder.named_children()] and \
+                '_elmo' in [name for name, _ in self._text_field_embedder.token_embedder_elmo.named_children()]:
+            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+        if isinstance(self._phrase_layer, BiLMEncoder):
+            self._phrase_layer.reset_states()
 
 class BiLMEncoder(ElmoLstm):
     """Wrapper around BiLM to give it an interface to comply with SentEncoder

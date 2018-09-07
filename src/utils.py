@@ -16,17 +16,15 @@ from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 import numpy as np
 import torch
 from torch.autograd import Variable
-
-from allennlp.common.checks import ConfigurationError
-
-# Masked Multi headed self attention
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
+from allennlp.common.checks import ConfigurationError
 from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
+
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -37,12 +35,6 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
-
-def reset_elmo_states(model):
-    ''' Reset ELMo hidden states if ELMo is detected '''
-    if model.elmo:
-        model.sent_encoder._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
-    return
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
