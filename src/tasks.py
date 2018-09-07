@@ -1465,7 +1465,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_knowledge_dic, 'knowledge')
         return collected_metrics
 
-@register_task('nli-prob', 'NLI-Prob/')
+@register_task('nli-prob', rel_path='NLI-Prob/')
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
@@ -1490,7 +1490,7 @@ class NLITypeProbingTask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-type probing data.")
 
-@register_task('nli-prob-negation', 'NLI-Prob/')
+@register_task('nli-prob-negation', rel_path='NLI-Prob/')
 class NLITypeProbingTaskNeg(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name="nli-prob-negation", probe_path="probe_dummy.tsv"):
@@ -1513,7 +1513,7 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading negation data.")
 
-@register_task('nli-prob-prepswap', 'NLI-Prob/')
+@register_task('nli-prob-prepswap', rel_path='NLI-Prob/')
 class NLITypeProbingTaskPrepswap(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name="nli-prob-prepswap", probe_path="probe_dummy.tsv"):
@@ -1535,7 +1535,7 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading preposition swap data.")
 
-@register_task('nps', 'nps/')
+@register_task('nps', rel_path='nps/')
 class NPSTask(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name="nps", probe_path="probe_dummy.tsv"):
@@ -1559,7 +1559,7 @@ class NPSTask(PairClassificationTask):
         log.info("\tFinished loading NP/S data.")
 
 
-@register_task('nli-alt', 'NLI-Prob/')
+@register_task('nli-alt', rel_path='NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
 
@@ -1971,7 +1971,7 @@ class Wiki103Seq2SeqTask(MTTask):
             prev_sent = sent
 
 
-@register_task('dissentwiki', 'DisSent/wikitext/')
+@register_task('dissentwiki', rel_path='DisSent/wikitext/')
 class DisSentTask(PairClassificationTask):
     ''' Task class for DisSent, dataset agnostic.
         Based on Nie, Bennett, and Goodman (2017), but with different datasets.
@@ -2045,7 +2045,7 @@ class DisSentWikiSingleTask(DisSentTask):
         super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
 
 
-@register_task('dissentwikifullbig', 'DisSent/wikitext/')
+@register_task('dissentwikifullbig', rel_path='DisSent/wikitext/')
 class DisSentWikiBigFullTask(DisSentTask):
     ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
         or across two sentences.
@@ -2054,7 +2054,7 @@ class DisSentWikiBigFullTask(DisSentTask):
         super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
 
 
-@register_task('weakgrounded', 'mscoco/weakgrounded/')
+@register_task('weakgrounded', rel_path='mscoco/weakgrounded/')
 class WeakGroundedTask(PairClassificationTask):
     ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
 
@@ -2082,7 +2082,7 @@ class WeakGroundedTask(PairClassificationTask):
         log.info("\tFinished loading MSCOCO data.")
 
 
-@register_task('grounded', 'mscoco/grounded/')
+@register_task('grounded', rel_path='mscoco/grounded/')
 class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
@@ -2192,7 +2192,7 @@ class GroundedTask(Task):
         log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
         log.info("\tFinished loading MSCOCO data!")
 
-@register_task('groundedsw', 'mscoco/grounded')
+@register_task('groundedsw', rel_path='mscoco/grounded')
 class GroundedSWTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
@@ -2306,55 +2306,55 @@ class RecastNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading recast probing data.")
 
-@register_task('recast-puns', 'DNC/recast_puns_data')
+@register_task('recast-puns', rel_path='DNC/recast_puns_data')
 class RecastPunTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-puns"):
         super(RecastPunTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-ner', 'DNC/recast_ner_data')
+@register_task('recast-ner', rel_path='DNC/recast_ner_data')
 class RecastNERTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-ner"):
         super(RecastNERTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-verbnet', 'DNC/recast_verbnet_data')
+@register_task('recast-verbnet', rel_path='DNC/recast_verbnet_data')
 class RecastVerbnetTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbnet"):
         super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-verbcorner', 'DNC/recast_verbcorner_data')
+@register_task('recast-verbcorner', rel_path='DNC/recast_verbcorner_data')
 class RecastVerbcornerTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-verbcorner"):
         super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-sentiment', 'DNC/recast_sentiment_data')
+@register_task('recast-sentiment', rel_path='DNC/recast_sentiment_data')
 class RecastSentimentTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-sentiment"):
         super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-factuality', 'DNC/recast_factuality_data')
+@register_task('recast-factuality', rel_path='DNC/recast_factuality_data')
 class RecastFactualityTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-factuality"):
         super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-winogender', 'DNC/manually-recast-winogender')
+@register_task('recast-winogender', rel_path='DNC/manually-recast-winogender')
 class RecastWinogenderTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-winogender"):
         super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-lexicosyntax', 'DNC/lexicosyntactic_recasted')
+@register_task('recast-lexicosyntax', rel_path='DNC/lexicosyntactic_recasted')
 class RecastLexicosynTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
         super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
 
-@register_task('recast-kg', 'DNC/kg-relations')
+@register_task('recast-kg', rel_path='DNC/kg-relations')
 class RecastKGTask(RecastNLITask):
 
     def __init__(self, path, max_seq_len, name="recast-kg"):
@@ -2399,7 +2399,7 @@ class TaggingTask(Task):
         return self.all_labels
 
 
-@register_task('ccg', 'CCG/')
+@register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''

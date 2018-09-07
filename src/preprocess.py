@@ -35,16 +35,7 @@ from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
-
-from .tasks import \
-    BWBLMTask, CCGTaggingTask, CoLATask, DisSentWikiBigFullTask, DisSentWikiSingleTask, GroundedTask, \
-    MRPCTask, MTTask, MultiNLIAltTask, MultiNLIDiagnosticTask, MultiNLIFictionTask, MultiNLIGovernmentTask, \
-    MultiNLISlateTask, MultiNLITask, MultiNLITelephoneTask, MultiNLITravelTask, NLITypeProbingAltTask, \
-    NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
-    RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
-    RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
-    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
-
+from .tasks import MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
@@ -61,7 +52,7 @@ ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
 
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
+                      'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
 
 TASKS_REGISTRY = tasks_module.REGISTRY
 
@@ -360,7 +351,7 @@ def build_tasks(args):
                 # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
                 log.warn("When using un-trimmed pretraining version of train split, "
-                "it creates a deepcopy of task object which is inefficient.")
+                         "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
