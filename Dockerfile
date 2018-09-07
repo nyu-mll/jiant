@@ -64,6 +64,11 @@ RUN python -m spacy download en
 # Install local data files.
 RUN python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 
+# Fix permission issues when running as non-root.
+# This directory is where anaconda3 and nltk_data reside.
+# TODO: see about a workaround if we can install elsewhere in the container.
+RUN chmod go+rx /root
+
 # Fix unicode issues in Python3 by setting default text file encoding.
 ENV LANG C.UTF-8
 
