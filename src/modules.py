@@ -140,7 +140,7 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-        pad_mask = (sent_mask == 0) #1 - sent_mask.byte().data
+        pad_mask = (sent_mask == 0)
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
 
@@ -192,7 +192,7 @@ class Pooler(nn.Module):
     def forward(self, sequence, mask):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
-        pad_mask = (mask == 0) #1 - mask.byte().data
+        pad_mask = (mask == 0)
         proj_seq = self.project(sequence) # linear project each hid state
         if self.pool_type == 'max':
             proj_seq = proj_seq.masked_fill(pad_mask, -float('inf'))
