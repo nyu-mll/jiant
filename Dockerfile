@@ -24,6 +24,9 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
+# Fix unicode issues in Python3 by setting default text file encoding.
+ENV LANG C.UTF-8
+
 # Update Ubuntu packages
 RUN apt-get update && yes | apt-get upgrade
 
@@ -33,13 +36,14 @@ RUN apt-get install -y wget git bzip2
 # Install Anaconda
 # TODO: replace with miniconda to reduce image size.
 RUN wget https://repo.anaconda.com/archive/Anaconda3-5.2.0-Linux-x86_64.sh \
-  && bash Anaconda3-5.2.0-Linux-x86_64.sh -b \
+  && bash Anaconda3-5.2.0-Linux-x86_64.sh -b -p /usr/share/anaconda3 \
   && rm Anaconda3-5.2.0-Linux-x86_64.sh
 
 # Set path to conda
-ENV PATH /root/anaconda3/bin:$PATH
+ENV PATH /usr/share/anaconda3/bin:$PATH
 
 # Fix some package issues
+RUN pip install --upgrade pip
 RUN pip install msgpack
 
 # Install latest TensorFlow
@@ -56,21 +60,14 @@ RUN pip install ipdb tensorboard tensorboardX==1.2
 # Install AllenNLP
 RUN pip install allennlp==0.5.1
 
-# Install misc util packages
+# Install misc util packages.
 RUN pip install --upgrade google-cloud-logging sendgrid
 RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11
 RUN python -m spacy download en
 
 # Install local data files.
-RUN python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
-
-# Fix permission issues when running as non-root.
-# This directory is where anaconda3 and nltk_data reside.
-# TODO: see about a workaround if we can install elsewhere in the container.
-RUN chmod go+rx /root
-
-# Fix unicode issues in Python3 by setting default text file encoding.
-ENV LANG C.UTF-8
+RUN python -m nltk.downloader -d /usr/share/nltk_data \
+  perluniprops nonbreaking_prefixes punkt
 
 # Create local dir for NFS mount.
 RUN mkdir -p /nfs/jsalt
