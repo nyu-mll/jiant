@@ -652,6 +652,7 @@ class MultiTaskModel(nn.Module):
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         '''
         out = {}
+
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'], task)
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
