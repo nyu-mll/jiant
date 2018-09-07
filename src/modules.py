@@ -142,7 +142,6 @@ class SentenceEncoder(Model):
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0) #1 - sent_mask.byte().data
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
-        assert_for_log(sent_enc.min().item() != float('-inf'), 'Negative infinity detected!')
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
