@@ -38,7 +38,9 @@ from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
+
 from .utils import MaskedMultiHeadSelfAttention, assert_for_log
+from . import utils
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -107,9 +109,25 @@ class SentenceEncoder(Model):
         """
         # Embeddings
         # Note: These highway modules are actually identity functions by default.
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        # task_sent_embs only used if sep_embs_for_skip
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
+
+        # General sentence embeddings (for sentence encoder).
+        # Skip this for probing runs that don't need it.
+        if not isinstance(self._phrase_layer, NullPhraseLayer):
+            sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        else:
+            sent_embs = None
+
+        # Task-specific sentence embeddings (e.g. custom ELMo weights).
+        # Skip computing this if it won't be used.
+        if self.sep_embs_for_skip:
+            task_sent_embs = self._highway_layer(
+                                 self._text_field_embedder(
+                                     sent, task._classifier_name))
+        else:
+            task_sent_embs = None
+
+        # Make sure we're embedding /something/
+        assert (sent_embs is not None) or (task_sent_embs is not None)
 
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
@@ -127,16 +145,23 @@ class SentenceEncoder(Model):
                                   dtype=sent_cove_embs_raw.dtype,
                                   device=sent_cove_embs_raw.device)
             sent_cove_embs = torch.cat([pad_col, sent_cove_embs_raw, pad_col], dim=1)
-            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+            if sent_embs is not None:
+                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            if task_sent_embs is not None:
+                task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
 
-        sent_embs = self._dropout(sent_embs)
-        task_sent_embs = self._dropout(task_sent_embs)
+        if sent_embs is not None:
+            sent_embs = self._dropout(sent_embs)
+        if task_sent_embs is not None:
+            task_sent_embs = self._dropout(task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if sent_embs is not None:
+            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        else:
+            sent_enc = None
 
         # ELMoLSTM returns all layers, we just want to use the top layer
         sent_enc = sent_enc[-1] if isinstance(self._phrase_layer, BiLMEncoder) else sent_enc
@@ -144,6 +169,9 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            utils.assert_for_log(skip_vec is not None,
+                "skip_vec is none - perhaps embeddings are not configured "
+                "properly?")
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
             else:
@@ -151,6 +179,7 @@ class SentenceEncoder(Model):
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0)
+        assert sent_enc is not None
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
 
