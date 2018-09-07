@@ -39,7 +39,7 @@ class EdgeProbingDatasetStats(object):
         tokens = record['text'].split()
         stats['token.count'] += len(tokens)
         stats['token.count2'] += len(tokens)**2  # for computing RMS
-        
+
         # Target stats
         targets = record.get('targets', [])
         stats['targets.count'] += len(targets)
