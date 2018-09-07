@@ -38,7 +38,9 @@ from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
+
 from .utils import MaskedMultiHeadSelfAttention
+from . import utils
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -158,6 +160,8 @@ class SentenceEncoder(Model):
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         if sent_embs is not None:
             sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        else:
+            sent_enc = None
 
         # ELMoLSTM returns all layers, we just want to use the top layer
         if isinstance(self._phrase_layer, BiLMEncoder):
