@@ -75,6 +75,8 @@ class Seq2SeqDecoder(Model):
             raise Exception("attention not implemented {}".format(attention))
 
         self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
+        # Allow for a bottleneck layer between encoder outputs and distribution over vocab
+        # The bottleneck layer consists of a linear transform and helps to reduce number of parameters
         if self._output_proj_input_dim != self._decoder_output_dim:
             self._projection_bottleneck = Linear(self._decoder_output_dim, self._output_proj_input_dim)
         self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)

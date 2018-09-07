@@ -26,7 +26,6 @@ from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoT
 from .utils import get_batch_utilization, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
-#from . import generate_s2s
 
 from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
@@ -348,12 +347,12 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
         log.info("using {} attention".format(args.s2s_attention))
         decoder_params = Params({'input_dim': d_sent,
-                                 'decoder_hidden_size': args.d_hid_dec,
-                                 'target_embedding_dim': args.target_embedding_dim,
+                                 'decoder_hidden_size': args.s2s_d_hid_dec,
+                                 'target_embedding_dim': args.s2s_target_embedding_dim,
                                  'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': 'tokens',
                                  'attention': args.s2s_attention,
-                                 'output_proj_input_dim': args.output_proj_input_dim,
+                                 'output_proj_input_dim': args.s2s_output_proj_input_dim,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -361,12 +360,12 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     elif isinstance(task, MTTask):
         log.info("using {} attention".format(args.s2s_attention))
         decoder_params = Params({'input_dim': d_sent,
-                                 'decoder_hidden_size': args.d_hid_dec,
-                                 'target_embedding_dim': args.target_embedding_dim,
+                                 'decoder_hidden_size': args.s2s_d_hid_dec,
+                                 'target_embedding_dim': args.s2s_target_embedding_dim,
                                  'max_decoding_steps': args.max_seq_len,
                                  'target_namespace': task._label_namespace if hasattr(task, '_label_namespace') else 'targets',
                                  'attention': args.s2s_attention,
-                                 'output_proj_input_dim': args.output_proj_input_dim,
+                                 'output_proj_input_dim': args.s2s_output_proj_input_dim,
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
@@ -494,10 +493,10 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
     rnn = s2s_e.by_name('lstm').from_params(
         Params({'input_size': embedder.get_output_dim(),
-                'hidden_size': args.d_hid_dec,
-                'num_layers': args.n_layers_dec, 'bidirectional': False}))
+                'hidden_size': args.s2s_d_hid_dec,
+                'num_layers': args.s2s_n_layers_dec, 'bidirectional': False}))
     decoder = SentenceEncoder(vocab, embedder, 0, rnn)
-    hid2voc = nn.Linear(args.d_hid_dec, args.max_word_v_size)
+    hid2voc = nn.Linear(args.s2s_d_hid_dec, args.max_word_v_size)
     return decoder, hid2voc
 
 
@@ -815,16 +814,6 @@ class MultiTaskModel(nn.Module):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(out['loss'].item())
-
-            # Commented out for final run (still needs this for further debugging).
-            # We don't want to write predictions during training.
-            #if not self.training and not isinstance(task, Wiki103_Seq2Seq):
-            #    # bleu scoring
-            #    bleu_score, unk_ratio_macroavg = generate_s2s.generate_and_compute_bleu(decoder, sent, sent_mask, batch['targs']['words'], preds_file_path=task.preds_file_path, task=task)
-            #    task.scorer2(bleu_score)
-            #    task.scorer3(unk_ratio_macroavg)
-
-            return out
 
         if 'targs' in batch:
             pass
