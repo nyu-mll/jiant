@@ -38,7 +38,7 @@ from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
-from .utils import MaskedMultiHeadSelfAttention
+from .utils import MaskedMultiHeadSelfAttention, assert_for_log
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -140,8 +140,9 @@ class SentenceEncoder(Model):
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
-        pad_mask = 1 - sent_mask.byte().data
+        pad_mask = (sent_mask == 0) #1 - sent_mask.byte().data
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
+        assert_for_log(sent_enc.min().item() != float('-inf'), 'Negative infinity detected!')
         return sent_enc, sent_mask
 
 class BiLMEncoder(ElmoLstm):
@@ -192,7 +193,7 @@ class Pooler(nn.Module):
     def forward(self, sequence, mask):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
-        pad_mask = 1 - mask.byte().data
+        pad_mask = (mask == 0) #1 - mask.byte().data
         proj_seq = self.project(sequence) # linear project each hid state
         if self.pool_type == 'max':
             proj_seq = proj_seq.masked_fill(pad_mask, -float('inf'))
