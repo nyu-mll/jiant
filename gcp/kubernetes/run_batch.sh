@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run a batch job on the Kubernetes cluster.
+# Run a job on the Kubernetes cluster.
 #
 # Before running, be sure that:
 #    - the image is built and available at $IMAGE, below.
@@ -61,45 +61,42 @@ if [ ! -d "${PROJECT_DIR}" ]; then
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v3"
+IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v4"
 
 ##
-# Create custom config and create a Kubernetes job.
+# Create custom config and create a Kubernetes pod.
 cat <<EOF | kubectl ${MODE} -f -
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: ${JOB_NAME}
 spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      securityContext:
-        runAsUser: $UID
-        fsGroup: $GROUPS
-      containers:
-      - name: jiant-sandbox
-        image: ${IMAGE}
-        command: ["bash"]
-        args: ["-l", "-c", "$COMMAND"]
-        resources:
-          limits:
-           nvidia.com/gpu: 1
-        volumeMounts:
-        - mountPath: /nfs/jsalt
-          name: nfs-jsalt
-        env:
-        - name: NFS_PROJECT_PREFIX
-          value: ${PROJECT_DIR}
-        - name: JIANT_PROJECT_PREFIX
-          value: ${PROJECT_DIR}
-      nodeSelector:
-        cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
-      volumes:
-      - name: nfs-jsalt
-        persistentVolumeClaim:
-          claimName: nfs-jsalt-claim
-          readOnly: false
+  restartPolicy: Never
+  securityContext:
+    runAsUser: $UID
+    fsGroup: $GROUPS
+  containers:
+  - name: jiant-sandbox
+    image: ${IMAGE}
+    command: ["bash"]
+    args: ["-l", "-c", "$COMMAND"]
+    resources:
+      limits:
+       nvidia.com/gpu: 1
+    volumeMounts:
+    - mountPath: /nfs/jsalt
+      name: nfs-jsalt
+    env:
+    - name: NFS_PROJECT_PREFIX
+      value: ${PROJECT_DIR}
+    - name: JIANT_PROJECT_PREFIX
+      value: ${PROJECT_DIR}
+  nodeSelector:
+    cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
+  volumes:
+  - name: nfs-jsalt
+    persistentVolumeClaim:
+      claimName: nfs-jsalt-claim
+      readOnly: false
 EOF
 
