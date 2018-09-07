@@ -100,6 +100,8 @@ class SentenceEncoder(Model):
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
             - task (Task): Used by the _text_field_embedder to pick the correct output
                            ELMo representation.
+            - reset (Bool): if True, manually reset the states of the ELMo LSTMs present
+                (if using BiLM or ELMo embeddings). Set False, if want to preserve statefulness.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
                 TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
