@@ -151,8 +151,8 @@ class SentenceEncoder(Model):
 
     def reset_states(self):
         ''' Reset ELMo if present; reset BiLM (ELMoLSTM) states if present '''
-        if hasattr(self._text_field_embedder, 'token_embedder_elmo') and \
-                hasattr(self._text_field_embedder.token_embedder_elmo, '_elmo'):
+        if 'token_embedder_elmo' in [name for name, _ in self._text_field_embedder.named_children()] and \
+                '_elmo' in [name for name, _ in self._text_field_embedder.token_embedder_elmo.named_children()]:
             self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
         if isinstance(self._phrase_layer, BiLMEncoder):
             self._phrase_layer.reset_states()
