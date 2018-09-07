@@ -21,19 +21,8 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src import utils
 
-def retokenize_file(fname):
-    new_tokenizer_name = utils.TOKENIZER.__class__.__name__
-    new_name = fname + ".retokenized." + new_tokenizer_name
-    log.info("Processing file: %s", fname)
-    record_iter = list(utils.load_json_data(fname))
-    log.info("  saving to %s", new_name)
-    with open(new_name, 'w') as fd:
-        for record in tqdm(record_iter):
-            new_record = retokenize_record(record)
-            fd.write(json.dumps(new_record))
-            fd.write("\n")
-
 def count_labels(fname: str) -> Type[collections.Counter]:
+    """Count labels across all targets in a file of edge probing examples."""
     label_ctr = collections.Counter()
     record_iter = utils.load_json_data(fname)
     for record in tqdm(record_iter):
