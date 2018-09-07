@@ -80,6 +80,7 @@ ALL_TASKS+=( "constituent-ontonotes" )
 ALL_TASKS+=( "ner-ontonotes" )
 ALL_TASKS+=( "srl-conll2012" )
 ALL_TASKS+=( "coref-ontonotes-conll" )
+ALL_TASKS+=( "spr1" )
 ALL_TASKS+=( "spr2" )
 ALL_TASKS+=( "dpr" )
 echo "All tasks to run: ${ALL_TASKS[@]}"
