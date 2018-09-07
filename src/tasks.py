@@ -263,6 +263,13 @@ class PairClassificationTask(ClassificationTask):
                     'val': "dev.edges.json",
                     'test': "test.edges.json",
                }, is_symmetric=False)
+# SPR1, as an edge-labeling task (multilabel).
+@register_task('edges-spr1', rel_path='edges/spr1',
+               label_file="labels.txt", files_by_split={
+                    'train': "spr1.train.json" + _tokenizer_suffix,
+                    'val': "spr1.dev.json" + _tokenizer_suffix,
+                    'test': "spr1.test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # SPR2, as an edge-labeling task (multilabel).
 @register_task('edges-spr2', rel_path='edges/spr2',
                label_file="labels.txt", files_by_split={
