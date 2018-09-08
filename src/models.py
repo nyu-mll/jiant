@@ -494,8 +494,8 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
     rnn = s2s_e.by_name('lstm').from_params(
         Params({'input_size': embedder.get_output_dim(),
-                'hidden_size': args.s2s_d_hid_dec,
-                'num_layers': args.s2s_n_layers_dec, 'bidirectional': False}))
+                'hidden_size': args.s2s['d_hid_dec'],
+                'num_layers': args.s2s['n_layers_dec'], 'bidirectional': False}))
     decoder = SentenceEncoder(vocab, embedder, 0, rnn)
     hid2voc = nn.Linear(args.s2s_d_hid_dec, args.max_word_v_size)
     return decoder, hid2voc

@@ -58,11 +58,14 @@ class Seq2SeqDecoder(Model):
         self._decoder_hidden_dim = decoder_hidden_size
         if self._encoder_output_dim != self._decoder_hidden_dim:
             self._projection_encoder_out = Linear(self._encoder_output_dim, self._decoder_hidden_dim)
+        else:
+            self._projection_encoder_out = lambda x: x
         self._decoder_output_dim = self._decoder_hidden_dim
         self._output_proj_input_dim = output_proj_input_dim
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
+        # Used to get an initial hidden state from the encoder states
         self._sent_pooler = Pooler.from_params(d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
 
         if attention == "bilinear":
@@ -71,6 +74,7 @@ class Seq2SeqDecoder(Model):
             # concatenated to the input vector of the decoder at each time step.
             self._decoder_input_dim = input_dim + target_embedding_dim
         elif attention == "none":
+            self._decoder_attention = None
             self._decoder_input_dim = target_embedding_dim
         else:
             raise Exception("attention not implemented {}".format(attention))
@@ -94,10 +98,8 @@ class Seq2SeqDecoder(Model):
         encoder_outputs_mask: torch.LongTensor, [bs, T, 1]
         """
 
-        if hasattr(self, "_projection_encoder_out"):
+        if self._decoder_attention is not None:
             encoder_outputs = self._projection_encoder_out(encoder_outputs)
-
-        if hasattr(self, "_decoder_attention") and self._decoder_attention:
             encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
             decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
@@ -220,7 +222,7 @@ class Seq2SeqDecoder(Model):
         # (batch_size, target_embedding_dim)
         embedded_input = self._target_embedder(input_indices)
 
-        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+        if self._decoder_attention is not None:
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
