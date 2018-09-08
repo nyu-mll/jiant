@@ -356,7 +356,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        #decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
     elif isinstance(task, MTTask):
         log.info("using {} attention".format(args.s2s['attention']))
@@ -370,7 +369,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        #decoder = Seq2SeqDecoder.from_params(vocab, decoder_params)
         setattr(model, '%s_decoder' % task.name, decoder)
 
     elif isinstance(task, SequenceGenerationTask):

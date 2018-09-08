@@ -275,26 +275,3 @@ class Seq2SeqDecoder(Model):
         relevant_mask = target_mask[:, 1:].contiguous()  # (batch_size, num_decoding_steps)
         loss = sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
         return loss
-
-    @classmethod
-    def from_params(cls, vocab, params: Params) -> 'SimpleSeq2Seq':
-        input_dim = params.pop("input_dim")
-        decoder_hidden_size = params.pop("decoder_hidden_size")
-        max_decoding_steps = params.pop("max_decoding_steps")
-        target_namespace = params.pop("target_namespace", "targets")
-        target_embedding_dim = params.pop("target_embedding_dim")
-        attention = params.pop("attention", "none")
-        output_proj_input_dim = params.pop("output_proj_input_dim", input_dim)
-        dropout = params.pop_float("dropout", 0.0)
-        scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
-        params.assert_empty(cls.__name__)
-        return cls(vocab,
-                   input_dim=input_dim,
-                   decoder_hidden_size=decoder_hidden_size,
-                   target_embedding_dim=target_embedding_dim,
-                   max_decoding_steps=max_decoding_steps,
-                   target_namespace=target_namespace,
-                   attention=attention,
-                   output_proj_input_dim=output_proj_input_dim,
-                   dropout=dropout,
-                   scheduled_sampling_ratio=scheduled_sampling_ratio)
