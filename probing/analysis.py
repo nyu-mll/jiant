@@ -3,6 +3,7 @@
 
 import sys
 import os
+import io
 import json
 import collections
 import itertools
@@ -19,6 +20,36 @@ from typing import Iterable, Dict, List, Tuple
 def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
             for key, value in record.get(outer_key, {}).items()}
+
+class EdgeProbingExample(object):
+    """Wrapper object to handle an edge probing example.
+
+    Mostly exists for pretty-printing, but could be worth integrating
+    into the data-handling code.
+    """
+    def __init__(self, record: Dict):
+        """Construct an example from a record.
+
+        Record should be derived from the standard JSON format.
+        """
+        self._data = record
+
+    def __str__(self):
+        buf = io.StringIO()
+        text = self._data['text']
+        tokens = text.split()
+        buf.write("Text ({:d}): {:s}\n".format(len(tokens), text))
+        _fmt_span = lambda s,e: '[{:d},{:d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
+        for t in self._data['targets']:
+            buf.write("\n")
+            buf.write("  span1: {}\n".format(_fmt_span(*t['span1'])))
+            buf.write("  span2: {}\n".format(_fmt_span(*t['span2'])))
+            labels = utils.wrap_singleton_string(t['label'])
+            buf.write("  label: ({:d})\t {}\n".format(len(labels), ", ".join(labels)))
+        return buf.getvalue()
+
+    def __repr__(self):
+        return str(self)
 
 class Predictions(object):
     """Container class to manage a set of predictions from the Edge Probing
@@ -48,9 +79,9 @@ class Predictions(object):
                 d = {'label': utils.wrap_singleton_string(t['label']),
                      'idx': idx}
                 if 'span1' in t:
-                    d['span1'] = t['span1']
+                    d['span1'] = tuple(t['span1'])
                 if 'span2' in t:
-                    d['span2'] = t['span2']
+                    d['span2'] = tuple(t['span2'])
                 d.update(_get_nested_vals(t, 'info'))
                 d.update(_get_nested_vals(t, 'preds'))
                 tr_records.append(d)
@@ -125,7 +156,7 @@ class Predictions(object):
                                   i=['index'], j="label",
                                   stubnames=["label.true", "preds.proba"],
                                   sep=".",
-                                  suffix=r"\w+")
+                                  suffix=r"[^.]+")
         long_df.sort_values("idx", inplace=True)  # Sort by example idx
         long_df.reset_index(inplace=True)         # Remove multi-index
         long_df.drop("index", axis=1, inplace=True)  # Drop dummy index, but keep 'label'
@@ -221,7 +252,7 @@ class Comparison(object):
 
 
     def plot_scores(self, task_name, metric="f1", sort_field="expt_headroom",
-                    sort_ascending=False, row_height=400):
+                    sort_ascending=False, row_height=400, palette=None):
         import bokeh
         import bokeh.plotting as bp
 
@@ -258,7 +289,11 @@ class Comparison(object):
                                      ascending=sort_ascending)['label']
         categories = list(itertools.product(labels, runs))
 
-        palette = bokeh.palettes.Spectral6
+        if not palette:
+            #  palette = bokeh.palettes.Spectral6
+            #  palette = bokeh.palettes.Category10[len(runs)]
+            palette = bokeh.palettes.Category20[len(runs)]
+            #  palette = bokeh.palettes.Set2[len(runs)]
         fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
         width = 35*len(categories)
         tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'

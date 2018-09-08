@@ -219,8 +219,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            sys.path.append(args.path_to_cove)
-            from cove import MTLSTM as cove_lstm
+            from .cove.cove import MTLSTM as cove_lstm
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
             # SentenceEncoder.forward().
@@ -416,6 +415,7 @@ def get_task_specific_params(args, task_name):
     # Used for edge probing. Other tasks can safely ignore.
     params['cls_loss_fn'] = _get_task_attr("classifier_loss_fn")
     params['cls_span_pooling'] = _get_task_attr("classifier_span_pooling")
+    params['edgeprobe_cnn_context'] = _get_task_attr("edgeprobe_cnn_context")
 
     # For NLI probing tasks, might want to use a classifier trained on
     # something else (typically 'mnli').
@@ -513,7 +513,6 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.reset_elmo_states = args.reset_elmo_states if hasattr(args, "reset_elmo_states") else False
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
 
@@ -656,6 +655,7 @@ class MultiTaskModel(nn.Module):
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         '''
         out = {}
+
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'], task)
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
