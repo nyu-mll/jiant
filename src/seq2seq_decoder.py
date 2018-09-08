@@ -38,6 +38,7 @@ class Seq2SeqDecoder(Model):
                  target_embedding_dim: int = None,
                  attention: str = "none",
                  dropout: float = 0.0,
+                 scheduled_sampling_ratio: float = 0.0,
                  ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
         self._max_decoding_steps = max_decoding_steps
