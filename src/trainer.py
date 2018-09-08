@@ -8,6 +8,7 @@ import copy
 import random
 import logging as log
 import itertools
+import datetime
 
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -182,10 +183,6 @@ class SamplingMultiTaskTrainer():
         self._TB_dir = None
         if self._serialization_dir is not None:
             self._TB_dir = os.path.join(self._serialization_dir, "tensorboard")
-            self._TB_train_log = SummaryWriter(
-                os.path.join(self._TB_dir, "train"))
-            self._TB_validation_log = SummaryWriter(
-                os.path.join(self._TB_dir, "val"))
 
     def _check_history(self, metric_history, cur_score, should_decrease=False):
         '''
@@ -351,6 +348,12 @@ class SamplingMultiTaskTrainer():
 
         n_pass, should_stop = 0, False  # define these here b/c they might get overridden on load
         if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
+            #If in the pretrain phase, 1 tensorboard channel will be created for the training and 1 for the validation.
+            # All tasks will be logged into these channels. Every task will have it's separate tab.
+            self._TB_train_log = SummaryWriter(
+                os.path.join(self._TB_dir, "pretrain", "train"))
+            self._TB_validation_log = SummaryWriter(
+                os.path.join(self._TB_dir, "pretrain", "val"))
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
@@ -364,7 +367,17 @@ class SamplingMultiTaskTrainer():
                                "Use load_model = 1 to load the checkpoints instead. "
                                "If you don't want them, delete them or change your experiment name." %
                                self._serialization_dir)
-
+        # If in the eval phase, it will create 2 separate (train,val) channels for every task and also every run.
+        # The run is indexed by a timestamp. We have to handle eval phase differently than pretrain phase because
+        # if we pause training in the eval phase and then resume, it will start training from scratch.
+        # To avoid collision of logs we create separate channel every time when we start training in eval phase.
+        if self._serialization_dir is not None and phase == 'eval':
+            now = datetime.datetime.now()
+            task_name_for_plot = tasks[0].name
+            self._TB_eval_train_log = SummaryWriter(
+                os.path.join(self._TB_dir, "train_for_eval", task_name_for_plot, "train", now.strftime("%Y%m%d-%H%M")))
+            self._TB_eval_validation_log = SummaryWriter(
+                os.path.join(self._TB_dir, "train_for_eval", task_name_for_plot, "val", now.strftime("%Y%m%d-%H%M")))
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
             def clip_function(grad): return grad.clamp(-self._grad_clipping, self._grad_clipping)
             for parameter in self._model.parameters():
@@ -461,12 +474,12 @@ class SamplingMultiTaskTrainer():
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
 
-                # log to tensorboard
+                # log to tensorboard (train channel)
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
                     task_metrics_to_TB["loss"] = \
                         float(task_info['loss'] / n_batches_since_val)
-                    self._metrics_to_tensorboard_tr(n_pass, task_metrics_to_TB, task.name)
+                    self._metrics_to_tensorboard_tr(n_pass, task_metrics_to_TB, task.name, phase)
 
                 task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
                 description = self._description_from_metrics(task_metrics)
@@ -511,14 +524,14 @@ class SamplingMultiTaskTrainer():
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
 
-                # Log results to logger and tensorboard
+                # Log results to logger and tensorboard (val channel)
                 for name, value in all_val_metrics.items():
                     log.info("Statistic: %s", name)
                     if name in all_tr_metrics:
                         log.info("\ttraining: %3f", all_tr_metrics[name])
                     log.info("\tvalidation: %3f", value)
                 if self._TB_dir is not None:
-                    self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
+                    self._metrics_to_tensorboard_val(n_pass, all_val_metrics, phase)
                 lrs = self._get_lr() # log LR
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
@@ -928,7 +941,7 @@ class SamplingMultiTaskTrainer():
         training_state = torch.load(training_state_path)
         return training_state["pass"], training_state["should_stop"]
 
-    def _metrics_to_tensorboard_tr(self, epoch, train_metrics, task_name):
+    def _metrics_to_tensorboard_tr(self, epoch, train_metrics, task_name, phase):
         """
         Sends all of the train metrics to tensorboard
         """
@@ -936,10 +949,14 @@ class SamplingMultiTaskTrainer():
 
         for name in metric_names:
             train_metric = train_metrics.get(name)
-            name = task_name + '/' + task_name + '_' + name
-            self._TB_train_log.add_scalar(name, train_metric, epoch)
+            if phase == "main":
+                name = 'pretrain_' + task_name + '/' + task_name + '_' + name
+                self._TB_train_log.add_scalar(name, train_metric, epoch)
+            if phase == "eval":
+                name = 'train_for_eval_' + task_name + '/' + task_name + '_' + name
+                self._TB_eval_train_log.add_scalar(name, train_metric, epoch)
 
-    def _metrics_to_tensorboard_val(self, epoch, val_metrics):
+    def _metrics_to_tensorboard_val(self, epoch, val_metrics, phase):
         """
         Sends all of the val metrics to tensorboard
         """
@@ -947,8 +964,13 @@ class SamplingMultiTaskTrainer():
 
         for name in metric_names:
             val_metric = val_metrics.get(name)
-            name = name.split('_')[0] + '/' + name
-            self._TB_validation_log.add_scalar(name, val_metric, epoch)
+
+            if phase == 'main':
+                name = 'pretrain_' + name.split('_')[0] + '/' + name
+                self._TB_validation_log.add_scalar(name, val_metric, epoch)
+            if phase == 'eval':
+                name = 'train_for_eval_' + name.split('_')[0] + '/' + name
+                self._TB_eval_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
