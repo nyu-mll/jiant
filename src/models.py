@@ -497,7 +497,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
                 'hidden_size': args.s2s['d_hid_dec'],
                 'num_layers': args.s2s['n_layers_dec'], 'bidirectional': False}))
     decoder = SentenceEncoder(vocab, embedder, 0, rnn)
-    hid2voc = nn.Linear(args.s2s_d_hid_dec, args.max_word_v_size)
+    hid2voc = nn.Linear(args.s2s['d_hid_dec'], args.max_word_v_size)
     return decoder, hid2voc
 
 
