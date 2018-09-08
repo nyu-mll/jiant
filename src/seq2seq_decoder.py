@@ -79,6 +79,8 @@ class Seq2SeqDecoder(Model):
         # The bottleneck layer consists of a linear transform and helps to reduce number of parameters
         if self._output_proj_input_dim != self._decoder_output_dim:
             self._projection_bottleneck = Linear(self._decoder_output_dim, self._output_proj_input_dim)
+        else:
+            self._projection_bottleneck = lambda x: x
         self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
@@ -144,10 +146,7 @@ class Seq2SeqDecoder(Model):
                 decoder_input, (decoder_hidden, decoder_context))
 
             # output projection
-            if hasattr(self, "projection_bottleneck"):
-                proj_input = self._projection_bottleneck(decoder_hidden)
-            else:
-                proj_input = decoder_hidden
+            proj_input = self._projection_bottleneck(decoder_hidden)
             # (batch_size, num_classes)
             output_projections = self._output_projection_layer(proj_input)
 
@@ -286,6 +285,7 @@ class Seq2SeqDecoder(Model):
         attention = params.pop("attention", "none")
         output_proj_input_dim = params.pop("output_proj_input_dim", input_dim)
         dropout = params.pop_float("dropout", 0.0)
+        scheduled_sampling_ratio = params.pop_float("scheduled_sampling_ratio", 0.0)
         params.assert_empty(cls.__name__)
         return cls(vocab,
                    input_dim=input_dim,
