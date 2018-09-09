@@ -1773,6 +1773,17 @@ class MTTask(SequenceGenerationTask):
         return {'perplexity': math.exp(avg_nll), 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
+@register_task('wmt_debug', rel_path='wmt_debug/', max_targ_v_size=5000)
+class MTDebug(MTTask):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='wmt_debug'):
+        ''' Demo task for MT with 10k training examples.'''
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
+                               "val": os.path.join(path, "valid.txt"),
+                               "test": os.path.join(path, "test.txt")}
+
+
 @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
 class MTTaskEnRu(MTTask):
     def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_ru'):
