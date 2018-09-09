@@ -950,11 +950,13 @@ class SamplingMultiTaskTrainer():
         for name in metric_names:
             train_metric = train_metrics.get(name)
             if phase == "main":
-                name = 'pretrain_' + task_name + '/' + task_name + '_' + name
+                name = 'pretrain_' + task_name + '/' + task_name + '_' +name
                 self._TB_train_log.add_scalar(name, train_metric, epoch)
-            if phase == "eval":
+            elif phase == "eval":
                 name = 'train_for_eval_' + task_name + '/' + task_name + '_' + name
                 self._TB_eval_train_log.add_scalar(name, train_metric, epoch)
+            else:
+                raise ValueError('We expect logs either from main or eval phase')
 
     def _metrics_to_tensorboard_val(self, epoch, val_metrics, phase):
         """
@@ -968,9 +970,11 @@ class SamplingMultiTaskTrainer():
             if phase == 'main':
                 name = 'pretrain_' + name.split('_')[0] + '/' + name
                 self._TB_validation_log.add_scalar(name, val_metric, epoch)
-            if phase == 'eval':
+            elif phase == 'eval':
                 name = 'train_for_eval_' + name.split('_')[0] + '/' + name
                 self._TB_eval_validation_log.add_scalar(name, val_metric, epoch)
+            else:
+                raise ValueError('We expect logs either from main or eval phase')
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
