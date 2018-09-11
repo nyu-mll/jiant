@@ -31,10 +31,14 @@ class Seq2SeqDecoder(Model):
     def __init__(self,
                  vocab: Vocabulary,
                  input_dim: int,
+                 decoder_hidden_size: int,
+                 max_decoding_steps: int,
+                 output_proj_input_dim: int,
                  target_namespace: str = "targets",
                  target_embedding_dim: int = None,
                  attention: str = "none",
                  dropout: float = 0.0,
+                 scheduled_sampling_ratio: float = 0.0,
                  ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
         self._max_decoding_steps = max_decoding_steps
@@ -50,26 +54,39 @@ class Seq2SeqDecoder(Model):
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
         # hidden state of the decoder with that of the final hidden states of the encoder. Also, if
         # we're using attention with ``DotProductSimilarity``, this is needed.
-        self._decoder_hidden_dim = input_dim
+        self._encoder_output_dim = input_dim
+        self._decoder_hidden_dim = decoder_hidden_size
+        if self._encoder_output_dim != self._decoder_hidden_dim:
+            self._projection_encoder_out = Linear(self._encoder_output_dim, self._decoder_hidden_dim)
+        else:
+            self._projection_encoder_out = lambda x: x
         self._decoder_output_dim = self._decoder_hidden_dim
-        # target_embedding_dim = target_embedding_dim #or self._source_embedder.get_output_dim()
+        self._output_proj_input_dim = output_proj_input_dim
         self._target_embedding_dim = target_embedding_dim
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
-        self._sent_pooler = Pooler.from_params(input_dim, input_dim, False)
+        # Used to get an initial hidden state from the encoder states
+        self._sent_pooler = Pooler.from_params(d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
 
         if attention == "bilinear":
-            self._decoder_attention = BilinearAttention(input_dim, input_dim)
+            self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
             # The output of attention, a weighted average over encoder outputs, will be
             # concatenated to the input vector of the decoder at each time step.
             self._decoder_input_dim = input_dim + target_embedding_dim
         elif attention == "none":
+            self._decoder_attention = None
             self._decoder_input_dim = target_embedding_dim
         else:
             raise Exception("attention not implemented {}".format(attention))
 
         self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
-        self._output_projection_layer = Linear(self._decoder_output_dim, num_classes)
+        # Allow for a bottleneck layer between encoder outputs and distribution over vocab
+        # The bottleneck layer consists of a linear transform and helps to reduce number of parameters
+        if self._output_proj_input_dim != self._decoder_output_dim:
+            self._projection_bottleneck = Linear(self._decoder_output_dim, self._output_proj_input_dim)
+        else:
+            self._projection_bottleneck = lambda x: x
+        self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
     def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
@@ -80,10 +97,9 @@ class Seq2SeqDecoder(Model):
         encoder_outputs: torch.FloatTensor, [bs, T, h]
         encoder_outputs_mask: torch.LongTensor, [bs, T, 1]
         """
-        # very important - feel free to check it a third time
-        # idempotent / safe to run in place. encoder_outputs_mask should never
-        # change
-        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+
+        if self._decoder_attention is not None:
+            encoder_outputs = self._projection_encoder_out(encoder_outputs)
             encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
             decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
@@ -132,8 +148,10 @@ class Seq2SeqDecoder(Model):
             decoder_hidden, decoder_context = self._decoder_cell(
                 decoder_input, (decoder_hidden, decoder_context))
 
+            # output projection
+            proj_input = self._projection_bottleneck(decoder_hidden)
             # (batch_size, num_classes)
-            output_projections = self._output_projection_layer(decoder_hidden)
+            output_projections = self._output_projection_layer(proj_input)
 
             # list of (batch_size, 1, num_classes)
             step_logit = output_projections.unsqueeze(1)
@@ -204,7 +222,7 @@ class Seq2SeqDecoder(Model):
         # (batch_size, target_embedding_dim)
         embedded_input = self._target_embedder(input_indices)
 
-        if hasattr(self, "_decoder_attention") and self._decoder_attention:
+        if self._decoder_attention is not None:
             # encoder_outputs : (batch_size, input_sequence_length, encoder_output_dim)
             # Ensuring mask is also a FloatTensor. Or else the multiplication within attention will
             # complain.
@@ -221,9 +239,9 @@ class Seq2SeqDecoder(Model):
             # (batch_size, input_sequence_length)
             input_weights = self._decoder_attention(
                 decoder_hidden_state, encoder_outputs, encoder_outputs_mask)
-            # (batch_size, encoder_output_dim)
+            # (batch_size, input_dim)
             attended_input = weighted_sum(encoder_outputs, input_weights)
-            # (batch_size, encoder_output_dim + target_embedding_dim)
+            # (batch_size, input_dim + target_embedding_dim)
             return torch.cat((attended_input, embedded_input), -1)
         else:
             return embedded_input
@@ -259,20 +277,3 @@ class Seq2SeqDecoder(Model):
         relevant_mask = target_mask[:, 1:].contiguous()  # (batch_size, num_decoding_steps)
         loss = sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
         return loss
-
-    @classmethod
-    def from_params(cls, vocab, params: Params) -> 'SimpleSeq2Seq':
-        input_dim = params.pop("input_dim")
-        max_decoding_steps = params.pop("max_decoding_steps")
-        target_namespace = params.pop("target_namespace", "targets")
-        target_embedding_dim = params.pop("target_embedding_dim")
-        attention = params.pop("attention", "none")
-        dropout = params.pop_float("dropout", 0.0)
-        params.assert_empty(cls.__name__)
-        return cls(vocab,
-                   input_dim=input_dim,
-                   target_embedding_dim=target_embedding_dim,
-                   max_decoding_steps=max_decoding_steps,
-                   target_namespace=target_namespace,
-                   attention=attention,
-                   dropout=dropout)

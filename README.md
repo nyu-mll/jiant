@@ -19,6 +19,11 @@ To activate the environment run ``source activate jiant``, and to deactivate run
 
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
+You will also need to install dependencies for nltk if you do not already have them:
+```
+python -m nltk.downloader -d /usr/share/nltk_data perluniprops nonbreaking_prefixes punkt
+```
+
 ## Submodules
 
 This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
@@ -61,6 +66,15 @@ python main.py --config_file config/demo.conf \
     --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
+
+To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in this [script](path_config.sh)
+*  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
+*  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the Glue data.
+*  $WORD_EMBED: location of the word embeddings you want to use. For GloVe:  [840B300d Glove](http://nlp.stanford.edu/data/glove.840B.300d.zip). For FastText: [300d-2M](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip). For ELMo, AllenNLP will download it for you.
+*  $FASTTEXT_MODEL_FILE: location of the FastText model: can be set to '.'
+
+
+
 
 ### Saving Preprocessed Data
 
