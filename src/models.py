@@ -31,7 +31,7 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, VAETask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
+    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -547,8 +547,6 @@ class MultiTaskModel(nn.Module):
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             out = self._lm_forward(batch, task, predict)
-        elif isinstance(task, VAETask):
-            out = self._vae_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
@@ -783,26 +781,6 @@ class MultiTaskModel(nn.Module):
         batch_acc = total_correct.item()/len(labels)
         out["n_exs"] = len(labels)
         task.scorer1(batch_acc)
-        return out
-
-
-    def _vae_forward(self, batch, task, predict):
-        ''' For translation, denoising, maybe language modeling? '''
-        out = {}
-        sent, sent_mask = self.sent_encoder(batch['inputs'], task)
-        out['n_exs'] = get_batch_size(batch)
-
-        if isinstance(task, VAETask):
-            decoder = getattr(self, "%s_decoder" % task.name)
-            out = decoder.forward(sent, sent_mask, batch['targs'])
-            task.scorer1(math.exp(out['loss'].item()))
-            return out
-        if 'targs' in batch:
-            pass
-
-        if predict:
-            pass
-
         return out
 
     def _seq_gen_forward(self, batch, task, predict):

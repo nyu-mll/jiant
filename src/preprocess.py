@@ -35,16 +35,7 @@ from . import config
 from . import serialize
 from . import utils
 from . import tasks as tasks_module
-
-from .tasks import \
-    BWBLMTask, CCGTaggingTask, CoLATask, DisSentWikiBigFullTask, DisSentWikiSingleTask, GroundedTask, \
-    MRPCTask, MTTask, MultiNLIAltTask, MultiNLIDiagnosticTask, MultiNLIFictionTask, MultiNLIGovernmentTask, \
-    MultiNLISlateTask, MultiNLITask, MultiNLITelephoneTask, MultiNLITravelTask, NLITypeProbingAltTask, \
-    NLITypeProbingTask, NPSTask, PairOrdinalRegressionTask, QNLIAltTask, QNLITask, QQPAltTask, QQPTask, \
-    RecastFactualityTask, RecastKGTask, RecastLexicosynTask, RecastNERTask, RecastPunTask, RecastSentimentTask, \
-    RecastVerbcornerTask, RecastVerbnetTask, RecastWinogenderTask, RTETask, SNLITask, SSTTask, STSBAltTask, \
-    STSBTask, TaggingTask, WeakGroundedTask, WikiText103LMTask, WNLITask, GroundedSWTask, JOCITask
-
+from .tasks import MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
@@ -61,56 +52,9 @@ ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
 
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                    'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
+                      'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
 
-# DEPRECATED: use @register_task in tasks.py instead.
-NAME2INFO = {'sst': (SSTTask, 'SST-2/'),
-             'cola': (CoLATask, 'CoLA/'),
-             'mrpc': (MRPCTask, 'MRPC/'),
-             'qqp': (QQPTask, 'QQP'),
-             'qqp-alt': (QQPAltTask, 'QQP'),
-             'sts-b': (STSBTask, 'STS-B/'),
-             'sts-b-alt': (STSBAltTask, 'STS-B/'),
-             'mnli': (MultiNLITask, 'MNLI/'),
-             'mnli-alt': (MultiNLIAltTask, 'MNLI/'),
-             'mnli-fiction': (MultiNLIFictionTask, 'MNLI/'),
-             'mnli-slate': (MultiNLISlateTask, 'MNLI/'),
-             'mnli-government': (MultiNLIGovernmentTask, 'MNLI/'),
-             'mnli-telephone': (MultiNLITelephoneTask, 'MNLI/'),
-             'mnli-travel': (MultiNLITravelTask, 'MNLI/'),
-             'mnli-diagnostic': (MultiNLIDiagnosticTask, 'MNLI/'),
-             'qnli': (QNLITask, 'QNLI/'),
-             'qnli-alt': (QNLIAltTask, 'QNLI/'),
-             'rte': (RTETask, 'RTE/'),
-             'snli': (SNLITask, 'SNLI/'),
-             'wnli': (WNLITask, 'WNLI/'),
-             'joci': (JOCITask, 'JOCI/'),
-             'wiki103': (WikiText103LMTask, 'WikiText103/'),
-             'bwb': (BWBLMTask, 'BWB/'),
-             'dissentwiki': (DisSentWikiSingleTask, 'DisSent/wikitext/'),
-             'dissentwikifullbig': (DisSentWikiBigFullTask, 'DisSent/wikitext/'),
-             'weakgrounded': (WeakGroundedTask, 'mscoco/weakgrounded/'),
-             'grounded': (GroundedTask, 'mscoco/grounded/'),
-             'ccg': (CCGTaggingTask, 'CCG/'),
-             'nli-prob': (NLITypeProbingTask, 'NLI-Prob/'),
-             'nli-alt': (NLITypeProbingAltTask, '/'),
-             'nps': (NPSTask, 'nps/'), # NPS = Noun Phrases
-             'nli-alt': (NLITypeProbingAltTask, '/nfs/jsalt/exp/alexis-probing/results'),
-             'recast-kg': (RecastKGTask, 'DNC/kg-relations'),
-             'recast-lexicosyntax': (RecastLexicosynTask, 'DNC/lexicosyntactic_recasted'),
-             'recast-winogender': (RecastWinogenderTask, 'DNC/manually-recast-winogender'),
-             'recast-factuality': (RecastFactualityTask, 'DNC/recast_factuality_data'),
-             'recast-ner': (RecastNERTask, 'DNC/recast_ner_data'),
-             'recast-puns': (RecastPunTask, 'DNC/recast_puns_data'),
-             'recast-sentiment': (RecastSentimentTask, 'DNC/recast_sentiment_data'),
-             'recast-verbcorner': (RecastVerbcornerTask, 'DNC/recast_verbcorner_data'),
-             'recast-verbnet': (RecastVerbnetTask, 'DNC/recast_verbnet_data'),
-             'groundedsw': (GroundedSWTask, 'mscoco/grounded/'),
-             }
-# !!!!!!! NOTE: You should not be adding anything else manually to NAME2INFO.
-# !!!!!!! Use the decorator @register_task instead.
-# Add any tasks registered in tasks.py
-NAME2INFO.update(tasks_module.REGISTRY)
+TASKS_REGISTRY = tasks_module.REGISTRY
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>" # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SPECIALS = [SOS_TOK, EOS_TOK] # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
@@ -407,7 +351,7 @@ def build_tasks(args):
                 # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
                 log.warn("When using un-trimmed pretraining version of train split, "
-                "it creates a deepcopy of task object which is inefficient.")
+                         "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
@@ -457,8 +401,8 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
 
     tasks = []
     for name in task_names:
-        assert name in NAME2INFO, "Task '{:s}' not found!".format(name)
-        task_info = NAME2INFO[name]
+        assert name in TASKS_REGISTRY, "Task '{:s}' not found!".format(name)
+        task_info = TASKS_REGISTRY[name]
         task_src_path = os.path.join(path, task_info[1])
         task_scratch_path = os.path.join(scratch_path, task_info[1])
         pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
