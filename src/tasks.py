@@ -157,6 +157,16 @@ class Task():
             self.example_counts[split] = count
 
     @property
+    def tokenizer_name(self):
+        ''' Get the name of the tokenizer used for this task.
+
+        Generally, this is just MosesTokenizer, but other tokenizations may be
+        needed in special cases such as when working with BPE-based models
+        such as the OpenAI transformer LM.
+        '''
+        return utils.TOKENIZER.__class__.__name__
+
+    @property
     def n_train_examples(self):
         return self.example_counts['train']
 
@@ -249,115 +259,113 @@ class PairClassificationTask(ClassificationTask):
         return process_single_pair_task_split(split, indexers, is_pair=True)
 
 
-# Make sure we load the properly-retokenized versions.
-_tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
 # SRL CoNLL 2005, formulated as an edge-labeling task.
 @register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.wsj.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.wsj.edges.json",
                }, is_symmetric=False)
 # SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
 @register_task('edges-srl-conll2012', rel_path='edges/srl_conll2012',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.edges.json",
                }, is_symmetric=False)
 # SPR1, as an edge-labeling task (multilabel).
 @register_task('edges-spr1', rel_path='edges/spr1',
                label_file="labels.txt", files_by_split={
-                    'train': "spr1.train.json" + _tokenizer_suffix,
-                    'val': "spr1.dev.json" + _tokenizer_suffix,
-                    'test': "spr1.test.json" + _tokenizer_suffix,
+                    'train': "spr1.train.json",
+                    'val': "spr1.dev.json",
+                    'test': "spr1.test.json",
                }, is_symmetric=False)
 # SPR2, as an edge-labeling task (multilabel).
 @register_task('edges-spr2', rel_path='edges/spr2',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.edges.json",
                }, is_symmetric=False)
 # Definite pronoun resolution. Two labels.
 @register_task('edges-dpr', rel_path='edges/dpr',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.edges.json",
                }, is_symmetric=False)
 # Coreference on OntoNotes corpus. Two labels.
 @register_task('edges-coref-ontonotes', rel_path='edges/ontonotes-coref',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.edges.json",
                }, is_symmetric=False)
 # Re-processed version of the above, via AllenNLP data loaders.
 @register_task('edges-coref-ontonotes-conll',
                rel_path='edges/ontonotes-coref-conll',
                label_file="labels.txt", files_by_split={
-                    'train': "coref_conll_ontonotes_en_train.json" + _tokenizer_suffix,
-                    'val': "coref_conll_ontonotes_en_dev.json" + _tokenizer_suffix,
-                    'test': "coref_conll_ontonotes_en_test.json" + _tokenizer_suffix,
+                    'train': "coref_conll_ontonotes_en_train.json",
+                    'val': "coref_conll_ontonotes_en_dev.json",
+                    'test': "coref_conll_ontonotes_en_test.json",
                }, is_symmetric=False)
 # Entity type labeling on CoNLL 2003.
 @register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
                label_file="labels.txt", files_by_split={
-                    'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
-                    'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
-                    'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+                    'train': "CoNLL-2003_train.json",
+                    'val': "CoNLL-2003_dev.json",
+                    'test': "CoNLL-2003_test.json",
                }, single_sided=True)
 # Entity type labeling on OntoNotes.
 @register_task('edges-ner-ontonotes',
                rel_path='edges/ontonotes-ner',
                label_file="labels.txt", files_by_split={
-                    'train': "ner_ontonotes_en_train.json" + _tokenizer_suffix,
-                    'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
-                    'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
+                    'train': "ner_ontonotes_en_train.json",
+                    'val': "ner_ontonotes_en_dev.json",
+                    'test': "ner_ontonotes_en_test.json",
                }, single_sided=True)
 # Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
 @register_task('edges-dep-labeling', rel_path='edges/dep',
                label_file="labels.txt", files_by_split={
-                    'train': "train.json" + _tokenizer_suffix,
-                    'val': "dev.json" + _tokenizer_suffix,
-                    'test': "test.json" + _tokenizer_suffix,
+                    'train': "train.json",
+                    'val': "dev.json",
+                    'test': "test.json",
                }, is_symmetric=False)
 # Dependency edge labeling on English Web Treebank (UD).
 @register_task('edges-dep-labeling-ewt', rel_path='edges/dep_ewt',
                label_file="labels.txt", files_by_split={
-                    'train': "train.edges.json" + _tokenizer_suffix,
-                    'val': "dev.edges.json" + _tokenizer_suffix,
-                    'test': "test.edges.json" + _tokenizer_suffix,
+                    'train': "train.edges.json",
+                    'val': "dev.edges.json",
+                    'test': "test.edges.json",
                }, is_symmetric=False)
 # PTB constituency membership / labeling.
 @register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
                label_file="labels.txt", files_by_split={
-                    'train': "ptb_train.json" + _tokenizer_suffix,
-                    'val': "ptb_dev.json" + _tokenizer_suffix,
-                    'test': "ptb_test.json" + _tokenizer_suffix,
+                    'train': "ptb_train.json",
+                    'val': "ptb_dev.json",
+                    'test': "ptb_test.json",
                }, single_sided=True)
 # Constituency membership / labeling on OntoNotes.
 @register_task('edges-constituent-ontonotes',
                rel_path='edges/ontonotes-constituents',
                label_file="labels.txt", files_by_split={
-                    'train': "consts_ontonotes_en_train.json" + _tokenizer_suffix,
-                    'val': "consts_ontonotes_en_dev.json" + _tokenizer_suffix,
-                    'test': "consts_ontonotes_en_test.json" + _tokenizer_suffix,
+                    'train': "consts_ontonotes_en_train.json",
+                    'val': "consts_ontonotes_en_dev.json",
+                    'test': "consts_ontonotes_en_test.json",
                }, single_sided=True)
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.tag.train.json" + _tokenizer_suffix,
-                    'val': "ccg.tag.dev.json" + _tokenizer_suffix,
-                    'test': "ccg.tag.test.json" + _tokenizer_suffix,
+                    'train': "ccg.tag.train.json",
+                    'val': "ccg.tag.dev.json",
+                    'test': "ccg.tag.test.json",
                }, single_sided=True)
 # CCG parsing (constituent labeling).
 @register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                label_file="labels.txt", files_by_split={
-                    'train': "ccg.parse.train.json" + _tokenizer_suffix,
-                    'val': "ccg.parse.dev.json" + _tokenizer_suffix,
-                    'test': "ccg.parse.test.json" + _tokenizer_suffix,
+                    'train': "ccg.parse.train.json",
+                    'val': "ccg.parse.dev.json",
+                    'test': "ccg.parse.test.json",
                }, single_sided=True)
 class EdgeProbingTask(Task):
     ''' Generic class for fine-grained edge probing.
@@ -370,6 +378,11 @@ class EdgeProbingTask(Task):
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
     '''
+    @property
+    def _tokenizer_suffix(self):
+        ''' Suffix to make sure we use the correct source files. '''
+        return ".retokenized." + self.tokenizer_name
+
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
                  label_file: str=None,
@@ -399,7 +412,7 @@ class EdgeProbingTask(Task):
         assert label_file is not None
         assert files_by_split is not None
         self._files_by_split = {
-            split: os.path.join(path, fname)
+            split: os.path.join(path, fname) + self._tokenizer_suffix
             for split, fname in files_by_split.items()
         }
         self._iters_by_split = self.load_data()
