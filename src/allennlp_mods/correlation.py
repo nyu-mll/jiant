@@ -29,8 +29,9 @@ class FastMatthews(Metric):
         assert predictions.dtype in [np.int32, np.int64, int]
         assert labels.dtype in [np.int32, np.int64, int]
 
-        C = confusion_matrix(labels.ravel(), predictions.ravel())
-        assert C.shape == (2,2)
+        C = confusion_matrix(labels.ravel(), predictions.ravel(),
+                             labels=np.arange(self.n_classes, dtype=np.int32))
+        assert C.shape == (self.n_classes, self.n_classes)
         self._C += C
 
     def mcc_from_confmat(self, C):
