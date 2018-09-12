@@ -157,6 +157,16 @@ class Task():
             self.example_counts[split] = count
 
     @property
+    def tokenizer_name(self):
+        ''' Get the name of the tokenizer used for this task.
+
+        Generally, this is just MosesTokenizer, but other tokenizations may be
+        needed in special cases such as when working with BPE-based models
+        such as the OpenAI transformer LM.
+        '''
+        return utils.TOKENIZER.__class__.__name__
+
+    @property
     def n_train_examples(self):
         return self.example_counts['train']
 
@@ -368,8 +378,10 @@ class EdgeProbingTask(Task):
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
     '''
-    # Add this suffix to data files.
-    _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
+    @property
+    def _tokenizer_suffix(self):
+        ''' Suffix to make sure we use the correct source files. '''
+        return ".retokenized." + self.tokenizer_name
 
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
