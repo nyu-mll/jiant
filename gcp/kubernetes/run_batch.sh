@@ -17,6 +17,7 @@
 #    -m <mode>     # mode is 'create', 'replace', 'delete'
 #    -g <gpu_type>  # e.g. 'k80' or 'p100'
 #    -p <project>   # project folder to group experiments
+#    -n <email>    # email address for job notifications
 #
 # For example:
 # ./run_batch.sh -p demos -m k80 jiant-demo \
@@ -29,16 +30,19 @@ set -e
 MODE="create"
 GPU_TYPE="p100"
 PROJECT="$USER"
+NOTIFY_EMAIL=""
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts ":m:g:p:" opt; do
+while getopts ":m:g:p:n:" opt; do
     case "$opt" in
     m)	MODE=$OPTARG
         ;;
     g)  GPU_TYPE=$OPTARG
         ;;
     p)  PROJECT=$OPTARG
+        ;;
+    n)	NOTIFY_EMAIL=$OPTARG
         ;;
     \? )
         echo "Invalid flag $opt."
@@ -91,6 +95,8 @@ spec:
       value: ${PROJECT_DIR}
     - name: JIANT_PROJECT_PREFIX
       value: ${PROJECT_DIR}
+    - name: NOTIFY_EMAIL
+      value: ${NOTIFY_EMAIL}
   nodeSelector:
     cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
   volumes:
