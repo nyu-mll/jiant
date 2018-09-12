@@ -5,12 +5,15 @@
 #
 # See exp_fns.sh for the override params, and config/edgeprobe_*.conf
 # for the base configs.
+#
+# To run on a particular cluster, authenticate to that cluster with:
+#   gcloud container clusters get-credentials --zone <zone> <cluster_name>
 
 set -e
 
 # Default arguments.
 GPU_TYPE="p100"
-PROJECT="edgeprobe"
+PROJECT=""
 NOTIFY_EMAIL="iftenney@gmail.com"
 
 # Handle flags.
@@ -34,18 +37,23 @@ shift $((OPTIND-1))
 # Remaining positional arguments.
 MODE=${1:-"create"}
 
+if [ -z $PROJECT ]; then
+    echo "You must provide a project name!"
+    exit 1
+fi
+
 pushd "${PWD%jiant*}"/jiant
 
 # Make a copy of the current tree in the project directory.
 PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
 if [ ! -d "${PROJECT_DIR}" ]; then
-  echo "Creating project directory ${PROJECT_DIR}"
-  mkdir ${PROJECT_DIR}
-  chmod -R o+w ${PROJECT_DIR}
+    echo "Creating project directory ${PROJECT_DIR}"
+    mkdir ${PROJECT_DIR}
+    chmod -R o+w ${PROJECT_DIR}
 fi
 if [[ $MODE != "delete" ]]; then
-  echo "Copying source tree to project dir..."
-  rsync -a --exclude=".git" "./" "${PROJECT_DIR}/jiant"
+    echo "Copying source tree to project dir..."
+    rsync -a --exclude=".git" "./" "${PROJECT_DIR}/jiant"
 fi
 PATH_TO_JIANT="${PROJECT_DIR}/jiant"
 
@@ -86,16 +94,17 @@ ALL_TASKS+=( "coref-ontonotes-conll" )
 echo "All tasks to run: ${ALL_TASKS[@]}"
 
 if [[ $MODE == "delete" ]]; then
-  # OK to fail to delete some jobs, still try others.
-  set +e
+    # OK to fail to delete some jobs, still try others.
+    set +e
 fi
 
 for task in "${ALL_TASKS[@]}"
 do
-  kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
-  kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
-  kuberun elmo-full-$task  "elmo_full_exp edges-$task"
-  kuberun glove-$task      "glove_exp edges-$task"
-  kuberun cove-$task       "cove_exp edges-$task"
+    kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
+    kuberun elmo-ortho-$task "elmo_ortho_exp edges-$task 0"
+    kuberun elmo-full-$task  "elmo_full_exp edges-$task"
+    kuberun glove-$task      "glove_exp edges-$task"
+    kuberun cove-$task       "cove_exp edges-$task"
+    # kuberun openai-$task     "openai_exp edges-$task"
 done
 
