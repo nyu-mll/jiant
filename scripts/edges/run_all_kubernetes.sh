@@ -75,14 +75,14 @@ function kuberun() {
 ##
 
 declare -a ALL_TASKS
+ALL_TASKS+=( "spr1" )
+ALL_TASKS+=( "spr2" )
+ALL_TASKS+=( "dpr" )
 ALL_TASKS+=( "dep-labeling-ewt" )
 ALL_TASKS+=( "constituent-ontonotes" )
 ALL_TASKS+=( "ner-ontonotes" )
 ALL_TASKS+=( "srl-conll2012" )
 ALL_TASKS+=( "coref-ontonotes-conll" )
-ALL_TASKS+=( "spr1" )
-ALL_TASKS+=( "spr2" )
-ALL_TASKS+=( "dpr" )
 echo "All tasks to run: ${ALL_TASKS[@]}"
 
 if [[ $MODE == "delete" ]]; then
