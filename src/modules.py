@@ -165,13 +165,14 @@ class SentenceEncoder(Model):
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
-        pad_shape = (sent_mask.shape[0],
-                     max_seq_length - sent_mask.shape[1],
-                     *sent_mask.shape[2:])
-        sent_mask = torch.cat([sent_mask, torch.zeros(*pad_shape,
-                                                     dtype=sent_mask.dtype,
-                                                     device=sent_mask.device)],
-                              dim=1)
+        if sent_mask.shape[1] < max_seq_length:
+            pad_shape = (sent_mask.shape[0],
+                         max_seq_length - sent_mask.shape[1],
+                         *sent_mask.shape[2:])
+            sent_mask = torch.cat([sent_mask, torch.zeros(*pad_shape,
+                                                 dtype=sent_mask.dtype,
+                                                 device=sent_mask.device)],
+                                  dim=1)
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         if sent_embs is not None:
             sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
