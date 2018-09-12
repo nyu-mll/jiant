@@ -14,7 +14,7 @@ set -e
 # Default arguments.
 GPU_TYPE="p100"
 PROJECT=""
-NOTIFY_EMAIL="iftenney@gmail.com"
+NOTIFY_EMAIL="$NOTIFY_EMAIL"  # allow pre-set from shell
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
@@ -59,10 +59,9 @@ PATH_TO_JIANT="${PROJECT_DIR}/jiant"
 
 function make_kubernetes_command() {
     # Generate shell command to execute in container.
-    # Uses edgeprobe_exp_fns.sh to generate configs; see that file for details
+    # Uses exp_fns.sh to generate configs; see that file for details
     # and to define new experiments.
-    echo -n "export NOTIFY_EMAIL=${NOTIFY_EMAIL}"
-    echo -n "; pushd ${PATH_TO_JIANT}"
+    echo -n "pushd ${PATH_TO_JIANT}"
     echo -n "; source scripts/edges/exp_fns.sh"
     echo -n "; $@"
 }
@@ -73,7 +72,7 @@ function kuberun() {
     COMMAND=$(make_kubernetes_command $2)
     echo "Job '$NAME': '$COMMAND'"
     ./gcp/kubernetes/run_batch.sh -m $MODE -p ${PROJECT} -g ${GPU_TYPE} \
-        $NAME "$COMMAND"
+        -n ${NOTIFY_EMAIL} $NAME "$COMMAND"
     echo ""
 }
 
