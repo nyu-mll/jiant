@@ -199,10 +199,7 @@ class EdgeClassifierModule(nn.Module):
         Returns:
             probs: [batch_size, num_targets, n_classes]
         """
-        if self.loss_type == 'softmax':
-            raise NotImplementedError("Softmax loss not fully supported.")
-            return F.softmax(logits, dim=2)
-        elif self.loss_type == 'sigmoid':
+        if self.loss_type == 'sigmoid':
             return torch.sigmoid(logits)
         else:
             raise ValueError("Unsupported loss type '%s' "
@@ -233,12 +230,7 @@ class EdgeClassifierModule(nn.Module):
         binary_scores = torch.stack([-1*logits, logits], dim=2)
         task.f1_scorer(binary_scores, labels)
 
-        if self.loss_type == 'softmax':
-            raise NotImplementedError("Softmax loss not fully supported.")
-            # Expect exactly one target, convert to indices.
-            assert labels.shape[1] == 1  # expect a single target
-            return F.cross_entropy(logits, labels)
-        elif self.loss_type == 'sigmoid':
+        if self.loss_type == 'sigmoid':
             return F.binary_cross_entropy(torch.sigmoid(logits),
                                           labels.float())
         else:
