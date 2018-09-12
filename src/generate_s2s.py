@@ -6,8 +6,6 @@ import torch.nn.functional as F
 from . import bleu_scoring
 import numpy as np
 
-""" Beam search was confirmed to be WRONG. Use greedy search"""
-
 
 def _get_word(decoder_vocab, word_idx):
     return decoder_vocab._index_to_token['targets'][word_idx]

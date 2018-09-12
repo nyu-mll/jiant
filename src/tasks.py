@@ -265,6 +265,13 @@ _tokenizer_suffix = ".retokenized." + utils.TOKENIZER.__class__.__name__
                     'val': "dev.edges.json" + _tokenizer_suffix,
                     'test': "test.edges.json" + _tokenizer_suffix,
                }, is_symmetric=False)
+# SPR1, as an edge-labeling task (multilabel).
+@register_task('edges-spr1', rel_path='edges/spr1',
+               label_file="labels.txt", files_by_split={
+                    'train': "spr1.train.json" + _tokenizer_suffix,
+                    'val': "spr1.dev.json" + _tokenizer_suffix,
+                    'test': "spr1.test.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 # SPR2, as an edge-labeling task (multilabel).
 @register_task('edges-spr2', rel_path='edges/spr2',
                label_file="labels.txt", files_by_split={
@@ -476,23 +483,25 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
+    def _make_span_field(self, s, text_field, offset=1):
+        return SpanField(s[0]+offset, s[1]-1+offset, text_field)
+
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
-        text = _sentence_to_text_field(tokens, indexers)
+        tokens = [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+        text_field = _sentence_to_text_field(tokens, indexers)
 
         d = {}
         d["idx"] = MetadataField(idx)
 
-        d['input1'] = text
+        d['input1'] = text_field
 
-        span1s = [t['span1'] for t in record['targets']]
-        d['span1s'] = ListField([SpanField(s[0], s[1] - 1, text)
-                                 for s in span1s])
+        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
+                                 for t in record['targets']])
         if not self.single_sided:
-            span2s = [t['span2'] for t in record['targets']]
-            d['span2s'] = ListField([SpanField(s[0], s[1] - 1, text)
-                                     for s in span2s])
+            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                     for t in record['targets']])
 
         # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
@@ -1785,6 +1794,17 @@ class MTTask(SequenceGenerationTask):
         avg_nll = self.scorer1.get_metric(reset)
         unk_ratio_macroavg = self.scorer3.get_metric(reset)
         return {'perplexity': math.exp(avg_nll), 'bleu_score': 0, 'unk_ratio_macroavg': unk_ratio_macroavg}
+
+
+@register_task('wmt_debug', rel_path='wmt_debug/', max_targ_v_size=5000)
+class MTDebug(MTTask):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name='wmt_debug'):
+        ''' Demo task for MT with 10k training examples.'''
+        super().__init__(path=path, max_seq_len=max_seq_len,
+                         max_targ_v_size=max_targ_v_size, name=name)
+        self.files_by_split = {"train": os.path.join(path, "train.txt"),
+                               "val": os.path.join(path, "valid.txt"),
+                               "test": os.path.join(path, "test.txt")}
 
 
 @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
