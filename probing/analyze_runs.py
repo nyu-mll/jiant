@@ -40,6 +40,24 @@ def find_tasks_and_splits(run_path: str) -> List[Tuple[str,str]]:
         log.warning("Warning: no predictions found for run '%s'", run_path)
     return matches
 
+def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
+    """Extract some run information from the log text."""
+    log_path = os.path.join(run_path, log_name)
+    if not os.path.isfile(log_path):
+        log.warning("Warning: no log found for run '%s'", run_path)
+        return None
+    train_stats = []
+    with open(log_path) as fd:
+        for line in fd:
+            m = re.match(r"Trained ([\w-]+) for (\d+) batches or (.+) epochs\w*", line)
+            if m is None:
+                continue
+            r = dict(zip(["task", "num_steps", "num_epochs"], m.groups()))
+            r['run'] = run_path
+            r['label'] = "__run_info__"
+            train_stats.append(r)
+    return pd.DataFrame.from_records(train_stats)
+
 def analyze_run(run_path: str) -> Iterable[pd.DataFrame]:
     log.info("Analyzing run %s", run_path)
     for task, split in find_tasks_and_splits(run_path):
@@ -64,8 +82,12 @@ def main(args):
     for run_path in args.inputs:
         for scores in analyze_run(run_path):
             all_scores.append(scores)
+        # Heterogeneous run information.
+        run_info = get_run_info(run_path)
+        all_scores.append(run_info)
 
-    long_scores = pd.concat(all_scores, axis=0, ignore_index=True)
+    long_scores = pd.concat(all_scores, axis=0, ignore_index=True,
+                            sort=False)
     if args.output:
         log.info("Writing long-form stats table to %s", args.output)
         long_scores.to_csv(args.output, sep="\t")
