@@ -42,7 +42,8 @@ if [ -z $PROJECT ]; then
     exit 1
 fi
 
-pushd "${PWD%jiant*}"/jiant
+# Top-level directory for the current repo.
+pushd $(git rev-parse --show-toplevel)
 
 # Make a copy of the current tree in the project directory.
 PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
