@@ -28,6 +28,7 @@ import analysis
 from typing import List, Tuple, Iterable
 
 def find_tasks_and_splits(run_path: str) -> List[Tuple[str,str]]:
+    """Find tasks and splits for a particular run."""
     matcher = r"([\w-]+)_(train|val|test)\.json"
     matches = []
     for fname in os.listdir(run_path):
