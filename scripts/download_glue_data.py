@@ -1,6 +1,6 @@
 ''' Script for downloading all GLUE data.
 
-Example usage: 
+Example usage:
   python download_glue_data.py --data_dir data --tasks all
 
 Note: for legal reasons, we are unable to host MRPC ourselves.

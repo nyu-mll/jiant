@@ -7,7 +7,7 @@
 # Current implementation is not fast; TODO to profile this and see why.
 
 from typing import Sequence, Iterable, Tuple, \
-        Union, Type, NewType
+    Union, Type, NewType
 
 from io import StringIO
 
@@ -30,21 +30,23 @@ Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
 
 _DTYPE = np.int32
 
+
 def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
     M = np.zeros((n_chars_src, n_chars_tgt), dtype=_DTYPE)
     for i in range(len(mb)):
         b = mb[i]  # current block
         # Fill in-between this block and last block
         if i > 0:
-            lb = mb[i-1]  # last block
-            s0 = lb[0]+lb[2]  # top
+            lb = mb[i - 1]  # last block
+            s0 = lb[0] + lb[2]  # top
             e0 = b[0]         # bottom
-            s1 = lb[1]+lb[2]  # left
+            s1 = lb[1] + lb[2]  # left
             e1 = b[1]         # right
-            M[s0:e0,s1:e1] = 1
+            M[s0:e0, s1:e1] = 1
         # Fill matching region on diagonal
-        M[b[0]:b[0]+b[2], b[1]:b[1]+b[2]] = 2*np.identity(b[2], dtype=_DTYPE)
+        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * np.identity(b[2], dtype=_DTYPE)
     return M
+
 
 def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
     ridxs = []
@@ -53,10 +55,10 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
     for i, b in enumerate(mb):
         # Fill in-between this block and last block
         if i > 0:
-            lb = mb[i-1]  # last block
-            s0 = lb[0]+lb[2]  # top
+            lb = mb[i - 1]  # last block
+            s0 = lb[0] + lb[2]  # top
             l0 = b[0] - s0    # num rows
-            s1 = lb[1]+lb[2]  # left
+            s1 = lb[1] + lb[2]  # left
             l1 = b[1] - s1    # num cols
             idxs = np.indices((l0, l1))
             ridxs.extend((s0 + idxs[0]).flatten())  # row indices
@@ -64,12 +66,13 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
             data.extend(np.ones(l0 * l1, dtype=_DTYPE))
 
         # Fill matching region on diagonal
-        ridxs.extend(range(b[0], b[0]+b[2]))
-        cidxs.extend(range(b[1], b[1]+b[2]))
-        data.extend(2*np.ones(b[2], dtype=_DTYPE))
+        ridxs.extend(range(b[0], b[0] + b[2]))
+        cidxs.extend(range(b[1], b[1] + b[2]))
+        data.extend(2 * np.ones(b[2], dtype=_DTYPE))
     M = sparse.csr_matrix((data, (ridxs, cidxs)),
                           shape=(n_chars_src, n_chars_tgt))
     return M
+
 
 def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]],
                           n_chars: int) -> Matrix:
@@ -78,6 +81,7 @@ def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]],
     for i, s in enumerate(spans):
         M[i, s[0]:s[1]] = 1
     return M
+
 
 def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
                            n_chars: int) -> Matrix:
@@ -91,6 +95,7 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
     data = np.ones(len(ridxs), dtype=_DTYPE)
     return sparse.csr_matrix((data, (ridxs, cidxs)),
                              shape=(len(spans), n_chars))
+
 
 class TokenAligner(object):
     """Align two similiar tokenizations.
@@ -127,6 +132,7 @@ class TokenAligner(object):
         source: ["'s", "["]
         target: ["'", "s", "["]
     """
+
     def token_to_char(self, text: str) -> Matrix:
         spans = _SIMPLE_TOKENIZER.span_tokenize(text)
         # TODO(iftenney): compare performance of these implementations.
@@ -144,7 +150,6 @@ class TokenAligner(object):
         # TODO(iftenney): compare performance of these implementations.
         #  return _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt)
         return _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt)
-
 
     def char_to_char(self, source: str, target: str) -> Matrix:
         # Run Levenshtein at character level.
@@ -176,7 +181,7 @@ class TokenAligner(object):
         """Render as alignment table: src -> [tgts]"""
         output = StringIO()
         output.write("{:s}({:d}, {:d}):\n".format(self.__class__.__name__,
-                                                    *self.T.shape))
+                                                  *self.T.shape))
         for i in range(self.T.shape[0]):
             targs = sorted(list(self.project_tokens(i)))
             output.write("  {:d} -> {:s}".format(i, str(targs)))
@@ -190,7 +195,7 @@ class TokenAligner(object):
     def project_tokens(self, idxs: Union[int, Sequence[int]]) -> Sequence[int]:
         """Project source token indices to target token indices."""
         if isinstance(idxs, int):
-          idxs = [idxs]
+            idxs = [idxs]
         return self.T[idxs].nonzero()[1]  # column indices
 
     def project_span(self, start, end) -> Tuple[int, int]:
@@ -199,5 +204,5 @@ class TokenAligner(object):
         Span end is taken to be exclusive, so this actually projects end - 1
         and maps back to an exclusive target span.
         """
-        tgt_idxs = self.project_tokens([start, end-1])
+        tgt_idxs = self.project_tokens([start, end - 1])
         return min(tgt_idxs), max(tgt_idxs) + 1

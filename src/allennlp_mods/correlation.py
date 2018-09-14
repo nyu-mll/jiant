@@ -6,6 +6,7 @@ from sklearn.metrics import matthews_corrcoef, confusion_matrix
 from scipy.stats import pearsonr, spearmanr
 import torch
 
+
 @Metric.register("fastMatthews")
 class FastMatthews(Metric):
     """Fast version of Matthews correlation.
@@ -14,6 +15,7 @@ class FastMatthews(Metric):
     get_metric() is called. Should match the numbers from the Correlation()
     class, but will be much faster and use less memory on large datasets.
     """
+
     def __init__(self, n_classes=2):
         assert n_classes >= 2
         self.n_classes = n_classes
@@ -68,6 +70,7 @@ class FastMatthews(Metric):
 @Metric.register("correlation")
 class Correlation(Metric):
     """Aggregate predictions, then calculate specified correlation"""
+
     def __init__(self, corr_type):
         self._predictions = []
         self._labels = []

@@ -23,6 +23,7 @@ from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_lo
 
 from .modules import Pooler
 
+
 class Seq2SeqDecoder(Model):
     """
     This is a slightly modified version of AllenNLP SimpleSeq2Seq class
@@ -57,7 +58,8 @@ class Seq2SeqDecoder(Model):
         self._encoder_output_dim = input_dim
         self._decoder_hidden_dim = decoder_hidden_size
         if self._encoder_output_dim != self._decoder_hidden_dim:
-            self._projection_encoder_out = Linear(self._encoder_output_dim, self._decoder_hidden_dim)
+            self._projection_encoder_out = Linear(
+                self._encoder_output_dim, self._decoder_hidden_dim)
         else:
             self._projection_encoder_out = lambda x: x
         self._decoder_output_dim = self._decoder_hidden_dim
@@ -66,7 +68,8 @@ class Seq2SeqDecoder(Model):
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
         # Used to get an initial hidden state from the encoder states
-        self._sent_pooler = Pooler.from_params(d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
+        self._sent_pooler = Pooler.from_params(
+            d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
 
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
@@ -81,9 +84,11 @@ class Seq2SeqDecoder(Model):
 
         self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
         # Allow for a bottleneck layer between encoder outputs and distribution over vocab
-        # The bottleneck layer consists of a linear transform and helps to reduce number of parameters
+        # The bottleneck layer consists of a linear transform and helps to reduce
+        # number of parameters
         if self._output_proj_input_dim != self._decoder_output_dim:
-            self._projection_bottleneck = Linear(self._decoder_output_dim, self._output_proj_input_dim)
+            self._projection_bottleneck = Linear(
+                self._decoder_output_dim, self._output_proj_input_dim)
         else:
             self._projection_bottleneck = lambda x: x
         self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
@@ -102,11 +107,13 @@ class Seq2SeqDecoder(Model):
             encoder_outputs = self._projection_encoder_out(encoder_outputs)
             encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
 
-            decoder_hidden = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+            decoder_hidden = encoder_outputs.new_zeros(
+                encoder_outputs_mask.size(0), self._decoder_hidden_dim)
             decoder_context = encoder_outputs.max(dim=1)[0]
         else:
             decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
-            decoder_context = encoder_outputs.new_zeros(encoder_outputs_mask.size(0), self._decoder_hidden_dim)
+            decoder_context = encoder_outputs.new_zeros(
+                encoder_outputs_mask.size(0), self._decoder_hidden_dim)
 
         return decoder_hidden, decoder_context
 

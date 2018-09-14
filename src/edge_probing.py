@@ -10,9 +10,10 @@ from .tasks import EdgeProbingTask
 from . import modules
 
 from allennlp.modules.span_extractors import \
-        EndpointSpanExtractor, SelfAttentiveSpanExtractor
+    EndpointSpanExtractor, SelfAttentiveSpanExtractor
 
 from typing import Dict, Iterable, List
+
 
 class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
@@ -36,6 +37,7 @@ class EdgeClassifierModule(nn.Module):
         - batch-negative (pairwise among spans seen in batch, where not-seen
         are negative)
     '''
+
     def _make_span_extractor(self):
         if self.span_pooling == "attn":
             return SelfAttentiveSpanExtractor(self.proj_dim)
@@ -49,7 +51,7 @@ class EdgeClassifierModule(nn.Module):
         CNN maps [batch_size, max_len, d_inp]
         to [batch_size, max_len, proj_dim] with no change in length.
         """
-        k = 1 + 2*self.cnn_context
+        k = 1 + 2 * self.cnn_context
         padding = self.cnn_context
         return nn.Conv1d(d_inp, self.proj_dim, kernel_size=k,
                          stride=1, padding=padding, dilation=1,
@@ -129,13 +131,13 @@ class EdgeClassifierModule(nn.Module):
         out['n_inputs'] = batch_size
 
         # Apply projection CNN layer for each span.
-        sent_embs_t = sent_embs.transpose(1,2)  # needed for CNN layer
-        se_proj1 = self.projs[1](sent_embs_t).transpose(2,1).contiguous()
+        sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
+        se_proj1 = self.projs[1](sent_embs_t).transpose(2, 1).contiguous()
         if not self.single_sided:
-            se_proj2 = self.projs[2](sent_embs_t).transpose(2,1).contiguous()
+            se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
 
         # Span extraction.
-        span_mask = (batch['span1s'][:,:,0] != -1)  # [batch_size, num_targets] bool
+        span_mask = (batch['span1s'][:, :, 0] != -1)  # [batch_size, num_targets] bool
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
@@ -189,7 +191,6 @@ class EdgeClassifierModule(nn.Module):
                               torch.unbind(masks, dim=0)):
             yield pred[mask].numpy()  # only non-masked predictions
 
-
     def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
 
@@ -227,7 +228,7 @@ class EdgeClassifierModule(nn.Module):
 
         # F1Measure() expects [total_num_targets, n_classes, 2]
         # to compute binarized F1.
-        binary_scores = torch.stack([-1*logits, logits], dim=2)
+        binary_scores = torch.stack([-1 * logits, logits], dim=2)
         task.f1_scorer(binary_scores, labels)
 
         if self.loss_type == 'sigmoid':
