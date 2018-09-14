@@ -1,6 +1,8 @@
 import codecs
 import glob
-import time, os, sys
+import time
+import os
+import sys
 import csv
 import pandas
 
@@ -19,10 +21,12 @@ delimiter = '\t'
 count_good = 0
 total_count = 0
 
+
 def check_condition(row):
     ''' check several conditions to filter out comments '''
-    if 'http' in row or row.startswith('/r/') or row.startswith('@') or row.startswith('[removed]') or (len(''.join(c for c in row if c.isalpha())) < 0.7*len(row)):
-            return 0 
+    if 'http' in row or row.startswith('/r/') or row.startswith('@') or row.startswith(
+            '[removed]') or (len(''.join(c for c in row if c.isalpha())) < 0.7 * len(row)):
+        return 0
     else:
         return 1
 
@@ -39,17 +43,23 @@ for year in [year_no]:
                     #row = row_temp.values[0]
                     row = row_temp.strip().split(delimiter)
                     if len(row) == 4 and len(row[2]) < 250 and len(row[3]) < 250:
-                        if check_condition(row[2]) and check_condition(row[3]): 
+                        if check_condition(row[2]) and check_condition(row[3]):
                             count_good += 1
                             row[2] = row[2].replace('\r', '')
                             row[3] = row[3].replace('\r', '')
-                            out_f.write(row[0] + delimiter + row[1] + delimiter  + row[2] + delimiter + row[3])
+                            out_f.write(
+                                row[0] +
+                                delimiter +
+                                row[1] +
+                                delimiter +
+                                row[2] +
+                                delimiter +
+                                row[3])
                             out_f.write('\n')
-                except:
+                except BaseException:
                     print("ERROR")
-                    
-                    
+
+
 print(count_good, total_count)
 
 out_f.close()
-
