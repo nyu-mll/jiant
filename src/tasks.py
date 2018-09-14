@@ -559,6 +559,13 @@ class EdgeProbingTask(Task):
                     'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
                     'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
                }, single_sided=True)
+# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
+@register_task('edges-srl-conll2012-sd', rel_path='edges/srl_conll2012',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
 class SpanDetectionTask(EdgeProbingTask):
     ''' Task class for edge probing
 
@@ -571,6 +578,7 @@ class SpanDetectionTask(EdgeProbingTask):
                  is_symmetric: bool=False,
                  single_sided: bool=False,
     ):
+        max_seq_len = 200
         super(SpanDetectionTask, self).__init__(path, max_seq_len,
                                                 name, label_file,
                                                 files_by_split,
