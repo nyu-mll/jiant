@@ -52,7 +52,7 @@ We also make use of many other data sources, including:
 - Image captioning: MSCOCO Dataset (http://cocodataset.org/#download). Specifically we use the following splits: 2017 Train images [118K/18GB], 2017 Val images [5K/1GB], 2017 Train/Val annotations [241MB].
 - Reddit: [reddit_comments dataset](https://bigquery.cloud.google.com/dataset/fh-bigquery:reddit_comments). Specifically we use the 2008 and 2009 tables.
 - DisSent: Details for preparing the corpora are in [`scripts/dissent/README`](scripts/dissent/README).
-- DNC (Diverse Natural Language Inference Collection), i.e. Recast data: The DNC is currently being prepared for release for EMNLP camera ready. Instructions on how to download the data is forthcoming.
+- DNC (**D**iverse **N**atural Language Inference **C**ollection), i.e. recast data: The DNC is available [online](https://github.com/decompositional-semantics-initiative/DNC). Follow the instructions described there to download the DNC.
 - CCG: Details for preparing the corpora are in [`scripts/ccg/README`](scripts/ccg/README).
 - Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
 

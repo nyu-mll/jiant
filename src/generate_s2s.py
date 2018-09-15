@@ -61,7 +61,6 @@ def greedy_search(decoder, encoder_outputs, encoder_outputs_mask, debug=False):
     return gen_indices.cpu().numpy(), scores
 
 
-
 def write_translation_preds(hyps, relevant_targets, preds_file_path, decoder_vocab):
     with open(preds_file_path, "a") as f:
         for i in range(len(hyps)):
@@ -90,9 +89,11 @@ def generate_and_compute_bleu(decoder, encoder_outputs, encoder_outputs_mask,
 
     # important - preprocess targets for relevant targets
     # masking is handled by hardcoded check for zeros.
-    relevant_targets = [[int(wordidx.item()) for i, wordidx in enumerate(target) if wordidx != 0 and i > 0] for target in targets]
+    relevant_targets = [[int(wordidx.item()) for i, wordidx in enumerate(
+        target) if wordidx != 0 and i > 0] for target in targets]
 
-    targets_unk_ratio = [len([i for i in target if i == decoder._unk_index]) / len(target) for target in targets]
+    targets_unk_ratio = [len([i for i in target if i == decoder._unk_index]
+                             ) / len(target) for target in targets]
     unk_ratio_macroavg = np.mean(targets_unk_ratio)
 
     bleu_score = compute_bleu(hyps, scores, relevant_targets)

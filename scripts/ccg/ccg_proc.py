@@ -5,7 +5,26 @@ import os
 fo = open("ccg.train", "w")
 
 # Standard training split
-directories = ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18"]
+directories = [
+    "00",
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18"]
 
 for directory in directories:
     for filename in os.listdir(directory):
@@ -85,5 +104,3 @@ for directory in directories:
                 # Write to file
                 if len(sentence) == len(tags):
                     fo.write(" ".join(sentence) + "\t" + " ".join(tags) + "\n")
-
-

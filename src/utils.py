@@ -36,10 +36,12 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
+
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
     for elem in elems:
         yield copy.deepcopy(elem)
+
 
 def wrap_singleton_string(item: Union[Sequence, str]):
     ''' Wrap a single string as a list. '''
@@ -48,6 +50,7 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         # characters, which is not what we want.
         return [item]
     return item
+
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state
@@ -65,7 +68,9 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     '''
     model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
 
-    assert_for_log(not (skip_task_models and strict),
+    assert_for_log(
+        not (
+            skip_task_models and strict),
         "Can't skip task models while also strictly loading task models. Something is wrong.")
 
     for name, param in model.named_parameters():
@@ -73,7 +78,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
         if param.requires_grad:
             if strict:
                 assert_for_log(name in model_state,
-                    "In strict mode and failed to find at least one parameter: " + name)
+                               "In strict mode and failed to find at least one parameter: " + name)
             elif (name not in model_state) and ((not skip_task_models) or ("_mdl" not in name)):
                 logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logging.error("Parameter missing from checkpoint: " + name)
@@ -114,7 +119,7 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
     else:
         mix_id = text_field_embedder.task_map["@pretrain@"]
     mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
-    params = {'layer%d' % layer_id: p.item() for layer_id, p in \
+    params = {'layer%d' % layer_id: p.item() for layer_id, p in
               enumerate(mixer.scalar_parameters.parameters())}
     params['gamma'] = mixer.gamma
     return params
@@ -144,6 +149,7 @@ def maybe_make_dir(dirname):
     """Make a directory if it doesn't exist."""
     os.makedirs(dirname, exist_ok=True)
 
+
 def unescape_moses(moses_tokens):
     '''Unescape Moses punctuation tokens.
 
@@ -151,6 +157,7 @@ def unescape_moses(moses_tokens):
     (such as '['), so they better align to the original text.
     '''
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
+
 
 def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
@@ -166,17 +173,20 @@ def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
 def truncate(sents, max_seq_len, sos, eos):
     return [[sos] + s[:max_seq_len - 2] + [eos] for s in sents]
 
+
 def load_json_data(filename: str) -> Iterable:
     ''' Load JSON records, one per line. '''
     with open(filename, 'r') as fd:
         for line in fd:
             yield json.loads(line)
 
+
 def load_lines(filename: str) -> Iterable[str]:
     ''' Load text data, yielding each line. '''
     with open(filename) as fd:
         for line in fd:
             yield line.strip()
+
 
 def load_diagnostic_tsv(
         data_file,
@@ -194,10 +204,11 @@ def load_diagnostic_tsv(
     '''Load a tsv
 
     It loads the data with all it's attributes from diagnostic dataset for MNLI'''
-    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge  = [], [], [], [], [], [], [], []
+    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
 
     # There are 4 columns and every column could containd multiple values.
-    # For every column there is a dict which maps index to (string) value and different dict which maps value to index.
+    # For every column there is a dict which maps index to (string) value and
+    # different dict which maps value to index.
     ix_to_lex_sem_dic = {}
     ix_to_pr_ar_str_dic = {}
     ix_to_logic_dic = {}
@@ -227,9 +238,6 @@ def load_diagnostic_tsv(
                 indexes.append(new_index)
         return indexes
 
-
-
-
     with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
@@ -238,11 +246,11 @@ def load_diagnostic_tsv(
                 row = row.rstrip().split(delimiter)
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if targ_map is not None:
-                        targ = targ_map[row[targ_idx]]
+                    targ = targ_map[row[targ_idx]]
                 elif targ_fn is not None:
-                        targ = targ_fn(row[targ_idx])
+                    targ = targ_fn(row[targ_idx])
                 else:
-                        targ = int(row[targ_idx])
+                    targ = int(row[targ_idx])
                 sent2 = process_sentence(row[s2_idx], max_seq_len)
                 sent2s.append(sent2)
 
@@ -263,7 +271,6 @@ def load_diagnostic_tsv(
             except Exception as e:
                 print(e, " file: %s, row: %d" % (data_file, row_idx))
                 continue
-
 
     ix_to_lex_sem_dic[0] = "missing"
     ix_to_pr_ar_str_dic[0] = "missing"
@@ -288,7 +295,6 @@ def load_diagnostic_tsv(
             'ix_to_logic_dic': ix_to_logic_dic,
             'ix_to_knowledge_dic': ix_to_knowledge_dic
             }
-
 
 
 def load_tsv(

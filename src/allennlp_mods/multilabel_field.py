@@ -72,23 +72,26 @@ class MultiLabelField(Field[torch.Tensor]):
                 raise ConfigurationError("In order to skip indexing, num_labels can't be None.")
 
             if not all(cast(int, label) < num_labels for label in labels):
-                raise ConfigurationError("All labels should be < num_labels. "
-                                         "Found num_labels = {} and labels = {} ".format(num_labels, labels))
+                raise ConfigurationError(
+                    "All labels should be < num_labels. "
+                    "Found num_labels = {} and labels = {} ".format(
+                        num_labels, labels))
 
             self._label_ids = labels
         else:
             if not all(isinstance(label, str) for label in labels):
-                raise ConfigurationError("MultiLabelFields expects string labels if skip_indexing=False. "
-                                         "Found labels: {}".format(labels))
+                raise ConfigurationError(
+                    "MultiLabelFields expects string labels if skip_indexing=False. "
+                    "Found labels: {}".format(labels))
 
     def _maybe_warn_for_namespace(self, label_namespace: str) -> None:
         if not (label_namespace.endswith("labels") or label_namespace.endswith("tags")):
             if label_namespace not in self._already_warned_namespaces:
-                logger.warning("Your label namespace was '%s'. We recommend you use a namespace "
-                               "ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by "
-                               "default to your vocabulary.  See documentation for "
-                               "`non_padded_namespaces` parameter in Vocabulary.",
-                               self._label_namespace)
+                logger.warning(
+                    "Your label namespace was '%s'. We recommend you use a namespace "
+                    "ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by "
+                    "default to your vocabulary.  See documentation for "
+                    "`non_padded_namespaces` parameter in Vocabulary.", self._label_namespace)
                 self._already_warned_namespaces.add(label_namespace)
 
     @overrides
@@ -123,7 +126,7 @@ class MultiLabelField(Field[torch.Tensor]):
 
     @overrides
     def empty_field(self):
-        return MultiLabelField([], self._label_namespace, 
+        return MultiLabelField([], self._label_namespace,
                                skip_indexing=self._skip_indexing,
                                num_labels=self._num_labels)
 

@@ -29,7 +29,7 @@ try:
 except BaseException:
     log.info("fastText library not found!")
 
-import _pickle as pkl  #  :(
+import _pickle as pkl  # :(
 
 from . import config
 from . import serialize
@@ -56,11 +56,12 @@ ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
 
 TASKS_REGISTRY = tasks_module.REGISTRY
 
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>" # NOTE: these are not that same as AllenNLP SOS, EOS tokens
-SPECIALS = [SOS_TOK, EOS_TOK] # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
-UNK_TOK = "@@UNKNOWN@@" # AllenNLP unk token
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"  # NOTE: these are not that same as AllenNLP SOS, EOS tokens
+SPECIALS = [SOS_TOK, EOS_TOK]  # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
+UNK_TOK = "@@UNKNOWN@@"  # AllenNLP unk token
 
 ALL_SPLITS = ['train', 'val', 'test']
+
 
 def _get_serialized_record_path(task_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
@@ -147,6 +148,7 @@ def _index_split(task, split, indexers, vocab, record_file):
 
     # Counter for lazy-loaded data, so we can log the # of elements.
     _instance_counter = 0
+
     def _counter_iter(elems):
         nonlocal _instance_counter
         for elem in elems:
@@ -159,6 +161,7 @@ def _index_split(task, split, indexers, vocab, record_file):
         _indexed_instance_generator(instance_iter, vocab), record_file)
     log.info("%s: saved %d instances to %s",
              log_prefix, _instance_counter, record_file)
+
 
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
                       relative_path: str, log_prefix: str="") -> bool:
@@ -192,6 +195,7 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
         return True
     return False
 
+
 def _build_embeddings(args, vocab, emb_file: str):
     ''' Build word embeddings from scratch (as opposed to loading them from a pickle),
     possibly using a fastText model or precomputed fastText / GloVe embeddings. '''
@@ -206,6 +210,7 @@ def _build_embeddings(args, vocab, emb_file: str):
     pkl.dump(word_embs, open(emb_file, 'wb'))
     log.info("\tSaved embeddings to %s", emb_file)
     return word_embs
+
 
 def _build_vocab(args, tasks, vocab_path: str):
     ''' Build vocabulary from scratch, reading data from tasks. '''
@@ -224,6 +229,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
+
 
 def build_tasks(args):
     '''Main logic for preparing tasks, doing so by
@@ -283,8 +289,10 @@ def build_tasks(args):
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
-    utils.assert_for_log(not (args.reload_indexing and not reindex_tasks),
-                         "Flag reload_indexing was set, but no tasks are set to reindex (use -o \"args.reindex_tasks = \"task1,task2,...\"\")")
+    utils.assert_for_log(
+        not (
+            args.reload_indexing and not reindex_tasks),
+        "Flag reload_indexing was set, but no tasks are set to reindex (use -o \"args.reindex_tasks = \"task1,task2,...\"\")")
     for task in tasks:
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
@@ -332,7 +340,7 @@ def build_tasks(args):
                 # and therefore there could be two tasks with the same name (task.name).
                 log.info("Creating un-trimmed eval training version of " + task.name + " train.")
                 log.warn("When using un-trimmed eval training version of train split, "
-                "it creates a deepcopy of task object which is inefficient.")
+                         "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
@@ -356,7 +364,8 @@ def build_tasks(args):
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
                 train_tasks.append(task)
-        # When neither eval_data_fraction nor training_data_fraction is specified we use unmodified iterators.
+        # When neither eval_data_fraction nor training_data_fraction is specified
+        # we use unmodified iterators.
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=1.0)
@@ -387,6 +396,7 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
               max_targ_v_size=20000):
@@ -413,7 +423,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task_cls = task_info[0]
             kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob' or name=='nli-alt':  # this task takes additional kw
+            if name == 'nli-prob' or name == 'nli-alt':  # this task takes additional kw
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
@@ -450,7 +460,6 @@ def get_words(tasks):
             for char in list(word):
                 char2freq[char] += 1
         return
-
 
     for task in tasks:
         log.info("\tCounting words for task: '%s'", task.name)
@@ -491,6 +500,7 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
         vocab.add_token_to_namespace(char, 'chars')
 
     return vocab
+
 
 def add_task_label_vocab(vocab, task):
     '''Add custom task labels to a separate namespace.

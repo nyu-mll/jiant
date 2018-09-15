@@ -16,11 +16,13 @@ from typing import List, Sequence, Iterable, Tuple, Dict
 
 LOG_INTERVAL = 30
 
+
 def _coerce_list(preds) -> List:
     if isinstance(preds, torch.Tensor):
         return preds.data.tolist()
     else:
         return list(preds)
+
 
 def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
     if write_preds_arg == 0:
@@ -29,6 +31,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
         return ['test']
     else:
         return write_preds_arg.split(",")
+
 
 def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
@@ -43,7 +46,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     all_preds = {}
     n_examples_overall = 0
 
-    assert len(tasks) > 0 , "Configured to evaluate, but specified no task to evaluate."
+    assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
         log.info("Evaluating on: %s, split: %s", task.name, split)
@@ -110,10 +113,11 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
 
     return all_metrics, all_preds
 
+
 def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_name,
                 strict_glue_format=False) -> None:
     for task in tasks:
-        if not task.name in all_preds:
+        if task.name not in all_preds:
             log.warning("Task '%s': missing predictions for split '%s'",
                         task.name, split_name)
             continue
@@ -126,7 +130,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             # Strict mode: strict GLUE format (no extra cols)
             strict = (strict_glue_format and task.name in preprocess.ALL_GLUE_TASKS)
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
-                             strict_glue_format=strict)
+                              strict_glue_format=strict)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         elif isinstance(task, tasks_module.EdgeProbingTask):
             # Edge probing tasks, have structured output.
@@ -152,12 +156,14 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
+
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
         file = GLUE_NAME_MAP[task_name] + ".tsv"
     else:
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
+
 
 def _write_edge_preds(task: tasks_module.EdgeProbingTask,
                       preds_df: pd.DataFrame,
@@ -192,6 +198,7 @@ def _write_edge_preds(task: tasks_module.EdgeProbingTask,
         for record in records:
             fd.write(json.dumps(record))
             fd.write("\n")
+
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
@@ -240,7 +247,7 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
 
     def _add_default_column(df, name: str, val):
         """ Ensure column exists and missing values = val. """
-        if not name in df:
+        if name not in df:
             df[name] = val
         df[name].fillna(value=val, inplace=True)
 
@@ -266,26 +273,33 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
         preds_df.sort_index(inplace=True)
         pred_map = {0: 'neutral', 1: 'entailment', 2: 'contradiction'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
-        _write_preds_with_pd(preds_df.iloc[:9796],
-                             os.path.join(pred_dir,
-                             _get_pred_filename('mnli-m', pred_dir, split_name, strict_glue_format)))
-        _write_preds_with_pd(preds_df.iloc[9796:19643],
-                             os.path.join(pred_dir,
-                             _get_pred_filename('mnli-mm', pred_dir, split_name, strict_glue_format)))
-        _write_preds_with_pd(preds_df.iloc[19643:],
-                             os.path.join(pred_dir,
-                             _get_pred_filename('diagnostic', pred_dir, split_name, strict_glue_format)))
+        _write_preds_with_pd(preds_df.iloc[:9796], os.path.join(
+            pred_dir, _get_pred_filename('mnli-m', pred_dir, split_name, strict_glue_format)))
+        _write_preds_with_pd(preds_df.iloc[9796:19643], os.path.join(
+            pred_dir, _get_pred_filename('mnli-mm', pred_dir, split_name, strict_glue_format)))
+        _write_preds_with_pd(preds_df.iloc[19643:], os.path.join(
+            pred_dir, _get_pred_filename('diagnostic', pred_dir, split_name, strict_glue_format)))
 
     elif task_name in ['rte', 'qnli']:
         pred_map = {0: 'not_entailment', 1: 'entailment'}
         _apply_pred_map(preds_df, pred_map, 'prediction')
-        _write_preds_with_pd(preds_df,
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format))
+        _write_preds_with_pd(
+            preds_df,
+            _get_pred_filename(
+                task_name,
+                pred_dir,
+                split_name,
+                strict_glue_format))
     elif task_name in ['sts-b']:
         preds_df['prediction'] = [min(max(0., pred * 5.), 5.)
                                   for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df,
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
+        _write_preds_with_pd(
+            preds_df,
+            _get_pred_filename(
+                task_name,
+                pred_dir,
+                split_name,
+                strict_glue_format),
             write_type=float)
     elif task_name in ['wmt']:
         # convert each prediction to a single string if we find a list of tokens
@@ -293,13 +307,23 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
             assert isinstance(preds_df['prediction'][0][0], str)
             preds_df['prediction'] = [' '.join(pred)
                                       for pred in preds_df['prediction']]
-        _write_preds_with_pd(preds_df,
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
+        _write_preds_with_pd(
+            preds_df,
+            _get_pred_filename(
+                task_name,
+                pred_dir,
+                split_name,
+                strict_glue_format),
             write_type=str)
     else:
-        _write_preds_with_pd(preds_df,
-            _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format),
-             write_type=int)
+        _write_preds_with_pd(
+            preds_df,
+            _get_pred_filename(
+                task_name,
+                pred_dir,
+                split_name,
+                strict_glue_format),
+            write_type=int)
 
     log.info("Wrote predictions for task: %s", task_name)
 
