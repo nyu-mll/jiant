@@ -27,7 +27,8 @@ import analysis
 
 from typing import List, Tuple, Iterable
 
-def find_tasks_and_splits(run_path: str) -> List[Tuple[str,str]]:
+
+def find_tasks_and_splits(run_path: str) -> List[Tuple[str, str]]:
     """Find tasks and splits for a particular run."""
     matcher = r"([\w-]+)_(train|val|test)\.json"
     matches = []
@@ -39,6 +40,7 @@ def find_tasks_and_splits(run_path: str) -> List[Tuple[str,str]]:
     if not matches:
         log.warning("Warning: no predictions found for run '%s'", run_path)
     return matches
+
 
 def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
     """Extract some run information from the log text."""
@@ -58,6 +60,7 @@ def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
             train_stats.append(r)
     return pd.DataFrame.from_records(train_stats)
 
+
 def analyze_run(run_path: str) -> Iterable[pd.DataFrame]:
     log.info("Analyzing run %s", run_path)
     for task, split in find_tasks_and_splits(run_path):
@@ -69,6 +72,7 @@ def analyze_run(run_path: str) -> Iterable[pd.DataFrame]:
         scores.insert(1, "task", value=task)
         scores.insert(2, "split", value=split)
         yield scores
+
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -94,7 +98,7 @@ def main(args):
     else:
         log.info("Stats:\n%s", str(long_scores))
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
