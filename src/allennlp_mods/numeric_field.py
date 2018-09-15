@@ -37,6 +37,7 @@ class NumericField(Field[numpy.ndarray]):
         If your labels are 0-indexed integers, you can pass in this flag, and we'll skip the indexing
         step.  If this is ``False`` and your labels are not strings, this throws a ``ConfigurationError``.
     """
+
     def __init__(self,
                  label: Union[float, int],
                  label_namespace: str = 'labels') -> None:
@@ -44,10 +45,11 @@ class NumericField(Field[numpy.ndarray]):
         self._label_namespace = label_namespace
         self._label_id = numpy.array(label, dtype=numpy.float32)
         if not (self._label_namespace.endswith("labels") or self._label_namespace.endswith("tags")):
-            logger.warning("Your label namespace was '%s'. We recommend you use a namespace "
-                           "ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by "
-                           "default to your vocabulary.  See documentation for "
-                           "`non_padded_namespaces` parameter in Vocabulary.", self._label_namespace)
+            logger.warning(
+                "Your label namespace was '%s'. We recommend you use a namespace "
+                "ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by "
+                "default to your vocabulary.  See documentation for "
+                "`non_padded_namespaces` parameter in Vocabulary.", self._label_namespace)
 
     # idk what this is for
     @overrides

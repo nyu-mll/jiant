@@ -21,6 +21,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 from src import utils
 from src import retokenize
 
+
 def retokenize_record(record):
     """Retokenize edge probing examples. Modifies in-place.
 
@@ -41,6 +42,7 @@ def retokenize_record(record):
                                        ta.project_span(*target['span2'])))
     return record
 
+
 def retokenize_file(fname):
     new_tokenizer_name = utils.TOKENIZER.__class__.__name__
     new_name = fname + ".retokenized." + new_tokenizer_name
@@ -53,11 +55,12 @@ def retokenize_file(fname):
             fd.write(json.dumps(new_record))
             fd.write("\n")
 
+
 def main(args):
     for fname in args:
         retokenize_file(fname)
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-

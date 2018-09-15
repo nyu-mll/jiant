@@ -12,25 +12,29 @@ import pytz
 import sendgrid
 from sendgrid.helpers import mail
 
+
 def _read_key_file(fname):
     with open(fname) as fd:
         return fd.read().strip()
 
+
 # Get API key (shared for workshop account)
-SENDGRID_KEY_PATH="/nfs/jsalt/share/sendgrid.key"
+SENDGRID_KEY_PATH = "/nfs/jsalt/share/sendgrid.key"
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", None)
 if SENDGRID_API_KEY is None:
     SENDGRID_API_KEY = _read_key_file(SENDGRID_KEY_PATH)
 
-DEFAULT_SENDER=mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com",
-                          name="Cookie Monster")
+DEFAULT_SENDER = mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com",
+                            name="Cookie Monster")
 
 LOCALTZ = pytz.timezone("US/Eastern")
+
 
 def make_message(to: str, subject: str, body: str) -> mail.Mail:
     to_email = mail.Email(to)
     content = mail.Content("text/plain", body)
     return mail.Mail(DEFAULT_SENDER, subject, to_email, content)
+
 
 def send_message(message: mail.Mail):
     sg = sendgrid.SendGridAPIClient(apikey=SENDGRID_API_KEY)
@@ -39,6 +43,8 @@ def send_message(message: mail.Mail):
 
 ##
 # Implementation-specific logic.
+
+
 def get_notifier(to: str, args):
     """ Get a notification handler to call on exit.
 
@@ -51,7 +57,8 @@ def get_notifier(to: str, args):
         notification email using sendgrid.
     """
     hostname = socket.gethostname()
-    def _handler(body:str, prefix: str=""):
+
+    def _handler(body: str, prefix: str=""):
         """ Email notifier. Sends an email. """
         # Construct subject line from args:
         subj_tmpl = "{prefix:s} '{exp_name:s}/{run_name:s}' on host '{host:s}'"

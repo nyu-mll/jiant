@@ -18,6 +18,7 @@ from allennlp.modules.time_distributed import TimeDistributed
 from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
 from allennlp.modules import Elmo
 
+
 @TokenEmbedder.register("elmo_token_embedder_wrapper")
 class ElmoTokenEmbedderWrapper(TokenEmbedder):
     """
@@ -25,6 +26,7 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
 
     Forwards all calls to Elmo
     """
+
     def __init__(self,
                  options_file: str,
                  weight_file: str,
@@ -44,7 +46,7 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
     def get_output_dim(self):
         return self._elmo.get_output_dim()
 
-    def forward(self, inputs: torch.Tensor) -> Dict[str, torch.Tensor]: #pylint: disable=arguments-differ
+    def forward(self, inputs: torch.Tensor) -> Dict[str, torch.Tensor]:  # pylint: disable=arguments-differ
         return self._elmo(inputs)
 
     # this is also deferred to elmo
@@ -69,10 +71,11 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     representations, we take ``TokenEmbedders`` with corresponding names.  Each ``TokenEmbedders``
     embeds its input, and the result is concatenated in an arbitrary order.
     """
+
     def __init__(self, token_embedders: Dict[str, TokenEmbedder],
                  classifiers: Dict[str, int],
                  elmo_chars_only=False,            # Flag ensuring we are using real ELMo
-                 sep_embs_for_skip=False) -> None: # Flag indicating separate scalars per task
+                 sep_embs_for_skip=False) -> None:  # Flag indicating separate scalars per task
         super(ElmoTextFieldEmbedder, self).__init__()
         self._token_embedders = token_embedders
         for key, embedder in token_embedders.items():

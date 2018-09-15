@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 
-# Script to convert SPR1 data from Rachel Rudinger's JSON format used for 
+# Script to convert SPR1 data from Rachel Rudinger's JSON format used for
 # (https://arxiv.org/pdf/1804.07976.pdf) into edge probing format.
 #
-# Note that reconstructing SPR1 from the raw data available on decomp.net is 
-# considerably more difficult. TODO to check in a full pipeline of scripts to 
+# Note that reconstructing SPR1 from the raw data available on decomp.net is
+# considerably more difficult. TODO to check in a full pipeline of scripts to
 # join against PTB and PropBank annotations.
 #
 # Usage:
 #    ./convert-spr1-rudinger.py -i /path/to/spr1/*.json \
 #        -o /path/to/probing/data/spr1/
 #
-# This will print a bunch of stats for each file, which you can sanity-check 
+# This will print a bunch of stats for each file, which you can sanity-check
 # against the published size of the dataset.
 #
 # Input should be JSON with a single record per line, with a format similar to:
-#  {'tokens': ['William', 'Craig', ',', 'an', 'independent', 'record', 
-#              'promoter', ',', 'pleaded', 'guilty', 'to', 'payola', 'and', 
-#              'criminal', 'tax', 'charges', ',', 'according', 'to', 'a', 
-#              'statement', 'issued', 'by', 'Gary', 'Feess', ',', 'the', 
+#  {'tokens': ['William', 'Craig', ',', 'an', 'independent', 'record',
+#              'promoter', ',', 'pleaded', 'guilty', 'to', 'payola', 'and',
+#              'criminal', 'tax', 'charges', ',', 'according', 'to', 'a',
+#              'statement', 'issued', 'by', 'Gary', 'Feess', ',', 'the',
 #              'U.S.', 'attorney', 'here', '.'],
 #   'pb': [],
 #   'wsd': [],
@@ -64,14 +64,16 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+
 def binarize_labels(responses):
     scores_by_property = collections.defaultdict(lambda: [])
     for response in responses:
         scores_by_property[response['spr_property']] = response['response']
-    avg_scores = {k:np.mean(v) for k,v in scores_by_property.items()}
-    bin_scores = {k:(v > 3.0) for k,v in avg_scores.items()}
-    pos_labels = [k for k,v in bin_scores.items() if v]
+    avg_scores = {k: np.mean(v) for k, v in scores_by_property.items()}
+    bin_scores = {k: (v > 3.0) for k, v in avg_scores.items()}
+    pos_labels = [k for k, v in bin_scores.items() if v]
     return sorted(pos_labels)
+
 
 def convert_record(source_record):
     record = {}
@@ -83,10 +85,11 @@ def convert_record(source_record):
         p = source_target['pred_idx']  # token index
         a = source_target['arg_idx']   # token index
         labels = binarize_labels(source_target['responses'])
-        targets.append(dict(span1=[p,p+1], span2=[a,a+1],
+        targets.append(dict(span1=[p, p + 1], span2=[a, a + 1],
                             label=labels))
     record['targets'] = targets
     return record
+
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -111,7 +114,7 @@ def main(args):
         log.info("Wrote examples to %s", target_fname)
         log.info(stats.format())
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-

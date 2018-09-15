@@ -17,9 +17,11 @@ from allennlp.data import Vocabulary
 
 from typing import Iterable, Dict, List, Tuple
 
+
 def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
             for key, value in record.get(outer_key, {}).items()}
+
 
 class EdgeProbingExample(object):
     """Wrapper object to handle an edge probing example.
@@ -27,6 +29,7 @@ class EdgeProbingExample(object):
     Mostly exists for pretty-printing, but could be worth integrating
     into the data-handling code.
     """
+
     def __init__(self, record: Dict):
         """Construct an example from a record.
 
@@ -39,7 +42,8 @@ class EdgeProbingExample(object):
         text = self._data['text']
         tokens = text.split()
         buf.write("Text ({:d}): {:s}\n".format(len(tokens), text))
-        _fmt_span = lambda s,e: '[{:d},{:d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
+
+        def _fmt_span(s, e): return '[{:d},{:d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
         for t in self._data['targets']:
             buf.write("\n")
             buf.write("  span1: {}\n".format(_fmt_span(*t['span1'])))
@@ -50,6 +54,7 @@ class EdgeProbingExample(object):
 
     def __repr__(self):
         return str(self)
+
 
 class Predictions(object):
     """Container class to manage a set of predictions from the Edge Probing
@@ -66,6 +71,7 @@ class Predictions(object):
                       #   predicted scores, etc.)
 
     """
+
     def _split_and_flatten_records(self, records: Iterable[Dict]):
         ex_records = []  # long-form example records, minus targets
         tr_records = []  # long-form target records with 'idx' column
@@ -116,10 +122,10 @@ class Predictions(object):
 
         # Apply indexing to labels
         self.target_df['label.ids'] = self.target_df['label'].map(
-                                            self._labels_to_ids)
+            self._labels_to_ids)
         # Convert labels to k-hot to align to predictions
         self.target_df['label.khot'] = self.target_df['label.ids'].map(
-                                            self._label_ids_to_khot)
+            self._label_ids_to_khot)
 
         # Placeholders, will compute later if requested.
         # Use non-underscore versions to access via propert getters.
@@ -213,7 +219,7 @@ class Comparison(object):
                  label_filter=lambda label: True):
         assert len(base.all_labels) == len(expt.all_labels)
         assert len(base.example_df) == len(expt.example_df)
-        assert len(base.target_df)  == len(expt.target_df)
+        assert len(base.target_df) == len(expt.target_df)
 
         self.base = base
         self.expt = expt
@@ -249,7 +255,6 @@ class Comparison(object):
         df['expt_headroom'] = ((1 - df['acc_score_expt'])
                                * len(expt.target_df)).astype(np.int32)
         self.wide_scores = df
-
 
     def plot_scores(self, task_name, metric="f1", sort_field="expt_headroom",
                     sort_ascending=False, row_height=400, palette=None):
@@ -295,7 +300,7 @@ class Comparison(object):
             palette = bokeh.palettes.Category20[len(runs)]
             #  palette = bokeh.palettes.Set2[len(runs)]
         fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
-        width = 35*len(categories)
+        width = 35 * len(categories)
         tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
 
         # Top plot: score bars
@@ -303,11 +308,11 @@ class Comparison(object):
                                                 range_padding=0.5,
                                                 range_padding_units='absolute')
         p1 = bp.figure(title=f"Performance by label ({task_name})",
-                       x_range=factor_range, y_range=[0,1],
+                       x_range=factor_range, y_range=[0, 1],
                        width=width, height=row_height, tools=tools)
         p1.vbar(x='row_key', top=_SCORE_COL, width=0.95,
-               fill_color=fill_cmap, line_color=None,
-               source=long_ds)
+                fill_color=fill_cmap, line_color=None,
+                source=long_ds)
         label_kw = dict(text_align="right", text_baseline="middle", y_offset=-3,
                         text_font_size="11pt", angle=90, angle_units='deg')
         score_labels = bokeh.models.LabelSet(x='row_key', y=_SCORE_COL,
@@ -315,7 +320,7 @@ class Comparison(object):
                                              source=long_ds, **label_kw)
         p1.add_layout(score_labels)
         p1.xaxis.major_label_orientation = 1
-        p1.yaxis.bounds = (0,1)
+        p1.yaxis.bounds = (0, 1)
 
         # Second plot: absolute diffs
         p2 = bp.figure(title=f"Absolute and (Relative) diffs by label ({task_name})",
@@ -349,12 +354,11 @@ class Comparison(object):
 
         p2.y_range.start = -1.10
         p2.y_range.end = 1.10
-        p2.yaxis.bounds = (-1,1)
+        p2.yaxis.bounds = (-1, 1)
         # Hacky: Hide category labels, not needed on this plot.
         p2.xaxis.major_label_text_color = None
         p2.xaxis.major_label_text_font_size = "0pt"
         p2.xaxis.major_tick_line_color = None
-
 
         # Bottom plot: count bars
         p3 = bp.figure(title=f"Counts by label ({task_name})",
@@ -379,20 +383,20 @@ class Comparison(object):
         # Fix labels for SPR case, labels are long
         if max(map(len, labels)) > 10:
             # Top plot: rotate labels, add height.
-            p1.xaxis.group_label_orientation = np.pi/2
+            p1.xaxis.group_label_orientation = np.pi / 2
             p1.plot_height += 150
             # Middle plot: hide labels.
             p2.xaxis.group_text_color = None
             p2.xaxis.group_text_font_size = "0pt"
             # Bottom plot: rotate labels, add height.
-            p3.xaxis.group_label_orientation = np.pi/2
+            p3.xaxis.group_label_orientation = np.pi / 2
             p3.plot_height += 75
 
         # Create plot layout.
         plots = bokeh.layouts.gridplot([p1, p2, p3], ncols=1,
-                                      toolbar_location="left",
-                                      merge_tools=True,
-                                      sizing_mode="fixed")
+                                       toolbar_location="left",
+                                       merge_tools=True,
+                                       sizing_mode="fixed")
         header = bokeh.models.Div(
             text=f"<h1>{task_name} sorted by '{sort_field}'</h1>",
             width=600)
@@ -404,13 +408,14 @@ class MultiComparison(object):
 
     Renders grouped bar plot and count bars, but not diff plot.
     """
+
     def __init__(self, runs_by_name: collections.OrderedDict,
                  label_filter=lambda label: True):
-        num_labels = {k:len(v.all_labels) for k,v in runs_by_name.items()}
+        num_labels = {k: len(v.all_labels) for k, v in runs_by_name.items()}
         assert len(set(num_labels.values())) == 1
-        num_examples = {k:len(v.example_df) for k,v in runs_by_name.items()}
+        num_examples = {k: len(v.example_df) for k, v in runs_by_name.items()}
         assert len(set(num_examples.values())) == 1
-        num_targets = {k:len(v.target_df) for k,v in runs_by_name.items()}
+        num_targets = {k: len(v.target_df) for k, v in runs_by_name.items()}
         assert len(set(num_targets.values())) == 1
 
         self.runs_by_name = runs_by_name
@@ -427,7 +432,6 @@ class MultiComparison(object):
         print("Done scoring!")
 
         self.long_scores = pd.concat(self.scores_by_name.values())
-
 
     def plot_scores(self, task_name, metric="f1",
                     sort_field="expt_headroom", sort_run=None,
@@ -467,7 +471,7 @@ class MultiComparison(object):
             palette = bokeh.palettes.Category20[len(runs)]
             #  palette = bokeh.palettes.Set2[len(runs)]
         fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
-        width = 30*len(categories) + 10*len(self.scores_by_name)
+        width = 30 * len(categories) + 10 * len(self.scores_by_name)
         tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
 
         # Top plot: score bars
@@ -475,11 +479,11 @@ class MultiComparison(object):
                                                 range_padding=0.5,
                                                 range_padding_units='absolute')
         p1 = bp.figure(title=f"Performance by label ({task_name})",
-                       x_range=factor_range, y_range=[0,1],
+                       x_range=factor_range, y_range=[0, 1],
                        width=width, height=row_height, tools=tools)
         p1.vbar(x='row_key', top=_SCORE_COL, width=0.95,
-               fill_color=fill_cmap, line_color=None,
-               source=long_ds)
+                fill_color=fill_cmap, line_color=None,
+                source=long_ds)
         label_kw = dict(text_align="right", text_baseline="middle", y_offset=-3,
                         text_font_size="11pt", angle=90, angle_units='deg')
         score_labels = bokeh.models.LabelSet(x='row_key', y=_SCORE_COL,
@@ -487,7 +491,7 @@ class MultiComparison(object):
                                              source=long_ds, **label_kw)
         p1.add_layout(score_labels)
         p1.xaxis.major_label_orientation = 1
-        p1.yaxis.bounds = (0,1)
+        p1.yaxis.bounds = (0, 1)
 
         # Middle plot: doesn't make sense for n > 2 experiments.
 
@@ -514,17 +518,17 @@ class MultiComparison(object):
         # Fix labels for SPR case, labels are long
         if max(map(len, labels)) > 10:
             # Top plot: rotate labels, add height.
-            p1.xaxis.group_label_orientation = np.pi/2
+            p1.xaxis.group_label_orientation = np.pi / 2
             p1.plot_height += 150
             # Bottom plot: rotate labels, add height.
-            p3.xaxis.group_label_orientation = np.pi/2
+            p3.xaxis.group_label_orientation = np.pi / 2
             p3.plot_height += 75
 
         # Create plot layout.
         plots = bokeh.layouts.gridplot([p1, p3], ncols=1,
-                                      toolbar_location="left",
-                                      merge_tools=True,
-                                      sizing_mode="fixed")
+                                       toolbar_location="left",
+                                       merge_tools=True,
+                                       sizing_mode="fixed")
         header_txt = f"{task_name}, sorted by '{sort_run}.{sort_field}'"
         header = bokeh.models.Div(
             text=f"<h1>{header_txt}</h1>",

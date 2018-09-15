@@ -22,6 +22,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import pandas as pd
 from data import utils
 
+
 def analyze_file(fname: str):
     pd.options.display.float_format = '{:.2f}'.format
     log.info("Analyzing file: %s", fname)
@@ -30,6 +31,7 @@ def analyze_file(fname: str):
     stats.compute(record_iter)
     log.info(stats.format(_name=fname))
     return stats.to_series(_name=fname)
+
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -48,7 +50,7 @@ def main(args):
         log.info("Writing stats table to %s", args.output)
         df.to_csv(args.output, sep="\t")
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
