@@ -65,7 +65,7 @@ class NullPhraseLayer(nn.Module):
 
 
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru a sequence encoder. '''
+    ''' Given a sequence of tokens, embed each token and pass through a sequence encoder. '''
     # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
