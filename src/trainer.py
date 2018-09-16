@@ -56,9 +56,9 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
 
     Parameters
     ----------
-    args: A trainer config object.
+    params: Trainer parameters as built by build_trainer_params.
     model: A module with trainable parameters.
-    max_vals: The upper bound on training steps, specified in number of validation runs.
+    run_dir: The directory where we save the models.
 
     Returns
     -------
@@ -106,7 +106,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     return trainer, train_params, opt_params, schd_params
 
 
-class SamplingMultiTaskTrainer():
+class SamplingMultiTaskTrainer:
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
@@ -122,9 +122,6 @@ class SamplingMultiTaskTrainer():
             An AllenNLP model to be optimized. Pytorch Modules can also be optimized if
             their ``forward`` method returns a dictionary with a "loss" key, containing a
             scalar tensor representing the loss function to be optimized.
-        optimizer : ``torch.nn.Optimizer``, required.
-            An instance of a Pytorch Optimizer, instantiated with the parameters of the
-            model to be optimized.
         patience , optional (default=2)
             Number of epochs to be patient before early stopping.
         val_metric , optional (default="loss")
@@ -145,11 +142,6 @@ class SamplingMultiTaskTrainer():
             If provided, gradients will be clipped `during the backward pass` to have an (absolute)
             maximum of this value.  If you are getting ``NaNs`` in your gradients during training
             that are not solved by using ``grad_norm``, you may need this.
-        learning_rate_scheduler : PytorchLRScheduler, optional, (default = None)
-            A Pytorch learning rate scheduler. The learning rate will be decayed with respect to
-            this schedule at the end of each epoch. If you use
-            :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`,
-            this will use the ``val_metric`` provided to determine if learning has plateaued.
         keep_all_checkpoints : If set, keep checkpoints from every validation. Otherwise, keep only
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
@@ -202,7 +194,6 @@ class SamplingMultiTaskTrainer():
         else:
             best_so_far = False
 
-        out_of_patience = False
         if should_decrease:
             index_of_last_improvement = metric_history.index(min(metric_history))
             out_of_patience = index_of_last_improvement <= len(metric_history) - (patience + 1)
@@ -264,7 +255,7 @@ class SamplingMultiTaskTrainer():
 
             if phase == "main":
                 # Warning: This won't be precise when training_data_fraction is set, since each example is included
-                # or excluded independantly using a hashing function. Fortunately, it
+                # or excluded independently using a hashing function. Fortunately, it
                 # doesn't need to be.
                 task_info['n_tr_batches'] = math.ceil(
                     task.n_train_examples * self._training_data_fraction / batch_size)
@@ -302,7 +293,7 @@ class SamplingMultiTaskTrainer():
         ----------
         tasks: A list of task objects to train on.
         stop_metric: The metric to use for early stopping.
-        validation_interval: How many passes between evaluations.
+        batch_size: The batch size to use for the tasks
         n_batches_per_pass: How many training steps per task per pass.
         weighting_method: How to sample which task to use.
         scaling_method: How to scale gradients.
@@ -432,7 +423,7 @@ class SamplingMultiTaskTrainer():
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[n_pass % (validation_interval)]  # randomly select a task
+            task = samples[n_pass % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info['stopped']:
                 continue
@@ -495,7 +486,7 @@ class SamplingMultiTaskTrainer():
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_pass % (validation_interval) == 0:
+            if n_pass % validation_interval == 0:
 
                 # Dump and log all of our current info
                 epoch = int(n_pass / validation_interval)
