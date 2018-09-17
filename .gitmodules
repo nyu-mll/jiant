@@ -1,0 +1,4 @@
+[submodule "src/cove"]
+	path = src/cove
+  url = https://github.com/salesforce/cove.git
+  ignore = untracked

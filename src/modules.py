@@ -26,28 +26,30 @@ from allennlp.models.model import Model
 from allennlp.modules import Highway
 from allennlp.modules.matrix_attention import DotProductMatrixAttention
 from allennlp.modules import Seq2SeqEncoder, SimilarityFunction, TimeDistributed
-from allennlp.nn import util, InitializerApplicator, RegularizerApplicator
-from allennlp.nn.util import remove_sentence_boundaries, add_sentence_boundary_token_ids, get_device_of
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+from allennlp.nn import util, InitializerApplicator
+from allennlp.nn.util import add_sentence_boundary_token_ids
 from allennlp.modules.token_embedders import Embedding
 from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper, ELMoTokenCharactersIndexer
-from allennlp.modules.similarity_functions import LinearSimilarity, DotProductSimilarity
-from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder, CnnEncoder
+from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 # StackedSelfAttentionEncoder
 from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
-from .utils import MaskedMultiHeadSelfAttention
+
+from .utils import MaskedMultiHeadSelfAttention, assert_for_log
+from . import utils
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
 from .cnns.inception import inception_v3
 
+
 class NullPhraseLayer(nn.Module):
     ''' Dummy phrase layer that does nothing. Exists solely for API compatibility. '''
+
     def __init__(self, input_dim: int):
         super(NullPhraseLayer, self).__init__()
         self.input_dim = input_dim
@@ -61,8 +63,9 @@ class NullPhraseLayer(nn.Module):
     def forward(self, embs, mask):
         return None
 
+
 class SentenceEncoder(Model):
-    ''' Given a sequence of tokens, embed each token and pass thru an LSTM. '''
+    ''' Given a sequence of tokens, embed each token and pass through a sequence encoder. '''
     # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
@@ -95,70 +98,125 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def forward(self, sent, task):
+    def forward(self, sent, task, reset=True):
         # pylint: disable=arguments-differ
         """
         Args:
             - sent (Dict[str, torch.LongTensor]): From a ``TextField``.
             - task (Task): Used by the _text_field_embedder to pick the correct output
                            ELMo representation.
+            - reset (Bool): if True, manually reset the states of the ELMo LSTMs present
+                (if using BiLM or ELMo embeddings). Set False, if want to preserve statefulness.
         Returns:
             - sent_enc (torch.FloatTensor): (b_size, seq_len, d_emb)
-                TODO: check what the padded values in sent_enc are (0 or -inf or something else?)
+                the padded values in sent_enc are set to 0
             - sent_mask (torch.FloatTensor): (b_size, seq_len, d_emb); all 0/1s
         """
+        if reset:
+            self.reset_states()
+
         # Embeddings
-        # Note: These highway layers are identity by default.
-        sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        # task_sent_embs only used if sep_embs_for_skip
-        task_sent_embs = self._highway_layer(self._text_field_embedder(sent, task._classifier_name))
+        # Note: These highway modules are actually identity functions by default.
+
+        # General sentence embeddings (for sentence encoder).
+        # Skip this for probing runs that don't need it.
+        if not isinstance(self._phrase_layer, NullPhraseLayer):
+            sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        else:
+            sent_embs = None
+
+        # Task-specific sentence embeddings (e.g. custom ELMo weights).
+        # Skip computing this if it won't be used.
+        if self.sep_embs_for_skip:
+            task_sent_embs = self._highway_layer(
+                self._text_field_embedder(
+                    sent, task._classifier_name))
+        else:
+            task_sent_embs = None
+
+        # Make sure we're embedding /something/
+        assert (sent_embs is not None) or (task_sent_embs is not None)
 
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
             # but this allows CoVe to be used alongside other embedding models
             # if we want to.
             sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
-            sent_cove_embs = self._cove_layer(sent['words'], sent_lens)
-            sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+            # CoVe doesn't use <SOS> or <EOS>, so strip these before running.
+            # Note that we need to also drop the last column so that CoVe returns
+            # the right shape. If all inputs have <EOS> then this will be the
+            # only thing clipped.
+            sent_cove_embs_raw = self._cove_layer(sent['words'][:, 1:-1],
+                                                  sent_lens - 2)
+            pad_col = torch.zeros(sent_cove_embs_raw.size()[0], 1,
+                                  sent_cove_embs_raw.size()[2],
+                                  dtype=sent_cove_embs_raw.dtype,
+                                  device=sent_cove_embs_raw.device)
+            sent_cove_embs = torch.cat([pad_col, sent_cove_embs_raw, pad_col], dim=1)
+            if sent_embs is not None:
+                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
+            if task_sent_embs is not None:
+                task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
 
-        sent_embs = self._dropout(sent_embs)
-        task_sent_embs = self._dropout(task_sent_embs)
+        if sent_embs is not None:
+            sent_embs = self._dropout(sent_embs)
+        if task_sent_embs is not None:
+            task_sent_embs = self._dropout(task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if sent_embs is not None:
+            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        else:
+            sent_enc = None
 
         # ELMoLSTM returns all layers, we just want to use the top layer
-        if isinstance(self._phrase_layer, BiLMEncoder):
-            sent_enc = sent_enc[-1]
-        if sent_enc is not None:
-            sent_enc = self._dropout(sent_enc)
+        sent_enc = sent_enc[-1] if isinstance(self._phrase_layer, BiLMEncoder) else sent_enc
+        sent_enc = self._dropout(sent_enc) if sent_enc is not None else sent_enc
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            utils.assert_for_log(skip_vec is not None,
+                                 "skip_vec is none - perhaps embeddings are not configured "
+                                 "properly?")
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
             else:
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
+        pad_mask = (sent_mask == 0)
+        assert sent_enc is not None
+        sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
+
+    def reset_states(self):
+        ''' Reset ELMo if present; reset BiLM (ELMoLSTM) states if present '''
+        if 'token_embedder_elmo' in [
+                name for name,
+                _ in self._text_field_embedder.named_children()] and '_elmo' in [
+                name for name,
+                _ in self._text_field_embedder.token_embedder_elmo.named_children()]:
+            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+        if isinstance(self._phrase_layer, BiLMEncoder):
+            self._phrase_layer.reset_states()
+
 
 class BiLMEncoder(ElmoLstm):
     """Wrapper around BiLM to give it an interface to comply with SentEncoder
     See base class: ElmoLstm
     """
+
     def get_input_dim(self):
         return self.input_size
 
     def get_output_dim(self):
         return self.hidden_size * 2
 
+
 class BoWSentEncoder(Model):
     ''' Bag-of-words sentence encoder '''
-    # NOTE: hasn't been tested in recent memory
 
     def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
@@ -195,17 +253,13 @@ class Pooler(nn.Module):
     def forward(self, sequence, mask):
         if len(mask.size()) < 3:
             mask = mask.unsqueeze(dim=-1)
-        pad_mask = 1 - mask.byte().data
-        if sequence.min().item() != float('-inf'):  # this will f up the loss
-            #log.warn('Negative infinity detected')
-            sequence.masked_fill(pad_mask, 0)
-        proj_seq = self.project(sequence)
-
+        pad_mask = (mask == 0)
+        proj_seq = self.project(sequence)  # linear project each hid state
         if self.pool_type == 'max':
             proj_seq = proj_seq.masked_fill(pad_mask, -float('inf'))
             seq_emb = proj_seq.max(dim=1)[0]
         elif self.pool_type == 'mean':
-            #proj_seq = proj_seq.masked_fill(pad_mask, 0)
+            proj_seq = proj_seq.masked_fill(pad_mask, 0)
             seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
         elif self.pool_type == 'final':
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
@@ -811,4 +865,4 @@ class CNNEncoder(Model):
 
         with open(self.feat_path + str(img_id) + '.json') as fd:
             feat_dict = json.load(fd)
-        return feat_dict[list(feat_dict.keys())[0]] # has one key
+        return feat_dict[list(feat_dict.keys())[0]]  # has one key

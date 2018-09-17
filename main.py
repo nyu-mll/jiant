@@ -83,9 +83,11 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
+
 # Global notification handler, can be accessed outside main() during exception
 # handling.
 EMAIL_NOTIFIER = None
+
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -139,7 +141,8 @@ def main(cl_arguments):
     log.info("Loading tasks...")
     start_time = time.time()
     train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    if any([t.val_metric_decreases for t in train_tasks]) and any([not t.val_metric_decreases for t in train_tasks]):
+    if any([t.val_metric_decreases for t in train_tasks]) and any(
+            [not t.val_metric_decreases for t in train_tasks]):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
     tasks = sorted(set(train_tasks + eval_tasks), key=lambda x: x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
@@ -158,28 +161,33 @@ def main(cl_arguments):
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
-        assert_for_log(not args.do_train,
-                       "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
+        assert_for_log(
+            not args.do_train,
+            "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
     if args.do_train:
         assert_for_log(args.train_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.train_tasks)
-        assert_for_log(args.val_interval % args.bpp_base == 0,
-                       "Error: val_interval [%d] must be divisible by bpp_base [%d]" % (args.val_interval,args.bpp_base))
+        assert_for_log(
+            args.val_interval %
+            args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
+            (args.val_interval, args.bpp_base))
         steps_log.append("Training model on tasks: %s" % args.train_tasks)
 
     if args.train_for_eval:
         steps_log.append("Re-training model for individual eval tasks")
-        assert_for_log(args.eval_val_interval % args.bpp_base == 0,
-                       "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" % (args.eval_val_interval,args.bpp_base))
-        assert_for_log(len(set(train_tasks).intersection(eval_tasks)) == 0 \
-                        or args.allow_reuse_of_pretraining_parameters \
-                        or args.do_train == 0,
-                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
-                        "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
-                        "  train with do_train = 1, train_for_eval = 0, stop, and restart with\n"
-                        "  do_train = 0 and train_for_eval = 1.")
+        assert_for_log(
+            args.eval_val_interval %
+            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
+            (args.eval_val_interval, args.bpp_base))
+        assert_for_log(len(set(train_tasks).intersection(eval_tasks)) == 0
+                       or args.allow_reuse_of_pretraining_parameters
+                       or args.do_train == 0,
+                       "If you're pretraining on a task you plan to reuse as a target task, set\n"
+                       "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
+                       "  train with do_train = 1, train_for_eval = 0, stop, and restart with\n"
+                       "  do_train = 0 and train_for_eval = 1.")
 
     if args.do_eval:
         assert_for_log(args.eval_tasks != "none",
@@ -235,13 +243,24 @@ def main(cl_arguments):
         eval_best = glob.glob(os.path.join(args.run_dir,
                                            "model_state_eval_best.th"))
         if len(eval_best) > 0:
-            load_model_state(model, eval_best[0], args.cuda, task_names_to_avoid_loading, strict=strict)
+            load_model_state(
+                model,
+                eval_best[0],
+                args.cuda,
+                task_names_to_avoid_loading,
+                strict=strict)
         else:
             macro_best = glob.glob(os.path.join(args.run_dir,
                                                 "model_state_main_epoch_*.best_macro.th"))
             if len(macro_best) > 0:
-                assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-                load_model_state(model, macro_best[0], args.cuda, task_names_to_avoid_loading, strict=strict)
+                assert_for_log(len(macro_best) == 1,
+                               "Too many best checkpoints. Something is wrong.")
+                load_model_state(
+                    model,
+                    macro_best[0],
+                    args.cuda,
+                    task_names_to_avoid_loading,
+                    strict=strict)
             else:
                 assert_for_log(
                     args.allow_untrained_encoder_parameters,
@@ -265,7 +284,8 @@ def main(cl_arguments):
             if task.name == 'mnli-diagnostic':
                 continue
             pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            to_train = elmo_scalars + [(n, p)
+                                       for n, p in pred_module.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
@@ -284,7 +304,12 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(model, layer_path, args.cuda, skip_task_models=task_names_to_avoid_loading, strict=strict)
+            load_model_state(
+                model,
+                layer_path,
+                args.cuda,
+                skip_task_models=task_names_to_avoid_loading,
+                strict=strict)
 
     if args.do_eval:
         # Evaluate #
