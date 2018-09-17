@@ -7,7 +7,7 @@ NOTIFY_EMAIL=$1
 
 function run_exp() {
     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
-    OVERRIDES+=", eval_tasks=$1, elmo_chars_only=0, reload_tasks=1"
+    OVERRIDES+=", eval_tasks=$1, elmo_chars_only=0"
     python main.py --config_file config/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
 #        --remote_log --notify "$NOTIFY_EMAIL"
@@ -36,4 +36,4 @@ pushd "${PWD%jiant*}/jiant"
 # run_exp "edges-ccg-tag"
 
 # Span Detection
-run_exp "edges-ner-ontonotes-sd"
+run_exp "edges-srl-conll2012-sd"
