@@ -14,7 +14,7 @@ args = parser.parse_args()
 
 col_order = [
     'date',
-    'train_tasks',
+    'pretrain_tasks',
     'dropout',
     'elmo',
     'cola_mcc',
@@ -44,7 +44,7 @@ for path in args.log_files:
         cols['path'] = path
         results_line = None
         found_eval = False
-        train_tasks = ""
+        pretrain_tasks = ""
         dropout = None
         elmo = None
 
@@ -66,11 +66,11 @@ for path in args.log_files:
                 train_m = re.match('Training model on tasks: (.*)', line)
                 if train_m:
                     found_tasks = train_m.groups()[0]
-                    if train_tasks is not "" and found_tasks != train_tasks:
+                    if pretrain_tasks is not "" and found_tasks != pretrain_tasks:
                         print(
                             "WARNING: Multiple sets of training tasks found. Skipping %s and reporting last." %
                             (found_tasks))
-                    train_tasks = found_tasks
+                    pretrain_tasks = found_tasks
 
                 do_m = re.match('"dropout": (.*),', line)
                 if do_m:
@@ -88,7 +88,7 @@ for path in args.log_files:
                             elmo, el)
                     elmo = el
 
-        cols['train_tasks'] = train_tasks
+        cols['pretrain_tasks'] = pretrain_tasks
         cols['dropout'] = dropout
         cols['elmo'] = 'Y' if elmo == '0' else 'N'
 

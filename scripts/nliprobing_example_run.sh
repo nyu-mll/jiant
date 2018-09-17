@@ -8,4 +8,4 @@ EXP_NAME="probing"
 PARAM_FILE=${MODEL_DIR}"/params.conf"
 MODEL_FILE=${MODEL_DIR}"/model_state_eval_best.th"
 
-python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, run_name = ${RUN_NAME}, eval_tasks = ${PROBING_TASK}, ${PROBING_TASK}_use_classifier=mnli"
+python main.py -c config/defaults.conf ${PARAM_FILE} config/eval_existing.conf -o "load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, run_name = ${RUN_NAME}, target_tasks = ${PROBING_TASK}, ${PROBING_TASK}_use_classifier=mnli"
