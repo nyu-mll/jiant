@@ -15,7 +15,7 @@
 ## GLUE tasks as pretraining ##
 
 # Sam ran all 18 of these.
-# Alex is now running the ELMo versions of these tasks.
+# Alex re-ran all 18 of these.
 # TODO: Non-alt tasks will need to be run in two parts because of https://github.com/jsalt18-sentence-repl/jiant/issues/290
 
 JIANT_OVERRIDES="train_tasks = cola, run_name = cola-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -49,7 +49,7 @@ JIANT_OVERRIDES="train_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = st
 ## Random BiLSTM, no pretraining ##
 
 # Sam ran these 2.
-# Alex is now running the ELMo version.
+# Alex re-ran all 2 of these.
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -96,7 +96,7 @@ JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, run_name = reddit-s2s-attn-elmo,
 # Classification
 
 # Raghu ran these.
-# Alex is running the ELMo version.
+# Alex re-ran all 2 of these.
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, run_name = reddit-class-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -133,20 +133,20 @@ JIANT_OVERRIDES="train_tasks = wiki103_classif, run_name = wiki103-cl-elmo, elmo
 ## DisSent ##
 
 # Alex ran these.
-# Alex is now rerunning the ELMo version.
+# Alex re-ran all 2 of these.
 JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = dissentwikifullbig, run_name = dissent-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## MSCOCO ##
 
 # Sam ran these.
-# Alex is now rerunning the ELMo version.
+# Alex re-ran all 2 of these.
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = grounded, run_name = grounded-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
 ## CCG (Note: For use in the NLI probing paper only) ##
 
-# Sam ran these.
+# Alex re-ran all 2 of these.
 JIANT_OVERRIDES="train_tasks = ccg, exp_name = final_ccg, run_name = ccg-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = ccg, exp_name = final_ccg, run_name = ccg-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 
@@ -156,7 +156,7 @@ JIANT_OVERRIDES="train_tasks = ccg, exp_name = final_ccg, run_name = ccg-elmo, e
 # TODO: These will need to be run in two parts because of https://github.com/jsalt18-sentence-repl/jiant/issues/290
 
 # Alex ran these.
-# Alex is now rerunning the ELMo version.
+# Alex is re-running all 2 of these.
 JIANT_OVERRIDES="train_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,qqp-alt,cola\", mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, run_name = mtl-glue-noelmo, elmo_chars_only = 1, do_train = 1, train_for_eval = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,qqp-alt,cola\", mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, run_name = mtl-glue-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, do_train = 1, train_for_eval = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,qqp-alt,cola\", mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, run_name = mtl-glue-noelmo, elmo_chars_only = 1, do_train = 0, train_for_eval = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
