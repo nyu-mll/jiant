@@ -393,7 +393,9 @@ class EdgeProbingTask(Task):
                  label_file: str=None,
                  files_by_split: Dict[str, str]=None,
                  is_symmetric: bool=False,
-                 single_sided: bool=False):
+                 single_sided: bool=False,
+                 detect_spans: bool=False,
+    ):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
@@ -411,6 +413,7 @@ class EdgeProbingTask(Task):
                 type and share parameters. Otherwise, we learn a separate
                 projection layer and attention weight for each.
             single_sided: if true, only use span1.
+            detect_spans: if true, create a dense matrix to consider all spans
         """
         super().__init__(name)
 
@@ -424,6 +427,7 @@ class EdgeProbingTask(Task):
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
+        self.detect_spans = detect_spans
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
@@ -558,6 +562,47 @@ class EdgeProbingTask(Task):
         metrics['f1'] = f1
         return metrics
 
+# Entity type labeling on CoNLL 2003.
+@register_task('edges-ner-conll2003-sd', rel_path='edges/ner_conll2003',
+               label_file="labels.txt", files_by_split={
+                    'train': "CoNLL-2003_train.json" + _tokenizer_suffix,
+                    'val': "CoNLL-2003_dev.json" + _tokenizer_suffix,
+                    'test': "CoNLL-2003_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# Entity type labeling on OntoNotes.
+@register_task('edges-ner-ontonotes-sd',
+               rel_path='edges/ontonotes-ner',
+               label_file="labels.txt", files_by_split={
+                    'train': "ner_ontonotes_en_train.json" + _tokenizer_suffix,
+                    'val': "ner_ontonotes_en_dev.json" + _tokenizer_suffix,
+                    'test': "ner_ontonotes_en_test.json" + _tokenizer_suffix,
+               }, single_sided=True)
+# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
+@register_task('edges-srl-conll2012-sd', rel_path='edges/srl_conll2012',
+               label_file="labels.txt", files_by_split={
+                    'train': "train.edges.json" + _tokenizer_suffix,
+                    'val': "dev.edges.json" + _tokenizer_suffix,
+                    'test': "test.edges.json" + _tokenizer_suffix,
+               }, is_symmetric=False)
+class SpanDetectionTask(EdgeProbingTask):
+    ''' Task class for edge probing
+
+    Same as EdgeProbingTasks but with span detection
+    '''
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str=None,
+                 files_by_split: Dict[str,str]=None,
+                 is_symmetric: bool=False,
+                 single_sided: bool=False,
+    ):
+        max_seq_len = 200
+        super(SpanDetectionTask, self).__init__(path, max_seq_len,
+                                                name, label_file,
+                                                files_by_split,
+                                                is_symmetric,
+                                                single_sided,
+                                                detect_spans=True)
 
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''

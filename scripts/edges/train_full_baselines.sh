@@ -34,3 +34,6 @@ run_exp "edges-constituent-ontonotes" 200 1000
 # run_exp "edges-coref-ontonotes"
 # run_exp "edges-constituent-ptb"
 # run_exp "edges-ccg-tag"
+
+# Span Detection
+run_exp "edges-srl-conll2012-sd"
