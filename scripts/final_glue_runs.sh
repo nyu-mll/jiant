@@ -194,3 +194,26 @@ JIANT_OVERRIDES="train_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,q
 ## Target task learning curves ##
 
 # TODO: Jan - Set up once we know which run works best on dev.
+# REDDIT CLASSIF ELMO (16,64,256,1024)
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00089, run_name = reddit_pair_classif-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00357, run_name = reddit_pair_classif-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.01430, run_name = reddit_pair_classif-256k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.05719, run_name = reddit_pair_classif-1024k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# REDDIT CLASSIF NOELMO (16,64,256,1024)
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00089, run_name = reddit_pair_classif-16k-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00357, run_name = reddit_pair_classif-64k-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.01430, run_name = reddit_pair_classif-256k-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.05719, run_name = reddit_pair_classif-1024k-noelmo, elmo_chars_only = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# REDDIT S2S ELMO (16,64,256,1024)
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00089, run_name = reddit_s2s-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-256k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.05719, run_name = reddit_s2s-1024k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+# REDDIT S2S NOELMO (16,64,256,1024)
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00089, run_name = reddit_s2s-16k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-64k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-256k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.05719, run_name = reddit_s2s-1024k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
