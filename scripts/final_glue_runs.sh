@@ -193,7 +193,7 @@ JIANT_OVERRIDES="train_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,q
 
 ## Target task learning curves ##
 
-# TODO: Jan - Set up once we know which run works best on dev.
+## Source task learning curves
 # REDDIT CLASSIF ELMO (16,64,256,1024)
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00089, run_name = reddit_pair_classif-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_pair_classif_3.4G, training_data_fraction = 0.00357, run_name = reddit_pair_classif-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1, pair_attn = 0" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
@@ -217,3 +217,108 @@ JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00089
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-64k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.00357, run_name = reddit_s2s-256k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
 JIANT_OVERRIDES="train_tasks = reddit_s2s_3.4G, training_data_fraction = 0.05719, run_name = reddit_s2s-1024k-noelmo, elmo_chars_only = 1, lr = 0.001, max_grad_norm = 1.0, max_seq_len = 64" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+## Target task learning curves
+# MNLI
+IANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00255, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00255, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.00255, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01019, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01019, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.01019, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.04074, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.04074, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-16k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.04074, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-16k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.16297, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.16297, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-64k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.16297, do_train = 0, eval_tasks = mnli, do_eval = 1, run_name = lc-target-mnli-64k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# QQP
+IANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00275, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00275, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.00275, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01099, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01099, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.01099, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.04397, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.04397, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-16k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.04397, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-16k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.17589, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.17589, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-64k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.17589, do_train = 0, eval_tasks = qqp, do_eval = 1, run_name = lc-target-qqp-64k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# SST
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01485, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.01485, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.01485, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.05939, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.05939, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.05939, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.23757, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.23757, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-16k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.23757, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-16k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.47514, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-32k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.47514, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-32k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.47514, do_train = 0, eval_tasks = sst, do_eval = 1, run_name = lc-target-sst-32k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# STS-B
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.17391, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.17391, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.17391, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.69565, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.69565, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.69565, do_train = 0, eval_tasks = sts-b, do_eval = 1, run_name = lc-target-sts-b-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# COLA
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.11695, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.11695, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.11695, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.46778, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.46778, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.46778, do_train = 0, eval_tasks = cola, do_eval = 1, run_name = lc-target-cola-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# MRPC
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.27255, do_train = 0, eval_tasks = mrpc, do_eval = 1, run_name = lc-target-mrpc-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.27255, do_train = 0, eval_tasks = mrpc, do_eval = 1, run_name = lc-target-mrpc-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.27255, do_train = 0, eval_tasks = mrpc, do_eval = 1, run_name = lc-target-mrpc-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+
+
+# QNLI
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00922, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-1k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.00922, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-1k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.00922, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-1k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.03689, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-4k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.03689, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-4k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.03689, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-4k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.14755, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-16k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.14755, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-16k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.14755, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-16k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.59021, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-64k-elmo, elmo_chars_only = 0, sep_embs_for_skip = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = none, allow_untrained_encoder_parameters = 1, eval_data_fraction = 0.59021, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-64k-noelmo, elmo_chars_only = 1" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+JIANT_OVERRIDES="train_tasks = "wmt17_en_ru,wmt14_en_de,bwb,wiki103,dissentwikifullbig,wiki103_s2s,wiki103_classif,reddit_s2s_3.4G,reddit_pair_classif_3.4G,grounded", val_interval = 10000, eval_data_fraction = 0.59021, do_train = 0, eval_tasks = qnli, do_eval = 1, run_name = lc-target-qnli-64k-mtl, elmo_chars_only = 1, dec_val_scale = 250" JIANT_CONF="config/final.conf" sbatch nyu_cilvr_cluster.sbatch
+
