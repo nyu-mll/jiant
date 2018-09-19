@@ -120,7 +120,6 @@ class Predictions(object):
         self.example_df = pd.DataFrame.from_records(ex_records)
         self.example_df.set_index('idx', inplace=True, drop=False)
         self.target_df = pd.DataFrame.from_records(tr_records)
-        # TODO: generate long-form DataFrame directly here?
 
         # Apply indexing to labels
         self.target_df['label.ids'] = self.target_df['label'].map(
@@ -156,19 +155,24 @@ class Predictions(object):
         return self._target_df_wide
 
     def _make_long_target_df(self):
-        wide_df = self.target_df_wide
+        df = self.target_df
         log.info("Generating long-form target DataFrame. May be slow... ")
-        # Melt to wide, using dummy 'index' column as unique key.
-        # All cols not starting with stubnames are kept as id_vars.
-        long_df = pd.wide_to_long(wide_df.reset_index(),
-                                  i=['index'], j="label",
-                                  stubnames=["label.true", "preds.proba"],
-                                  sep=".",
-                                  suffix=r"[^.]+")
-        long_df.sort_values("idx", inplace=True)  # Sort by example idx
-        long_df.reset_index(inplace=True)         # Remove multi-index
-        long_df.drop("index", axis=1, inplace=True)  # Drop dummy index, but keep 'label'
-        long_df.sort_index(axis=1, inplace=True)  # Sort columns alphabetically
+        num_targets = len(df)
+        # Index into self.target_df for other metadata.
+        idxs = np.tile(df.index, (len(self.all_labels), 1)).T.flatten()
+        # Repeat labels for each target.
+        labels = np.tile(self.all_labels, num_targets)
+        # Flatten lists using numpy - *much* faster than using Pandas.
+        label_true  = np.array(df['label.khot'].tolist(),
+                               dtype=np.int32).flatten()
+        preds_proba = np.array(df['preds.proba'].tolist(),
+                               dtype=np.float32).flatten()
+        assert len(label_true) == len(preds_proba)
+        assert len(label_true) == len(labels)
+        # Reconstruct a DataFrame.
+        long_df = pd.DataFrame({"idx": idxs, "label": labels,
+                                "label.true": label_true,
+                                "preds.proba": preds_proba})
         log.info("Done!")
         return long_df
 
