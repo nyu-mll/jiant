@@ -61,8 +61,7 @@ def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
     return pd.DataFrame.from_records(train_stats)
 
 
-def analyze_run(run_path: str, task: str, split: str,
-                verbose: bool=False) -> pd.DataFrame:
+def analyze_run(run_path: str, task: str, split: str) -> pd.DataFrame:
     log.info("Analyzing: '%s' / %s' / '%s'", run_path, task, split)
     preds = analysis.Predictions.from_run(run_path, task, split)
     scores = preds.score_by_label()
