@@ -98,7 +98,7 @@ def main(args):
         pool = Pool(args.parallel)
         all_scores = pool.map(_analyze_run, work_items)
     else:
-        all_scores = [analyze_run(*item) for item in work_items]
+        all_scores = list(map(_analyze_run, work_items))
 
     long_scores = pd.concat(run_info + all_scores, axis=0,
                             ignore_index=True, sort=False)
