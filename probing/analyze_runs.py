@@ -61,7 +61,8 @@ def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
     return pd.DataFrame.from_records(train_stats)
 
 
-def analyze_run(run_path: str, task: str, split: str) -> pd.DataFrame:
+def analyze_run(run_path: str, task: str, split: str,
+                verbose: bool=False) -> pd.DataFrame:
     log.info("Analyzing: '%s' / %s' / '%s'", run_path, task, split)
     preds = analysis.Predictions.from_run(run_path, task, split)
     scores = preds.score_by_label()
@@ -92,13 +93,20 @@ def main(args):
         # Global run info from log file.
         run_info.append(get_run_info(run_path))
 
+    all_scores = []
     if args.parallel > 1:
         from multiprocessing import Pool
         log.info("Processing runs in parallel with %d workers", args.parallel)
+        log.getLogger().setLevel(log.WARNING)  # hide INFO spam
         pool = Pool(args.parallel)
-        all_scores = pool.map(_analyze_run, work_items)
+        for score in tqdm(pool.imap_unordered(_analyze_run, work_items),
+                          total=len(work_items)):
+            all_scores.append(score)
+        log.getLogger().setLevel(log.INFO)  # re-enable
     else:
-        all_scores = list(map(_analyze_run, work_items))
+        for score in tqdm(map(_analyze_run, work_items),
+                          total=len(work_items)):
+            all_scores.append(score)
 
     long_scores = pd.concat(run_info + all_scores, axis=0,
                             ignore_index=True, sort=False)

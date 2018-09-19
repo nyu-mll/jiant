@@ -18,6 +18,14 @@ from allennlp.data import Vocabulary
 
 from typing import Iterable, Dict, List, Tuple
 
+def get_precision(df):
+    return df.tp_count / (df.tp_count + df.fp_count)
+
+def get_recall(df):
+    return df.tp_count / (df.tp_count + df.fn_count)
+
+def get_f1(df):
+    return 2*df.precision*df.recall / (df.precision + df.recall)
 
 def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
@@ -187,13 +195,16 @@ class Predictions(object):
 
     def score_long_df(self, df: pd.DataFrame) -> Dict[str, float]:
         """Compute metrics for a single DataFrame of long-form predictions."""
+        # Confusion matrix; can compute other metrics from this later.
         y_true = df['label.true']
         y_pred = df['preds.proba'] >= 0.5
+        C = metrics.confusion_matrix(y_true, y_pred, labels=[0,1])
+        tn, fp, fn, tp = C.ravel()
         record = dict()
-        record['f1_score'] = metrics.f1_score(y_true=y_true, y_pred=y_pred)
-        record['acc_score'] = metrics.accuracy_score(y_true=y_true, y_pred=y_pred)
-        record['true_count'] = sum(y_true)
-        record['pred_count'] = sum(y_pred)
+        record['tn_count'] = tn
+        record['fp_count'] = fp
+        record['fn_count'] = fn
+        record['tp_count'] = tp
         return record
 
     def score_by_label(self) -> pd.DataFrame:
