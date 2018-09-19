@@ -120,7 +120,7 @@ class Predictions(object):
         self.example_df = pd.DataFrame.from_records(ex_records)
         self.example_df.set_index('idx', inplace=True, drop=False)
         self.target_df = pd.DataFrame.from_records(tr_records)
-        # TODO: generate long-form DataFrame directly here.
+        # TODO: generate long-form DataFrame directly here?
 
         # Apply indexing to labels
         self.target_df['label.ids'] = self.target_df['label'].map(
@@ -230,23 +230,6 @@ class Predictions(object):
         cols.insert(0, cols.pop(cols.index("label")))
         score_df = score_df.reindex(columns=cols)
         return score_df
-
-    #  def score_by_label_wide(self) -> pd.DataFrame:
-    #      """Compute metrics for each label."""
-    #      wide_df = self.target_df_wide
-    #      records = []
-    #      for label in self.all_labels:
-    #          y_true = wide_df['label.true.' + label]
-    #          y_pred = wide_df['preds.proba.' + label] >= 0.5
-    #          f1_score = metrics.f1_score(y_true=y_true, y_pred=y_pred)
-    #          acc_score = metrics.accuracy_score(y_true=y_true, y_pred=y_pred)
-    #          true_count = sum(y_true)
-    #          pred_count = sum(y_pred)
-    #          records.append(dict(label=label, f1_score=f1_score,
-    #                              acc_score=acc_score,
-    #                              true_count=true_count,
-    #                              pred_count=pred_count))
-    #      return pd.DataFrame.from_records(records)
 
     @classmethod
     def from_run(cls, run_dir: str, task_name: str, split_name: str):
