@@ -61,18 +61,18 @@ def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
     return pd.DataFrame.from_records(train_stats)
 
 
-def analyze_run(run_path: str) -> Iterable[pd.DataFrame]:
-    log.info("Analyzing run %s", run_path)
-    for task, split in find_tasks_and_splits(run_path):
-        log.info("Analyzing: '%s' / '%s'", task, split)
-        preds = analysis.Predictions.from_run(run_path, task, split)
-        scores = preds.score_by_label()
-        # Add identifiers
-        scores.insert(0, "run", value=run_path)
-        scores.insert(1, "task", value=task)
-        scores.insert(2, "split", value=split)
-        yield scores
+def analyze_run(run_path: str, task: str, split: str) -> pd.DataFrame:
+    log.info("Analyzing: '%s' / %s' / '%s'", run_path, task, split)
+    preds = analysis.Predictions.from_run(run_path, task, split)
+    scores = preds.score_by_label()
+    # Add identifiers
+    scores.insert(0, "run", value=run_path)
+    scores.insert(1, "task", value=task)
+    scores.insert(2, "split", value=split)
+    return scores
 
+def _analyze_run(item):
+    return analyze_run(*item)
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -80,18 +80,36 @@ def main(args):
                         help="Output file (TSV).")
     parser.add_argument('-i', dest='inputs', type=str, nargs="+",
                         help="Input files.")
+    parser.add_argument('--parallel', type=int, default=1,
+                        help="Number of runs to process in parallel.")
     args = parser.parse_args(args)
 
-    all_scores = []
+    work_items = []
+    run_info = []
     for run_path in args.inputs:
-        for scores in analyze_run(run_path):
-            all_scores.append(scores)
-        # Heterogeneous run information.
-        run_info = get_run_info(run_path)
-        all_scores.append(run_info)
+        for task, split in find_tasks_and_splits(run_path):
+            work_items.append((run_path, task, split))
+        # Global run info from log file.
+        run_info.append(get_run_info(run_path))
 
-    long_scores = pd.concat(all_scores, axis=0, ignore_index=True,
-                            sort=False)
+    all_scores = []
+    if args.parallel > 1:
+        from multiprocessing import Pool
+        log.info("Processing runs in parallel with %d workers", args.parallel)
+        log.getLogger().setLevel(log.WARNING)  # hide INFO spam
+        pool = Pool(args.parallel)
+        for score in tqdm(pool.imap_unordered(_analyze_run, work_items),
+                          total=len(work_items)):
+            all_scores.append(score)
+        log.getLogger().setLevel(log.INFO)  # re-enable
+    else:
+        for score in tqdm(map(_analyze_run, work_items),
+                          total=len(work_items)):
+            all_scores.append(score)
+
+    long_scores = pd.concat(run_info + all_scores, axis=0,
+                            ignore_index=True, sort=False)
+
     if args.output:
         log.info("Writing long-form stats table to %s", args.output)
         long_scores.to_csv(args.output, sep="\t")
