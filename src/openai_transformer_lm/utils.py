@@ -92,17 +92,16 @@ class TransformerModel(nn.Module):
         x = x.view(-1, x.size(-2), x.size(-1))
         e = self.embed(x)
         # Add the position information to the input embeddings
-        h0 = e.sum(dim=2)
         if self.export_embs == 'only':
             # Skip running Transformer if only need base layer.
-            return h0
+            return e[:,:,0]
 
-        h = h0
+        h = e.sum(dim=2)
         for block in self.h:
             h = block(h)
         if self.export_embs == 'cat':
             # Concatenate embeddings layer.
-            h = torch.cat([h, h0], dim=2)
+            h = torch.cat([h, e[:,:,0]], dim=2)
         return h
 
     def get_output_dim(self):
