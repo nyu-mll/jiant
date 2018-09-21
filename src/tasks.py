@@ -558,10 +558,9 @@ class EdgeProbingTask(Task):
         metrics['f1'] = f1
         return metrics
 
-# Version of above to load versions of the data using OpenAI BPE tokenization.
-
 
 class OpenAIEdgeProbingTask(EdgeProbingTask):
+    """Version of EdgeProbingTask that loads BPE-tokenized data."""
     _tokenizer_suffix = ".retokenized.OpenAI.BPE"
 
 
