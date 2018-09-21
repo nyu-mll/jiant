@@ -390,10 +390,10 @@ class EdgeProbingTask(Task):
 
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
-                 label_file: str=None,
-                 files_by_split: Dict[str, str]=None,
-                 is_symmetric: bool=False,
-                 single_sided: bool=False):
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 is_symmetric: bool = False,
+                 single_sided: bool = False):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
