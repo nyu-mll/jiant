@@ -31,6 +31,13 @@ def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
             for key, value in record.get(outer_key, {}).items()}
 
+def _expand_runs(seq, nreps):
+    """Repeat each element N times, consecutively.
+
+    i.e. _expand_runs([1,2,3], 4) -> [1,1,1,1,2,2,2,2,3,3,3,3]
+    """
+    return np.tile(seq, (nreps, 1)).T.flatten()
+
 
 class EdgeProbingExample(object):
     """Wrapper object to handle an edge probing example.
@@ -167,7 +174,7 @@ class Predictions(object):
         log.info("Generating long-form target DataFrame. May be slow... ")
         num_targets = len(df)
         # Index into self.target_df for other metadata.
-        idxs = np.tile(df.index, (len(self.all_labels), 1)).T.flatten()
+        idxs = _expand_runs(df.index, len(self.all_labels))
         # Repeat labels for each target.
         labels = np.tile(self.all_labels, num_targets)
         # Flatten lists using numpy - *much* faster than using Pandas.
@@ -177,10 +184,27 @@ class Predictions(object):
                                dtype=np.float32).flatten()
         assert len(label_true) == len(preds_proba)
         assert len(label_true) == len(labels)
+        d = {"idx": idxs, "label": labels,
+             "label.true": label_true,
+             "preds.proba": preds_proba}
+        # Repeat some metadata fields if available.
+        # Use these for stratified scoring.
+        if 'info.height' in df.columns:
+            log.info("info.height field detected; copying to long-form "
+                     "DataFrame.")
+            d['info.height'] = _expand_runs(df['info.height'],
+                                            len(self.all_labels))
+        if 'span2' in df.columns:
+            log.info("span2 detected; adding span_distance to long-form "
+                     "DataFrame.")
+            _get_midpoint = lambda span: (span[1] - 1 - span[0])/2.0
+            s1_mid = df['span1'].map(_get_midpoint)
+            s2_mid = df['span2'].map(_get_midpoint)
+            span_distance = (s1_mid - s2_mid).abs()
+            d['span_distance'] = _expand_runs(span_distance,
+                                              len(self.all_labels))
         # Reconstruct a DataFrame.
-        long_df = pd.DataFrame({"idx": idxs, "label": labels,
-                                "label.true": label_true,
-                                "preds.proba": preds_proba})
+        long_df = pd.DataFrame(d)
         log.info("Done!")
         return long_df
 
@@ -233,11 +257,31 @@ class Predictions(object):
         macro_avg = score_df.agg(agg_map)
         macro_avg['label'] = "_macro_avg_"
         score_df = score_df.append(macro_avg, ignore_index=True)
+
         ##
         # Compute micro average
         micro_avg = pd.Series(self.score_long_df(long_df))
         micro_avg['label'] = "_micro_avg_"
         score_df = score_df.append(micro_avg, ignore_index=True)
+
+        ##
+        # Compute stratified scores by special fields
+        for field in ['info.height', 'span_distance']:
+            if field not in long_df.columns:
+                continue
+            log.info("Found special field '%s' with %d unique values.",
+                     field, len(long_df[field].unique()))
+            gb = long_df.groupby(by=[field])
+            records = []
+            for key, idxs in gb.groups.items():
+                sub_df = long_df.loc[idxs]
+                record = self.score_long_df(sub_df)
+                record['label'] = "_{:s}_{:s}_".format(field, str(key))
+                record['stratifier'] = field
+                record['stratum_key'] = key
+                records.append(record)
+            score_df = score_df.append(pd.DataFrame.from_records(records),
+                                       ignore_index=True, sort=False)
 
         ##
         # Move "label" column to the beginning.
