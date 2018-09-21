@@ -221,7 +221,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
     if args.openai_transformer:
-        # Add pre-computed BPE vocabulary
+        # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab)
 
     vocab.save_to_files(vocab_path)
@@ -261,14 +261,13 @@ def build_tasks(args):
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
-                              "other indexers!")
+                              " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-        # Exit if tasks might not be compatible with this tokenization.
+        # Exit if any tasks are not compatible with this tokenization.
         for task in tasks:
-            if task.name.startswith("edges-"):
-                assert task.name.endswith("-openai"), \
-                    (f"Edge probing task '{task.name:s}' not compatible "
-                      "with OpenAI transformer model; use -openai version.")
+            assert task.tokenizer_name == "OpenAI.BPE", \
+                (f"Task '{task.name:s}' not compatible with OpenAI "
+                  "Transformer model. For edge probing, use -openai versions.")
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):

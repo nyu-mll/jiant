@@ -4,7 +4,7 @@
   ignore = untracked
 [submodule "src/openai_transformer_lm/tf_original"]
 	path = src/openai_transformer_lm/tf_original
-	url = git@github.com:openai/finetune-transformer-lm.git
+	url = https://github.com/openai/finetune-transformer-lm.git
 [submodule "src/openai_transformer_lm/pytorch_huggingface"]
 	path = src/openai_transformer_lm/pytorch_huggingface
-	url = git@github.com:huggingface/pytorch-openai-transformer-lm.git
+	url = https://github.com/huggingface/pytorch-openai-transformer-lm.git

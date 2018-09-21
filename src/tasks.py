@@ -163,8 +163,8 @@ class Task():
     def tokenizer_name(self):
         ''' Get the name of the tokenizer used for this task.
 
-        Generally, this is just MosesTokenizer, but other tokenizations may be
-        needed in special cases such as when working with BPE-based models
+        Generally, this is just 'MosesTokenizer', but other tokenizations may
+        be needed in special cases such as when working with BPE-based models
         such as the OpenAI transformer LM.
         '''
         return utils.TOKENIZER.__class__.__name__
@@ -561,7 +561,9 @@ class EdgeProbingTask(Task):
 
 class OpenAIEdgeProbingTask(EdgeProbingTask):
     """Version of EdgeProbingTask that loads BPE-tokenized data."""
-    _tokenizer_suffix = ".retokenized.OpenAI.BPE"
+    @property
+    def tokenizer_name(self):
+        return "OpenAI.BPE"
 
 
 # Register copies of all edge probing tasks.
