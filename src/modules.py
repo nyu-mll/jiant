@@ -169,6 +169,9 @@ class SentenceEncoder(Model):
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         if sent_mask.shape[1] < max_seq_length:
+            # TODO(iftenney): just clip sent_embs instead, since
+            # this only triggers if it was padded past the length of the
+            # longest sentence?
             pad_shape = (sent_mask.shape[0],
                          max_seq_length - sent_mask.shape[1],
                          *sent_mask.shape[2:])
