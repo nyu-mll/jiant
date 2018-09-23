@@ -101,8 +101,30 @@ function openai_exp() {
     # Probe the OpenAI transformer model.
     # Note that we append -openai to the task name to use the
     # specially-retokenized versions.
-    # Usage: openai_lm_exp <task_name>
+    # Usage: openai_exp <task_name>
     OVERRIDES="exp_name=openai-$1, run_name=run"
     OVERRIDES+=", eval_tasks=${1}-openai"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
+
+function openai_cat_exp() {
+    # As above, but concat embeddings to output.
+    # Note that we append -openai to the task name to use the
+    # specially-retokenized versions.
+    # Usage: openai_cat_exp <task_name>
+    OVERRIDES="exp_name=openai-cat-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=${1}-openai"
+    OVERRIDES+=", openai_embeddings_mode=cat"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
+
+function openai_lex_exp() {
+    # Probe the OpenAI transformer model base layer.
+    # Note that we append -openai to the task name to use the
+    # specially-retokenized versions.
+    # Usage: openai_lex_exp <task_name>
+    OVERRIDES="exp_name=openai-lex-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=${1}-openai"
+    OVERRIDES+=", openai_embeddings_mode=only"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
