@@ -128,3 +128,16 @@ function openai_lex_exp() {
     OVERRIDES+=", openai_embeddings_mode=only"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
+
+function openai_bwb_exp() {
+    # Probe the OpenAI transformer model, as trained on BWB-shuffled.
+    # Note that we append -openai to the task name to use the
+    # specially-retokenized versions.
+    # Usage: openai_bwb_exp <task_name>
+    CKPT_PATH="/nfs/jsalt/home/iftenney/checkpoints/bwb_shuffled/model.ckpt-1000000"
+    OVERRIDES="exp_name=openai-bwb-$1, run_name=run"
+    OVERRIDES+=", eval_tasks=${1}-openai"
+    OVERRIDES+=", openai_transformer_ckpt=${CKPT_PATH}"
+    OVERRIDES+=", openai_embeddings_mode=cat"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
