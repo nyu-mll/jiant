@@ -197,7 +197,7 @@ class Predictions(object):
         if 'span2' in df.columns:
             log.info("span2 detected; adding span_distance to long-form "
                      "DataFrame.")
-            _get_midpoint = lambda span: (span[1] - 1 - span[0])/2.0
+            _get_midpoint = lambda span: (span[1] - 1 + span[0])/2.0
             s1_mid = df['span1'].map(_get_midpoint)
             s2_mid = df['span2'].map(_get_midpoint)
             span_distance = (s1_mid - s2_mid).abs()
