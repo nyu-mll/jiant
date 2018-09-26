@@ -198,9 +198,15 @@ class Predictions(object):
             log.info("span2 detected; adding span_distance to long-form "
                      "DataFrame.")
             _get_midpoint = lambda span: (span[1] - 1 + span[0])/2.0
-            s1_mid = df['span1'].map(_get_midpoint)
-            s2_mid = df['span2'].map(_get_midpoint)
-            span_distance = (s1_mid - s2_mid).abs()
+            def span_sep(a, b):
+                ma = _get_midpoint(a)
+                mb = _get_midpoint(b)
+                if mb >= ma:  # b starts later
+                    return max(0, b[0] - a[1])
+                else:         # a starts later
+                    return max(0, a[0] - b[1])
+            span_distance = [span_sep(a, b) for a, b in zip(df['span1'],
+                                                            df['span2'])]
             d['span_distance'] = _expand_runs(span_distance,
                                               len(self.all_labels))
         # Reconstruct a DataFrame.
