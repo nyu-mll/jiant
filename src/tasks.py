@@ -565,8 +565,9 @@ class OpenAIEdgeProbingTask(EdgeProbingTask):
     def tokenizer_name(self):
         return "OpenAI.BPE"
 
-
-# Register copies of all edge probing tasks.
+# We need '-openai' versions of all edge probing tasks, which load the correct
+# tokenization for that model. To avoid lots of boilerplate, add these to the
+# registry at import time using the loop below.
 for name in list(REGISTRY.keys()):
     args = REGISTRY[name]
     cls = args[0]
