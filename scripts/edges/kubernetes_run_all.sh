@@ -108,7 +108,6 @@ do
     kuberun elmo-full-$task  "elmo_full_exp edges-$task"
     kuberun glove-$task      "glove_exp edges-$task"
     kuberun cove-$task       "cove_exp edges-$task"
-    kuberun openai-$task     "openai_exp edges-$task"
 done
 
 ##
