@@ -182,7 +182,12 @@ class OpenAIEmbedderModule(nn.Module):
         x = torch.stack([ids, pos_ids], dim=2)
         # h is [batch_size, n_ctx, d_emb]
         h = self.model(x)
-        return h
+
+        # Truncate back to the original ids length, for compatiblity with the
+        # rest of our embedding models. This only drops padding
+        # representations.
+        h_trunc = h[:,:var_ids.size()[1],:]
+        return h_trunc
 
     def get_output_dim(self):
         return self.model.get_output_dim()
