@@ -358,6 +358,20 @@ class PairClassificationTask(ClassificationTask):
                    'val': "consts_ontonotes_en_dev.json",
                    'test': "consts_ontonotes_en_test.json",
                }, single_sided=True)
+@register_task('edges-pos-ontonotes',
+               rel_path='edges/ontonotes-constituents',
+               label_file="labels.pos.txt", files_by_split={
+                   'train': "consts_ontonotes_en_train.pos.json",
+                   'val': "consts_ontonotes_en_dev.pos.json",
+                   'test': "consts_ontonotes_en_test.pos.json",
+               }, single_sided=True)
+@register_task('edges-nonterminal-ontonotes',
+               rel_path='edges/ontonotes-constituents',
+               label_file="labels.nonterminal.txt", files_by_split={
+                   'train': "consts_ontonotes_en_train.nonterminal.json",
+                   'val': "consts_ontonotes_en_dev.nonterminal.json",
+                   'test': "consts_ontonotes_en_test.nonterminal.json",
+               }, single_sided=True)
 # CCG tagging (tokens only).
 @register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
                label_file="labels.txt", files_by_split={
@@ -565,8 +579,9 @@ class OpenAIEdgeProbingTask(EdgeProbingTask):
     def tokenizer_name(self):
         return "OpenAI.BPE"
 
-
-# Register copies of all edge probing tasks.
+# We need '-openai' versions of all edge probing tasks, which load the correct
+# tokenization for that model. To avoid lots of boilerplate, add these to the
+# registry at import time using the loop below.
 for name in list(REGISTRY.keys()):
     args = REGISTRY[name]
     cls = args[0]
