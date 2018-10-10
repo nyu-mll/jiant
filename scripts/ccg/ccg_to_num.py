@@ -37,7 +37,7 @@ for line in fi3:
 
     for tag in tags:
         if tag not in tag2num:
-            tag2num[tag] = str(counter) 
+            tag2num[tag] = str(counter)
             counter += 1
 
 fi1.close()
@@ -45,7 +45,6 @@ fi2.close()
 fi3.close()
 
 print(counter)
-
 
 
 fi1 = open("ccg.train", "r")
@@ -84,4 +83,3 @@ for line in fi3:
         nums.append(tag2num[tag])
 
     fo3.write(sent + "\t" + " ".join(nums) + "\n")
-

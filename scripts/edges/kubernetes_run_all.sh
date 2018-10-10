@@ -42,7 +42,8 @@ if [ -z $PROJECT ]; then
     exit 1
 fi
 
-pushd "${PWD%jiant*}"/jiant
+# Top-level directory for the current repo.
+pushd $(git rev-parse --show-toplevel)
 
 # Make a copy of the current tree in the project directory.
 PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
@@ -97,6 +98,9 @@ if [[ $MODE == "delete" ]]; then
     set +e
 fi
 
+##
+# Run these on the main 'jsalt' cluster
+gcloud container clusters get-credentials --zone us-east1-c jsalt
 for task in "${ALL_TASKS[@]}"
 do
     kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
@@ -104,6 +108,14 @@ do
     kuberun elmo-full-$task  "elmo_full_exp edges-$task"
     kuberun glove-$task      "glove_exp edges-$task"
     kuberun cove-$task       "cove_exp edges-$task"
-    # kuberun openai-$task     "openai_exp edges-$task"
+    kuberun openai-$task     "openai_exp edges-$task"
+done
+
+##
+# Run these on 'jsalt-central' for V100s
+gcloud container clusters get-credentials --zone us-central1-a jsalt-central
+for task in "${ALL_TASKS[@]}"
+do
+    kuberun openai-$task     "openai_exp edges-$task"
 done
 

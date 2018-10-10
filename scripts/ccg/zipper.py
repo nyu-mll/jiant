@@ -11,7 +11,3 @@ lines2 = fi2.readlines()
 
 for index, line in enumerate(lines1):
     fo1.write(line.strip().split("\t")[0] + "\t" + lines2[index].strip().split("\t")[1] + "\n")
-
-
-
-

@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 
-# Helper script to retokenize edge-probing data.
-# Uses the tokenizer for the OpenAI transformer LM, as described in 
-# https://blog.openai.com/language-unsupervised/ and using the code from 
+# Helper script to retokenize edge-probing data using a BPE model.
+# Uses the tokenizer for the OpenAI transformer LM, as described in
+# https://blog.openai.com/language-unsupervised/ and using the code from
 # https://github.com/openai/finetune-transformer-lm
 #
-# Like retokenize_edge_data.py, this saves the result alongside the original 
+# Like retokenize_edge_data.py, this saves the result alongside the original
 # files.
 #
 # Usage:
 #  python retokenize_edge_data.py /path/to/edge/probing/data/*.json
 #
-# Speed: takes around 2.5 minutes to process 90000 sentences on a single core.
-#
-# Requirements: this requires the `spacy` and `ftfy` packages for running the 
-# preprocessing for the OpenAI model. These should only be needed for this 
+# Requirements: this requires the `spacy` and `ftfy` packages for running the
+# preprocessing for the OpenAI model. These should only be needed for this
 # script - main.py shouldn't need to do any further preprocessing.
 
 import sys
@@ -43,7 +41,7 @@ def retokenize_record(record):
     text = record['text']
     eow_tokens = space_tokenize_with_eow(text)
     bpe_tokens = openai_utils.tokenize(text)
-    
+
     ta = retokenize.TokenAligner(eow_tokens, bpe_tokens)
     record['text'] = " ".join(bpe_tokens)
     for target in record['targets']:

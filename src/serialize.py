@@ -6,6 +6,7 @@ import _pickle as pkl
 import base64
 from zlib import crc32
 
+
 def _serialize(examples, fd, flush_every):
     for i, example in enumerate(examples):
         blob = pkl.dumps(example)

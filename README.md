@@ -52,7 +52,7 @@ We also make use of many other data sources, including:
 - Image captioning: MSCOCO Dataset (http://cocodataset.org/#download). Specifically we use the following splits: 2017 Train images [118K/18GB], 2017 Val images [5K/1GB], 2017 Train/Val annotations [241MB].
 - Reddit: [reddit_comments dataset](https://bigquery.cloud.google.com/dataset/fh-bigquery:reddit_comments). Specifically we use the 2008 and 2009 tables.
 - DisSent: Details for preparing the corpora are in [`scripts/dissent/README`](scripts/dissent/README).
-- DNC (Diverse Natural Language Inference Collection), i.e. Recast data: The DNC is currently being prepared for release for EMNLP camera ready. Instructions on how to download the data is forthcoming.
+- DNC (**D**iverse **N**atural Language Inference **C**ollection), i.e. recast data: The DNC is available [online](https://github.com/decompositional-semantics-initiative/DNC). Follow the instructions described there to download the DNC.
 - CCG: Details for preparing the corpora are in [`scripts/ccg/README`](scripts/ccg/README).
 - Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
 
@@ -225,6 +225,9 @@ python main.py --config_file config/demo.conf
 
 You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
 
+## License
+
+This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
 
 ## Getting Help
 

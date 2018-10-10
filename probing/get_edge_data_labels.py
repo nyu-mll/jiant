@@ -21,6 +21,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src import utils
 
+
 def count_labels(fname: str) -> Type[collections.Counter]:
     """Count labels across all targets in a file of edge probing examples."""
     label_ctr = collections.Counter()
@@ -32,6 +33,7 @@ def count_labels(fname: str) -> Type[collections.Counter]:
                 label = [label]
             label_ctr.update(label)
     return label_ctr
+
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -56,7 +58,7 @@ def main(args):
         for label in all_labels:
             fd.write(label + "\n")
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
