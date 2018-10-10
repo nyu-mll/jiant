@@ -44,12 +44,6 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 # using individual tasks later, so better to have as a list
 ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
-# Edge probing suite.
-ALL_EDGE_TASKS = ['edges-srl-conll2005', 'edges-spr2',
-                  'edges-dpr', 'edges-ner-conll2003',
-                  'edges-coref-ontonotes',
-                  'edges-dep-labeling']
-
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
                       'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
@@ -226,6 +220,10 @@ def _build_vocab(args, tasks, vocab_path: str):
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
+    if args.openai_transformer:
+        # Add pre-computed BPE vocabulary for OpenAI transformer model.
+        add_openai_bpe_vocab(vocab)
+
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -242,7 +240,8 @@ def build_tasks(args):
 
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
-        get_tasks(parse_task_list_arg(args.train_tasks), parse_task_list_arg(args.eval_tasks), args.max_seq_len,
+        get_tasks(parse_task_list_arg(args.train_tasks),
+                  parse_task_list_arg(args.eval_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path,
@@ -253,7 +252,6 @@ def build_tasks(args):
                 task_classifier if task_classifier else task.name)
 
     # 2) build / load vocab and indexers
-    vocab_path = os.path.join(args.exp_dir, 'vocab')
     indexers = {}
     if not args.word_embs == 'none':
         indexers["words"] = SingleIdTokenIndexer()
@@ -261,7 +259,17 @@ def build_tasks(args):
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.openai_transformer:
+        assert not indexers, ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
+        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+        # Exit if any tasks are not compatible with this tokenization.
+        for task in tasks:
+            assert task.tokenizer_name == "OpenAI.BPE", \
+                (f"Task '{task.name:s}' not compatible with OpenAI "
+                  "Transformer model. For edge probing, use -openai versions.")
 
+    vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
         _build_vocab(args, tasks, vocab_path)
 
@@ -388,8 +396,6 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(','):
         if task_name == 'glue':
             task_names.extend(ALL_GLUE_TASKS)
-        elif task_name == 'edges-all':
-            task_names.extend(ALL_EDGE_TASKS)
         elif task_name == 'none' or task_name == '':
             continue
         else:
@@ -402,8 +408,9 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               max_targ_v_size=20000):
     ''' Actually build or load (from pickles) the tasks. '''
     # We don't want mnli-diagnostic in train_task_names
-    train_task_names = [name for name in train_task_names if name not in {'mnli-diagnostic'}]
-    ''' Load tasks '''
+    train_task_names = [name for name in train_task_names
+                        if name not in {'mnli-diagnostic'}]
+
     task_names = sorted(set(train_task_names + eval_task_names))
     assert path is not None
     scratch_path = (scratch_path or path)
@@ -529,6 +536,16 @@ def add_task_label_vocab(vocab, task):
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
+def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
+    '''Add OpenAI BPE vocabulary for use with pre-tokenized data.'''
+    from .openai_transformer_lm import utils as openai_utils
+    id_to_wordpiece = openai_utils.reverse_encoder_dict
+    for i in range(len(id_to_wordpiece)):
+        vocab.add_token_to_namespace(id_to_wordpiece[i], namespace)
+    # Add SOS and EOS tokens to *end* of namespace, since this is where the
+    # OpenAI model expects special tokens.
+    vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
+    vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.

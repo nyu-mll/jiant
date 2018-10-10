@@ -58,7 +58,18 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args '''
 
     # Build embeddings.
-    d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
+    if args.openai_transformer:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .openai_transformer_lm.utils import OpenAIEmbedderModule
+        log.info("Using OpenAI transformer model; skipping other embedders.")
+        cove_layer = None
+        embedder = OpenAIEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    else:
+        # Default case, used for ELMo, CoVe, word embeddings, etc.
+        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
+                                                       tasks, pretrained_embs)
     d_sent = args.d_hid
 
     # Build single sentence encoder: the main component of interest

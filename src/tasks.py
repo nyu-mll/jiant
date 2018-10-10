@@ -163,8 +163,8 @@ class Task():
     def tokenizer_name(self):
         ''' Get the name of the tokenizer used for this task.
 
-        Generally, this is just MosesTokenizer, but other tokenizations may be
-        needed in special cases such as when working with BPE-based models
+        Generally, this is just 'MosesTokenizer', but other tokenizations may
+        be needed in special cases such as when working with BPE-based models
         such as the OpenAI transformer LM.
         '''
         return utils.TOKENIZER.__class__.__name__
@@ -195,7 +195,7 @@ class Task():
         ''' Process split text into a list of AllenNLP Instances. '''
         raise NotImplementedError
 
-    def get_metrics(self, reset: bool=False) -> Dict:
+    def get_metrics(self, reset: bool = False) -> Dict:
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
 
@@ -404,10 +404,10 @@ class EdgeProbingTask(Task):
 
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
-                 label_file: str=None,
-                 files_by_split: Dict[str, str]=None,
-                 is_symmetric: bool=False,
-                 single_sided: bool=False):
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 is_symmetric: bool = False,
+                 single_sided: bool = False):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
@@ -571,6 +571,25 @@ class EdgeProbingTask(Task):
         metrics['recall'] = recall
         metrics['f1'] = f1
         return metrics
+
+
+class OpenAIEdgeProbingTask(EdgeProbingTask):
+    """Version of EdgeProbingTask that loads BPE-tokenized data."""
+    @property
+    def tokenizer_name(self):
+        return "OpenAI.BPE"
+
+# We need '-openai' versions of all edge probing tasks, which load the correct
+# tokenization for that model. To avoid lots of boilerplate, add these to the
+# registry at import time using the loop below.
+for name in list(REGISTRY.keys()):
+    args = REGISTRY[name]
+    cls = args[0]
+    if (issubclass(cls, EdgeProbingTask)
+            and not issubclass(cls, OpenAIEdgeProbingTask)):
+        new_args = (OpenAIEdgeProbingTask, *args[1:])
+        new_name = name + "-openai"
+        REGISTRY[new_name] = new_args
 
 
 class PairRegressionTask(RegressionTask):
