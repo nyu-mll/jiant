@@ -1,5 +1,6 @@
 import os
 import random
+import copy
 import logging as log
 
 from typing import List, Dict
@@ -67,6 +68,47 @@ def prep_ids(ids_lists: List[List[int]], n_ctx=512, n_special=3) -> np.ndarray:
         x_in[i,1:len(ids)+1,0] = ids[:n_ctx-2]
     return x_in
 
+class TransformerModel(nn.Module):
+    """ Transformer model.
+
+    Copy of model_pytorch.TransformerModel, modified to expose embedding layer.
+    """
+
+    def __init__(self, cfg, vocab=40990, n_ctx=512, export_embs='none'):
+        super(TransformerModel, self).__init__()
+        assert export_embs in {'none', 'cat', 'only'}
+        self.export_embs = export_embs
+        self.n_embd = cfg.n_embd
+
+        self.vocab = vocab
+        self.embed = nn.Embedding(vocab, cfg.n_embd)
+        self.drop = nn.Dropout(cfg.embd_pdrop)
+        block = model_pytorch.Block(n_ctx, cfg, scale=True)
+        self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(cfg.n_layer)])
+
+        nn.init.normal_(self.embed.weight, std=0.02)
+
+    def forward(self, x):
+        x = x.view(-1, x.size(-2), x.size(-1))
+        e = self.embed(x)
+        # Add the position information to the input embeddings
+        if self.export_embs == 'only':
+            # Skip running Transformer if only need base layer.
+            return e[:,:,0]
+
+        h = e.sum(dim=2)
+        for block in self.h:
+            h = block(h)
+        if self.export_embs == 'cat':
+            # Concatenate embeddings layer.
+            h = torch.cat([h, e[:,:,0]], dim=2)
+        return h
+
+    def get_output_dim(self):
+        if self.export_embs == "cat":
+            return 2*self.n_embd
+        else:
+            return self.n_embd
 
 class OpenAIEmbedderModule(nn.Module):
     def __init__(self, args, n_special=3, n_ctx=512):
@@ -76,8 +118,9 @@ class OpenAIEmbedderModule(nn.Module):
         self.n_ctx = n_ctx  # max context width (seq len)
 
         full_emb_vocab = N_VOCAB + self.n_special + self.n_ctx
-        self.model = model_pytorch.TransformerModel(self.model_cfg,
-                                                    vocab=full_emb_vocab)
+        self.model = TransformerModel(self.model_cfg,
+                                      vocab=full_emb_vocab,
+                                      export_embs=args.openai_embeddings_mode)
 
         # Need specific seed to reproduce results.
         seed = 42
@@ -147,6 +190,6 @@ class OpenAIEmbedderModule(nn.Module):
         return h_trunc
 
     def get_output_dim(self):
-        return self.model_cfg['n_embd']
+        return self.model.get_output_dim()
 
 

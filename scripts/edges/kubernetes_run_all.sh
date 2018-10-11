@@ -108,6 +108,7 @@ do
     kuberun elmo-full-$task  "elmo_full_exp edges-$task"
     kuberun glove-$task      "glove_exp edges-$task"
     kuberun cove-$task       "cove_exp edges-$task"
+    kuberun openai-lex-$task "openai_lex_exp edges-$task"
 done
 
 ##
@@ -115,6 +116,7 @@ done
 gcloud container clusters get-credentials --zone us-central1-a jsalt-central
 for task in "${ALL_TASKS[@]}"
 do
-    kuberun openai-$task     "openai_exp edges-$task"
+    # kuberun openai-$task     "openai_exp edges-$task"
+    kuberun openai-cat-$task "openai_cat_exp edges-$task"
 done
 
