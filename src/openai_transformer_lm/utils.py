@@ -14,12 +14,12 @@ from .tf_original.text_utils import TextEncoder
 
 from .pytorch_huggingface import model_pytorch
 
-openai_data_dir = os.path.join(os.path.dirname(openai_utils.__file__),
+OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__),
                                "model")
-encoder_path = os.path.join(openai_data_dir, "encoder_bpe_40000.json")
-bpe_path = os.path.join(openai_data_dir, "vocab_40000.bpe")
+ENCODER_PATH = os.path.join(OPENAI_DATA_DIR, "encoder_bpe_40000.json")
+BPE_PATH = os.path.join(OPENAI_DATA_DIR, "vocab_40000.bpe")
 
-text_encoder = TextEncoder(encoder_path, bpe_path)
+text_encoder = TextEncoder(ENCODER_PATH, BPE_PATH)
 encoder_dict = text_encoder.encoder  # just a dict of text -> id
 reverse_encoder_dict = {v:k for k,v in encoder_dict.items()}
 N_VOCAB = len(encoder_dict)
@@ -67,6 +67,37 @@ def prep_ids(ids_lists: List[List[int]], n_ctx=512, n_special=3) -> np.ndarray:
     for i, ids in enumerate(ids_lists):
         x_in[i,1:len(ids)+1,0] = ids[:n_ctx-2]
     return x_in
+
+def load_from_tf_checkpoint(model, ckpt_path: str):
+    """Load transformer model weights from a TensorFlow checkpoint.
+
+    TensorFlow checkpoint should have variables corresponding to those in the
+    original openai/finetune-transformer-lm code.
+    """
+    from tensorflow import train as tf_train
+    for name, p in model.named_parameters():
+        path = name.split(".")
+        if path[0] == "h":
+            # PyTorch names like 'h.11.foo.bar' become
+            # TensorFlow names like 'model/h11/foo/bar'
+            tf_name = f"model/{path[0]}{path[1]}/" + "/".join(path[2:])
+            #  print(f"{name} -> {tf_name}")
+            var_np = tf_train.load_variable(ckpt_path, tf_name)
+        elif name == "embed.weight":
+            # Concatenate positional embeddings to the end of the vocab
+            # embedding table.
+            tf_names = ["model/we", "model/pe"]
+            #  print(f"{name} -> {tf_names}")
+            vars_np = [tf_train.load_variable(ckpt_path, tf_name)
+                       for tf_name in tf_names]
+            var_np = np.concatenate(vars_np, axis=0)
+        else:
+            raise ValueError(f"Unrecognized name: {name}")
+        # Squeeze singleton dimensions, since some of the TF variables
+        # have shape [1, foo, bar] instead of [foo, bar].
+        init_value = torch.from_numpy(var_np.squeeze())
+        assert init_value.shape == p.shape
+        p.data = init_value
 
 class TransformerModel(nn.Module):
     """ Transformer model.
@@ -128,14 +159,20 @@ class OpenAIEmbedderModule(nn.Module):
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-        loader_args = dict(n_special=n_special)
-        # Path to model weights
-        loader_args['path'] = openai_data_dir + "/"
-        # Path to variable name mapping
-        loader_args['path_names'] = os.path.dirname(model_pytorch.__file__) + "/"
-        # Load pretrained weights from disk
-        log.info("Loading OpenAI transformer model from %s", loader_args['path'])
-        model_pytorch.load_openai_pretrained_model(self.model, **loader_args)
+        if args.openai_transformer_ckpt:
+            assert n_special == 3
+            log.info("Loading OpenAI transformer model from %s",
+                     args.openai_transformer_ckpt)
+            load_from_tf_checkpoint(self.model, args.openai_transformer_ckpt)
+        else:
+            loader_args = dict(n_special=n_special)
+            # Path to model weights
+            loader_args['path'] = OPENAI_DATA_DIR + "/"
+            # Path to variable name mapping
+            loader_args['path_names'] = os.path.dirname(model_pytorch.__file__) + "/"
+            # Load pretrained weights from disk
+            log.info("Loading OpenAI transformer model from %s", loader_args['path'])
+            model_pytorch.load_openai_pretrained_model(self.model, **loader_args)
         log.info("Loaded OpenAI transformer model.")
 
         # Set trainability of this module.
