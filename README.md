@@ -161,7 +161,7 @@ Note: if you want to train and evaluate on a task, that task must be in both ``t
 
 To add new tasks, you should:
 
-1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. 
+1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. It is recommended that you shuffle your training data if there are many rows (>10k) to avoid training artefacts.
 
 2. Create a class in ``src/tasks.py``, and make sure that...
 
