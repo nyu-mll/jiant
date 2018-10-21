@@ -161,7 +161,7 @@ Note: if you want to train and evaluate on a task, that task must be in both ``t
 
 To add new tasks, you should:
 
-1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. It is recommended that you shuffle your training data if there are many rows (>10k) to avoid training artefacts.
+1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. It is recommended that you shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. E.g: in a binary classification setting, if your data is sorted by label, the model would go through all the positive examples before finding a negative, so would only learn to always predict 1. If you reach 100% accuracy in training before one epoch, this is likely the case.
 
 2. Create a class in ``src/tasks.py``, and make sure that...
 
