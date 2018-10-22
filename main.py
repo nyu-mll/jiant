@@ -12,7 +12,6 @@ import subprocess
 import random
 import sys
 import time
-import re
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -94,19 +93,6 @@ def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
-
-    # prevent loading old config args
-    # old name: new name
-    name_dict = {'task_patience':'lr_patience',\
-                   'do_train': 'do_pretrain',\
-                   'train_for_eval':'do_target_task_training',\
-                   'do_eval': 'do_full_eval',\
-                   'train_tasks':'pretrain_tasks',\
-                   'eval_tasks':'target_tasks'}
-    for k,v in name_dict.items():
-        for arg in args:
-            assert_for_log(not re.match(k,arg),
-                   "Error: Attempting to load old config arg name: %s, should use new name %s"%(k,v))
 
     # Logistics #
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
