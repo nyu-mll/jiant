@@ -10,9 +10,7 @@
 
 MODEL_DIR=$1 # directory of checkpoint to probe,
              # e.g: /nfs/jsalt/share/models_to_probe/nli_do2_noelmo
-PROBING_TASK=${2:-"edges-all"}  # probing task name(s)
-                                # "edges-all" runs all as defined in
-                                # preprocess.ALL_EDGE_TASKS
+PROBING_TASK=${2:-"edges-spr2"}  # probing task name(s)
 
 EXP_NAME=${3:-"edgeprobe-$(basename $MODEL_DIR)"}  # experiment name
 RUN_NAME=${4:-"probing"}                     # name for this run

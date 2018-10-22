@@ -7,6 +7,7 @@ import io
 import json
 import collections
 import itertools
+import logging as log
 
 import pandas as pd
 import numpy as np
@@ -17,10 +18,25 @@ from allennlp.data import Vocabulary
 
 from typing import Iterable, Dict, List, Tuple
 
+def get_precision(df):
+    return df.tp_count / (df.tp_count + df.fp_count)
+
+def get_recall(df):
+    return df.tp_count / (df.tp_count + df.fn_count)
+
+def get_f1(df):
+    return 2*df.precision*df.recall / (df.precision + df.recall)
 
 def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
             for key, value in record.get(outer_key, {}).items()}
+
+def _expand_runs(seq, nreps):
+    """Repeat each element N times, consecutively.
+
+    i.e. _expand_runs([1,2,3], 4) -> [1,1,1,1,2,2,2,2,3,3,3,3]
+    """
+    return np.tile(seq, (nreps, 1)).T.flatten()
 
 
 class EdgeProbingExample(object):
@@ -133,7 +149,7 @@ class Predictions(object):
         self._target_df_long = None  # long-form targets (melted by label)
 
     def _make_wide_target_df(self):
-        print("Generating wide-form target DataFrame. May be slow... ", end="")
+        log.info("Generating wide-form target DataFrame. May be slow... ")
         # Expand labels to columns
         expanded_y_true = self.target_df['label.khot'].apply(pd.Series)
         expanded_y_true.columns = ["label.true." + l for l in self.all_labels]
@@ -143,7 +159,7 @@ class Predictions(object):
                             axis='columns')
         DROP_COLS = ["preds.proba", "label", "label.ids", "label.khot"]
         wide_df.drop(labels=DROP_COLS, axis=1, inplace=True)
-        print("Done!")
+        log.info("Done!")
         return wide_df
 
     @property
@@ -154,20 +170,48 @@ class Predictions(object):
         return self._target_df_wide
 
     def _make_long_target_df(self):
-        wide_df = self.target_df_wide
-        print("Generating long-form target DataFrame. May be slow... ", end="")
-        # Melt to wide, using dummy 'index' column as unique key.
-        # All cols not starting with stubnames are kept as id_vars.
-        long_df = pd.wide_to_long(wide_df.reset_index(),
-                                  i=['index'], j="label",
-                                  stubnames=["label.true", "preds.proba"],
-                                  sep=".",
-                                  suffix=r"[^.]+")
-        long_df.sort_values("idx", inplace=True)  # Sort by example idx
-        long_df.reset_index(inplace=True)         # Remove multi-index
-        long_df.drop("index", axis=1, inplace=True)  # Drop dummy index, but keep 'label'
-        long_df.sort_index(axis=1, inplace=True)  # Sort columns alphabetically
-        print("Done!")
+        df = self.target_df
+        log.info("Generating long-form target DataFrame. May be slow... ")
+        num_targets = len(df)
+        # Index into self.target_df for other metadata.
+        idxs = _expand_runs(df.index, len(self.all_labels))
+        # Repeat labels for each target.
+        labels = np.tile(self.all_labels, num_targets)
+        # Flatten lists using numpy - *much* faster than using Pandas.
+        label_true  = np.array(df['label.khot'].tolist(),
+                               dtype=np.int32).flatten()
+        preds_proba = np.array(df['preds.proba'].tolist(),
+                               dtype=np.float32).flatten()
+        assert len(label_true) == len(preds_proba)
+        assert len(label_true) == len(labels)
+        d = {"idx": idxs, "label": labels,
+             "label.true": label_true,
+             "preds.proba": preds_proba}
+        # Repeat some metadata fields if available.
+        # Use these for stratified scoring.
+        if 'info.height' in df.columns:
+            log.info("info.height field detected; copying to long-form "
+                     "DataFrame.")
+            d['info.height'] = _expand_runs(df['info.height'],
+                                            len(self.all_labels))
+        if 'span2' in df.columns:
+            log.info("span2 detected; adding span_distance to long-form "
+                     "DataFrame.")
+            _get_midpoint = lambda span: (span[1] - 1 + span[0])/2.0
+            def span_sep(a, b):
+                ma = _get_midpoint(a)
+                mb = _get_midpoint(b)
+                if mb >= ma:  # b starts later
+                    return max(0, b[0] - a[1])
+                else:         # a starts later
+                    return max(0, a[0] - b[1])
+            span_distance = [span_sep(a, b) for a, b in zip(df['span1'],
+                                                            df['span2'])]
+            d['span_distance'] = _expand_runs(span_distance,
+                                              len(self.all_labels))
+        # Reconstruct a DataFrame.
+        long_df = pd.DataFrame(d)
+        log.info("Done!")
         return long_df
 
     @property
@@ -179,35 +223,91 @@ class Predictions(object):
             self._target_df_long = self._make_long_target_df()
         return self._target_df_long
 
+    def score_long_df(self, df: pd.DataFrame) -> Dict[str, float]:
+        """Compute metrics for a single DataFrame of long-form predictions."""
+        # Confusion matrix; can compute other metrics from this later.
+        y_true = df['label.true']
+        y_pred = df['preds.proba'] >= 0.5
+        C = metrics.confusion_matrix(y_true, y_pred, labels=[0,1])
+        tn, fp, fn, tp = C.ravel()
+        record = dict()
+        record['tn_count'] = tn
+        record['fp_count'] = fp
+        record['fn_count'] = fn
+        record['tp_count'] = tp
+        return record
+
     def score_by_label(self) -> pd.DataFrame:
-        """Compute metrics for each label."""
-        wide_df = self.target_df_wide
+        """Compute metrics for each label, and in the aggregate."""
+        long_df = self.target_df_long
+        gb = long_df.groupby(by=["label"])
         records = []
-        for label in self.all_labels:
-            y_true = wide_df['label.true.' + label]
-            y_pred = wide_df['preds.proba.' + label] >= 0.5
-            f1_score = metrics.f1_score(y_true=y_true, y_pred=y_pred)
-            acc_score = metrics.accuracy_score(y_true=y_true, y_pred=y_pred)
-            true_count = sum(y_true)
-            pred_count = sum(y_pred)
-            records.append(dict(label=label, f1_score=f1_score,
-                                acc_score=acc_score,
-                                true_count=true_count,
-                                pred_count=pred_count))
-        return pd.DataFrame.from_records(records)
+        for label, idxs in gb.groups.items():
+            sub_df = long_df.loc[idxs]
+            record = self.score_long_df(sub_df)
+            record['label'] = label
+            records.append(record)
+        score_df = pd.DataFrame.from_records(records)
+        ##
+        # Compute macro average
+        agg_map = {}
+        for col in score_df.columns:
+            if col.endswith("_score"):
+                agg_map[col] = 'mean'
+            elif col.endswith("_count"):
+                agg_map[col] = 'sum'
+            elif col == "label":
+                pass
+            else:
+                log.warning("Unsupported column '%s'", col)
+        macro_avg = score_df.agg(agg_map)
+        macro_avg['label'] = "_macro_avg_"
+        score_df = score_df.append(macro_avg, ignore_index=True)
+
+        ##
+        # Compute micro average
+        micro_avg = pd.Series(self.score_long_df(long_df))
+        micro_avg['label'] = "_micro_avg_"
+        score_df = score_df.append(micro_avg, ignore_index=True)
+
+        ##
+        # Compute stratified scores by special fields
+        for field in ['info.height', 'span_distance']:
+            if field not in long_df.columns:
+                continue
+            log.info("Found special field '%s' with %d unique values.",
+                     field, len(long_df[field].unique()))
+            gb = long_df.groupby(by=[field])
+            records = []
+            for key, idxs in gb.groups.items():
+                sub_df = long_df.loc[idxs]
+                record = self.score_long_df(sub_df)
+                record['label'] = "_{:s}_{:s}_".format(field, str(key))
+                record['stratifier'] = field
+                record['stratum_key'] = key
+                records.append(record)
+            score_df = score_df.append(pd.DataFrame.from_records(records),
+                                       ignore_index=True, sort=False)
+
+        ##
+        # Move "label" column to the beginning.
+        cols = list(score_df.columns)
+        cols.insert(0, cols.pop(cols.index("label")))
+        score_df = score_df.reindex(columns=cols)
+        return score_df
 
     @classmethod
     def from_run(cls, run_dir: str, task_name: str, split_name: str):
         # Load vocabulary
         exp_dir = os.path.dirname(run_dir.rstrip("/"))
         vocab_path = os.path.join(exp_dir, "vocab")
-        print("Loading vocabulary from %s" % vocab_path)
+        log.info("Loading vocabulary from %s" % vocab_path)
         vocab = Vocabulary.from_files(vocab_path)
         label_namespace = f"{task_name}_labels"
 
         # Load predictions
         preds_file = os.path.join(run_dir, f"{task_name}_{split_name}.json")
-        print("Loading predictions from %s" % preds_file)
+        log.info("Loading predictions from %s" % preds_file)
         return cls(vocab, utils.load_json_data(preds_file),
                    label_namespace=label_namespace)
 
@@ -225,13 +325,13 @@ class Comparison(object):
         self.expt = expt
 
         # Score & compare
-        print("Scoring base run...")
+        log.info("Scoring base run...")
         self.base_scores = base.score_by_label()
         self.base_scores['run'] = "base"
-        print("Scoring expt run...")
+        log.info("Scoring expt run...")
         self.expt_scores = expt.score_by_label()
         self.expt_scores['run'] = "expt"
-        print("Done scoring!")
+        log.info("Done scoring!")
 
         _mask = self.base_scores['label'].map(label_filter)
         self.base_scores = self.base_scores[_mask]
@@ -422,14 +522,14 @@ class MultiComparison(object):
 
         self.scores_by_name = collections.OrderedDict()
         for name, run in self.runs_by_name.items():
-            print("Scoring run '%s'" % name)
+            log.info("Scoring run '%s'" % name)
             score_df = run.score_by_label()
             score_df['run'] = name
             _mask = score_df['label'].map(label_filter)
             score_df = score_df[_mask]
             self.scores_by_name[name] = score_df
 
-        print("Done scoring!")
+        log.info("Done scoring!")
 
         self.long_scores = pd.concat(self.scores_by_name.values())
 

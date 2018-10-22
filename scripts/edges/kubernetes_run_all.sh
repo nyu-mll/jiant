@@ -98,6 +98,9 @@ if [[ $MODE == "delete" ]]; then
     set +e
 fi
 
+##
+# Run these on the main 'jsalt' cluster
+gcloud container clusters get-credentials --zone us-east1-c jsalt
 for task in "${ALL_TASKS[@]}"
 do
     kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
@@ -105,6 +108,16 @@ do
     kuberun elmo-full-$task  "elmo_full_exp edges-$task"
     kuberun glove-$task      "glove_exp edges-$task"
     kuberun cove-$task       "cove_exp edges-$task"
+    kuberun openai-lex-$task "openai_lex_exp edges-$task"
+done
+
+##
+# Run these on 'jsalt-central' for V100s
+gcloud container clusters get-credentials --zone us-central1-a jsalt-central
+for task in "${ALL_TASKS[@]}"
+do
     # kuberun openai-$task     "openai_exp edges-$task"
+    kuberun openai-cat-$task "openai_cat_exp edges-$task"
+    kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
 done
 
