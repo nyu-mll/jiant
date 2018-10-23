@@ -67,7 +67,7 @@ Follow the instructions at http://cemantix.org/data/ontonotes.html; you should e
 If you're working on the JSALT cloud project, you can also download this directly from `gs://jsalt-data/ontonotes`.
 
 ### Extracting Data
-To extract all datasets, run:
+To extract all OntoNotes tasks, run:
 ```
 python extract_ontonotes_all.py --ontonotes /path/to/conll-formatted-ontonotes-5.0 \
   --tasks const coref ner srl \
