@@ -77,9 +77,24 @@ python extrace_ontonotes_all.py --ontonotes /path/to/conll-formatted-ontonotes-5
 This will write a number of JSON files to `$OUTPUT_DIR`, one for each split for each task, with names `$OUTPUT_DIR/{task}.{split}.json`.
 
 
-## Semantic Proto Roles v2 (Adam)
+## Semantic Proto Roles (SPR)
 
-Tasks: `edges-spr2`
+Tasks: `spr1`, `spr2`
+
+### SPR1
+
+The version of SPR1 distributed on [decomp.io](http://decomp.io/) is difficult to work with directly, because it requires joining with both the Penn Treebank and the PropBank SRL annotations. If you have access to the Penn Treebank ([LDC99T42](https://catalog.ldc.upenn.edu/ldc99t42)), contact Rachel Rudinger or Ian Tenney for a processed copy of the data.
+
+From Rachel's JSON format, you can use a script in this directory to convert to edge probing format:
+
+```
+./convert-spr1-rudinger.py -i /path/to/spr1/*.json \
+    -o /path/to/probing/data/spr1/
+```
+
+You should get files named `spr1.{split}.json` where `split = {train, dev, test}`.
+
+### SPR2
 
 Run:
 ```
@@ -87,9 +102,10 @@ pip install conllu
 ./get_spr2_data.sh $JIANT_DATA_DIR/spr2
 ```
 
-The `conllu` package is required to process the universal dependencies source data.
+This downloads both the UD treebank and the annotations and performs a join. See the `get_spr2_data.sh` script for more info. The `conllu` package is required to process the Universal Dependencies source data.
 
-## Definite Pronoun Resolution (Adam)
+
+## Definite Pronoun Resolution (DPR)
 
 Tasks: ` `
 
