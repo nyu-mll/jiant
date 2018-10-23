@@ -69,7 +69,7 @@ If you're working on the JSALT cloud project, you can also download this directl
 ### Extracting Data
 To extract all datasets, run:
 ```
-python extrace_ontonotes_all.py --ontonotes /path/to/conll-formatted-ontonotes-5.0 \
+python extract_ontonotes_all.py --ontonotes /path/to/conll-formatted-ontonotes-5.0 \
   --tasks const coref ner srl \
   --splits train development test conll-2012-test \
   -o $OUTPUT_DIR
@@ -107,20 +107,11 @@ This downloads both the UD treebank and the annotations and performs a join. See
 
 ## Definite Pronoun Resolution (DPR)
 
-Tasks: ` `
+Tasks: `dpr`
 
 To get the original data, run `bash get_dpr_data.sh`.
 To convert the data, run `python convert-dpr.py`
 
-## Penn Treebank Constituent Labeling
-
-### Getting the Full PTB Dataset and Generating Edge Probing Data
-
-Follow [this](https://www.ldc.upenn.edu/language-resources/data/obtaining) to obtain the full PTB dataset. After downloading/unzipping `ptb` directory to `/path/to/data`, run `python ptb_process -env /path/to/data` to generate `ptb_train.json`, `ptb_dev.json`, `ptb_dev.full.json`, and `ptb_test.json` (there are python libraries that may need to be downloaded).  Files in the current directory with the same name as the three files generated will be overwritten.
-
-### Split of Penn Treebank (PTB) Dataset
-
-For choice of train/dev/test, we followed [Klein *et al*](http://ilpubs.stanford.edu:8091/~klein/unlexicalized-parsing.pdf).  Note that there is a discrepency in the size of our dev set (first 20 files in section 22 of WSJ section of the Penn treebank), which has 427 sentences compared to 393 as described in Klein *et al*.
 
 ## Universal Dependencies (TODO: Tom)
 
