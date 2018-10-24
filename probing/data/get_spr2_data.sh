@@ -32,4 +32,4 @@ fetch_data
 python $THIS_DIR/convert-spr2.py --src_dir $TARGET_DIR/raw -o $TARGET_DIR
 
 # Print dataset stats for sanity-check.
-python ${THIS_DIR%jiant*}/jiant/probing/edge_data_stats.py $TARGET_DIR/*.json
+python ${THIS_DIR%jiant*}/jiant/probing/edge_data_stats.py -i $TARGET_DIR/*.json

@@ -172,7 +172,10 @@ def main(args):
             ontonotes_reader = ontonotes.dataset_iterator(file_path=source_path)
 
             log.info("Processing split '%s' for task '%s'", split, task)
-            target_fname = os.path.join(args.output_dir, f"{task}.{split}.json")
+            task_dir = os.path.join(args.output_dir, task)
+            if not os.path.isdir(task_dir):
+                os.mkdir(task_dir)
+            target_fname = os.path.join(task_dir, f"{split}.json")
             ontonotes_stats = collections.Counter()
             converted_records = process_task_split(tqdm(ontonotes_reader),
                                                    task, ontonotes_stats)
