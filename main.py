@@ -22,7 +22,7 @@ import torch
 from src import config
 from src import gcp
 
-from src.utils import assert_for_log, maybe_make_dir, load_model_state
+from src.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
@@ -94,6 +94,9 @@ def main(cl_arguments):
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
+    # Raise error if obsolete arg names are present
+    check_arg_name(args)
+
     # Logistics #
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
@@ -140,11 +143,11 @@ def main(cl_arguments):
     # Prepare data #
     log.info("Loading tasks...")
     start_time = time.time()
-    train_tasks, eval_tasks, vocab, word_embs = build_tasks(args)
-    if any([t.val_metric_decreases for t in train_tasks]) and any(
-            [not t.val_metric_decreases for t in train_tasks]):
+    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
+    if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
+            [not t.val_metric_decreases for t in pretrain_tasks]):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
-    tasks = sorted(set(train_tasks + eval_tasks), key=lambda x: x.name)
+    tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
 
@@ -162,37 +165,37 @@ def main(cl_arguments):
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
         assert_for_log(
-            not args.do_train,
+            not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
-    if args.do_train:
-        assert_for_log(args.train_tasks != "none",
-                       "Error: Must specify at least on training task: [%s]" % args.train_tasks)
+    if args.do_pretrain:
+        assert_for_log(args.pretrain_tasks != "none",
+                       "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
         assert_for_log(
             args.val_interval %
             args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.val_interval, args.bpp_base))
-        steps_log.append("Training model on tasks: %s" % args.train_tasks)
+        steps_log.append("Training model on tasks: %s" % args.pretrain_tasks)
 
-    if args.train_for_eval:
+    if args.do_target_task_training:
         steps_log.append("Re-training model for individual eval tasks")
         assert_for_log(
             args.eval_val_interval %
             args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.eval_val_interval, args.bpp_base))
-        assert_for_log(len(set(train_tasks).intersection(eval_tasks)) == 0
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
-                       or args.do_train == 0,
+                       or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
                        "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
-                       "  train with do_train = 1, train_for_eval = 0, stop, and restart with\n"
-                       "  do_train = 0 and train_for_eval = 1.")
+                       "  train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
+                       "  do_pretrain = 0 and do_target_task_training = 1.")
 
-    if args.do_eval:
-        assert_for_log(args.eval_tasks != "none",
-                       "Error: Must specify at least one eval task: [%s]" % args.eval_tasks)
-        steps_log.append("Evaluating model on tasks: %s" % args.eval_tasks)
+    if args.do_full_eval:
+        assert_for_log(args.target_tasks != "none",
+                       "Error: Must specify at least one eval task: [%s]" % args.target_tasks)
+        steps_log.append("Evaluating model on tasks: %s" % args.target_tasks)
 
     # Start Tensorboard if requested
     if cl_args.tensorboard:
@@ -200,36 +203,36 @@ def main(cl_arguments):
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
-    if args.do_train:
+    if args.do_pretrain:
         # Train on train tasks #
         log.info("Training...")
         params = build_trainer_params(args, task_names=[])
-        stop_metric = train_tasks[0].val_metric if len(train_tasks) == 1 else 'macro_avg'
-        should_decrease = train_tasks[0].val_metric_decreases if len(train_tasks) == 1 else False
+        stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
+        should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
         trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                             args.run_dir,
                                                             should_decrease)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        best_epochs = trainer.train(train_tasks, stop_metric,
+        best_epochs = trainer.train(pretrain_tasks, stop_metric,
                                     args.batch_size, args.bpp_base,
                                     args.weighting_method, args.scaling_method,
                                     to_train, opt_params, schd_params,
                                     args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
-    if not args.train_for_eval:
-        log.info("In strict mode because train_for_eval is off. "
+    if not args.do_target_task_training:
+        log.info("In strict mode because do_target_task_training is off. "
                  "Will crash if any tasks are missing from the checkpoint.")
         strict = True
     else:
         strict = False
 
-    if args.train_for_eval and not args.allow_reuse_of_pretraining_parameters:
+    if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models.
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
-        # during the train_for_eval phase.
-        task_names_to_avoid_loading = [task.name for task in eval_tasks]
+        # during the do_target_task_training phase.
+        task_names_to_avoid_loading = [task.name for task in target_tasks]
     else:
         task_names_to_avoid_loading = []
 
@@ -268,15 +271,15 @@ def main(cl_arguments):
                 log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
-    if args.train_for_eval:
+    if args.do_target_task_training:
         # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
         elmo_scalars = [(n, p) for n, p in model.named_parameters() if
                         "scalar_mix" in n and "scalar_mix_0" not in n]
         # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
         assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
-                       "Error: ELMo scalars loaded and will be updated in train_for_eval but "
+                       "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
                        "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
-        for task in eval_tasks:
+        for task in target_tasks:
             # Skip mnli-diagnostic
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
@@ -311,19 +314,19 @@ def main(cl_arguments):
                 skip_task_models=task_names_to_avoid_loading,
                 strict=strict)
 
-    if args.do_eval:
+    if args.do_full_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, val_preds = evaluate.evaluate(model, eval_tasks,
+        val_results, val_preds = evaluate.evaluate(model, target_tasks,
                                                    args.batch_size,
                                                    args.cuda, "val")
 
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if 'val' in splits_to_write:
-            evaluate.write_preds(eval_tasks, val_preds, args.run_dir, 'val',
+            evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
                                  strict_glue_format=args.write_strict_glue_format)
         if 'test' in splits_to_write:
-            _, te_preds = evaluate.evaluate(model, eval_tasks,
+            _, te_preds = evaluate.evaluate(model, target_tasks,
                                             args.batch_size, args.cuda, "test")
             evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)

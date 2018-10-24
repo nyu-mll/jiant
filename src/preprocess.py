@@ -240,8 +240,8 @@ def build_tasks(args):
 
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = \
-        get_tasks(parse_task_list_arg(args.train_tasks),
-                  parse_task_list_arg(args.eval_tasks), args.max_seq_len,
+        get_tasks(parse_task_list_arg(args.pretrain_tasks),
+                  parse_task_list_arg(args.target_tasks), args.max_seq_len,
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path,
@@ -329,8 +329,8 @@ def build_tasks(args):
     # 5) Initialize tasks with data iterators.
     assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
         "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
-    train_tasks = []
-    eval_tasks = []
+    pretrain_tasks = []
+    target_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
@@ -341,7 +341,7 @@ def build_tasks(args):
             log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
-            train_tasks.append(task)
+            pretrain_tasks.append(task)
             if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
                 # phase. It will create a deepcopy of the task object
@@ -352,15 +352,15 @@ def build_tasks(args):
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
-                eval_tasks.append(task)
+                target_tasks.append(task)
 
         # When using eval_data_fraction, we need modified iterators
-        # only for training datasets at train_for_eval time.
+        # only for training datasets at do_target_task_training time.
         elif args.eval_data_fraction < 1 and task.name in eval_task_names:
             log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.eval_data_fraction)
-            eval_tasks.append(task)
+            target_tasks.append(task)
             if task.name in train_task_names:
                 # Rebuild the iterator so we see the full dataset in the pretraining
                 # phase. It will create a deepcopy of the task object
@@ -371,23 +371,23 @@ def build_tasks(args):
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
-                train_tasks.append(task)
+                pretrain_tasks.append(task)
         # When neither eval_data_fraction nor training_data_fraction is specified
         # we use unmodified iterators.
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=1.0)
             if task.name in train_task_names:
-                train_tasks.append(task)
+                pretrain_tasks.append(task)
             if task.name in eval_task_names:
-                eval_tasks.append(task)
+                target_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
-    return train_tasks, eval_tasks, vocab, word_embs
+    return pretrain_tasks, target_tasks, vocab, word_embs
 
 
 def parse_task_list_arg(task_list):

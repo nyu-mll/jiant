@@ -34,7 +34,7 @@ def build_trainer_params(args, task_names):
                                                                attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
-                  'task_patience', 'patience', 'scheduler_threshold']
+                  'lr_patience', 'patience', 'scheduler_threshold']
     # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
@@ -85,7 +85,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         schd_params = Params({'type': 'reduce_on_plateau',
                               'mode': 'min' if metric_should_decrease else 'max',
                               'factor': params['lr_decay_factor'],
-                              'patience': params['task_patience'],
+                              'patience': params['lr_patience'],
                               'threshold': params['scheduler_threshold'],
                               'threshold_mode': 'abs',
                               'verbose': True})

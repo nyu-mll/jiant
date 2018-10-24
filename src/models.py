@@ -192,7 +192,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
 def get_task_whitelist(args):
     """Filters tasks so that we only build models that we will use, meaning we only
     build models for train tasks and for classifiers of eval tasks"""
-    eval_task_names = parse_task_list_arg(args.eval_tasks)
+    eval_task_names = parse_task_list_arg(args.target_tasks)
     eval_clf_names = []
     for task_name in eval_task_names:
         override_clf = config.get_task_attr(args, task_name, 'use_classifier')
@@ -200,7 +200,7 @@ def get_task_whitelist(args):
             eval_clf_names.append(task_name)
         else:
             eval_clf_names.append(override_clf)
-    train_task_names = parse_task_list_arg(args.train_tasks)
+    train_task_names = parse_task_list_arg(args.pretrain_tasks)
     log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s",
              str(train_task_names), str(eval_clf_names))
     return train_task_names, eval_clf_names
@@ -285,7 +285,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
             # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
             # classiifer task map.
-            assert_for_log(args.do_train or args.allow_missing_task_map,
+            assert_for_log(args.do_pretrain or args.allow_missing_task_map,
                            "Error: {} should already exist.".format(classifier_save_path))
             if args.allow_missing_task_map:
                 log.warning("Warning: classifier task map not found in model"
