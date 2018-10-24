@@ -59,6 +59,12 @@ class Params(object):
             setattr(self, k, v)
         self._known_keys.add(k)
 
+    def __delitem__(self, k):
+        if not k in self:
+            raise ValueError("Parameter %s not found.", k)
+        delattr(self, k)
+        self._known_keys.remove(k)
+
     def __init__(self, **kw):
         """Create from a list of key-value pairs."""
         self._known_keys = set()
