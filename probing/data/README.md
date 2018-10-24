@@ -100,7 +100,7 @@ This will write a number of JSON files, one for each split for each task, with n
 
 ### Splitting Constituent Data
 
-The consistuent data from the script above includes both preterminal (POS tag) and nonterminal (constituent) examples. We can split these into the `edges-nonterminal-ontonotes` and `edges-pos-ontonotes` tasks by running:
+The constituent data from the script above includes both preterminal (POS tag) and nonterminal (constituent) examples. We can split these into the `edges-nonterminal-ontonotes` and `edges-pos-ontonotes` tasks by running:
 ```
 python jiant/probing/split_constituent_data.py $JIANT_DATA_DIR/edges/ontonotes/const/*.json
 ```
