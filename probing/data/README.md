@@ -57,13 +57,31 @@ The resulting JSON has one example per line, with the following structure (line 
 }
 ```
 
+## Labels and Retokenization
+
+For each of the tasks below, we need to perform two more preprocessing steps.
+
+First, extract the set of available labels:
+```
+export TASK_DIR="$JIANT_DATA_DIR/edges/<task>"
+python jiant/probing/get_edge_data_labels.py -o $TASK_DIR/labels.txt \
+    -i $TASK_DIR/*.json -s
+```
+
+Second, make retokenized versions for MosesTokenizer and for the OpenAI BPE model:
+```
+python jiant/probing/retokenize_edge_data.py $TASK_DIR/*.json
+python jiant/probing/retokenize_edge_data.openai.py $TASK_DIR/*.json
+```
+This will make retokenized versions alongside the original files.
+
 ## OntoNotes
 Tasks:
-- Constituents / POS: `constituent-ontonotes`, `nonterminal-ontonotes`,
-  `pos-ontonotes`
-- Entities: `ner-ontonotes`
-- SRL: `srl-ontonotes`
-- Coreference: `coref-ontonotes-conll`
+- Constituents / POS: `edges-constituent-ontonotes`, `edges-nonterminal-ontonotes`,
+  `edges-pos-ontonotes`
+- Entities: `edges-ner-ontonotes`
+- SRL: `edges-srl-ontonotes`
+- Coreference: `edges-coref-ontonotes-conll`
 
 ### Getting OntoNotes Data
 Follow the instructions at http://cemantix.org/data/ontonotes.html; you should end up with a folder named `conll-formatted-ontonotes-5.0/`.
@@ -80,12 +98,18 @@ python extract_ontonotes_all.py --ontonotes /path/to/conll-formatted-ontonotes-5
 ```
 This will write a number of JSON files, one for each split for each task, with names `{task}/{split}.json`.
 
+### Splitting Constituent Data
+
+The consistuent data from the script above includes both preterminal (POS tag) and nonterminal (constituent) examples. We can split these into the `edges-nonterminal-ontonotes` and `edges-pos-ontonotes` tasks by running:
+```
+python jiant/probing/split_constituent_data.py $JIANT_DATA_DIR/edges/ontonotes/const/*.json
+```
+This will create `*.pos.json` and `*.nonterminal.json` versions of each input file.
 
 ## Semantic Proto Roles (SPR)
 
-Tasks: `spr1`, `spr2`
-
 ### SPR1
+Tasks: `edges-spr1`
 
 The version of SPR1 distributed on [decomp.io](http://decomp.io/) is difficult to work with directly, because it requires joining with both the Penn Treebank and the PropBank SRL annotations. If you have access to the Penn Treebank ([LDC99T42](https://catalog.ldc.upenn.edu/ldc99t42)), contact Rachel Rudinger or Ian Tenney for a processed copy of the data.
 
@@ -99,6 +123,7 @@ From Rachel's JSON format, you can use a script in this directory to convert to 
 You should get files named `spr1.{split}.json` where `split = {train, dev, test}`.
 
 ### SPR2
+Tasks: `edges-spr2`
 
 Run:
 ```
@@ -111,7 +136,7 @@ This downloads both the UD treebank and the annotations and performs a join. See
 
 ## Definite Pronoun Resolution (DPR)
 
-Tasks: `dpr`
+Tasks: `edges-dpr`
 
 Run:
 ```
@@ -121,5 +146,6 @@ Run:
 
 ## Universal Dependencies (TODO: Tom)
 
-Lorem ipsum...
+Tasks: `edges-dep-labeling-ewt`
 
+**TODO(Tom):** fill this in.
