@@ -112,16 +112,15 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
         Dict[str, float]: dictionary with the values of each layer weight and of the scaling
                           factor.
     '''
-    # TODO: rename variables to be more descriptive (mix_id -> task_id, mixer -> task_weights)
     elmo = text_field_embedder.token_embedder_elmo._elmo
     if task:
-        mix_id = text_field_embedder.task_map[task._classifier_name]
+        task_id = text_field_embedder.task_map[task._classifier_name]
     else:
-        mix_id = text_field_embedder.task_map["@pretrain@"]
-    mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
+        task_id = text_field_embedder.task_map["@pretrain@"]
+    task_weights = getattr(elmo, "scalar_mix_%d" % task_id)
     params = {'layer%d' % layer_id: p.item() for layer_id, p in
-              enumerate(mixer.scalar_parameters.parameters())}
-    params['gamma'] = mixer.gamma
+              enumerate(task_weights.scalar_parameters.parameters())}
+    params['gamma'] = task_weights.gamma
     return params
 
 
