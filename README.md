@@ -94,7 +94,7 @@ project_dir  # directory for all experiments using jiant
 |
 |-- exp2/  # directory for a runs with a different set of experiments, potentially using a different branch of the code
 |   |-- preproc/
-|   |-- vocab/ 
+|   |-- vocab/
 |   |-- FooTask/
 |   |-- BazTask/
 |   |-- run1/
@@ -143,11 +143,11 @@ The trainer evaluates the model on the validation data after a fixed number of g
 The learning rate is scheduled to decay by ``lr_decay_factor`` (default: .5) whenever the validation score doesn't improve after ``lr_patience`` (default: 1) validation checks.
 Note: "epoch" is generally used in comments and variable names to refer to the interval between validation checks, not to a complete pass through any one training set.
 
-If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, e.g. ``weighting_method = uniform`` or ``weighting_method = proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training. 
+If you're training only on one task, you don't need to worry about sampling schemes, but if you are training on multiple tasks, you can vary the sampling weights with ``weighting_method``, e.g. ``weighting_method = uniform`` or ``weighting_method = proportional`` (to amount of training data). You can also scale the losses of each minibatch via ``scaling_method`` if you want to weight tasks with different amounts of training data equally throughout training.
 
 For multi-task training, we use a shared global optimizer and LR scheduler for all tasks. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro-average will be well-behaved.
 
-We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. 
+We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate.
 
 Within a run, tasks are distinguished between training tasks and evaluation tasks. The logic of ``main.py`` is that the entire model is pretrained on all the `training` tasks, then the best model is then loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_pretrain, do_target_task_training, do_full_eval``.
@@ -161,7 +161,7 @@ Note: if you want to train and evaluate on a task, that task must be in both ``p
 
 To add new tasks, you should:
 
-1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data. 
+1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data.
 
 2. Create a class in ``src/tasks.py``, and make sure that...
 
@@ -179,7 +179,7 @@ To add new tasks, you should:
     * The correct task-specific module is being created for your task in ``build_module()``.
     * Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the ``Instance`` objects you created in preprocessing, as well as a ``predict`` flag that indicates if your forward function should generate predictions or not.
     * You create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
-    
+
 Note: The current training procedure is task-agnostic: we randomly sample a task to train on, pass a batch to the model, and receive an output dictionary at least containing a ``loss`` key. Training loss should be calculated within the model; validation metrics should also be computed within AllenNLP ``scorer``s and not in the training loop. So you should *not* need to modify the training loop; please reach out if you think you need to.
 
 Feel free to create a pull request to add an additional task if you expect that it'll be useful to others.
@@ -224,6 +224,15 @@ python main.py --config_file config/demo.conf
 ```
 
 You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
+
+
+## Update config files
+
+As some config arguments are renamed, you may encounter an error when loading past config files (e.g. params.conf) created before Oct 24, 2018. To update a config file, run
+
+```sh
+python scripts/update_config.py <path_to_file>
+```
 
 ## License
 

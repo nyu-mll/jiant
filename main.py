@@ -22,7 +22,7 @@ import torch
 from src import config
 from src import gcp
 
-from src.utils import assert_for_log, maybe_make_dir, load_model_state
+from src.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
@@ -94,19 +94,8 @@ def main(cl_arguments):
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
 
-    # prevent loading old config arg names
-    # key - old name: value - new name
-    name_dict = {'task_patience':'lr_patience',\
-                 'do_train': 'do_pretrain',\
-                 'train_for_eval':'do_target_task_training',\
-                 'do_eval': 'do_full_eval',\
-                 'train_tasks':'pretrain_tasks',\
-                 'eval_tasks':'target_tasks'}
-    detect_old_name = list(set(args.keys()) & set(name_dict.keys()))
-    name_helper = {k:name_dict[k] for k in detect_old_name}
-    assert_for_log(len(detect_old_name) == 0,
-                   "Error: Attempting to load old config arg names, please update to new names.\n" +
-                   "OLD -> NEW: " + str(name_helper))
+    # Raise error if obsolete arg names are present
+    check_arg_name(args)
 
     # Logistics #
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME

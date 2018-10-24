@@ -1,11 +1,11 @@
 '''
-Overwrite params.conf by renaming config args.
-Need one argument: path of params.conf to update.
+Overwrite a config file by renaming args.
+Require one argument: path_to_file.
 '''
 
 import sys
 
-# key - old name: value - new name
+# Mapping - key: old name, value: new name
 name_dict = {'task_patience':'lr_patience',\
                'do_train': 'do_pretrain',\
                'train_for_eval':'do_target_task_training',\
@@ -15,10 +15,10 @@ name_dict = {'task_patience':'lr_patience',\
 
 path = sys.argv[1]
 assert '.conf' in path, "Error: .conf not found."
-with open(path,'r+') as f:
+with open(path, 'r+') as f:
     param = f.read()
-    for k,v in name_dict.items():
+    for old_name, new_name in name_dict.items():
         # avoid substrings, won't replace first line
-        param = param.replace('\n'+k,'\n'+v)
+        param = param.replace('\n' + old_name, '\n' + new_name)
     f.seek(0)
     f.write(param)
