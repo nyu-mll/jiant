@@ -1111,11 +1111,11 @@ def assert_for_log(condition, error_message):
 def check_arg_name(args):
     ''' Raise error if obsolete arg names are present. '''
     # Mapping - key: old name, value: new name
-    name_dict = {'task_patience':'lr_patience',\
-                 'do_train': 'do_pretrain',\
-                 'train_for_eval':'do_target_task_training',\
-                 'do_eval': 'do_full_eval',\
-                 'train_tasks':'pretrain_tasks',\
+    name_dict = {'task_patience':'lr_patience',
+                 'do_train': 'do_pretrain',
+                 'train_for_eval':'do_target_task_training',
+                 'do_eval': 'do_full_eval',
+                 'train_tasks':'pretrain_tasks',
                  'eval_tasks':'target_tasks'}
     for old_name, new_name in name_dict.items():
         assert_for_log(old_name not in args,
