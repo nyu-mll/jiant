@@ -2560,3 +2560,26 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
+
+@register_task('whid', rel_path='WH-iden/')
+class WHIdentificationTask(SingleClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="whid"):
+        super(WHIdentificationTask, self).__init__(name, 6)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+
+    def load_data(self, path, max_seq_len):
+        targ_map = {'what': 0, 'when': 1, 'where': 2, 'why': 3, 'how': 4, 'who': 5}
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading Wh-identification task data.")
+
