@@ -2583,4 +2583,126 @@ class WHIdentificationTask(SingleClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading Wh-identification task data.")
 
+@register_task('defindef', 'definiteness/')
+class DefinitenessTask(SingleClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="defindef"):
+        super(DefinitenessTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_acc_f1" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading definiteness acceptability data.")
+
+    def get_metrics(self, reset=False):
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
+@register_task('possid', 'poss-id/')
+class PossIdTask(PairClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="possid"):
+        super(PossIdTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+        self.val_metric = "%s_acc_f1" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading Possessor-Possessee identification data.")
+
+    def get_metrics(self, reset=False):
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
+@register_task('coord', 'conj-coord/')
+class CoordinatingConjunctionTask(SingleClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="coord"):
+        super(CoordinatingConjunctionTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_acc_f1" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading coordinating conjunction swap acceptability data.")
+
+    def get_metrics(self, reset=False):
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
+@register_task('eos-id', 'eos-id/')
+class EOSIdTask(SingleClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="eos-id"):
+        super(EOSIdTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_acc_f1" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading EOS-identification data.")
+
+    def get_metrics(self, reset=False):
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
 
