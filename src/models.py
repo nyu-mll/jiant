@@ -603,6 +603,12 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
+    def encode(self, batch, task=None):
+        """ Encode a batch of sentences.
+        task object is needed if using ELMo. """
+        encs, masks = self.sent_encoder(batch['input'], task)
+        return encs, masks
+
     def _get_task_params(self, task_name):
         """ Get task-specific Params, as set in build_module(). """
         return getattr(self, "%s_task_params" % task_name)
