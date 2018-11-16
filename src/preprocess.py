@@ -33,7 +33,7 @@ import _pickle as pkl  # :(
 
 from . import config
 from . import serialize
-from . import utils
+from .utils import utils
 from . import tasks as tasks_module
 from .tasks import MTTask
 

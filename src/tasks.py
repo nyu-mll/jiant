@@ -32,8 +32,8 @@ from .allennlp_mods.numeric_field import NumericField
 from .allennlp_mods.multilabel_field import MultiLabelField
 
 from . import serialize
-from . import utils
-from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+from .utils import utils
+from .utils.utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 import codecs
 
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
