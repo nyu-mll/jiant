@@ -10,6 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
+from .tasks.edge_probing import EdgeProbingTask
 
 from typing import List, Sequence, Iterable, Tuple, Dict
 
@@ -131,7 +132,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
                               strict_glue_format=strict)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
-        elif isinstance(task, tasks_module.tasks.EdgeProbingTask):
+        elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
@@ -164,7 +165,7 @@ def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     return os.path.join(pred_dir, file)
 
 
-def _write_edge_preds(task: tasks_module.tasks.EdgeProbingTask,
+def _write_edge_preds(task: EdgeProbingTask,
                       preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
                       join_with_input: bool=True):
