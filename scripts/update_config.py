@@ -4,7 +4,7 @@ Require one argument: path_to_file.
 '''
 
 import sys
-from src import config # use symlink from scripts to src
+from src.utils import config # use symlink from scripts to src
 
 # Mapping - key: old name, value: new name
 name_dict = {'task_patience':'lr_patience',

@@ -23,7 +23,7 @@ from allennlp.training.optimizers import Optimizer  # pylint: disable=import-err
 
 from .utils.utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
-from . import config
+from .utils import config
 
 
 def build_trainer_params(args, task_names):

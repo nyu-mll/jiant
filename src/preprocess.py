@@ -31,7 +31,7 @@ except BaseException:
 
 import _pickle as pkl  # :(
 
-from . import config
+from .utils import config
 from .utils import serialize
 from .utils import utils
 from . import tasks as tasks_module

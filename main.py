@@ -19,7 +19,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 import torch
 
-from src import config
+from src.utils import config
 
 from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks

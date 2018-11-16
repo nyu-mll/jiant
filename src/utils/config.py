@@ -12,7 +12,7 @@ import argparse
 import pyhocon
 import json
 
-from .utils import hocon_writer
+from . import hocon_writer
 
 from typing import Type, Union, Sequence, Iterable
 
