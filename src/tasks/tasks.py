@@ -41,28 +41,7 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
 UNK_TOK_ATOMIC = "UNKNOWN"  # an unk token that won't get split by tokenizers
 
-REGISTRY = {}  # Do not edit manually!
-
-
-def register_task(name, rel_path, **kw):
-    '''Decorator to register a task.
-
-    Use this instead of adding to NAME2INFO in preprocess.py
-
-    If kw is not None, this will be passed as additional args when the Task is
-    constructed in preprocess.py.
-
-    Usage:
-    @register_task('mytask', 'my-task/data', **extra_kw)
-    class MyTask(SingleClassificationTask):
-        ...
-    '''
-    def _wrap(cls):
-        entry = (cls, rel_path, kw) if kw else (cls, rel_path)
-        REGISTRY[name] = entry
-        return cls
-    return _wrap
-
+from .registry import register_task, REGISTRY  # global task registry
 
 def _sentence_to_text_field(sent: Sequence[str], indexers: Any):
     ''' Helper function to map a sequence of tokens into a sequence of

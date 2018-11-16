@@ -34,21 +34,10 @@ import _pickle as pkl  # :(
 from .utils import config
 from .utils import serialize
 from .utils import utils
-from .tasks import tasks as tasks_module
+
+from .tasks import REGISTRY as TASKS_REGISTRY
+from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
 from .tasks.tasks import MTTask
-
-ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
-
-# people are mostly using nli-prob for now, but we will change to
-# using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
-
-# Tasks for which we need to construct task-specific vocabularies
-ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                      'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
-
-TASKS_REGISTRY = tasks_module.REGISTRY
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"  # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SPECIALS = [SOS_TOK, EOS_TOK]  # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
