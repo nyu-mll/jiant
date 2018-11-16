@@ -152,20 +152,4 @@ Run:
 ./get_ud_data.sh $JIANT_DATA_DIR/edges/dep_ewt
 ```
 
-This downloads the UD treebank and converts the conllu format to the edge probing format. Entries should look similar to this:
-
-```
-{
-  "text": "This only serves their purposes .",
-  "targets": [
-    {"span1": [0, 1], "span2": [2, 3], "label": "nsubj"},
-    {"span1": [1, 2], "span2": [2, 3], "label": "advmod"},
-    {"span1": [2, 3], "span2": [2, 3], "label": "root"},
-    {"span1": [3, 4], "span2": [4, 5], "label": "nmod:poss"},
-    {"span1": [4, 5], "span2": [2, 3], "label": "obj"},
-    {"span1": [5, 6], "span2": [2, 3], "label": "punct"}
-  ],
-  "info": {"source": "UD_English-EWT"}
-}
-```
-
+This downloads the UD treebank and converts the conllu format to the edge probing format.
