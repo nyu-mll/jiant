@@ -143,9 +143,13 @@ Run:
 ./get_dpr_data.sh $JIANT_DATA_DIR/edges/dpr
 ```
 
-
-## Universal Dependencies (TODO: Tom)
+## Universal Dependencies
 
 Tasks: `edges-dep-labeling-ewt`
 
-**TODO(Tom):** fill this in.
+Run:
+```
+./get_ud_data.sh $JIANT_DATA_DIR/edges/dep_ewt
+```
+
+This downloads the UD treebank and converts the conllu format to the edge probing format.
