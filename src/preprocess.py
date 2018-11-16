@@ -32,7 +32,7 @@ except BaseException:
 import _pickle as pkl  # :(
 
 from . import config
-from . import serialize
+from .utils import serialize
 from .utils import utils
 from . import tasks as tasks_module
 from .tasks import MTTask

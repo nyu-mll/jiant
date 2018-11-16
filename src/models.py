@@ -23,7 +23,8 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils.utils import get_batch_utilization, get_elmo_mixing_weights
+from .utils.utils import assert_for_log, get_batch_utilization, \
+    get_batch_size, get_elmo_mixing_weights
 from . import config
 from . import edge_probing
 
@@ -39,7 +40,6 @@ from .modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
 
-from .utils.utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
 from .seq2seq_decoder import Seq2SeqDecoder
 

@@ -31,7 +31,7 @@ from allennlp.data.fields import TextField, LabelField, \
 from .allennlp_mods.numeric_field import NumericField
 from .allennlp_mods.multilabel_field import MultiLabelField
 
-from . import serialize
+from .utils import serialize
 from .utils import utils
 from .utils.utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 import codecs
