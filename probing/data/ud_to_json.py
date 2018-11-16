@@ -22,6 +22,14 @@ import pandas as pd
 import conllu
 
 def convert_ud_file(fd):
+    """Convert a UD file to a list of records in edge probing format.
+
+    Args:
+        fd: file-like object or list of lines
+
+    Returns:
+        list(dict) of edge probing records
+    """
     #TODO(Tom): refactor to use conllu to parse file
     prev_line = "FILLER"
     word_lines = []
