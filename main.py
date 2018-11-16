@@ -26,7 +26,6 @@ from src.utils import assert_for_log, maybe_make_dir, load_model_state, check_ar
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
-from src.tasks import NLITypeProbingTask
 from src import evaluate
 
 
