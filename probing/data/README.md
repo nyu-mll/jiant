@@ -147,29 +147,25 @@ Run:
 
 Tasks: `edges-dep-labeling-ewt`
 
-Download the EWT corpus for Universal Dependencies from [here](https://github.com/UniversalDependencies/UD_English-EWT/tree/master). The specific files that you need are `en_ewt-ud-dev.conllu`, `en_ewt-ud-test.conllu`, and `en_ewt-ud-train.conllu`.
+Run:
+```
+./get_ud_data.sh $JIANT_DATA_DIR/edges/dep_ewt
+```
 
-Run the following three lines (you may need to modify the paths to the downloaded `.conllu` files):
-```
-python ud_to_json.py UD_English-EWT/en_ewt-ud-dev.conllu
-python ud_to_json.py UD_English-EWT/en_ewt-ud-test.conllu
-python ud_to_json.py UD_English-EWT/en_ewt-ud-train.conllu
-```
-You should now see files named `en_ewt-ud-dev.json`, `en_ewt-ud-test.json`, and `en_ewt-ud-train.json` in the directory where the original data files were downloaded. Here is an example of one of the entries in the resulting file:
+This downloads the UD treebank and converts the conllu format to the edge probing format. Entries should look similar to this:
 
 ```
 {
-  "text": "This only serves their purposes .", 
+  "text": "This only serves their purposes .",
   "targets": [
-    {"span1": [0, 1], "span2": [2, 3], "label": "nsubj"}, 
-    {"span1": [1, 2], "span2": [2, 3], "label": "advmod"}, 
-    {"span1": [2, 3], "span2": [2, 3], "label": "root"}, 
-    {"span1": [3, 4], "span2": [4, 5], "label": "nmod:poss"}, 
-    {"span1": [4, 5], "span2": [2, 3], "label": "obj"}, 
+    {"span1": [0, 1], "span2": [2, 3], "label": "nsubj"},
+    {"span1": [1, 2], "span2": [2, 3], "label": "advmod"},
+    {"span1": [2, 3], "span2": [2, 3], "label": "root"},
+    {"span1": [3, 4], "span2": [4, 5], "label": "nmod:poss"},
+    {"span1": [4, 5], "span2": [2, 3], "label": "obj"},
     {"span1": [5, 6], "span2": [2, 3], "label": "punct"}
-  ], 
+  ],
   "info": {"source": "UD_English-EWT"}
 }
 ```
 
-Each element of `targets` represents one dependency arc. For example, the first element shows that there is an arc between the span going from index 0 to index 1 (i.e. the word "This") and the span going from index 2 to index 3 (i.e. the word "serves"), and that dependency arc has the label "nsubj." The task is to provide the correct labels for all of these dependency arcs.
