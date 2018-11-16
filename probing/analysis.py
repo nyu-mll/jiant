@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 from sklearn import metrics
 
-from src import utils
+from src.utils import utils
 from allennlp.data import Vocabulary
 
 from typing import Iterable, Dict, List, Tuple
