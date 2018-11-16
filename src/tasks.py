@@ -2226,21 +2226,6 @@ class GroundedTask(Task):
         self.img_encoder = None
         self.val_metric_decreases = False
 
-    def _compute_metric(self, metric_name, tensor1, tensor2):
-        '''Metrics for similarity in image space'''
-
-        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
-
-        if metric_name is 'abs_diff':
-            metric = np.mean(np1 - np2)
-        elif metric_name is 'cos_sim':
-            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
-        else:
-            print('Undefined metric name!')
-            metric = 0
-
-        return metric
-
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metric = self.scorer1.get_metric(reset)
@@ -2335,21 +2320,6 @@ class GroundedSWTask(Task):
         self.path = path
         self.img_encoder = None
         self.val_metric_decreases = False
-
-    def _compute_metric(self, metric_name, tensor1, tensor2):
-        '''Metrics for similarity in image space'''
-
-        np1, np2 = tensor1.data.numpy(), tensor2.data.numpy()
-
-        if metric_name is 'abs_diff':
-            metric = np.mean(np1 - np2)
-        elif metric_name is 'cos_sim':
-            metric = cos_sim(np.asarray(np1), np.asarray(np2))[0][0]
-        else:
-            log.warning('Undefined metric name!')
-            metric = 0
-
-        return metric
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
