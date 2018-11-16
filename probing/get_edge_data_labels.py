@@ -19,7 +19,7 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-from src import utils
+from src.utils import utils
 
 
 def count_labels(fname: str) -> Type[collections.Counter]:
