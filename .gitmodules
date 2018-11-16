@@ -1,5 +1,5 @@
 [submodule "src/cove"]
-	path = src/cove
+	path = src/modules/cove
   url = https://github.com/salesforce/cove.git
   ignore = untracked
 [submodule "src/openai_transformer_lm/tf_original"]

@@ -18,8 +18,8 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-from src import utils
-from src import retokenize
+from src.utils import utils
+from src.utils import retokenize
 
 
 def retokenize_record(record):

@@ -19,10 +19,9 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 import torch
 
-from src import config
-from src import gcp
+from src.utils import config
 
-from src.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
+from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
@@ -103,10 +102,11 @@ def main(cl_arguments):
     log.getLogger().addHandler(log.FileHandler(args.local_log_path))
 
     if cl_args.remote_log:
+        from src.utils import gcp
         gcp.configure_remote_logging(args.remote_log_name)
 
     if cl_args.notify:
-        from src import emails
+        from src.utils import emails
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
         EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)

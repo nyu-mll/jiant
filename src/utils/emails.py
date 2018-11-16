@@ -74,7 +74,7 @@ def get_notifier(to: str, args):
         # Add log info.
         body += "\n\n Experiment log: {:s}".format(args.local_log_path)
         try:
-            from src import gcp
+            from . import gcp
             body += ("\n Remote log (if enabled): " +
                      gcp.get_remote_log_url(args.remote_log_name))
         except Exception as e:

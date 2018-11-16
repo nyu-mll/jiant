@@ -24,8 +24,8 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-from src import utils
-from src import retokenize
+from src.utils import utils
+from src.utils import retokenize
 from src.openai_transformer_lm import utils as openai_utils
 
 def space_tokenize_with_eow(sentence):

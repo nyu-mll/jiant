@@ -23,25 +23,25 @@ from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils import get_batch_utilization, get_elmo_mixing_weights
-from . import config
-from . import edge_probing
+from .utils.utils import assert_for_log, get_batch_utilization, \
+    get_batch_size, get_elmo_mixing_weights
+from .utils import config
 
-from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
-from .modules import SentenceEncoder, BoWSentEncoder, \
+from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
 
-from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
-from .seq2seq_decoder import Seq2SeqDecoder
+from .modules.edge_probing import EdgeClassifierModule
+from .modules.seq2seq_decoder import Seq2SeqDecoder
 
 
 # Elmo stuff
@@ -241,7 +241,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            from .cove.cove import MTLSTM as cove_lstm
+            from .modules.cove.cove import MTLSTM as cove_lstm
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
             # SentenceEncoder.forward().
@@ -365,7 +365,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
     elif isinstance(task, EdgeProbingTask):
-        module = edge_probing.EdgeClassifierModule(task, d_sent, task_params)
+        module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
         log.info("using {} attention".format(args.s2s['attention']))

@@ -7,34 +7,36 @@
 get_metrics(): e.g. if task.val_metric = task_name + "_accuracy", then
 task.get_metrics() should return {"accuracy": accuracy_val, ... }
 '''
-import copy
+import codecs
 import collections
+import copy
 import itertools
-import os
-import math
-import logging as log
 import json
+import logging as log
+import math
+import os
+
 import numpy as np
-from typing import Iterable, Sequence, List, Dict, Any, Type
 import torch
 
 import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure, Average
+from ..allennlp_mods.correlation import Correlation, FastMatthews
 from allennlp.data.token_indexers import SingleIdTokenIndexer
-from .allennlp_mods.correlation import Correlation, FastMatthews
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, \
     SpanField, ListField, MetadataField
-from .allennlp_mods.numeric_field import NumericField
-from .allennlp_mods.multilabel_field import MultiLabelField
+from ..allennlp_mods.numeric_field import NumericField
+from ..allennlp_mods.multilabel_field import MultiLabelField
 
-from . import serialize
-from . import utils
-from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
-import codecs
+from ..utils import serialize
+from ..utils import utils
+from ..utils.utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+
+from typing import Iterable, Sequence, List, Dict, Any, Type
 
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
 UNK_TOK_ATOMIC = "UNKNOWN"  # an unk token that won't get split by tokenizers
