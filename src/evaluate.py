@@ -9,7 +9,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
 from allennlp.data.iterators import BasicIterator
-from . import tasks as tasks_module
+from .tasks import tasks as tasks_module
 from . import preprocess
 
 from typing import List, Sequence, Iterable, Tuple, Dict

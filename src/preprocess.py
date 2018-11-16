@@ -34,8 +34,8 @@ import _pickle as pkl  # :(
 from .utils import config
 from .utils import serialize
 from .utils import utils
-from . import tasks as tasks_module
-from .tasks import MTTask
+from .tasks import tasks as tasks_module
+from .tasks.tasks import MTTask
 
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
