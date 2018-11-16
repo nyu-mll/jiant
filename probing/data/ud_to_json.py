@@ -22,6 +22,7 @@ import pandas as pd
 import conllu
 
 def convert_ud_file(fd):
+    #TODO(Tom): refactor to use conllu to parse file
     prev_line = "FILLER"
     word_lines = []
     examples = []
