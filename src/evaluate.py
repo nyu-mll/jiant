@@ -114,6 +114,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     return all_metrics, all_preds
 
 
+
+
 def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_name,
                 strict_glue_format=False) -> None:
     for task in tasks:
@@ -335,3 +337,33 @@ def write_results(results, results_file, run_name):
     with open(results_file, 'a') as results_fh:
         results_fh.write("%s\t%s\n" % (run_name, all_metrics_str))
     log.info(all_metrics_str)
+
+
+def encode(model, tasks, batch_size, cuda_device, split, combine_method="mean"):
+    ''' Get representations for each example in a split of for task in tasks '''
+    if combine_method == "none":
+        raise NotImplementedError("Method %s for combining vectors is not supported!", combine_method)
+    all_reps = {}
+
+    for task in tasks:
+        log.info("Evaluating on: %s, split: %s", task.name, split)
+        last_log = time.time()
+        task_reps = []
+        dataset = getattr(task, "%s_data" % split)
+        generator = iterator(dataset, num_epochs = 1, shuffle=False, cuda_device=cuda_device)
+        for batch_idx, batch in enumerate(generator):
+            reps, _ = model.encode(task, batch, combine_method)
+            task_reps.append(reps)
+
+            if time.time() - last_log > LOG_INTERVAL:
+                log.info("\tTask %s: batch %d", task.name, batch_idx)
+                last_log = time.time()
+
+        all_reps[task.name] = task_reps
+        log.info("Finished evaluating on: %s", task.name)
+
+    return all_reps
+
+def write_encodings(encs, enc_file):
+    ''' Write encodings to enc_file '''
+    pass

@@ -603,11 +603,23 @@ class MultiTaskModel(nn.Module):
             raise ValueError("Task-specific components not found!")
         return out
 
-    def encode(self, batch, task=None):
+    def encode(self, batch, task=None, combine_method="mean"):
         """ Encode a batch of sentences.
         task object is needed if using ELMo. """
         encs, masks = self.sent_encoder(batch['input'], task)
-        return encs, masks
+        if combine_method == "mean":
+            # masked fill with 0
+            encs = encs.masked_fill(mask, 0)
+            encs = encs.sum(dim=1) / mask.sum(dim=1)
+            return encs, masks
+        elif combine_method == "max":
+            encs = encs.masked_fill(mask, -float('inf'))
+            encs = encs.max(dim=1)[0]
+            return encs, masks
+        elif combine_method == "none":
+            return encs, masks
+        else:
+            raise ValueError("method %s for combining vectors not found!", combine_method)
 
     def _get_task_params(self, task_name):
         """ Get task-specific Params, as set in build_module(). """
