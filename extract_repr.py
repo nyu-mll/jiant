@@ -158,9 +158,9 @@ def main(cl_arguments):
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
 
-    assert_for_log(os.path.exists(args.load_eval_checkpoint),
-                   "Error: Attempting to load model from non-existent path: [%s]" %
-                   args.load_eval_checkpoint)
+    #assert_for_log(os.path.exists(args.load_eval_checkpoint),
+    #               "Error: Attempting to load model from non-existent path: [%s]" %
+    #               args.load_eval_checkpoint)
     assert_for_log(not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
     steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
@@ -170,25 +170,16 @@ def main(cl_arguments):
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
 
     # Select model checkpoint from main training run to load
-    log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-    load_model_state(model, args.load_eval_checkpoint,
-                     #args.cuda, task_names_to_avoid_loading, strict=strict)
-                     args.cuda, task_names_to_avoid_loading=[], strict=False)
+    #log.info("Loading existing model from %s...", args.load_eval_checkpoint)
+    #load_model_state(model, args.load_eval_checkpoint,
+    #                 args.cuda, skip_task_models=[], strict=False)
 
 
     # Evaluate #
     log.info("Evaluating...")
     splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-    if 'val' in splits_to_write:
-        _, val_preds = evaluate.encode(model, target_tasks, args.batch_size,
-                                       args.cuda, "val")
-        evaluate.write_encs(target_tasks, val_preds, args.run_dir, 'val',
-                            strict_glue_format=args.write_strict_glue_format)
-    if 'test' in splits_to_write:
-        _, te_preds = evaluate.encode(model, target_tasks,
-                                      args.batch_size, args.cuda, "test")
-        evaluate.write_encs(tasks, te_preds, args.run_dir, 'test',
-                            strict_glue_format=args.write_strict_glue_format)
+    te_encs = evaluate.encode(model, target_tasks, args.batch_size, args.cuda, "test", "mean")
+    evaluate.write_encs(tasks, te_encs, args.run_dir)
 
     log.info("Done!")
 

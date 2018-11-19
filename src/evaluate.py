@@ -4,6 +4,8 @@ import time
 import logging as log
 
 import json
+import numpy as np
+np.set_printoptions(threshold=np.nan)
 import pandas as pd
 from csv import QUOTE_NONE, QUOTE_MINIMAL
 
@@ -61,8 +63,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
             # We don't want mnli-diagnostic to affect the micro and macro average.
             # Accuracy of mnli-diagnostic is hardcoded to 0.
             if task.name != "mnli-diagnostic":
-                n_examples += out["n_exs"]
-            # get predictions
+                n_examples += out["n_exs"] # get predictions
             if 'preds' not in out:
                 continue
             preds = _coerce_list(out['preds'])
@@ -341,9 +342,11 @@ def write_results(results, results_file, run_name):
 
 def encode(model, tasks, batch_size, cuda_device, split, combine_method="mean"):
     ''' Get representations for each example in a split of for task in tasks '''
+    FIELDS_TO_EXPORT = ['idx', 'category', 'sent_str']
     if combine_method == "none":
         raise NotImplementedError("Method %s for combining vectors is not supported!", combine_method)
     all_reps = {}
+    iterator = BasicIterator(batch_size)
 
     for task in tasks:
         log.info("Evaluating on: %s, split: %s", task.name, split)
@@ -352,18 +355,40 @@ def encode(model, tasks, batch_size, cuda_device, split, combine_method="mean"):
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs = 1, shuffle=False, cuda_device=cuda_device)
         for batch_idx, batch in enumerate(generator):
-            reps, _ = model.encode(task, batch, combine_method)
-            task_reps.append(reps)
+            reps, _ = model.encode(batch, task, combine_method)
+            cols = {"reps": [list(l) for l in list(reps.detach().cpu().numpy())]}
+            for field in FIELDS_TO_EXPORT:
+                if field in batch:
+                    cols[field] = _coerce_list(batch[field])
+
+            df = pd.DataFrame(cols)
+            task_reps.append(df)
 
             if time.time() - last_log > LOG_INTERVAL:
                 log.info("\tTask %s: batch %d", task.name, batch_idx)
                 last_log = time.time()
 
+        # Combine task_preds from each batch to a single DataFrame.
+        task_reps = pd.concat(task_reps, ignore_index=True)
+        # Store predictions, sorting by index if given.
+        if 'idx' in task_reps.columns:
+            log.info("Task '%s': sorting predictions by 'idx'", task.name)
+            task_reps.sort_values(by=['idx'], inplace=True)
         all_reps[task.name] = task_reps
         log.info("Finished evaluating on: %s", task.name)
 
     return all_reps
 
-def write_encodings(encs, enc_file):
+def write_encs(tasks, encs, run_dir):
     ''' Write encodings to enc_file '''
-    pass
+    quoting = QUOTE_MINIMAL
+    cols_to_write = ['index', 'category', 'string', 'encoding']
+
+    for task in tasks:
+        encs_df = encs[task.name]
+        encs_df.rename({"idx": "index", "reps": "encoding", "sent_str": "string"},
+                       axis="columns", inplace=True)
+        outfile = os.path.join(run_dir, "%s.encs" % task.name)
+        encs_df.to_csv(outfile, sep="\t", index=False, float_format="%.3f",
+                       quoting=quoting, columns=cols_to_write)
+    return

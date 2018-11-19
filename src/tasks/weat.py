@@ -5,7 +5,7 @@ import logging as log
 from allennlp.data import Instance
 from allennlp.data.fields import LabelField, MetadataField
 
-from ..utils.utils import assert_for_log
+from ..utils.utils import assert_for_log, SOS_TOK, EOS_TOK
 
 from .tasks import Task, sentence_to_text_field
 from .registry import register_task, REGISTRY
@@ -30,10 +30,12 @@ class WEATTask(Task):
         with open(data_file, 'r') as data_fh:
             for row in data_fh:
                 category, words = row.strip().split(':')
-                sents += words.split(',')
+                words = words.split(',')
                 categories += [category for _ in range(len(words))]
+                sents += [[SOS_TOK, w, EOS_TOK] for w in words]
+                assert len(categories) == len(sents)
         self.test_data_text = [sents, categories, range(len(sents))]
-        self.train_data_text = [[], [], [] ]
+        self.train_data_text = [[], [], []]
         self.val_data_text = [[], [], []]
         log.info("\tFinished loading WEAT data.")
 
@@ -50,3 +52,9 @@ class WEATTask(Task):
             return Instance(d)
 
         return map(_make_instance, *split)
+
+class OpenAIWEATTask(WEATTask):
+    ''' Version of WEAT for BPE-tokenized data. '''
+    @property
+    def tokenizer_name(self):
+        return "OpenAI.BPE"

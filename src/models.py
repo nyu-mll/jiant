@@ -613,11 +613,11 @@ class MultiTaskModel(nn.Module):
         encs, masks = self.sent_encoder(batch['input'], task)
         if combine_method == "mean":
             # masked fill with 0
-            encs = encs.masked_fill(mask, 0)
-            encs = encs.sum(dim=1) / mask.sum(dim=1)
+            encs = encs.masked_fill(1 - masks.byte(), 0)
+            encs = encs.sum(dim=1) / masks.sum(dim=1)
             return encs, masks
         elif combine_method == "max":
-            encs = encs.masked_fill(mask, -float('inf'))
+            encs = encs.masked_fill(1 - masks.byte(), -float('inf'))
             encs = encs.max(dim=1)[0]
             return encs, masks
         elif combine_method == "none":
