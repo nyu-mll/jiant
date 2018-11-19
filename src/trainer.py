@@ -311,7 +311,7 @@ class SamplingMultiTaskTrainer:
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
-
+        
         if shared_optimizer:  # if shared_optimizer, ignore task_specific optimizers
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
@@ -320,8 +320,11 @@ class SamplingMultiTaskTrainer:
             g_optimizer, g_scheduler = None, None
         self._g_optimizer = g_optimizer
         self._g_scheduler = g_scheduler
-
+        
+        
         n_pass, should_stop = 0, False  # define these here b/c they might get overridden on load
+        self._save_checkpoint({"pass": 0, "epoch": 0, "should_stop": should_stop}, phase=phase)
+
         if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
