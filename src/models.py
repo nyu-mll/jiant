@@ -35,6 +35,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedS
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 from .tasks.edge_probing import EdgeProbingTask
+from .tasks.weat import WEATTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -409,6 +410,8 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+    elif isinstance(task, WEATTask):
+        log.info("Not creating module for WEAT task %s", task.name)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
