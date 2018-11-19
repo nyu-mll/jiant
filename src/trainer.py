@@ -21,9 +21,9 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 
-from .utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .utils.utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
-from . import config
+from .utils import config
 
 
 def build_trainer_params(args, task_names):
