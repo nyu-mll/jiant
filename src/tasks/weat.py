@@ -32,7 +32,7 @@ class WEATTask(Task):
                 category, words = row.strip().split(':')
                 words = words.split(',')
                 categories += [category for _ in range(len(words))]
-                sents += [[SOS_TOK, w, EOS_TOK] for w in words]
+                sents += [[SOS_TOK] + [w] + [EOS_TOK] for w in words]
                 assert len(categories) == len(sents)
         self.test_data_text = [sents, categories, range(len(sents))]
         self.train_data_text = [[], [], []]
@@ -53,8 +53,30 @@ class WEATTask(Task):
 
         return map(_make_instance, *split)
 
+@register_task('weat1-openai', rel_path='WEAT/', version='weat1.txt.retokenized.OpenAI.BPE')
+@register_task('weat2-openai', rel_path='WEAT/', version='weat2.txt.retokenized.OpenAI.BPE')
+@register_task('weat3-openai', rel_path='WEAT/', version='weat3.txt.retokenized.OpenAI.BPE')
+@register_task('weat4-openai', rel_path='WEAT/', version='weat4.txt.retokenized.OpenAI.BPE')
 class OpenAIWEATTask(WEATTask):
     ''' Version of WEAT for BPE-tokenized data. '''
     @property
     def tokenizer_name(self):
         return "OpenAI.BPE"
+
+    def load_data(self, path, version):
+        ''' Load the data '''
+        sents = []
+        categories = []
+        data_file = os.path.join(path, version)
+        with open(data_file, 'r') as data_fh:
+            for row in data_fh:
+                category, words = row.strip().split(':')
+                words = words.split(',')
+                categories += [category for _ in range(len(words))]
+                sents += [[SOS_TOK] + w.split() + [EOS_TOK] for w in words]
+                assert len(categories) == len(sents)
+        self.test_data_text = [sents, categories, range(len(sents))]
+        self.train_data_text = [[], [], []]
+        self.val_data_text = [[], [], []]
+        log.info("\tFinished loading WEAT data.")
+

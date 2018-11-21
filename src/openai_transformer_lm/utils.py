@@ -1,6 +1,6 @@
 import os
-import random
 import copy
+import random
 import logging as log
 
 from typing import List, Dict
@@ -25,6 +25,7 @@ reverse_encoder_dict = {v:k for k,v in encoder_dict.items()}
 N_VOCAB = len(encoder_dict)
 assert N_VOCAB == 40478
 FILL_ID = N_VOCAB
+UNK_ID = 0
 
 def encode(sentences: List[str]) -> List[List[int]]:
     return text_encoder.encode(sentences)
@@ -209,6 +210,8 @@ class OpenAIEmbedderModule(nn.Module):
         # expects (index 1).
         ids[ids == 0] = FILL_ID + 2
         ids -= 2
+        ids[ids == -1] = UNK_ID
+        assert ids.min() >= 0
 
         # Generate positional indices.
         pos_ids = torch.arange(self.n_ctx, dtype=torch.int64,
