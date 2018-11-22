@@ -178,7 +178,8 @@ def main(cl_arguments):
     # Evaluate #
     log.info("Evaluating...")
     splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-    te_encs = evaluate.encode(model, target_tasks, args.batch_size, args.cuda, "test", "mean")
+    te_encs = evaluate.encode(model, target_tasks, args.batch_size, args.cuda, "test",
+                              args.combine_method)
     evaluate.write_encs(tasks, te_encs, args.run_dir)
 
     log.info("Done!")

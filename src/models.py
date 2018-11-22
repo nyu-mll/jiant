@@ -620,6 +620,9 @@ class MultiTaskModel(nn.Module):
             encs = encs.masked_fill(1 - masks.byte(), -float('inf'))
             encs = encs.max(dim=1)[0]
             return encs, masks
+        elif combine_method == "last":
+            idxs = masks.squeeze(-1).sum(dim=1) - 1
+            return encs[torch.arange(0, encs.size(0)).long(), idxs.long()], masks
         elif combine_method == "none":
             return encs, masks
         else:

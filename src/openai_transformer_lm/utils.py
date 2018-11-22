@@ -210,7 +210,7 @@ class OpenAIEmbedderModule(nn.Module):
         # expects (index 1).
         ids[ids == 0] = FILL_ID + 2
         ids -= 2
-        ids[ids == -1] = UNK_ID
+        ids[ids == -1] = UNK_ID # AllenNLP unks will get mapped to -1, which is bad
         assert ids.min() >= 0
 
         # Generate positional indices.
