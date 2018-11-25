@@ -1,43 +1,30 @@
-#!/bin/bash -l
-#SBATCH --job-name=depewt-eval-skipthought
-#SBATCH --time=12:0:0
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH -o /home-3/nkim43@jhu.edu/log/naacl/probe/depewt-eval-skipthought.log
-#SBATCH -p gpup100 --gres=gpu:1
-#SBATCH -A t2-skhudan1
-#SBATCH --cpus-per-task=6
-#SBATCH –reservation=JSALT
-#SBATCH --export=ALL
-#SBATCH --mail-type=end
-#SBATCH --mail-user=nkim43@jhu.edu
+#!/bin/bash
+#$ -cwd
+#$ -j y
+#$ -N constonto-eval-mt-elmo
+#$ -o ~/log/naacl/probe/constonto-eval-mt-elmo.log
+#$ -l 'hostname=b1[12345678]*|c0*|c1[2345678]*,gpu=1, mem_free=15G, ram_free=15G'
+#$ -q g.q
 
-module load python/3.6-anaconda
-module load cuda
-module load gcc/5.5.0
-module load openmpi/3.1
-
-source deactivate
-conda deactivate
 source activate jiant
 source path_config_naacl.sh
 
-
 export NFS_PROJECT_PREFIX=${PROBE_DIR}
 export JIANT_PROJECT_PREFIX=${NFS_PROJECT_PREFIX}
+export CUDA_NO=`free-gpu`
 
-EXP_NAME=depewt
-RUN_NAME=skipthought
+EXP_NAME=constonto-elmo
+RUN_NAME=mt-elmo
+BEST_EP=539
 
 #PROBING_TASK="edges-srl-conll2005"
 #PROBING_TASK="edges-srl-conll2012"
-PROBING_TASK="edges-dep-labeling-ewt"
-#PROBING_TASK="edges-constituent-ontonotes"
-#PROBING_TASK="edges-spr2"
+#PROBING_TASK="edges-dep-labeling-ewt"
+PROBING_TASK="edges-constituent-ontonotes"
 
 MODEL_DIR=${TRAIN_DIR}/${RUN_NAME}/${RUN_NAME}-train
 PARAM_FILE=${MODEL_DIR}"/params.conf"
-MODEL_FILE=${MODEL_DIR}"/model_state_main_epoch_266.best_macro.th"
+MODEL_FILE=${MODEL_DIR}"/model_state_main_epoch_${BEST_EP}.best_macro.th"
 
 # use this for random init models
 #MODEL_FILE=${MODEL_DIR}"/model_state_main_epoch_0.th"
@@ -47,7 +34,8 @@ OVERRIDES+=", exp_name = ${EXP_NAME}"
 OVERRIDES+=", run_name = ${RUN_NAME}"
 OVERRIDES+=", target_tasks = ${PROBING_TASK}"
 OVERRIDES+=", use_classifier = ${PROBING_TASK}"
-OVERRIDES+=", cuda = ${CUDA_VISIBLE_DEVICES}, load_model=1, reload_vocab=0, do_target_task_training=1"
+OVERRIDES+=", cuda = ${CUDA_NO}, load_model=1, reload_vocab=0, do_target_task_training=1, reload_tasks=0"
+OVERRIDES+=", elmo=1, elmo_chars_only=0"
 #OVERRIDES+=", scaling_method=uniform"
 
 python main.py -c config/final.conf ${PARAM_FILE} config/edgeprobe_existing.conf config/naacl_additional.conf -o "${OVERRIDES}"

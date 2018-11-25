@@ -357,6 +357,71 @@ def load_tsv(
     else:
         return sent1s, sent2s, targs
 
+def load_tsv_eoseasy(
+        data_file,
+        max_seq_len,
+        s1_idx=0,
+        s2_idx=1,
+        targ_idx=2,
+        idx_idx=None,
+        targ_map=None,
+        targ_fn=None,
+        skip_rows=0,
+        delimiter='\t',
+        filter_idx=None,
+        filter_value=None,
+        n_classes=5,
+        pad_tok=""):
+    
+    sent1s_list, sent2s_list, targs, idxs = [], [], [], []
+    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
+        for _ in range(skip_rows):
+            data_fh.readline()
+        for row_idx, row in enumerate(data_fh):
+            try:
+                row = row.strip().split(delimiter)
+                if filter_idx and row[filter_idx] != filter_value:
+                    continue
+ 
+                if targ_idx is not None:
+                    if targ_map is not None:
+                        targ = targ_map[row[targ_idx]]
+                    elif targ_fn is not None:
+                        targ = targ_fn(row[targ_idx])
+                    else:
+                        targ = int(row[targ_idx])
+                else:
+                    targ = 0
+ 
+                concat_sent = row[s1_idx]
+                concat_sent_words = concat_sent.split()
+                targ_choices = row[s2_idx].split()
+
+                sent1s = []
+                sent2s = []
+                for targ_choice in targ_choices:
+                    targ_choice = int(targ_choice)
+                    sent1 = ' '.join(concat_sent_words[0:targ_choice+1])
+                    sent2 = ' '.join(concat_sent_words[targ_choice+1:])
+                    sent1s.append(process_sentence(sent1, max_seq_len))
+                    sent2s.append(process_sentence(sent2, max_seq_len))
+
+                while len(sent1s) < n_classes:
+                    sent1s.append(process_sentence('@@UNKNOWN@@', max_seq_len))
+                    sent2s.append(process_sentence('@@UNKNOWN@@', max_seq_len))
+
+                sent1s_list.append(sent1s)
+                sent2s_list.append(sent2s)
+                targs.append(targ_choices.index(str(targ)))
+
+            except Exception as e:
+                print(e, " file: %s, row: %d" % (data_file, row_idx))
+                continue
+
+    if idx_idx is not None:
+        return sent1s, sent2s, targs, idxs
+    else:
+        return sent1s_list, sent2s_list, targs
 
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''

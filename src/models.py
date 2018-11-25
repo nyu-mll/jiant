@@ -31,13 +31,13 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
+    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask, EOSIDTaskEasy
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer
+    NullPhraseLayer, MultipleChoiceClassifier
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -408,6 +408,9 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+    elif isinstance(task, EOSIDTaskEasy):
+        module = build_multiplechoice_module(task, d_sent, model, vocab, task_params, args.d_hid, args.dropout)
+        setattr(model, '%s_mdl' % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -510,6 +513,21 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
+def build_multiplechoice_module(task, d_inp, model, vocab, params, d_hid, dropout):
+    ''' Build a multiple choice classifier of variable # '''
+
+    n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
+    pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
+    d_out = params["d_proj"]
+    classifier = nn.Sequential(nn.Linear(d_out*n_classes, d_hid),
+                               nn.Tanh(), nn.LayerNorm(d_hid),
+                               nn.Dropout(p=dropout),
+                               nn.Linear(d_hid, n_classes))
+
+    #classifier = Classifier.from_params(params["d_proj"]*n_classes, n_classes, params)
+    module = MultipleChoiceClassifier(pooler, classifier)
+    return module
+
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
@@ -599,6 +617,8 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
+        elif isinstance(task, EOSIDTaskEasy):
+            out = self._multiple_choice_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1003,6 +1023,40 @@ class MultiTaskModel(nn.Module):
         batch_acc = total_correct.item() / len(labels)
         task.scorer1.__call__(batch_acc)
 
+        return out
+
+    def _multiple_choice_forward(self, batch, task, predict):
+        out = {}
+        sent_mask_list = [self.sent_encoder(batch["input{}".format(str(x))], task) for x in range(0, task.n_classes)]
+        sents, masks = map(list, zip(*sent_mask_list))
+        classifier = self._get_classifier(task)
+
+        logits = classifier(sents, masks)
+        out['logits'] = logits
+        out['n_exs'] = get_batch_size(batch)
+
+        if 'labels' in batch: # means we should compute loss
+            labels = batch['labels']
+            if batch['labels'].dim() == 0:
+                labels = batch['labels'].unsqueeze(0)
+            elif batch['labels'].dim() == 1:
+                labels = batch['labels']
+            else:
+                labels = batch['labels'].squeeze(-1)
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.scorer1(logits, labels)
+            if task.scorer2 is not None:
+                task.scorer2(logits, labels)
+
+        if predict:
+            if isinstance(task, RegressionTask):
+                if logits.ndimension() > 1:
+                    assert logits.ndimension() == 2 and logits[-1] == 1, \
+                            "Invalid regression prediction dimensions!"
+                    logits = logits.squeeze(-1)
+                out['preds'] = logits
+            else:
+                _, out['preds'] = logits.max(dim=1)
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):

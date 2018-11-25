@@ -33,7 +33,7 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+from .utils import load_tsv, load_tsv_eoseasy, process_sentence, truncate, load_diagnostic_tsv
 import codecs
 
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
@@ -122,6 +122,30 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     #  return list(instances)
     return instances  # lazy iterator
 
+def process_multichoice_task_split(split, indexers, n_classes, max_seq_len):
+    
+    def _make_instances(choices, fixed_item, labels, idx):
+        d = {}
+        d["labels"] = LabelField(labels, label_namespace="labels",
+                                skip_indexing=True)
+
+        d["idx"] = LabelField(idx, label_namespace="idxs",
+                              skip_indexing=True)
+
+        assert len(choices) == n_classes
+        for i in range(0, n_classes):
+            d["input{}".format(str(i))] = _sentence_to_text_field(choices[i], indexers)
+            d["sent{}_str".format(str(i))] = MetadataField(" ".join(choices[i][1:-1]))
+
+        return Instance(d)
+
+    split = list(split)
+    split[1] = itertools.repeat(None)
+    if len(split) < 4:
+        assert len(split) == 3
+        split.append(itertools.count())
+    instances = map(_make_instances, *split)
+    return instances
 
 class Task():
     '''Generic class for a task
@@ -2722,5 +2746,87 @@ class EOSIdTask(SingleClassificationTask):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
+@register_task('eosid-easy', 'eos-id/')
+class EOSIDTaskEasy(ClassificationTask):
+
+    def __init__(self, path, max_seq_len, name="eosid-easy", n_classes=5):
+        super(EOSIDTaskEasy, self).__init__(name)
+        self.n_classes = n_classes
+        self.max_seq_len = max_seq_len
+        self.load_data(path, max_seq_len)
+        self.sent_lists = [self.train_data_text[0] + self.val_data_text[0]]
+        self.val_metric = "%s_acc_f1" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+    
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv_eoseasy(os.path.join(path, 'train_easy.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
+        val_data = load_tsv_eoseasy(os.path.join(path, 'dev_easy.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
+        te_data = load_tsv_eoseasy(os.path.join(path, 'test_easy.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading EOS-identification data (easy version: 5-ary classification).")
+
+    def get_metrics(self, reset=False):
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        for sent_list in self.sent_lists:
+            for choices in sent_list:
+                for choice in choices:
+                    yield choice
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        return process_multichoice_task_split(split, indexers, self.n_classes, self.max_seq_len)
+
+@register_task('mscoco_lm', rel_path='mscoco/grounded')
+class MSCOCOLMTask(WikiTextLMTask):
+    """Language modeling task on mscoco text only
+    See base class: WikiTextLMTask
+    """
+
+    def __init__(self, path, max_seq_len, name="mscoco_lm"):
+        super().__init__(path, max_seq_len, name)
+        self.files_by_split = {'train': os.path.join(path, "all_train_captions.txt"),
+                               'val': os.path.join(path, "all_dev_captions.txt"),
+                               'test': os.path.join(path, "all_dev_captions.txt")} # not using test
+
+
+@register_task('mscoco_nli', rel_path='mscoco/nli')
+class MSCOCOMultiNLITask(PairClassificationTask):
+    ''' Task class for Multi-Genre Natural Language Inference '''
+
+    def __init__(self, path, max_seq_len, name="mscoco_nli"):
+        '''MNLI'''
+        super(MSCOCOMultiNLITask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at path.'''
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading Pseudo-NLI data (generated from MSCOCO text).")
+
 
 
