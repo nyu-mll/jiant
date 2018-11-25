@@ -2675,10 +2675,28 @@ class CoordinatingConjunctionTask(SingleClassificationTask):
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
 
-@register_task('eos-id', 'eos-id/')
+@register_task('coord-turked', 'conj-coord/')
+class CoordinatingConjunctionTaskTurked(CoordinatingConjunctionTask):
+    def __init__(self, path, max_seq_len, name="coord-turked"):
+        super(CoordinatingConjunctionTaskTurked, self).__init__(name, max_seq_len)
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'dev_turked.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=6, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_turked.tsv'), max_seq_len,
+                        s1_idx=0, s2_idx=None, targ_idx=6, skip_rows=1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading coordinating conjunction swap acceptability data.")
+
+@register_task('eosid', 'eos-id/')
 class EOSIdTask(SingleClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="eos-id"):
+    def __init__(self, path, max_seq_len, name="eosid"):
         super(EOSIdTask, self).__init__(name, max_seq_len)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
