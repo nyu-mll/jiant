@@ -27,19 +27,20 @@ from .utils.utils import assert_for_log, get_batch_utilization, \
     get_batch_size, get_elmo_mixing_weights
 from .utils import config
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask, GroundedSWTask, \
+from .preprocess import parse_task_list_arg, get_tasks
+
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedSWTask, \
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
+from .tasks.edge_probing import EdgeProbingTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
-
-from .preprocess import parse_task_list_arg, get_tasks
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 

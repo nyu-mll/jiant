@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from ..tasks.tasks import EdgeProbingTask
+from ..tasks.edge_probing import EdgeProbingTask
 from .import modules
 
 from allennlp.modules.span_extractors import \

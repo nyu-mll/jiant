@@ -9,8 +9,8 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
 from allennlp.data.iterators import BasicIterator
-from .tasks import tasks as tasks_module
-from . import preprocess
+from . import tasks as tasks_module
+from .tasks.edge_probing import EdgeProbingTask
 
 from typing import List, Sequence, Iterable, Tuple, Dict
 
@@ -38,7 +38,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     '''Evaluate on a dataset'''
     FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
     # Enforce that these tasks have the 'idx' field set.
-    IDX_REQUIRED_TASK_NAMES = preprocess.ALL_GLUE_TASKS + ['wmt']
+    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt']
     model.eval()
     iterator = BasicIterator(batch_size)
 
@@ -124,15 +124,15 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        glue_style_tasks = (preprocess.ALL_NLI_PROBING_TASKS
-                            + preprocess.ALL_GLUE_TASKS + ['wmt'])
+        glue_style_tasks = (tasks_module.ALL_NLI_PROBING_TASKS
+                            + tasks_module.ALL_GLUE_TASKS + ['wmt'])
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
-            strict = (strict_glue_format and task.name in preprocess.ALL_GLUE_TASKS)
+            strict = (strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS)
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
                               strict_glue_format=strict)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
-        elif isinstance(task, tasks_module.EdgeProbingTask):
+        elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
@@ -165,7 +165,7 @@ def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     return os.path.join(pred_dir, file)
 
 
-def _write_edge_preds(task: tasks_module.EdgeProbingTask,
+def _write_edge_preds(task: EdgeProbingTask,
                       preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
                       join_with_input: bool=True):
