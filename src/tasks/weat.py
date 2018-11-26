@@ -14,8 +14,12 @@ from .registry import register_task, REGISTRY
 @register_task('weat2', rel_path='WEAT/', version='weat2.txt')
 @register_task('weat3', rel_path='WEAT/', version='weat3.txt')
 @register_task('weat4', rel_path='WEAT/', version='weat4.txt')
+@register_task('sent-weat1', rel_path='WEAT/', version='sent_weat1.txt')
+@register_task('sent-weat2', rel_path='WEAT/', version='sent_weat2.txt')
+@register_task('sent-weat3', rel_path='WEAT/', version='sent_weat3.txt')
+@register_task('sent-weat4', rel_path='WEAT/', version='sent_weat4.txt')
 class WEATTask(Task):
-    ''' '''
+    ''' Task class for WEAT tests '''
     def __init__(self, path, max_seq_len, version, name="weat"):
         ''' Initialize the task '''
         super(WEATTask, self).__init__(name)
@@ -57,6 +61,10 @@ class WEATTask(Task):
 @register_task('weat2-openai', rel_path='WEAT/', version='weat2.txt.retokenized.OpenAI.BPE')
 @register_task('weat3-openai', rel_path='WEAT/', version='weat3.txt.retokenized.OpenAI.BPE')
 @register_task('weat4-openai', rel_path='WEAT/', version='weat4.txt.retokenized.OpenAI.BPE')
+@register_task('sent-weat1-openai', rel_path='WEAT/', version='sent_weat1.txt.retokenized.OpenAI.BPE')
+@register_task('sent-weat2-openai', rel_path='WEAT/', version='sent_weat2.txt.retokenized.OpenAI.BPE')
+@register_task('sent-weat3-openai', rel_path='WEAT/', version='sent_weat3.txt.retokenized.OpenAI.BPE')
+@register_task('sent-weat4-openai', rel_path='WEAT/', version='sent_weat4.txt.retokenized.OpenAI.BPE')
 class OpenAIWEATTask(WEATTask):
     ''' Version of WEAT for BPE-tokenized data. '''
     @property
