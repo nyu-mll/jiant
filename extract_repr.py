@@ -180,7 +180,7 @@ def main(cl_arguments):
     splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
     te_encs = evaluate.encode(model, target_tasks, args.batch_size, args.cuda, "test",
                               args.combine_method)
-    evaluate.write_encs(tasks, te_encs, args.run_dir)
+    evaluate.write_weat_encs(tasks, te_encs, args.run_dir)
 
     log.info("Done!")
 
