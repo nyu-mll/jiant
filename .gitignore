@@ -1,6 +1,7 @@
 *.pyc
 *.swp
 *.log
+*.out
 *.*~
 glue_data/
 user_config.sh

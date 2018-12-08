@@ -388,9 +388,7 @@ class SamplingMultiTaskTrainer():
         # Sample the tasks to train on. Do it all at once (val_interval) for MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        if scaling_method == 'uniform':
-            scaling_weights = [1.0] * len(tasks)
-        elif scaling_method == 'max_proportional':
+        if scaling_method == 'max_proportional':
             scaling_weights = task_n_train_examples.astype(float)
         elif scaling_method == 'max_proportional_log':
             scaling_weights = np.log(task_n_train_examples)
@@ -401,21 +399,20 @@ class SamplingMultiTaskTrainer():
             scaling_weights = 1 / np.log(task_n_train_examples)
         elif scaling_method == 'max_inverse':
             scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
-        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif 'max_epoch_' in scaling_method:
+            # Weighting losses based on best epochs for each task from a previous uniform run
+            # normalizd by max epoch, eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
             epochs = scaling_method.strip('max_epoch_').split('_')
             assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
-
+        else:
+            scaling_weights = [1.0] * len(tasks)
         # normalized by max weight
         if 'max' in scaling_method:
             scaling_weights = scaling_weights / np.max(scaling_weights)
-
         scaling_weights = dict(zip(task_names, scaling_weights))
         log.info("Using loss scaling method: %s, with weights %s", scaling_method, str(scaling_weights))
 
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
