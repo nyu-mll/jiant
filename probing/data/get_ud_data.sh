@@ -24,15 +24,12 @@ function fetch_data() {
   popd
 }
 
-# fetch_data
+fetch_data
 
 # Convert UD to edge probing format.
 python $THIS_DIR/ud_to_json.py \
   -i $TARGET_DIR/raw/ud/UD_English-EWT-r2.2/en_ewt-ud-*.conllu \
   -o $TARGET_DIR
 
-# # Join UD with protorole annotations.
-# python $THIS_DIR/convert-spr2.py --src_dir $TARGET_DIR/raw -o $TARGET_DIR
-
 # Print dataset stats for sanity-check.
-# python ${THIS_DIR%jiant*}/jiant/probing/edge_data_stats.py -i $TARGET_DIR/*.json
+python ${THIS_DIR%jiant*}/jiant/probing/edge_data_stats.py -i $TARGET_DIR/*.json

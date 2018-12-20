@@ -37,7 +37,7 @@ The constituent data from the script above includes both preterminal (POS tag) a
 ```
 python jiant/probing/split_constituent_data.py $JIANT_DATA_DIR/edges/ontonotes/const/*.json
 ```
-This will create `*.pos.json` and `*.nonterminal.json` versions of each input file.
+This will create `pos/*.json` and `nonterminal/*.json` versions of each input file.
 
 ## Semantic Proto Roles (SPR)
 

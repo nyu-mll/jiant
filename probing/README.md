@@ -14,6 +14,8 @@ In particular:
 
 The [data/](data/) subdirectory contains scripts to download each probing dataset and convert it to the edge probing JSON format, described below.
 
+If you just want to get all the data, see [get_and_process_all_data.sh](get_and_process_all_data.sh); this is a convenience wrapper over the instructions in [data/README.md](data/README.md).
+
 ## Data Format
 
 The edge probing data is stored and manipulated as JSON (or the equivalent Python dict) which encodes a single `text` field and a number of `targets` each consisting of `span1`, (optionally) `span2`, and a list of `labels`. The `info` field can be used for additional metadata. See examples below:
