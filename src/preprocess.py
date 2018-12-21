@@ -438,6 +438,7 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
                 kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)
             utils.maybe_make_dir(task_scratch_path)
+            # TODO: Option to shuffle task for issues with sampling order (see Adding new task, 2. in README.md)
             pkl.dump(task, open(pkl_path, 'wb'))
         #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
 
