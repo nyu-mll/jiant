@@ -3,7 +3,12 @@ This repo contains the `jiant` sentence representation learning toolkit created 
 
 The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
 
-To reproduce experiments from JSALT (bugs and all) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
+jiant has been used in these two papers so far:
+
+- [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
+- [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX)
+
+To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
 
 ## Dependencies
 
