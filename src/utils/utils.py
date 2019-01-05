@@ -11,7 +11,7 @@ import logging
 import codecs
 import time
 
-from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
+from mosestokenizer import MosesTokenizer, MosesDetokenizer
 
 import numpy as np
 import torch
@@ -21,7 +21,6 @@ from torch.nn import Parameter
 from torch.nn import init
 
 from allennlp.common.checks import ConfigurationError
-from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
@@ -163,7 +162,7 @@ def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     if isinstance(sent, str):
-        return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
+        return [sos_tok] + TOKENIZER(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return [sos_tok] + sent[:max_seq_len] + [eos_tok]
