@@ -12,6 +12,7 @@
 
 set -eux
 
+# Get the path to this repo; we'll mount it from the container later.
 JIANT_PATH=$(readlink -f $(dirname $0))
 
 TEMP_DIR=${1:-"/tmp/jiant-demo"}
