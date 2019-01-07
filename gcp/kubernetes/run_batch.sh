@@ -65,7 +65,7 @@ if [ ! -d "${PROJECT_DIR}" ]; then
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v4"
+IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v5-bert"
 
 ##
 # Create custom config and create a Kubernetes pod.

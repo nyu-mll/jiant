@@ -3,9 +3,10 @@
 # Usage:
 #   docker build -t jiant-sandbox:v1 .
 #   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
-#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" jiant-sandbox:v1 \
+#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" \
 #       -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
 #       -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
+#       jiant-sandbox:v1 \
 #       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
 #       [ ... additional args to main.py ... ]
 #
@@ -19,6 +20,7 @@
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 # Add Tini to handle init.
+# TODO: see if we still need this? More recent docker might have this built-in.
 ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
@@ -51,14 +53,21 @@ RUN pip install msgpack
 RUN pip install --upgrade tensorflow-gpu tensorflow-hub
 
 # Install PyTorch 0.4
-RUN conda install pytorch=0.4.0 torchvision=0.2.1 cuda90 -c pytorch
+# TODO: upgrade to PyTorch 1.0
+RUN conda install pytorch=0.4.1 torchvision=0.2.1 cuda90 -c pytorch
 
 # Install other requirements
 RUN conda install numpy=1.14.5 nltk=3.2.5
 RUN pip install ipdb tensorboard tensorboardX==1.2
 
 # Install AllenNLP
+# TODO: upgrade to latest AllenNLP
 RUN pip install allennlp==0.5.1
+
+# Install BERT module
+RUN git clone https://github.com/huggingface/pytorch-pretrained-BERT.git \
+  /tmp/pytorch_pretrained_bert \
+  && cd /tmp/pytorch_pretrained_bert && pip install .
 
 # Install misc util packages.
 RUN pip install --upgrade google-cloud-logging sendgrid
@@ -69,9 +78,12 @@ RUN python -m spacy download en
 RUN python -m nltk.downloader -d /usr/share/nltk_data \
   perluniprops nonbreaking_prefixes punkt
 
-# Create local dir for NFS mount.
+# Create local mount points.
+RUN mkdir -p /share/jiant
 RUN mkdir -p /nfs/jsalt
 # Set environment vars based on gcp/config/jsalt_paths.1.2.sh
+# TODO: make these a generic mount, instead of requiring that they look like our
+# NFS directory.
 ENV JSALT_SHARE_DIR "/nfs/jsalt/share"
 ENV JIANT_DATA_DIR "$JSALT_SHARE_DIR/glue_data"
 ENV GLOVE_EMBS_FILE "$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
