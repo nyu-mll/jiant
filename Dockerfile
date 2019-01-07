@@ -60,6 +60,8 @@ RUN pip install ipdb tensorboard tensorboardX==1.2
 # Install AllenNLP
 RUN pip install allennlp==0.5.1
 
+RUN pip install mosestokenizer
+
 # Install misc util packages.
 RUN pip install --upgrade google-cloud-logging sendgrid
 RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11
