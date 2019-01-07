@@ -78,6 +78,10 @@ RUN python -m spacy download en
 RUN python -m nltk.downloader -d /usr/share/nltk_data \
   perluniprops nonbreaking_prefixes punkt
 
+# AllenNLP cache, may be used for ELMo weights.
+RUN mkdir -p /tmp/.allennlp && chmod a+w /tmp/.allennlp
+ENV ALLENNLP_CACHE_ROOT "/tmp/.allennlp"
+
 # Create local mount points.
 RUN mkdir -p /share/jiant
 RUN mkdir -p /nfs/jsalt
