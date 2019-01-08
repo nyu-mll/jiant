@@ -416,7 +416,8 @@ def _get_task(name, args, data_path, scratch_path):
             kw['probe_path'] = args['nli-prob'].probe_path
         if name in ALL_TARG_VOC_TASKS:
             kw['max_targ_v_size'] = args.max_targ_v_size
-        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name, **kw)
+        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
+                        tokenizer_name=args.tokenizer, **kw)
         utils.maybe_make_dir(task_scratch_path)
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
