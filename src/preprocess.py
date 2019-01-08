@@ -245,21 +245,20 @@ def build_tasks(args):
         indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.cove:
+        assert args.tokenizer == "MosesTokenizer", \
+                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
+                 " you are using args.tokenizer = {args.tokenizer}")
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
-        assert set(tokenizer_names.values()) == {"OpenAI.BPE"}, \
+        assert args.tokenizer == "OpenAI.BPE", \
                              ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-        # Exit if any tasks are not compatible with this tokenization.
-        for task in tasks:
-            assert task.tokenizer_name == "OpenAI.BPE", \
-                (f"Task '{task.name:s}' not compatible with OpenAI "
-                  "Transformer model. For edge probing, use -openai versions.")
-
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):

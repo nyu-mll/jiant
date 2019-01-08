@@ -146,13 +146,6 @@ class Task(object):
     @property
     def tokenizer_name(self):
         return self._tokenizer_name
-        #  ''' Get the name of the tokenizer used for this task.
-
-        #  Generally, this is just 'MosesTokenizer', but other tokenizations may
-        #  be needed in special cases such as when working with BPE-based models
-        #  such as the OpenAI transformer LM.
-        #  '''
-        #  return utils.TOKENIZER.__class__.__name__
 
     @property
     def n_train_examples(self):

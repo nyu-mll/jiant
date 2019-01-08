@@ -40,12 +40,19 @@ class EdgeProbingTask(Task):
     '''
     @property
     def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files. '''
-        return ""  # override in subclass
+        ''' Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
 
-    @property
-    def tokenizer_name(self):
-        return ""  # override in subclass
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
 
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
@@ -355,51 +362,51 @@ register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                }, single_sided=True)(EdgeProbingTask)
 
 
-class RetokenizedEdgeProbingTask(EdgeProbingTask):
-    """Parent class for retokenized edge probing data."""
-    @property
-    def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files. '''
-        return ".retokenized." + self.tokenizer_name
+#  class RetokenizedEdgeProbingTask(EdgeProbingTask):
+#      """Parent class for retokenized edge probing data."""
+#      @property
+#      def _tokenizer_suffix(self):
+#          ''' Suffix to make sure we use the correct source files. '''
+#          return ".retokenized." + self.tokenizer_name
 
-# Use this for CoVe, which uses Moses tokenization.
-class MosesEdgeProbingTask(RetokenizedEdgeProbingTask):
-    """Version of EdgeProbingTask that loads Moses-tokenized data."""
-    @property
-    def tokenizer_name(self):
-        return "MosesTokenizer"
+#  # Use this for CoVe, which uses Moses tokenization.
+#  class MosesEdgeProbingTask(RetokenizedEdgeProbingTask):
+#      """Version of EdgeProbingTask that loads Moses-tokenized data."""
+#      @property
+#      def tokenizer_name(self):
+#          return "MosesTokenizer"
 
-class OpenAIEdgeProbingTask(RetokenizedEdgeProbingTask):
-    """Version of EdgeProbingTask that loads BPE-tokenized data."""
-    @property
-    def tokenizer_name(self):
-        return "OpenAI.BPE"
+#  class OpenAIEdgeProbingTask(RetokenizedEdgeProbingTask):
+#      """Version of EdgeProbingTask that loads BPE-tokenized data."""
+#      @property
+#      def tokenizer_name(self):
+#          return "OpenAI.BPE"
 
-class BertBaseUncasedEdgeProbingTask(RetokenizedEdgeProbingTask):
-    """Version of EdgeProbingTask that loads BERT-tokenized data."""
-    @property
-    def tokenizer_name(self):
-        return "bert-base-uncased"
+#  class BertBaseUncasedEdgeProbingTask(RetokenizedEdgeProbingTask):
+#      """Version of EdgeProbingTask that loads BERT-tokenized data."""
+#      @property
+#      def tokenizer_name(self):
+#          return "bert-base-uncased"
 
-# TODO: add bert-base-cased, and bert-large-* versions.
+#  # TODO: add bert-base-cased, and bert-large-* versions.
 
-# We need '-openai' versions of all edge probing tasks, which load the correct
-# tokenization for that model. To avoid lots of boilerplate, add these to the
-# registry at import time using the loop below.
-def _should_retokenize(cls):
-    return (issubclass(cls, EdgeProbingTask)
-            and not issubclass(cls, RetokenizedEdgeProbingTask))
+#  # We need '-openai' versions of all edge probing tasks, which load the correct
+#  # tokenization for that model. To avoid lots of boilerplate, add these to the
+#  # registry at import time using the loop below.
+#  def _should_retokenize(cls):
+#      return (issubclass(cls, EdgeProbingTask)
+#              and not issubclass(cls, RetokenizedEdgeProbingTask))
 
-def _make_retokenized_clone(new_name, new_cls, args):
-    REGISTRY[new_name] = (new_cls, *args[1:])
+#  def _make_retokenized_clone(new_name, new_cls, args):
+#      REGISTRY[new_name] = (new_cls, *args[1:])
 
-for name in list(REGISTRY.keys()):
-    args = REGISTRY[name]
-    cls = args[0]
-    if _should_retokenize(cls):
-        _make_retokenized_clone(name + "-moses",
-                                MosesEdgeProbingTask, args)
-        _make_retokenized_clone(name + "-openai",
-                                OpenAIEdgeProbingTask, args)
-        _make_retokenized_clone(name + "-bert-base-uncased",
-                                BertBaseUncasedEdgeProbingTask, args)
+#  for name in list(REGISTRY.keys()):
+#      args = REGISTRY[name]
+#      cls = args[0]
+#      if _should_retokenize(cls):
+#          _make_retokenized_clone(name + "-moses",
+#                                  MosesEdgeProbingTask, args)
+#          _make_retokenized_clone(name + "-openai",
+#                                  OpenAIEdgeProbingTask, args)
+#          _make_retokenized_clone(name + "-bert-base-uncased",
+#                                  BertBaseUncasedEdgeProbingTask, args)
