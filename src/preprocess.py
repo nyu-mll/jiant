@@ -240,6 +240,11 @@ def build_tasks(args):
         setattr(task, "_classifier_name",
                 task_classifier if task_classifier else task.name)
 
+    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
+    assert len(set(tokenizer_names.values())) == 1, \
+            (f"Error: mixing tasks with different tokenizers!"
+              " Tokenizations: {tokenizer_names:s}")
+
     # 2) build / load vocab and indexers
     indexers = {}
     if not args.word_embs == 'none':
@@ -251,12 +256,16 @@ def build_tasks(args):
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
+        assert set(tokenizer_names.values()) == {"OpenAI.BPE"}, \
+                             ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
         # Exit if any tasks are not compatible with this tokenization.
         for task in tasks:
             assert task.tokenizer_name == "OpenAI.BPE", \
                 (f"Task '{task.name:s}' not compatible with OpenAI "
                   "Transformer model. For edge probing, use -openai versions.")
+
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
