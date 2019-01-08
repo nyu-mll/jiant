@@ -416,7 +416,7 @@ def _get_task(name, args, data_path, scratch_path):
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
                         tokenizer_name=args.tokenizer, **task_kw)
-        utils.maybe_make_dir(task_scratch_path)
+        utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
     return task
