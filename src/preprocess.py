@@ -388,10 +388,8 @@ def parse_task_list_arg(task_list):
 def _get_task(name, args, data_path, scratch_path):
     ''' Build or load a single task. '''
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
-    task_info = TASKS_REGISTRY[name]
-    task_src_path = os.path.join(data_path, task_info[1])
-    task_scratch_path = os.path.join(scratch_path, task_info[1])
-    pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
+    pkl_path = os.path.join(scratch_path, "tasks", "%s.pkl" % name)
     # TODO: refactor to always read from disk, even if task is constructed
     # here. This should avoid subtle bugs from deserialization issues.
     if os.path.isfile(pkl_path) and not args.reload_tasks:
@@ -399,16 +397,17 @@ def _get_task(name, args, data_path, scratch_path):
         log.info('\tLoaded existing task %s', name)
     else:
         log.info('\tCreating task %s from scratch', name)
-        task_cls = task_info[0]
-        kw = task_info[2]
-        if name == 'nli-prob' or name == 'nli-alt':  # this task takes additional kw
+        # These tasks take an additional kwarg.
+        if name == 'nli-prob' or name == 'nli-alt':
             # TODO: remove special case, replace with something general
             # to pass custom loader args to task.
-            kw['probe_path'] = args['nli-prob'].probe_path
+            task_kw['probe_path'] = args['nli-prob'].probe_path
         if name in ALL_TARG_VOC_TASKS:
-            kw['max_targ_v_size'] = args.max_targ_v_size
-        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name, **kw)
-        utils.maybe_make_dir(task_scratch_path)
+            task_kw['max_targ_v_size'] = args.max_targ_v_size
+        task_src_path = os.path.join(data_path, rel_path)
+        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
+                        **task_kw)
+        utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
     return task
