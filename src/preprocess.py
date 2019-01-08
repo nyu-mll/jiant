@@ -399,7 +399,8 @@ def _get_task(name, args, data_path, scratch_path):
     task_info = TASKS_REGISTRY[name]
     task_src_path = os.path.join(data_path, task_info[1])
     task_scratch_path = os.path.join(scratch_path, task_info[1])
-    pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
+    pkl_path = os.path.join(task_scratch_path,
+                            f"{name:s}_task.{args.tokenizer:s}.pkl")
     # TODO: refactor to always read from disk, even if task is constructed
     # here. This should avoid subtle bugs from deserialization issues.
     if os.path.isfile(pkl_path) and not args.reload_tasks:
