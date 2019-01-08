@@ -191,8 +191,8 @@ class RegressionTask(Task):
 class SingleClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
-    def __init__(self, name, n_classes, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, n_classes, **kw):
+        super().__init__(name, **kw)
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = None
@@ -220,8 +220,8 @@ class SingleClassificationTask(ClassificationTask):
 class PairClassificationTask(ClassificationTask):
     ''' Generic sentence pair classification '''
 
-    def __init__(self, name, n_classes, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, n_classes, **kw):
+        super().__init__(name, **kw)
         assert n_classes > 0
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
@@ -242,8 +242,8 @@ class PairClassificationTask(ClassificationTask):
 class PairRegressionTask(RegressionTask):
     ''' Generic sentence pair classification '''
 
-    def __init__(self, name, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, **kw):
+        super().__init__(name, **kw)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = None
@@ -266,8 +266,8 @@ class PairOrdinalRegressionTask(RegressionTask):
         Currently just doing regression but added new class
         in case we find a good way to implement ordinal regression with NN'''
 
-    def __init__(self, name, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, **kw):
+        super().__init__(name, **kw)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = Correlation('spearman')
@@ -290,8 +290,8 @@ class PairOrdinalRegressionTask(RegressionTask):
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
 
-    def __init__(self, name, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, **kw):
+        super().__init__(name, **kw)
         self.scorer1 = Average()  # for average BLEU or something
         self.scorer2 = None
         self.val_metric = "%s_bleu" % self.name
@@ -320,14 +320,14 @@ class LanguageModelingTask(SequenceGenerationTask):
         files_by_split: (dict) files for three data split (train, val, test)
     """
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         """Init class
         Args:
             path: (str) path that the data files are stored
             max_seq_len: (int) maximum length of one sequence
             name: (str) task name
         """
-        super().__init__(name, **parent_kw)
+        super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_perplexity" % self.name
@@ -436,8 +436,8 @@ class WikiText103LMTask(WikiTextLMTask):
     See base class: WikiTextLMTask
     """
 
-    def __init__(self, path, *parent_args, **parent_kw):
-        super().__init__(path, *parent_args, **parent_kw)
+    def __init__(self, path, *args, **kw):
+        super().__init__(path, *args, **kw)
         self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
                                'val': os.path.join(path, "valid.sentences.txt"),
                                'test': os.path.join(path, "test.sentences.txt")}
@@ -447,9 +447,9 @@ class WikiText103LMTask(WikiTextLMTask):
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(SSTTask, self).__init__(name, n_classes=2, **parent_kw)
+        super(SSTTask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
@@ -475,9 +475,9 @@ class SSTTask(SingleClassificationTask):
 class RedditTask(RankingTask):
     ''' Task class for Reddit data.  '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super().__init__(name, **parent_kw)
+        super().__init__(name, **kw)
         self.scorer1 = Average()  # CategoricalAccuracy()
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
@@ -550,9 +550,9 @@ class RedditTask(RankingTask):
 class RedditPairClassificationTask(PairClassificationTask):
     ''' Task class for Reddit data.  '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super().__init__(name, n_classes=2, **parent_kw)
+        super().__init__(name, n_classes=2, **kw)
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -625,9 +625,9 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
         RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
     '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super().__init__(path, max_seq_len, name, **parent_kw)
+        super().__init__(path, max_seq_len, name, **kw)
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
                                split in ["train", "val", "test"]}
 
@@ -657,9 +657,9 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(CoLATask, self).__init__(name, n_classes=2, **parent_kw)
+        super(CoLATask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
@@ -691,8 +691,8 @@ class CoLATask(SingleClassificationTask):
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super().__init__(name, n_classes=2, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -729,10 +729,10 @@ class QQPTask(PairClassificationTask):
 class MultiNLISingleGenreTask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
 
-    def __init__(self, path, max_seq_len, genre, name, **parent_kw):
+    def __init__(self, path, max_seq_len, genre, name, **kw):
         '''MNLI'''
         super(MultiNLISingleGenreTask, self).__init__(name, n_classes=3,
-                                                      **parent_kw)
+                                                      **kw)
         self.load_data(path, max_seq_len, genre)
         self.scorer2 = None
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -797,9 +797,9 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 class MRPCTask(PairClassificationTask):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(MRPCTask, self).__init__(name, n_classes=2, **parent_kw)
+        super(MRPCTask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -833,9 +833,9 @@ class MRPCTask(PairClassificationTask):
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(STSBTask, self).__init__(name, **parent_kw)
+        super(STSBTask, self).__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -870,9 +870,9 @@ class STSBTask(PairRegressionTask):
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' Do stuff '''
-        super(SNLITask, self).__init__(name, n_classes=3, **parent_kw)
+        super(SNLITask, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -897,9 +897,9 @@ class SNLITask(PairClassificationTask):
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         '''MNLI'''
-        super(MultiNLITask, self).__init__(name, n_classes=3, **parent_kw)
+        super(MultiNLITask, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -938,8 +938,8 @@ class MultiNLITask(PairClassificationTask):
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super().__init__(name, n_classes=3, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=3, **kw)
         self.load_data_and_create_scorers(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1105,8 +1105,8 @@ class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
 
     def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **parent_kw):
-        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **parent_kw)
+                 **kw):
+        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len, probe_path)
         #  self.use_classifier = 'mnli'  # use .conf params instead
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -1131,9 +1131,9 @@ class NLITypeProbingTask(PairClassificationTask):
 class NLITypeProbingTaskNeg(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **parent_kw):
+                 **kw):
         super(NLITypeProbingTaskNeg, self).__init__(name, n_classes=3,
-                                                    **parent_kw)
+                                                    **kw)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1157,9 +1157,9 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
 class NLITypeProbingTaskPrepswap(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **parent_kw):
+                 **kw):
         super(NLITypeProbingTaskPrepswap, self).__init__(name, n_classes=3,
-                                                         **parent_kw)
+                                                         **kw)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1182,8 +1182,8 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
 class NPSTask(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **parent_kw):
-        super(NPSTask, self).__init__(name, n_classes=3, **parent_kw)
+                 **kw):
+        super(NPSTask, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1208,8 +1208,8 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
     ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
 
     def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **parent_kw):
-        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **parent_kw)
+                 **kw):
+        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1242,9 +1242,9 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(RTETask, self).__init__(name, n_classes=2, **parent_kw)
+        super(RTETask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1270,8 +1270,8 @@ class RTETask(PairClassificationTask):
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super(QNLITask, self).__init__(name, n_classes=2, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(QNLITask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1295,9 +1295,9 @@ class QNLITask(PairClassificationTask):
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(WNLITask, self).__init__(name, n_classes=2, **parent_kw)
+        super(WNLITask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1320,8 +1320,8 @@ class WNLITask(PairClassificationTask):
 class JOCITask(PairOrdinalRegressionTask):
     '''Class for JOCI ordinal regression task'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super(JOCITask, self).__init__(name, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(JOCITask, self).__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1345,9 +1345,9 @@ class JOCITask(PairOrdinalRegressionTask):
 class MTTask(SequenceGenerationTask):
     '''Machine Translation Task'''
 
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **parent_kw):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         ''' '''
-        super().__init__(name, **parent_kw)
+        super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = Average()
         self.scorer3 = Average()
@@ -1440,10 +1440,10 @@ class RedditSeq2SeqTask(MTTask):
     Note: max_targ_v_size doesn't do anything here b/c the
     target is in English'''
 
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **parent_kw):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         super().__init__(path=path, max_seq_len=max_seq_len,
                          max_targ_v_size=max_targ_v_size, name=name,
-                         **parent_kw)
+                         **kw)
         self._label_namespace = None
         self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
         self.files_by_split = {"train": os.path.join(path, "train.csv"),
@@ -1469,8 +1469,8 @@ class RedditSeq2SeqTask(MTTask):
 class Wiki103Classification(PairClassificationTask):
     '''Pair Classificaiton Task using Wiki103'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super().__init__(name, n_classes=2, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
         self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
@@ -1541,9 +1541,9 @@ class Wiki103Classification(PairClassificationTask):
 class Wiki103Seq2SeqTask(MTTask):
     ''' Skipthought objective on Wiki103 '''
 
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **parent_kw):
+    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         ''' Note: max_targ_v_size does nothing here '''
-        super().__init__(path, max_seq_len, max_targ_v_size, name, **parent_kw)
+        super().__init__(path, max_seq_len, max_targ_v_size, name, **kw)
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
         # Similar for self.target_sentences
@@ -1610,11 +1610,11 @@ class DisSentTask(PairClassificationTask):
         Based on Nie, Bennett, and Goodman (2017), but with different datasets.
     '''
 
-    def __init__(self, path, max_seq_len, prefix, name, **parent_kw):
+    def __init__(self, path, max_seq_len, prefix, name, **kw):
         ''' There are 8 classes because there are 8 discourse markers in
             the dataset (and, but, because, if, when, before, though, so)
         '''
-        super().__init__(name, n_classes=8, **parent_kw)
+        super().__init__(name, n_classes=8, **kw)
         self.max_seq_len = max_seq_len
         self.files_by_split = {"train": os.path.join(path, "%s.train" % prefix),
                                "val": os.path.join(path, "%s.valid" % prefix),
@@ -1676,9 +1676,9 @@ class DisSentTask(PairClassificationTask):
 class WeakGroundedTask(PairClassificationTask):
     ''' Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image '''
 
-    def __init__(self, path, max_seq_len, n_classes, name, **parent_kw):
+    def __init__(self, path, max_seq_len, n_classes, name, **kw):
         ''' Do stuff '''
-        super(WeakGroundedTask, self).__init__(name, n_classes, **parent_kw)
+        super(WeakGroundedTask, self).__init__(name, n_classes, **kw)
 
         ''' Process the dataset located at path.  '''
         ''' positive = captions of the same image, negative = captions of different images '''
@@ -1705,9 +1705,9 @@ class GroundedTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' Do stuff '''
-        super(GroundedTask, self).__init__(name, **parent_kw)
+        super(GroundedTask, self).__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_metric" % self.name
@@ -1800,8 +1800,8 @@ class GroundedSWTask(Task):
     ''' Task class for Grounded Sentences i.e., training on caption->image pair '''
     ''' Defined new metric function from AllenNLP Average '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super(GroundedSWTask, self).__init__(name, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(GroundedSWTask, self).__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = None
         self.val_metric = "%s_metric" % self.name
@@ -1884,8 +1884,8 @@ class GroundedSWTask(Task):
 class RecastNLITask(PairClassificationTask):
     ''' Task class for NLI Recast Data'''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
-        super(RecastNLITask, self).__init__(name, n_classes=2, **parent_kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(RecastNLITask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
@@ -1907,8 +1907,8 @@ class RecastNLITask(PairClassificationTask):
 class TaggingTask(Task):
     ''' Generic tagging task, one tag per word '''
 
-    def __init__(self, name, num_tags, **parent_kw):
-        super().__init__(name, **parent_kw)
+    def __init__(self, name, num_tags, **kw):
+        super().__init__(name, **kw)
         assert num_tags > 0
         self.num_tags = num_tags + 2  # add tags for unknown and padding
         self.scorer1 = CategoricalAccuracy()
@@ -1951,9 +1951,9 @@ class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
 
-    def __init__(self, path, max_seq_len, name, **parent_kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, num_tags=1363, **parent_kw)
+        super().__init__(name, num_tags=1363, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
 
