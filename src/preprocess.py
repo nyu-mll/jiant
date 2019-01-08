@@ -228,13 +228,7 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    tasks, train_task_names, eval_task_names = \
-        get_tasks(parse_task_list_arg(args.pretrain_tasks),
-                  parse_task_list_arg(args.target_tasks), args.max_seq_len,
-                  path=args.data_dir, scratch_path=args.exp_dir,
-                  load_pkl=bool(not args.reload_tasks),
-                  nli_prob_probe_path=args['nli-prob'].probe_path,
-                  max_targ_v_size=args.max_targ_word_v_size)
+    tasks, train_task_names, eval_task_names = get_tasks(args)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
         setattr(task, "_classifier_name",
@@ -391,44 +385,54 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+def _get_task(name, args, data_path, scratch_path):
+    ''' Build or load a single task. '''
+    assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
+    pkl_path = os.path.join(scratch_path, "tasks", "%s.pkl" % name)
+    # TODO: refactor to always read from disk, even if task is constructed
+    # here. This should avoid subtle bugs from deserialization issues.
+    if os.path.isfile(pkl_path) and not args.reload_tasks:
+        task = pkl.load(open(pkl_path, 'rb'))
+        log.info('\tLoaded existing task %s', name)
+    else:
+        log.info('\tCreating task %s from scratch', name)
+        # These tasks take an additional kwarg.
+        if name == 'nli-prob' or name == 'nli-alt':
+            # TODO: remove special case, replace with something general
+            # to pass custom loader args to task.
+            task_kw['probe_path'] = args['nli-prob'].probe_path
+        if name in ALL_TARG_VOC_TASKS:
+            task_kw['max_targ_v_size'] = args.max_targ_v_size
+        task_src_path = os.path.join(data_path, rel_path)
+        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
+                        **task_kw)
+        utils.maybe_make_dir(os.path.dirname(pkl_path))
+        pkl.dump(task, open(pkl_path, 'wb'))
+    #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+    return task
 
-def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
-              max_targ_v_size=20000):
+def get_tasks(args):
     ''' Actually build or load (from pickles) the tasks. '''
+    data_path = args.data_dir
+    scratch_path = args.exp_dir
+
+    train_task_names = parse_task_list_arg(args.pretrain_tasks)
+    eval_task_names = parse_task_list_arg(args.target_tasks)
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names
                         if name not in {'mnli-diagnostic'}]
 
     task_names = sorted(set(train_task_names + eval_task_names))
-    assert path is not None
-    scratch_path = (scratch_path or path)
+    assert data_path is not None
+    scratch_path = (scratch_path or data_path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)
 
     tasks = []
     for name in task_names:
-        assert name in TASKS_REGISTRY, "Task '{:s}' not found!".format(name)
-        task_info = TASKS_REGISTRY[name]
-        task_src_path = os.path.join(path, task_info[1])
-        task_scratch_path = os.path.join(scratch_path, task_info[1])
-        pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and load_pkl:
-            task = pkl.load(open(pkl_path, 'rb'))
-            log.info('\tLoaded existing task %s', name)
-        else:
-            log.info('\tCreating task %s from scratch', name)
-            task_cls = task_info[0]
-            kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob' or name == 'nli-alt':  # this task takes additional kw
-                # TODO: remove special case, replace with something general
-                # to pass custom loader args to task.
-                kw['probe_path'] = nli_prob_probe_path
-            if name in ALL_TARG_VOC_TASKS:
-                kw['max_targ_v_size'] = max_targ_v_size
-            task = task_cls(task_src_path, max_seq_len, name=name, **kw)
-            utils.maybe_make_dir(task_scratch_path)
-            pkl.dump(task, open(pkl_path, 'wb'))
-        #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+        task = _get_task(name, args, data_path=data_path,
+                         scratch_path=scratch_path)
+        tasks.append(task)
 
         # Count examples, store in example_counts.
         if not hasattr(task, 'example_counts'):
@@ -436,7 +440,6 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
         log.info("\tTask '%s': %s", task.name,
                  " ".join(("%s=%d" % kv for kv in
                            task.example_counts.items())))
-        tasks.append(task)
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
