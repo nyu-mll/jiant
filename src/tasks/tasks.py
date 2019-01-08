@@ -182,16 +182,10 @@ class ClassificationTask(Task):
     ''' General classification task '''
     pass
 
-    #  def __init__(self, name):
-    #      super().__init__(name)
-
 
 class RegressionTask(Task):
     ''' General regression task '''
     pass
-
-    #  def __init__(self, name):
-    #      super().__init__(name)
 
 
 class SingleClassificationTask(ClassificationTask):
@@ -315,9 +309,6 @@ class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
 
-    #  def __init__(self, name):
-    #      super().__init__(name)
-
 
 class LanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
@@ -415,13 +406,11 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield sent
 
 
+@register_task('bwb', rel_path='BWB/')
 class WikiTextLMTask(LanguageModelingTask):
     """ Language modeling on a Wikitext dataset
     See base class: LanguageModelingTask
     """
-    #  def __init__(self, path, max_seq_len, name="wiki", **parent_kw):
-    #      super().__init__(path, max_seq_len, name, **parent_kw)
-
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
         nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
@@ -452,18 +441,6 @@ class WikiText103LMTask(WikiTextLMTask):
         self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
                                'val': os.path.join(path, "valid.sentences.txt"),
                                'test': os.path.join(path, "test.sentences.txt")}
-
-
-@register_task('bwb', rel_path='BWB/')
-class BWBLMTask(LanguageModelingTask):
-    """Language modeling task on Billion Word Benchmark
-    See base class: LanguageModelingTask
-    """
-    pass
-
-    #  def __init__(self, path, max_seq_len, name="bwb"):
-    #      super().__init__(path, max_seq_len, name)
-    #      self.max_seq_len = max_seq_len
 
 
 @register_task('sst', rel_path='SST-2/')
@@ -744,22 +721,6 @@ class QQPTask(PairClassificationTask):
                 'precision': pcs, 'recall': rcl}
 
 
-#  @register_task('qqp-alt', rel_path='QQP/')
-#  class QQPAltTask(QQPTask):
-#      ''' Task class for Quora Question Pairs.
-
-#      Identical to QQPTask class, but it can be handy to have two when controlling model settings.
-
-#      TODO: this doesn't appear to be used anywhere else, can we just combine
-#      with QQPTask?
-#      '''
-#      pass
-
-#      #  def __init__(self, path, max_seq_len, name, **parent_kw):
-#      #      '''QQP'''
-#      #      super(QQPAltTask, self).__init__(path, max_seq_len, name)
-
-
 @register_task('mnli-fiction', rel_path='MNLI/', genre='fiction')
 @register_task('mnli-slate', rel_path='MNLI/', genre='slate')
 @register_task('mnli-government', rel_path='MNLI/', genre='government')
@@ -830,77 +791,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
     def get_metrics(self, reset=False):
         ''' No F1 '''
         return {'accuracy': self.scorer1.get_metric(reset)}
-
-
-#  @register_task('mnli-fiction', rel_path='MNLI/')
-#  class MultiNLIFictionTask(MultiNLISingleGenreTask):
-#      ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
-
-#      def __init__(self, path, max_seq_len, name, **parent_kw):
-#          '''MNLI'''
-#          super(
-#              MultiNLIFictionTask,
-#              self).__init__(
-#              path,
-#              max_seq_len,
-#              genre="fiction",
-#              name=name, **parent_kw)
-
-
-#  @register_task('mnli-slate', rel_path='MNLI/')
-#  class MultiNLISlateTask(MultiNLISingleGenreTask):
-#      ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
-
-#      def __init__(self, path, max_seq_len, name, **parent_kw):
-#          '''MNLI'''
-#          super(MultiNLISlateTask, self).__init__(path, max_seq_len,
-#                                                  genre="slate", name=name,
-#                                                  **parent_kw)
-
-
-#  @register_task('mnli-government', rel_path='MNLI/')
-#  class MultiNLIGovernmentTask(MultiNLISingleGenreTask):
-#      ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
-
-#      def __init__(self, path, max_seq_len, name="mnli-government"):
-#          '''MNLI'''
-#          super(
-#              MultiNLIGovernmentTask,
-#              self).__init__(
-#              path,
-#              max_seq_len,
-#              genre="government",
-#              name=name)
-
-
-#  @register_task('mnli-telephone', rel_path='MNLI/')
-#  class MultiNLITelephoneTask(MultiNLISingleGenreTask):
-#      ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
-
-#      def __init__(self, path, max_seq_len, name="mnli-telephone"):
-#          '''MNLI'''
-#          super(
-#              MultiNLITelephoneTask,
-#              self).__init__(
-#              path,
-#              max_seq_len,
-#              genre="telephone",
-#              name=name)
-
-
-#  @register_task('mnli-travel', rel_path='MNLI/')
-#  class MultiNLITravelTask(MultiNLISingleGenreTask):
-#      ''' Task class for Multi-Genre Natural Language Inference, Fiction genre.'''
-
-#      def __init__(self, path, max_seq_len, name="mnli-travel"):
-#          '''MNLI'''
-#          super(
-#              MultiNLITravelTask,
-#              self).__init__(
-#              path,
-#              max_seq_len,
-#              genre="travel",
-#              name=name)
 
 
 @register_task('mrpc', rel_path='MRPC/')
@@ -974,18 +864,6 @@ class STSBTask(PairRegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
-
-
-#  @register_task('sts-b-alt', rel_path='STS-B/')
-#  class STSBAltTask(STSBTask):
-#      ''' Task class for Sentence Textual Similarity Benchmark.
-
-#      Identical to STSBTask class, but it can be handy to have two when controlling model settings.
-#      '''
-
-#      def __init__(self, path, max_seq_len, name="sts_benchmark-alt"):
-#          '''STSB'''
-#          super(STSBAltTask, self).__init__(path, max_seq_len, name)
 
 
 @register_task('snli', rel_path='SNLI/')
@@ -1360,18 +1238,6 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         log.info("\tFinished loading NLI-alt probing data.")
 
 
-#  @register_task('mnli-alt', rel_path='MNLI/')  # second copy for different params
-#  class MultiNLIAltTask(MultiNLITask):
-#      ''' Task class for Multi-Genre Natural Language Inference.
-
-#      Identical to MultiNLI class, but it can be handy to have two when controlling model settings.
-#      '''
-
-#      def __init__(self, path, max_seq_len, name="mnli-alt"):
-#          '''MNLI'''
-#          super(MultiNLIAltTask, self).__init__(path, max_seq_len, name)
-
-
 @register_task('rte', rel_path='RTE/')
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
@@ -1423,17 +1289,6 @@ class QNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading QNLI.")
-
-
-#  @register_task('qnli-alt', rel_path='QNLI/')  # second copy for different params
-#  class QNLIAltTask(QNLITask):
-#      ''' Task class for SQuAD NLI
-#      Identical to SQuAD NLI class, but it can be handy to have two when controlling model settings.
-#      '''
-
-#      def __init__(self, path, max_seq_len, name="squad-alt"):
-#          '''QNLI'''
-#          super(QNLIAltTask, self).__init__(path, max_seq_len, name)
 
 
 @register_task('wnli', rel_path='WNLI/')
@@ -1574,41 +1429,6 @@ class MTTask(SequenceGenerationTask):
             'perplexity': math.exp(avg_nll),
             'bleu_score': 0,
             'unk_ratio_macroavg': unk_ratio_macroavg}
-
-
-#  @register_task('wmt_debug', rel_path='wmt_debug/', max_targ_v_size=5000)
-#  class MTDebug(MTTask):
-#      def __init__(self, path, max_seq_len, max_targ_v_size, name, **parent_kw):
-#          ''' Demo task for MT with 10k training examples.'''
-#          super().__init__(path=path, max_seq_len=max_seq_len,
-#                           max_targ_v_size=max_targ_v_size, name=name,
-#                           **parent_kw)
-#          self.files_by_split = {"train": os.path.join(path, "train.txt"),
-#                                 "val": os.path.join(path, "valid.txt"),
-#                                 "test": os.path.join(path, "test.txt")}
-
-
-#  @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
-#  class MTTaskEnRu(MTTask):
-#      def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_ru'):
-#          ''' MT En-Ru'''
-#          super().__init__(path=path, max_seq_len=max_seq_len,
-#                           max_targ_v_size=max_targ_v_size, name=name)
-#          self.files_by_split = {"train": os.path.join(path, "train.txt"),
-#                                 "val": os.path.join(path, "valid.txt"),
-#                                 "test": os.path.join(path, "test.txt")}
-
-
-#  @register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
-#  class MTTaskEnDe(MTTask):
-#      def __init__(self, path, max_seq_len, max_targ_v_size, name='mt_en_de'):
-#          ''' MT En-De'''
-#          super().__init__(path=path, max_seq_len=max_seq_len,
-#                           max_targ_v_size=max_targ_v_size, name=name)
-
-#          self.files_by_split = {"train": os.path.join(path, "train.txt"),
-#                                 "val": os.path.join(path, "valid.txt"),
-#                                 "test": os.path.join(path, "test.txt")}
 
 
 @register_task('reddit_s2s', rel_path='Reddit_2008/', max_targ_v_size=0)
@@ -1851,24 +1671,6 @@ class DisSentTask(PairClassificationTask):
             yield _make_instance(sent1, sent2, trg)
 
 
-#  class DisSentWikiSingleTask(DisSentTask):
-#      ''' Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence
-#          Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
-
-#      def __init__(self, path, max_seq_len, name="dissentwiki"):
-#          super().__init__(path, max_seq_len, "wikitext.dissent.single_sent", name)
-
-
-#  @register_task('dissentwikifullbig', rel_path='DisSent/wikitext/')
-#  class DisSentWikiBigFullTask(DisSentTask):
-#      ''' Task class for DisSent with Wikitext 103 considering clauses from within a single sentence
-#          or across two sentences.
-#          Data sets should be prepared as described in Nie, Bennett, and Goodman (2017) '''
-
-#      def __init__(self, path, max_seq_len, name="dissentwikifullbig"):
-#          super().__init__(path, max_seq_len, "wikitext.dissent.big", name)
-
-
 # TODO: does this even work? What is n_classes for this?
 @register_task('weakgrounded', rel_path='mscoco/weakgrounded/')
 class WeakGroundedTask(PairClassificationTask):
@@ -2100,69 +1902,6 @@ class RecastNLITask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading recast probing data.")
-
-
-#  @register_task('recast-puns', rel_path='DNC/recast_puns_data')
-#  class RecastPunTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-puns"):
-#          super(RecastPunTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-ner', rel_path='DNC/recast_ner_data')
-#  class RecastNERTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-ner"):
-#          super(RecastNERTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-verbnet', rel_path='DNC/recast_verbnet_data')
-#  class RecastVerbnetTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-verbnet"):
-#          super(RecastVerbnetTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-verbcorner', rel_path='DNC/recast_verbcorner_data')
-#  class RecastVerbcornerTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-verbcorner"):
-#          super(RecastVerbcornerTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-sentiment', rel_path='DNC/recast_sentiment_data')
-#  class RecastSentimentTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-sentiment"):
-#          super(RecastSentimentTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-factuality', rel_path='DNC/recast_factuality_data')
-#  class RecastFactualityTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-factuality"):
-#          super(RecastFactualityTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-winogender', rel_path='DNC/manually-recast-winogender')
-#  class RecastWinogenderTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-winogender"):
-#          super(RecastWinogenderTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-lexicosyntax', rel_path='DNC/lexicosyntactic_recasted')
-#  class RecastLexicosynTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-lexicosyn"):
-#          super(RecastLexicosynTask, self).__init__(path, max_seq_len, name)
-
-
-#  @register_task('recast-kg', rel_path='DNC/kg-relations')
-#  class RecastKGTask(RecastNLITask):
-
-#      def __init__(self, path, max_seq_len, name="recast-kg"):
-#          super(RecastKGTask, self).__init__(path, max_seq_len, name)
 
 
 class TaggingTask(Task):
