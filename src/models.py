@@ -24,7 +24,7 @@ from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils.utils import assert_for_log, get_batch_utilization, \
-    get_batch_size, get_elmo_mixing_weights
+    get_batch_size, get_elmo_mixing_weights, maybe_make_dir
 from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
@@ -66,6 +66,16 @@ def build_model(args, vocab, pretrained_embs, tasks):
         log.info("Using OpenAI transformer model; skipping other embedders.")
         cove_layer = None
         embedder = OpenAIEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.bert_model_name:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .bert.utils import BertEmbedderModule
+        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
+        cove_layer = None
+        bert_cache_dir = os.path.join(args.exp_dir, "bert_cache")
+        maybe_make_dir(bert_cache_dir)
+        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
         d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.

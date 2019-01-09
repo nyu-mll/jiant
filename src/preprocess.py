@@ -211,7 +211,7 @@ def _build_vocab(args, tasks, vocab_path: str):
         add_task_label_vocab(vocab, task)
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
-        add_openai_bpe_vocab(vocab)
+        add_openai_bpe_vocab(vocab, 'openai_bpe')
     if args.bert_model_name:
         # Add pre-computed BPE vocabulary for BERT model.
         add_bert_wpm_vocab(vocab, args.bert_model_name)
@@ -262,6 +262,13 @@ def build_tasks(args):
                              ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+    if args.bert_model_name:
+        assert not indexers, ("BERT is not supported alongside"
+                              " other indexers due to tokenization!")
+        assert args.tokenizer == args.bert_model_name, \
+                             ("BERT is not supported alongside"
+                              " other indexers due to tokenization!")
+        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
@@ -543,13 +550,16 @@ def add_task_label_vocab(vocab, task):
 def add_bert_wpm_vocab(vocab, bert_model_name):
     '''Add BERT WPM vocabulary for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do anything special so we can just use the standard indexers.
+    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
+    anything special so we can just use the standard indexers.
     '''
     from pytorch_pretrained_bert import BertTokenizer
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name)
+    do_lower_case = bert_model_name.endswith('uncased')
+    tokenizer = BertTokenizer.from_pretrained(bert_model_name,
+                                              do_lower_case=do_lower_case)
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
-    logging.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name,
-                 len(ordered_vocab))
+    log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name,
+             len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, bert_model_name)
 
