@@ -142,7 +142,11 @@ tensorboard --logdir <exp_dir>/<run_name>/tensorboard
 
 The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks. We also provide bag of words and RNN sentence encoder. 
 
+<<<<<<< HEAD
 The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in build_model()) in src/models.py. 
+=======
+The base model class is aMultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in build_model()). 
+>>>>>>> 3b30f182cd95ac4270add49716469caefc011ad3
 
 We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer` and `openai_transformer_finetune` in your code.
 
