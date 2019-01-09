@@ -73,10 +73,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
         from .bert.utils import BertEmbedderModule
         log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
         cove_layer = None
-        # TODO: use global cache if not fine-tuning to avoid large download on
-        # each run.
-        bert_cache_dir = os.path.join(args.exp_dir, "bert_cache")
-        maybe_make_dir(bert_cache_dir)
+        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
+        # cache; see
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        bert_cache_dir = (os.path.join(args.exp_dir, "bert_cache") if
+                          args.bert_fine_tune else None)
+        if bert_cache_dir:
+            maybe_make_dir(bert_cache_dir)
         embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
         d_emb = embedder.get_output_dim()
     else:
