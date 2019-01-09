@@ -32,6 +32,8 @@ GPU_TYPE="p100"
 PROJECT="$USER"
 NOTIFY_EMAIL=""
 
+BERT_CACHE="/nfs/jsalt/share/bert_cache"
+
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts ":m:g:p:n:" opt; do
@@ -97,6 +99,8 @@ spec:
       value: ${PROJECT_DIR}
     - name: NOTIFY_EMAIL
       value: ${NOTIFY_EMAIL}
+    - name: PYTORCH_PRETRAINED_BERT_CACHE
+      value: ${BERT_CACHE}
   nodeSelector:
     cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
   volumes:
