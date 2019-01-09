@@ -43,14 +43,16 @@ def space_tokenize_with_bow(sentence):
     """Add <w> markers to ensure word-boundary alignment."""
     return ["<w>" + t for t in sentence.split()]
 
-def retokenize_record(record, bert_tokenizer_fn):
+def retokenize_record(record, bert_tokenizer_fn, do_lower_case: bool):
     """Retokenize edge probing examples. Modifies in-place.
 
     This can be slow, so recommended to use as a pre-processing step.
     See retokenize_edge_data.py.
     """
     text = record['text']
-    bow_tokens = space_tokenize_with_bow(text)
+    # If using lowercase, do this for the source tokens for better matching.
+    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
+                                         text)
     wpm_tokens = bert_tokenizer_fn(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
@@ -68,14 +70,14 @@ def retokenize_record(record, bert_tokenizer_fn):
                                        ta.project_span(*target['span2'])))
     return record
 
-def retokenize_file(fname, new_tokenizer_name, tokenizer_fn):
+def retokenize_file(fname, new_tokenizer_name, **record_kw):
     new_name = fname + ".retokenized." + new_tokenizer_name
     log.info("Processing file: %s", fname)
     record_iter = list(utils.load_json_data(fname))
     log.info("  saving to %s", new_name)
     with open(new_name, 'w') as fd:
         for record in tqdm(record_iter):
-            new_record = retokenize_record(record, tokenizer_fn)
+            new_record = retokenize_record(record, **record_kw)
             fd.write(json.dumps(new_record))
             fd.write("\n")
 
@@ -90,10 +92,15 @@ def main(args):
     args = parser.parse_args(args)
 
     # Load tokenizer
-    tokenizer = BertTokenizer.from_pretrained(args.model)
+    do_lower_case = args.model.endswith('uncased')
+    log.info("do_lower_case=%s", str(do_lower_case))
+    tokenizer = BertTokenizer.from_pretrained(args.model,
+                                              do_lower_case=do_lower_case)
 
     for fname in args.inputs:
-        retokenize_file(fname, args.model, tokenizer.tokenize)
+        retokenize_file(fname, args.model,
+                        bert_tokenizer_fn=tokenizer.tokenize,
+                        do_lower_case=do_lower_case)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
