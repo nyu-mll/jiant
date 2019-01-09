@@ -63,14 +63,29 @@ class BertEmbedderModule(nn.Module):
         ids[ids == 0] = FILL_ID + 2
         ids -= 2
 
-        # encoded_layers is a list of layer activations, each of which is
-        # <float32> [batch_size, seq_len, output_dim]
-        encoded_layers, _ = self.model(ids, token_type_ids=torch.zeros_like(ids),
-                                       attention_mask=mask,
-                                       output_all_encoded_layers=True)
+        if self.embeddings_mode != "none":
+            # Extract lexical embeddings; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py#L186
+            h_lex = self.model.embeddings.word_embeddings(ids)
+            h_lex = self.model.embeddings.LayerNorm(h_lex)
+            # following our use of the OpenAI model, don't use dropout for
+            # probing.
+            #  h_lex = self.model.embeddings.dropout(embeddings)
+
+        if self.embeddings_mode != "only":
+            # encoded_layers is a list of layer activations, each of which is
+            # <float32> [batch_size, seq_len, output_dim]
+            encoded_layers, _ = self.model(ids, token_type_ids=torch.zeros_like(ids),
+                                           attention_mask=mask,
+                                           output_all_encoded_layers=True)
+            h_enc = encoded_layers[-1]
 
         if self.embeddings_mode == "none":
-            h = encoded_layers[-1]
+            h = h_enc
+        elif self.embeddings_mode == "cat":
+            h = torch.cat([h_enc, h_lex], dim=2)
+        elif self.embeddings_mode == "only":
+            h = h_lex
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
                                        " not yet supported.")
@@ -83,6 +98,9 @@ class BertEmbedderModule(nn.Module):
         return h_trunc
 
     def get_output_dim(self):
-        return self.model.config.hidden_size
+        if self.embeddings_mode == "cat":
+            return 2*self.model.config.hidden_size
+        else:
+            return self.model.config.hidden_size
 
 
