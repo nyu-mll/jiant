@@ -115,6 +115,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 yield sent
 
 
+# TODO: restructure LM task hierarchy
 @register_task('bwb', rel_path='BWB/')
 class WikiTextLMTask(LanguageModelingTask):
     """ Language modeling on a Wikitext dataset
