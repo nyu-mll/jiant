@@ -48,7 +48,7 @@ class EdgeProbingTask(Task):
                  label_file: str = None,
                  files_by_split: Dict[str, str] = None,
                  is_symmetric: bool = False,
-                 single_sided: bool = False):
+                 single_sided: bool = False, **kw):
         """Construct an edge probing task.
 
         path, max_seq_len, and name are passed by the code in preprocess.py;
@@ -67,7 +67,7 @@ class EdgeProbingTask(Task):
                 projection layer and attention weight for each.
             single_sided: if true, only use span1.
         """
-        super().__init__(name)
+        super().__init__(name, **kw)
 
         assert label_file is not None
         assert files_by_split is not None

@@ -4,6 +4,7 @@ Import this to use @register_task when defining new tasks,
 then access the registry as registry.REGISTRY.
 """
 
+# Entries have form name -> (cls, rel_path, kw)
 REGISTRY = {}  # Do not edit manually!
 
 def register_task(name, rel_path, **kw):
@@ -11,7 +12,7 @@ def register_task(name, rel_path, **kw):
 
     Use this instead of adding to NAME2INFO in preprocess.py
 
-    If kw is not None, this will be passed as additional args when the Task is
+    If kw is not empty, this will be passed as additional args when the Task is
     constructed in preprocess.py.
 
     Usage:
@@ -20,8 +21,7 @@ def register_task(name, rel_path, **kw):
         ...
     '''
     def _wrap(cls):
-        entry = (cls, rel_path, kw) if kw else (cls, rel_path)
-        REGISTRY[name] = entry
+        REGISTRY[name] = (cls, rel_path, kw)
         return cls
     return _wrap
 
