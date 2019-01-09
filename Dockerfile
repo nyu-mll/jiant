@@ -1,5 +1,9 @@
 # Dockerfile for jiant repo. Currently intended to run in our GCP environment.
 #
+# To set up Docker for local use, follow the first part of the Kubernetes
+# install instructions (gcp/kubernetes/README.md) to install Docker and
+# nvidia-docker.
+#
 # Usage:
 #   docker build -t jiant-sandbox:v1 .
 #   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
