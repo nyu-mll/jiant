@@ -13,13 +13,11 @@ import copy
 import itertools
 import json
 import logging as log
-import math
 import os
 
 import numpy as np
 import torch
 
-import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure, Average
 from ..allennlp_mods.correlation import Correlation, FastMatthews
@@ -47,7 +45,7 @@ def sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
 
-def _atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
+def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
     ''' Replace tokens that will be split by tokenizer with a
     placeholder token. Tokenize, and then substitute the placeholder
     with the *first* nonatomic token in the list. '''
@@ -310,140 +308,6 @@ class RankingTask(Task):
     pass
 
 
-class LanguageModelingTask(SequenceGenerationTask):
-    """Generic language modeling task
-    See base class: SequenceGenerationTask
-    Attributes:
-        max_seq_len: (int) maximum sequence length
-        min_seq_len: (int) minimum sequence length
-        target_indexer: (Indexer Obejct) Indexer used for target
-        files_by_split: (dict) files for three data split (train, val, test)
-    """
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        """Init class
-        Args:
-            path: (str) path that the data files are stored
-            max_seq_len: (int) maximum length of one sequence
-            name: (str) task name
-        """
-        super().__init__(name, **kw)
-        self.scorer1 = Average()
-        self.scorer2 = None
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.max_seq_len = max_seq_len
-        self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
-        self.files_by_split = {'train': os.path.join(path, "train.txt"),
-                               'val': os.path.join(path, "valid.txt"),
-                               'test': os.path.join(path, "test.txt")}
-
-    def count_examples(self):
-        """Computes number of samples
-        Assuming every line is one example.
-        """
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
-        self.example_counts = example_counts
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task
-        Args:
-            reset: (boolean) reset any accumulators or internal state
-        """
-        nll = self.scorer1.get_metric(reset)
-        return {'perplexity': math.exp(nll)}
-
-    def load_data(self, path):
-        """Loading data file and tokenizing the text
-        Args:
-            path: (str) data file path
-        """
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                yield process_sentence(toks, self.max_seq_len)
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """Process a language modeling split by indexing and creating fields.
-        Args:
-            split: (list) a single list of sentences
-            indexers: (Indexer object) indexer to index input words
-        """
-        def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
-            d = {}
-            d["input"] = sentence_to_text_field(sent, indexers)
-            d["targs"] = sentence_to_text_field(sent[1:] + [sent[0]], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-1], self.target_indexer)
-            return Instance(d)
-        for sent in split:
-            yield _make_instance(sent)
-
-    def get_split_text(self, split: str):
-        """Get split text as iterable of records.
-        Args:
-            split: (str) should be one of 'train', 'val', or 'test'.
-        """
-        return self.load_data(self.files_by_split[split])
-
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        """Yield sentences, used to compute vocabulary.
-        """
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            for sent in self.load_data(path):
-                yield sent
-
-
-# TODO: restructure LM task hierarchy
-@register_task('bwb', rel_path='BWB/')
-class WikiTextLMTask(LanguageModelingTask):
-    """ Language modeling on a Wikitext dataset
-    See base class: LanguageModelingTask
-    """
-    def load_data(self, path):
-        ''' Rather than return a whole list of examples, stream them '''
-        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                # WikiText103 preprocesses unknowns as '<unk>'
-                # which gets tokenized as '@', '@', 'UNKNOWN', ...
-                # We replace to avoid that
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
-                # we also filtering out headers (artifact of the data)
-                # which are processed to have multiple = signs
-                if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
-                    continue
-                yield sent
-
-
-@register_task('wiki103', rel_path='WikiText103/')
-class WikiText103LMTask(WikiTextLMTask):
-    """Language modeling task on Wikitext 103
-    See base class: WikiTextLMTask
-    """
-
-    def __init__(self, path, *args, **kw):
-        super().__init__(path, *args, **kw)
-        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
-                               'val': os.path.join(path, "valid.sentences.txt"),
-                               'test': os.path.join(path, "test.sentences.txt")}
-
-
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -466,192 +330,6 @@ class SSTTask(SingleClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
-
-
-@register_task('reddit', rel_path='Reddit_2008/')
-@register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/')
-@register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
-@register_task('reddit_13G', rel_path='Reddit_13G/')
-@register_task('reddit_softmax', rel_path='Reddit_2008/')
-class RedditTask(RankingTask):
-    ''' Task class for Reddit data.  '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super().__init__(name, **kw)
-        self.scorer1 = Average()  # CategoricalAccuracy()
-        self.scorer2 = None
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
-        self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for
-                               split in ["train", "val", "test"]}
-        self.max_seq_len = max_seq_len
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
-
-    def load_data(self, path):
-        ''' Load data '''
-        with open(path, 'r') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 4 or not row[2] or not row[3]:
-                    continue
-                sent1 = process_sentence(row[2], self.max_seq_len)
-                sent2 = process_sentence(row[3], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
-                yield sent1
-                yield sent2
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
-        self.example_counts = example_counts
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
-            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels",
-                                     skip_indexing=True)
-            return Instance(d)
-
-        for sent1, sent2, trg in split:
-            yield _make_instance(sent1, sent2, trg)
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
-
-
-@register_task('reddit_pair_classif', rel_path='Reddit_2008/')
-@register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
-@register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
-class RedditPairClassificationTask(PairClassificationTask):
-    ''' Task class for Reddit data.  '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super().__init__(name, n_classes=2, **kw)
-        self.scorer2 = None
-        self.val_metric = "%s_accuracy" % self.name
-        self.val_metric_decreases = False
-        self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for
-                               split in ["train", "val", "test"]}
-        self.max_seq_len = max_seq_len
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
-
-    def load_data(self, path):
-        ''' Load data '''
-        with open(path, 'r') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 4 or not row[2] or not row[3]:
-                    continue
-                sent1 = process_sentence(row[2], self.max_seq_len)
-                sent2 = process_sentence(row[3], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
-                yield sent1
-                yield sent2
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
-        self.example_counts = example_counts
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            #d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
-            #d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels",
-                                     skip_indexing=True)
-            return Instance(d)
-
-        for sent1, sent2, trg in split:
-            yield _make_instance(sent1, sent2, trg)
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        acc = self.scorer1.get_metric(reset)
-        return {'accuracy': acc}
-
-
-@register_task('mt_pair_classif', rel_path='wmt14_en_de_local/')
-@register_task('mt_pair_classif_dummy', rel_path='wmt14_en_de_mini/')
-class MTDataPairClassificationTask(RedditPairClassificationTask):
-    ''' Task class for MT data pair classification using standard setup.
-        RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
-    '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super().__init__(path, max_seq_len, name, **kw)
-        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
-                               split in ["train", "val", "test"]}
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
-                targ = 1
-                yield (sent1, sent2, targ)
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(
-                1 for line in codecs.open(
-                    split_path, 'r', 'utf-8', errors='ignore'))
-        self.example_counts = example_counts
 
 
 @register_task('cola', rel_path='CoLA/')
@@ -1101,84 +779,6 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         return collected_metrics
 
 
-@register_task('nli-prob', rel_path='NLI-Prob/')
-class NLITypeProbingTask(PairClassificationTask):
-    ''' Task class for Probing Task (NLI-type)'''
-
-    def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **kw):
-        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **kw)
-        self.load_data(path, max_seq_len, probe_path)
-        #  self.use_classifier = 'mnli'  # use .conf params instead
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading NLI-type probing data.")
-
-
-@register_task('nli-prob-negation', rel_path='NLI-Prob/')
-class NLITypeProbingTaskNeg(PairClassificationTask):
-
-    def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **kw):
-        super(NLITypeProbingTaskNeg, self).__init__(name, n_classes=3,
-                                                    **kw)
-        self.load_data(path, max_seq_len, probe_path)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
-                            s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading negation data.")
-
-
-@register_task('nli-prob-prepswap', rel_path='NLI-Prob/')
-class NLITypeProbingTaskPrepswap(PairClassificationTask):
-
-    def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **kw):
-        super(NLITypeProbingTaskPrepswap, self).__init__(name, n_classes=3,
-                                                         **kw)
-        self.load_data(path, max_seq_len, probe_path)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len, probe_path):
-        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'all.prepswap.turk.newlabels.tsv'), max_seq_len,
-                            s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading preposition swap data.")
-
-
 @register_task('nps', rel_path='nps/')
 class NPSTask(PairClassificationTask):
 
@@ -1202,41 +802,6 @@ class NPSTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading NP/S data.")
-
-
-@register_task('nli-alt', rel_path='NLI-Prob/')
-class NLITypeProbingAltTask(NLITypeProbingTask):
-    ''' Task class for Alt Probing Task (NLI-type), NLITypeProbingTask with different indices'''
-
-    def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **kw):
-        super(NLITypeProbingTask, self).__init__(name, n_classes=3, **kw)
-        self.load_data(path, max_seq_len, probe_path)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'0': 0, '1': 1, '2': 2}
-        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(
-            os.path.join(
-                path,
-                probe_path),
-            max_seq_len,
-            idx_idx=0,
-            s1_idx=9,
-            s2_idx=10,
-            targ_idx=1,
-            targ_map=targ_map,
-            skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading NLI-alt probing data.")
 
 
 @register_task('rte', rel_path='RTE/')
@@ -1340,133 +905,6 @@ class JOCITask(PairOrdinalRegressionTask):
         log.info("\tFinished loading JOCI data.")
 
 
-# TODO: remove dummy / debug tasks
-@register_task('wmt_debug', rel_path='wmt_debug/', max_targ_v_size=5000)
-@register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
-@register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
-class MTTask(SequenceGenerationTask):
-    '''Machine Translation Task'''
-
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        ''' '''
-        super().__init__(name, **kw)
-        self.scorer1 = Average()
-        self.scorer2 = Average()
-        self.scorer3 = Average()
-        self.val_metric = "%s_perplexity" % self.name
-        self.val_metric_decreases = True
-        self.max_seq_len = max_seq_len
-        self._label_namespace = self.name + "_tokens"
-        self.max_targ_v_size = max_targ_v_size
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
-        self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
-                               split in ["train", "valid", "test"]}
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
-
-    def get_all_labels(self) -> List[str]:
-        ''' Build vocabulary and return it as a list '''
-        word2freq = collections.Counter()
-        for split in ["train", "val"]:
-            for _, sent in self.load_data(self.files_by_split[split]):
-                for word in sent:
-                    word2freq[word] += 1
-        return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 2 or not row[0] or not row[1]:
-                    continue
-                src_sent = process_sentence(row[0], self.max_seq_len)
-                # target sentence sos_tok, eos_tok need to match Seq2SeqDecoder class
-                tgt_sent = process_sentence(
-                    row[1], self.max_seq_len,
-                    sos_tok=allennlp_util.START_SYMBOL,
-                    eos_tok=allennlp_util.END_SYMBOL,
-                )
-                yield (src_sent, tgt_sent)
-
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split in self.files_by_split:
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            path = self.files_by_split[split]
-            yield from self.load_data(path)
-
-    def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
-        example_counts = {}
-        for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(
-                1 for line in codecs.open(
-                    split_path, 'r', 'utf-8', errors='ignore'))
-        self.example_counts = example_counts
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input, target):
-            d = {}
-            d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer)  # this line changed
-            return Instance(d)
-
-        for sent1, sent2 in split:
-            yield _make_instance(sent1, sent2)
-
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        avg_nll = self.scorer1.get_metric(reset)
-        unk_ratio_macroavg = self.scorer3.get_metric(reset)
-        return {
-            'perplexity': math.exp(avg_nll),
-            'bleu_score': 0,
-            'unk_ratio_macroavg': unk_ratio_macroavg}
-
-
-@register_task('reddit_s2s', rel_path='Reddit_2008/', max_targ_v_size=0)
-@register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/', max_targ_v_size=0)
-@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/', max_targ_v_size=0)
-class RedditSeq2SeqTask(MTTask):
-    ''' Task for seq2seq using reddit data
-
-    Note: max_targ_v_size doesn't do anything here b/c the
-    target is in English'''
-
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        super().__init__(path=path, max_seq_len=max_seq_len,
-                         max_targ_v_size=max_targ_v_size, name=name,
-                         **kw)
-        self._label_namespace = None
-        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
-        self.files_by_split = {"train": os.path.join(path, "train.csv"),
-                               "val": os.path.join(path, "val.csv"),
-                               "test": os.path.join(path, "test.csv")}
-
-    def load_data(self, path):
-        ''' Load data '''
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                row = row.strip().split('\t')
-                if len(row) < 4 or not row[2] or not row[3]:
-                    continue
-                src_sent = process_sentence(row[2], self.max_seq_len)
-                tgt_sent = process_sentence(row[3], self.max_seq_len,
-                                            sos_tok=allennlp_util.START_SYMBOL,
-                                            eos_tok=allennlp_util.END_SYMBOL,
-                                            )
-                yield (src_sent, tgt_sent)
-
-
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
     '''Pair Classificaiton Task using Wiki103'''
@@ -1497,7 +935,7 @@ class Wiki103Classification(PairClassificationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -1537,65 +975,6 @@ class Wiki103Classification(PairClassificationTask):
             # pair sentence # = sent # - 1
             example_counts[split] = sum(1 for line in open(split_path)) - 1
         self.example_counts = example_counts
-
-
-@register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
-class Wiki103Seq2SeqTask(MTTask):
-    ''' Skipthought objective on Wiki103 '''
-
-    def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        ''' Note: max_targ_v_size does nothing here '''
-        super().__init__(path, max_seq_len, max_targ_v_size, name, **kw)
-        # for skip-thoughts setting, all source sentences are sentences that
-        # followed by another sentence (which are all but the last one).
-        # Similar for self.target_sentences
-        self._nonatomic_toks = [UNK_TOK_ALLENNLP, '<unk>']
-        self._label_namespace = None
-        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
-        self.files_by_split = {"train": os.path.join(path, "train.sentences.txt"),
-                               "val": os.path.join(path, "valid.sentences.txt"),
-                               "test": os.path.join(path, "test.sentences.txt")}
-
-    def load_data(self, path):
-        ''' Load data '''
-        nonatomic_toks = self._nonatomic_toks
-        with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
-            for row in txt_fh:
-                toks = row.strip()
-                if not toks:
-                    continue
-                sent = _atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
-                                        self.max_seq_len)
-                yield sent, []
-
-    def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text.
-
-        Subclass can override this if data is not stored in column format.
-        '''
-        # pair setences# = sent# - 1
-        return len(split_text) - 1
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split.
-
-        Split is a single list of sentences here.
-        '''
-        target_indexer = self.target_indexer
-
-        def _make_instance(prev_sent, sent):
-            d = {}
-            d["inputs"] = sentence_to_text_field(prev_sent, indexers)
-            d["targs"] = sentence_to_text_field(sent, target_indexer)
-            return Instance(d)
-
-        prev_sent = None
-        for sent, _ in split:
-            if prev_sent is None:
-                prev_sent = sent
-                continue
-            yield _make_instance(prev_sent, sent)
-            prev_sent = sent
 
 
 # Task class for DisSent with Wikitext 103 only considering clauses from within a single sentence
