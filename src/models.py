@@ -211,11 +211,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     d_sent += args.skip_embs * d_emb
 
-    # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab)
-    # for each task, you need to have a certain comoponent. From OpenAI, then
-    # add a decoder at the end.
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
