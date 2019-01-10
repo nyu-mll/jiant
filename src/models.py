@@ -185,6 +185,15 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
             task, model, d_sent, d_emb, vocab, embedder, args)
 
 
+<<<<<<< HEAD
+=======
+"""
+Our initial languae model is a forwrad and bakcward LM
+Look at build_module to look at the types of components that ahve aready been implemented.
+"""
+
+
+>>>>>>> f75558e5c2e58d7ddfb36c32fbb9e6bae30a7ffe
 def build_model(args, vocab, pretrained_embs, tasks):
     '''Build model according to args
     Returns: model which has attributes set in it with the attrbutes.
@@ -612,7 +621,11 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 class MultiTaskModel(nn.Module):
     '''
     Giant model with task-specific components and a shared word and sentence encoder.
+<<<<<<< HEAD
     This class samples the tasks passed in pretrained_tasks, adding task specific components
+=======
+    This model samples the tasks passed in pretrained_tasks, adding task specific components
+>>>>>>> f75558e5c2e58d7ddfb36c32fbb9e6bae30a7ffe
     to the model.
 
     '''
@@ -961,6 +974,10 @@ class MultiTaskModel(nn.Module):
                             first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
                             second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
                 - 'loss': size average CE loss
+<<<<<<< HEAD
+=======
+        This langauge model is simply a linear model forward and backward.
+>>>>>>> f75558e5c2e58d7ddfb36c32fbb9e6bae30a7ffe
         """
         out = {}
         sent_encoder = self.sent_encoder
