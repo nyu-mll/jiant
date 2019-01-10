@@ -40,8 +40,19 @@ class EdgeProbingTask(Task):
     '''
     @property
     def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files. '''
-        return ".retokenized." + self.tokenizer_name
+        ''' Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
+
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
 
     def __init__(self, path: str, max_seq_len: int,
                  name: str,
@@ -350,21 +361,3 @@ register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                    'test': "ccg.parse.test.json",
                }, single_sided=True)(EdgeProbingTask)
 
-
-class OpenAIEdgeProbingTask(EdgeProbingTask):
-    """Version of EdgeProbingTask that loads BPE-tokenized data."""
-    @property
-    def tokenizer_name(self):
-        return "OpenAI.BPE"
-
-# We need '-openai' versions of all edge probing tasks, which load the correct
-# tokenization for that model. To avoid lots of boilerplate, add these to the
-# registry at import time using the loop below.
-for name in list(REGISTRY.keys()):
-    args = REGISTRY[name]
-    cls = args[0]
-    if (issubclass(cls, EdgeProbingTask)
-            and not issubclass(cls, OpenAIEdgeProbingTask)):
-        new_args = (OpenAIEdgeProbingTask, *args[1:])
-        new_name = name + "-openai"
-        REGISTRY[new_name] = new_args

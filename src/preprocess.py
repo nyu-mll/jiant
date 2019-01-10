@@ -234,23 +234,31 @@ def build_tasks(args):
         setattr(task, "_classifier_name",
                 task_classifier if task_classifier else task.name)
 
+    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
+    assert len(set(tokenizer_names.values())) == 1, \
+            (f"Error: mixing tasks with different tokenizers!"
+              " Tokenizations: {tokenizer_names:s}")
+
     # 2) build / load vocab and indexers
     indexers = {}
     if not args.word_embs == 'none':
         indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.cove:
+        assert args.tokenizer == "MosesTokenizer", \
+                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
+                 " you are using args.tokenizer = {args.tokenizer}")
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
+        assert args.tokenizer == "OpenAI.BPE", \
+                             ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-        # Exit if any tasks are not compatible with this tokenization.
-        for task in tasks:
-            assert task.tokenizer_name == "OpenAI.BPE", \
-                (f"Task '{task.name:s}' not compatible with OpenAI "
-                  "Transformer model. For edge probing, use -openai versions.")
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
@@ -389,7 +397,8 @@ def _get_task(name, args, data_path, scratch_path):
     ''' Build or load a single task. '''
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
     task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
-    pkl_path = os.path.join(scratch_path, "tasks", "%s.pkl" % name)
+    pkl_path = os.path.join(scratch_path, "tasks",
+                            f"{name:s}.{args.tokenizer:s}.pkl")
     # TODO: refactor to always read from disk, even if task is constructed
     # here. This should avoid subtle bugs from deserialization issues.
     if os.path.isfile(pkl_path) and not args.reload_tasks:
@@ -406,7 +415,7 @@ def _get_task(name, args, data_path, scratch_path):
             task_kw['max_targ_v_size'] = args.max_targ_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
-                        **task_kw)
+                        tokenizer_name=args.tokenizer, **task_kw)
         utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
