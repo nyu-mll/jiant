@@ -35,7 +35,7 @@ class BertEmbedderModule(nn.Module):
             sent: batch dictionary
 
         Returns:
-            h: [batch_size, n_ctx, d_emb]
+            h: [batch_size, seq_len, d_emb]
         """
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
@@ -84,7 +84,7 @@ class BertEmbedderModule(nn.Module):
             h = h_lex
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
-                                       " not yet supported.")
+                                       " not supported.")
 
         # Truncate back to the original ids length, for compatiblity with the
         # rest of our embedding models. This only drops padding
