@@ -102,7 +102,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     return instances  # lazy iterator
 
 
-class Task():
+class Task(object):
     '''Generic class for a task
 
     Methods and attributes:
@@ -114,8 +114,10 @@ class Task():
         - process: pad and indexify data given a mapping
         - optimizer
     '''
-    def __init__(self, name):
+    def __init__(self, name, tokenizer_name):
         self.name = name
+        assert self.tokenizer_is_supported(tokenizer_name)
+        self._tokenizer_name = tokenizer_name
 
     def load_data(self, path, max_seq_len):
         ''' Load data from path and create splits. '''
@@ -137,15 +139,13 @@ class Task():
             count = self.get_num_examples(st)
             self.example_counts[split] = count
 
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        return tokenizer_name == utils.TOKENIZER.__class__.__name__
+
     @property
     def tokenizer_name(self):
-        ''' Get the name of the tokenizer used for this task.
-
-        Generally, this is just 'MosesTokenizer', but other tokenizations may
-        be needed in special cases such as when working with BPE-based models
-        such as the OpenAI transformer LM.
-        '''
-        return utils.TOKENIZER.__class__.__name__
+        return self._tokenizer_name
 
     @property
     def n_train_examples(self):

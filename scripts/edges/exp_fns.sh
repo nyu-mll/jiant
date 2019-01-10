@@ -99,44 +99,36 @@ function cove_exp() {
 # OpenAI transformer model.
 function openai_exp() {
     # Probe the OpenAI transformer model.
-    # Note that we append -openai to the task name to use the
-    # specially-retokenized versions.
     # Usage: openai_exp <task_name>
     OVERRIDES="exp_name=openai-$1, run_name=run"
-    OVERRIDES+=", target_tasks=${1}-openai"
+    OVERRIDES+=", target_tasks=$1"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_cat_exp() {
     # As above, but concat embeddings to output.
-    # Note that we append -openai to the task name to use the
-    # specially-retokenized versions.
     # Usage: openai_cat_exp <task_name>
     OVERRIDES="exp_name=openai-cat-$1, run_name=run"
-    OVERRIDES+=", target_tasks=${1}-openai"
+    OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=cat"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_lex_exp() {
     # Probe the OpenAI transformer model base layer.
-    # Note that we append -openai to the task name to use the
-    # specially-retokenized versions.
     # Usage: openai_lex_exp <task_name>
     OVERRIDES="exp_name=openai-lex-$1, run_name=run"
-    OVERRIDES+=", target_tasks=${1}-openai"
+    OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=only"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_bwb_exp() {
     # Probe the OpenAI transformer model, as trained on BWB-shuffled.
-    # Note that we append -openai to the task name to use the
-    # specially-retokenized versions.
     # Usage: openai_bwb_exp <task_name>
     CKPT_PATH="/nfs/jsalt/home/iftenney/checkpoints/bwb_shuffled/model.ckpt-1000000"
     OVERRIDES="exp_name=openai-bwb-$1, run_name=run"
-    OVERRIDES+=", target_tasks=${1}-openai"
+    OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_transformer_ckpt=${CKPT_PATH}"
     OVERRIDES+=", openai_embeddings_mode=cat"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
