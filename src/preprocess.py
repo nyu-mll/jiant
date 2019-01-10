@@ -37,7 +37,7 @@ from .utils import utils
 
 from .tasks import REGISTRY as TASKS_REGISTRY
 from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
-from .tasks.tasks import MTTask
+from .tasks.mt import MTTask
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"  # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SPECIALS = [SOS_TOK, EOS_TOK]  # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
