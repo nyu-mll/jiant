@@ -57,9 +57,10 @@ ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
 
-def make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
+def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
+    # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
     tfm_params = Params({'input_dim': d_emb, 'hidden_dim': args.d_hid,
                          'projection_dim': args.d_tproj,
                          'feedforward_hidden_dim': args.d_ff,
@@ -159,6 +160,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''
     Build model according to args
     Returns: model which has attributes set in it with the attrbutes.
+
     '''
 
     # Build embeddings.
@@ -174,9 +176,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab,
                                                        tasks, pretrained_embs)
-    d_sent = args.d_hid
+    d_sent_input = args.d_hid
 
-    sent_encoder = make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
+    sent_encoder = build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
 
     sent_encoder, d_sent_output = build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
     # d_task_input is the input dimension of the task-specific module
@@ -186,7 +188,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab)
+    build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
+    # for each task, you need to have a certain comoponent. From OpenAI, then add a decoder at the end.
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
