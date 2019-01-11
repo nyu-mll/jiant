@@ -554,7 +554,8 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 class MultiTaskModel(nn.Module):
     '''
     Giant model with task-specific components and a shared word and sentence encoder.
-    This class samples the tasks passed into the model to train on.
+    This class samples the tasks passed in pretrained_tasks, and adds task specific components
+    to the model.
     '''
 
     def __init__(self, args, sent_encoder, vocab):
