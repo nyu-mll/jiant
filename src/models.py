@@ -55,12 +55,11 @@ ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
 
-def make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
+def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
 
     # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
-    # So, embedding modules and classifier modules should not apply dropout there.
     tfm_params = Params({'input_dim': d_emb, 'hidden_dim': args.d_hid,
                          'projection_dim': args.d_tproj,
                          'feedforward_hidden_dim': args.d_ff,
@@ -68,7 +67,7 @@ def make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
-    # MAKE SENTENCE ENCODER 
+    # MAKE SENTENCE ENCODER
     if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
@@ -124,9 +123,9 @@ def make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-    return sent_encoder 
+    return sent_encoder, d_sent
 
-def build_tasks(args, tasks):
+def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     if args.is_probing_task:
         # TODO: move this logic to preprocess.py;
         # current implementation reloads MNLI data, which is slow.
@@ -154,14 +153,14 @@ def build_tasks(args, tasks):
         if task.name != model._get_task_params(task.name).get('use_classifier', task.name):
             log.info("Name of the task is different than the classifier it should use")
             continue
-        build_module(task, model, d_sent, d_emb, vocab, embedder, args)
+        build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, args)
 """
 Our initial languae model is a forwrad and bakcward LM
-Look at build_module to look at the types of components that ahve aready been implemented. 
+Look at build_module to look at the types of components that ahve aready been implemented.
 """
 def build_model(args, vocab, pretrained_embs, tasks):
-    '''Build model according to args 
-    Returns: model which has attributes set in it with the attrbutes. 
+    '''Build model according to args
+    Returns: model which has attributes set in it with the attrbutes.
 
     '''
 
@@ -172,21 +171,21 @@ def build_model(args, vocab, pretrained_embs, tasks):
         from .openai_transformer_lm.utils import OpenAIEmbedderModule
         log.info("Using OpenAI transformer model; skipping other embedders.")
         cove_layer = None
-        embedder = OpenAIEmbedderModule(args) # Here, this uses openAIEmbedder. 
+        embedder = OpenAIEmbedderModule(args) # Here, this uses openAIEmbedder.
         d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab,
                                                        tasks, pretrained_embs)
-    d_sent = args.d_hid
+    d_sent_input = args.d_hid
 
-    sent_encoder = make_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
+    sent_encoder, d_sent_output = build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
 
-    d_sent += args.skip_embs * d_emb
+    d_task_input = d_sent_output + (args.skip_embs * d_emb)
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    build_tasks(args, tasks)
+    build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab)
     # for each task, you need to have a certain comoponent. From OpenAI, then add a decoder at the end.
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
@@ -361,9 +360,9 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     return d_emb, embedder, cove_layer
 
 
-def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
+def build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model
-        These include decoders, linear layers for linear models. 
+        These include decoders, linear layers for linear models.
      '''
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
@@ -554,8 +553,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 class MultiTaskModel(nn.Module):
     '''
     Giant model with task-specific components and a shared word and sentence encoder.
-    This model samples the tasks passed in  
-    Pass in label. 
+    This class samples the tasks passed into the model to train on.
     '''
 
     def __init__(self, args, sent_encoder, vocab):
@@ -892,7 +890,7 @@ class MultiTaskModel(nn.Module):
                             first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
                             second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
                 - 'loss': size average CE loss
-        This langauge model is simply a linear model forward and backward. 
+        This langauge model is simply a linear model forward and backward.
         """
         out = {}
         sent_encoder = self.sent_encoder
