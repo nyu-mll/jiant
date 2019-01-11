@@ -30,10 +30,12 @@ from .utils import config
 from .preprocess import parse_task_list_arg, get_tasks
 
 from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedSWTask, \
-    GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
-    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
+    GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
+    TaggingTask, WeakGroundedTask, JOCITask
+from .tasks.lm import LanguageModelingTask
+from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
