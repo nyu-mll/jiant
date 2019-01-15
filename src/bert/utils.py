@@ -57,6 +57,9 @@ class BertEmbedderModule(nn.Module):
         # reserved for padding).
         FILL_ID = 0  # [PAD] for BERT models.
         ids[ids == 0] = FILL_ID + 2
+        # Index 1 should never be used since the BERT WPM uses its own
+        # unk token, and handles this at the string level before indexing.
+        assert (ids > 1).all()
         ids -= 2
 
         if self.embeddings_mode != "none":
