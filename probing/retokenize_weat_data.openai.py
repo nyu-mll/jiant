@@ -18,6 +18,7 @@
 import os
 import sys
 import json
+from tqdm import tqdm
 
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
@@ -30,6 +31,15 @@ from src.openai_transformer_lm import utils as openai_utils
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
     return [t + "</w>" for t in sentence.split()]
+
+def retokenize_word_set(word_set):
+    """Retokenize """
+    examples = word_set["examples"]
+    new_examples = []
+    for example in examples:
+        new_examples.append(retokenize_record(example))
+    word_set["examples"] = new_examples
+    return word_set
 
 def retokenize_record(text):
     """Retokenize edge probing examples. Modifies in-place.
@@ -51,20 +61,12 @@ def retokenize_file(fname):
     new_tokenizer_name = "OpenAI.BPE"
     new_name = fname + ".retokenized." + new_tokenizer_name
     log.info("Processing file: %s", fname)
-    cat2rec = {}
-    with open(fname) as fhandle:
-        for row in fhandle:
-            category, words = row.strip().split(':')
-            cat2rec[category] = words.split(',')
-
-    log.info("  saving to %s", new_name)
-    with open(new_name, 'w') as fd:
-        for cat, recs in cat2rec.items():
-            new_recs = []
-            for record in recs:
-                new_record = retokenize_record(record)
-                new_recs.append(new_record)
-            fd.write("%s:%s\n" % (cat, ','.join(new_recs)))
+    test_d = json.load(open(fname, 'r'))
+    for word_set_name, word_set in tqdm(test_d.items()):
+        new_set = retokenize_word_set(word_set)
+        test_d[word_set_name] = new_set
+    with open(new_name, 'w') as fhandle:
+        json.dump(test_d, fhandle, indent=2)
 
 def main(args):
     for fname in args:

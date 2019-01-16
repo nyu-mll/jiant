@@ -1,12 +1,12 @@
 """ Helper functions to evaluate a model on a dataset """
 import os
 import time
-import logging as log
-
 import json
+import h5py
 import numpy as np
 np.set_printoptions(threshold=np.nan)
 import pandas as pd
+import logging as log
 from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
@@ -342,7 +342,7 @@ def write_results(results, results_file, run_name):
 
 def encode(model, tasks, batch_size, cuda_device, split, combine_method="mean"):
     ''' Get representations for each example in a split of for task in tasks '''
-    FIELDS_TO_EXPORT = ['idx', 'category', 'sent_str']
+    FIELDS_TO_EXPORT = ['idx', 'category', 'test_split', 'sent_str']
     if combine_method == "none":
         raise NotImplementedError("Method %s for combining vectors is not supported!", combine_method)
     all_reps = {}
@@ -379,16 +379,30 @@ def encode(model, tasks, batch_size, cuda_device, split, combine_method="mean"):
 
     return all_reps
 
-def write_encs(tasks, encs, run_dir):
+def write_weat_encs(tasks, encs, run_dir):
     ''' Write encodings to enc_file '''
     quoting = QUOTE_MINIMAL
-    cols_to_write = ['index', 'category', 'string', 'encoding']
+    cols_to_write = ['test_split', 'category', 'string', 'encoding']
+    splits = ["targ1", "targ2", "attr1", "attr2"]
+
+    def write_df_to_hdf5(df, outfile):
+        with h5py.File(outfile, 'w') as out_fh:
+            for test_split in splits:
+                split_df = df.loc[df["test_split"] == test_split]
+                split = out_fh.create_group(test_split)
+                category = split_df["category"].values[0]
+                split["category"] = category
+                for ex, enc, cat in zip(split_df["string"], split_df["encoding"], split_df["category"]):
+                    ex = ex.replace(' ', '').replace('</w>', ' ').rstrip()
+                    split[ex] = np.array(enc)
+                    assert cat == category
 
     for task in tasks:
         encs_df = encs[task.name]
         encs_df.rename({"idx": "index", "reps": "encoding", "sent_str": "string"},
                        axis="columns", inplace=True)
         outfile = os.path.join(run_dir, "%s.encs" % task.name)
-        encs_df.to_csv(outfile, sep="\t", index=False, float_format="%.3f",
-                       quoting=quoting, columns=cols_to_write)
+        #encs_df.to_csv(outfile, sep="\t", index=False, float_format="%.3f",
+        #               quoting=quoting, columns=cols_to_write)
+        write_df_to_hdf5(encs_df, outfile)
     return
