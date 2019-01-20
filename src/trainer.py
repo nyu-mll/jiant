@@ -53,11 +53,13 @@ def build_trainer_params(args, task_names):
 
 def build_trainer(params, model, run_dir, metric_should_decrease=True):
     '''Build a trainer from params.
+
     Parameters
     ----------
     params: Trainer parameters as built by build_trainer_params.
     model: A module with trainable parameters.
     run_dir: The directory where we save the models.
+
     Returns
     -------
     A trainer object, a trainer config object, an optimizer config object,
@@ -113,6 +115,7 @@ class SamplingMultiTaskTrainer:
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
+
         Parameters
         ----------
         model : ``Model``, required.
@@ -210,6 +213,7 @@ class SamplingMultiTaskTrainer:
             phase):
         ''' Set up the trainer by initializing task_infos and metric_infos, which
         track necessary information about the training status of each task and metric respectively.
+
         Returns:
             - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info contains:
                 - iterator: a task specific (because it uses that task's fields to dynamically batch) batcher
@@ -222,6 +226,7 @@ class SamplingMultiTaskTrainer:
                 - scheduler: a task specific scheduler, not used if the global optimizer is not None
                 - stopped: a bool indicating if that task is stopped or not (if it ran out of patience or hit min lr)
                 - last_log: the time we last logged progress for the task
+
             - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
                 Each metric should be the validation metric of a task, except {micro/macro}_avg,
                 which are privileged to get an aggregate multi-task score. Each dict contains:
@@ -283,6 +288,7 @@ class SamplingMultiTaskTrainer:
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
+
         Parameters
         ----------
         tasks: A list of task objects to train on.
@@ -297,6 +303,7 @@ class SamplingMultiTaskTrainer:
         shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
         load_model: Whether to restore and continue training if a checkpoint is found.
         phase: Usually 'main' or 'eval'.
+
         Returns
         -------
         Validation results
@@ -840,6 +847,7 @@ class SamplingMultiTaskTrainer:
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=['main']):
         """
         Search for checkpoints to load, looking only for `main` training checkpoints.
+
         TODO: This is probably hairier than it needs to be. If you're good at string handling...
         """
         if not self._serialization_dir:
@@ -869,6 +877,7 @@ class SamplingMultiTaskTrainer:
         if you wish to load a model for inference/load parts of a model into a new
         computation graph, you should use the native Pytorch functions:
         `` model.load_state_dict(torch.load("/path/to/model/weights.th"))``
+
         Returns
         -------
         epoch

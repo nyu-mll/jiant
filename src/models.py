@@ -1,3 +1,4 @@
+'''Core model and functions for building it.'''
 import os
 import sys
 import math
@@ -416,9 +417,11 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
 
 def get_task_specific_params(args, task_name):
     ''' Search args for parameters specific to task.
+
     Args:
         args: main-program args, a config.Params object
         task_name: (string)
+
     Returns:
         AllenNLP Params object of task-specific params.
     '''
@@ -551,12 +554,14 @@ class MultiTaskModel(nn.Module):
     def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
+
         Args:
             - task (tasks.Task): task for which batch is drawn
             - batch (Dict[str:Dict[str:Tensor]]): dictionary of (field, indexing) pairs,
                 where indexing is a dict of the index namespace and the actual indices.
             - predict (Bool): passed to task specific forward(). If true, forward()
                 should return predictions.
+
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
@@ -837,40 +842,27 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
-            '''
-                This function is the specific task-component forward func
-                Args:
-                        batch: a dict of inputs and target tags
-                        task: TaggingTask
-                        predict: (boolean) predict mode (not supported)
-                Returns
-                    out: (dict)
-                        - 'logits': output layer, dimension: [batchSize * task.max_seq_len, task.num_tags]
-                        - 'loss': size average CE loss
-            '''
-            out = {}
-            b_size, _ = batch['targs']['words'].size()
-            sent_encoder = self.sent_encoder
-            out['n_exs'] = get_batch_size(batch)
-            if not isinstance(sent_encoder, BiLMEncoder):
-                # Tihs si the targs which are the labels.
-                sent, mask = sent_encoder(batch['inputs'], task)
-                sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
-                hid2tag = self._get_classifier(task)
-                logits = hid2tag(sent)
-                logits = logits.view(b_size * (task.max_seq_len), -1) #inputs.
-                out['logits'] = logits
-                #pad the targs.
-                padded_targs = torch.zeros((b_size, task.max_seq_len),dtype=torch.long)
-                targs = batch['targs']['words']
-                padded_targs[:targs.size()[0], :targs.size()[1]] = targs
-                padded_targs = padded_targs.view(-1)
+    def _tagger_forward(self, batch, task, predict):
+        ''' For sequence tagging '''
+        out = {}
+        b_size, seq_len, _ = batch['inputs']['elmo'].size()
+        seq_len -= 2
+        sent_encoder = self.sent_encoder
+        out['n_exs'] = get_batch_size(batch)
+        if not isinstance(sent_encoder, BiLMEncoder):
+            sent, mask = sent_encoder(batch['inputs'], task)
+            sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            sent = sent[:, 1:-1, :]
+            hid2tag = self._get_classifier(task)
+            logits = hid2tag(sent)
+            logits = logits.view(b_size * seq_len, -1)
+            out['logits'] = logits
+            targs = batch['targs']['words'][:, :seq_len].contiguous().view(-1)
 
-            pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-            out['loss'] = F.cross_entropy(logits, padded_targs, ignore_index=pad_idx)
-            task.scorer1(logits, padded_targs)
-            return out
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(logits, targs)
+        return out
 
     def _lm_forward(self, batch, task, predict):
         """Forward pass for LM model
@@ -1018,8 +1010,10 @@ class MultiTaskModel(nn.Module):
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.
+
         args:
            - tasks (List[Task]): list of tasks that we want to get  ELMo scalars for.
+
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
         '''

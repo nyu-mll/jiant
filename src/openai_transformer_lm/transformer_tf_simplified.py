@@ -1,4 +1,4 @@
-# Simplified version of openai/finetune-transformer-lm/train.py, stripped down
+# Simplified version of openai/finetune-transformer-lm/train.py, stripped down 
 # to only the code necessary to run the model and get the hidden states.
 
 import os
@@ -11,7 +11,7 @@ import tensorflow as tf
 
 from functools import partial
 
-from .finetune-transformer-lm.utils import encode_dataset, flatten, iter_data, \
+from .tf_original.utils import encode_dataset, flatten, iter_data, \
     find_trainable_variables, convert_gradient_to_tensor, shape_list, \
     ResultLogger, assign_to_gpu, average_grads, make_path
 
@@ -203,7 +203,7 @@ def model_abbreviated(X, train=False, reuse=False):
     """Expect X as shape [batch_size, n_sentences, n_ctx, 2],
     where X[:,:,:,1] is positional indices as added here:
     https://github.com/openai/finetune-transformer-lm/blob/master/train.py#L245
-
+    
     After embedding, these are summed with the embeddings of X[:,:,:,0].
     """
     with tf.variable_scope('model', reuse=reuse):
@@ -216,7 +216,7 @@ def model_abbreviated(X, train=False, reuse=False):
         h = embed(X, we)
         for layer in range(n_layer):
             h = block(h, 'h%d'%layer, train=train, scale=True)
-
+        
         # Note: we omit some variables associated with the custom
         # classifier layer, `clf`
         return h
