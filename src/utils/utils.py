@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-
+EOS_INDEX = 2
+SOS_INDEX = 1
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
@@ -295,6 +296,64 @@ def load_diagnostic_tsv(
             'ix_to_knowledge_dic': ix_to_knowledge_dic
             }
 
+def moses_tokenizer(text):
+    from sacremoses import MosesTokenizer
+    mt = MosesTokenizer()
+    return mt.tokenize(text, return_str=True)
+
+def adjust_targs_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
+    """
+    Adjusts target tokens so that it matches with the newly BPE-retokenized
+    input
+    This function is called only for OpenAI -> TaggingTasks
+    BPE tokenization will add more tokens to the sentence than the original
+    tokens (thus len(bpe_input) >= len(orig_tokenizer_func(orig_input)))
+    THus, we handle this case by assuming that the target token of the
+    new added bpe token is the same as its left neighbor for simplicity.
+    Parameters
+    ----------
+    targs :  A list of string, required.
+        target tokens
+    bpe_input : list of string, required
+        This is the output of the BPE tokenizer
+    orig_input: string, required
+        This is the original input from the dataset
+    orig_tokenizer_func: func: str -> list of strings
+        This is a function that tokenizes it the way that the dataset is
+        tokenized. For example, CCGBank was created by tokenizing the input
+        using MosesTokenizer
+
+    Returns
+    -------
+    A list of strings of the newly adjusted target tokens
+    """
+    orig_input = orig_tokenizer_func(orig_input)
+    bpe_input = bpe_input[1:]
+    bpe_input = bpe_input[:-1]
+    new_toks = [s.replace("</w>", "") for s in new]
+    orig_toks = [s.lower() for s in orig_input]
+
+    c_index = len(targs) - 1
+    curr_targ = targs[c_index]
+    next_expected_tok = orig_toks[c_index-1]
+    new_targs = [curr_targ]
+    current_tok_up_to_now = ""
+    # move from last to front,
+    for i in range(len(new_toks) - 2, -1, -1):
+        current_tok_up_to_now = "%s%s" % (new_toks[i], current_tok_up_to_now)
+        if current_tok_up_to_now != next_expected_tok:
+            new_targs.append(curr_targ)
+        else:
+            c_index -= 1
+            current_tok_up_to_now = ""
+            curr_targ = targs[c_index]
+            new_targs.append(curr_targ)
+            next_expected_tok = orig_toks[c_index-1]
+    # add EOS/SOS to the target tokens.
+    targ_final = [str(int(t)+EOS_INDEX) for t in new_targs]
+    targ_final = [str(EOS_INDEX)] + targ_final + [str(SOS_INDEX)]
+    targ_final.reverse()
+    return targ_final
 
 def load_tsv(
         data_file,
@@ -308,14 +367,17 @@ def load_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None):
+        filter_value=None,
+        openai = False,
+        tagging = False):
     '''Load a tsv
-
+    Shift every CCG tag up by 1, so 0 is SOS and 1 is EOS.
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
     with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
+        import pdb; pdb.set_trace()
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.strip().split(delimiter)
@@ -324,7 +386,6 @@ def load_tsv(
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
-
                 if targ_idx is not None:
                     if targ_map is not None:
                         targ = targ_map[row[targ_idx]]
@@ -334,7 +395,11 @@ def load_tsv(
                         targ = int(row[targ_idx])
                 else:
                     targ = 0
-
+                if tagging and openai:
+                    # since OpenAI pretokenized needs BPE tokenization,
+                    # we adjust the target tokens to match BPE tokenizzation
+                    targ = adjust_targs_BPE(targ, sent1, row[s1_idx], moses_tokenizer)
+                assert len(sent1) == len(targ)
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
@@ -349,6 +414,7 @@ def load_tsv(
                 targs.append(targ)
 
             except Exception as e:
+                import pdb; pdb.set_trace()
                 print(e, " file: %s, row: %d" % (data_file, row_idx))
                 continue
 
@@ -356,7 +422,6 @@ def load_tsv(
         return sent1s, sent2s, targs, idxs
     else:
         return sent1s, sent2s, targs
-
 
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''

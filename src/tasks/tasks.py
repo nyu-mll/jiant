@@ -1319,7 +1319,6 @@ class TaggingTask(Task):
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
                  for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
         instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
         return instances
 
@@ -1331,23 +1330,27 @@ class TaggingTask(Task):
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
+    def __init__(self, path, max_seq_len, name="ccg"):
         ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, num_tags=1363, **kw)
+        super().__init__(name, 1363)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.max_seq_len = max_seq_len
+
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at each data file.
            The target needs to be split into tokens because
-           it is a sequence (one tag per input token). '''
+           it is a sequence (one tag per input token)
+           Call load_tsv for TR data, which populates iwth EOS/SOS.
+           This trims the sentences to a
+           . '''
         tr_data = load_tsv(os.path.join(path, "ccg_1363.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                           s1_idx=0, s2_idx=None, targ_idx=1, tagging = True, targ_fn=lambda t: t.split(' '))
         val_data = load_tsv(os.path.join(path, "ccg_1363.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                            s1_idx=0, s2_idx=None, targ_idx=1, tagging = True, targ_fn=lambda t: t.split(' '))
         te_data = load_tsv(os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                           s1_idx=0, s2_idx=None, targ_idx=1, tagging = True, targ_fn=lambda t: t.split(' '))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
