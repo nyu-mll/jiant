@@ -368,7 +368,6 @@ def load_tsv(
         delimiter='\t',
         filter_idx=None,
         filter_value=None,
-        openai = False,
         tagging = False):
     '''Load a tsv
     Shift every CCG tag up by 1, so 0 is SOS and 1 is EOS.
@@ -377,7 +376,6 @@ def load_tsv(
     with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
         for _ in range(skip_rows):
             data_fh.readline()
-        import pdb; pdb.set_trace()
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.strip().split(delimiter)
@@ -395,7 +393,7 @@ def load_tsv(
                         targ = int(row[targ_idx])
                 else:
                     targ = 0
-                if tagging and openai:
+                if tagging:
                     # since OpenAI pretokenized needs BPE tokenization,
                     # we adjust the target tokens to match BPE tokenizzation
                     targ = adjust_targs_BPE(targ, sent1, row[s1_idx], moses_tokenizer)
@@ -414,7 +412,6 @@ def load_tsv(
                 targs.append(targ)
 
             except Exception as e:
-                import pdb; pdb.set_trace()
                 print(e, " file: %s, row: %d" % (data_file, row_idx))
                 continue
 
