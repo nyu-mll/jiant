@@ -1,5 +1,4 @@
 '''Preprocessing functions and pipeline
-
 The pipeline is three steps
     1) create / load tasks, which includes
         a) load raw data
@@ -55,7 +54,6 @@ def _get_serialized_record_path(task_name, split, preproc_dir):
 
 def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
-
     Args:
         task_name: (string), task name
         split: (string), split name ('train', 'val', or 'test')
@@ -63,7 +61,6 @@ def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
         fraction: if set to a float between 0 and 1, load only the specified percentage
           of examples. Hashing is used to ensure that the same examples are loaded each
           epoch.
-
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
@@ -74,13 +71,10 @@ def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
 
 def _indexed_instance_generator(instance_iter, vocab):
     """Yield indexed instances. Instances are modified in-place.
-
     TODO(iftenney): multiprocess the $%^& out of this.
-
     Args:
         instance_iter: iterable(Instance) of examples
         vocab: Vocabulary for use in indexing
-
     Yields:
         Instance with indexed fields.
     """
@@ -95,7 +89,6 @@ def del_field_tokens(instance):
     ''' Save memory by deleting the tokens that will no longer be used.
     Only works if Instances have fields 'input1' and 'input2'.
     All other fields will keep their tokens in memory.
-
     Args:
         instance: AllenNLP Instance. Modified in-place.
     '''
@@ -149,16 +142,13 @@ def _index_split(task, split, indexers, vocab, record_file):
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
                       relative_path: str, log_prefix: str="") -> bool:
     """Find a cached file.
-
     Look in local exp_dir first, then in global_exp_cache_dir. If found in the
     global dir, make a symlink in the local dir pointing to the global one.
-
     Args:
         exp_dir: (string) local experiment dir
         global_exp_cache_dir: (string) global experiment cache
         relative_path: (string) relative path to file, from exp_dir
         log_prefix: (string) prefix for logging info
-
     Returns:
         True if file was found in either location.
     """
@@ -512,17 +502,14 @@ def get_vocab(word2freq, char2freq, max_v_sizes):
 
 def add_task_label_vocab(vocab, task):
     '''Add custom task labels to a separate namespace.
-
     If task has a 'get_all_labels' method, call that to get a list of labels
     to populate the <task_name>_labels vocabulary namespace.
-
     This is the recommended way to implement multiclass models: in your task's
     process_split code, make instances that use LabelFields with the task label
     namespace, e.g.:
         label_namespace = "%s_labels" % self.name
         label = LabelField(label_string, label_namespace=label_namespace)
     This will cause them to be properly indexed by the Vocabulary.
-
     This can then be accessed when generating Instances, either via a custom
     Indexer or by invoking the namespace when creating a LabelField.
     '''
