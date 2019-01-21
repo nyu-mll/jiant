@@ -280,6 +280,76 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
+    def get_scaling_weights(scaling_method, tasks, task_n_train_example):
+        if scaling_method == 'uniform':
+            scaling_weights = [1.0] * len(tasks)
+        elif scaling_method == 'max_proportional':
+            scaling_weights = task_n_train_examples.astype(float)
+        elif scaling_method == 'max_proportional_log':
+            scaling_weights = np.log(task_n_train_examples)
+        elif 'max_power_' in scaling_method:
+            scaling_power = float(scaling_method.strip('max_power_'))
+            scaling_weights = task_n_train_examples ** scaling_power
+        elif scaling_method == 'max_inverse_log':
+            scaling_weights = 1 / np.log(task_n_train_examples)
+        elif scaling_method == 'max_inverse':
+            scaling_weights = 1 / task_n_train_examples
+        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
+        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
+        elif 'max_epoch_' in scaling_method:
+            epochs = scaling_method.strip('max_epoch_').split('_')
+            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            scaling_weights = np.array(list(map(int, epochs)))
+
+        # normalized by max weight
+        if 'max' in scaling_method:
+            scaling_weights = scaling_weights / np.max(scaling_weights)
+
+        scaling_weights = dict(zip(task_names, scaling_weights))
+        log.info(
+            "Using loss scaling method: %s, with weights %s",
+            scaling_method,
+            str(scaling_weights))
+        return scaling_weights
+
+    def get_sampling_weights_and_temp(weighting_method):
+        """
+        Args:
+        Returns:
+            Sampling weights
+        """
+        weighting_temp = None
+        if weighting_method == 'uniform':
+            sample_weights = [1.0] * len(tasks)
+            log.info("Sampling tasks uniformly.")
+        elif weighting_method == 'proportional':
+            sample_weights = task_n_train_examples.astype(float)
+            log.info("Sampling tasks proportional to number of training examples.")
+        elif weighting_method == 'proportional_log_batch':
+            sample_weights = np.log(task_n_train_batches)
+            log.info("Sampling tasks proportional to log number of training batches.")
+        elif weighting_method == 'proportional_log_example':
+            sample_weights = np.log(task_n_train_examples)
+            log.info("Sampling tasks proportional to log number of training examples.")
+        elif weighting_method == 'inverse':
+            sample_weights = 1 / task_n_train_examples
+            log.info("Sampling tasks inverse to number of training examples.")
+        elif weighting_method == 'inverse_log_example':
+            sample_weights = 1 / np.log(task_n_train_examples)
+            log.info("Sampling tasks inverse to log number of training examples.")
+        elif weighting_method == 'inverse_log_batch':
+            sample_weights = 1 / np.log(task_n_train_batches)
+            log.info("Sampling tasks inverse to log number of training batches.")
+        elif 'power_' in weighting_method:
+            weighting_power = float(weighting_method.strip('power_'))
+            sample_weights = task_n_train_examples ** weighting_power
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of '))
+        elif 'softmax_' in weighting_method:  # exp(x/temp)
+            weighting_temp = float(weighting_method.strip('softmax_'))
+            sample_weights = np.exp(task_n_train_examples / weighting_temp)
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
+        return sample_Weights, weighting_temp
+
     def train(self, tasks, stop_metric,
               batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
@@ -351,35 +421,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_batches = np.array([task_infos[task.name]['n_tr_batches'] for task in tasks])
         log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
 
-        if weighting_method == 'uniform':
-            sample_weights = [1.0] * len(tasks)
-            log.info("Sampling tasks uniformly.")
-        elif weighting_method == 'proportional':
-            sample_weights = task_n_train_examples.astype(float)
-            log.info("Sampling tasks proportional to number of training examples.")
-        elif weighting_method == 'proportional_log_batch':
-            sample_weights = np.log(task_n_train_batches)
-            log.info("Sampling tasks proportional to log number of training batches.")
-        elif weighting_method == 'proportional_log_example':
-            sample_weights = np.log(task_n_train_examples)
-            log.info("Sampling tasks proportional to log number of training examples.")
-        elif weighting_method == 'inverse':
-            sample_weights = 1 / task_n_train_examples
-            log.info("Sampling tasks inverse to number of training examples.")
-        elif weighting_method == 'inverse_log_example':
-            sample_weights = 1 / np.log(task_n_train_examples)
-            log.info("Sampling tasks inverse to log number of training examples.")
-        elif weighting_method == 'inverse_log_batch':
-            sample_weights = 1 / np.log(task_n_train_batches)
-            log.info("Sampling tasks inverse to log number of training batches.")
-        elif 'power_' in weighting_method:
-            weighting_power = float(weighting_method.strip('power_'))
-            sample_weights = task_n_train_examples ** weighting_power
-            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of '))
-        elif 'softmax_' in weighting_method:  # exp(x/temp)
-            weighting_temp = float(weighting_method.strip('softmax_'))
-            sample_weights = np.exp(task_n_train_examples / weighting_temp)
-            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
+        sample_weights = get_sampling_weights(weighting_method)
 
         normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
         log.info("Using weighting method: %s, with normalized sample weights %s ",
@@ -388,36 +430,7 @@ class SamplingMultiTaskTrainer:
         # Sample the tasks to train on. Do it all at once (val_interval) for MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        if scaling_method == 'uniform':
-            scaling_weights = [1.0] * len(tasks)
-        elif scaling_method == 'max_proportional':
-            scaling_weights = task_n_train_examples.astype(float)
-        elif scaling_method == 'max_proportional_log':
-            scaling_weights = np.log(task_n_train_examples)
-        elif 'max_power_' in scaling_method:
-            scaling_power = float(scaling_method.strip('max_power_'))
-            scaling_weights = task_n_train_examples ** scaling_power
-        elif scaling_method == 'max_inverse_log':
-            scaling_weights = 1 / np.log(task_n_train_examples)
-        elif scaling_method == 'max_inverse':
-            scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
-        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
-        elif 'max_epoch_' in scaling_method:
-            epochs = scaling_method.strip('max_epoch_').split('_')
-            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
-            scaling_weights = np.array(list(map(int, epochs)))
-
-        # normalized by max weight
-        if 'max' in scaling_method:
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-
-        scaling_weights = dict(zip(task_names, scaling_weights))
-        log.info(
-            "Using loss scaling method: %s, with weights %s",
-            scaling_method,
-            str(scaling_weights))
-
+        scaling_weights = get_scaling_weights(scaling_method, tasks, task_n_train_example)
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
