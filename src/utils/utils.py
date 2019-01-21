@@ -19,6 +19,7 @@ from torch.autograd import Variable
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
+from src.openai_transformer_lm import utils as openai_utils
 
 from allennlp.common.checks import ConfigurationError
 from allennlp.nn.util import last_dim_softmax
@@ -28,8 +29,12 @@ from allennlp.common.params import Params
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+TOKENIZERS = {
+    "moses": MosesTokenizer(),
+    "openai": openai_utils,
+}
 
-TOKENIZER = MosesTokenizer()
+TOKENIZER = TOKENIZERS[os.environ["TOKENIZER"]]
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 EOS_INDEX = 2
 SOS_INDEX = 1
