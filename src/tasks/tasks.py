@@ -139,7 +139,7 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
-        return tokenizer_name == utils.TOKENIZER.__class__.__name__
+        return tokenizer_name in utils.TOKENIZERS.keys()
 
     @property
     def tokenizer_name(self):
@@ -1330,9 +1330,10 @@ class TaggingTask(Task):
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
-    def __init__(self, path, max_seq_len, name="ccg"):
+    def __init__(self, path, max_seq_len, name="ccg", **kw):
         ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, 1363)
+        import pdb; pdb.set_trace()
+        super().__init__(name, 1363, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len

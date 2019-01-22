@@ -841,8 +841,7 @@ class MultiTaskModel(nn.Module):
             pass
 
         return out
-
- def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
+    def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
         '''
             This function is the specific task-component forward func
             Args:
