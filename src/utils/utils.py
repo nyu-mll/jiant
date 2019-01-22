@@ -18,7 +18,7 @@ from torch.autograd import Variable
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
-from src.openai_transformer_lm.tf_original import utils as openai_utils
+from src.openai_transformer_lm import utils as openai_utils
 from sacremoses import MosesTokenizer, MosesDetokenizer
 from allennlp.common.checks import ConfigurationError
 from allennlp.nn.util import last_dim_softmax
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 TOKENIZERS = {
     "moses": MosesTokenizer(),
-    "openai": openai_utils,
+    "OpenAI.BPE": openai_utils,
 }
 
 TOKENIZER = TOKENIZERS[os.environ["TOKENIZER"]]
@@ -162,13 +162,14 @@ def unescape_moses(moses_tokens):
     '''
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
-
 def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    TOKENIZER = TOKENIZERS[os.environ.get("TOKENIZER", "moses")] # Do it again since it crashes above for RTE...
+    # TODO: Figure out wtf is going on\
     if isinstance(sent, str):
-        return [sos_tok] + TOKENIZER(sent)[:max_seq_len] + [eos_tok]
+        return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return [sos_tok] + sent[:max_seq_len] + [eos_tok]
@@ -334,7 +335,7 @@ def adjust_targs_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
     orig_input = orig_tokenizer_func(orig_input)
     bpe_input = bpe_input[1:]
     bpe_input = bpe_input[:-1]
-    new_toks = [s.replace("</w>", "") for s in new]
+    new_toks = [s.replace("</w>", "") for s in bpe_input]
     orig_toks = [s.lower() for s in orig_input]
 
     c_index = len(targs) - 1
