@@ -45,7 +45,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     NullPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-
+from .modules.onlstm.ON_LSTM import ONLSTMStack
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -102,7 +102,29 @@ def build_model(args, vocab, pretrained_embs, tasks):
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
-    if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
+    if args.sent_enc=="onlstm":
+        phrase_layer = ONLSTMStack(
+            [args.d_word] + [args.d_hid] * (args.n_layers_enc - 1) + [args.d_word],
+            chunk_size=args.chunk_size,
+            dropconnect=args.dropconnect,
+            dropouti=args.dropouti,
+            dropout=args.dropout,
+            dropouth=args.dropouth,
+            embedder= embedder,
+            phrase_layer=None,
+            batch_size=args.batch_size
+        )
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       phrase_layer, skip_embs=args.skip_embs,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       cove_layer=cove_layer)
+        d_sent=args.d_word#this is output dim right?
+        log.info("Using onlstm sentence encoder!") 
+        tying=False
+        if tasks[0].name=="wsj" and args.sent_enc=='onlstm' and tying:#enable tying
+            model.sent_encoder._phrase_layer.emb.weight=model.wsj_hid2voc.weight
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
         if args.elmo:
@@ -377,9 +399,11 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
-        d_sent = args.d_hid + (args.skip_embs * d_emb)
+        if args.sent_enc!="onlstm":
+            d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
@@ -603,7 +627,10 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            out = self._lm_forward(batch, task, predict)
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
+                out = self._lm_only_forward(batch, task, predict)#single forward only, no bilm
+            else:
+                out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
@@ -924,6 +951,43 @@ class MultiTaskModel(nn.Module):
         trg_fwd = batch['targs']['words'].view(-1)
         trg_bwd = batch['targs_b']['words'].view(-1)
         targs = torch.cat([trg_fwd, trg_bwd], dim=0)
+        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
+        if predict:
+            pass
+        return out
+
+    def _lm_only_forward(self, batch, task, predict):
+        """Forward pass for LM model
+        Args:
+            batch: indexed input data
+            task: (Task obejct)
+            predict: (boolean) predict mode (not supported)
+        return:
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                - 'loss': size average CE loss
+        """
+        out = {}
+        sent_encoder = self.sent_encoder
+        #assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
+        #               "Not using LM for language modeling task!")
+        assert_for_log('targs' in batch and 'words' in batch['targs'],
+                       "Batch missing target words!")
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
+        b_size, seq_len = batch['targs']['words'].size()
+        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
+        out['n_exs'] = (b_size * seq_len - n_pad) * 2
+        sent, mask = sent_encoder(batch['input'], task)
+        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs 
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        logits = hid2voc(sent).view(b_size * seq_len, -1)
+        out['logits'] = logits
+        trg_fwd = batch['targs']['words'].view(-1)
+        targs = trg_fwd
         assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
