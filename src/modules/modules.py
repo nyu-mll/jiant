@@ -39,8 +39,8 @@ from allennlp.modules.layer_norm import LayerNorm
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features
 
-from .utils import MaskedMultiHeadSelfAttention, assert_for_log
-from . import utils
+from ..utils.utils import MaskedMultiHeadSelfAttention, assert_for_log
+from ..utils import utils
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101

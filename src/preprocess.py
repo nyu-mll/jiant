@@ -31,24 +31,13 @@ except BaseException:
 
 import _pickle as pkl  # :(
 
-from . import config
-from . import serialize
-from . import utils
-from . import tasks as tasks_module
-from .tasks import MTTask
+from .utils import config
+from .utils import serialize
+from .utils import utils
 
-ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
-
-# people are mostly using nli-prob for now, but we will change to
-# using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
-
-# Tasks for which we need to construct task-specific vocabularies
-ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                      'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
-
-TASKS_REGISTRY = tasks_module.REGISTRY
+from .tasks import REGISTRY as TASKS_REGISTRY
+from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
+from .tasks.mt import MTTask
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"  # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SPECIALS = [SOS_TOK, EOS_TOK]  # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
@@ -239,17 +228,16 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    tasks, train_task_names, eval_task_names = \
-        get_tasks(parse_task_list_arg(args.train_tasks),
-                  parse_task_list_arg(args.eval_tasks), args.max_seq_len,
-                  path=args.data_dir, scratch_path=args.exp_dir,
-                  load_pkl=bool(not args.reload_tasks),
-                  nli_prob_probe_path=args['nli-prob'].probe_path,
-                  max_targ_v_size=args.max_targ_word_v_size)
+    tasks, train_task_names, eval_task_names = get_tasks(args)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
         setattr(task, "_classifier_name",
                 task_classifier if task_classifier else task.name)
+
+    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
+    assert len(set(tokenizer_names.values())) == 1, \
+            (f"Error: mixing tasks with different tokenizers!"
+              " Tokenizations: {tokenizer_names:s}")
 
     # 2) build / load vocab and indexers
     indexers = {}
@@ -257,17 +245,20 @@ def build_tasks(args):
         indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.cove:
+        assert args.tokenizer == "MosesTokenizer", \
+                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
+                 " you are using args.tokenizer = {args.tokenizer}")
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
+        assert args.tokenizer == "OpenAI.BPE", \
+                             ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-        # Exit if any tasks are not compatible with this tokenization.
-        for task in tasks:
-            assert task.tokenizer_name == "OpenAI.BPE", \
-                (f"Task '{task.name:s}' not compatible with OpenAI "
-                  "Transformer model. For edge probing, use -openai versions.")
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
@@ -329,8 +320,8 @@ def build_tasks(args):
     # 5) Initialize tasks with data iterators.
     assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
         "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
-    train_tasks = []
-    eval_tasks = []
+    pretrain_tasks = []
+    target_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
@@ -341,7 +332,7 @@ def build_tasks(args):
             log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
-            train_tasks.append(task)
+            pretrain_tasks.append(task)
             if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
                 # phase. It will create a deepcopy of the task object
@@ -352,15 +343,15 @@ def build_tasks(args):
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
-                eval_tasks.append(task)
+                target_tasks.append(task)
 
         # When using eval_data_fraction, we need modified iterators
-        # only for training datasets at train_for_eval time.
+        # only for training datasets at do_target_task_training time.
         elif args.eval_data_fraction < 1 and task.name in eval_task_names:
             log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.eval_data_fraction)
-            eval_tasks.append(task)
+            target_tasks.append(task)
             if task.name in train_task_names:
                 # Rebuild the iterator so we see the full dataset in the pretraining
                 # phase. It will create a deepcopy of the task object
@@ -371,23 +362,23 @@ def build_tasks(args):
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
-                train_tasks.append(task)
+                pretrain_tasks.append(task)
         # When neither eval_data_fraction nor training_data_fraction is specified
         # we use unmodified iterators.
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=1.0)
             if task.name in train_task_names:
-                train_tasks.append(task)
+                pretrain_tasks.append(task)
             if task.name in eval_task_names:
-                eval_tasks.append(task)
+                target_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
     log.info('\t  Training on %s', ', '.join(train_task_names))
     log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
-    return train_tasks, eval_tasks, vocab, word_embs
+    return pretrain_tasks, target_tasks, vocab, word_embs
 
 
 def parse_task_list_arg(task_list):
@@ -402,45 +393,55 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+def _get_task(name, args, data_path, scratch_path):
+    ''' Build or load a single task. '''
+    assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
+    pkl_path = os.path.join(scratch_path, "tasks",
+                            f"{name:s}.{args.tokenizer:s}.pkl")
+    # TODO: refactor to always read from disk, even if task is constructed
+    # here. This should avoid subtle bugs from deserialization issues.
+    if os.path.isfile(pkl_path) and not args.reload_tasks:
+        task = pkl.load(open(pkl_path, 'rb'))
+        log.info('\tLoaded existing task %s', name)
+    else:
+        log.info('\tCreating task %s from scratch', name)
+        # These tasks take an additional kwarg.
+        if name == 'nli-prob' or name == 'nli-alt':
+            # TODO: remove special case, replace with something general
+            # to pass custom loader args to task.
+            task_kw['probe_path'] = args['nli-prob'].probe_path
+        if name in ALL_TARG_VOC_TASKS:
+            task_kw['max_targ_v_size'] = args.max_targ_v_size
+        task_src_path = os.path.join(data_path, rel_path)
+        task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
+                        tokenizer_name=args.tokenizer, **task_kw)
+        utils.maybe_make_dir(os.path.dirname(pkl_path))
+        pkl.dump(task, open(pkl_path, 'wb'))
+    #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+    return task
 
-def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
-              scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
-              max_targ_v_size=20000):
+def get_tasks(args):
     ''' Actually build or load (from pickles) the tasks. '''
+    data_path = args.data_dir
+    scratch_path = args.exp_dir
+
+    train_task_names = parse_task_list_arg(args.pretrain_tasks)
+    eval_task_names = parse_task_list_arg(args.target_tasks)
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names
                         if name not in {'mnli-diagnostic'}]
 
     task_names = sorted(set(train_task_names + eval_task_names))
-    assert path is not None
-    scratch_path = (scratch_path or path)
+    assert data_path is not None
+    scratch_path = (scratch_path or data_path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)
 
     tasks = []
     for name in task_names:
-        assert name in TASKS_REGISTRY, "Task '{:s}' not found!".format(name)
-        task_info = TASKS_REGISTRY[name]
-        task_src_path = os.path.join(path, task_info[1])
-        task_scratch_path = os.path.join(scratch_path, task_info[1])
-        pkl_path = os.path.join(task_scratch_path, "%s_task.pkl" % name)
-        if os.path.isfile(pkl_path) and load_pkl:
-            task = pkl.load(open(pkl_path, 'rb'))
-            log.info('\tLoaded existing task %s', name)
-        else:
-            log.info('\tCreating task %s from scratch', name)
-            task_cls = task_info[0]
-            kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob' or name == 'nli-alt':  # this task takes additional kw
-                # TODO: remove special case, replace with something general
-                # to pass custom loader args to task.
-                kw['probe_path'] = nli_prob_probe_path
-            if name in ALL_TARG_VOC_TASKS:
-                kw['max_targ_v_size'] = max_targ_v_size
-            task = task_cls(task_src_path, max_seq_len, name=name, **kw)
-            utils.maybe_make_dir(task_scratch_path)
-            # TODO: Option to shuffle task for issues with sampling order (see Adding new task, 2. in README.md)
-            pkl.dump(task, open(pkl_path, 'wb'))
-        #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+        task = _get_task(name, args, data_path=data_path,
+                         scratch_path=scratch_path)
+        tasks.append(task)
 
         # Count examples, store in example_counts.
         if not hasattr(task, 'example_counts'):
@@ -448,7 +449,6 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
         log.info("\tTask '%s': %s", task.name,
                  " ".join(("%s=%d" % kv for kv in
                            task.example_counts.items())))
-        tasks.append(task)
 
     log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names

@@ -112,16 +112,15 @@ def get_elmo_mixing_weights(text_field_embedder, task=None):
         Dict[str, float]: dictionary with the values of each layer weight and of the scaling
                           factor.
     '''
-    # TODO: rename variables to be more descriptive (mix_id -> task_id, mixer -> task_weights)
     elmo = text_field_embedder.token_embedder_elmo._elmo
     if task:
-        mix_id = text_field_embedder.task_map[task._classifier_name]
+        task_id = text_field_embedder.task_map[task._classifier_name]
     else:
-        mix_id = text_field_embedder.task_map["@pretrain@"]
-    mixer = getattr(elmo, "scalar_mix_%d" % mix_id)
+        task_id = text_field_embedder.task_map["@pretrain@"]
+    task_weights = getattr(elmo, "scalar_mix_%d" % task_id)
     params = {'layer%d' % layer_id: p.item() for layer_id, p in
-              enumerate(mixer.scalar_parameters.parameters())}
-    params['gamma'] = mixer.gamma
+              enumerate(task_weights.scalar_parameters.parameters())}
+    params['gamma'] = task_weights.gamma
     return params
 
 
@@ -1107,3 +1106,18 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
+
+
+def check_arg_name(args):
+    ''' Raise error if obsolete arg names are present. '''
+    # Mapping - key: old name, value: new name
+    name_dict = {'task_patience':'lr_patience',
+                 'do_train': 'do_pretrain',
+                 'train_for_eval':'do_target_task_training',
+                 'do_eval': 'do_full_eval',
+                 'train_tasks':'pretrain_tasks',
+                 'eval_tasks':'target_tasks'}
+    for old_name, new_name in name_dict.items():
+        assert_for_log(old_name not in args,
+                      "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
+                      (old_name,name_dict[old_name]))

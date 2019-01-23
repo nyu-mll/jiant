@@ -42,6 +42,11 @@ if [ -z $PROJECT ]; then
     exit 1
 fi
 
+if [ -z $NOTIFY_EMAIL ]; then
+    echo "You must provide an email address!"
+    exit 1
+fi
+
 # Top-level directory for the current repo.
 pushd $(git rev-parse --show-toplevel)
 

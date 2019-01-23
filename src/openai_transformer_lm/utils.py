@@ -122,11 +122,11 @@ class TransformerModel(nn.Module):
     def forward(self, x):
         x = x.view(-1, x.size(-2), x.size(-1))
         e = self.embed(x)
-        # Add the position information to the input embeddings
         if self.export_embs == 'only':
             # Skip running Transformer if only need base layer.
-            return e[:,:,0]
+            return e[:,:,0]  # token embs, no position info
 
+        # Add the position information to the input embeddings
         h = e.sum(dim=2)
         for block in self.h:
             h = block(h)
