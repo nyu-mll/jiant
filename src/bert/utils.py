@@ -57,15 +57,22 @@ class BertEmbedderModule(nn.Module):
         # reserved for padding).
         FILL_ID = 0  # [PAD] for BERT models.
         ids[ids == 0] = FILL_ID + 2
+        # Index 1 should never be used since the BERT WPM uses its own
+        # unk token, and handles this at the string level before indexing.
+        assert (ids > 1).all()
         ids -= 2
 
         if self.embeddings_mode != "none":
+            # This is redundant with the lookup inside BertModel,
+            # but doing so this way avoids the need to modify the BertModel
+            # code.
             # Extract lexical embeddings; see
             # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py#L186
             h_lex = self.model.embeddings.word_embeddings(ids)
             h_lex = self.model.embeddings.LayerNorm(h_lex)
             # following our use of the OpenAI model, don't use dropout for
-            # probing.
+            # probing. If you would like to use dropout, consider applying
+            # later on in the SentenceEncoder (see models.py).
             #  h_lex = self.model.embeddings.dropout(embeddings)
 
         if self.embeddings_mode != "only":

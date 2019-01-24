@@ -266,8 +266,9 @@ def build_tasks(args):
         assert not indexers, ("BERT is not supported alongside"
                               " other indexers due to tokenization!")
         assert args.tokenizer == args.bert_model_name, \
-                             ("BERT is not supported alongside"
-                              " other indexers due to tokenization!")
+                             ("BERT models use custom WPM tokenization for "
+                              "each model, so tokenizer must match the "
+                              "specified BERT model.")
         indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
