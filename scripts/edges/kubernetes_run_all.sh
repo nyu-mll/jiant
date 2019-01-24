@@ -113,16 +113,38 @@ do
     kuberun elmo-full-$task  "elmo_full_exp edges-$task"
     kuberun glove-$task      "glove_exp edges-$task"
     kuberun cove-$task       "cove_exp edges-$task"
+
     kuberun openai-lex-$task "openai_lex_exp edges-$task"
+    kuberun bert-base-uncased-lex-$task    "bert_lex_exp edges-$task base-uncased"
+    # kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
 done
+
+# Run cased BERT models for NER tasks
+task="ner-ontonotes"
+kuberun bert-base-cased-lex-$task    "bert_lex_exp edges-$task base-cased"
+# kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
+
+# exit 0
 
 ##
 # Run these on 'jsalt-central' for V100s
 gcloud container clusters get-credentials --zone us-central1-a jsalt-central
+if [[ ${GPU_TYPE} != "v100" ]]; then
+    echo "jsalt-central has only v100 GPUs! (you requested ${GPU_TYPE})"
+    exit 1
+fi
 for task in "${ALL_TASKS[@]}"
 do
     # kuberun openai-$task     "openai_exp edges-$task"
     kuberun openai-cat-$task "openai_cat_exp edges-$task"
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
+
+    kuberun bert-base-uncased-cat-$task    "bert_cat_exp edges-$task base-uncased"
+    # kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
 done
+
+# Run cased BERT models for NER tasks
+task="ner-ontonotes"
+kuberun bert-base-cased-cat-$task    "bert_cat_exp edges-$task base-cased"
+# kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
 
