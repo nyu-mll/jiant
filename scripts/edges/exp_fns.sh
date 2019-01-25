@@ -133,3 +133,27 @@ function openai_bwb_exp() {
     OVERRIDES+=", openai_embeddings_mode=cat"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
+
+##
+# BERT model.
+# These take two arguments: the task name, and the bert model
+# (e.g. base-uncased)
+function bert_cat_exp() {
+    # Run BERT, and concat embeddings to output.
+    # Usage: bert_cat_exp <task_name>
+    OVERRIDES="exp_name=bert-${2}-cat-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", bert_model_name=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=cat"
+    run_exp "config/edgeprobe_bert.conf" "${OVERRIDES}"
+}
+
+function bert_lex_exp() {
+    # Probe the BERT token embeddings.
+    # Usage: bert_lex_exp <task_name>
+    OVERRIDES="exp_name=bert-${2}-lex-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", bert_model_name=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=only"
+    run_exp "config/edgeprobe_bert.conf" "${OVERRIDES}"
+}

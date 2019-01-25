@@ -68,6 +68,11 @@ RUN pip install ipdb tensorboard tensorboardX==1.2
 # TODO: upgrade to latest AllenNLP
 RUN pip install allennlp==0.5.1
 
+# Install BERT module
+RUN git clone https://github.com/huggingface/pytorch-pretrained-BERT.git \
+  /tmp/pytorch_pretrained_bert \
+  && cd /tmp/pytorch_pretrained_bert && pip install .
+
 # Install misc util packages.
 RUN pip install --upgrade google-cloud-logging sendgrid
 RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11

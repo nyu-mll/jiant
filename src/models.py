@@ -24,7 +24,7 @@ from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils.utils import assert_for_log, get_batch_utilization, \
-    get_batch_size, get_elmo_mixing_weights
+    get_batch_size, get_elmo_mixing_weights, maybe_make_dir
 from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
@@ -57,7 +57,42 @@ ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
 
+<<<<<<< HEAD
 def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
+=======
+def build_model(args, vocab, pretrained_embs, tasks):
+    '''Build model according to args '''
+
+    # Build embeddings.
+    if args.openai_transformer:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .openai_transformer_lm.utils import OpenAIEmbedderModule
+        log.info("Using OpenAI transformer model; skipping other embedders.")
+        cove_layer = None
+        embedder = OpenAIEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.bert_model_name:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .bert.utils import BertEmbedderModule
+        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
+        cove_layer = None
+        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
+        # cache; see
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
+                                   os.path.join(args.exp_dir, "bert_cache"))
+        maybe_make_dir(bert_cache_dir)
+        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
+        d_emb = embedder.get_output_dim()
+    else:
+        # Default case, used for ELMo, CoVe, word embeddings, etc.
+        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
+                                                       tasks, pretrained_embs)
+    d_sent = args.d_hid
+
+>>>>>>> 301a4e64852e8d5f95292edc42fc00dac7b36dca
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
