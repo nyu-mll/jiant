@@ -38,7 +38,6 @@ def _expand_runs(seq, nreps):
     """
     return np.tile(seq, (nreps, 1)).T.flatten()
 
-
 class EdgeProbingExample(object):
     """Wrapper object to handle an edge probing example.
 
@@ -46,12 +45,30 @@ class EdgeProbingExample(object):
     into the data-handling code.
     """
 
-    def __init__(self, record: Dict):
+    def __init__(self, record: Dict,
+                 label_vocab: List[str]=None,
+                 pred_thresh: float=0.5):
         """Construct an example from a record.
 
         Record should be derived from the standard JSON format.
         """
         self._data = record
+        self._label_vocab = label_vocab
+        self._pred_thresh = pred_thresh
+
+    @staticmethod
+    def _fmt_span(tokens, s, e):
+        return '[{:2d},{:2d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
+
+    def _fmt_preds(self, preds):
+        buf = io.StringIO()
+        for i, p in enumerate(preds['proba']):
+            if p < self._pred_thresh:
+                continue
+            buf.write("  {:5s}  ".format("" if buf.getvalue() else "pred:"))
+            label = self._label_vocab[i] if self._label_vocab else str(i)
+            buf.write(f"\t\t {label:s} ({p:.2f})\n")
+        return buf.getvalue()
 
     def __str__(self):
         buf = io.StringIO()
@@ -59,17 +76,21 @@ class EdgeProbingExample(object):
         tokens = text.split()
         buf.write("Text ({:d}): {:s}\n".format(len(tokens), text))
 
-        def _fmt_span(s, e): return '[{:d},{:d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
         for t in self._data['targets']:
             buf.write("\n")
-            buf.write("  span1: {}\n".format(_fmt_span(*t['span1'])))
-            buf.write("  span2: {}\n".format(_fmt_span(*t['span2'])))
+            buf.write("  span1: {}\n".format(self._fmt_span(tokens, *t['span1'])))
+            if 'span2' in t:
+                buf.write("  span2: {}\n".format(self._fmt_span(tokens, *t['span2'])))
             labels = utils.wrap_singleton_string(t['label'])
-            buf.write("  label: ({:d})\t {}\n".format(len(labels), ", ".join(labels)))
+            buf.write("  label: ({:d})\t\t {}\n".format(len(labels), ", ".join(labels)))
+            # Show predictions, if present.
+            if 'preds' in t:
+                buf.write(self._fmt_preds(t['preds']))
+
         return buf.getvalue()
 
     def __repr__(self):
-        return str(self)
+        return "EdgeProbingExample(" + repr(self._data) + ")"
 
 
 class Predictions(object):
@@ -173,6 +194,8 @@ class Predictions(object):
         df = self.target_df
         log.info("Generating long-form target DataFrame. May be slow... ")
         num_targets = len(df)
+        # Index into self.example_df for text.
+        ex_idxs = _expand_runs(df['idx'], len(self.all_labels))
         # Index into self.target_df for other metadata.
         idxs = _expand_runs(df.index, len(self.all_labels))
         # Repeat labels for each target.
@@ -186,7 +209,8 @@ class Predictions(object):
         assert len(label_true) == len(labels)
         d = {"idx": idxs, "label": labels,
              "label.true": label_true,
-             "preds.proba": preds_proba}
+             "preds.proba": preds_proba,
+             "ex_idx": ex_idxs}
         # Repeat some metadata fields if available.
         # Use these for stratified scoring.
         if 'info.height' in df.columns:
@@ -223,7 +247,8 @@ class Predictions(object):
             self._target_df_long = self._make_long_target_df()
         return self._target_df_long
 
-    def score_long_df(self, df: pd.DataFrame) -> Dict[str, float]:
+    @staticmethod
+    def score_long_df(df: pd.DataFrame) -> Dict[str, float]:
         """Compute metrics for a single DataFrame of long-form predictions."""
         # Confusion matrix; can compute other metrics from this later.
         y_true = df['label.true']
