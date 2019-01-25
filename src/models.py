@@ -24,7 +24,7 @@ from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils.utils import assert_for_log, get_batch_utilization, \
-    get_batch_size, get_elmo_mixing_weights, maybe_make_dir
+    get_batch_size, get_elmo_mixing_weights
 from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
@@ -57,42 +57,7 @@ ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
 
-<<<<<<< HEAD
 def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
-=======
-def build_model(args, vocab, pretrained_embs, tasks):
-    '''Build model according to args '''
-
-    # Build embeddings.
-    if args.openai_transformer:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .openai_transformer_lm.utils import OpenAIEmbedderModule
-        log.info("Using OpenAI transformer model; skipping other embedders.")
-        cove_layer = None
-        embedder = OpenAIEmbedderModule(args)
-        d_emb = embedder.get_output_dim()
-    elif args.bert_model_name:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .bert.utils import BertEmbedderModule
-        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
-        cove_layer = None
-        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
-        # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
-        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
-                                   os.path.join(args.exp_dir, "bert_cache"))
-        maybe_make_dir(bert_cache_dir)
-        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
-        d_emb = embedder.get_output_dim()
-    else:
-        # Default case, used for ELMo, CoVe, word embeddings, etc.
-        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
-                                                       tasks, pretrained_embs)
-    d_sent = args.d_hid
-
->>>>>>> 301a4e64852e8d5f95292edc42fc00dac7b36dca
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
@@ -162,6 +127,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
     return sent_encoder, d_sent
 
 def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
+    """
+        This function gets the task-specific parameters and builds
+        the task-specific modules.
+    """
     if args.is_probing_task:
         # TODO: move this logic to preprocess.py;
         # current implementation reloads MNLI data, which is slow.
@@ -195,7 +164,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
     '''
     Build model according to args
     Returns: model which has attributes set in it with the attrbutes.
-
     '''
 
     # Build embeddings.
@@ -224,7 +192,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
-    # for each task, you need to have a certain comoponent. From OpenAI, then add a decoder at the end.
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
@@ -397,7 +364,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, cove_layer
 
-def build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, args):
+def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model
         These include decoders, linear layers for linear models.
      '''
@@ -467,11 +434,9 @@ def build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, 
 
 def get_task_specific_params(args, task_name):
     ''' Search args for parameters specific to task.
-
     Args:
         args: main-program args, a config.Params object
         task_name: (string)
-
     Returns:
         AllenNLP Params object of task-specific params.
     '''
@@ -606,14 +571,12 @@ class MultiTaskModel(nn.Module):
     def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
-
         Args:
             - task (tasks.Task): task for which batch is drawn
             - batch (Dict[str:Dict[str:Tensor]]): dictionary of (field, indexing) pairs,
                 where indexing is a dict of the index namespace and the actual indices.
             - predict (Bool): passed to task specific forward(). If true, forward()
                 should return predictions.
-
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
@@ -1062,10 +1025,8 @@ class MultiTaskModel(nn.Module):
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.
-
         args:
            - tasks (List[Task]): list of tasks that we want to get  ELMo scalars for.
-
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
         '''
