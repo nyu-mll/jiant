@@ -41,7 +41,7 @@ class BertEmbedderModule(nn.Module):
         assert var_ids.size()[1] <= 512
         ids = var_ids
 
-        mask = (ids == 0)
+        mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
         # AllenNLP.
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
