@@ -49,7 +49,7 @@ class BertEmbedderModule(nn.Module):
         fill_len = min(var_ids.size()[1], self.seq_len)
         ids[:,:fill_len] = var_ids[:,:fill_len]
 
-        mask = (ids == 0)
+        mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
         # AllenNLP.
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
