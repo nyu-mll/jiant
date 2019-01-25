@@ -68,7 +68,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
-    # MAKE SENTENCE ENCODER
+    # Make sentence encoder
     if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
@@ -158,7 +158,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         if task.name != model._get_task_params(task.name).get('use_classifier', task.name):
             log.info("Name of the task is different than the classifier it should use")
             continue
-        build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, args)
+        build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args)
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''
@@ -379,7 +379,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     return d_emb, embedder, cove_layer
 
 def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args):
-    ''' Build task-specific components for a task and add them to model
+    ''' Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
      '''
     task_params = model._get_task_params(task.name)
