@@ -175,6 +175,20 @@ def build_model(args, vocab, pretrained_embs, tasks):
         cove_layer = None
         embedder = OpenAIEmbedderModule(args) # Here, this uses openAIEmbedder.
         d_emb = embedder.get_output_dim()
+    elif args.bert_model_name:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .bert.utils import BertEmbedderModule
+        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
+        cove_layer = None
+        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
+        # cache; see
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
+                                   os.path.join(args.exp_dir, "bert_cache"))
+        maybe_make_dir(bert_cache_dir)
+        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
+        d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab,
