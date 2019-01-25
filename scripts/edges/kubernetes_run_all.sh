@@ -12,16 +12,13 @@
 set -e
 
 # Default arguments.
-GPU_TYPE="p100"
 PROJECT=""
 NOTIFY_EMAIL="$NOTIFY_EMAIL"  # allow pre-set from shell
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts ":g:p:n:" opt; do
+while getopts ":p:n:" opt; do
     case "$opt" in
-    g)  GPU_TYPE=$OPTARG
-        ;;
     p)  PROJECT=$OPTARG
         ;;
     n)	NOTIFY_EMAIL=$OPTARG
@@ -106,6 +103,7 @@ fi
 ##
 # Run these on the main 'jsalt' cluster
 gcloud container clusters get-credentials --zone us-east1-c jsalt
+export GPU_TYPE="p100"
 for task in "${ALL_TASKS[@]}"
 do
     kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
@@ -129,10 +127,7 @@ kuberun bert-base-cased-lex-$task    "bert_lex_exp edges-$task base-cased"
 ##
 # Run these on 'jsalt-central' for V100s
 gcloud container clusters get-credentials --zone us-central1-a jsalt-central
-if [[ ${GPU_TYPE} != "v100" ]]; then
-    echo "jsalt-central has only v100 GPUs! (you requested ${GPU_TYPE})"
-    exit 1
-fi
+export GPU_TYPE="v100"
 for task in "${ALL_TASKS[@]}"
 do
     # kuberun openai-$task     "openai_exp edges-$task"
