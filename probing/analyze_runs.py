@@ -3,8 +3,8 @@
 # Convenience script to score a set of runs from the predictions.
 #
 # Usage:
-#  python edge_data_stats.py -i /path/to/experiment/run/ \
-#      -o /tmp/stats.tsv
+#  python analyze_runs.py -i /path/to/experiment/run/ \
+#      -o /tmp/stats.tsv [--parallel n]
 #
 # Output will be a long-form TSV file containing aggregated and per-class
 # predictions for each run.
