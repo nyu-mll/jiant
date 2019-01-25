@@ -10,10 +10,12 @@ import random
 import logging
 import codecs
 import time
+import pandas as pd
+import csv
+import numpy as np
 
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
-import numpy as np
 import torch
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear
@@ -21,7 +23,6 @@ from torch.nn import Parameter
 from torch.nn import init
 
 from allennlp.common.checks import ConfigurationError
-from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
@@ -205,7 +206,7 @@ def load_diagnostic_tsv(
     It loads the data with all it's attributes from diagnostic dataset for MNLI'''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
 
-    # There are 4 columns and every column could containd multiple values.
+    # There are 4 columns and every column could contain multiple values.
     # For every column there is a dict which maps index to (string) value and
     # different dict which maps value to index.
     ix_to_lex_sem_dic = {}
@@ -299,63 +300,65 @@ def load_diagnostic_tsv(
 def load_tsv(
         data_file,
         max_seq_len,
+        label_idx=2,
         s1_idx=0,
         s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
+        label_fn=None,
         skip_rows=0,
+        return_indices=False,
         delimiter='\t',
         filter_idx=None,
+        has_labels=False,
         filter_value=None):
-    '''Load a tsv
+    '''
+    Load a tsv
+    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.
+    Args:
 
-    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
-    sent1s, sent2s, targs, idxs = [], [], [], []
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.strip().split(delimiter)
-                if filter_idx and row[filter_idx] != filter_value:
-                    continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
-                    continue
+        s1_idx; int
+        s2_idx: int
+        targ_idx: int
+        return_indices: bool that describes if you need to return indices (for purposes of matching)
+        label_fn is a function that expects a row and outputs the label
 
-                if targ_idx is not None:
-                    if targ_map is not None:
-                        targ = targ_map[row[targ_idx]]
-                    elif targ_fn is not None:
-                        targ = targ_fn(row[targ_idx])
-                    else:
-                        targ = int(row[targ_idx])
-                else:
-                    targ = 0
+    Returns:
+        List of first and second sentences, labels, and if applicable indices
+    '''
+    sent1s, sent2s, labels = pd.Series(), pd.Series(), pd.Series()
+    # make sure you skip a few rows.
+    rows = pd.read_csv(data_file, \
+                        sep=delimiter, \
+                        error_bad_lines=False, \
+                        header=None, \
+                        skiprows=skip_rows, \
+                        quoting=csv.QUOTE_NONE,\
+                        encoding='utf-8')
+    if filter_idx:
+        rows = rows[rows[filter_idx] == filter_value]
+    # filter for sentence1s that are of length 0
+    # filter if row[targ_idx] is nan
+    mask = (rows[s1_idx].str.len() > 0)
+    if has_labels:
+        masks = masks & (~rows[label_idx].isnull())
+    rows = rows.loc[mask]
+    sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
+    if s2_idx:
+        sent2s = rows[s2_idx].apply(lambda x: process_sentence(x, max_seq_len))
 
-                if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len)
-                    if not len(sent2):
-                        continue
-                    sent2s.append(sent2)
-
-                if idx_idx is not None:
-                    idx = int(row[idx_idx])
-                    idxs.append(idx)
-
-                sent1s.append(sent1)
-                targs.append(targ)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
-                continue
-
-    if idx_idx is not None:
-        return sent1s, sent2s, targs, idxs
+    if has_labels:
+        if label_fn is None:
+            labels = rows[label_idx]
+        else:
+            labels = rows[label_idx].apply(lambda x: label_fn(x, label_idx))
     else:
-        return sent1s, sent2s, targs
+        labels = np.zeros(len(rows), dtype=int)
+
+    if return_indices is not None:
+        idxs = rows.index.tolist()
+        # these are the indices of the remaining rows after filtering
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
+    else:
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist()
 
 
 def split_data(data, ratio, shuffle=1):

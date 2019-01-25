@@ -158,7 +158,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         if task.name != model._get_task_params(task.name).get('use_classifier', task.name):
             log.info("Name of the task is different than the classifier it should use")
             continue
-        build_task_specific_components(task, model, d_sent, d_emb, vocab, embedder, args)
+        build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, args)
 
 def build_model(args, vocab, pretrained_embs, tasks):
     '''
