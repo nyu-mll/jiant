@@ -161,7 +161,7 @@ def unescape_moses(moses_tokens):
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 
-def process_sentence(sent, max_seq_len, tokenizer=''):
+def process_sentence(sent, max_seq_len, tokenizer='', start_tok=SOS_TOK, end_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"

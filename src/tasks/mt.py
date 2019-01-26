@@ -65,12 +65,13 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                src_sent = process_sentence(row[0], self.max_seq_len)
+                src_sent = process_sentence(row[0], self.max_seq_len, tokenizer=self._tokenizer_name)
                 # target sentence sos_tok, eos_tok need to match Seq2SeqDecoder class
+                # NOTE(Alex): don't use BERT tokenization on targets
                 tgt_sent = process_sentence(
                     row[1], self.max_seq_len,
-                    sos_tok=allennlp_util.START_SYMBOL,
-                    eos_tok=allennlp_util.END_SYMBOL,
+                    start_tok=allennlp_util.START_SYMBOL,
+                    end_tok=allennlp_util.END_SYMBOL,
                 )
                 yield (src_sent, tgt_sent)
 
@@ -139,10 +140,10 @@ class RedditSeq2SeqTask(MTTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                src_sent = process_sentence(row[2], self.max_seq_len)
+                src_sent = process_sentence(row[2], self.max_seq_len, tokenizer=self._tokenizer_name)
                 tgt_sent = process_sentence(row[3], self.max_seq_len,
-                                            sos_tok=allennlp_util.START_SYMBOL,
-                                            eos_tok=allennlp_util.END_SYMBOL,
+                                            start_tok=allennlp_util.START_SYMBOL,
+                                            end_tok=allennlp_util.END_SYMBOL,
                                             )
                 yield (src_sent, tgt_sent)
 
@@ -172,7 +173,7 @@ class Wiki103Seq2SeqTask(MTTask):
                 if not toks:
                     continue
                 sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
-                                        self.max_seq_len)
+                                       self.max_seq_len, tokenizer_name=self._tokenizer_name)
                 yield sent, []
 
     def get_num_examples(self, split_text):
