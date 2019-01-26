@@ -12,6 +12,7 @@ import codecs
 import time
 
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
+from pytorch_pretrained_bert import BertTokenizer
 
 import numpy as np
 import torch
@@ -31,6 +32,8 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+BERT_TOKENIZER = None # NOTE(Alex): hacky way of not loading the tokenizer every time
+BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
@@ -158,12 +161,26 @@ def unescape_moses(moses_tokens):
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 
-def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
+def process_sentence(sent, max_seq_len, tokenizer=''):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    if tokenizer.startswith('bert'):
+        sos_tok = BERT_CLS_TOK
+        eos_tok = BERT_SEP_TOK
+        global BERT_TOKENIZER
+        if BERT_TOKENIZER is None:
+            do_lower_case = tokenizer.endswith('uncased')
+            BERT_TOKENIZER = BertTokenizer.from_pretrained(tokenizer,
+                                                           do_lower_case=do_lower_case)
+        tokenizer = BERT_TOKENIZER
+    else:
+        sos_tok = SOS_TOK
+        eos_tok = EOS_TOK
+        tokenizer = TOKENIZER
+
     if isinstance(sent, str):
-        return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
+        return [sos_tok] + tokenizer.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return [sos_tok] + sent[:max_seq_len] + [eos_tok]
@@ -199,7 +216,8 @@ def load_diagnostic_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None):
+        filter_value=None,
+        tokenizer=''):
     '''Load a tsv
 
     It loads the data with all it's attributes from diagnostic dataset for MNLI'''
@@ -243,14 +261,14 @@ def load_diagnostic_tsv(
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer=tokenizer)
                 if targ_map is not None:
                     targ = targ_map[row[targ_idx]]
                 elif targ_fn is not None:
                     targ = targ_fn(row[targ_idx])
                 else:
                     targ = int(row[targ_idx])
-                sent2 = process_sentence(row[s2_idx], max_seq_len)
+                sent2 = process_sentence(row[s2_idx], max_seq_len, tokenizer=tokenizer)
                 sent2s.append(sent2)
 
                 sent1s.append(sent1)
@@ -308,7 +326,8 @@ def load_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None):
+        filter_value=None,
+        tokenizer=''):
     '''Load a tsv
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
@@ -321,7 +340,7 @@ def load_tsv(
                 row = row.strip().split(delimiter)
                 if filter_idx and row[filter_idx] != filter_value:
                     continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer=tokenizer)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
 
@@ -336,7 +355,7 @@ def load_tsv(
                     targ = 0
 
                 if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len)
+                    sent2 = process_sentence(row[s2_idx], max_seq_len, tokenizer=tokenizer)
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)
