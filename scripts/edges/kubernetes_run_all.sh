@@ -115,15 +115,13 @@ do
 
     kuberun openai-lex-$task "openai_lex_exp edges-$task"
     kuberun bert-base-uncased-lex-$task    "bert_lex_exp edges-$task base-uncased"
-    # kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
+    kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
 done
 
 # Run cased BERT models for NER tasks
 task="ner-ontonotes"
 kuberun bert-base-cased-lex-$task    "bert_lex_exp edges-$task base-cased"
-# kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
-
-# exit 0
+kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
 
 ##
 # Run these on 'jsalt-central' for V100s
@@ -136,11 +134,11 @@ do
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
 
     kuberun bert-base-uncased-cat-$task    "bert_cat_exp edges-$task base-uncased"
-    # kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
+    kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
 done
 
 # Run cased BERT models for NER tasks
 task="ner-ontonotes"
 kuberun bert-base-cased-cat-$task    "bert_cat_exp edges-$task base-cased"
-# kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
+kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
 
