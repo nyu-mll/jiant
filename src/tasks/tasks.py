@@ -530,9 +530,9 @@ class STSBTask(PairRegressionTask):
     def load_data(self, path, max_seq_len):
         ''' Load data '''
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
+                           s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x, idx: float(x) / 5)
         val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
+                            s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x, idx: float(x) / 5)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
@@ -642,6 +642,9 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        def targ_func(row, label_idx):
+            return targ_map[row[label_idx]]
+
         diag_data_dic = load_diagnostic_tsv(
             os.path.join(
                 path,
@@ -650,7 +653,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             s1_idx=5,
             s2_idx=6,
             label_idx=7,
-            targ_map=targ_map,
+            label_fn=targ_func,
             skip_rows=1)
 
         self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
@@ -876,6 +879,7 @@ class WNLITask(PairClassificationTask):
         '''Load the data'''
         tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
+        import pdb; pdb.set_trace()
         val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
                             s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,

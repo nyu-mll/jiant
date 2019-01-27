@@ -191,96 +191,59 @@ def load_lines(filename: str) -> Iterable[str]:
 def load_diagnostic_tsv(
         data_file,
         max_seq_len,
+        label_idx,
         s1_idx=0,
         s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
+        label_fn=None,
         skip_rows=0,
-        delimiter='\t',
-        filter_idx=None,
-        filter_value=None):
-    '''Load a tsv
-
-    It loads the data with all it's attributes from diagnostic dataset for MNLI'''
+        delimiter='\t'):
+    '''Load a tsv and also preprocesses the targets by mapping them to
+        indices, and indexing the targets. This is only used for MNLI right now.
+    Args:
+        -data_file
+        -max_seq_len
+        -s1_idx
+        -s2_idx
+        -label_fn
+        -skip_rows
+        -delimiter
+    Returns:
+        -A dictionary of the necessary attributes
+    '''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
+    try:
+        import pdb; pdb.set_trace()
+        rows = pd.read_csv(data_file, \
+                            sep=delimiter, \
+                            error_bad_lines=False, \
+                            header=None, \
+                            skiprows=skip_rows, \
+                            quoting=csv.QUOTE_NONE,\
+                            encoding='utf-8')
 
-    # There are 4 columns and every column could contain multiple values.
-    # For every column there is a dict which maps index to (string) value and
-    # different dict which maps value to index.
-    ix_to_lex_sem_dic = {}
-    ix_to_pr_ar_str_dic = {}
-    ix_to_logic_dic = {}
-    ix_to_knowledge_dic = {}
+        def targs_to_idx(index):
+            # This maps target vocab to inices, and also maps 0 -> missing.
+            vocab = set(rows[index].values)
+            flattened_vocab = list(itertools.chain(*vocab))
+            word_to_ix = {word: i+1 for i, word in enumerate(flattened_vocab) if word !=''}
+            ix_to_word =  {i+1:word for i, word in enumerate(flattened_vocab) if word !=''}
+            #and then we map these people.
+            rows[index] = rows[index].apply(lambda x: word_to_idx[x])
+            word_to_ix[0] = "missing"
+            ix_to_word["missing"] = 0
+            return word_to_ix, ix_to_word, rows[index]
+        import pdb; pdb.set_trace()
+        sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
+        sent2s = rows[s2_idx].apply(lambda x: process_sentence(x, max_seq_len))
+        labels = rows[label_idx].apply(lambda x: label_fn(x, label_idx))
+        lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = tags_to_idx(0)
+        pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = tags_to_idx(1)
+        logic_to_ix_dic, ix_to_logic_dic, logic = tags_to_idx(2)
+        knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = tags_to_idx(3)
+        idxs = rows.index.tolist()
 
-    lex_sem_to_ix_dic = {}
-    pr_ar_str_to_ix_dic = {}
-    logic_to_ix_dic = {}
-    knowledge_to_ix_dic = {}
-
-    # This converts tags to indices and adds new indices to dictionaries above.
-    # In every row there could be multiple tags in one column
-    def tags_to_ixs(tags, tag_to_ix_dict, ix_to_tag_dic):
-        splitted_tags = tags.split(';')
-        indexes = []
-        for t in splitted_tags:
-            if t == '':
-                continue
-            if t in tag_to_ix_dict:
-                indexes.append(tag_to_ix_dict[t])
-            else:
-                # index 0 will be used for missing value
-                highest_ix = len(tag_to_ix_dict)
-                new_index = highest_ix + 1
-                tag_to_ix_dict[t] = new_index
-                ix_to_tag_dic[new_index] = t
-                indexes.append(new_index)
-        return indexes
-
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if targ_map is not None:
-                    targ = targ_map[row[targ_idx]]
-                elif targ_fn is not None:
-                    targ = targ_fn(row[targ_idx])
-                else:
-                    targ = int(row[targ_idx])
-                sent2 = process_sentence(row[s2_idx], max_seq_len)
-                sent2s.append(sent2)
-
-                sent1s.append(sent1)
-                targs.append(targ)
-
-                lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
-                pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
-                logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
-                knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
-
-                idxs.append(row_idx)
-                lex_sem.append(lex_sem_sample)
-                pr_ar_str.append(pr_ar_str_sample)
-                logic.append(logic_sample)
-                knowledge.append(knowledge_sample)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
-                continue
-
-    ix_to_lex_sem_dic[0] = "missing"
-    ix_to_pr_ar_str_dic[0] = "missing"
-    ix_to_logic_dic[0] = "missing"
-    ix_to_knowledge_dic[0] = "missing"
-
-    lex_sem_to_ix_dic["missing"] = 0
-    pr_ar_str_to_ix_dic["missing"] = 0
-    logic_to_ix_dic["missing"] = 0
-    knowledge_to_ix_dic["missing"] = 0
+    except Exception as e:
+        print(e, " file: %s" % (data_file))
 
     return {'sents1': sent1s,
             'sents2': sent2s,
@@ -308,10 +271,10 @@ def load_tsv(
         return_indices=False,
         delimiter='\t',
         filter_idx=None,
-        has_labels=False,
+        has_labels=True,
         filter_value=None):
     '''
-    Load a tsv
+    Load a tsv.
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.
     Args:
 
@@ -325,7 +288,6 @@ def load_tsv(
         List of first and second sentences, labels, and if applicable indices
     '''
     sent1s, sent2s, labels = pd.Series(), pd.Series(), pd.Series()
-    # make sure you skip a few rows.
     rows = pd.read_csv(data_file, \
                         sep=delimiter, \
                         error_bad_lines=False, \
@@ -339,7 +301,7 @@ def load_tsv(
     # filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
     if has_labels:
-        masks = masks & (~rows[label_idx].isnull())
+        mask = mask & (~rows[label_idx].isnull())
     rows = rows.loc[mask]
     sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
     if s2_idx:
@@ -351,6 +313,7 @@ def load_tsv(
         else:
             labels = rows[label_idx].apply(lambda x: label_fn(x, label_idx))
     else:
+        # if it doesn't have lables, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
 
     if return_indices is not None:
