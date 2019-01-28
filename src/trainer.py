@@ -165,7 +165,6 @@ class SamplingMultiTaskTrainer:
         self._val_data_limit = val_data_limit
         self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
-
         self._task_infos = None
         self._metric_infos = None
 
@@ -733,7 +732,7 @@ class SamplingMultiTaskTrainer:
 
     def _forward(self, batch, for_training, task=None):
         ''' At one point this does something, now it doesn't really do anything '''
-        tensor_batch = batch
+        tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)
         return model_out
 
