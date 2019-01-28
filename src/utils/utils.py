@@ -20,7 +20,7 @@ from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
-from allennlp.nn.util import masked_log_softmax
+from allennlp.nn.util import masked_softmax
 from allennlp.common.checks import ConfigurationError
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
@@ -503,46 +503,6 @@ def arrays_to_variables(data_structure, cuda_device=-1, add_batch_dimension=Fals
             return torch_variable
         else:
             return torch_variable.cuda(cuda_device)
-
-
-def masked_softmax(vector, mask):
-    """
-    ``torch.nn.functional.softmax(vector)`` does not work if some elements of ``vector`` should be
-    masked.  This performs a softmax on just the non-masked portions of ``vector``.  Passing
-    ``None`` in for the mask is also acceptable; you'll just get a regular softmax.
-
-    We assume that both ``vector`` and ``mask`` (if given) have shape ``(batch_size, vector_dim)``.
-
-    In the case that the input vector is completely masked, this function returns an array
-    of ``0.0``. This behavior may cause ``NaN`` if this is used as the last layer of a model
-    that uses categorical cross-entropy loss.
-    """
-    if mask is None:
-        result = torch.nn.functional.softmax(vector)
-    else:
-        # To limit numerical errors from large vector elements outside mask, we zero these out
-        result = torch.nn.functional.softmax(vector * mask)
-        result = result * mask
-        result = result / (result.sum(dim=1, keepdim=True) + 1e-13)
-    return result
-
-
-def masked_log_softmax(vector, mask):
-    """
-    ``torch.nn.functional.log_softmax(vector)`` does not work if some elements of ``vector`` should be
-    masked.  This performs a log_softmax on just the non-masked portions of ``vector``.  Passing
-    ``None`` in for the mask is also acceptable; you'll just get a regular log_softmax.
-
-    We assume that both ``vector`` and ``mask`` (if given) have shape ``(batch_size, vector_dim)``.
-
-    In the case that the input vector is completely masked, this function returns an array
-    of ``0.0``.  You should be masking the result of whatever computation comes out of this in that
-    case, anyway, so it shouldn't matter.
-    """
-    if mask is not None:
-        vector = vector + mask.log()
-    return torch.nn.functional.log_softmax(vector)
-
 
 def viterbi_decode(tag_sequence: torch.Tensor,
                    transition_matrix: torch.Tensor,

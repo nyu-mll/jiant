@@ -20,6 +20,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 from allennlp.common import Params
+from allennlp.nn.util import masked_softmax
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
 from allennlp.models.model import Model
@@ -419,7 +420,7 @@ class AttnPairEncoder(Model):
         return cls(vocab=vocab, attention_similarity_function=similarity_function,
                    modeling_layer=modeling_layer, dropout=dropout,
                    mask_lstms=mask_lstms, initializer=initializer)
-                  
+
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     # pylint: disable=line-too-long
     """
