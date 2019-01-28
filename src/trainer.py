@@ -20,6 +20,7 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
+from allennlp.nn.util import move_to_device
 
 from .utils.utils import device_mapping, assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
@@ -249,8 +250,8 @@ class SamplingMultiTaskTrainer:
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
-            tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-
+            tr_generator = iterator(task.train_data, num_epochs=None)
+            tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
             if phase == "main":
@@ -590,8 +591,8 @@ class SamplingMultiTaskTrainer:
             else:
                 max_data_points = task.n_val_examples
             val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-                task.val_data, num_epochs=1, shuffle=False,
-                cuda_device=self._cuda_device)
+                task.val_data, num_epochs=1, shuffle=False)
+            val_generator = move_to_device(val_generator, self._cuda_device)
             n_val_batches = math.ceil(max_data_points / batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
 

@@ -20,8 +20,8 @@ from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
+from allennlp.nn.util import masked_log_softmax
 from allennlp.common.checks import ConfigurationError
-from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
@@ -656,26 +656,6 @@ def get_text_field_mask(text_field_tensors: Dict[str, torch.Tensor]) -> torch.Lo
 
     return (token_tensor != 0).long()
 
-
-def last_dim_softmax(tensor: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-    """
-    Takes a tensor with 3 or more dimensions and does a masked softmax over the last dimension.  We
-    assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask (if given)
-    has shape ``(batch_size, sequence_length)``.  We first unsqueeze and expand the mask so that it
-    has the same shape as the tensor, then flatten them both to be 2D, pass them through
-    :func:`masked_softmax`, then put the tensor back in its original shape.
-    """
-    tensor_shape = tensor.size()
-    reshaped_tensor = tensor.view(-1, tensor.size()[-1])
-    if mask is not None:
-        while mask.dim() < tensor.dim():
-            mask = mask.unsqueeze(1)
-        mask = mask.expand_as(tensor).contiguous().float()
-        mask = mask.view(-1, mask.size()[-1])
-    reshaped_result = masked_softmax(reshaped_tensor, mask)
-    return reshaped_result.view(*tensor_shape)
-
-
 def weighted_sum(matrix: torch.Tensor, attention: torch.Tensor) -> torch.Tensor:
     """
     Takes a matrix of vectors and a set of weights over the rows in the matrix (which we call an
@@ -1065,7 +1045,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
         # shape (num_heads * batch_size, timesteps, timesteps)
         # Normalise the distributions, using the same mask for all heads.
-        attention = last_dim_softmax(masked_scaled_similarities, mask.repeat(num_heads, 1))
+        attention = masked_softmax(masked_scaled_similarities, mask.repeat(num_heads, 1))
         attention = self._attention_dropout(attention)
         # This is doing the following batch-wise matrix multiplication:
         # (num_heads * batch_size, timesteps, timesteps) *
