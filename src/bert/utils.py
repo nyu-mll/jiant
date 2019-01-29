@@ -19,9 +19,6 @@ class BertEmbedderModule(nn.Module):
                 args.bert_model_name,
                 cache_dir=cache_dir)
         self.embeddings_mode = args.bert_embeddings_mode
-        # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
-        assert args.max_seq_len <= 512
-        self.seq_len = args.max_seq_len
 
         # Set trainability of this module.
         for param in self.model.parameters():
@@ -40,14 +37,9 @@ class BertEmbedderModule(nn.Module):
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
         var_ids = sent["bert_wpm_pretokenized"]
-
-        # Model has fixed, learned positional component, so we must pass a
-        # block of exactly seq_len length.
-        # ids is <int32> [batch_size, seq_len]
-        ids = torch.zeros(var_ids.size()[0], self.seq_len, dtype=var_ids.dtype,
-                          device=var_ids.device)
-        fill_len = min(var_ids.size()[1], self.seq_len)
-        ids[:,:fill_len] = var_ids[:,:fill_len]
+        # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
+        assert var_ids.size()[1] <= 512
+        ids = var_ids
 
         mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
@@ -93,12 +85,8 @@ class BertEmbedderModule(nn.Module):
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
                                        " not supported.")
 
-        # Truncate back to the original ids length, for compatiblity with the
-        # rest of our embedding models. This only drops padding
-        # representations.
-        h_trunc = h[:,:var_ids.size()[1],:]
         # <float32> [batch_size, var_seq_len, output_dim]
-        return h_trunc
+        return h
 
     def get_output_dim(self):
         if self.embeddings_mode == "cat":
