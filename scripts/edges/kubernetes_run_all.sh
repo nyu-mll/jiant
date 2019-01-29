@@ -135,10 +135,18 @@ do
 
     kuberun bert-base-uncased-cat-$task    "bert_cat_exp edges-$task base-uncased"
     kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
+
+    # BERT with ELMo-style scalar mixing.
+    kuberun bert-base-uncased-mix-$task    "bert_mix_exp edges-$task base-uncased"
+    kuberun bert-large-uncased-mix-$task   "bert_mix_exp edges-$task large-uncased"
 done
 
 # Run cased BERT models for NER tasks
 task="ner-ontonotes"
 kuberun bert-base-cased-cat-$task    "bert_cat_exp edges-$task base-cased"
 kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
+
+# BERT with ELMo-style scalar mixing.
+kuberun bert-base-cased-mix-$task    "bert_mix_exp edges-$task base-cased"
+kuberun bert-large-cased-mix-$task   "bert_mix_exp edges-$task large-cased"
 

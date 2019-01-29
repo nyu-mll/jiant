@@ -5,6 +5,8 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
+from allennlp.modules import scalar_mix
+
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
@@ -23,6 +25,16 @@ class BertEmbedderModule(nn.Module):
         # Set trainability of this module.
         for param in self.model.parameters():
             param.requires_grad = bool(args.bert_fine_tune)
+
+        # Configure scalar mixing, ELMo-style
+        # TODO: if doing multiple target tasks, allow for multiple sets of
+        # scalars. Seee the ELMo implementation here:
+        # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+        if self.embeddings_mode == "mix":
+            num_layers = self.model.config.num_hidden_layers
+            self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1,
+                                                   do_layer_norm=False)
+
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
@@ -77,10 +89,12 @@ class BertEmbedderModule(nn.Module):
 
         if self.embeddings_mode == "none":
             h = h_enc
-        elif self.embeddings_mode == "cat":
-            h = torch.cat([h_enc, h_lex], dim=2)
         elif self.embeddings_mode == "only":
             h = h_lex
+        elif self.embeddings_mode == "cat":
+            h = torch.cat([h_enc, h_lex], dim=2)
+        elif self.embeddings_mode == "mix":
+            h = self.scalar_mix([h_lex] + encoded_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
                                        " not supported.")
