@@ -420,8 +420,8 @@ class MultiNLISingleGenreTask(PairClassificationTask):
     def load_data(self, path, max_seq_len, genre):
         '''Process the dataset located at path. We only use the in-genre matche data.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        def targ_func(row, label_idx):
-            return targ_map[row[label_idx]]
+        def targ_func(value):
+            return targ_map[value]
 
         tr_data = load_tsv(
             os.path.join(
@@ -561,11 +561,11 @@ class SNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        def targ_func(row, label_idx):
-            return targ_map[row[label_idx]]
-        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
+        def targ_func(value):
+            return targ_map[value]
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, label_fn=targ_func,
                            s1_idx=7, s2_idx=8, label_idx=-1, skip_rows=1)
-        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
+        val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_func,
                             s1_idx=7, s2_idx=8, label_idx=-1, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
@@ -590,14 +590,17 @@ class MultiNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        def targ_func(value):
+            return targ_map[value]
+
         tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=8, s2_idx=9, label_idx=11, targ_map=targ_map, skip_rows=1)
+                           s1_idx=8, s2_idx=9, label_idx=11, label_fn=targ_func, skip_rows=1)
 
         # Warning to anyone who edits this: The reference label is column *15*, not 11 as above.
         val_matched_data = load_tsv(os.path.join(path, 'dev_matched.tsv'), max_seq_len,
-                                    s1_idx=8, s2_idx=9, label_idx=15, targ_map=targ_map, skip_rows=1)
+                                    s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_func, skip_rows=1)
         val_mismatched_data = load_tsv(os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, label_idx=15, targ_map=targ_map,
+                                       s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_func, has_labels=False,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
@@ -642,8 +645,8 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        def targ_func(row, label_idx):
-            return targ_map[row[label_idx]]
+        def targ_func(value):
+            return targ_map[value]
 
         diag_data_dic = load_diagnostic_tsv(
             os.path.join(

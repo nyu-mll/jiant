@@ -17,6 +17,7 @@ import numpy as np
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
 import torch
+import itertools
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
@@ -210,10 +211,10 @@ def load_diagnostic_tsv(
         -delimiter
     Returns:
         -A dictionary of the necessary attributes
+        -If the field in the diagnostic is '', then we return []
     '''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
     try:
-        import pdb; pdb.set_trace()
         rows = pd.read_csv(data_file, \
                             sep=delimiter, \
                             error_bad_lines=False, \
@@ -221,26 +222,28 @@ def load_diagnostic_tsv(
                             skiprows=skip_rows, \
                             quoting=csv.QUOTE_NONE,\
                             encoding='utf-8')
-
+        rows = rows.fillna('')
         def targs_to_idx(index):
             # This maps target vocab to inices, and also maps 0 -> missing.
             vocab = set(rows[index].values)
-            flattened_vocab = list(itertools.chain(*vocab))
-            word_to_ix = {word: i+1 for i, word in enumerate(flattened_vocab) if word !=''}
-            ix_to_word =  {i+1:word for i, word in enumerate(flattened_vocab) if word !=''}
+            word_to_ix = {word: i+1 for i, word in enumerate(vocab) if word !=''}
+            # take out the nans, so jsut return [] if it doesn't work.
+            ix_to_word =  {i+1:word for i, word in enumerate(vocab) if word !=''}
             #and then we map these people.
-            rows[index] = rows[index].apply(lambda x: word_to_idx[x])
+            # take away the nanas.
+            rows[index] = rows[index].apply(lambda x: [word_to_ix[x]] if x != '' else [])
             word_to_ix[0] = "missing"
             ix_to_word["missing"] = 0
             return word_to_ix, ix_to_word, rows[index]
-        import pdb; pdb.set_trace()
+
         sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(x, max_seq_len))
-        labels = rows[label_idx].apply(lambda x: label_fn(x, label_idx))
-        lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = tags_to_idx(0)
-        pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = tags_to_idx(1)
-        logic_to_ix_dic, ix_to_logic_dic, logic = tags_to_idx(2)
-        knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = tags_to_idx(3)
+        labels = rows[label_idx].apply(lambda x: label_fn(x))
+        lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = targs_to_idx(0)
+        import pdb; pdb.set_trace()
+        pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = targs_to_idx(1)
+        logic_to_ix_dic, ix_to_logic_dic, logic = targs_to_idx(2)
+        knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = targs_to_idx(3)
         idxs = rows.index.tolist()
 
     except Exception as e:
