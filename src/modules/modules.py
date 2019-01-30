@@ -20,7 +20,6 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 from allennlp.common import Params
-from allennlp.nn.util import masked_softmax
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
 from allennlp.models.model import Model
@@ -391,14 +390,14 @@ class AttnPairEncoder(Model):
 
         # s2 representation
         # Shape: (batch_size, s2_length, s1_length)
-        s2_s1_attn = masked_softmax(similarity_mat, s1_mask)
+        s2_s1_attn = util.masked_softmax(similarity_mat, s1_mask)
         # Shape: (batch_size, s2_length, encoding_dim)
         s2_s1_vectors = util.weighted_sum(s1, s2_s1_attn)
         # batch_size, seq_len, 4*enc_dim
         s2_w_context = torch.cat([s2, s2_s1_vectors], 2)
 
         # s1 representation, using same attn method as for the s2 representation
-        s1_s2_attn = masked_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
+        s1_s2_attn = util.masked_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
         # Shape: (batch_size, s1_length, encoding_dim)
         s1_s2_vectors = util.weighted_sum(s2, s1_s2_attn)
         s1_w_context = torch.cat([s1, s1_s2_vectors], 2)
@@ -420,7 +419,7 @@ class AttnPairEncoder(Model):
         return cls(vocab=vocab, attention_similarity_function=similarity_function,
                    modeling_layer=modeling_layer, dropout=dropout,
                    mask_lstms=mask_lstms, initializer=initializer)
-
+                  
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     # pylint: disable=line-too-long
     """
