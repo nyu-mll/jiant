@@ -29,6 +29,7 @@ import json
 import os
 import re
 import sys
+import multiprocessing
 from tqdm import tqdm
 
 import logging as log
@@ -124,16 +125,23 @@ def retokenize_record(record, tokenizer_name):
                                        ta.project_span(*target['span2'])))
     return record
 
+def _map_fn(line, tokenizer_name):
+    record = json.loads(line)
+    new_record = retokenize_record(record, tokenizer_name)
+    return json.dumps(new_record)
 
 def retokenize_file(fname, tokenizer_name):
     new_name = fname + ".retokenized." + tokenizer_name
     log.info("Processing file: %s", fname)
-    record_iter = list(utils.load_json_data(fname))
+    inputs = list(utils.load_lines(fname))
     log.info("  saving to %s", new_name)
+    pool = multiprocessing.Pool(4)
+    map_fn = functools.partial(_map_fn,
+                               tokenizer_name=tokenizer_name)
     with open(new_name, 'w') as fd:
-        for record in tqdm(record_iter):
-            new_record = retokenize_record(record, tokenizer_name)
-            fd.write(json.dumps(new_record))
+        for line in tqdm(pool.imap(map_fn, inputs, chunksize=500),
+                         total=len(inputs)):
+            fd.write(line)
             fd.write("\n")
 
 
