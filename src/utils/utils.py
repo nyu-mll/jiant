@@ -1,4 +1,4 @@
-z"""
+"""
 Assorted utilities for working with neural networks in AllenNLP.
 """
 from typing import Dict, List, Sequence, Optional, Union, Iterable
