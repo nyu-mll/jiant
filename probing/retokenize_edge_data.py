@@ -23,10 +23,12 @@
 # Note: for BERT tokenizers, this requires the 'pytorch_pretrained_bert'
 # package.
 
-import sys
-import os
 import argparse
+import functools
 import json
+import os
+import re
+import sys
 from tqdm import tqdm
 
 import logging as log
@@ -37,6 +39,7 @@ from src.utils import utils
 from src.utils import retokenize
 
 from src.openai_transformer_lm import utils as openai_utils
+from pytorch_pretrained_bert import BertTokenizer
 
 from typing import Tuple, List, Text
 
@@ -48,6 +51,23 @@ MosesTokenizer = utils.TOKENIZER
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
     return [t + "</w>" for t in sentence.split()]
+
+def process_bert_wordpiece_for_alignment(t):
+    """Add <w> markers to ensure word-boundary alignment."""
+    if t.startswith("##"):
+        return re.sub(r"^##", "", t)
+    else:
+        return "<w>" + t
+
+def space_tokenize_with_bow(sentence):
+    """Add <w> markers to ensure word-boundary alignment."""
+    return ["<w>" + t for t in sentence.split()]
+
+@functools.lru_cache(maxsize=8, typed=False)
+def _get_bert_tokenizer(model_name, do_lower_case):
+    log.info(f"Loading BertTokenizer({model_name}, do_lower_case={do_lower_case})")
+    return BertTokenizer.from_pretrained(model_name,
+                                         do_lower_case=do_lower_case)
 
 ##
 # Aligner functions. These take a raw string and return a tuple
@@ -64,11 +84,28 @@ def align_openai(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
     ta = retokenize.TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
 
+def align_bert(text: Text, model_name: str) -> Tuple[retokenize.TokenAligner, List[Text]]:
+    # If using lowercase, do this for the source tokens for better matching.
+    do_lower_case = model_name.endswith('uncased')
+    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
+                                         text)
+
+    bert_tokenizer = _get_bert_tokenizer(model_name, do_lower_case)
+    wpm_tokens = bert_tokenizer.tokenize(text)
+
+    # Align using <w> markers for stability w.r.t. word boundaries.
+    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment,
+                                   wpm_tokens))
+    ta = retokenize.TokenAligner(bow_tokens, modified_wpm_tokens)
+    return ta, wpm_tokens
+
 def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer":
         return align_moses
     elif tokenizer_name == "OpenAI.BPE":
         return align_openai
+    elif tokenizer_name.startswith("bert-"):
+        return functools.partial(align_bert, model_name=tokenizer_name)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
 
@@ -102,7 +139,7 @@ def retokenize_file(fname, tokenizer_name):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('tokenizer_name', type=str,
+    parser.add_argument("-t", dest='tokenizer_name', type=str, required=True,
                         help="Tokenizer name.")
     parser.add_argument('inputs', type=str, nargs="+",
                         help="Input JSON files.")
