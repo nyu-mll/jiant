@@ -130,16 +130,15 @@ def _map_fn(line, tokenizer_name):
     new_record = retokenize_record(record, tokenizer_name)
     return json.dumps(new_record)
 
-def retokenize_file(fname, tokenizer_name):
+def retokenize_file(fname, tokenizer_name, worker_pool):
     new_name = fname + ".retokenized." + tokenizer_name
     log.info("Processing file: %s", fname)
     inputs = list(utils.load_lines(fname))
     log.info("  saving to %s", new_name)
-    pool = multiprocessing.Pool(4)
     map_fn = functools.partial(_map_fn,
                                tokenizer_name=tokenizer_name)
     with open(new_name, 'w') as fd:
-        for line in tqdm(pool.imap(map_fn, inputs, chunksize=500),
+        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500),
                          total=len(inputs)):
             fd.write(line)
             fd.write("\n")
@@ -149,12 +148,15 @@ def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", dest='tokenizer_name', type=str, required=True,
                         help="Tokenizer name.")
+    parser.add_argument("--num_parallel", type=int, default=4,
+                        help="Number of parallel processes to use.")
     parser.add_argument('inputs', type=str, nargs="+",
                         help="Input JSON files.")
     args = parser.parse_args(args)
 
+    worker_pool = multiprocessing.Pool(args.num_parallel)
     for fname in args.inputs:
-        retokenize_file(fname, args.tokenizer_name)
+        retokenize_file(fname, args.tokenizer_name, worker_pool=worker_pool)
 
 
 if __name__ == '__main__':
