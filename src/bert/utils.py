@@ -35,7 +35,7 @@ class BertEmbedderModule(nn.Module):
             # TODO: if doing multiple target tasks, allow for multiple sets of
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
-            assert len(args.target_tasks == 1), \
+            assert len(args.target_tasks) <= 1, \
                     ("bert_embeddings_mode='mix' only supports a single set of "
                      "scalars (but if you need this feature, see the TODO in "
                      "the code!)")
