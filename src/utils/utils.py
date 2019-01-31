@@ -162,7 +162,7 @@ def unescape_moses(moses_tokens):
 
 
 def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
-    '''process a sentence '''
+    '''Tokenizes a sentence and appends EOS, SOS to sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     if isinstance(sent, str):
@@ -190,7 +190,7 @@ def load_lines(filename: str) -> Iterable[str]:
             yield line.strip()
 
 
-def load_diagnostic_tsv(
+def load_diagnostic_tsv_and_index(
         data_file,
         max_seq_len,
         label_idx,
@@ -199,19 +199,23 @@ def load_diagnostic_tsv(
         label_fn=None,
         skip_rows=0,
         delimiter='\t'):
-    '''Load a tsv and also preprocesses the targets by mapping them to
-        indices, and indexing the targets. This is only used for MNLI right now.
+    '''Load a tsv and  indexes the columns from the diagnostic tsv.
+        This is only used for MNLI-diagnostic right now.
+
     Args:
-        -data_file
-        -max_seq_len
-        -s1_idx
-        -s2_idx
-        -label_fn
-        -skip_rows
-        -delimiter
+        data_file: string
+        max_seq_len: int
+        s1_idx: int
+        s2_idx: int
+        label_fn: function
+        skip_rows: list of ints
+        delimiter: string
+
     Returns:
-        -A dictionary of the necessary attributes
-        -If the field in the diagnostic is '', then we return []
+        A dictionary of the necessary indexed fields, the tokenized sent1 and sent2
+        and indices
+        Note: If a field in a particular row in the dataset is empty, we return []
+        for that field for that row, otherwise we return an array of ints (indices)
     '''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
     try:
@@ -224,13 +228,13 @@ def load_diagnostic_tsv(
                             encoding='utf-8')
         rows = rows.fillna('')
         def targs_to_idx(index):
-            # This maps target vocab to inices, and also maps 0 -> missing.
+            # this function build the index to vocab (and its inverse)
+            # and also indees the column rows[index]
             vocab = set(rows[index].values)
             word_to_ix = {word: i+1 for i, word in enumerate(vocab) if word !=''}
-            # take out the nans, so jsut return [] if it doesn't work.
+            # If for a certaian row there isnt' a value in that column,
+            # return []
             ix_to_word =  {i+1:word for i, word in enumerate(vocab) if word !=''}
-            #and then we map these people.
-            # take away the nanas.
             rows[index] = rows[index].apply(lambda x: [word_to_ix[x]] if x != '' else [])
             word_to_ix[0] = "missing"
             ix_to_word["missing"] = 0
@@ -239,8 +243,8 @@ def load_diagnostic_tsv(
         sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(x, max_seq_len))
         labels = rows[label_idx].apply(lambda x: label_fn(x))
+        # build indices for field attributes
         lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = targs_to_idx(0)
-        import pdb; pdb.set_trace()
         pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = targs_to_idx(1)
         logic_to_ix_dic, ix_to_logic_dic, logic = targs_to_idx(2)
         knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = targs_to_idx(3)
@@ -279,7 +283,8 @@ def load_tsv(
         filter_value=None):
     '''
     Load a tsv.
-    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.
+    To load only rows that have a certain value for a certain column,
+    like genre in MNLI, set filter_idx and filter_value.
     Args:
 
         s1_idx; int
@@ -317,12 +322,12 @@ def load_tsv(
         else:
             labels = rows[label_idx].apply(lambda x: label_fn(x, label_idx))
     else:
-        # if it doesn't have lables, for example for test set, then mock labels
+        # if dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
 
     if return_indices is not None:
         idxs = rows.index.tolist()
-        # these are the indices of the remaining rows after filtering
+        # get indices of the remaining rows after filtering
         return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
     else:
         return sent1s.tolist(), sent2s.tolist(), labels.tolist()

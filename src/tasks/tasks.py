@@ -1362,4 +1362,4 @@ class CCGTaggingTask(TaggingTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading CCGTagging data.”)z
+        log.info('\tFinished loading CCGTagging data.')
