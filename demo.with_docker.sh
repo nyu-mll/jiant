@@ -21,6 +21,7 @@ TEMP_DIR=${1:-"/tmp/jiant-demo"}
 mkdir -p $TEMP_DIR
 mkdir -p $TEMP_DIR/exp
 mkdir -p $TEMP_DIR/share
+mkdir -p $TEMP_DIR/share/bert_cache
 python scripts/download_glue_data.py --data_dir $TEMP_DIR/share/glue_data \
   --tasks all
 
@@ -34,12 +35,14 @@ sudo docker build -t $IMAGE_NAME .
 declare -a COMMAND
 COMMAND+=( python /share/jiant/main.py )
 COMMAND+=( --config_file /share/jiant/config/demo.conf )
+COMMAND+=( -o "exp_name=jiant-demo" )
 
 # Run demo.conf in the docker container.
 sudo docker run --runtime=nvidia --rm -v "$TEMP_DIR:/nfs/jsalt" \
   -v "$JIANT_PATH:/share/jiant" \
   -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp" \
   -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp" \
+  -e "PYTORCH_PRETRAINED_BERT_CACHE=/nfs/jsalt/share/bert_cache" \
   -e "ELMO_SRC_DIR=" \
   --user $(id -u):$(id -g) \
   -i ${IMAGE_NAME} "${COMMAND[@]}"
