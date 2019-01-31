@@ -11,6 +11,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.edge_probing import EdgeProbingTask
+from allennlp.nn.util import move_to_device
 
 from typing import List, Sequence, Iterable, Tuple, Dict
 
@@ -55,8 +56,9 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
-        generator = iterator(dataset, num_epochs=1, shuffle=False, cuda_device=cuda_device)
+        generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
+            batch = move_to_device(batch, cuda_device)
             out = model.forward(task, batch, predict=True)
             # We don't want mnli-diagnostic to affect the micro and macro average.
             # Accuracy of mnli-diagnostic is hardcoded to 0.
