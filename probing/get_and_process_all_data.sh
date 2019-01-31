@@ -31,8 +31,10 @@ function preproc_task() {
     python $HERE/get_edge_data_labels.py -o $TASK_DIR/labels.txt \
       -i $TASK_DIR/*.json -s
     # Retokenize for each tokenizer we need.
-    python $HERE/retokenize_edge_data.py $TASK_DIR/*.json
-    python $HERE/retokenize_edge_data.openai.py $TASK_DIR/*.json
+    python $HERE/retokenize_edge_data.py -t "MosesTokenizer" $TASK_DIR/*.json
+    python $HERE/retokenize_edge_data.py -t "OpenAI.BPE"     $TASK_DIR/*.json
+    python $HERE/retokenize_edge_data.py -t "bert-base-uncased"  $TASK_DIR/*.json
+    python $HERE/retokenize_edge_data.py -t "bert-large-uncased" $TASK_DIR/*.json
 
     # Convert the original version to tfrecord.
     python $HERE/convert_edge_data_to_tfrecord.py $TASK_DIR/*.json
