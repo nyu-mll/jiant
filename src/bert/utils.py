@@ -5,6 +5,10 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
+from ..preprocess import parse_task_list_arg
+
+from allennlp.modules import scalar_mix
+
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
@@ -23,6 +27,24 @@ class BertEmbedderModule(nn.Module):
         # Set trainability of this module.
         for param in self.model.parameters():
             param.requires_grad = bool(args.bert_fine_tune)
+
+        # Configure scalar mixing, ELMo-style.
+        if self.embeddings_mode == "mix":
+            if not args.bert_fine_tune:
+                log.warning("NOTE: bert_embeddings_mode='mix', so scalar "
+                            "mixing weights will be fine-tuned even if BERT "
+                            "model is frozen.")
+            # TODO: if doing multiple target tasks, allow for multiple sets of
+            # scalars. See the ELMo implementation here:
+            # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+            assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
+                    ("bert_embeddings_mode='mix' only supports a single set of "
+                     "scalars (but if you need this feature, see the TODO in "
+                     "the code!)")
+            num_layers = self.model.config.num_hidden_layers
+            self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1,
+                                                   do_layer_norm=False)
+
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
@@ -54,7 +76,7 @@ class BertEmbedderModule(nn.Module):
         assert (ids > 1).all()
         ids -= 2
 
-        if self.embeddings_mode != "none":
+        if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
             # but doing so this way avoids the need to modify the BertModel
             # code.
@@ -75,12 +97,14 @@ class BertEmbedderModule(nn.Module):
                                            output_all_encoded_layers=True)
             h_enc = encoded_layers[-1]
 
-        if self.embeddings_mode == "none":
+        if self.embeddings_mode in ["none", "top"]:
             h = h_enc
-        elif self.embeddings_mode == "cat":
-            h = torch.cat([h_enc, h_lex], dim=2)
         elif self.embeddings_mode == "only":
             h = h_lex
+        elif self.embeddings_mode == "cat":
+            h = torch.cat([h_enc, h_lex], dim=2)
+        elif self.embeddings_mode == "mix":
+            h = self.scalar_mix([h_lex] + encoded_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
                                        " not supported.")
