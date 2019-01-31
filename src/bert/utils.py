@@ -76,7 +76,7 @@ class BertEmbedderModule(nn.Module):
         assert (ids > 1).all()
         ids -= 2
 
-        if self.embeddings_mode != "none":
+        if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
             # but doing so this way avoids the need to modify the BertModel
             # code.
@@ -97,7 +97,7 @@ class BertEmbedderModule(nn.Module):
                                            output_all_encoded_layers=True)
             h_enc = encoded_layers[-1]
 
-        if self.embeddings_mode == "none":
+        if self.embeddings_mode in ["none", "top"]:
             h = h_enc
         elif self.embeddings_mode == "only":
             h = h_lex
