@@ -26,11 +26,19 @@ class BertEmbedderModule(nn.Module):
         for param in self.model.parameters():
             param.requires_grad = bool(args.bert_fine_tune)
 
-        # Configure scalar mixing, ELMo-style
-        # TODO: if doing multiple target tasks, allow for multiple sets of
-        # scalars. Seee the ELMo implementation here:
-        # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+        # Configure scalar mixing, ELMo-style.
         if self.embeddings_mode == "mix":
+            if not args.bert_fine_tune:
+                log.warning("NOTE: bert_embeddings_mode='mix', so scalar "
+                            "mixing weights will be fine-tuned even if BERT "
+                            "model is frozen.")
+            # TODO: if doing multiple target tasks, allow for multiple sets of
+            # scalars. See the ELMo implementation here:
+            # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+            assert len(args.target_tasks == 1), \
+                    ("bert_embeddings_mode='mix' only supports a single set of "
+                     "scalars (but if you need this feature, see the TODO in "
+                     "the code!)")
             num_layers = self.model.config.num_hidden_layers
             self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1,
                                                    do_layer_norm=False)
