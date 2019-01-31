@@ -4,19 +4,11 @@
 # install instructions (gcp/kubernetes/README.md) to install Docker and
 # nvidia-docker.
 #
-# Usage:
-#   docker build -t jiant-sandbox:v1 .
-#   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
-#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" \
-#       -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
-#       -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
-#       jiant-sandbox:v1 \
-#       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
-#       [ ... additional args to main.py ... ]
+# For local usage, see demo.with_docker.sh
 #
 # To run on Kubernetes, see gcp/kubernetes/run_batch.sh
 #
-# Note that --remote_log currently doesn't work with the above command,
+# Note that --remote_log currently doesn't work with containers,
 # since the host name seen by main.py is the name of the container, not the
 # name of the host GCE instance.
 
@@ -72,11 +64,6 @@ RUN python -m spacy download en
 RUN pip install pytorch-pretrained-bert==0.4.0
 RUN conda install greenlet=0.4.15
 RUN pip install allennlp==0.8.1
-
-# # Install BERT module
-# RUN git clone https://github.com/huggingface/pytorch-pretrained-BERT.git \
-#   /tmp/pytorch_pretrained_bert \
-#   && cd /tmp/pytorch_pretrained_bert && pip install .
 
 # Install local data files.
 RUN python -m nltk.downloader -d /usr/share/nltk_data \
