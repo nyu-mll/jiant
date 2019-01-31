@@ -5,6 +5,8 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
+from ..preprocess import parse_task_list_arg
+
 from allennlp.modules import scalar_mix
 
 # huggingface implementation of BERT
@@ -35,7 +37,7 @@ class BertEmbedderModule(nn.Module):
             # TODO: if doing multiple target tasks, allow for multiple sets of
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
-            assert len(args.target_tasks) <= 1, \
+            assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
                     ("bert_embeddings_mode='mix' only supports a single set of "
                      "scalars (but if you need this feature, see the TODO in "
                      "the code!)")
