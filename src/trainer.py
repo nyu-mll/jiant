@@ -20,9 +20,9 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
-from allennlp.nn.util import move_to_device
+from allennlp.nn.util import move_to_device, device_mapping
 
-from .utils.utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .utils.utils import assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
 from .utils import config
 
