@@ -107,7 +107,7 @@ class TransformerModel(nn.Module):
 
     def __init__(self, cfg, vocab=40990, n_ctx=512, export_embs='none'):
         super(TransformerModel, self).__init__()
-        assert export_embs in {'none', 'cat', 'only'}
+        assert export_embs in {'none', 'top', 'cat', 'only'}
         self.export_embs = export_embs
         self.n_embd = cfg.n_embd
 

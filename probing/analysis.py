@@ -252,6 +252,8 @@ class Predictions(object):
         # Compute macro average
         agg_map = {}
         for col in score_df.columns:
+            # TODO(ian): ths _score_ entries don't actually do anything,
+            # since when run the DataFrame only contains '_counts' columns.
             if col.endswith("_score"):
                 agg_map[col] = 'mean'
             elif col.endswith("_count"):
