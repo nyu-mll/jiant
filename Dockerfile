@@ -4,19 +4,11 @@
 # install instructions (gcp/kubernetes/README.md) to install Docker and
 # nvidia-docker.
 #
-# Usage:
-#   docker build -t jiant-sandbox:v1 .
-#   export JIANT_PATH="/nfs/jsalt/path/to/jiant"
-#   docker run --runtime=nvidia --rm -v "/nfs/jsalt:/nfs/jsalt" \
-#       -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
-#       -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp/docker" \
-#       jiant-sandbox:v1 \
-#       python $JIANT_PATH/main.py --config_file $JIANT_PATH/demo.conf \
-#       [ ... additional args to main.py ... ]
+# For local usage, see demo.with_docker.sh
 #
 # To run on Kubernetes, see gcp/kubernetes/run_batch.sh
 #
-# Note that --remote_log currently doesn't work with the above command,
+# Note that --remote_log currently doesn't work with containers,
 # since the host name seen by main.py is the name of the container, not the
 # name of the host GCE instance.
 
@@ -56,31 +48,28 @@ RUN pip install msgpack
 # TODO: pin this to a specific version!
 RUN pip install --upgrade tensorflow-gpu tensorflow-hub
 
-# Install PyTorch 0.4
-# TODO: upgrade to PyTorch 1.0
-RUN conda install pytorch=0.4.1 torchvision=0.2.1 cuda90 -c pytorch
+# Install PyTorch
+RUN conda install pytorch=1.0.0 torchvision=0.2.1 cuda90 -c pytorch
 
 # Install other requirements
 RUN conda install numpy=1.14.5 nltk=3.2.5
 RUN pip install ipdb tensorboard tensorboardX==1.2
-
-# Install AllenNLP
-# TODO: upgrade to latest AllenNLP
-RUN pip install allennlp==0.5.1
-
-# Install BERT module
-RUN git clone https://github.com/huggingface/pytorch-pretrained-BERT.git \
-  /tmp/pytorch_pretrained_bert \
-  && cd /tmp/pytorch_pretrained_bert && pip install .
 
 # Install misc util packages.
 RUN pip install --upgrade google-cloud-logging sendgrid
 RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11
 RUN python -m spacy download en
 
+# Install AllenNLP. Need to update some other deps first.
+RUN pip install pytorch-pretrained-bert==0.4.0
+RUN conda install greenlet=0.4.15
+RUN pip install allennlp==0.8.1
+
 # Install local data files.
 RUN python -m nltk.downloader -d /usr/share/nltk_data \
   perluniprops nonbreaking_prefixes punkt
+
+RUN pip install pyhocon==0.3.35
 
 # AllenNLP cache, may be used for ELMo weights.
 RUN mkdir -p /tmp/.allennlp && chmod a+w /tmp/.allennlp

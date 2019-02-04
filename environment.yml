@@ -3,7 +3,7 @@ channels:
     - pytorch
 dependencies:
     - python=3.6
-    - pytorch=0.4.0
+    - pytorch=1.0.0
     - torchvision=0.2.1
     - numpy=1.14.5
     - nltk=3.2.5
@@ -11,7 +11,7 @@ dependencies:
     - pandas=0.23.0
     - pytz=2017.3
     - pip:
-        - allennlp==0.5.1
+        - allennlp==0.8.1
         - ipdb
         - tensorboard
         - tensorboardX==1.2
