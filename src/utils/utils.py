@@ -229,8 +229,8 @@ def load_diagnostic_tsv_and_index(
                             encoding='utf-8')
         rows = rows.fillna('')
         def targs_to_idx(index):
-            # this function build the index to vocab (and its inverse) mapping
-            # and then indees the column based on the index passed in
+            # this function builds the index to vocab (and its inverse) mapping
+            # and then indexes the column based on the index passed in
             vocab = set(rows[index].values)
             word_to_ix = {word: i+1 for i, word in enumerate(vocab) if word !=''}
             ix_to_word = {i+1:word for i, word in enumerate(vocab) if word !=''}
