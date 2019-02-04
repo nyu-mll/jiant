@@ -93,4 +93,4 @@ ENV ELMO_SRC_DIR "$JSALT_SHARE_DIR/elmo"
 
 # Set these manually with -e or via Kuberentes config YAML.
 # ENV NFS_PROJECT_PREFIX "/nfs/jsalt/exp/docker"
-# ENV JIANT_PROJECT_PREFIX 
+# ENV JIANT_PROJECT_PREFIX "$NFS_PROJECT_PREFIX"
