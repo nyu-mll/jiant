@@ -190,7 +190,7 @@ def load_lines(filename: str) -> Iterable[str]:
             yield line.strip()
 
 
-def load_diagnostic_tsv_and_index(
+def load_diagnostic_tsv(
         data_file,
         max_seq_len,
         label_idx,
@@ -216,6 +216,7 @@ def load_diagnostic_tsv_and_index(
         and indices
         Note: If a field in a particular row in the dataset is empty, we return []
         for that field for that row, otherwise we return an array of ints (indices)
+        Else, we return an array of indices
     '''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
     try:
@@ -228,18 +229,15 @@ def load_diagnostic_tsv_and_index(
                             encoding='utf-8')
         rows = rows.fillna('')
         def targs_to_idx(index):
-            # this function build the index to vocab (and its inverse)
-            # and also indees the column rows[index]
+            # this function build the index to vocab (and its inverse) mapping
+            # and then indees the column based on the index passed in
             vocab = set(rows[index].values)
             word_to_ix = {word: i+1 for i, word in enumerate(vocab) if word !=''}
-            # If for a certaian row there isnt' a value in that column,
-            # return []
-            ix_to_word =  {i+1:word for i, word in enumerate(vocab) if word !=''}
+            ix_to_word = {i+1:word for i, word in enumerate(vocab) if word !=''}
             rows[index] = rows[index].apply(lambda x: [word_to_ix[x]] if x != '' else [])
-            word_to_ix[0] = "missing"
-            ix_to_word["missing"] = 0
+            ix_to_word[0] = "missing"
+            word_to_ix["missing"] = 0
             return word_to_ix, ix_to_word, rows[index]
-
         sent1s = rows[s1_idx].apply(lambda x: process_sentence(x, max_seq_len))
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(x, max_seq_len))
         labels = rows[label_idx].apply(lambda x: label_fn(x))
@@ -248,19 +246,19 @@ def load_diagnostic_tsv_and_index(
         pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = targs_to_idx(1)
         logic_to_ix_dic, ix_to_logic_dic, logic = targs_to_idx(2)
         knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = targs_to_idx(3)
-        idxs = rows.index.tolist()
+        idxs = rows.index
 
     except Exception as e:
         print(e, " file: %s" % (data_file))
 
-    return {'sents1': sent1s,
-            'sents2': sent2s,
-            'targs': targs,
-            'idxs': idxs,
-            'lex_sem': lex_sem,
-            'pr_ar_str': pr_ar_str,
-            'logic': logic,
-            'knowledge': knowledge,
+    return {'sents1': sent1s.tolist(),
+            'sents2': sent2s.tolist(),
+            'targs': labels.tolist(),
+            'idxs': idxs.tolist(),
+            'lex_sem': lex_sem.tolist(),
+            'pr_ar_str': pr_ar_str.tolist(),
+            'logic': logic.tolist(),
+            'knowledge': knowledge.tolist(),
             'ix_to_lex_sem_dic': ix_to_lex_sem_dic,
             'ix_to_pr_ar_str_dic': ix_to_pr_ar_str_dic,
             'ix_to_logic_dic': ix_to_logic_dic,
@@ -325,7 +323,7 @@ def load_tsv(
         # if dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
 
-    if return_indices is not None:
+    if return_indices:
         idxs = rows.index.tolist()
         # get indices of the remaining rows after filtering
         return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
