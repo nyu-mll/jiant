@@ -190,7 +190,7 @@ def load_lines(filename: str) -> Iterable[str]:
             yield line.strip()
 
 
-def load_diagnostic_tsv(
+def load_diagnostic_tsv_and_index(
         data_file,
         max_seq_len,
         label_idx,
