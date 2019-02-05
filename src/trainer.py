@@ -72,8 +72,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 0, 'amsgrad': True})
     else:
-        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0})
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr']})
 
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
