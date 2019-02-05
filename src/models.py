@@ -237,13 +237,17 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_word = word_embs.size()[1]
             log.info("\tUsing pre-trained word embeddings: %s",
                      str(word_embs.size()))
+        elif args.word_embs=="scratch":
+            log.info("\tScratch Word embs!")
+            d_word=args.d_word
+            word_embs= nn.Embedding(n_token_vocab, d_word).weight
         else:
             log.info("\tLearning word embeddings from scratch!")
             word_embs = None
             d_word = args.d_word
 
         embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
-                               weight=word_embs, trainable=False,
+                               weight=word_embs, trainable=True if args.word_embs=="scratch" else False,
                                padding_index=vocab.get_token_index('@@PADDING@@'))
         token_embedders["words"] = embeddings
         d_emb += d_word
