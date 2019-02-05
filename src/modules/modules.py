@@ -264,6 +264,8 @@ class Pooler(nn.Module):
         elif self.pool_type == 'final':
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
             seq_emb = proj_seq.gather(dim=1, index=idxs)
+        elif self.pool_type == 'first':
+            seq_emb = proj_seq[:,0]
         return seq_emb
 
     @classmethod
@@ -345,9 +347,6 @@ class AttnPairEncoder(Model):
     Parameters
     ----------
     vocab : ``Vocabulary``
-    attention_similarity_function : ``SimilarityFunction``
-        The similarity function that we will use when comparing encoded passage and question
-        representations.
     modeling_layer : ``Seq2SeqEncoder``
         The encoder (with its own internal stacking) that we will use in after the bidirectional
         attention.
@@ -416,10 +415,9 @@ class AttnPairEncoder(Model):
 
         mask_lstms = params.pop('mask_lstms', True)
         params.assert_empty(cls.__name__)
-        return cls(vocab=vocab, attention_similarity_function=similarity_function,
-                   modeling_layer=modeling_layer, dropout=dropout,
+        return cls(vocab=vocab, modeling_layer=modeling_layer, dropout=dropout,
                    mask_lstms=mask_lstms, initializer=initializer)
-                  
+
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     # pylint: disable=line-too-long
     """
