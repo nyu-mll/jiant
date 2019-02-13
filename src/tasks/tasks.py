@@ -56,7 +56,6 @@ def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_s
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
-
 def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
@@ -64,19 +63,29 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
+        - indexers ()
+        - is_pair (Bool)
+        - classification (Bool)
 
     Returns:
-        - instances (list[Instance]): a list of AllenNLP Instances with fields
+        - instances (Iterable[Instance]): an iterable of AllenNLP Instances
     '''
+    # check here if using bert to avoid passing model info to tasks
+    bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+
     def _make_instance(input1, input2, labels, idx):
         d = {}
-        d["input1"] = sentence_to_text_field(input1, indexers)
-        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-        if input2:
-            d["input2"] = sentence_to_text_field(input2, indexers)
+        if bert_pair and is_pair:
+            inp = input1 + input2[1:] # throw away input2 leading [CLS]
+            d["inputs"] = sentence_to_text_field(inp, indexers)
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+        else:
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            if input2:
+                d["input2"] = sentence_to_text_field(input2, indexers)
+                d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
@@ -95,7 +104,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         assert len(split) == 3
         split.append(itertools.count())
 
-    # Map over columns: input2, (input2), labels, idx
+    # Map over columns: input1, (input2), labels, idx
     instances = map(_make_instance, *split)
     #  return list(instances)
     return instances  # lazy iterator
@@ -235,6 +244,7 @@ class PairClassificationTask(ClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        # process_pair_bert_task_split()
         return process_single_pair_task_split(split, indexers, is_pair=True)
 
 

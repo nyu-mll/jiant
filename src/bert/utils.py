@@ -47,7 +47,8 @@ class BertEmbedderModule(nn.Module):
 
 
     def forward(self, sent: Dict[str, torch.LongTensor],
-                unused_task_name: str="") -> torch.FloatTensor:
+                unused_task_name: str="",
+                pair_task=False) -> torch.FloatTensor:
         """ Run BERT to get hidden states.
 
         Args:
@@ -92,7 +93,19 @@ class BertEmbedderModule(nn.Module):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            encoded_layers, _ = self.model(ids, token_type_ids=torch.zeros_like(ids),
+            if pair_task:
+                SEP_ID = 104 # [SEP] for BERT models.
+                sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
+                # TODO(Alex): some kind of assert
+                # this won't work b/c A and B both end with [SEP]!
+                token_types = torch.ones_like(ids)
+                # fill in with zeros
+                # TODO(Alex): some way to vectorize this?
+                for row, idx in zip(token_types, sep_idxs[::2]):
+                    row[:idx + 1].fill_(0)
+            else:
+                token_types = torch.zeros_like(ids)
+            encoded_layers, _ = self.model(ids, token_type_ids=token_types,
                                            attention_mask=mask,
                                            output_all_encoded_layers=True)
             h_enc = encoded_layers[-1]

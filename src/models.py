@@ -504,32 +504,36 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pair_attn = AttnPairEncoder(model.vocab, modeling_layer, dropout=params["dropout"])
         return pair_attn
 
-    # Build the "pooler", possibly with a projection layer beforehand
-    is_bert = isinstance(model.sent_encoder._text_field_embedder, BertEmbedderModule) and \
-                        model.sent_encoder._text_field_embedder.embeddings_mode not in ["only"]
-    if params["attn"] and not is_bert:
+    # Build the "pooler", which does pools a variable length sequence
+    #   possibly with a projection layer beforehand
+    if params["attn"] and not model.use_bert:
         pooler = Pooler(d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"], project=False)
         d_out = params["d_hid_attn"] * 2
     else:
-        pool_type = "first" if not is_bert else "max"
-        pooler = Pooler(d_inp, project=not is_bert, d_proj=params["d_proj"], pool_type=pool_type)
-        d_out = model.sent_encoder._text_field_embedder.get_output_dim() if is_bert else params["d_proj"]
+        pool_type = "first" if model.use_bert else "max"
+        pooler = Pooler(d_inp, project=not model.use_bert, d_proj=params["d_proj"], pool_type=pool_type)
+        #d_out = model.sent_encoder._text_field_embedder.get_output_dim() if model.use_bert else params["d_proj"]
+        d_out = d_inp if model.use_bert else params["d_proj"]
 
     # Build the pair attn mechanism
-    if params["shared_pair_attn"] and not is_bert:
+    if params["shared_pair_attn"] and not model.use_bert:
         if not hasattr(model, "pair_attn"):
             pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    elif params["attn"] and not is_bert:
+    elif params["attn"] and not model.use_bert:
         pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
     else:
         pair_attn = None
 
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    classifier = Classifier.from_params(4 * d_out, n_classes, params)
-    module = PairClassifier(pooler, classifier, pair_attn)
+    if model.use_bert:
+        classifier = Classifier.from_params(d_out, n_classes, params)
+        module = SingleClassifier(pooler, classifier)
+    else:
+        classifier = Classifier.from_params(4 * d_out, n_classes, params)
+        module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
 
@@ -568,6 +572,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
+        self.use_bert = args.bert_model_name
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
@@ -751,11 +756,14 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
-
-        logits = classifier(sent1, sent2, mask1, mask2)
+        if self.use_bert:
+            sent, mask = self.sent_encoder(batch['inputs'], task)
+            logits = classifier(sent, mask)
+        else:
+            sent1, mask1 = self.sent_encoder(batch['input1'], task)
+            sent2, mask2 = self.sent_encoder(batch['input2'], task)
+            logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 
