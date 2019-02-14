@@ -697,6 +697,13 @@ class SamplingMultiTaskTrainer:
         ''' Check to see if should stop '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_optimizer = self._g_optimizer
+
+        #if self._max_epochs_per_task > 0:
+        #    n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
+        #    if n_epochs_trained >= self._max_epochs_per_task:
+        #        log.info("Maximum batches trained on %s.", task.name)
+        #        task_info['stopped'] = True
+
         if g_optimizer is None:
             stop_tr = True
             for task in tasks:
@@ -705,13 +712,14 @@ class SamplingMultiTaskTrainer:
                     log.info("Minimum lr hit on %s.", task.name)
                     task_info['stopped'] = True
                 stop_tr = stop_tr and task_info['stopped']
-                #stop_val = stop_val and metric_infos[task.val_metric]['stopped']
         else:
+            stop_tr = False
             if g_optimizer.param_groups[0]['lr'] < self._min_lr:
                 log.info("Minimum lr hit.")
                 stop_tr = True
-            else:
-                stop_tr = False
+            if min([info["stopped"] for info in task_infos.values()]):
+                log.info("Maximum batches trained on all tasks.")
+                stop_tr = True
 
         stop_val = metric_infos[stop_metric]['stopped']
 
