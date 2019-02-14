@@ -8,7 +8,7 @@ gpuid=${2:-0}
 
 ## Debugging ##
 function debug() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = debug-bert, bert_embeddings_mode = \"top\", sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = debug-bert, bert_embeddings_mode = \"top\", sent_enc = \"null\", sep_embs_for_skip = 1, val_interval = 50, cuda = ${gpuid}"
 }
 
 ## GLUE pretraining ##
