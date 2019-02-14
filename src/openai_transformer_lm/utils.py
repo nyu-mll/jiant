@@ -143,7 +143,7 @@ class TransformerModel(nn.Module):
         if self.embeddings_mode in ["none", "top"]:
             h = encoded_layers[-1]
         #  elif self.embeddings_mode == "only":
-        #      h = h_lex
+        #      handled above by early return
         elif self.embeddings_mode == 'cat':
             # Concatenate embeddings layer.
             h = torch.cat([encoded_layers[-1], h_lex], dim=2)
@@ -211,8 +211,8 @@ class OpenAIEmbedderModule(nn.Module):
                      "the code!)")
             if not args.openai_transformer_fine_tune:
                 log.warning("NOTE: openai_embeddings_mode='mix', so scalar "
-                            "mixing weights will be fine-tuned even if BERT "
-                            "model is frozen.")
+                            "mixing weights will be fine-tuned even if "
+                            "transformer weights are frozen.")
             # Make sure scalar mix is always tunable.
             for param in self.model.scalar_mix.parameters():
                 param.requires_grad = True
