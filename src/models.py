@@ -484,11 +484,10 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp, model, params):
     ''' Build a single classifier '''
-    is_bert = isinstance(model.sent_encoder._text_field_embedder, BertEmbedderModule) and \
-                        model.sent_encoder._text_field_embedder.embeddings_mode not in ["only"]
-    pool_type = "first" if not is_bert else "max"
-    pooler = Pooler(d_inp, project=not is_bert, d_proj=params['d_proj'], pool_type=pool_type)
-    classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+    pool_type = "first" if model.use_bert else "max"
+    pooler = Pooler(d_inp, project=not model.use_bert, d_proj=params['d_proj'], pool_type=pool_type)
+    d_out = d_inp if model.use_bert else params["d_proj"]
+    classifier = Classifier.from_params(d_out, task.n_classes, params)
     return SingleClassifier(pooler, classifier)
 
 
