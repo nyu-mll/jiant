@@ -12,16 +12,13 @@
 set -e
 
 # Default arguments.
-GPU_TYPE="p100"
 PROJECT=""
 NOTIFY_EMAIL="$NOTIFY_EMAIL"  # allow pre-set from shell
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
-while getopts ":g:p:n:" opt; do
+while getopts ":p:n:" opt; do
     case "$opt" in
-    g)  GPU_TYPE=$OPTARG
-        ;;
     p)  PROJECT=$OPTARG
         ;;
     n)	NOTIFY_EMAIL=$OPTARG
@@ -92,7 +89,8 @@ ALL_TASKS+=( "spr1" )
 ALL_TASKS+=( "spr2" )
 ALL_TASKS+=( "dpr" )
 ALL_TASKS+=( "dep-labeling-ewt" )
-ALL_TASKS+=( "constituent-ontonotes" )
+ALL_TASKS+=( "nonterminal-ontonotes" )
+ALL_TASKS+=( "pos-ontonotes" )
 ALL_TASKS+=( "ner-ontonotes" )
 ALL_TASKS+=( "srl-conll2012" )
 ALL_TASKS+=( "coref-ontonotes-conll" )
@@ -106,6 +104,7 @@ fi
 ##
 # Run these on the main 'jsalt' cluster
 gcloud container clusters get-credentials --zone us-east1-c jsalt
+export GPU_TYPE="p100"
 for task in "${ALL_TASKS[@]}"
 do
     kuberun elmo-chars-$task "elmo_chars_exp edges-$task"
@@ -116,35 +115,39 @@ do
 
     kuberun openai-lex-$task "openai_lex_exp edges-$task"
     kuberun bert-base-uncased-lex-$task    "bert_lex_exp edges-$task base-uncased"
-    # kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
+    kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
 done
 
 # Run cased BERT models for NER tasks
 task="ner-ontonotes"
 kuberun bert-base-cased-lex-$task    "bert_lex_exp edges-$task base-cased"
-# kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
-
-# exit 0
+kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
 
 ##
 # Run these on 'jsalt-central' for V100s
 gcloud container clusters get-credentials --zone us-central1-a jsalt-central
-if [[ ${GPU_TYPE} != "v100" ]]; then
-    echo "jsalt-central has only v100 GPUs! (you requested ${GPU_TYPE})"
-    exit 1
-fi
+export GPU_TYPE="v100"
 for task in "${ALL_TASKS[@]}"
 do
     # kuberun openai-$task     "openai_exp edges-$task"
     kuberun openai-cat-$task "openai_cat_exp edges-$task"
+    kuberun openai-mix-$task "openai_mix_exp edges-$task"
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
 
     kuberun bert-base-uncased-cat-$task    "bert_cat_exp edges-$task base-uncased"
-    # kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
+    kuberun bert-large-uncased-cat-$task   "bert_cat_exp edges-$task large-uncased"
+
+    # BERT with ELMo-style scalar mixing.
+    kuberun bert-base-uncased-mix-$task    "bert_mix_exp edges-$task base-uncased"
+    kuberun bert-large-uncased-mix-$task   "bert_mix_exp edges-$task large-uncased"
 done
 
 # Run cased BERT models for NER tasks
 task="ner-ontonotes"
 kuberun bert-base-cased-cat-$task    "bert_cat_exp edges-$task base-cased"
-# kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
+kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
+
+# BERT with ELMo-style scalar mixing.
+kuberun bert-base-cased-mix-$task    "bert_mix_exp edges-$task base-cased"
+kuberun bert-large-cased-mix-$task   "bert_mix_exp edges-$task large-cased"
 

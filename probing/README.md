@@ -7,8 +7,7 @@ In particular:
   tokens, number of spans, and number of labels.
 - [get_edge_data_labels.py](get_edge_data_labels.py) compiles a list of all the 
   unique labels found in a dataset.
-- [retokenize_edge_data.py](retokenize_edge_data.py) and 
-  [retokenize_edge_data.openai.py](retokenize_edge_data.openai.py) apply tokenizers (MosesTokenizer or the BPE model from OpenAI GPT) and re-map spans to the new tokenization.
+- [retokenize_edge_data.py](retokenize_edge_data.py) applies tokenizers (MosesTokenizer, OpenAI.BPE, or a BERT wordpiece model) and re-map spans to the new tokenization.
 - [convert_edge_data_to_tfrecord.py](convert_edge_data_to_tfrecord.py) converts 
   edge probing JSON data to TensorFlow examples.
 
@@ -82,7 +81,7 @@ python jiant/probing/get_edge_data_labels.py -o $TASK_DIR/labels.txt \
 
 Second, make retokenized versions for MosesTokenizer and for the OpenAI BPE model:
 ```
-python jiant/probing/retokenize_edge_data.py $TASK_DIR/*.json
-python jiant/probing/retokenize_edge_data.openai.py $TASK_DIR/*.json
+python jiant/probing/retokenize_edge_data.py -t "MosesTokenizer" $TASK_DIR/*.json
+python jiant/probing/retokenize_edge_data.py -t "OpenAI.BPE"     $TASK_DIR/*.json
 ```
 This will make retokenized versions alongside the original files.

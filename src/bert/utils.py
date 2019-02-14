@@ -5,6 +5,10 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
+from ..preprocess import parse_task_list_arg
+
+from allennlp.modules import scalar_mix
+
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
@@ -19,13 +23,28 @@ class BertEmbedderModule(nn.Module):
                 args.bert_model_name,
                 cache_dir=cache_dir)
         self.embeddings_mode = args.bert_embeddings_mode
-        # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
-        assert args.max_seq_len <= 512
-        self.seq_len = args.max_seq_len
 
         # Set trainability of this module.
         for param in self.model.parameters():
             param.requires_grad = bool(args.bert_fine_tune)
+
+        # Configure scalar mixing, ELMo-style.
+        if self.embeddings_mode == "mix":
+            if not args.bert_fine_tune:
+                log.warning("NOTE: bert_embeddings_mode='mix', so scalar "
+                            "mixing weights will be fine-tuned even if BERT "
+                            "model is frozen.")
+            # TODO: if doing multiple target tasks, allow for multiple sets of
+            # scalars. See the ELMo implementation here:
+            # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+            assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
+                    ("bert_embeddings_mode='mix' only supports a single set of "
+                     "scalars (but if you need this feature, see the TODO in "
+                     "the code!)")
+            num_layers = self.model.config.num_hidden_layers
+            self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1,
+                                                   do_layer_norm=False)
+
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
@@ -40,14 +59,9 @@ class BertEmbedderModule(nn.Module):
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
         var_ids = sent["bert_wpm_pretokenized"]
-
-        # Model has fixed, learned positional component, so we must pass a
-        # block of exactly seq_len length.
-        # ids is <int32> [batch_size, seq_len]
-        ids = torch.zeros(var_ids.size()[0], self.seq_len, dtype=var_ids.dtype,
-                          device=var_ids.device)
-        fill_len = min(var_ids.size()[1], self.seq_len)
-        ids[:,:fill_len] = var_ids[:,:fill_len]
+        # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
+        assert var_ids.size()[1] <= 512
+        ids = var_ids
 
         mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
@@ -62,7 +76,7 @@ class BertEmbedderModule(nn.Module):
         assert (ids > 1).all()
         ids -= 2
 
-        if self.embeddings_mode != "none":
+        if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
             # but doing so this way avoids the need to modify the BertModel
             # code.
@@ -83,22 +97,20 @@ class BertEmbedderModule(nn.Module):
                                            output_all_encoded_layers=True)
             h_enc = encoded_layers[-1]
 
-        if self.embeddings_mode == "none":
+        if self.embeddings_mode in ["none", "top"]:
             h = h_enc
-        elif self.embeddings_mode == "cat":
-            h = torch.cat([h_enc, h_lex], dim=2)
         elif self.embeddings_mode == "only":
             h = h_lex
+        elif self.embeddings_mode == "cat":
+            h = torch.cat([h_enc, h_lex], dim=2)
+        elif self.embeddings_mode == "mix":
+            h = self.scalar_mix([h_lex] + encoded_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
                                        " not supported.")
 
-        # Truncate back to the original ids length, for compatiblity with the
-        # rest of our embedding models. This only drops padding
-        # representations.
-        h_trunc = h[:,:var_ids.size()[1],:]
         # <float32> [batch_size, var_seq_len, output_dim]
-        return h_trunc
+        return h
 
     def get_output_dim(self):
         if self.embeddings_mode == "cat":
