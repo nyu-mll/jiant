@@ -40,7 +40,7 @@ def build_trainer_params(args, task_names):
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'cuda', 'keep_all_checkpoints',
-                  'val_data_limit', 'training_data_fraction']
+                  'val_data_limit', 'max_epochs_per_task', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
@@ -99,6 +99,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
+                           'max_epochs_per_task': params['max_epochs_per_task'],
                            'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
@@ -110,7 +111,7 @@ class SamplingMultiTaskTrainer:
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 keep_all_checkpoints=False, val_data_limit=5000,
+                 keep_all_checkpoints=False, val_data_limit=5000, max_epochs_per_task=-1,
                  dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -162,6 +163,7 @@ class SamplingMultiTaskTrainer:
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._max_epochs_per_task = max_epochs_per_task
         self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
@@ -576,7 +578,6 @@ class SamplingMultiTaskTrainer:
         all_val_metrics["macro_avg"] = 0.0
         all_val_metrics["micro_avg"] = 0.0
         n_examples_overall = 0.0
-        import ipdb; ipdb.set_trace()
 
         # Get validation numbers for each task
         for task in tasks:
@@ -698,11 +699,13 @@ class SamplingMultiTaskTrainer:
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_optimizer = self._g_optimizer
 
-        #if self._max_epochs_per_task > 0:
-        #    n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
-        #    if n_epochs_trained >= self._max_epochs_per_task:
-        #        log.info("Maximum batches trained on %s.", task.name)
-        #        task_info['stopped'] = True
+        if self._max_epochs_per_task > 0:
+            for task in tasks:
+                task_info = task_infos[task.name]
+                n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
+                if n_epochs_trained >= self._max_epochs_per_task:
+                    log.info("Maximum batches trained on %s.", task.name)
+                    task_info['stopped'] = True
 
         if g_optimizer is None:
             stop_tr = True
@@ -979,6 +982,7 @@ class SamplingMultiTaskTrainer:
         min_lr = params.pop("min_lr", None)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        max_epochs_per_task = params.pop("max_epochs_per_task", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
 
@@ -991,5 +995,6 @@ class SamplingMultiTaskTrainer:
                                         min_lr=min_lr,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
+                                        max_epochs_per_task=max_epochs_per_task,
                                         dec_val_scale=dec_val_scale,
                                         training_data_fraction=training_data_fraction)
