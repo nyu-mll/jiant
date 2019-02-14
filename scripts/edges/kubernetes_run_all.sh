@@ -131,6 +131,7 @@ for task in "${ALL_TASKS[@]}"
 do
     # kuberun openai-$task     "openai_exp edges-$task"
     kuberun openai-cat-$task "openai_cat_exp edges-$task"
+    kuberun openai-mix-$task "openai_mix_exp edges-$task"
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
 
     kuberun bert-base-uncased-cat-$task    "bert_cat_exp edges-$task base-uncased"
