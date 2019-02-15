@@ -653,9 +653,9 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 path,
                 'diagnostic-full.tsv'),
             max_seq_len,
-            s1_idx=5,
-            s2_idx=6,
-            label_idx=7,
+            s1_col="Premise",
+            s2_col="Hypothesis",
+            label_col="Label",
             label_fn=targ_func,
             skip_rows=1)
 
