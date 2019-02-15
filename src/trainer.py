@@ -20,8 +20,9 @@ from allennlp.common.checks import ConfigurationError  # pylint: disable=import-
 from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: disable=import-error
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
+from allennlp.nn.util import move_to_device, device_mapping
 
-from .utils.utils import device_mapping, assert_for_log  # pylint: disable=import-error
+from .utils.utils import assert_for_log  # pylint: disable=import-error
 from .evaluate import evaluate
 from .utils import config
 
@@ -164,7 +165,6 @@ class SamplingMultiTaskTrainer:
         self._val_data_limit = val_data_limit
         self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
-
         self._task_infos = None
         self._metric_infos = None
 
@@ -249,8 +249,8 @@ class SamplingMultiTaskTrainer:
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
-            tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
-
+            tr_generator = iterator(task.train_data, num_epochs=None)
+            tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
             if phase == "main":
@@ -582,6 +582,75 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
+    def _update_metric_history(self, task, tasks, epoch, all_val_metrics, metric_infos):
+        if task in ['micro', 'macro']:
+            metric = "%s_avg" % task
+            metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
+            task_name = task
+        else:
+            metric = task.val_metric
+            metric_decreases = task.val_metric_decreases
+            task_name = task.name
+        if metric_infos[metric]['stopped']:
+            return metric_infos
+        this_epoch_metric = all_val_metrics[metric]
+        metric_history = metric_infos[metric]['hist']
+        metric_history.append(this_epoch_metric)
+        return metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name
+
+    def _validate_helper(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+        n_examples, batch_num = 0, 0
+        task_info = task_infos[task.name]
+        # to speed up training, we evaluate on a subset of validation data
+        if self._val_data_limit >= 0:
+            max_data_points = min(task.n_val_examples, self._val_data_limit)
+        else:
+            max_data_points = task.n_val_examples
+        val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
+            task.val_data, num_epochs=1, shuffle=False)
+        val_generator = move_to_device(val_generator, self._cuda_device)
+        n_val_batches = math.ceil(max_data_points / batch_size)
+        all_val_metrics["%s_loss" % (task.name] = 0.0
+
+        for batch in val_generator:
+            batch_num += 1
+            out = self._forward(batch, task=task, for_training=False)
+            loss = out["loss"]
+            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+            n_examples += out["n_exs"]
+
+            # log
+            if time.time() - task_info['last_log'] > self._log_interval:
+                task_metrics = task.get_metrics()
+                task_metrics["%s_loss" % task.name] = \
+                    all_val_metrics["%s_loss" % task.name] / batch_num
+                description = self._description_from_metrics(task_metrics)
+                log.info("Batch %d/%d: %s , for evaluation data", batch_num, n_val_batches, description)
+                task_info['last_log'] = time.time()
+        assert batch_num == n_val_batches
+
+        # Get task validation metrics and store in all_val_metrics
+        task_metrics = task.get_metrics(reset=True)
+        for name, value in task_metrics.items():
+            all_val_metrics["%s_%s" % (task.name, name)] = value
+        all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        if task.val_metric_decreases and len(tasks) > 1:
+            all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] /
+                                             self._dec_val_scale) * n_examples
+            all_val_metrics["macro_avg"] += (1 -
+                                         all_val_metrics[task.val_metric] /
+                                             self._dec_val_scale)
+        else:
+            # triggers for single-task cases and during MTL when task val metric increases
+            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+        n_examples_overall += n_examples
+
+        # Reset training progress
+        task_info['n_batches_since_val'] = 0
+        task_info['loss'] = 0
+        return n_examples_overall, task_infos, all_val_metrics
+
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         ''' Validate on all tasks and return the results and whether to save this epoch or not '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
@@ -594,57 +663,7 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples, batch_num = 0, 0
-            task_info = task_infos[task.name]
-
-            # to speed up training, we evaluate on a subset of validation data
-            if self._val_data_limit >= 0:
-                max_data_points = min(task.n_val_examples, self._val_data_limit)
-            else:
-                max_data_points = task.n_val_examples
-            val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-                task.val_data, num_epochs=1, shuffle=False,
-                cuda_device=self._cuda_device)
-            n_val_batches = math.ceil(max_data_points / batch_size)
-            all_val_metrics["%s_loss" % task.name] = 0.0
-
-            for batch in val_generator:
-                batch_num += 1
-                out = self._forward(batch, task=task, for_training=False)
-                loss = out["loss"]
-                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-                n_examples += out["n_exs"]
-
-                # log
-                if time.time() - task_info['last_log'] > self._log_interval:
-                    task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = \
-                        all_val_metrics["%s_loss" % task.name] / batch_num
-                    description = self._description_from_metrics(task_metrics)
-                    log.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
-                    task_info['last_log'] = time.time()
-            assert batch_num == n_val_batches
-
-            # Get task validation metrics and store in all_val_metrics
-            task_metrics = task.get_metrics(reset=True)
-            for name, value in task_metrics.items():
-                all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
-            if task.val_metric_decreases and len(tasks) > 1:
-                all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] /
-                                                 self._dec_val_scale) * n_examples
-                all_val_metrics["macro_avg"] += (1 -
-                                                 all_val_metrics[task.val_metric] /
-                                                 self._dec_val_scale)
-            else:
-                # triggers for single-task cases and during MTL when task val metric increases
-                all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-                all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
-            n_examples_overall += n_examples
-
-            # Reset training progress
-            task_info['n_batches_since_val'] = 0
-            task_info['loss'] = 0
+            n_examples_overall, task_infos, all_val_metrics = self._validate_helper(task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall)
 
         all_val_metrics['micro_avg'] /= n_examples_overall
         all_val_metrics['macro_avg'] /= len(tasks)
@@ -655,19 +674,7 @@ class SamplingMultiTaskTrainer:
         new_best_macro = False  # whether this epoch is a new best
 
         for task in tasks + ['micro', 'macro']:
-            if task in ['micro', 'macro']:
-                metric = "%s_avg" % task
-                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
-                task_name = task
-            else:
-                metric = task.val_metric
-                metric_decreases = task.val_metric_decreases
-                task_name = task.name
-            if metric_infos[metric]['stopped']:
-                continue
-            this_epoch_metric = all_val_metrics[metric]
-            metric_history = metric_infos[metric]['hist']
-            metric_history.append(this_epoch_metric)
+            metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name  = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos)
             is_best_so_far, out_of_patience = \
                 self._check_history(metric_history, this_epoch_metric, metric_decreases)
             if is_best_so_far:
@@ -745,7 +752,7 @@ class SamplingMultiTaskTrainer:
 
     def _forward(self, batch, for_training, task=None):
         ''' At one point this does something, now it doesn't really do anything '''
-        tensor_batch = batch
+        tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)
         return model_out
 

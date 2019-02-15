@@ -170,10 +170,19 @@ class EdgeProbingTask(Task):
     def _make_span_field(self, s, text_field, offset=1):
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
+    def _pad_tokens(self, tokens):
+        """Pad tokens according to the current tokenization style."""
+        if self.tokenizer_name.startswith("bert-"):
+            # standard padding for BERT; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            return ["[CLS]"] + tokens + ["[SEP]"]
+        else:
+            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record['text'].split()  # already space-tokenized by Moses
-        tokens = [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+        tokens = self._pad_tokens(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
         d = {}

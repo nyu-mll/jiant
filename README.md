@@ -168,7 +168,9 @@ To add new tasks, you should:
 
 1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data.
 
-2. Create a class in ``src/tasks.py``, and make sure that...
+2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. Indeed, jiant loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
+
+3. Create a class in ``src/tasks.py``, and make sure that...
 
     * You decorate the task: in the line immediately before ``class MyNewTask():``, add the line ``@register_task(task_name, rel_path='path/to/data')`` where ``task_name`` is the designation for the task used in ``pretrain_tasks, target_tasks`` and ``rel_path`` is the path to the data in ``data_dir``. See `EdgeProbingTasks` in [`tasks.py`](src/tasks.py) for an example.
     * Your task inherits from existing classes as necessary (e.g. ``PairClassificationTask``, ``SequenceGenerationTask``, ``WikiTextLMTask``, etc.).
@@ -180,7 +182,7 @@ To add new tasks, you should:
     * If you task requires task specific label namespaces, e.g. for translation or tagging, you set the attribute ``task._label_namespace`` to reserve a vocabulary namespace for your task's target labels. We strongly suggest including the task name in the target namespace. Your task should also implement ``task.get_all_labels()``, which returns an iterable over the labels (possibly words, e.g. in the case of MT) in the task-specific namespace.
     * Your task has attributes ``task.val_metric`` (name of task-specific metric to track during training) and ``task.val_metric_decreases`` (bool, ``True`` if val metric should decrease during training). You should also implement a ``task.get_metrics()`` method that implements the metrics you care about by using AllenNLP ``Scorer`` objects (typically set via ``task.scorer1``, ``task.scorer2``, etc.).
 
-3. In ``src/models.py``, make sure that:
+4. In ``src/models.py``, make sure that:
     * The correct task-specific module is being created for your task in ``build_module()``.
     * Your task is correctly being handled in ``forward()`` of ``MultiTaskModel``. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the ``Instance`` objects you created in preprocessing, as well as a ``predict`` flag that indicates if your forward function should generate predictions or not.
     * You create additional methods or add branches to existing methods as necessary. If you do add additional methods, make sure to make use of the ``sent_encoder`` attribute of the model, which is shared amongst all tasks.
