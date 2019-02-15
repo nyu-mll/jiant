@@ -11,7 +11,6 @@ import logging
 import codecs
 import time
 
-from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 
 import numpy as np
 import torch
@@ -19,19 +18,24 @@ from torch.autograd import Variable
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
-
+from src.openai_transformer_lm import utils as openai_utils
+from sacremoses import MosesTokenizer, MosesDetokenizer
 from allennlp.common.checks import ConfigurationError
-from allennlp.nn.util import last_dim_softmax
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+TOKENIZERS = {
+    "moses": MosesTokenizer(),
+    "OpenAI.BPE": openai_utils,
+}
 
-TOKENIZER = MosesTokenizer()
+TOKENIZER = TOKENIZERS["OpenAI.BPE"]
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-
+EOS_INDEX = 2
+SOS_INDEX = 1
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
@@ -54,7 +58,6 @@ def wrap_singleton_string(item: Union[Sequence, str]):
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state
-
     Parameters
     ----------
     model: The model object to populate with loaded parameters.
@@ -103,11 +106,9 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
 def get_elmo_mixing_weights(text_field_embedder, task=None):
     ''' Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task.
     Stops program execution if something goes wrong (e.g. task is malformed, resulting in KeyError).
-
     args:
         - text_field_embedder (ElmoTextFieldEmbedder): the embedder used during the run
         - task (Task): a Task object with a populated `_classifier_name` attribute.
-
     returns:
         Dict[str, float]: dictionary with the values of each layer weight and of the scaling
                           factor.
@@ -134,7 +135,6 @@ def get_batch_size(batch):
 
 def get_batch_utilization(batch_field, pad_idx=0):
     ''' Get ratio of batch elements that are padding
-
     Batch should be field, i.e. a dictionary of inputs'''
     if 'elmo' in batch_field:
         idxs = batch_field['elmo']
@@ -151,17 +151,16 @@ def maybe_make_dir(dirname):
 
 def unescape_moses(moses_tokens):
     '''Unescape Moses punctuation tokens.
-
     Replaces escape sequences like &#91; with the original characters
     (such as '['), so they better align to the original text.
     '''
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
-
 def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    TOKENIZER = TOKENIZERS[os.environ.get("TOKENIZER", "moses")] # Do it again since it crashes above for RTE...
     if isinstance(sent, str):
         return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
@@ -201,7 +200,6 @@ def load_diagnostic_tsv(
         filter_idx=None,
         filter_value=None):
     '''Load a tsv
-
     It loads the data with all it's attributes from diagnostic dataset for MNLI'''
     sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
 
@@ -295,6 +293,63 @@ def load_diagnostic_tsv(
             'ix_to_knowledge_dic': ix_to_knowledge_dic
             }
 
+def moses_tokenizer(text):
+    from sacremoses import MosesTokenizer
+    mt = MosesTokenizer()
+    return mt.tokenize(text, return_str=True)
+
+def adjust_targs_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
+    """
+    Adjusts target tokens so that it matches with the newly BPE-retokenized
+    input
+    This function is called only for OpenAI -> TaggingTasks
+    BPE tokenization will add more tokens to the sentence than the original
+    tokens (thus len(bpe_input) >= len(orig_tokenizer_func(orig_input)))
+    THus, we handle this case by assuming that the target token of the
+    new added bpe token is the same as its left neighbor for simplicity.
+    Parameters
+    ----------
+    targs :  A list of string, required.
+        target tokens
+    bpe_input : list of string, required
+        This is the output of the BPE tokenizer
+    orig_input: string, required
+        This is the original input from the dataset
+    orig_tokenizer_func: func: str -> list of strings
+        This is a function that tokenizes it the way that the dataset is
+        tokenized. For example, CCGBank was created by tokenizing the input
+        using MosesTokenizer
+    Returns
+    -------
+    A list of strings of the newly adjusted target tokens
+    """
+    orig_input = orig_tokenizer_func(orig_input)
+    bpe_input = bpe_input[1:]
+    bpe_input = bpe_input[:-1]
+    new_toks = [s.replace("</w>", "") for s in bpe_input]
+    orig_toks = [s.lower() for s in orig_input]
+
+    c_index = len(targs) - 1
+    curr_targ = targs[c_index]
+    next_expected_tok = orig_toks[c_index-1]
+    new_targs = [curr_targ]
+    current_tok_up_to_now = ""
+    # move from last to front,
+    for i in range(len(new_toks) - 2, -1, -1):
+        current_tok_up_to_now = "%s%s" % (new_toks[i], current_tok_up_to_now)
+        if current_tok_up_to_now != next_expected_tok:
+            new_targs.append(curr_targ)
+        else:
+            c_index -= 1
+            current_tok_up_to_now = ""
+            curr_targ = targs[c_index]
+            new_targs.append(curr_targ)
+            next_expected_tok = orig_toks[c_index-1]
+    # add EOS/SOS to the target tokens.
+    targ_final = [str(int(t)+EOS_INDEX) for t in new_targs]
+    targ_final = [str(EOS_INDEX)] + targ_final + [str(SOS_INDEX)]
+    targ_final.reverse()
+    return targ_final
 
 def load_tsv(
         data_file,
@@ -308,9 +363,10 @@ def load_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None):
+        filter_value=None,
+        tagging = False):
     '''Load a tsv
-
+    Shift every CCG tag up by 1, so 0 is SOS and 1 is EOS.
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
     sent1s, sent2s, targs, idxs = [], [], [], []
     with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
@@ -324,7 +380,6 @@ def load_tsv(
                 sent1 = process_sentence(row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
-
                 if targ_idx is not None:
                     if targ_map is not None:
                         targ = targ_map[row[targ_idx]]
@@ -334,7 +389,11 @@ def load_tsv(
                         targ = int(row[targ_idx])
                 else:
                     targ = 0
-
+                if tagging:
+                    # since OpenAI pretokenized needs BPE tokenization,
+                    # we adjust the target tokens to match BPE tokenizzation
+                    targ = adjust_targs_BPE(targ, sent1, row[s1_idx], moses_tokenizer)
+                assert len(sent1) == len(targ)
                 if s2_idx is not None:
                     sent2 = process_sentence(row[s2_idx], max_seq_len)
                     if not len(sent2):
@@ -357,7 +416,6 @@ def load_tsv(
     else:
         return sent1s, sent2s, targs
 
-
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
     n_exs = len(data[0])
@@ -373,13 +431,11 @@ def get_lengths_from_binary_sequence_mask(mask):
     """
     Compute sequence lengths for each batch element in a tensor using a
     binary mask.
-
     Parameters
     ----------
     mask : torch.Tensor, required.
         A 2D binary mask of shape (batch_size, sequence_length) to
         calculate the per-batch sequence lengths from.
-
     Returns
     -------
     A torch.LongTensor of shape (batch_size,) representing the lengths
@@ -391,7 +447,6 @@ def get_lengths_from_binary_sequence_mask(mask):
 def sort_batch_by_length(tensor, sequence_lengths):
     """
     Sort a batch first tensor by some specified lengths.
-
     Parameters
     ----------
     tensor : Variable(torch.FloatTensor), required.
@@ -399,7 +454,6 @@ def sort_batch_by_length(tensor, sequence_lengths):
     sequence_lengths : Variable(torch.LongTensor), required.
         A tensor representing the lengths of some dimension of the tensor which
         we want to sort by.
-
     Returns
     -------
     sorted_tensor : Variable(torch.FloatTensor)
@@ -436,14 +490,11 @@ def get_dropout_mask(dropout_probability, tensor_for_masking):
     each element in the mask is dropped out with probability dropout_probability.
     Note that the mask is NOT applied to the tensor - the tensor is passed to retain
     the correct CUDA tensor type for the mask.
-
     Parameters
     ----------
     dropout_probability : float, required.
         Probability of dropping a dimension of the input.
     tensor_for_masking : torch.Variable, required.
-
-
     Returns
     -------
     A torch.FloatTensor consisting of the binary mask scaled by 1/ (1 - dropout_probability).
@@ -462,7 +513,6 @@ def arrays_to_variables(data_structure, cuda_device=-1, add_batch_dimension=Fals
     """
     Convert an (optionally) nested dictionary of arrays to Pytorch ``Variables``,
     suitable for use in a computation graph.
-
     Parameters
     ----------
     data_structure : Dict[str, Union[dict, numpy.ndarray]], required.
@@ -479,7 +529,6 @@ def arrays_to_variables(data_structure, cuda_device=-1, add_batch_dimension=Fals
         If ``False``, we will pass the ``volatile=True`` flag when constructing variables, which
         disables gradient computations in the graph.  This makes inference more efficient
         (particularly in memory usage), but is incompatible with training models.
-
     Returns
     -------
     The original data structure or tensor converted to a Pytorch ``Variable``.
@@ -510,9 +559,7 @@ def masked_softmax(vector, mask):
     ``torch.nn.functional.softmax(vector)`` does not work if some elements of ``vector`` should be
     masked.  This performs a softmax on just the non-masked portions of ``vector``.  Passing
     ``None`` in for the mask is also acceptable; you'll just get a regular softmax.
-
     We assume that both ``vector`` and ``mask`` (if given) have shape ``(batch_size, vector_dim)``.
-
     In the case that the input vector is completely masked, this function returns an array
     of ``0.0``. This behavior may cause ``NaN`` if this is used as the last layer of a model
     that uses categorical cross-entropy loss.
@@ -532,9 +579,7 @@ def masked_log_softmax(vector, mask):
     ``torch.nn.functional.log_softmax(vector)`` does not work if some elements of ``vector`` should be
     masked.  This performs a log_softmax on just the non-masked portions of ``vector``.  Passing
     ``None`` in for the mask is also acceptable; you'll just get a regular log_softmax.
-
     We assume that both ``vector`` and ``mask`` (if given) have shape ``(batch_size, vector_dim)``.
-
     In the case that the input vector is completely masked, this function returns an array
     of ``0.0``.  You should be masking the result of whatever computation comes out of this in that
     case, anyway, so it shouldn't matter.
@@ -552,7 +597,6 @@ def viterbi_decode(tag_sequence: torch.Tensor,
     specifying pairwise (transition) potentials between tags and a matrix of shape
     (sequence_length, num_tags) specifying unary potentials for possible tags per
     timestep.
-
     Parameters
     ----------
     tag_sequence : torch.Tensor, required.
@@ -569,7 +613,6 @@ def viterbi_decode(tag_sequence: torch.Tensor,
         other, or those transitions are extremely unlikely. In this situation we log a
         warning, but the responsibility for providing self-consistent evidence ultimately
         lies with the user.
-
     Returns
     -------
     viterbi_path : List[int]
@@ -636,12 +679,10 @@ def get_text_field_mask(text_field_tensors: Dict[str, torch.Tensor]) -> torch.Lo
     Takes the dictionary of tensors produced by a ``TextField`` and returns a mask of shape
     ``(batch_size, num_tokens)``.  This mask will be 0 where the tokens are padding, and 1
     otherwise.
-
     There could be several entries in the tensor dictionary with different shapes (e.g., one for
     word ids, one for character ids).  In order to get a token mask, we assume that the tensor in
     the dictionary with the lowest number of dimensions has plain token ids.  This allows us to
     also handle cases where the input is actually a ``ListField[TextField]``.
-
     NOTE: Our functions for generating masks create torch.LongTensors, because using
     torch.byteTensors inside Variables makes it easy to run into overflow errors
     when doing mask manipulation, such as summing to get the lengths of sequences - see below.
@@ -681,20 +722,16 @@ def weighted_sum(matrix: torch.Tensor, attention: torch.Tensor) -> torch.Tensor:
     Takes a matrix of vectors and a set of weights over the rows in the matrix (which we call an
     "attention" vector), and returns a weighted sum of the rows in the matrix.  This is the typical
     computation performed after an attention mechanism.
-
     Note that while we call this a "matrix" of vectors and an attention "vector", we also handle
     higher-order tensors.  We always sum over the second-to-last dimension of the "matrix", and we
     assume that all dimensions in the "matrix" prior to the last dimension are matched in the
     "vector".  Non-matched dimensions in the "vector" must be `directly after the batch dimension`.
-
     For example, say I have a "matrix" with dimensions ``(batch_size, num_queries, num_words,
     embedding_dim)``.  The attention "vector" then must have at least those dimensions, and could
     have more. Both:
-
         - ``(batch_size, num_queries, num_words)`` (distribution over words for each query)
         - ``(batch_size, num_documents, num_queries, num_words)`` (distribution over words in a
           query for each document)
-
     are valid input "vectors", producing tensors of shape:
     ``(batch_size, num_queries, embedding_dim)`` and
     ``(batch_size, num_documents, num_queries, embedding_dim)`` respectively.
@@ -725,7 +762,6 @@ def sequence_cross_entropy_with_logits(logits: torch.FloatTensor,
     in the :func:`torch.nn.CrossEntropyLoss()` criterion, which is weighting
     classes; here we are weighting the loss contribution from particular elements
     in the sequence. This allows loss computations for models which use padding.
-
     Parameters
     ----------
     logits : ``torch.FloatTensor``, required.
@@ -739,13 +775,11 @@ def sequence_cross_entropy_with_logits(logits: torch.FloatTensor,
     batch_average : bool, optional, (default = True).
         A bool indicating whether the loss should be averaged across the batch,
         or returned as a vector of losses per batch element.
-
     Returns
     -------
     A torch.FloatTensor representing the cross entropy loss.
     If ``batch_average == True``, the returned loss is a scalar.
     If ``batch_average == False``, the returned loss is a vector of shape (batch_size,).
-
     """
     # shape : (batch * sequence_length, num_classes)
     logits_flat = logits.view(-1, logits.size(-1))
@@ -816,22 +850,18 @@ def combine_tensors(combination: str, tensors: List[torch.Tensor]) -> torch.Tens
     Combines a list of tensors using element-wise operations and concatenation, specified by a
     ``combination`` string.  The string refers to (1-indexed) positions in the input tensor list,
     and looks like ``"1,2,1+2,3-1"``.
-
     We allow the following kinds of combinations: ``x``, ``x*y``, ``x+y``, ``x-y``, and ``x/y``,
     where ``x`` and ``y`` are positive integers less than or equal to ``len(tensors)``.  Each of
     the binary operations is performed elementwise.  You can give as many combinations as you want
     in the ``combination`` string.  For example, for the input string ``"1,2,1*2"``, the result
     would be ``[1;2;1*2]``, as you would expect, where ``[;]`` is concatenation along the last
     dimension.
-
     If you have a fixed, known way to combine tensors that you use in a model, you should probably
     just use something like ``torch.cat([x_tensor, y_tensor, x_tensor * y_tensor])``.  This
     function adds some complexity that is only necessary if you want the specific combination used
     to be `configurable`.
-
     If you want to do any element-wise operations, the tensors involved in each element-wise
     operation must have the same shape.
-
     This function also accepts ``x`` and ``y`` in place of ``1`` and ``2`` in the combination
     string.
     """
@@ -870,7 +900,6 @@ def get_combined_dim(combination: str, tensor_dims: List[int]) -> int:
     calling ``combine_tensors(combination, tensors)``, when the tensor dimension is known.  This is
     necessary for knowing the sizes of weight matrices when building models that use
     ``combine_tensors``.
-
     Parameters
     ----------
     combination : ``str``
@@ -909,7 +938,6 @@ def logsumexp(tensor: torch.Tensor,
     A numerically stable computation of logsumexp. This is mathematically equivalent to
     `tensor.exp().sum(dim, keep=keepdim).log()`.  This function is typically used for summing log
     probabilities.
-
     Parameters
     ----------
     tensor : torch.FloatTensor, required.
@@ -941,11 +969,9 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
     This class implements the key-value scaled dot product attention mechanism
     detailed in the paper `Attention is all you Need
     <https://www.semanticscholar.org/paper/Attention-Is-All-You-Need-Vaswani-Shazeer/0737da0767d77606169cbf4187b83e1ab62f6077>`_ .
-
     The attention mechanism is a weighted sum of a projection V of the inputs, with respect
     to the scaled, normalised dot product of Q and K, which are also both linear projections
     of the input. This procedure is repeated for each attention head, using different parameters.
-
     Parameters
     ----------
     num_heads : ``int``, required.
@@ -1018,7 +1044,6 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
             A tensor of shape (batch_size, timesteps, input_dim)
         mask : ``torch.FloatTensor``, optional (default = None).
             A tensor of shape (batch_size, timesteps).
-
         Returns
         -------
         A tensor of shape (batch_size, timesteps, output_projection_dim),
