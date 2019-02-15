@@ -114,7 +114,7 @@ class Task(object):
     '''
     def __init__(self, name, tokenizer_name):
         self.name = name
-        assert self.tokenizer_is_supported(tokenizer_name)
+        #assert self.tokenizer_is_supported(tokenizer_name)
         self._tokenizer_name = tokenizer_name
 
     def load_data(self, path, max_seq_len):
