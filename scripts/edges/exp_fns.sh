@@ -123,6 +123,15 @@ function openai_lex_exp() {
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
+function openai_mix_exp() {
+    # Probe the OpenAI transformer with ELMo-style scalar mixing across layers.
+    # Usage: openai_mix_exp <task_name>
+    OVERRIDES="exp_name=openai-mix-$1, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", openai_embeddings_mode=mix"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
+
 function openai_bwb_exp() {
     # Probe the OpenAI transformer model, as trained on BWB-shuffled.
     # Usage: openai_bwb_exp <task_name>
