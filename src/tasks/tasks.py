@@ -365,6 +365,58 @@ class CoLATask(SingleClassificationTask):
                 'accuracy': self.scorer2.get_metric(reset)}
 
 
+@register_task('cola-in-domain', rel_path='CoLA/')
+class CoLAInDomainTask(CoLATask):
+    def __init__(self, path, max_seq_len, name="train_in_domain", **kw):
+        '''MNLI'''
+        super(
+            CoLAInDomainTask,
+            self).__init__(
+            path,
+            max_seq_len,
+            name=name,
+		**kw)
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tr_data = load_tsv(os.path.join(path, "original/raw/in_domain_train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, targ_idx=1)
+        val_data = load_tsv(os.path.join(path, "original/raw/in_domain_dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'original/raw/cola_in_domain_test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading CoLA in domain.")
+
+@register_task('cola-out-domain', rel_path='CoLA/')
+class CoLAOutDomainTask(CoLATask):
+    def __init__(self, path, max_seq_len, name="train_out_domain", **kw):
+        '''MNLI'''
+        super(
+            CoLAOutDomainTask,
+            self).__init__(
+            path,
+            max_seq_len,
+            name=name,
+		**kw)
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, targ_idx=1)
+        # TODO: What do you change about this?
+        val_data = load_tsv(os.path.join(path, "original/raw/out_of_domain_dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, targ_idx=1)
+        te_data = load_tsv(os.path.join(path, 'original/raw/cola_out_of_domain_test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading CoLA out of domain.")
+
 @register_task('qqp', rel_path='QQP/')
 @register_task('qqp-alt', rel_path='QQP/')  # second copy for different params
 class QQPTask(PairClassificationTask):

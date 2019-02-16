@@ -16,7 +16,7 @@ from .tasks import Task
 ##
 # Task lists for handling as a group; these names correspond to the keys in 
 # the task registry.
-ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
+ALL_GLUE_TASKS = ['sst', 'cola', 'cola-in-domain', 'cola-out-domain', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
 # people are mostly using nli-prob for now, but we will change to
