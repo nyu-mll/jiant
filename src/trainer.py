@@ -67,12 +67,14 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         and a scheduler config object.
     '''
 
+    opt_params = {'type': params['optimizer'], 'lr': params['lr']}
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
-        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0, 'amsgrad': True})
-    else:
-        opt_params = Params({'type': params['optimizer'], 'lr': params['lr']})
+        opt_params['amsgrad'] = True
+    elif params['optimizer'] == 'bert_adam':
+        opt_params['t_total'] = -1
+        opt_params['warmup'] = 0.1
+    opt_params = Params(opt_params)
 
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
@@ -272,6 +274,7 @@ class SamplingMultiTaskTrainer:
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
             task_info['last_log'] = time.time()
+
         # Metric bookkeeping
         all_metrics = [task.val_metric for task in tasks] + ['micro_avg', 'macro_avg']
         metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for
@@ -313,6 +316,9 @@ class SamplingMultiTaskTrainer:
                                                         optimizer_params, scheduler_params, phase)
 
         if shared_optimizer:  # if shared_optimizer, ignore task_specific optimizers
+            if self._max_epochs_per_task:
+                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+                optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
@@ -445,7 +451,7 @@ class SamplingMultiTaskTrainer:
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
-                assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
+                #assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application

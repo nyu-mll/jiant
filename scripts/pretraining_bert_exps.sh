@@ -8,13 +8,14 @@ gpuid=${2:-0}
 
 ## Debugging ##
 function debug() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = cola, do_target_task_training = 0, max_epochs_per_task = 1, mnli-alt_pair_attn = 0, run_name = debug-bert, bert_embeddings_mode = \"top\", sent_enc = \"null\", sep_embs_for_skip = 1, val_interval = 50, cuda = ${gpuid}"
+    python -m ipdb main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, target_tasks = \"cola,mrpc\", do_pretrain = 0, do_target_task_training = 1, do_full_eval = 1, max_epochs_per_task = 3, transfer_paradigm = finetune, mnli-alt_pair_attn = 0, run_name = debug-bert, bert_embeddings_mode = \"top\", sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
 
 ## GLUE pretraining ##
 function fullbert_mnli() {
     python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
+
 function wordbert_mnli() {
     python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-nobert, bert_embeddings_mode = only, cuda = ${gpuid}"
 } 

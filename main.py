@@ -82,6 +82,24 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 
+def get_best_checkpoint_path(run_dir):
+    """ Look in run_dir for model checkpoint to load.
+    Hierarchy is
+        1) best checkpoint from eval (target_task_training)
+        2) best checkpoint from pretraining
+        3) nothing found (empty string) """
+    eval_best = glob.glob(os.path.join(run_dir, "model_state_eval_best.th"))
+    if len(eval_best) > 0:
+        assert_for_log(len(eval_best) == 1,
+                       "Too many best checkpoints. Something is wrong.")
+        return eval_best[0]
+    macro_best = glob.glob(os.path.join(run_dir, "model_state_main_epoch_*.best_macro.th"))
+    if len(macro_best) > 0:
+        assert_for_log(len(macro_best) == 1,
+                       "Too many best checkpoints. Something is wrong.")
+        return macro_best[0]
+    return ""
+
 # Global notification handler, can be accessed outside main() during exception
 # handling.
 EMAIL_NOTIFIER = None
@@ -150,7 +168,7 @@ def main(cl_arguments):
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
 
-    # Build or load model #
+    # Build model #
     log.info('Building model...')
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
@@ -242,42 +260,26 @@ def main(cl_arguments):
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
-        eval_best = glob.glob(os.path.join(args.run_dir,
-                                           "model_state_eval_best.th"))
-        if len(eval_best) > 0:
-            load_model_state(
-                model,
-                eval_best[0],
-                args.cuda,
-                task_names_to_avoid_loading,
-                strict=strict)
+        best_path = get_best_checkpoint_path(args.run_dir)
+        if best_path:
+            load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
         else:
-            macro_best = glob.glob(os.path.join(args.run_dir,
-                                                "model_state_main_epoch_*.best_macro.th"))
-            if len(macro_best) > 0:
-                assert_for_log(len(macro_best) == 1,
-                               "Too many best checkpoints. Something is wrong.")
-                load_model_state(
-                    model,
-                    macro_best[0],
-                    args.cuda,
-                    task_names_to_avoid_loading,
-                    strict=strict)
-            else:
-                assert_for_log(
-                    args.allow_untrained_encoder_parameters,
-                    "No best checkpoint found to evaluate.")
-                log.warning("Evaluating untrained encoder parameters!")
+            assert_for_log(args.allow_untrained_encoder_parameters,
+                           "No best checkpoint found to evaluate.")
+            log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
-        # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
-        elmo_scalars = [(n, p) for n, p in model.named_parameters() if
-                        "scalar_mix" in n and "scalar_mix_0" not in n]
-        # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
-        assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
-                       "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
-                       "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
+
+        if args.transfer_paradigm == "frozen":
+            # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
+            elmo_scalars = [(n, p) for n, p in model.named_parameters() if
+                            "scalar_mix" in n and "scalar_mix_0" not in n]
+            # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
+            assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
+                           "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
+                           "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
+
         for task in target_tasks:
             # Skip mnli-diagnostic
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
@@ -285,9 +287,15 @@ def main(cl_arguments):
             # "is_probing_task is global flag specific to a run, not to a task.
             if task.name == 'mnli-diagnostic':
                 continue
-            pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = elmo_scalars + [(n, p)
-                                       for n, p in pred_module.named_parameters() if p.requires_grad]
+
+            if args.transfer_paradigm == "finetune":
+                to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+            else:
+                pred_module = getattr(model, "%s_mdl" % task.name)
+                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad] +\
+                            elmo_scalars
+
+
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
@@ -306,34 +314,71 @@ def main(cl_arguments):
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
-            load_model_state(
-                model,
-                layer_path,
-                args.cuda,
-                skip_task_models=task_names_to_avoid_loading,
-                strict=strict)
+            if args.transfer_paradigm == "finetune":
+                # save this fine-tune model with a task specific name
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                os.rename(layer_path, finetune_path)
+
+                # reload the original best model
+                pre_finetune_path = get_best_checkpoint_path(args.run_dir)
+                load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
+            else:
+                load_model_state(model, layer_path, args.cuda,
+                                 skip_task_models=task_names_to_avoid_loading,
+                                 strict=strict)
 
     if args.do_full_eval:
         # Evaluate #
         log.info("Evaluating...")
-        val_results, val_preds = evaluate.evaluate(model, target_tasks,
-                                                   args.batch_size,
-                                                   args.cuda, "val")
-
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-        if 'val' in splits_to_write:
-            evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
-                                 strict_glue_format=args.write_strict_glue_format)
-        if 'test' in splits_to_write:
-            _, te_preds = evaluate.evaluate(model, target_tasks,
-                                            args.batch_size, args.cuda, "test")
-            evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                                 strict_glue_format=args.write_strict_glue_format)
-        run_name = args.get("run_name", os.path.basename(args.run_dir))
+        if args.transfer_paradigm == "finetune":
+            for task in tasks:
+                # TODO(Alex): special case for MNLI and MNLI-diagnostic
+                if task.name == 'mnli-diagnostic':
+                    continue
 
-        results_tsv = os.path.join(args.exp_dir, "results.tsv")
-        log.info("Writing results for split 'val' to %s", results_tsv)
-        evaluate.write_results(val_results, results_tsv, run_name=run_name)
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                if os.path.exists(finetune_path):
+                    ckpt_path = finetune_path
+                else:
+                    ckpt_path = get_best_checkpoint_path(args.run_dir)
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                val_results, val_preds = evaluate.evaluate(model, [task],
+                                                           args.batch_size,
+                                                           args.cuda, "val")
+                if 'val' in splits_to_write:
+                    evaluate.write_preds([task], val_preds, args.run_dir, 'val',
+                                         strict_glue_format=args.write_strict_glue_format)
+                if 'test' in splits_to_write:
+                    _, te_preds = evaluate.evaluate(model, [task],
+                                                    args.batch_size, args.cuda, "test")
+                    evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
+                                         strict_glue_format=args.write_strict_glue_format)
+                run_name = args.get("run_name", os.path.basename(args.run_dir))
+
+                results_tsv = os.path.join(args.exp_dir, "results.tsv")
+                log.info("Writing results for split 'val' to %s", results_tsv)
+                evaluate.write_results(val_results, results_tsv, run_name=run_name)
+
+
+        else:
+            val_results, val_preds = evaluate.evaluate(model, target_tasks,
+                                                       args.batch_size,
+                                                       args.cuda, "val")
+
+            if 'val' in splits_to_write:
+                evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
+                                     strict_glue_format=args.write_strict_glue_format)
+            if 'test' in splits_to_write:
+                _, te_preds = evaluate.evaluate(model, target_tasks,
+                                                args.batch_size, args.cuda, "test")
+                evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
+                                     strict_glue_format=args.write_strict_glue_format)
+            run_name = args.get("run_name", os.path.basename(args.run_dir))
+
+            results_tsv = os.path.join(args.exp_dir, "results.tsv")
+            log.info("Writing results for split 'val' to %s", results_tsv)
+            evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
     log.info("Done!")
 
