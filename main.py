@@ -301,11 +301,15 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
-            best_epoch = trainer.train([task], task.val_metric,
-                                       args.batch_size, 1,
-                                       args.weighting_method, args.scaling_method,
-                                       to_train, opt_params, schd_params,
-                                       args.shared_optimizer, load_model=False, phase="eval")
+            best_epoch = trainer.train(tasks=[task], stop_metric=task.val_metric,
+                                       batch_size=args.batch_size, n_batches_per_pass=1,
+                                       weighting_method=args.weighting_method,
+                                       scaling_method=args.scaling_method,
+                                       train_params=to_train,
+                                       optimizer_params=opt_params,
+                                       scheduler_params=schd_params,
+                                       shared_optimizer=args.shared_optimizer,
+                                       load_model=False, phase="eval")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             task_names_to_avoid_loading.remove(task.name)
