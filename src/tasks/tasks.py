@@ -52,7 +52,7 @@ def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_s
     with the *first* nonatomic token in the list. '''
     for nonatomic_tok in nonatomic_toks:
         sent = sent.replace(nonatomic_tok, atomic_tok)
-    sent = process_sentence(sent, max_seq_len, tokenizer=tokenizer_name)
+    sent = process_sentence(sent, max_seq_len, tokenizer_name=tokenizer_name)
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 

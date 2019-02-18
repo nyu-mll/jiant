@@ -161,7 +161,7 @@ def unescape_moses(moses_tokens):
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 
-def process_sentence(sent, max_seq_len, tokenizer_name, start_tok=SOS_TOK, end_tok=EOS_TOK):
+def process_sentence(sent, max_seq_len, tokenizer_name):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
@@ -174,10 +174,12 @@ def process_sentence(sent, max_seq_len, tokenizer_name, start_tok=SOS_TOK, end_t
             BERT_TOKENIZER = BertTokenizer.from_pretrained(tokenizer_name,
                                                            do_lower_case=do_lower_case)
         tokenizer = BERT_TOKENIZER
-    else:
+    elif tokenizer_name == "MosesTokenizer":
         sos_tok = SOS_TOK
         eos_tok = EOS_TOK
         tokenizer = TOKENIZER
+    else:
+        raise ValueError("Tokenizer %s not found!" % tokenizer_name)
 
     if isinstance(sent, str):
         return [sos_tok] + tokenizer.tokenize(sent)[:max_seq_len] + [eos_tok]
