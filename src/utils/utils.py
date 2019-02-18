@@ -11,8 +11,6 @@ import logging
 import codecs
 import time
 
-from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
-
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -25,17 +23,14 @@ from allennlp.common.checks import ConfigurationError
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
+from .tokenizers import OpenAIBPETokenizer, MosesTokenizer
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+TOKENIZERS = {"OpenAI.BPE": OpenAIBPETokenizer(),
+            "MosesTokenizer": MosesTokenizer()}
 
-TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-
-# Note: using the full 'detokenize()' method is not recommended, since it does
-# a poor job of adding correct whitespace. Use unescape_xml() only.
-_MOSES_DETOKENIZER = MosesDetokenizer()
-
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
@@ -149,18 +144,11 @@ def maybe_make_dir(dirname):
     os.makedirs(dirname, exist_ok=True)
 
 
-def unescape_moses(moses_tokens):
-    '''Unescape Moses punctuation tokens.
 
-    Replaces escape sequences like &#91; with the original characters
-    (such as '['), so they better align to the original text.
-    '''
-    return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
-
-
-def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
+def process_sentence(tokenizer_name, sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
+    TOKENIZER = TOKENIZERS[tokenizer_name]
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     if isinstance(sent, str):
         return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
@@ -188,6 +176,7 @@ def load_lines(filename: str) -> Iterable[str]:
 
 
 def load_diagnostic_tsv(
+        tokenizer_name,
         data_file,
         max_seq_len,
         s1_idx=0,
@@ -243,14 +232,14 @@ def load_diagnostic_tsv(
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
                 if targ_map is not None:
                     targ = targ_map[row[targ_idx]]
                 elif targ_fn is not None:
                     targ = targ_fn(row[targ_idx])
                 else:
                     targ = int(row[targ_idx])
-                sent2 = process_sentence(row[s2_idx], max_seq_len)
+                sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
                 sent2s.append(sent2)
 
                 sent1s.append(sent1)
@@ -297,6 +286,7 @@ def load_diagnostic_tsv(
 
 
 def load_tsv(
+        tokenizer_name,
         data_file,
         max_seq_len,
         s1_idx=0,
@@ -308,7 +298,7 @@ def load_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None):
+        filter_value=None,):
     '''Load a tsv
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
@@ -321,7 +311,7 @@ def load_tsv(
                 row = row.strip().split(delimiter)
                 if filter_idx and row[filter_idx] != filter_value:
                     continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
+                sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
 
@@ -336,7 +326,7 @@ def load_tsv(
                     targ = 0
 
                 if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len)
+                    sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)
