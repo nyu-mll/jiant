@@ -310,8 +310,36 @@ register_task('edges-dpr', rel_path='edges/dpr',
                }, is_symmetric=False)(EdgeProbingTask)
 
 ##
+# New or experimental tasks.
+##
+# Relation classification on SemEval 2010 Task8. 19 labels.
+register_task('edges-rel-semeval', rel_path='edges/semeval',
+               label_file="labels.txt", files_by_split={
+                   'train': "train.0.85.json",
+                   'val': "dev.json",
+                   'test': "test.json",
+               }, is_symmetric=False)(EdgeProbingTask)
+# Relation classification on TACRED. 42 labels.
+register_task('edges-rel-tacred', rel_path='edges/tacred/rel',
+               label_file="labels.txt", files_by_split={
+                   'train': "train.json",
+                   'val': "dev.json",
+                   'test': "test.json",
+               }, is_symmetric=False)(EdgeProbingTask)
+
+
+##
 # Older tasks or versions for backwards compatibility.
 ##
+# Entity classification on TACRED. 17 labels.
+# NOTE: these are probably silver labels from CoreNLP,
+# so this is of limited use as a target.
+register_task('edges-ner-tacred', rel_path='edges/tacred/entity',
+               label_file="labels.txt", files_by_split={
+                   'train': "train.json",
+                   'val': "dev.json",
+                   'test': "test.json",
+               }, single_sided=True)(EdgeProbingTask)
 # SRL CoNLL 2005, formulated as an edge-labeling task.
 register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
                label_file="labels.txt", files_by_split={
