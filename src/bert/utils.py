@@ -97,7 +97,6 @@ class BertEmbedderModule(nn.Module):
                 SEP_ID = 104 # [SEP] for BERT models.
                 sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
                 # TODO(Alex): some kind of assert
-                # this won't work b/c A and B both end with [SEP]!
                 token_types = torch.ones_like(ids)
                 # fill in with zeros
                 # TODO(Alex): some way to vectorize this?
