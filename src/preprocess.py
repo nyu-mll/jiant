@@ -19,7 +19,6 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from src.utils import tokenizers
 from allennlp.data import Vocabulary
 from allennlp.data.token_indexers import \
     SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
@@ -249,7 +248,7 @@ def build_tasks(args):
         indexers["words"] = SingleIdTokenIndexer()
     if args.elmo:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
-        assert args.tokenizer in tokenizers.AVAILABLE_TOKENIZERS
+        assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.cove:

@@ -5,18 +5,7 @@ main Tokenizer class.
 
 """
 import os
-
-from ..openai_transformer_lm.tf_original import utils as openai_utils
-from ..openai_transformer_lm.tf_original.text_utils import TextEncoder
 from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer, MosesDetokenizer
-
-"""Global task registry.
-
-Import this to use @register_task when defining new tasks,
-then access the registry as registry.REGISTRY.
-"""
-
-AVAILABLE_TOKENIZERS = ["MosesTokenizer" , "OpenAI.BPE"]
 
 class Tokenizer(object):
 
@@ -26,6 +15,8 @@ class Tokenizer(object):
 class OpenAIBPETokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
+        from ..openai_transformer_lm.tf_original import utils as openai_utils
+        from ..openai_transformer_lm.tf_original.text_utils import TextEncoder
         OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__),
                                        "model")
         ENCODER_PATH = os.path.join(OPENAI_DATA_DIR, "encoder_bpe_40000.json")
@@ -60,3 +51,9 @@ class MosesTokenizer(Tokenizer):
         '''
         detokenizer = MosesDetokenizer()
         return [detokenizer.unescape_xml(t) for t in tokens]
+
+
+AVAILABLE_TOKENIZERS = {
+    "OpenAI.BPE": OpenAIBPETokenizer(),
+    "MosesTokenizer": MosesTokenizer()
+}

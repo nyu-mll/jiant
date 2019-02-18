@@ -38,7 +38,6 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src.utils import utils
 from src.utils import retokenize
-from src.utils import tokenizers
 
 from src.openai_transformer_lm import utils as openai_utils
 from pytorch_pretrained_bert import BertTokenizer
@@ -47,7 +46,8 @@ from typing import Tuple, List, Text
 
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
-MosesTokenizer = tokenizers.MosesTokenizer()
+assert utils.TOKENIZER.__class__.__name__ == "MosesTokenizer"
+MosesTokenizer = utils.TOKENIZER
 
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
@@ -75,7 +75,7 @@ def _get_bert_tokenizer(model_name, do_lower_case):
 # of a TokenAligner instance and a list of tokens.
 def align_moses(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
     moses_tokens = MosesTokenizer.tokenize(text)
-    cleaned_moses_tokens = MosesTokenizer.detokenize(moses_tokens)
+    cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
     ta = retokenize.TokenAligner(text, cleaned_moses_tokens)
     return ta, moses_tokens
 
