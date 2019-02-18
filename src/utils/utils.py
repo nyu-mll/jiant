@@ -161,17 +161,17 @@ def unescape_moses(moses_tokens):
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 
-def process_sentence(sent, max_seq_len, tokenizer='', start_tok=SOS_TOK, end_tok=EOS_TOK):
+def process_sentence(sent, max_seq_len, tokenizer_name, start_tok=SOS_TOK, end_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
-    if tokenizer.startswith('bert'):
+    if tokenizer_name.startswith('bert'):
         sos_tok = BERT_CLS_TOK
         eos_tok = BERT_SEP_TOK
         global BERT_TOKENIZER
         if BERT_TOKENIZER is None:
-            do_lower_case = tokenizer.endswith('uncased')
-            BERT_TOKENIZER = BertTokenizer.from_pretrained(tokenizer,
+            do_lower_case = tokenizer_name.endswith('uncased')
+            BERT_TOKENIZER = BertTokenizer.from_pretrained(tokenizer_name,
                                                            do_lower_case=do_lower_case)
         tokenizer = BERT_TOKENIZER
     else:
@@ -207,6 +207,7 @@ def load_lines(filename: str) -> Iterable[str]:
 def load_diagnostic_tsv(
         data_file,
         max_seq_len,
+        tokenizer_name,
         s1_idx=0,
         s2_idx=1,
         targ_idx=2,
@@ -216,8 +217,7 @@ def load_diagnostic_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None,
-        tokenizer=''):
+        filter_value=None):
     '''Load a tsv
 
     It loads the data with all it's attributes from diagnostic dataset for MNLI'''
@@ -261,14 +261,14 @@ def load_diagnostic_tsv(
         for row_idx, row in enumerate(data_fh):
             try:
                 row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer=tokenizer)
+                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer_name=tokenizer_name)
                 if targ_map is not None:
                     targ = targ_map[row[targ_idx]]
                 elif targ_fn is not None:
                     targ = targ_fn(row[targ_idx])
                 else:
                     targ = int(row[targ_idx])
-                sent2 = process_sentence(row[s2_idx], max_seq_len, tokenizer=tokenizer)
+                sent2 = process_sentence(row[s2_idx], max_seq_len,tokenizer_name=tokenizer_name)
                 sent2s.append(sent2)
 
                 sent1s.append(sent1)
@@ -317,6 +317,7 @@ def load_diagnostic_tsv(
 def load_tsv(
         data_file,
         max_seq_len,
+        tokenizer_name,
         s1_idx=0,
         s2_idx=1,
         targ_idx=2,
@@ -326,8 +327,7 @@ def load_tsv(
         skip_rows=0,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None,
-        tokenizer=''):
+        filter_value=None):
     '''Load a tsv
 
     To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
@@ -340,7 +340,7 @@ def load_tsv(
                 row = row.strip().split(delimiter)
                 if filter_idx and row[filter_idx] != filter_value:
                     continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer=tokenizer)
+                sent1 = process_sentence(row[s1_idx], max_seq_len, tokenizer_name=tokenizer_name)
                 if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
                     continue
 
@@ -355,7 +355,7 @@ def load_tsv(
                     targ = 0
 
                 if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len, tokenizer=tokenizer)
+                    sent2 = process_sentence(row[s2_idx], max_seq_len, tokenizer_name=tokenizer_name)
                     if not len(sent2):
                         continue
                     sent2s.append(sent2)

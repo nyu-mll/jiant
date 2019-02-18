@@ -98,6 +98,12 @@ def get_best_checkpoint_path(run_dir):
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
+    pre_finetune = glob.glob(os.path.join(run_dir, "model_state_untrained_prefinetune.th"))
+    if len(pre_finetune) > 0:
+        assert_for_log(len(pre_finetune) == 1,
+                       "Too many best checkpoints. Something is wrong.")
+        return pre_finetune[0]
+
     return ""
 
 # Global notification handler, can be accessed outside main() during exception
@@ -267,6 +273,11 @@ def main(cl_arguments):
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
             log.warning("Evaluating untrained encoder parameters!")
+            if args.transfer_paradigm == "finetune":
+                # save a model
+                model_state = model.state_dict()
+                model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
+                torch.save(model_state, model_path)
 
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:

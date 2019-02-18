@@ -12,101 +12,49 @@ function debug() {
 }
 
 ## GLUE pretraining ##
-function fullbert_mnli() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+function fullbert() {
+    python main.py --config config/final-bert.conf --overrides "do_pretrain = 0, allow_untrained_encoder_parameters = 1, run_name = untrained-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
-
+## Lexical BERT ##
 function wordbert_mnli() {
     python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-nobert, bert_embeddings_mode = only, cuda = ${gpuid}"
 } 
 
-function fullbert_qqp() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+## GLUE pretraining ##
+function fullbert_mnli() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = mnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
 
-function wordbert_qqp() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-nobert, bert_embeddings_mode = only, cuda = ${gpuid}"
+function fullbert_qqp() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qqp-alt, run_name = qqp-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
 
 function fullbert_qnli() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qnli-alt, qnli-alt_pair_attn = 0, run_name = qnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
-}
-function wordbert_qnli() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qnli-alt, qnli-alt_pair_attn = 0, run_name = qnli-nobert, bert_embeddings_mode = only, cuda = ${gpuid}"
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = qnli-alt, run_name = qnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
 
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-bert, bert_embeddings_mode = none, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = qnli-alt, qnli-alt_pair_attn = 0, run_name = qnli-bert, bert_embeddings_mode = none, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-bert, bert_embeddings_mode = none, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = cola, run_name = cola-bert, bert_embeddings_mode = none, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = sst, run_name = sst-bert, bert_embeddings_mode = none, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = rte, run_name = rte-bert, bert_embeddings_mode = none, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = wnli, run_name = wnli-bert, bert_embeddings_mode = none, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = mrpc, run_name = mrpc-bert, bert_embeddings_mode = none, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = cola, run_name = cola-bert, bert_embeddings_mode = none, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-bert, bert_embeddings_mode = none, cuda = 3"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = rte, run_name = rte-bert, bert_embeddings_mode = none, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = wnli, run_name = wnli-bert, bert_embeddings_mode = none, cuda = 2"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = mrpc, run_name = mrpc-bert, bert_embeddings_mode = none, cuda = 5"
+function fullbert_stsb() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = sts-b-alt, run_name = sts-b-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
+function fullbert_cola() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = cola-alt, run_name = cola-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, mnli-alt_pair_attn = 0, run_name = mnli-nobert, bert_embeddings_mode = only, cuda = 6"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = qnli-alt, qnli-alt_pair_attn = 0, run_name = qnli-nobert, bert_embeddings_mode = only, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = qqp-alt, qqp-alt_pair_attn = 0, run_name = qqp-nobert, bert_embeddings_mode = only, cuda = 6"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = cola, run_name = cola-nobert, bert_embeddings_mode = only, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = sst, run_name = sst-nobert, bert_embeddings_mode = only, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = rte, run_name = rte-nobert, bert_embeddings_mode = only, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = wnli, run_name = wnli-nobert, bert_embeddings_mode = only, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 1, train_for_eval = 0, pretrain_tasks = mrpc, run_name = mrpc-nobert, bert_embeddings_mode = only, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = cola, run_name = cola-nobert, bert_embeddings_mode = only, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = sts-b-alt, sts-b-alt_pair_attn = 0, run_name = sts-b-nobert, bert_embeddings_mode = only, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = rte, run_name = rte-nobert, bert_embeddings_mode = only, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = wnli, run_name = wnli-nobert, bert_embeddings_mode = only, cuda = 2"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, do_train = 0, train_for_eval = 1, pretrain_tasks = mrpc, run_name = mrpc-nobert, bert_embeddings_mode = only, cuda = 5"
+function fullbert_sst() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = sst-alt, run_name = sst-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
+function fullbert_mrpc() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mrpc-alt, run_name = mrpc-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
-# Reruns for variance
-partition1="cola,mnli,mrpc,rte,wnli"
-partition2="qqp,sst"
-partition3="qnli,sts-b"
-partition23="qqp,qnli,sst,sts-b"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-nobert-p1-s2, bert_embeddings_mode = only, random_seed = 2222, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-nobert-p1-s3, bert_embeddings_mode = only, random_seed = 3333, cuda = 1"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-nobert-p1-s4, bert_embeddings_mode = only, random_seed = 4444, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-nobert-p1-s5, bert_embeddings_mode = only, random_seed = 5555, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-bert-p1-s2, bert_embeddings_mode = none, random_seed = 2222"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-bert-p1-s3, bert_embeddings_mode = none, random_seed = 3333"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-bert-p1-s4, bert_embeddings_mode = none, random_seed = 4444"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = mnli-alt, eval_tasks = \"cola,mnli,mrpc,rte,wnli\", mnli-alt_pair_attn = 0, run_name = mnli-bert-p1-s5, bert_embeddings_mode = none, random_seed = 5555"
-partition0="mnli-alt"
-ckpt2="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-nobert-p1-s2/model_state_main_epoch_60.best_macro.th"
-ckpt3="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-nobert-p1-s3/model_state_main_epoch_73.best_macro.th"
-ckpt4="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-nobert-p1-s4/model_state_main_epoch_64.best_macro.th"
-ckpt5="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-nobert-p1-s5/model_state_main_epoch_50.best_macro.th"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"${partition0}\", eval_tasks = \"${partition2}\", do_train = 0, train_for_eval = 1, do_eval = 1, mnli-alt_pair_attn = 0, run_name = mnli-nobert-p2-s4, bert_embeddings_mode = only, load_eval_checkpoint = ${ckpt4}, random_seed = 4444, cuda = 3"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"${partition0}\", eval_tasks = \"${partition2}\", do_train = 0, train_for_eval = 1, do_eval = 1, mnli-alt_pair_attn = 0, run_name = mnli-nobert-p2-s5, bert_embeddings_mode = only, load_eval_checkpoint = ${ckpt5}, random_seed = 5555, cuda = 1"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"${partition0}\", eval_tasks = \"${partition3}\", do_train = 0, train_for_eval = 1, do_eval = 1, mnli-alt_pair_attn = 0, run_name = mnli-nobert-p3-s2, bert_embeddings_mode = only, load_eval_checkpoint = ${ckpt2}, random_seed = 2222, cuda = 3"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"${partition0}\", eval_tasks = \"${partition3}\", do_train = 0, train_for_eval = 1, do_eval = 1, mnli-alt_pair_attn = 0, run_name = mnli-nobert-p3-s3, bert_embeddings_mode = only, load_eval_checkpoint = ${ckpt3}, random_seed = 3333, cuda = 3"
+function fullbert_rte() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = rte-alt, run_name = rte-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
-## Random encoder ##
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-nobert-s3, bert_embeddings_mode = only, allow_missing_task_map = 1, random_seed = 91011, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-nobert-s4, bert_embeddings_mode = only, allow_missing_task_map = 1, random_seed = 121314, cuda = 7"
-
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert, bert_embeddings_mode = none, allow_missing_task_map = 1, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition1}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p1-s2, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 2222, cuda = 0"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition1}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p1-s3, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 3333, cuda = 0"
-
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition2}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p2-s2, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 2222, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition2}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p2-s3, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 3333, cuda = 2"
-
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition3}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p3-s2, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 2222, cuda = 2"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition3}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p3-s3, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 3333, cuda = 2"
-
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition1}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p1-s4, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 4444, cuda = 2"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition1}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p1-s5, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 5555, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition2}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p2-s4, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 4444, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition2}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p2-s5, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 5555, cuda = 5"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition3}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p3-s4, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 4444, cuda = 7"
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = none, eval_tasks = \"${partition3}\", allow_untrained_encoder_parameters = 1, do_train = 0, run_name = random-bert-p3-s5, bert_embeddings_mode = none, allow_missing_task_map = 1, random_seed = 5555, cuda = 7"
+function fullbert_wnli() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = wnli-alt, run_name = wnli-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
 
 ## Reddit ##
@@ -114,7 +62,9 @@ ckpt5="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-
 
 
 ## DisSent ##
-#python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = dissentwikifullbig, run_name = dissent-bert, bert_embeddings_mode = none, pair_attn = 0, cuda = 3"
+function fullbert_dissent() {
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = dissentwikifullbig, run_name = dissent-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+}
 
 
 ## Grounded ##
@@ -140,9 +90,11 @@ ckpt5="/misc/vlgscratch4/BowmanGroup/awang/ckpts/mtl-sent-rep/friends-bert/mnli-
 #python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = wiki103, run_name = wiki103-lm-nobert, bert_embeddings_mode = only, lr = 0.001, cuda = 1"
 
 
+
 ## GLUE MTL ##
 #python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,qqp-alt,cola\", mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, run_name = mtl-glue-bert, bert_embeddings_mode = none, do_train = 1, train_for_eval = 0, cuda = 6"
 #python main.py --config config/final-bert.conf --overrides "exp_name = friends-bert, pretrain_tasks = \"mnli-alt,mrpc,qnli-alt,sst,sts-b-alt,rte,wnli,qqp-alt,cola\", mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, run_name = mtl-glue-bert, bert_embeddings_mode = none, do_train = 0, train_for_eval = 1, cuda = 2"
+
 
 
 # non GLUE MTL
@@ -218,10 +170,30 @@ model_state_file="model_state_main_epoch_176.best_macro.th"
 
 if [ $1 == "debug" ]; then
     debug
-elif [ $1 == "fullbert-mnli" ]; then
-    fullbert_mnli
 elif [ $1 == "wordbert-mnli" ]; then
     wordbert_mnli
+elif [ $1 == "fullbert" ]; then
+    fullbert
+elif [ $1 == "fullbert-mnli" ]; then
+    fullbert_mnli
+elif [ $1 == "fullbert-qqp" ]; then
+    fullbert_qqp
+elif [ $1 == "fullbert-qnli" ]; then
+    fullbert_qnli
+elif [ $1 == "fullbert-stsb" ]; then
+    fullbert_stsb
+elif [ $1 == "fullbert-mrpc" ]; then
+    fullbert_mrpc
+elif [ $1 == "fullbert-rte" ]; then
+    fullbert_rte
+elif [ $1 == "fullbert-wnli" ]; then
+    fullbert_wnli
+elif [ $1 == "fullbert-cola" ]; then
+    fullbert_cola
+elif [ $1 == "fullbert-sst" ]; then
+    fullbert_sst
+elif [ $1 == "fullbert-dissent" ]; then
+    fullbert_dissent
 fi
 
 ### Eval a model: rerun test ###
