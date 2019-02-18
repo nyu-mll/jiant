@@ -8,6 +8,12 @@
 # Usage, to split 'all.txt' into 'train.txt' and 'dev.txt', with train
 # containing approximately 80% of the examples:
 #  python deterministic_split.py -s 42 -f 0.8 -i all.txt -o train.txt dev.txt
+#
+# Note: this /should/ be reproducible in future Python versions, but may
+# require a minor code change to use backwards-compatible RNG seeding.
+# See https://docs.python.org/3/library/random.html#notes-on-reproducibility
+#
+# For edge probing experiments, this is run using Python 3.6.8
 
 import argparse
 import os
