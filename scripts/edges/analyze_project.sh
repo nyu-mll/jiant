@@ -3,6 +3,18 @@
 # Convenience script to analyze a directory ("project") of experiments.
 #
 # Usage: ./analyze_project.sh /path/to/project
+#
+# Expected directory structure:
+# <project_dir>/
+#   <experiment_1>/
+#     run/
+#     vocab/
+#   <experiment_2>/
+#     run/
+#     vocab/
+#   (...)
+#
+# Will create <project_dir>/scores.tsv as output.
 
 PROJECT_DIR=$1
 
