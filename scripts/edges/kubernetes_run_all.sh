@@ -118,18 +118,12 @@ do
     kuberun bert-large-uncased-lex-$task   "bert_lex_exp edges-$task large-uncased"
 done
 
-# Run cased BERT models for NER tasks
-task="ner-ontonotes"
-kuberun bert-base-cased-lex-$task    "bert_lex_exp edges-$task base-cased"
-kuberun bert-large-cased-lex-$task   "bert_lex_exp edges-$task large-cased"
-
 ##
 # Run these on 'jsalt-central' for V100s
 gcloud container clusters get-credentials --zone us-central1-a jsalt-central
 export GPU_TYPE="v100"
 for task in "${ALL_TASKS[@]}"
 do
-    # kuberun openai-$task     "openai_exp edges-$task"
     kuberun openai-cat-$task "openai_cat_exp edges-$task"
     kuberun openai-mix-$task "openai_mix_exp edges-$task"
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
@@ -141,13 +135,4 @@ do
     kuberun bert-base-uncased-mix-$task    "bert_mix_exp edges-$task base-uncased"
     kuberun bert-large-uncased-mix-$task   "bert_mix_exp edges-$task large-uncased"
 done
-
-# Run cased BERT models for NER tasks
-task="ner-ontonotes"
-kuberun bert-base-cased-cat-$task    "bert_cat_exp edges-$task base-cased"
-kuberun bert-large-cased-cat-$task   "bert_cat_exp edges-$task large-cased"
-
-# BERT with ELMo-style scalar mixing.
-kuberun bert-base-cased-mix-$task    "bert_mix_exp edges-$task base-cased"
-kuberun bert-large-cased-mix-$task   "bert_mix_exp edges-$task large-cased"
 
