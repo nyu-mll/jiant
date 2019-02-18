@@ -124,7 +124,6 @@ gcloud container clusters get-credentials --zone us-central1-a jsalt-central
 export GPU_TYPE="v100"
 for task in "${ALL_TASKS[@]}"
 do
-    # kuberun openai-$task     "openai_exp edges-$task"
     kuberun openai-cat-$task "openai_cat_exp edges-$task"
     kuberun openai-mix-$task "openai_mix_exp edges-$task"
     kuberun openai-bwb-$task "openai_bwb_exp edges-$task"
