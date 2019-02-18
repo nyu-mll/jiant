@@ -27,8 +27,10 @@ from .tokenizers import OpenAIBPETokenizer, MosesTokenizer
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-TOKENIZERS = {"OpenAI.BPE": OpenAIBPETokenizer(),
-            "MosesTokenizer": MosesTokenizer()}
+TOKENIZERS = {
+    "OpenAI.BPE": OpenAIBPETokenizer(),
+    "MosesTokenizer": MosesTokenizer()
+}
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
