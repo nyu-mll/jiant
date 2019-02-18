@@ -25,13 +25,13 @@ class NLITypeProbingTask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
         val_data = load_tsv(os.path.join(path, probe_path), max_seq_len,
                             s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -54,13 +54,13 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
         val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
                             s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1,
-                            tokenizer=self._tokenizer_name)
+                            tokenizer_name=self._tokenizer_name)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -82,13 +82,13 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
     def load_data(self, path, max_seq_len, probe_path):
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
         val_data = load_tsv(os.path.join(path, 'all.prepswap.turk.newlabels.tsv'), max_seq_len,
                             s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0,
-                            tokenizer=self._tokenizer_name)
+                            tokenizer_name=self._tokenizer_name)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -110,7 +110,7 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         targ_map = {'0': 0, '1': 1, '2': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
         val_data = load_tsv(
             os.path.join(
                 path,
@@ -122,10 +122,10 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
             targ_idx=1,
             targ_map=targ_map,
             skip_rows=1,
-           tokenizer=self._tokenizer_name)
+           tokenizer_name=self._tokenizer_name)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0,
-                           tokenizer=self._tokenizer_name)
+                           tokenizer_name=self._tokenizer_name)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
