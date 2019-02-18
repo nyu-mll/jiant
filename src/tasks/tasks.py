@@ -30,7 +30,7 @@ from allennlp.data.fields import TextField, LabelField, \
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
-from ..utils.utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+from ..utils.utils import load_tsv, load_old_tsv, process_sentence, truncate, load_diagnostic_tsv
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -564,16 +564,15 @@ class SNLITask(PairClassificationTask):
         def targ_func(value):
             return targ_map[value]
         tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len, label_fn=targ_func,
-                           s1_idx=7, s2_idx=8, label_idx=-1, skip_rows=1)
+                           s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
         val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_func,
-                            s1_idx=7, s2_idx=8, label_idx=-1, skip_rows=1)
+                            s1_idx=7, s2_idx=8, label_idx=14, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
-
 
 @register_task('mnli', rel_path='MNLI/')
 @register_task('mnli-alt', rel_path='MNLI/')  # second copy for different params
