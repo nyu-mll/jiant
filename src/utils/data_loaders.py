@@ -4,6 +4,7 @@ files downloaded in scripts/download_data_glue.py
 
 """
 from .tokenizers import AVAILABLE_TOKENIZERS
+import codecs
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
