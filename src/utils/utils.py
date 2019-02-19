@@ -27,9 +27,11 @@ from allennlp.common.params import Params
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-_MOSES_DETOKENIZER = MosesDetokenizer()
-
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+
+# Note: using the full 'detokenize()' method is not recommended, since it does
+# a poor job of adding correct whitespace. Use unescape_xml() only.
+_MOSES_DETOKENIZER = MosesDetokenizer()
 
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''

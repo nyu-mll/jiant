@@ -13,6 +13,7 @@ class Tokenizer(object):
         raise NotImplementedError
 
 class OpenAIBPETokenizer(Tokenizer):
+    # TODO: Add detokenize method to OpenAIBPE class
     def __init__(self):
         super().__init__()
         from ..openai_transformer_lm.tf_original import utils as openai_utils
