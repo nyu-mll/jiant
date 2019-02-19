@@ -39,6 +39,7 @@ class MosesTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
         self._tokenizer = NLTKMosesTokenizer()
+        self._detokenizer = MosesDetokenizer()
 
     def tokenize(self, sentence):
         return self._tokenizer.tokenize(sentence)
@@ -49,8 +50,7 @@ class MosesTokenizer(Tokenizer):
         Replaces escape sequences like &#91; with the original characters
         (such as '['), so they better align to the original text.
         '''
-        detokenizer = MosesDetokenizer()
-        return [detokenizer.unescape_xml(t) for t in tokens]
+        return [self._detokenizer.unescape_xml(t) for t in tokens]
 
 
 AVAILABLE_TOKENIZERS = {

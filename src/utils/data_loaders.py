@@ -3,7 +3,7 @@ Functions having to do with loading data from output of
 files downloaded in scripts/download_data_glue.py
 
 """
-from .tokenizers import OpenAIBPETokenizer, MosesTokenizer, AVAILABLE_TOKENIZERS
+from .tokenizers import AVAILABLE_TOKENIZERS
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
@@ -29,40 +29,35 @@ def load_tsv(
         for _ in range(skip_rows):
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.strip().split(delimiter)
-                if filter_idx and row[filter_idx] != filter_value:
-                    continue
-                sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
-                if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
-                    continue
-
-                if targ_idx is not None:
-                    if targ_map is not None:
-                        targ = targ_map[row[targ_idx]]
-                    elif targ_fn is not None:
-                        targ = targ_fn(row[targ_idx])
-                    else:
-                        targ = int(row[targ_idx])
-                else:
-                    targ = 0
-
-                if s2_idx is not None:
-                    sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
-                    if not len(sent2):
-                        continue
-                    sent2s.append(sent2)
-
-                if idx_idx is not None:
-                    idx = int(row[idx_idx])
-                    idxs.append(idx)
-
-                sent1s.append(sent1)
-                targs.append(targ)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
+            row = row.strip().split(delimiter)
+            if filter_idx and row[filter_idx] != filter_value:
                 continue
+            sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
+            if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
+                continue
+
+            if targ_idx is not None:
+                if targ_map is not None:
+                    targ = targ_map[row[targ_idx]]
+                elif targ_fn is not None:
+                    targ = targ_fn(row[targ_idx])
+                else:
+                    targ = int(row[targ_idx])
+            else:
+                targ = 0
+
+            if s2_idx is not None:
+                sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
+                if not len(sent2):
+                    continue
+                sent2s.append(sent2)
+
+            if idx_idx is not None:
+                idx = int(row[idx_idx])
+                idxs.append(idx)
+
+            sent1s.append(sent1)
+            targs.append(targ)
 
     if idx_idx is not None:
         return sent1s, sent2s, targs, idxs
@@ -124,35 +119,30 @@ def load_diagnostic_tsv(
         for _ in range(skip_rows):
             data_fh.readline()
         for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
-                if targ_map is not None:
-                    targ = targ_map[row[targ_idx]]
-                elif targ_fn is not None:
-                    targ = targ_fn(row[targ_idx])
-                else:
-                    targ = int(row[targ_idx])
-                sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
-                sent2s.append(sent2)
+            row = row.rstrip().split(delimiter)
+            sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
+            if targ_map is not None:
+                targ = targ_map[row[targ_idx]]
+            elif targ_fn is not None:
+                targ = targ_fn(row[targ_idx])
+            else:
+                targ = int(row[targ_idx])
+            sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
+            sent2s.append(sent2)
 
-                sent1s.append(sent1)
-                targs.append(targ)
+            sent1s.append(sent1)
+            targs.append(targ)
 
-                lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
-                pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
-                logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
-                knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
+            lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
+            pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
+            logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
+            knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
 
-                idxs.append(row_idx)
-                lex_sem.append(lex_sem_sample)
-                pr_ar_str.append(pr_ar_str_sample)
-                logic.append(logic_sample)
-                knowledge.append(knowledge_sample)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
-                continue
+            idxs.append(row_idx)
+            lex_sem.append(lex_sem_sample)
+            pr_ar_str.append(pr_ar_str_sample)
+            logic.append(logic_sample)
+            knowledge.append(knowledge_sample)
 
     ix_to_lex_sem_dic[0] = "missing"
     ix_to_pr_ar_str_dic[0] = "missing"
@@ -181,8 +171,8 @@ def load_diagnostic_tsv(
 def process_sentence(tokenizer_name, sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
     '''process a sentence '''
     max_seq_len -= 2
-    TOKENIZER = AVAILABLE_TOKENIZERS[tokenizer_name]
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
+    TOKENIZER = AVAILABLE_TOKENIZERS[tokenizer_name]
     if isinstance(sent, str):
         return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
