@@ -239,8 +239,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                      str(word_embs.size()))
         elif args.word_embs=="scratch":
             log.info("\tTraining word embeddings from scratch.")
-            d_word=args.d_word
-            word_embs= nn.Embedding(n_token_vocab, d_word).weight
+            d_word = args.d_word
+            word_embs = nn.Embedding(n_token_vocab, d_word).weight
         else:
             raise Exception('Not a valid type of word emb. Set to none for elmo.')
 
