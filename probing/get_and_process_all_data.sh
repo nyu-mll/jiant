@@ -16,6 +16,7 @@ JIANT_DATA_DIR=${1:-"$HOME/glue_data"}  # path to glue_data directory
 ## Configure these for your environment ##
 PATH_TO_ONTONOTES="/nfs/jsalt/home/iftenney/ontonotes/ontonotes/conll-formatted-ontonotes-5.0"
 PATH_TO_SPR1_RUDINGER="/nfs/jsalt/home/iftenney/decomp.net/spr1"
+PATH_TO_TACRED_LDC="/nfs/jsalt/home/iftenney/tacred/tacred/"  # unpacked LDC2018T24.tgz
 
 ## Don't modify below this line. ##
 
@@ -92,7 +93,30 @@ function get_ud() {
     preproc_task $OUTPUT_DIR/dep_ewt
 }
 
+function get_tacred() {
+    ## TACRED relation classification
+    ## Gives tacred/{task}/{split}.json, where split = {train, dev, test}
+    ## and task = {rel, entity}
+    mkdir $OUTPUT_DIR/tacred
+    python $HERE/data/convert-tacred.py \
+        -i ${PATH_TO_TACRED_LDC}/data/json/*.json \
+        -o $OUTPUT_DIR/tacred
+    preproc_task $OUTPUT_DIR/tacred/rel
+    preproc_task $OUTPUT_DIR/tacred/entity
+}
+
+function get_semeval() {
+    ## SemEval 2010 Task 8 relation classification
+    ## Gives semeval/{split}.json, where split = {train.0.85, dev, test}
+    mkdir $OUTPUT_DIR/semeval
+    bash $HERE/data/get_semeval_data.sh $OUTPUT_DIR/semeval
+    preproc_task $OUTPUT_DIR/semeval
+}
+
 get_ontonotes
 get_spr_dpr
 get_ud
+
+get_tacred
+get_semeval
 

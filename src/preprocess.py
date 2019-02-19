@@ -287,7 +287,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.word_embs != 'none':
+    if args.word_embs not in ['none' ,'scratch']:
         emb_file = os.path.join(args.exp_dir, 'embs.pkl')
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)

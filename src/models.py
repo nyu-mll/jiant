@@ -237,13 +237,15 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_word = word_embs.size()[1]
             log.info("\tUsing pre-trained word embeddings: %s",
                      str(word_embs.size()))
-        else:
-            log.info("\tLearning word embeddings from scratch!")
-            word_embs = None
+        elif args.word_embs == "scratch":
+            log.info("\tTraining word embeddings from scratch.")
             d_word = args.d_word
+            word_embs = nn.Embedding(n_token_vocab, d_word).weight
+        else:
+            raise Exception('Not a valid type of word emb. Set to none for elmo.')
 
         embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
-                               weight=word_embs, trainable=False,
+                               weight=word_embs, trainable=(args.embeddings_train == 1),
                                padding_index=vocab.get_token_index('@@PADDING@@'))
         token_embedders["words"] = embeddings
         d_emb += d_word
