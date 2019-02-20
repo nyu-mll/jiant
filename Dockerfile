@@ -61,9 +61,9 @@ RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11
 RUN python -m spacy download en
 
 # Install AllenNLP. Need to update some other deps first.
-RUN pip install pytorch-pretrained-bert==0.4.0
 RUN conda install greenlet=0.4.15
 RUN pip install allennlp==0.8.1
+RUN pip install --upgrade pytorch-pretrained-bert==0.5.1
 
 # Install local data files.
 RUN python -m nltk.downloader -d /usr/share/nltk_data \

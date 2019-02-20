@@ -44,7 +44,7 @@ from src.openai_transformer_lm import utils as openai_utils
 from pytorch_pretrained_bert import BertTokenizer
 
 from typing import Tuple, List, Text
-import pdb; pdb.set_trace()
+
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
 assert "MosesTokenizer" in tokenizers.AVAILABLE_TOKENIZERS
@@ -162,5 +162,4 @@ def main(args):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-    print(align_moses("hey"))
     sys.exit(0)
