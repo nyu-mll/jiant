@@ -38,13 +38,13 @@ BERT_CACHE="/nfs/jsalt/share/bert_cache"
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts ":m:g:p:n:" opt; do
     case "$opt" in
-    m)	MODE=$OPTARG
+    m)  MODE=$OPTARG
         ;;
     g)  GPU_TYPE=$OPTARG
         ;;
     p)  PROJECT=$OPTARG
         ;;
-    n)	NOTIFY_EMAIL=$OPTARG
+    n)  NOTIFY_EMAIL=$OPTARG
         ;;
     \? )
         echo "Invalid flag $opt."
@@ -103,6 +103,11 @@ spec:
       value: ${BERT_CACHE}
   nodeSelector:
     cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
+  tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Equal"
+    value: "present"
+    effect: "NoSchedule"
   volumes:
   - name: nfs-jsalt
     persistentVolumeClaim:
