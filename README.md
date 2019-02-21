@@ -141,6 +141,8 @@ We also include an experimental option to use a shared [Transformer](https://arx
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
 
+To use the ON-LSTM sentence encoder from the ICLR 2019 paper (https://arxiv.org/abs/1810.09536) , set sent_enc as 'onlstm'. To re-rerun experiments from the paper on WSJ Language Modeling, using the configuration file [config/onlstm.conf](config/onlstm.conf)
+
 ## Trainer
 
 The trainer was originally written to perform sampling-based multi-task training. At each step, a task is sampled and ``bpp_base`` (default: 1) batches of that task's training data is trained on.
@@ -240,6 +242,7 @@ As some config arguments are renamed, you may encounter an error when loading pa
 ```sh
 python scripts/update_config.py <path_to_file>
 ```
+
 
 ## License
 

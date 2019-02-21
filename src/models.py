@@ -120,7 +120,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_layer)
         d_sent = args.d_word
-        log.info("Using onlstm sentence encoder!")
+        log.info("Using ON-LSTM sentence encoder!")
         if tasks[0].name == "wsj" and args.sent_enc == 'onlstm' and (args.tying == 1):
             model.sent_encoder._phrase_layer.emb.weight = model.wsj_hid2voc.weight
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
