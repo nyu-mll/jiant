@@ -1,8 +1,7 @@
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
-from src.modules.onlstm.locked_dropout import LockedDropout
-from ..utils import locked_dropout
+from ...utils.locked_dropout import LockedDropout
 import numpy as np
 class LayerNorm(nn.Module):
 

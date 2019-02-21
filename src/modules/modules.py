@@ -18,7 +18,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from .modules.onlstm.ON_LSTM import ONLSTMStack
+from .onlstm.ON_LSTM import ONLSTMStack
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError

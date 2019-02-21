@@ -157,21 +157,17 @@ class WSJLanguageModelling(LanguageModelingTask):
     """ Language modeling on a PTB dataset
     See base class: LanguageModelingTask
     """
-
-    def __init__(self, path, max_seq_len, name="wiki"):
-        super().__init__(path, max_seq_len, name)
-
     def count_examples(self):
         """Computes number of samples
         Assuming every line is one example.
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            arr=[line.strip().split()+["<EOS>"] for line in open(split_path)]
-            allf=0
+            arr = [line.strip().split()+["<EOS>"] for line in open(split_path)]
+            allf = 0
             for x in arr:
-                allf+=len(x)
-            example_counts[split]=int(math.ceil(allf/self.max_seq_len))
+                allf += len(x)
+            example_counts[split] = int(math.ceil(allf/self.max_seq_len))
         self.example_counts = example_counts
 
     
@@ -206,9 +202,9 @@ class WSJLanguageModelling(LanguageModelingTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                toks_v=toks.split()
-                toks=toks.split()+["<EOS>"]
-                tokens+=toks
+                toks_v = toks.split()
+                toks = toks.split()+["<EOS>"]
+                tokens += toks
             for i in range(0, len(tokens), seq_len):
                 yield tokens[i:i+seq_len]
 
