@@ -24,7 +24,7 @@ from allennlp.training.metrics import Average
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 from .utils.utils import assert_for_log, get_batch_utilization, \
-    get_batch_size, get_elmo_mixing_weights
+    get_batch_size, get_elmo_mixing_weights, maybe_make_dir
 from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
