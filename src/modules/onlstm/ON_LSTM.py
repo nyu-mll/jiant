@@ -2,7 +2,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch
 from src.modules.onlstm.locked_dropout import LockedDropout
-
+from ..utils import locked_dropout
 import numpy as np
 class LayerNorm(nn.Module):
 
@@ -19,23 +19,20 @@ class LayerNorm(nn.Module):
 
 
 def embedded_dropout(embed, words, dropout=0.1, scale=None):
-  if dropout:
-    mask = embed.weight.data.new().resize_((embed.weight.size(0), 1)).bernoulli_(1 - dropout).expand_as(embed.weight) / (1 - dropout)
-    masked_embed_weight = mask * embed.weight
-  else:
-    masked_embed_weight = embed.weight
-  if scale:
-    masked_embed_weight = scale.expand_as(masked_embed_weight) * masked_embed_weight
-
-  padding_idx = embed.padding_idx
-  if padding_idx is None:
-    padding_idx = -1
-  #padding_idx=-1
-  X = torch.nn.functional.embedding(words, masked_embed_weight,
-    padding_idx, embed.max_norm, embed.norm_type,
-    embed.scale_grad_by_freq, embed.sparse
-  )
-  return X
+    if dropout:
+        mask = embed.weight.data.new().resize_((embed.weight.size(0), 1)).bernoulli_(1 - dropout).expand_as(embed.weight) / (1 - dropout)
+        masked_embed_weight = mask * embed.weight
+    else:
+        masked_embed_weight = embed.weight
+    if scale:
+        masked_embed_weight = scale.expand_as(masked_embed_weight) * masked_embed_weight
+    padding_idx = embed.padding_idx
+    if padding_idx is None:
+        padding_idx = -1
+    X = torch.nn.functional.embedding(words, masked_embed_weight,
+                                    padding_idx, embed.max_norm, embed.norm_type,
+                                    embed.scale_grad_by_freq, embed.sparse)
+    return X
 
 if __name__ == '__main__':
   V = 50
@@ -155,7 +152,7 @@ class ONLSTMCell(nn.Module):
 class ONLSTMStack(nn.Module):
     def __init__(self, layer_sizes, chunk_size, dropout=0., dropconnect=0., embedder=None, phrase_layer=None, dropouti=0.5, dropoutw=0.1, dropouth=0.3, batch_size=20):
         super(ONLSTMStack, self).__init__()
-        self.layer_sizes=layer_sizes
+        self.layer_sizes = layer_sizes
         self.cells = nn.ModuleList([ONLSTMCell(layer_sizes[i],
                                                layer_sizes[i+1],
                                                chunk_size,
@@ -164,16 +161,16 @@ class ONLSTMStack(nn.Module):
         self.lockdrop = LockedDropout()
         #self.lockdrop2= LockedDropout()
         self.dropout = dropout
-        self.dropouti=dropouti
-        self.dropouth=dropouth
+        self.dropouti = dropouti
+        self.dropouth = dropouth
         self.sizes = layer_sizes
-        self.embedder=embedder
-        dim=self.embedder.token_embedder_words.weight.shape
-        self.emb=nn.Embedding(dim[0], dim[1])
+        self.embedder = embedder
+        dim = self.embedder.token_embedder_words.weight.shape
+        self.emb = nn.Embedding(dim[0], dim[1])
         #self.hidden=self.init_hidden(batch_size)
-        self._phrase_layer=phrase_layer
+        self._phrase_layer = phrase_layer
 
-        self.dropoutw=dropoutw
+        self.dropoutw = dropoutw
 
     def get_input_dim(self):
         return self.layer_sizes[0]
@@ -186,14 +183,14 @@ class ONLSTMStack(nn.Module):
 
     def forward(self, input, task=None):
         #input= torch.transpose(input, 0, 1)
-        batch_size=input.size()[1]
+        batch_size = input.size()[1]
         #hidden=self.hidden
         hidden = self.init_hidden(batch_size)
         return self.forward_actual(input, hidden)
 
     def forward_actual(self, input, hidden):
-        abs_inp=input
-        input=embedded_dropout(self.emb, input, dropout=self.dropoutw if self.training else 0)
+        abs_inp = input
+        input = embedded_dropout(self.emb, input, dropout=self.dropoutw if self.training else 0)
         input = self.lockdrop(input, self.dropouti)
         length, batch_size, _ = input.size()
         if self.training:
@@ -231,9 +228,10 @@ class ONLSTMStack(nn.Module):
             distances_forget.append(dist_layer_cforget)
             distances_in.append(dist_layer_cin)
         output = prev_layer
-        output=self.lockdrop(output, self.dropout)
-        return output, torch.ones(output.shape)
-        #import pdb;pdb.set_trace()
+        output = self.lockdrop(output, self.dropout)
+        mask = abs_inp != 0
+        self.distances = torch.stack(distances_forget)
+        return output, mask
         #return output, prev_state, raw_outputs, outputs, (torch.stack(distances_forget), torch.stack(distances_in))
 
 
@@ -242,4 +240,3 @@ if __name__ == "__main__":
     x.data.normal_()
     lstm = LSTMCellStack([10, 10, 10])
     print(lstm(x, lstm.init_hidden(10))[1])
-

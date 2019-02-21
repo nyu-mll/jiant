@@ -158,23 +158,8 @@ class WSJLanguageModelling(LanguageModelingTask):
     See base class: LanguageModelingTask
     """
 
-    # def __init__(self, path, max_seq_len, name, **kw):
-    #     super().__init__(path, max_seq_len, name)
-
-    def load_data(self, path):
-        seq_len=self.max_seq_len
-        tokens=[]
-        with open(path) as txt_fh:
-            for row in txt_fh:
-                toks=row.strip()
-                if not toks:
-                    continue
-                toks=toks.split()+["<EOS>"]
-                tokens+=toks
-            num_sent=int(math.ceil(len(tokens)/seq_len))
-            for i in range(num_sent):
-                yield tokens[i*seq_len:i*seq_len+seq_len]
-
+    def __init__(self, path, max_seq_len, name="wiki"):
+        super().__init__(path, max_seq_len, name)
 
     def count_examples(self):
         """Computes number of samples
@@ -182,7 +167,6 @@ class WSJLanguageModelling(LanguageModelingTask):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = 
             arr=[line.strip().split()+["<EOS>"] for line in open(split_path)]
             allf=0
             for x in arr:
@@ -203,11 +187,30 @@ class WSJLanguageModelling(LanguageModelingTask):
             to avoid issues with needing to strip extra tokens
             in the input for each direction '''
             d = {}
-            d["input"] = sentence_to_text_field(sent, indexers)
-            d["targs"] = sentence_to_text_field(sent, self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-1], self.target_indexer)
+            #import pdb;pdb.set_trace()
+            d["input"] = sentence_to_text_field(sent[:-1], indexers)
+            d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
+    def load_data(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
+        seq_len=self.max_seq_len
+        tokens=[]
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                toks_v=toks.split()
+                toks=toks.split()+["<EOS>"]
+                tokens+=toks
+            for i in range(0, len(tokens), seq_len):
+                yield tokens[i:i+seq_len]
+
 
 

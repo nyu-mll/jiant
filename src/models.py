@@ -102,7 +102,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
-    if args.sent_enc=="onlstm":
+    if args.sent_enc == "onlstm":
         phrase_layer = ONLSTMStack(
             [args.d_word] + [args.d_hid] * (args.n_layers_enc - 1) + [args.d_word],
             chunk_size=args.chunk_size,
@@ -110,7 +110,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
             dropouti=args.dropouti,
             dropout=args.dropout,
             dropouth=args.dropouth,
-            embedder= embedder,
+            embedder=embedder,
             phrase_layer=None,
             batch_size=args.batch_size
         )
@@ -119,11 +119,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_layer)
-        d_sent=args.d_word#this is output dim right?
-        log.info("Using onlstm sentence encoder!") 
-        tying=False
-        if tasks[0].name=="wsj" and args.sent_enc=='onlstm' and tying:#enable tying
-            model.sent_encoder._phrase_layer.emb.weight=model.wsj_hid2voc.weight
+        d_sent = args.d_word
+        log.info("Using onlstm sentence encoder!")
+        if tasks[0].name == "wsj" and args.sent_enc == 'onlstm' and (args.tying == 1):
+            model.sent_encoder._phrase_layer.emb.weight = model.wsj_hid2voc.weight
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
@@ -399,7 +398,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
-        if args.sent_enc!="onlstm":
+        if args.sent_enc != "onlstm":
             d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
@@ -628,7 +627,7 @@ class MultiTaskModel(nn.Module):
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
-                out = self._lm_only_forward(batch, task, predict)#single forward only, no bilm
+                out = self._lm_only_forward(batch, task, predict)
             else:
                 out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
@@ -959,7 +958,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_only_forward(self, batch, task, predict):
-        """Forward pass for LM model
+        """Only forward pass for LM model - consider for non-bidirectional models
         Args:
             batch: indexed input data
             task: (Task obejct)
@@ -973,8 +972,6 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         sent_encoder = self.sent_encoder
-        #assert_for_log(isinstance(sent_encoder._phrase_layer, BiLMEncoder),
-        #               "Not using LM for language modeling task!")
         assert_for_log('targs' in batch and 'words' in batch['targs'],
                        "Batch missing target words!")
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
@@ -982,7 +979,7 @@ class MultiTaskModel(nn.Module):
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
         out['n_exs'] = (b_size * seq_len - n_pad) * 2
         sent, mask = sent_encoder(batch['input'], task)
-        sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs 
+        sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         logits = hid2voc(sent).view(b_size * seq_len, -1)
         out['logits'] = logits
@@ -990,6 +987,7 @@ class MultiTaskModel(nn.Module):
         targs = trg_fwd
         assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        #print("\nPerplexity:"+str(math.exp(out['loss'])))
         task.scorer1(out['loss'].item())
         if predict:
             pass
