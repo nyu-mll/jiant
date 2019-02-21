@@ -5,6 +5,15 @@ import pandas as pd
 
 from typing import Dict, Iterable, Sequence, Union
 
+import logging as log
+log.basicConfig(format='%(asctime)s: %(message)s',
+                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+
+def load_lines(filename: str) -> Iterable[str]:
+    ''' Load text data, yielding each line. '''
+    with open(filename) as fd:
+        for line in fd:
+            yield line.strip()
 
 def load_json_data(filename: str) -> Iterable:
     ''' Load JSON records, one per line. '''
@@ -88,3 +97,12 @@ class EdgeProbingDatasetStats(object):
 
     def __str__(self):
         return self.format()
+
+def write_file_and_print_stats(records: Iterable[Dict], target_fname: str):
+    """ Write edge probing records to a JSON file, and print dataset stats. """
+    stats = EdgeProbingDatasetStats()
+    records = stats.passthrough(records)
+    write_json_data(target_fname, records)
+    log.info("Wrote examples to %s", target_fname)
+    log.info(stats.format())
+    return stats
