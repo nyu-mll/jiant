@@ -10,7 +10,7 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 # Fields for instance processing
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate
+from ..utils.utils import process_sentence, truncate, load_tsv
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -18,6 +18,7 @@ from .tasks import SequenceGenerationTask
 from .tasks import sentence_to_text_field, atomic_tokenize
 from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
 from .registry import register_task
+
 
 class LanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
@@ -195,8 +196,8 @@ class WSJLanguageModelling(LanguageModelingTask):
         Args:
             path: (str) data file path
         """
-        seq_len=self.max_seq_len
-        tokens=[]
+        seq_len = self.max_seq_len
+        tokens = []
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -207,6 +208,79 @@ class WSJLanguageModelling(LanguageModelingTask):
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
                 yield tokens[i:i+seq_len]
+
+@register_task('mnli_lm', rel_path='MNLI/')
+class MNLILanguageMdelling(LanguageModelingTask):
+    """ Language modeling on the MNLI dataset
+    See base class: LanguageModelingTask
+    """
+
+    def __init__(self, path, max_seq_len, name="mnli_lm", **kw):
+        """Init class
+        Args:
+            path: (str) path that the data files are stored
+            max_seq_len: (int) maximum length of one sequence
+            name: (str) task name
+        """
+        super().__init__(path, max_seq_len, name, **kw)
+        self.scorer1 = Average()
+        self.scorer2 = None
+        self.val_metric = "%s_perplexity" % self.name
+        self.val_metric_decreases = True
+        self.max_seq_len = max_seq_len
+        self.min_seq_len = 0
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.files_by_split = {'train': os.path.join(path, "train.tsv"),
+                               'val': os.path.join(path, "dev_matched.tsv"),
+                               'test': os.path.join(path, "test_matched.tsv")}
+    def count_examples(self):
+        """Computes number of samples
+        Assuming every line is one example.
+        """
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            arr = [line.strip().split()+["<EOS>"] for line in open(split_path)]
+            allf = 0
+            for x in arr:
+                allf += len(x)
+            example_counts[split] = int(math.ceil(allf/self.max_seq_len))
+        self.example_counts = example_counts
+
+    
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        """Process a language modeling split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+        def _make_instance(sent):
+            ''' Forward targs adds <s> as a target for input </s>
+            and bwd targs adds </s> as a target for input <s>
+            to avoid issues with needing to strip extra tokens
+            in the input for each direction '''
+            d = {}
+            #import pdb;pdb.set_trace()
+            d["input"] = sentence_to_text_field(sent[:-1], indexers)
+            d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
+            return Instance(d)
+        for sent in split:
+            yield _make_instance(sent)
+    def load_data(self, path):
+        """Loading data file and tokenizing the text
+        Args:
+            path: (str) data file path
+        """
+        seq_len = self.max_seq_len
+        tokens = []
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        data = load_tsv(os.path.join(path), 1000, skip_rows=1, s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map)
+        rows=[]
+        tokens=[]
+        for x, y in zip(data[0], data[1]):
+            tokens += x[1:-1]+["<EOS>"]+y[1:-1]+["<EOS>"]
+        for i in range(0, len(tokens), seq_len):
+            yield tokens[i:i+seq_len]
 
 
 
