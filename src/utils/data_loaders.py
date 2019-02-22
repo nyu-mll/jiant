@@ -186,6 +186,3 @@ def process_sentence(tokenizer_name, sent, max_seq_len, sos_tok=SOS_TOK, eos_tok
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return [sos_tok] + sent[:max_seq_len] + [eos_tok]
-
-
-print(process_sentence("bert-base-uncased", "Hey waht's up I'm not sure what happened", 100))
