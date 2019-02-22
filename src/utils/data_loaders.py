@@ -3,9 +3,10 @@ Functions having to do with loading data from output of
 files downloaded in scripts/download_data_glue.py
 
 """
-from .tokenizers import AVAILABLE_TOKENIZERS
+from tokenizers import AVAILABLE_TOKENIZERS, BertTokenizer
 import codecs
 
+BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 def load_tsv(
@@ -173,9 +174,18 @@ def process_sentence(tokenizer_name, sent, max_seq_len, sos_tok=SOS_TOK, eos_tok
     '''process a sentence '''
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
-    TOKENIZER = AVAILABLE_TOKENIZERS[tokenizer_name]
+    if "bert" in tokenizer_name:
+        import pdb; pdb.set_trace()
+        TOKENIZER = BertTokenizer(tokenizer_name)
+        sos_tok = BERT_SEP_TOK
+        eos_tok = BERT_CLS_TOK
+    else:
+        TOKENIZER = AVAILABLE_TOKENIZERS[tokenizer_name]
     if isinstance(sent, str):
         return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
         return [sos_tok] + sent[:max_seq_len] + [eos_tok]
+
+
+print(process_sentence("bert-base-uncased", "Hey waht's up I'm not sure what happened", 100))
