@@ -51,7 +51,7 @@ class MosesTokenizer(Tokenizer):
         Replaces escape sequences like &#91; with the original characters
         (such as '['), so they better align to the original text.
         '''
-        return [self._detokenizer.unesScape_xml(t) for t in tokens]
+        return [self._detokenizer.unescape_xml(t) for t in tokens]
 
 class BertTokenizer(Tokenizer):
     def __init__(self, bert_model_name):
