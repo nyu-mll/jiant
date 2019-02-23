@@ -7,9 +7,9 @@
 #   export NOTIFY_EMAIL="yourname@gmail.com"
 #   pushd /path/to/jiant
 #   source scripts/edges/exp_fns.sh
-#   elmo_chars_exp edges-srl-conll2005
-#   elmo_full_exp edges-srl-conll2005
-#   elmo_ortho_exp edges-srl-conll2005 0
+#   elmo_chars_exp edges-srl-conll2012
+#   elmo_full_exp edges-srl-conll2012
+#   elmo_ortho_exp edges-srl-conll2012 0
 #
 #
 # See individual functions below for usage.
