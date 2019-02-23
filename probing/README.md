@@ -56,6 +56,8 @@ You can use the `run/*_val.json` and `run/*_test.json` files to run scoring and 
 
 ## Running the experiments from the paper
 
+We provide a frozen branch, [`edgeprobe_frozen_feb2019`](https://github.com/jsalt18-sentence-repl/jiant/tree/edgeprobe_frozen_feb2019), which should reflect the master branch as of the final version of the paper.
+
 The configs in `jiant/config/edgeprobe_*.conf` are the starting point for the experiments in the paper, but are supplemented by a number of parameter overrides (the `-o` flag to `main.py`). We use a set of bash functions to keep track of these, which are maintained in [`jiant/scripts/edges/exp_fns.sh`](../scripts/edges/exp_fns.sh).
 
 To run a standard experiment, you can do something like:
