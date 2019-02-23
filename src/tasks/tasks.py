@@ -101,7 +101,6 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     #  return list(instances)
     return instances  # lazy iterator
 
-
 class Task(object):
     '''Generic class for a task
 
@@ -308,6 +307,9 @@ class SequenceGenerationTask(Task):
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
+
+class PointerTask(Task):
+    """ Genering task where you point out the start and end"""
 
 
 @register_task('sst', rel_path='SST-2/')
@@ -546,6 +548,8 @@ class STSBTask(PairRegressionTask):
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
+@register_task("gap-coreference", rel_path="gap-coreference/")
+class GAPCoreferenceTask():
 
 @register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
