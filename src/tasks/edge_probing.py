@@ -19,6 +19,7 @@ from ..allennlp_mods.multilabel_field import MultiLabelField
 
 from ..utils import serialize
 from ..utils import utils
+from ..utils import data_loaders
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -80,20 +81,15 @@ class EdgeProbingTask(Task):
         """
         super().__init__(name, **kw)
 
-        assert label_file is not None
         assert files_by_split is not None
-        self._files_by_split = {
-            split: os.path.join(path, fname) + self._tokenizer_suffix
-            for split, fname in files_by_split.items()
-        }
+        self.path = path
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
-        label_file = os.path.join(path, label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
+        #label_file = os.path.join(path, label_file)
+        self.n_classes = 2
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
@@ -154,7 +150,7 @@ class EdgeProbingTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
+        ''' Get split text as fiterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
         '''
@@ -167,8 +163,9 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
-    def _make_span_field(self, s, text_field, offset=1):
-        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
+    def _make_span_field(self, span, text_field, offset=1):
+        import pdb; pdb.set_trace()
+        return SpanField(span[0] + offset, span[1] - 1 + offset, text_field)
 
     def _pad_tokens(self, tokens):
         """Pad tokens according to the current tokenization style."""
@@ -192,10 +189,11 @@ class EdgeProbingTask(Task):
 
         d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
                                  for t in record['targets']])
+        # single-sided. And we reused the cod ehre
         if not self.single_sided:
             d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
                                      for t in record['targets']])
-
+        # so here is where you loop over the targets.
         # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
@@ -211,7 +209,7 @@ class EdgeProbingTask(Task):
         return map(_map_fn, records, itertools.count())
 
     def get_all_labels(self) -> List[str]:
-        return self.all_labels
+        return ["True", "False"]
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
@@ -232,6 +230,36 @@ class EdgeProbingTask(Task):
         metrics['recall'] = recall
         metrics['f1'] = f1
         return metrics
+
+
+@register_task('gap-coreference', rel_path = 'processed/gap-coreference')
+class GapCorefTask(EdgeProbingTask):
+    def __init__(self, path, single_sided=False, **kw):
+        self._files_by_split = {'train': "__development__",
+                           'val': "__validation__",
+                           'test': "__test__",
+                       }
+        super().__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        max_seq_len = 100
+        import pandas as pd
+        for split in self._files_by_split.keys():
+            tr_data = pd.read_pickle(os.path.join(self.path, self._files_by_split[split]))
+            text = tr_data["text"]
+
+            s1start = tr_data["prompt_start_index"]
+            s1end = tr_data["prompt_end_index"]
+            s2start = tr_data["candidate_start_index"]
+            s2end = tr_data["candidate_end_index"]
+            labels = tr_data["label"]
+            # transform labels
+            label_map = {False: 0, True: 1}
+            labels = [label_map[i] for i  in labels]
+            structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label":labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
+            iters_by_split[split] = structured_data
+        return iters_by_split
 
 ##
 # Task definitions. We call the register_task decorator explicitly so that we
@@ -397,4 +425,3 @@ register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                    'val': "ccg.parse.dev.json",
                    'test': "ccg.parse.test.json",
                }, single_sided=True)(EdgeProbingTask)
-

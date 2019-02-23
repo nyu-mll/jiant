@@ -548,9 +548,6 @@ class STSBTask(PairRegressionTask):
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
 
-@register_task("gap-coreference", rel_path="gap-coreference/")
-class GAPCoreferenceTask():
-
 @register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''

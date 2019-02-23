@@ -1,4 +1,4 @@
-name: jiant
+name: jiant_upgrade
 channels:
     - pytorch
 dependencies:

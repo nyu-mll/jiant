@@ -111,25 +111,72 @@ def get_aligner_fn(tokenizer_name: Text):
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
 
+def retokenize_csv_files(fname, tokenizer_name, worker_pool):
+    import pandas as pd
+    new_name = fname + ".retokenized." + tokenizer_name
+    log.info("Processing file: %s", fname)
+    import pdb; pdb.set_trace()
+    inputs = pd.read_pickle(fname)
+    log.info(" saving to %s", new_name)
+    retokenize_record(inputs.iloc[0], tokenizer_name)
+    map_fn = functools.partial(_map_fn,
+                               tokenizer_name=tokenizer_name)
+    results = []
+    with open(new_name, 'w') as fd:
+        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500),
+                         total=len(inputs)):
+            results.append(line)
+    span_aligned = pd.DataFrame(results,columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
+    pickle.dump(span_aligned, open(new_name, "wb"))
+
 def retokenize_record(record, tokenizer_name):
     """Retokenize an edge probing example. Modifies in-place."""
+    import pdb; pdb.set_trace()
     text = record['text']
     aligner_fn = get_aligner_fn(tokenizer_name)
     ta, new_tokens = aligner_fn(text)
     record['text'] = " ".join(new_tokens)
-    for target in record['targets']:
-        if 'span1' in target:
-            target['span1'] = list(map(int,
-                                       ta.project_span(*target['span1'])))
-        if 'span2' in target:
-            target['span2'] = list(map(int,
-                                       ta.project_span(*target['span2'])))
+    record['prompt_start_index'] = ta.project_span(record['prompt_start_index'],new_tokens)
+    record["prompt_end_index"] =ta.project_span(*target['prompt_end_index'])
+    record['candidate_start_index '] = ta.project_span(*target['candidate_start_index'])
+    record["candidate_end_index"] =ta.project_span(*target['candidate_end_index'])
+
     return record
 
-def _map_fn(line, tokenizer_name):
-    record = json.loads(line)
-    new_record = retokenize_record(record, tokenizer_name)
-    return json.dumps(new_record)
+import pandas as pd
+import pickle
+
+def getEnd(index, word):
+    return index  + len(word)
+
+def process_dataset(split):
+    # I have to process the datasets myself.
+    gap_text = pd.read_csv("/Users/yadapruksachatkun/jiant/data/gap-coreference/gap-"+split+".tsv",  header = 0, delimiter="\t")
+    new_pandas = []
+    aligner, new_tokens = get_aligner_fn("OpenAI.BPE")
+    for i in range(len(gap_text)):
+        row = gap_text.iloc[i]
+        text = row['text']
+        text_with_stuff = tokenizer.tokenize(text)
+        pronoun = row['Pronoun']
+        pronoun_index = row["Pronoun-offset"]
+        end_index_prnn = getEnd(pronoun_index, pronoun)
+        first_index = row["A-offset"]
+        first_word = row["A"]
+        end_index = getEnd(first_index, first_word)
+        label = row["A-coref"]
+        new_pandas.append([text, pronoun_index, end_index_prnn, first_index, end_index, label])
+        second_index = row["B-offset"]
+        second_word = row["B"]
+        end_index_b = getEnd(second_index, second_word)
+        label_b = row['B-coref']
+        new_pandas.append([text, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
+    result = pd.DataFrame(new_pandas, columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
+    pickle.dump(result, open("/Users/yadapruksachatkun/jiant/data/processed/gap-coreference/__"+split+"__", "wb"))
+
+def _map_fn(row, tokenizer_name):
+    new_record = retokenize_record(row, tokenizer_name)
+    return new_record
 
 def retokenize_file(fname, tokenizer_name, worker_pool):
     new_name = fname + ".retokenized." + tokenizer_name
@@ -157,7 +204,7 @@ def main(args):
 
     worker_pool = multiprocessing.Pool(args.num_parallel)
     for fname in args.inputs:
-        retokenize_file(fname, args.tokenizer_name, worker_pool=worker_pool)
+        retokenize_csv_files(fname, args.tokenizer_name, worker_pool=worker_pool)
 
 
 if __name__ == '__main__':
