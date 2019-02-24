@@ -4,7 +4,7 @@
 # Don't execute this script directly, but instead include at the top of an
 # experiment script as:
 #
-#   export NOTIFY_EMAIL="yourname@gmail.com"  # optional
+#   export NOTIFY_EMAIL="yourname@gmail.com"  # optional, only works with creds
 #   pushd /path/to/jiant
 #   source scripts/edges/exp_fns.sh
 #   elmo_chars_exp edges-srl-conll2012
