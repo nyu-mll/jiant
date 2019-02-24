@@ -1,6 +1,6 @@
 # Edge Probing
 
-This is the main page for [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX), a.k.a. "Edge Probing"
+This is the main page for [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX), a.k.a. "Edge Probing."
 
 ## Getting Started
 
