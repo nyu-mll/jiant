@@ -80,7 +80,7 @@ python main.py --config_file config/demo.conf \
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in this [script](path_config.sh)
+To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [path_config.sh](path_config.sh)
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
 *  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the Glue data.
 *  $WORD_EMBED: location of the word embeddings you want to use. For GloVe:  [840B300d Glove](http://nlp.stanford.edu/data/glove.840B.300d.zip). For FastText: [300d-2M](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip). For ELMo, AllenNLP will download it for you. For OpenAI, the model weights will be downloaded when installing the git submodules.
