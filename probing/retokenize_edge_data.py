@@ -81,7 +81,7 @@ def align_moses(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
     return ta, moses_tokens
 
 def align_openai(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
-    eow_tokens = space_tokenize_with_eow(text)
+    eow_tokens = text.split()
     bpe_tokens = openai_utils.tokenize(text)
     ta = retokenize.TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
@@ -115,7 +115,6 @@ def retokenize_csv_files(fname, tokenizer_name, worker_pool):
     import pandas as pd
     new_name = fname + ".retokenized." + tokenizer_name
     log.info("Processing file: %s", fname)
-    import pdb; pdb.set_trace()
     inputs = pd.read_pickle(fname)
     log.info(" saving to %s", new_name)
     retokenize_record(inputs.iloc[0], tokenizer_name)
@@ -129,19 +128,6 @@ def retokenize_csv_files(fname, tokenizer_name, worker_pool):
     span_aligned = pd.DataFrame(results,columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
     pickle.dump(span_aligned, open(new_name, "wb"))
 
-def retokenize_record(record, tokenizer_name):
-    """Retokenize an edge probing example. Modifies in-place."""
-    import pdb; pdb.set_trace()
-    text = record['text']
-    aligner_fn = get_aligner_fn(tokenizer_name)
-    ta, new_tokens = aligner_fn(text)
-    record['text'] = " ".join(new_tokens)
-    record['prompt_start_index'] = ta.project_span(record['prompt_start_index'],new_tokens)
-    record["prompt_end_index"] =ta.project_span(*target['prompt_end_index'])
-    record['candidate_start_index '] = ta.project_span(*target['candidate_start_index'])
-    record["candidate_end_index"] =ta.project_span(*target['candidate_end_index'])
-
-    return record
 
 import pandas as pd
 import pickle
@@ -149,30 +135,68 @@ import pickle
 def getEnd(index, word):
     return index  + len(word)
 
-def process_dataset(split):
+def first_alignment(text, start_index, end_index):
+    # get nnumbe rof spaces between the beginning nd the start_index.
+    new_text = text[:start_index+1]
+    new_sindex = len(new_text.split()) - 1 # 0indexing
+    text_between = text[start_index:end_index]
+    new_eindex = new_sindex + len(text_between.split()) # since you're adding up the text in etween
+    # ifthe proun is more than 1 word, make sure to take care of 1-indexing by -1
+    if new_eindex > 0 and new_sindex == 0:
+        new_eindex -= 1
+    return new_sindex, new_eindex
+
+def retokenize_record(record, tokenizer_name):
+    """Retokenize an edge probing example. Modifies in-place."""
+    text = record['text']
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    ta, new_tokens = aligner_fn(text) # this tokenizes the text
+    text =  " ".join(new_tokens)
+    p_sidx, p_eidx = ta.project_span(record["prompt_start_index"], record["prompt_end_index"])
+    c_sidx, c_eidx = ta.project_span(record["candidate_start_index"], record["candidate_end_index"])
+    p_eidx -= 1
+    c_eidx -= 1
+    # you decrease by 1 becuase this adds another word.
+    print(new_tokens[c_sidx: c_eidx])
+    print(record["text"].split()[record["candidate_start_index"]: record["candidate_end_index"]])
+    return text, p_sidx, p_eidx, c_sidx, c_eidx
+
+# THEN you can try aligning it.
+def process_dataset(split, tokenizer_name):
     # I have to process the datasets myself.
-    gap_text = pd.read_csv("/Users/yadapruksachatkun/jiant/data/gap-coreference/gap-"+split+".tsv",  header = 0, delimiter="\t")
+    gap_text = pd.read_csv("/Users/yadapruksachatkun/coref-jiant/data/gap-coreference/gap-"+split+".tsv",  header = 0, delimiter="\t")
     new_pandas = []
-    aligner, new_tokens = get_aligner_fn("OpenAI.BPE")
-    for i in range(len(gap_text)):
+    for i in range(10):
+        # Just trying to debug if this works for retokenizing
         row = gap_text.iloc[i]
-        text = row['text']
-        text_with_stuff = tokenizer.tokenize(text)
+        text = row['Text']
         pronoun = row['Pronoun']
         pronoun_index = row["Pronoun-offset"]
+        # and then get the one that's closest to hte index
         end_index_prnn = getEnd(pronoun_index, pronoun)
+        pronoun_index, end_index_prnn = first_alignment(text, pronoun_index, end_index_prnn)
         first_index = row["A-offset"]
         first_word = row["A"]
         end_index = getEnd(first_index, first_word)
+        first_index, end_index = first_alignment(text, first_index, end_index)
         label = row["A-coref"]
         new_pandas.append([text, pronoun_index, end_index_prnn, first_index, end_index, label])
         second_index = row["B-offset"]
         second_word = row["B"]
         end_index_b = getEnd(second_index, second_word)
+        second_index, end_index_b = first_alignment(text, second_index, end_index_b)
         label_b = row['B-coref']
         new_pandas.append([text, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
+
     result = pd.DataFrame(new_pandas, columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
-    pickle.dump(result, open("/Users/yadapruksachatkun/jiant/data/processed/gap-coreference/__"+split+"__", "wb"))
+    for i in range(len(result)):
+        row = result.iloc[i]
+        new = retokenize_record(row, tokenizer_name) # now it's the correct one.
+        text = new[0]
+        first_index = new[1]
+        end_index = new[2]
+        print(text.split()[first_index:end_index])
+    pickle.dump(result, open("/Users/yadapruksachatkun/coref-jiant/data/processed/gap-coreference/__"+split+"__TEST", "wb"))
 
 def _map_fn(row, tokenizer_name):
     new_record = retokenize_record(row, tokenizer_name)
@@ -208,5 +232,23 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
-    sys.exit(0)
+    process_dataset("test", "OpenAI.BPE")
+    """
+    This is the problem:
+    Given a text, we have BPE tokenizationse
+    for example - "I like Bob Sutter yeah " becomes soemthing like
+    ["I", "like", "Bob", "Sut", "ter", "yeah"]
+    We have noun index as [7:16], however, with tokenization, we
+    want tokenization of [2:4]
+
+    text = "A factory in Bangladesh caught on fire. The workers fled from it.'"
+    orig_start = 40
+    orig_end = 51
+    pronoun = "A factory in Bangladesh"
+    start, end = first_alignment(text, pronoun, orig_start, orig_end)
+    new_text = text.split()
+
+    print(text[orig_start: orig_end+1])
+    import pdb; pdb.set_trace()
+    print(new_text[start:end+1])
+    """
