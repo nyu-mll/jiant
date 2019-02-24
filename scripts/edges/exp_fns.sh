@@ -4,7 +4,7 @@
 # Don't execute this script directly, but instead include at the top of an
 # experiment script as:
 #
-#   export NOTIFY_EMAIL="yourname@gmail.com"
+#   export NOTIFY_EMAIL="yourname@gmail.com"  # optional
 #   pushd /path/to/jiant
 #   source scripts/edges/exp_fns.sh
 #   elmo_chars_exp edges-srl-conll2012
@@ -21,8 +21,13 @@ function run_exp() {
     # Usage: run_exp <config_file> <overrides>
     CONFIG_FILE=$1
     OVERRIDES=$2
-    python main.py --config_file "${CONFIG_FILE}" \
-        -o "${OVERRIDES}" --remote_log --notify "$NOTIFY_EMAIL"
+    declare -a args
+    args+=( --config_file "${CONFIG_FILE}" )
+    args+=( -o "${OVERRIDES}" --remote_log )
+    if [ ! -z $NOTIFY_EMAIL ]; then
+        args+=( --notify "$NOTIFY_EMAIL" )
+    fi
+    python main.py "${args[@]}"
 }
 
 function elmo_chars_exp() {
