@@ -4,11 +4,15 @@ This is the main page for [What do you learn from context? Probing for sentence 
 
 ## Getting Started
 
-First, follow the set-up instructions for `jiant`: [Getting Started](../README.md#getting-started). In particular, you'll need to set the following environment variables:
+First, follow the set-up instructions for `jiant`: [Getting Started](../README.md#getting-started)  
+In particular, you'll need to set the following environment variables:
 - `JIANT_PROJECT_PREFIX` to wherever you want experiments to be saved (like 
   `$HOME/exp`)
 - `JIANT_DATA_DIR` to the directory where you'll download the edge probing data 
   (like `$HOME/jiant_data`)
+- `GLOVE_EMBS_FILE` to a copy of `glove.840B.300d.txt` (get it 
+  [here](http://nlp.stanford.edu/data/glove.840B.300d.zip)) if you want to use GloVe or CoVe.
+- _TODO(ian): add optional cache paths for ELMo and BERT_
 
 Next, download and process the edge probing data. You'll need access to the underlying corpora, in particular OntoNotes 5.0 and a processed (JSON) copy of the SPR1 dataset. Edit the paths in [get_and_process_all_data.sh](get_and_process_all_data.sh) to point to these resources, then run:
 
@@ -62,7 +66,6 @@ The configs in `jiant/config/edgeprobe_*.conf` are the starting point for the ex
 
 To run a standard experiment, you can do something like:
 ```sh
-export NOTIFY_EMAIL="yourname@gmail.com"  # TODO: make it work without this
 pushd ${PWD%/jiant*}/jiant
 source scripts/edges/exp_fns.sh
 # Run a lexical baseline (ELMo char CNN)
