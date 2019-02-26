@@ -390,7 +390,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                  'decoder_hidden_size': args.s2s['d_hid_dec'],
                                  'output_proj_input_dim': args.s2s['output_proj_input_dim'],
                                  'max_decoding_steps': args.max_seq_len,
-                                 'target_namespace': 'tokens',
+                                 'target_namespace': 'tokens', #task.tokenizer_name,
                                  'attention': args.s2s['attention'],
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})
@@ -718,23 +718,28 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
 
-        # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
-        classifier = self._get_classifier(task)
+        if self.use_bert:
+            # batch will be a dict with torch.Tensor values
+            # so input1 and input2 will be padded already... fuck
+            pass
+        else:
+            # embed the sentence
+            sent1, mask1 = self.sent_encoder(batch['input1'], task)
+            sent2, mask2 = self.sent_encoder(batch['input2'], task)
+            classifier = self._get_classifier(task)
 
-        # Negative pairs are created by rotating sent2
-        # Note that we need to rotate corresponding mask also. *_new contain
-        # positive and negative pairs
-        sent1_new = torch.cat([sent1, sent1], 0)
-        mask1_new = torch.cat([mask1, mask1], 0)
-        sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
-        mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
-        logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
-        out['logits'] = logits
-        out['n_exs'] = len(sent1_new)
-        labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
-        labels = torch.tensor(labels, dtype=torch.long).cuda()
+            # Negative pairs are created by rotating sent2
+            # Note that we need to rotate corresponding mask also. *_new contain
+            # positive and negative pairs
+            sent1_new = torch.cat([sent1, sent1], 0)
+            mask1_new = torch.cat([mask1, mask1], 0)
+            sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
+            mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
+            logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
+            out['logits'] = logits
+            out['n_exs'] = len(sent1_new)
+            labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
+            labels = torch.tensor(labels, dtype=torch.long).cuda()
         out['loss'] = F.cross_entropy(logits, labels)
         task.scorer1(logits, labels)
         if task.scorer2 is not None:

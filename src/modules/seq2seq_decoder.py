@@ -68,8 +68,7 @@ class Seq2SeqDecoder(Model):
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
         # Used to get an initial hidden state from the encoder states
-        self._sent_pooler = Pooler.from_params(
-            d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
+        self._sent_pooler = Pooler(d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
 
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
@@ -136,7 +135,10 @@ class Seq2SeqDecoder(Model):
         batch_size, _, _ = encoder_outputs.size()
 
         if target_tokens is not None:
-            targets = target_tokens["words"]
+            # TODO(Alex): should really have some kind of check that the
+            # namespace found is the one expected (pass in at model creation time)
+            assert len(target_tokens) == 1
+            targets = [v for v in target_tokens.values()][0] #target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
         else:
