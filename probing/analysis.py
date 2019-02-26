@@ -4,6 +4,7 @@
 import sys
 import os
 import io
+import re
 import json
 import collections
 import itertools
@@ -18,6 +19,145 @@ from allennlp.data import Vocabulary
 
 from typing import Iterable, Dict, List, Tuple
 
+##
+# Task list for stable ordering, and human-friendly display names.
+TASK_TO_DISPLAY_NAME = collections.OrderedDict([
+    ("pos-ontonotes", "Part-of-Speech"),
+    ("nonterminal-ontonotes", "Constituents"),
+    ("dep-labeling-ewt", "Dependencies"),
+    ("ner-ontonotes", "Entities"),
+    ("srl-conll2012", "SRL"),
+    ("coref-ontonotes-conll", "OntoNotes Coref."),
+    ("spr1", "SPR1"),
+    ("spr2", "SPR2"),
+    ("dpr", "Winograd Coref."),
+    ("rel-semeval", "Relations (SemEval)"),
+])
+TASKS = list(TASK_TO_DISPLAY_NAME.keys())
+
+def task_sort_key(candidate):
+    """Generate a stable sort key for a task, with optional suffixes."""
+    for i, name in enumerate(TASKS):
+        if candidate.startswith(name):
+            return (i, candidate)
+    return (len(TASKS), candidate)
+
+def clean_task_name(task_name):
+    """Return a cleaned version of a jiant task name."""
+    c1 = re.sub(r"^edges-", "", task_name)
+    c2 = re.sub(r"-openai$", "", c1)  # legacy, for old -openai versions of tasks
+    return c2
+
+def make_display_name(task, label=None):
+    display_task = TASK_TO_DISPLAY_NAME[task]
+    if label in {"_micro_avg_", "1", None}:
+        return display_task
+    elif label == "_clean_micro_":
+        return f"{display_task} (all)"
+    elif label == "_core_":
+        return f"{display_task} (core)"
+    elif label == "_non_core_":
+        return f"{display_task} (non-core)"
+    else:
+        clean_label = label.strip("_")
+        return f"{display_task} ({clean_label})"
+
+# Experiment type list for stable ordering
+# These correspond to the convention in scripts/edges/exp_fns.sh
+# and scripts/edges/kubernetes_run_all.sh for naming experiments.
+EXP_TYPES = [
+    "glove",
+    "cove",
+    "elmo-chars",
+    "elmo-ortho",
+    "elmo-full",
+    "openai-lex",
+    "openai-cat",
+    "openai-mix",
+    "openai-bwb",
+    "train-chars",
+]
+# Add BERT experiments
+for bert_name in ['base-uncased', 'base-cased', 'large-uncased',
+                  'large-cased']:
+    EXP_TYPES.append(f"bert-{bert_name}-lex")
+    EXP_TYPES.append(f"bert-{bert_name}-cat")
+    EXP_TYPES.append(f"bert-{bert_name}-mix")
+
+def exp_type_sort_key(candidate):
+    """Generate a stable sort key for an experiment type, with optional suffixes."""
+    exp_type = candidate.split(" ", 1)[0]
+    m = re.match(r"(.*)-\d+$", exp_type)
+    if m:
+        exp_type = m.group(1)
+    return (exp_types.index(exp_type), candidate)
+
+def _parse_exp_name(exp_name):
+    m = re.match(r"([a-z-]+)(-(\d+))?-edges-([a-z-]+)", exp_name)
+    assert m is not None, f"Unable to parse run name: {exp_name}"
+    prefix, _, num, task = m.groups()
+    return prefix, num, task
+
+def get_exp_type(exp_name):
+    return _parse_exp_name(exp_name)[0]
+
+##
+# Predicates for filtering and aggregation
+def is_core_role(label):
+    return re.match(r"^ARG[0-5A]$", label) is not None
+
+def is_non_core_role(label):
+    return re.match(r"^ARGM(-.+)?$", label) is not None
+
+def is_core_or_noncore(label):
+    return is_core_role(label) or is_non_core_role(label)
+
+def is_srl_task(task):
+    return task.startswith("srl-")
+
+def is_coref_task(task):
+    return task.startswith("coref-")
+
+def is_relation_task(task):
+    return task.startswith("rel-")
+
+def is_positive_relation(label):
+    return (not label.startswith("_")) and (label != "no_relation") and (label != "Other")
+
+##
+# Scoring helpers
+def harmonic_mean(a, b):
+    return 2 * a * b / (a + b)
+
+def score_from_confusion_matrix(df):
+    """Score a DataFrame in-place, computing metrics for each row based on confusion matricies."""
+    assert 'tn_count' in df.columns  # true negatives
+    assert 'fp_count' in df.columns  # false positives
+    assert 'fn_count' in df.columns  # false negatives
+    assert 'tp_count' in df.columns  # true negatives
+
+    df['pred_pos_count'] = df.tp_count + df.fp_count
+    df['true_pos_count'] = df.tp_count + df.fn_count
+    df['total_count'] = df.tp_count + df.tn_count + df.fp_count + df.fn_count
+
+    # NOTE: this overwrites any _macro_avg_ rows by recomputing the micro-average!
+    df['accuracy'] = (df.tp_count + df.tn_count) / df.total_count
+    df['precision'] = df.tp_count / df.pred_pos_count
+    df['recall'] = df.tp_count / df.true_pos_count
+    df['f1_score'] = harmonic_mean(df.precision, df.recall).fillna(0)
+
+    # Approximate error intervals using normal approximation
+    # https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval
+    z = 1.96 # 95% confidence
+    df['accuracy_errn95'] = z * (df.accuracy * (1 - df.accuracy) / df.total_count).map(np.sqrt)
+    df['precision_errn95'] = z * (df.precision * (1 - df.precision) / df.pred_pos_count).map(np.sqrt)
+    df['recall_errn95'] = z * (df.recall * (1 - df.recall) / df.true_pos_count).map(np.sqrt)
+    # This probably isn't the right way to combine for F1 score, but should be a reasonable estimate.
+    df['f1_errn95'] = harmonic_mean(df.precision_errn95, df.recall_errn95)
+
+
+##
+# Old scoring helpers (TODO: remove these)
 def get_precision(df):
     return df.tp_count / (df.tp_count + df.fp_count)
 
