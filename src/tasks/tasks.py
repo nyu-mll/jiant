@@ -141,7 +141,7 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
-        return tokenizers.get_tokenizer(tokenizer_name) is not None
+        return get_tokenizer(tokenizer_name) is not None
 
     @property
     def tokenizer_name(self):
