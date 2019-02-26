@@ -79,7 +79,7 @@ class Dictionary(object):
 
 class Corpus(object):
     def __init__(self, vocab):
-        dict_file_name = os.path.join(path, 'dict_nli.pkl')
+        #dict_file_name = os.path.join(path, 'dict_nli.pkl')
         self.dictionary=vocab
         #self.train, self.train_sens, self.train_trees = self.tokenize(train_files)
         #self.valid, self.valid_sens, self.valid_trees = self.tokenize(valid_files)
@@ -157,7 +157,10 @@ class Corpus(object):
                 sens.append(words)
                 idx = []
                 for word in words:
-                    idx.append(self.dictionary[word])
+                    if word in self.dictionary:
+                        idx.append(self.dictionary[word])
+                    else:
+                        idx.append(self.dictionary["@@UNKNOWN@@"])
                 sens_idx.append(torch.LongTensor(idx))
                 trees.append(tree2list(sen_tree))
         f_in.close()       
