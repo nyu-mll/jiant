@@ -1,8 +1,7 @@
 """
 Tokenizer class
 To add a tokenizer, add to the below inherting from
-main Tokenizer class. Make sure to add the tokenizer class name to
-documentation in default.conf file.
+main Tokenizer class.
 """
 import os
 import functools
@@ -57,13 +56,14 @@ class MosesTokenizer(Tokenizer):
 
 @functools.lru_cache(maxsize=8, typed=False)
 def get_tokenizer(tokenizer_name):
+    log.info(f"Loading Tokenizer {tokenizer_name}")
     if tokenizer_name.startswith("bert"):
         from pytorch_pretrained_bert import BertTokenizer
         do_lower_case = tokenizer_name.endswith('uncased')
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     else:
-        # return the class instantiation given class name
-        assert tokenizer_name in globals(), "Tokenizer name not found in tokenizers available!"
-        log.info(f"Loading Tokenizer {tokenizer_name}")
-        tokenizer = globals()[tokenizer_name]()
+        if tokenizer_name == "OpenAI.BPE":
+            tokenizer = OpenAIBPETokenizer()
+        else:
+            tokenizer = MosesTokenizer()
     return tokenizer
