@@ -4,12 +4,12 @@
 # Don't execute this script directly, but instead include at the top of an
 # experiment script as:
 #
-#   export NOTIFY_EMAIL="yourname@gmail.com"
+#   export NOTIFY_EMAIL="yourname@gmail.com"  # optional, only works with creds
 #   pushd /path/to/jiant
 #   source scripts/edges/exp_fns.sh
-#   elmo_chars_exp edges-srl-conll2005
-#   elmo_full_exp edges-srl-conll2005
-#   elmo_ortho_exp edges-srl-conll2005 0
+#   elmo_chars_exp edges-srl-conll2012
+#   elmo_full_exp edges-srl-conll2012
+#   elmo_ortho_exp edges-srl-conll2012 0
 #
 #
 # See individual functions below for usage.
@@ -21,8 +21,13 @@ function run_exp() {
     # Usage: run_exp <config_file> <overrides>
     CONFIG_FILE=$1
     OVERRIDES=$2
-    python main.py --config_file "${CONFIG_FILE}" \
-        -o "${OVERRIDES}" --remote_log --notify "$NOTIFY_EMAIL"
+    declare -a args
+    args+=( --config_file "${CONFIG_FILE}" )
+    args+=( -o "${OVERRIDES}" --remote_log )
+    if [ ! -z $NOTIFY_EMAIL ]; then
+        args+=( --notify "$NOTIFY_EMAIL" )
+    fi
+    python main.py "${args[@]}"
 }
 
 function elmo_chars_exp() {
@@ -120,6 +125,15 @@ function openai_lex_exp() {
     OVERRIDES="exp_name=openai-lex-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=only"
+    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+}
+
+function openai_mix_exp() {
+    # Probe the OpenAI transformer with ELMo-style scalar mixing across layers.
+    # Usage: openai_mix_exp <task_name>
+    OVERRIDES="exp_name=openai-mix-$1, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", openai_embeddings_mode=mix"
     run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 

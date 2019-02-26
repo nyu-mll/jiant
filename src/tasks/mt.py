@@ -11,7 +11,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate
+from ..utils.data_loaders import process_sentence
+from ..utils.utils import truncate
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -203,4 +204,3 @@ class Wiki103Seq2SeqTask(MTTask):
                 continue
             yield _make_instance(prev_sent, sent)
             prev_sent = sent
-
