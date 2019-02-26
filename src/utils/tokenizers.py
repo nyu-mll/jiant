@@ -63,6 +63,8 @@ def get_tokenizer(tokenizer_name):
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name == "OpenAI.BPE":
         tokenizer = OpenAIBPETokenizer()
-    else:
+    elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
+    else:
+        tokenizer = None
     return tokenizer
