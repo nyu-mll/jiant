@@ -161,41 +161,83 @@ def retokenize_record(record, tokenizer_name):
     print(record["text"].split()[record["candidate_start_index"]: record["candidate_end_index"]])
     return text, p_sidx, p_eidx, c_sidx, c_eidx
 
-# THEN you can try aligning it.
+
+def align_spans(text, tokenizer_name, orig_span1_start, orig_span1_end, orig_span2_start, orig_span2_end):
+    """
+    Finds the BERT tokenization 
+    and returns the aligned pronoun_index start, pronoun_index end, span2_start, span2_end
+    """
+    if orig_span1_end > orig_span2_start:
+        # switch them since the pronoun comes after 
+        span2_start = orig_span1_start
+        span2_end = orig_span1_end
+        span1_start = orig_span2_start
+        span1_end = orig_span2_end
+
+    current_tokenization = []
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    text1 = text[:span1_start]
+    ta, new_tokens = aligner_fn(text1)
+    current_tokenization.extend(new_tokens)
+    new_span1start = len(current_tokenization)
+
+    span1 = text[span1_start:span1_end] 
+    ta, span_tokens = aligner_fn(span1)
+    current_tokenization.extend(span_tokens)
+    new_span1end = len(current_tokenization) 
+
+    text2 = text[span1_end:span2_start]
+    ta, new_tokens = aligner_fn(text2)
+    current_tokenization.extend(new_tokens)
+    new_span2start = len(current_tokenization)
+
+    span2 = text[span2_start:span2_end]
+    ta, span_tokens = aligner_fn(span2)
+    current_tokenization.extend(span_tokens)
+    new_span2end = len(current_tokenization)
+
+    text3 = text[span2_end:]
+    ta, span_tokens = aligner_fn(text3)
+    current_tokenization.extend(span_tokens)
+
+    text = " ".join(current_tokenization)
+    if orig_span1_end > orig_span2_start:
+        return new_span2start, new_span2end, new_span1start, new_span1end,text
+    return  new_span1start, new_span1end, new_span2start, new_span2end, text
+
 def process_dataset(split, tokenizer_name):
-    # I have to process the datasets myself.
+    """
+        This processes the dataset into the forma that edge probing can read in
+        and aligns the spain indices from character sto bpe span-aligned indices. 
+    """
     gap_text = pd.read_csv("/Users/yadapruksachatkun/coref-jiant/data/gap-coreference/gap-"+split+".tsv",  header = 0, delimiter="\t")
     new_pandas = []
-    for i in range(10):
-        # Just trying to debug if this works for retokenizing
+    for i in range(len(gap_text)):
         row = gap_text.iloc[i]
         text = row['Text']
         pronoun = row['Pronoun']
-        pronoun_index = row["Pronoun-offset"]
-        # and then get the one that's closest to hte index
-        end_index_prnn = getEnd(pronoun_index, pronoun)
-        pronoun_index, end_index_prnn = first_alignment(text, pronoun_index, end_index_prnn)
+        orig_pronoun_index = row["Pronoun-offset"]
+        orig_end_index_prnn = getEnd(orig_pronoun_index, pronoun)
         first_index = row["A-offset"]
         first_word = row["A"]
         end_index = getEnd(first_index, first_word)
-        first_index, end_index = first_alignment(text, first_index, end_index)
+        pronoun_index, end_index_prnn, first_index, end_index,text = align_spans(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, first_index, end_index)
+        
         label = row["A-coref"]
+        print(row["Text"][orig_pronoun_index: orig_end_index_prnn])
+        import pdb; pdb.set_trace()
+        print(text.split(" ")[pronoun_index: end_index_prnn])
         new_pandas.append([text, pronoun_index, end_index_prnn, first_index, end_index, label])
+
         second_index = row["B-offset"]
-        second_word = row["B"]
+        second_word = row["A"]
         end_index_b = getEnd(second_index, second_word)
-        second_index, end_index_b = first_alignment(text, second_index, end_index_b)
+        _, _, second_index, end_index_b, text = align_spans(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, second_index, end_index_b)
         label_b = row['B-coref']
         new_pandas.append([text, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
 
+
     result = pd.DataFrame(new_pandas, columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
-    for i in range(len(result)):
-        row = result.iloc[i]
-        new = retokenize_record(row, tokenizer_name) # now it's the correct one.
-        text = new[0]
-        first_index = new[1]
-        end_index = new[2]
-        print(text.split()[first_index:end_index])
     pickle.dump(result, open("/Users/yadapruksachatkun/coref-jiant/data/processed/gap-coreference/__"+split+"__TEST", "wb"))
 
 def _map_fn(row, tokenizer_name):
@@ -215,7 +257,6 @@ def retokenize_file(fname, tokenizer_name, worker_pool):
             fd.write(line)
             fd.write("\n")
 
-
 def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", dest='tokenizer_name', type=str, required=True,
@@ -229,7 +270,6 @@ def main(args):
     worker_pool = multiprocessing.Pool(args.num_parallel)
     for fname in args.inputs:
         retokenize_csv_files(fname, args.tokenizer_name, worker_pool=worker_pool)
-
 
 if __name__ == '__main__':
     process_dataset("test", "OpenAI.BPE")
