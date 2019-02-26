@@ -3,7 +3,7 @@ Functions having to do with loading data from output of
 files downloaded in scripts/download_data_glue.py
 
 """
-from tokenizers import get_tokenizer
+from .tokenizers import get_tokenizer
 import codecs
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
