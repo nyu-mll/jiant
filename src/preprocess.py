@@ -258,7 +258,7 @@ def build_tasks(args):
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
-        assert args.tokenizer == "OpenAIBPETokenizer", \
+        assert args.tokenizer == "OpenAI.BPE", \
                              ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
