@@ -78,21 +78,9 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path):
+    def __init__(self, vocab):
         dict_file_name = os.path.join(path, 'dict_nli.pkl')
-        if os.path.exists(dict_file_name):
-            self.dictionary = cPickle.load(open(dict_file_name, 'rb'))
-            print("loading: ", dict_file_name)
-        else:
-            self.dictionary = Dictionary()
-            #self.add_words(train_files)
-            #self.add_words(valid_files)
-            #self.add_words(test_files_snli)
-            self.add_words(test_files_mnli_match)
-            self.dictionary.rebuild_by_freq()
-            cPickle.dump(self.dictionary, open(dict_file_name, 'wb'))
-
-        
+        self.dictionary=vocab
         #self.train, self.train_sens, self.train_trees = self.tokenize(train_files)
         #self.valid, self.valid_sens, self.valid_trees = self.tokenize(valid_files)
         #self.test_snli, self.test_snli_sens, self.test_snli_trees = self.tokenize(test_files_snli)
