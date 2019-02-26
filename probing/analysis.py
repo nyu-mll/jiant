@@ -90,7 +90,7 @@ def exp_type_sort_key(candidate):
     m = re.match(r"(.*)-\d+$", exp_type)
     if m:
         exp_type = m.group(1)
-    return (exp_types.index(exp_type), candidate)
+    return (EXP_TYPES.index(exp_type), candidate)
 
 def _parse_exp_name(exp_name):
     m = re.match(r"([a-z-]+)(-(\d+))?-edges-([a-z-]+)", exp_name)
