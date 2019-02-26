@@ -109,9 +109,6 @@ def _parse_exp_name(exp_name):
 def get_exp_type(exp_name):
     return _parse_exp_name(exp_name)[0]
 
-def get_layer_num(exp_name):
-    return _parse_exp_name(exp_name)[1]
-
 ##
 # Predicates for filtering and aggregation
 def is_core_role(label):
