@@ -175,6 +175,9 @@ def process_sentence(tokenizer_name, sent, max_seq_len, sos_tok=SOS_TOK, eos_tok
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     tokenizer = get_tokenizer(tokenizer_name)
+    if tokenizer_name.startswith("bert"):
+        sos_tok = BERT_SEP_TOK
+        eos_tok = BERT_CLS_TOK
     if isinstance(sent, str):
         return [sos_tok] + tokenizer.tokenize(sent)[:max_seq_len] + [eos_tok]
     elif isinstance(sent, list):
