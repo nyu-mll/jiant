@@ -1,10 +1,12 @@
 """
 Tokenizer class
 To add a tokenizer, add to the below inherting from
-main Tokenizer class.
-
+main Tokenizer class. Make sure to add the tokenizer class name to
+documentation in default.conf file.
 """
 import os
+import functools
+import logging as log
 from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer, MosesDetokenizer
 
 class Tokenizer(object):
@@ -53,16 +55,15 @@ class MosesTokenizer(Tokenizer):
         '''
         return [self._detokenizer.unescape_xml(t) for t in tokens]
 
-class BertTokenizer(Tokenizer):
-    def __init__(self, bert_model_name):
-        from pytorch_pretrained_bert import BertTokenizer as HFBertTokenizer
-        do_lower_case = bert_model_name.endswith('uncased')
-        self._tokenizer = HFBertTokenizer.from_pretrained(bert_model_name, do_lower_case=do_lower_case)
-
-    def tokenize(self, sentence):
-        return self._tokenizer.tokenize(sentence)
-
-AVAILABLE_TOKENIZERS = {
-    "OpenAI.BPE": OpenAIBPETokenizer(),
-    "MosesTokenizer": MosesTokenizer(),
-}
+@functools.lru_cache(maxsize=8, typed=False)
+def get_tokenizer(tokenizer_name):
+    if tokenizer_name.startswith("bert"):
+        from pytorch_pretrained_bert import BertTokenizer
+        do_lower_case = tokenizer_name.endswith('uncased')
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    else:
+        # return the class instantiation given class name
+        assert tokenizer_name in globals(), "Tokenizer name not found in tokenizers available!"
+        log.info(f"Loading Tokenizer {tokenizer_name}")
+        tokenizer = globals()[tokenizer_name]()
+    return tokenizer
