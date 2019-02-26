@@ -6,7 +6,7 @@
 #
 # Supported tokenizers:
 # - MosesTokenizer
-# - OpenAIBPETokenizer: byte-pair-encoding model for OpenAI transformer LM;
+# - OpenAI.BPE: byte-pair-encoding model for OpenAI transformer LM;
 #     see https://github.com/openai/finetune-transformer-lm)
 # - bert-*: wordpiece models for BERT; see https://arxiv.org/abs/1810.04805
 #     and https://github.com/huggingface/pytorch-pretrained-BERT#usage
@@ -16,7 +16,7 @@
 #
 # Speed: takes around 2.5 minutes to process 90000 sentences on a single core.
 #
-# Note: for OpenAIBPETokenizer, this requires the `spacy` and `ftfy` packages.
+# Note: for OpenAI.BPE, this requires the `spacy` and `ftfy` packages.
 # These should only be needed for this script - main.py shouldn't need to do
 # any further preprocessing.
 #
@@ -104,7 +104,7 @@ def align_bert(text: Text, model_name: str) -> Tuple[retokenize.TokenAligner, Li
 def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer":
         return align_moses
-    elif tokenizer_name == "OpenAIBPETokenizer":
+    elif tokenizer_name == "OpenAI.BPE":
         return align_openai
     elif tokenizer_name.startswith("bert-"):
         return functools.partial(align_bert, model_name=tokenizer_name)

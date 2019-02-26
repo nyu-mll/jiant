@@ -33,7 +33,7 @@ function preproc_task() {
       -i $TASK_DIR/*.json -s
     # Retokenize for each tokenizer we need.
     python $HERE/retokenize_edge_data.py -t "MosesTokenizer" $TASK_DIR/*.json
-    python $HERE/retokenize_edge_data.py -t "OpenAIBPETokenizer"     $TASK_DIR/*.json
+    python $HERE/retokenize_edge_data.py -t "OpenAI.BPE"     $TASK_DIR/*.json
     python $HERE/retokenize_edge_data.py -t "bert-base-uncased"  $TASK_DIR/*.json
     python $HERE/retokenize_edge_data.py -t "bert-large-uncased" $TASK_DIR/*.json
 
@@ -119,3 +119,4 @@ get_ud
 
 get_tacred
 get_semeval
+
