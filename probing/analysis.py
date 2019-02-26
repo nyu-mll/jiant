@@ -24,7 +24,6 @@ from typing import Iterable, Dict, List, Tuple
 TASK_TO_DISPLAY_NAME = collections.OrderedDict([
     ("pos-ontonotes", "Part-of-Speech"),
     ("nonterminal-ontonotes", "Constituents"),
-    ("constituent-ontonotes", "BAD DO NOT USE"),
     ("dep-labeling-ewt", "Dependencies"),
     ("ner-ontonotes", "Entities"),
     ("srl-conll2012", "SRL"),
