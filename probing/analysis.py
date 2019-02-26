@@ -32,12 +32,7 @@ TASK_TO_DISPLAY_NAME = collections.OrderedDict([
     ("spr1", "SPR1"),
     ("spr2", "SPR2"),
     ("dpr", "Winograd Coref."),
-    ("ner-tacred", "Entities (TACRED)"),
-    ("rel-tacred", "Relations (TACRED)"),
     ("rel-semeval", "Relations (SemEval)"),
-    ("coref-gap", "GAP Coref."),
-    ("coref-gap-ontonotes", "GAP Coref (train OOD)"),
-    ("noun-verb", "Noun-Verb"),
 ])
 TASKS = list(TASK_TO_DISPLAY_NAME.keys())
 
@@ -88,9 +83,7 @@ for bert_name in ['base-uncased', 'base-cased', 'large-uncased',
                   'large-cased']:
     EXP_TYPES.append(f"bert-{bert_name}-lex")
     EXP_TYPES.append(f"bert-{bert_name}-cat")
-    EXP_TYPES.append(f"bert-{bert_name}-mix-pre")
     EXP_TYPES.append(f"bert-{bert_name}-mix")
-    EXP_TYPES.append(f"bert-{bert_name}-at")
 
 def exp_type_sort_key(candidate):
     """Generate a stable sort key for an experiment type, with optional suffixes."""
