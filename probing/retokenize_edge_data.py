@@ -38,6 +38,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src.utils import utils
 from src.utils import retokenize
+from src.utils import tokenizers
 
 from src.openai_transformer_lm import utils as openai_utils
 from pytorch_pretrained_bert import BertTokenizer
@@ -46,8 +47,8 @@ from typing import Tuple, List, Text
 
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
-assert utils.TOKENIZER.__class__.__name__ == "MosesTokenizer"
-MosesTokenizer = utils.TOKENIZER
+assert "MosesTokenizer" in tokenizers.AVAILABLE_TOKENIZERS
+MosesTokenizer = tokenizers.AVAILABLE_TOKENIZERS["MosesTokenizer"]
 
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""

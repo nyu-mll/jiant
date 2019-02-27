@@ -2,7 +2,8 @@
 import logging as log
 import os
 
-from ..utils.utils import load_tsv, process_sentence, truncate
+from ..utils.utils import truncate
+from ..utils.data_loaders import load_tsv, process_sentence
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -119,4 +120,3 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading NLI-alt probing data.")
-

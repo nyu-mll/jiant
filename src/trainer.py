@@ -509,6 +509,7 @@ class SamplingMultiTaskTrainer:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
+                        # updating loss from trianing.
                         all_tr_metrics["%s_loss" % task.name] = \
                             float(task_info['loss'] / n_batches_since_val)
                     else:
