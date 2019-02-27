@@ -280,7 +280,7 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
-    def get_scaling_weights(scaling_method, tasks, task_n_train_example):
+    def get_scaling_weights(self, scaling_method, tasks, task_names, task_n_train_example):
         if scaling_method == 'uniform':
             scaling_weights = [1.0] * len(tasks)
         elif scaling_method == 'max_proportional':
@@ -312,13 +312,12 @@ class SamplingMultiTaskTrainer:
             str(scaling_weights))
         return scaling_weights
 
-    def get_sampling_weights_and_temp(weighting_method):
+    def get_sampling_weights(self, weighting_method, tasks, task_n_train_examples):
         """
         Args:
         Returns:
             Sampling weights
         """
-        weighting_temp = None
         if weighting_method == 'uniform':
             sample_weights = [1.0] * len(tasks)
             log.info("Sampling tasks uniformly.")
@@ -348,7 +347,7 @@ class SamplingMultiTaskTrainer:
             weighting_temp = float(weighting_method.strip('softmax_'))
             sample_weights = np.exp(task_n_train_examples / weighting_temp)
             log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
-        return sample_Weights, weighting_temp
+        return sample_weights
 
     def train(self, tasks, stop_metric,
               batch_size, n_batches_per_pass,
@@ -420,8 +419,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_examples = np.array([task.n_train_examples for task in tasks])
         task_n_train_batches = np.array([task_infos[task.name]['n_tr_batches'] for task in tasks])
         log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
-
-        sample_weights = get_sampling_weights(weighting_method)
+        sample_weights = self.get_sampling_weights(weighting_method, tasks, task_n_train_examples)
 
         normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
         log.info("Using weighting method: %s, with normalized sample weights %s ",
@@ -430,7 +428,7 @@ class SamplingMultiTaskTrainer:
         # Sample the tasks to train on. Do it all at once (val_interval) for MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        scaling_weights = get_scaling_weights(scaling_method, tasks, task_n_train_example)
+        scaling_weights = self.get_scaling_weights(scaling_method, tasks, task_names, task_n_train_examples)
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -582,21 +580,24 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _update_metric_history(self, task, tasks, epoch, all_val_metrics, metric_infos):
-        if task in ['micro', 'macro']:
-            metric = "%s_avg" % task
-            metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
-            task_name = task
-        else:
-            metric = task.val_metric
-            metric_decreases = task.val_metric_decreases
-            task_name = task.name
-        if metric_infos[metric]['stopped']:
-            return metric_infos
+    def _update_metric_history(self, task, tasks, epoch, all_val_metrics, metric_infos, periodic_save):
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]['hist']
         metric_history.append(this_epoch_metric)
-        return metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name
+        is_best_so_far, out_of_patience = \
+            self._check_history(metric_history, this_epoch_metric, metric_decreases)
+        if is_best_so_far:
+            log.info("Best model found for %s.", task_name)
+            metric_infos[metric]['best'] = (epoch, all_val_metrics)
+            should_save = True
+            if task_name == 'macro':
+                new_best_macro = True
+        if out_of_patience:
+            if periodic_save:
+                should_save = True
+            metric_infos[metric]['stopped'] = True
+            log.info("Out of patience. Stopped tracking %s", task_name)
+        return metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_nam, should_save
 
     def _validate_helper(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
         n_examples, batch_num = 0, 0
@@ -610,7 +611,7 @@ class SamplingMultiTaskTrainer:
             task.val_data, num_epochs=1, shuffle=False)
         val_generator = move_to_device(val_generator, self._cuda_device)
         n_val_batches = math.ceil(max_data_points / batch_size)
-        all_val_metrics["%s_loss" % (task.name] = 0.0
+        all_val_metrics["%s_loss" % task.name] = 0.0
 
         for batch in val_generator:
             batch_num += 1
@@ -674,21 +675,17 @@ class SamplingMultiTaskTrainer:
         new_best_macro = False  # whether this epoch is a new best
 
         for task in tasks + ['micro', 'macro']:
-            metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name  = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos)
-            is_best_so_far, out_of_patience = \
-                self._check_history(metric_history, this_epoch_metric, metric_decreases)
-            if is_best_so_far:
-                log.info("Best model found for %s.", task_name)
-                metric_infos[metric]['best'] = (epoch, all_val_metrics)
-                should_save = True
-                if task_name == 'macro':
-                    new_best_macro = True
-            if out_of_patience:
-                if periodic_save:
-                    should_save = True
-                metric_infos[metric]['stopped'] = True
-                log.info("Out of patience. Stopped tracking %s", task_name)
-
+            if task in ['micro', 'macro']:
+                metric = "%s_avg" % task
+                metric_decreases = tasks[0].val_metric_decreases if len(tasks) == 1 else False
+                task_name = task
+            else:
+                metric = task.val_metric
+                metric_decreases = task.val_metric_decreases
+                task_name = task.name
+            if metric_infos[metric]['stopped']:
+                continue
+            metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name, should_save  = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos, periodic_save)
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
             if task_name not in ['micro', 'macro'] and g_scheduler is None:
