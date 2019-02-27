@@ -7,6 +7,7 @@ import os
 import functools
 import logging as log
 from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer, MosesDetokenizer
+from nltk.tokenize.simple import SpaceTokenizer
 
 class Tokenizer(object):
 
@@ -65,6 +66,8 @@ def get_tokenizer(tokenizer_name):
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":
         tokenizer = MosesTokenizer()
+    elif tokenizer_name == "":
+        tokenizer = SpaceTokenizer()
     else:
         tokenizer = None
     return tokenizer

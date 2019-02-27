@@ -48,7 +48,7 @@ from typing import Tuple, List, Text
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
 MosesTokenizer = tokenizers.get_tokenizer("MosesTokenizer")
-assert tokenizers.get_tokenizer("MosesTokenizer") is not None
+assert MosesTokenizer is not None
 
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
