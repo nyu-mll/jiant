@@ -32,7 +32,7 @@ from ..allennlp_mods.numeric_field import NumericField
 from ..utils import utils
 from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
-from ..utils.tokenizers import AVAILABLE_TOKENIZERS
+from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -141,7 +141,7 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
-        return tokenizer_name in AVAILABLE_TOKENIZERS.keys()
+        return get_tokenizer(tokenizer_name) is not None
 
     @property
     def tokenizer_name(self):
