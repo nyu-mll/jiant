@@ -60,7 +60,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     params: Trainer parameters as built by build_trainer_params.
     model: A module with trainable parameters.
     run_dir: The directory where we save the models.
-
     Returns
     -------
     A trainer object, a trainer config object, an optimizer config object,
@@ -580,7 +579,20 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _update_metric_history(self, task, tasks, epoch, all_val_metrics, metric_infos, periodic_save):
+    def _update_metric_history(self, epoch, all_val_metrics, metric_infos, metric_decreases, periodic_save):
+        """
+        This function updates metric history with the best validation score so far
+        Parameters
+        ---------
+        epoch: int
+        all_val_metrics: dict with current epoch's validation performance
+        metric_infos: metric_infos
+        to_increase_or_decrease_score: bool, marker to show if we should increase or
+        decrease validation metric.
+        Returns
+        ________
+
+        """
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]['hist']
         metric_history.append(this_epoch_metric)
@@ -597,9 +609,25 @@ class SamplingMultiTaskTrainer:
                 should_save = True
             metric_infos[metric]['stopped'] = True
             log.info("Out of patience. Stopped tracking %s", task_name)
-        return metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_nam, should_save
+        return metric_infos, this_epoch_metric, should_save, new_best_macro
 
-    def _validate_helper(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+    def _get_validation_performance(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+        """
+        This function evaluates each task, builds validation generator, and gets the validation metrics.
+        Parameters
+        ----------
+        task: Current task to get validation performance of.
+        task_infos: Instance of information about the task.
+        tasks: A list of task objects to train on.
+        batch_size: The batch size to use for the tasks.
+        all_val_metrics: A dcitionary storing the validation performance.
+        n_Examples_overall = int, current number of examples the model is validated on.
+        Returns
+        -------
+        n_examples_overall - int, current number of examples.
+        task_infos = updated Instance with reset training progress.
+        all_val_metrics = updated with micro and macro average validation performance.
+        """
         n_examples, batch_num = 0, 0
         task_info = task_infos[task.name]
         # to speed up training, we evaluate on a subset of validation data
@@ -650,10 +678,25 @@ class SamplingMultiTaskTrainer:
         # Reset training progress
         task_info['n_batches_since_val'] = 0
         task_info['loss'] = 0
+        all_val_metrics['micro_avg'] /= n_examples_overall
+        all_val_metrics['macro_avg'] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
-        ''' Validate on all tasks and return the results and whether to save this epoch or not '''
+        '''
+        Validate on all tasks and return the results and whether to save this epoch or not
+        Parameters
+        ----------
+        epoch: int,
+        tasks: A list of task objects to train on.
+        batch_size: int, the batch size to use for the tasks.periodic_save
+        periodic_save: Boolean value of whether or not to save model and progress periodically
+
+        Returns
+        __________
+
+
+        '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
         self._model.eval()
@@ -664,16 +707,19 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples_overall, task_infos, all_val_metrics = self._validate_helper(task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall)
-
-        all_val_metrics['micro_avg'] /= n_examples_overall
-        all_val_metrics['macro_avg'] /= len(tasks)
-
+            n_examples_overall, task_infos, all_val_metrics =
+                self._get_validation_performance(task,
+                                                 task_infos,
+                                                 tasks,
+                                                 batch_size,
+                                                 all_val_metrics,
+                                                 n_examples_overall)
         # Track per task patience
         should_save = periodic_save  # whether to save this epoch or not.
         # Currently we save every validation in the main training runs.
         new_best_macro = False  # whether this epoch is a new best
 
+        # update metric infos
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
@@ -685,7 +731,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            metric_infos, metric_history, metric, this_epoch_metric, metric_decreases, task_name, should_save  = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos, periodic_save)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos, periodic_save)
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
             if task_name not in ['micro', 'macro'] and g_scheduler is None:
@@ -700,7 +746,7 @@ class SamplingMultiTaskTrainer:
                 log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
                 log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
-        return all_val_metrics, should_save, new_best_macro
+        return all_val_metrics, should_save, new_best_macro, metric_infos, metric_history
 
     def _get_lr(self):
         ''' Get learning rate from the optimizer we're using '''
@@ -748,7 +794,6 @@ class SamplingMultiTaskTrainer:
         return should_stop
 
     def _forward(self, batch, for_training, task=None):
-        ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)
         return model_out
