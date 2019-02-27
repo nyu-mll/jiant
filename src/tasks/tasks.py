@@ -370,7 +370,6 @@ class CoLATask(SingleClassificationTask):
 @register_task('cola-in-domain', rel_path='CoLA/')
 class CoLAInDomainTask(CoLATask):
     def __init__(self, path, max_seq_len, name="train_in_domain", **kw):
-        '''MNLI'''
         super(
             CoLAInDomainTask,
             self).__init__(
@@ -396,7 +395,6 @@ class CoLAInDomainTask(CoLATask):
 @register_task('cola-out-domain', rel_path='CoLA/')
 class CoLAOutDomainTask(CoLATask):
     def __init__(self, path, max_seq_len, name="train_out_domain", **kw):
-        '''MNLI'''
         super(
             CoLAOutDomainTask,
             self).__init__(
