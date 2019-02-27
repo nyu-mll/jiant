@@ -164,7 +164,7 @@ class EdgeProbingTask(Task):
         return len(split_text)
 
     def _make_span_field(self, span, text_field, offset=1):
-        import pdb; pdb.set_trace()
+        # TODO: Doing the span fields
         return SpanField(span[0] + offset, span[1] - 1 + offset, text_field)
 
     def _pad_tokens(self, tokens):
@@ -195,7 +195,7 @@ class EdgeProbingTask(Task):
                                      for t in record['targets']])
         # so here is where you loop over the targets.
         # Always use multilabel targets, so be sure each label is a list.
-        labels = [utils.wrap_singleton_string(t['label'])
+        labels = [ [str(utils.wrap_singleton_string(t['label']))]
                   for t in record['targets']]
         d['labels'] = ListField([MultiLabelField(label_set,
                                                  label_namespace=self._label_namespace,
@@ -255,8 +255,6 @@ class GapCorefTask(EdgeProbingTask):
             s2end = tr_data["candidate_end_index"]
             labels = tr_data["label"]
             # transform labels
-            label_map = {False: 0, True: 1}
-            labels = [label_map[i] for i  in labels]
             structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label":labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
             iters_by_split[split] = structured_data
         return iters_by_split

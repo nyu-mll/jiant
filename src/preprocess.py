@@ -269,7 +269,7 @@ def build_tasks(args):
                              ("BERT models use custom WPM tokenization for "
                               "each model, so tokenizer must match the "
                               "specified BERT model.")
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
+        indexers["bert_wpm_pretokeniz   ed"] = SingleIdTokenIndexer(args.bert_model_name)
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
