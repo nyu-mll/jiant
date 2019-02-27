@@ -386,7 +386,7 @@ class CoLAInDomainTask(CoLATask):
         val_data = load_tsv(os.path.join(path, "original/raw/in_domain_dev.tsv"), max_seq_len,
                             s1_idx=3, s2_idx=None, targ_idx=1)
         te_data = load_tsv(os.path.join(path, 'original/raw/cola_in_domain_test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=3, s2_idx=None, targ_idx=1)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -412,7 +412,7 @@ class CoLAOutDomainTask(CoLATask):
         val_data = load_tsv(os.path.join(path, "original/raw/out_of_domain_dev.tsv"), max_seq_len,
                             s1_idx=3, s2_idx=None, targ_idx=1)
         te_data = load_tsv(os.path.join(path, 'original/raw/cola_out_of_domain_test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=3, s2_idx=None, targ_idx=1)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
