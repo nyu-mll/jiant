@@ -8,7 +8,8 @@ from allennlp.training.metrics import Average
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
-from ..utils.utils import process_sentence, truncate
+from ..utils.utils import truncate
+from ..utils.data_loaders import process_sentence
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -199,4 +200,3 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
                 1 for line in codecs.open(
                     split_path, 'r', 'utf-8', errors='ignore'))
         self.example_counts = example_counts
-

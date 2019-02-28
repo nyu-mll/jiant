@@ -9,6 +9,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from allennlp.modules import scalar_mix
+from ..preprocess import parse_task_list_arg
+
 from .tf_original import utils as openai_utils
 from .tf_original.text_utils import TextEncoder
 
@@ -105,10 +108,9 @@ class TransformerModel(nn.Module):
     Copy of model_pytorch.TransformerModel, modified to expose embedding layer.
     """
 
-    def __init__(self, cfg, vocab=40990, n_ctx=512, export_embs='none'):
+    def __init__(self, cfg, vocab=40990, n_ctx=512, embeddings_mode='none'):
         super(TransformerModel, self).__init__()
-        assert export_embs in {'none', 'top', 'cat', 'only'}
-        self.export_embs = export_embs
+        self.embeddings_mode = embeddings_mode
         self.n_embd = cfg.n_embd
 
         self.vocab = vocab
@@ -119,24 +121,43 @@ class TransformerModel(nn.Module):
 
         nn.init.normal_(self.embed.weight, std=0.02)
 
+        if self.embeddings_mode == "mix":
+            self.scalar_mix = scalar_mix.ScalarMix(cfg.n_layer + 1,
+                                                   do_layer_norm=False)
+
     def forward(self, x):
         x = x.view(-1, x.size(-2), x.size(-1))
         e = self.embed(x)
-        if self.export_embs == 'only':
+        h_lex = e[:,:,0]
+        if self.embeddings_mode == 'only':
             # Skip running Transformer if only need base layer.
-            return e[:,:,0]  # token embs, no position info
+            return h_lex  # token embs, no position info
 
+        encoded_layers = []
         # Add the position information to the input embeddings
         h = e.sum(dim=2)
         for block in self.h:
             h = block(h)
-        if self.export_embs == 'cat':
+            encoded_layers.append(h)
+
+        if self.embeddings_mode in ["none", "top"]:
+            h = encoded_layers[-1]
+        #  elif self.embeddings_mode == "only":
+        #      handled above by early return
+        elif self.embeddings_mode == 'cat':
             # Concatenate embeddings layer.
-            h = torch.cat([h, e[:,:,0]], dim=2)
+            h = torch.cat([encoded_layers[-1], h_lex], dim=2)
+        elif self.embeddings_mode == "mix":
+            # Scalar mixing. Ignore mask, but it doesn't matter since we're not
+            # doing layer norm.
+            h = self.scalar_mix([h_lex] + encoded_layers)
+        else:
+            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
+                                      " not supported")
         return h
 
     def get_output_dim(self):
-        if self.export_embs == "cat":
+        if self.embeddings_mode == "cat":
             return 2*self.n_embd
         else:
             return self.n_embd
@@ -151,7 +172,7 @@ class OpenAIEmbedderModule(nn.Module):
         full_emb_vocab = N_VOCAB + self.n_special + self.n_ctx
         self.model = TransformerModel(self.model_cfg,
                                       vocab=full_emb_vocab,
-                                      export_embs=args.openai_embeddings_mode)
+                                      embeddings_mode=args.openai_embeddings_mode)
 
         # Need specific seed to reproduce results.
         seed = 42
@@ -178,6 +199,24 @@ class OpenAIEmbedderModule(nn.Module):
         # Set trainability of this module.
         for param in self.model.parameters():
             param.requires_grad = bool(args.openai_transformer_fine_tune)
+
+        # Configure scalar mixing, ELMo-style.
+        if args.openai_embeddings_mode == "mix":
+            # TODO: if doing multiple target tasks, allow for multiple sets of
+            # scalars. See the ELMo implementation here:
+            # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
+            assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
+                    ("openai_embeddings_mode='mix' only supports a single set of "
+                     "scalars (but if you need this feature, see the TODO in "
+                     "the code!)")
+            if not args.openai_transformer_fine_tune:
+                log.warning("NOTE: openai_embeddings_mode='mix', so scalar "
+                            "mixing weights will be fine-tuned even if "
+                            "transformer weights are frozen.")
+            # Make sure scalar mix is always tunable.
+            for param in self.model.scalar_mix.parameters():
+                param.requires_grad = True
+
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
