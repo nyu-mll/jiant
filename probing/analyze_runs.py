@@ -3,7 +3,7 @@
 # Convenience script to score a set of runs from the predictions.
 #
 # Usage:
-#  python analyze_runs.py -i /path/to/experiment/run \
+#  python analyze_runs.py -i /path/to/experiments/*/run \
 #      -o /tmp/stats.tsv [--parallel n]
 #
 # Output will be a long-form TSV file containing aggregated and per-class
