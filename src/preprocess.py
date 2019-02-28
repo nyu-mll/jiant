@@ -67,6 +67,7 @@ def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
+    import pdb; pdb.set_trace()
     filename = _get_serialized_record_path(task_name, split, preproc_dir)
     assert os.path.isfile(filename), ("Record file '%s' not found!" % filename)
     return serialize.read_records(filename, repeatable=True, fraction=fraction)

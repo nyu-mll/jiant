@@ -74,7 +74,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 0})
-
+    import pdb; pdb.set_trace()
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
         schd_params = Params({'type': 'noam',
@@ -241,6 +241,7 @@ class SamplingMultiTaskTrainer:
             # Adding task-specific smart iterator to speed up training
             instance = [i for i in itertools.islice(task.train_data, 1)][0]
             pad_dict = instance.get_padding_lengths()
+
             sorting_keys = []
             for field in pad_dict:
                 for pad_field in pad_dict[field]:
@@ -249,7 +250,7 @@ class SamplingMultiTaskTrainer:
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
-            tr_generator = iterator(task.train_data, num_epochs=None)
+            tr_generator = iterator(task.train_data, num_epochs=None) 
             tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
@@ -437,6 +438,7 @@ class SamplingMultiTaskTrainer:
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
+                import pdb; pdb.set_trace()
                 output_dict = self._forward(batch, task=task, for_training=True)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
