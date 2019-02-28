@@ -266,7 +266,7 @@ class GapCorefTask(EdgeProbingTask):
               has maximum size 768
             """
             lengths = [len(hey.split(" ")) for hey in text.tolist()]
-            to_include = [1 if length < 768 else 0 for length in lengths]
+            to_include = [1 if length < 512 else 0 for length in lengths]
             indices = find_with_list(to_include, 1)
             tr_data = tr_data.iloc[indices]
             text = tr_data["text"]
