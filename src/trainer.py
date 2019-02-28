@@ -318,7 +318,8 @@ class SamplingMultiTaskTrainer:
         if shared_optimizer:  # if shared_optimizer, ignore task_specific optimizers
             if self._max_epochs_per_task:
                 n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-                optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
+                if self._model.use_bert:
+                    optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
