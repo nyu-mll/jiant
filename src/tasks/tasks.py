@@ -245,7 +245,6 @@ class PairClassificationTask(ClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        # process_pair_bert_task_split()
         return process_single_pair_task_split(split, indexers, is_pair=True)
 
 

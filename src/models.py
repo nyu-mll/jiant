@@ -560,7 +560,6 @@ def build_pair_sentence_module(task, d_inp, model, params):
     else:
         pool_type = "first" if model.use_bert else "max"
         pooler = Pooler(d_inp, project=not model.use_bert, d_proj=params["d_proj"], pool_type=pool_type)
-        #d_out = model.sent_encoder._text_field_embedder.get_output_dim() if model.use_bert else params["d_proj"]
         d_out = d_inp if model.use_bert else params["d_proj"]
 
     # Build the pair attn mechanism
