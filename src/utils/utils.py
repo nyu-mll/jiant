@@ -139,7 +139,7 @@ def get_batch_utilization(batch_field, pad_idx=0):
         idxs = batch_field['elmo']
         pad_ratio = idxs.eq(pad_idx).sum().item() / idxs.nelement()
     else:
-?        raise NotImplementedError
+        raise NotImplementedError
     return 1 - pad_ratio
 
 
@@ -171,6 +171,7 @@ def load_lines(filename: str) -> Iterable[str]:
     ''' Load text data, yielding each line. '''
     with open(filename) as fd:
         for line in fd:
+            yield line.strip()
 
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
