@@ -262,21 +262,21 @@ class GapCorefTask(EdgeProbingTask):
             tr_data = pd.read_pickle(os.path.join(self.path, self._files_by_split[split]))
             text = tr_data["text"]
             """
-              Filtering for size 768 since OpenAI tarnsformer model that we pretarined 
-              has maximum size 768
+              Filtering for size 768 since OpenAI tarnsformer model that we pretrianed
+              has max_seq_len 512
             """
             lengths = [len(hey.split(" ")) for hey in text.tolist()]
             to_include = [1 if length < 512 else 0 for length in lengths]
             indices = find_with_list(to_include, 1)
-            tr_data = tr_data.iloc[indices]
-            text = tr_data["text"]
+            tr_data = tr_data.loc[indices]
+            text = tr_data["text"].tolist()
             # filter out the data that doesn't satisfy this condition. 
             # is it the wrong convolution? 
-            s1start = tr_data["prompt_start_index"]
-            s1end = tr_data["prompt_end_index"]
-            s2start = tr_data["candidate_start_index"]
-            s2end = tr_data["candidate_end_index"]
-            labels = tr_data["label"]
+            s1start = tr_data["prompt_start_index"].tolist()
+            s1end = tr_data["prompt_end_index"].tolist()
+            s2start = tr_data["candidate_start_index"].tolist()
+            s2end = tr_data["candidate_end_index"].tolist()
+            labels = tr_data["label"].tolist()
             # transform labels
             structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label":labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
             iters_by_split[split] = structured_data
