@@ -178,7 +178,7 @@ class EdgeProbingTask(Task):
 
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
-        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = record['text'].split(" ")  # already space-tokenized by Moses
         tokens = self._pad_tokens(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
@@ -235,9 +235,9 @@ class EdgeProbingTask(Task):
 @register_task('gap-coreference', rel_path = 'processed/gap-coreference')
 class GapCorefTask(EdgeProbingTask):
     def __init__(self, path, single_sided=False, **kw):
-        self._files_by_split = {'train': "__development__",
-                           'val': "__validation__",
-                           'test': "__test__",
+        self._files_by_split = {'train': "__development__bert-base-cased",
+                           'val': "__validation__bert-base-cased",
+                           'test': "__test__bert-base-cased",
                        }
         super().__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
 
