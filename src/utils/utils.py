@@ -29,8 +29,6 @@ from allennlp.common.params import Params
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
-BERT_TOKENIZER = None # NOTE(Alex): hacky way of not loading the tokenizer every time
-BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.

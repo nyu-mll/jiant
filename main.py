@@ -260,9 +260,10 @@ def main(cl_arguments):
         task_names_to_avoid_loading = []
 
     if not args.load_eval_checkpoint == "none":
+        # This is to load a particular eval checkpoint.
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint,
-                         args.cuda, task_names_to_avoid_loading, strict=strict)
+                         args.cuda, task_names_tof_avoid_loading, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
@@ -274,19 +275,18 @@ def main(cl_arguments):
                            "No best checkpoint found to evaluate.")
             log.warning("Evaluating untrained encoder parameters!")
             if args.transfer_paradigm == "finetune":
-                # save a model
+                # Save model.
                 model_state = model.state_dict()
                 model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
                 torch.save(model_state, model_path)
 
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
-
         if args.transfer_paradigm == "frozen":
             # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
                             "scalar_mix" in n and "scalar_mix_0" not in n]
-            # fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length
+            # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length.
             assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
                            "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
                            "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
@@ -330,11 +330,11 @@ def main(cl_arguments):
             best_epoch = best_epoch[task.name]
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             if args.transfer_paradigm == "finetune":
-                # save this fine-tune model with a task specific name
+                # Save this fine-tune model with a task specific name.
                 finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 os.rename(layer_path, finetune_path)
 
-                # reload the original best model
+                # Reload the original best model.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
             else:
@@ -375,8 +375,8 @@ def main(cl_arguments):
                 log.info("Writing results for split 'val' to %s", results_tsv)
                 evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
-
         else:
+            # transfer_paradigm: frozen'
             val_results, val_preds = evaluate.evaluate(model, target_tasks,
                                                        args.batch_size,
                                                        args.cuda, "val")

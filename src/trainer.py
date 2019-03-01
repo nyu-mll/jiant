@@ -253,6 +253,7 @@ class SamplingMultiTaskTrainer:
                                       batch_size=batch_size,
                                       biggest_batch_first=True)
             tr_generator = iterator(task.train_data, num_epochs=None)
+            tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
             if phase == "main":
@@ -315,8 +316,10 @@ class SamplingMultiTaskTrainer:
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
 
-        if shared_optimizer:  # if shared_optimizer, ignore task_specific optimizers
+        if shared_optimizer:  # If shared_optimizer, ignore task_specific optimizers
             if self._max_epochs_per_task:
+                # TODO(Alex or Yada): make this generalizable to not depend
+                # on max_epochs_per_tasks.
                 n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
                 if optimizer_params["type"] == "bert_adam":
                     optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
@@ -598,6 +601,7 @@ class SamplingMultiTaskTrainer:
                 max_data_points = task.n_val_examples
             val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
                 task.val_data, num_epochs=1, shuffle=False)
+            val_generator = move_to_device(val_generator, self._cuda_device)
             n_val_batches = math.ceil(max_data_points / batch_size)
             all_val_metrics["%s_loss" % task.name] = 0.0
 
