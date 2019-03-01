@@ -1,6 +1,6 @@
 [submodule "src/modules/cove"]
 	path = src/modules/cove
-	url = git@github.com:salesforce/cove.git
+    url = https://github.com/salesforce/cove.git
 [submodule "src/openai_transformer_lm/tf_original"]
 	path = src/openai_transformer_lm/tf_original
 	url = https://github.com/openai/finetune-transformer-lm.git
