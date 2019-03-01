@@ -162,10 +162,9 @@ def retokenize_record(record, tokenizer_name):
     return text, p_sidx, p_eidx, c_sidx, c_eidx
 
 
-def align_spans(text, tokenizer_name, orig_span1_start, orig_span1_end, orig_span2_start, orig_span2_end):
+def build_spans_aligned_with_tokenization(text, tokenizer_name, orig_span1_start, orig_span1_end, orig_span2_start, orig_span2_end):
     """
-    Finds the BERT tokenization 
-    and returns the aligned pronoun_index start, pronoun_index end, span2_start, span2_end
+    Builds the alignment while also tokenizing the input piece by piece. 
     """
     if orig_span1_end > orig_span2_start:
         # switch them since the pronoun comes after 
@@ -173,6 +172,11 @@ def align_spans(text, tokenizer_name, orig_span1_start, orig_span1_end, orig_spa
         span2_end = orig_span1_end
         span1_start = orig_span2_start
         span1_end = orig_span2_end
+    else:
+        span1_start = orig_span1_start
+        span1_end = orig_span1_end
+        span2_start = orig_span2_start
+        span2_end = orig_span2_end
 
     current_tokenization = []
     aligner_fn = get_aligner_fn(tokenizer_name)
@@ -185,7 +189,6 @@ def align_spans(text, tokenizer_name, orig_span1_start, orig_span1_end, orig_spa
     ta, span_tokens = aligner_fn(span1)
     current_tokenization.extend(span_tokens)
     new_span1end = len(current_tokenization) 
-
     text2 = text[span1_end:span2_start]
     ta, new_tokens = aligner_fn(text2)
     current_tokenization.extend(new_tokens)
@@ -218,27 +221,24 @@ def process_dataset(split, tokenizer_name):
         pronoun = row['Pronoun']
         orig_pronoun_index = row["Pronoun-offset"]
         orig_end_index_prnn = getEnd(orig_pronoun_index, pronoun)
-        first_index = row["A-offset"]
+        orig_first_index = row["A-offset"]
         first_word = row["A"]
-        end_index = getEnd(first_index, first_word)
-        pronoun_index, end_index_prnn, first_index, end_index,text = align_spans(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, first_index, end_index)
+        orig_end_index = getEnd(orig_first_index, first_word)
+        pronoun_index, end_index_prnn, first_index, end_index,text = build_spans_aligned_with_tokenization(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, orig_first_index, orig_end_index)
         
         label = row["A-coref"]
-        print(row["Text"][orig_pronoun_index: orig_end_index_prnn])
-        import pdb; pdb.set_trace()
-        print(text.split(" ")[pronoun_index: end_index_prnn])
         new_pandas.append([text, pronoun_index, end_index_prnn, first_index, end_index, label])
 
         second_index = row["B-offset"]
         second_word = row["A"]
         end_index_b = getEnd(second_index, second_word)
-        _, _, second_index, end_index_b, text = align_spans(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, second_index, end_index_b)
+        _, _, second_index, end_index_b, text = build_spans_aligned_with_tokenization(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, second_index, end_index_b)
         label_b = row['B-coref']
         new_pandas.append([text, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
 
 
     result = pd.DataFrame(new_pandas, columns=["text", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
-    pickle.dump(result, open("/Users/yadapruksachatkun/coref-jiant/data/processed/gap-coreference/__"+split+"__TEST", "wb"))
+    pickle.dump(result, open("/Users/yadapruksachatkun/coref-jiant/data/processed/gap-coreference/__"+split+"__"+tokenizer_name, "wb"))
 
 def _map_fn(row, tokenizer_name):
     new_record = retokenize_record(row, tokenizer_name)
@@ -272,7 +272,9 @@ def main(args):
         retokenize_csv_files(fname, args.tokenizer_name, worker_pool=worker_pool)
 
 if __name__ == '__main__':
-    process_dataset("test", "OpenAI.BPE")
+    process_dataset("development", "bert-base-cased")
+    process_dataset("validation", "bert-base-cased")
+    process_dataset("test", "bert-base-cased")
     """
     This is the problem:
     Given a text, we have BPE tokenizationse
