@@ -45,8 +45,6 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     NullPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-from .bert.utils import BertEmbedderModule
-
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -56,38 +54,6 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
-
-
-def build_model(args, vocab, pretrained_embs, tasks):
-    '''Build model according to args '''
-
-    # Build embeddings.
-    if args.openai_transformer:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .openai_transformer_lm.utils import OpenAIEmbedderModule
-        log.info("Using OpenAI transformer model; skipping other embedders.")
-        cove_layer = None
-        embedder = OpenAIEmbedderModule(args)
-        d_emb = embedder.get_output_dim()
-    elif args.bert_model_name:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
-        cove_layer = None
-        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
-        # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
-        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
-                                   os.path.join(args.exp_dir, "bert_cache"))
-        maybe_make_dir(bert_cache_dir)
-        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
-        d_emb = embedder.get_output_dim()
-    else:
-        # Default case, used for ELMo, CoVe, word embeddings, etc.
-        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
-                                                       tasks, pretrained_embs)
-    d_sent = args.d_hid
 
 def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Build single sentence encoder: the main component of interest
@@ -173,7 +139,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         cove_layer = None
         embedder = OpenAIEmbedderModule(args) # Here, this uses openAIEmbedder.
         d_emb = embedder.get_output_dim()
-    elif args.bert_model_name:
+    elif args.use_bert:
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .bert.utils import BertEmbedderModule
@@ -418,11 +384,11 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
      '''
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
-        module = build_single_sentence_module(task, d_sent, model, task_params)
+        module = build_single_sentence_module(task, d_sent, model.use_bert, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                            PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model, task_params)
+        module = build_pair_sentence_module(task, d_sent, model.vocab, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
@@ -531,16 +497,16 @@ def build_image_sent_module(task, d_inp, params):
     return pooler
 
 
-def build_single_sentence_module(task, d_inp, model, params):
+def build_single_sentence_module(task, d_inp, use_bert, params):
     ''' Build a single classifier '''
-    pool_type = "first" if model.use_bert else "max"
-    pooler = Pooler(d_inp, project=not model.use_bert, d_proj=params['d_proj'], pool_type=pool_type)
-    d_out = d_inp if model.use_bert else params["d_proj"]
+    pool_type = "first" if use_bert else "max"
+    pooler = Pooler(d_inp, project=not use_bert, d_proj=params['d_proj'], pool_type=pool_type)
+    d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     return SingleClassifier(pooler, classifier)
 
 
-def build_pair_sentence_module(task, d_inp, model, params):
+def build_pair_sentence_module(task, d_inp, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
 
     def build_pair_attn(d_in, use_attn, d_hid_attn):
@@ -549,7 +515,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
         modeling_layer = s2s_e.by_name('lstm').from_params(
             Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
                     'num_layers': 1, 'bidirectional': True}))
-        pair_attn = AttnPairEncoder(model.vocab, modeling_layer, dropout=params["dropout"])
+        pair_attn = AttnPairEncoder(vocab, modeling_layer, dropout=params["dropout"])
         return pair_attn
 
     # Build the "pooler", which does pools a variable length sequence
@@ -621,7 +587,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.use_bert = args.bert_model_name
+        self.use_bert = args.use_bert
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):

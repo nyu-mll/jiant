@@ -320,7 +320,6 @@ class RankingTask(Task):
 
 
 @register_task('sst', rel_path='SST-2/')
-@register_task('sst-alt', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
 
@@ -345,7 +344,6 @@ class SSTTask(SingleClassificationTask):
 
 
 @register_task('cola', rel_path='CoLA/')
-@register_task('cola-alt', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
 
@@ -378,9 +376,7 @@ class CoLATask(SingleClassificationTask):
                 'accuracy': self.scorer2.get_metric(reset)}
 
 
-
 @register_task('qqp', rel_path='QQP/')
-@register_task('qqp-alt', rel_path='QQP/')  # second copy for different params
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
 
@@ -490,7 +486,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
 
 
 @register_task('mrpc', rel_path='MRPC/')
-@register_task('mrpc-alt', rel_path='MRPC/')
 class MRPCTask(PairClassificationTask):
     ''' Task class for Microsoft Research Paraphase Task.  '''
 
@@ -526,7 +521,6 @@ class MRPCTask(PairClassificationTask):
 
 
 @register_task('sts-b', rel_path='STS-B/')
-@register_task('sts-b-alt', rel_path='STS-B/')  # second copy for different params
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
@@ -590,7 +584,6 @@ class SNLITask(PairClassificationTask):
 
 
 @register_task('mnli', rel_path='MNLI/')
-@register_task('mnli-alt', rel_path='MNLI/')  # second copy for different params
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
@@ -825,7 +818,6 @@ class NPSTask(PairClassificationTask):
 
 
 @register_task('rte', rel_path='RTE/')
-@register_task('rte-alt', rel_path='RTE/')
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
@@ -853,7 +845,6 @@ class RTETask(PairClassificationTask):
 
 
 @register_task('qnli', rel_path='QNLI/')
-@register_task('qnli-alt', rel_path='QNLI/')  # second copy for different params
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
@@ -879,7 +870,6 @@ class QNLITask(PairClassificationTask):
 
 
 @register_task('wnli', rel_path='WNLI/')
-@register_task('wnli-alt', rel_path='WNLI/')
 class WNLITask(PairClassificationTask):
     '''Class for Winograd NLI task'''
 

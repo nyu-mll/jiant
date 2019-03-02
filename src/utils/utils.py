@@ -171,6 +171,7 @@ def load_lines(filename: str) -> Iterable[str]:
         for line in fd:
             yield line.strip()
 
+
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
     n_exs = len(data[0])

@@ -212,7 +212,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, 'openai_bpe')
-    if args.bert_model_name:
+    if args.use_bert:
         # Add pre-computed BPE vocabulary for BERT model.
         add_bert_wpm_vocab(vocab, args.bert_model_name)
 
@@ -262,7 +262,7 @@ def build_tasks(args):
                              ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.bert_model_name:
+    if args.use_bert:
         assert not indexers, ("BERT is not supported alongside"
                               " other indexers due to tokenization!")
         assert args.tokenizer == args.bert_model_name, \

@@ -275,7 +275,6 @@ class SamplingMultiTaskTrainer:
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
             task_info['last_log'] = time.time()
-
         # Metric bookkeeping
         all_metrics = [task.val_metric for task in tasks] + ['micro_avg', 'macro_avg']
         metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for
@@ -455,7 +454,7 @@ class SamplingMultiTaskTrainer:
                 loss *= scaling_weights[task.name]
 
                 loss.backward()
-
+                assert_for_log(not torch.isnan(loss).any(), "NaNs in loss.")
                 tr_loss += loss.data.cpu().numpy()
 
                 # Gradient regularization and application
