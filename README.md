@@ -146,7 +146,7 @@ The core model is a shared BiLSTM with task-specific components. When a language
 
 The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in build_model()) in src/models.py.
 
-We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer` and `openai_transformer_finetune` in your code.
+We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``openai_ transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer` and `openai_transformer_fine_tune` in your code. We support freezing BERT and openai transformer and using the out-of-the-box pretrained model as well.
 
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
@@ -162,7 +162,7 @@ If you're training only on one task, you don't need to worry about sampling sche
 
 For multi-task training, we use a shared global optimizer and LR scheduler for all tasks. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro-average will be well-behaved.
 
-We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate.
+We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. We also have support for BertAdam optimizer.
 
 Within a run, tasks are distinguished between training tasks (pretrain_tasks) and evaluation tasks (target tasks). The logic of ``main.py`` is that the entire model is pretrained on all the `pre_training` tasks, then the best model is then loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_pretrain, do_target_task_training, do_full_eval``.
@@ -170,7 +170,7 @@ Specify training tasks with ``pretrain_tasks = $pretrain_tasks`` where ``$pretra
 For example, ``pretrain_tasks = \"sst,mnli,foo\", target_tasks = \"qnli,bar,sst,mnli,foo\"`` (HOCON notation requires escaped quotes in command line arguments).
 Note: if you want to train and evaluate on a task, that task must be in both ``pretrain_tasks`` and ``target_tasks``.
 
-
+We currently support freezing non-task-specific modules in the model while doing task-specific training as well as training those modules (via the "finetune" vs "frozen" transfer-paradigm parameter in the config/defaults.conf file). This is a higher level of abstraction than bert_fine_tune and openai_transformer_fine_tune because there may be additional portions of the non-task-specific modules than BERT or OpenAI. For example, if you wanted to freeze BERT and train an LSTM on top of BERT, followed by task-specific modules, then set bert_fine_tine = 0 and paradigm = ``finetune``. 
 
 ## Adding New Tasks
 

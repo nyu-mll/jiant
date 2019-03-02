@@ -283,7 +283,7 @@ def main(cl_arguments):
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
         if args.transfer_paradigm == "frozen":
-            # might be empty if no elmo. scalar_mix_0 should always be pretrain scalars
+            # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
                             "scalar_mix" in n and "scalar_mix_0" not in n]
             # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length.
@@ -300,11 +300,13 @@ def main(cl_arguments):
                 continue
 
             if args.transfer_paradigm == "finetune":
+                # Train both the task specific models as well as sentence encoder.
                 to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
             else:
+                # Only train task-specific module.
                 pred_module = getattr(model, "%s_mdl" % task.name)
-                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad] +\
-                            elmo_scalars
+                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+                to_train += elmo_scalars
 
 
             # Look for <task_name>_<param_name>, then eval_<param_name>
@@ -328,16 +330,20 @@ def main(cl_arguments):
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
             best_epoch = best_epoch[task.name]
+            # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
+            # from here to trainer.py.
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             if args.transfer_paradigm == "finetune":
+                # If we finetune,
                 # Save this fine-tune model with a task specific name.
                 finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 os.rename(layer_path, finetune_path)
 
-                # Reload the original best model.
+                # Reload the original best model from before target-task training.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
             else:
+                # Load the current overall best model.
                 load_model_state(model, layer_path, args.cuda,
                                  skip_task_models=task_names_to_avoid_loading,
                                  strict=strict)
