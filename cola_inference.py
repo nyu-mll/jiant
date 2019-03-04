@@ -170,7 +170,7 @@ def run_corpus_inference(model, vocab, indexers, task, args,
         data_in = f_in.readlines()
     data_out_batches = []
     for batch_string_ls in tqdm(list(batchify(data_in, args.batch_size))):
-        batch, _ = prepare_batch(batch_string_ls, vocab, indexers, args)
+        batch, _ = prepare_batch(batch_string_ls, task, vocab, indexers, args)
         with torch.no_grad():
             out = model.forward(task, batch, predict=True)
             data_out_batches.append(out["logits"].cpu().numpy())
@@ -187,12 +187,16 @@ def batchify(ls, batch_size):
         i += batch_size
 
 
-def prepare_batch(input_string_ls, vocab, indexers, args):
+def prepare_batch(input_string_ls, task, vocab, indexers, args):
     ''' Do preprocessing for batch '''
     instance_ls = []
     token_ls = []
     for input_string in input_string_ls:
-        tokens = process_sentence(input_string, args.max_seq_len)
+        tokens = process_sentence(
+            tokenizer_name=task.tokenizer_name,
+            sent=input_string,
+            max_seq_len=args.max_seq_len,
+        )
         field = sentence_to_text_field(tokens, indexers)
         field.index(vocab)
         instance_ls.append(Instance({"input1": field}))
