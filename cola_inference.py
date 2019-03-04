@@ -3,14 +3,14 @@ Run a model inference via a REPL (read-eval-print loop), or by processing an inp
 
 To run as REPL (default):
 
-    python src/interface/inference.py \
+    python cola_inference.py \
         --config_file PATH_TO_CONFIG_FILE \
         --model_file_path PATH_TO_FILE_PATH
 
 
 To process a corpus:
 
-    python src/interface/inference.py \
+    python cola_inference.py \
         --config_file PATH_TO_CONFIG_FILE \
         --model_file_path PATH_TO_FILE_PATH \
         --inference mode corpus \
@@ -137,7 +137,10 @@ def run_repl(model, vocab, indexers, task, args):
                 break
 
             tokens = process_sentence(
-                input_string, args.max_seq_len)
+                tokenizer_name=task.tokenizer_name,
+                sent=input_string,
+                max_seq_len=args.max_seq_len,
+            )
             print("TOKENS:", " ".join("[{}]".format(tok) for tok in tokens))
             field = sentence_to_text_field(tokens, indexers)
             field.index(vocab)
