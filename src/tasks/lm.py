@@ -10,7 +10,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 # Fields for instance processing
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate
+from ..utils.utils import truncate
+from ..utils.data_loaders import process_sentence
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -151,5 +152,3 @@ class WikiText103LMTask(WikiTextLMTask):
         self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
                                'val': os.path.join(path, "valid.sentences.txt"),
                                'test': os.path.join(path, "test.sentences.txt")}
-
-

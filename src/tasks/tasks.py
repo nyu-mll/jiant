@@ -30,7 +30,9 @@ from allennlp.data.fields import TextField, LabelField, \
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
-from ..utils.utils import load_tsv, load_old_tsv, process_sentence, truncate, load_diagnostic_tsv
+from ..utils.utils import truncate
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
+from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -139,7 +141,7 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
-        return tokenizer_name == utils.TOKENIZER.__class__.__name__
+        return get_tokenizer(tokenizer_name) is not None
 
     @property
     def tokenizer_name(self):
@@ -423,7 +425,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
         def targ_func(value):
             return targ_map[value]
 
-        tr_data = load_tsv(
+        tr_data = load_tsv(self._tokenizer_name,
             os.path.join(
                 path,
                 'train.tsv'),
@@ -437,7 +439,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             filter_idx=3,
             filter_value=genre)
 
-        val_matched_data = load_tsv(
+        val_matched_data = load_tsv(self._tokenizer_name,
             os.path.join(
                 path,
                 'dev_matched.tsv'),
@@ -451,7 +453,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             filter_idx=3,
             filter_value=genre)
 
-        te_matched_data = load_tsv(
+        te_matched_data = load_tsv(self._tokenizer_name,
             os.path.join(
                 path,
                 'test_matched.tsv'),
@@ -604,12 +606,12 @@ class MultiNLITask(PairClassificationTask):
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
 
-        te_matched_data = load_tsv(os.path.join(path, 'test_matched.tsv'), max_seq_len,
-                                   s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
-        te_mismatched_data = load_tsv(os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
-                                      s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
-        te_diagnostic_data = load_tsv(os.path.join(path, 'diagnostic.tsv'), max_seq_len,
-                                      s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
+        te_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_matched.tsv'), max_seq_len,
+                                   s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+        te_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
+                                      s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+        te_diagnostic_data = load_tsv(self._tokenizer_name, os.path.join(path, 'diagnostic.tsv'), max_seq_len,
+                                      s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
 
@@ -647,7 +649,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         def targ_func(value):
             return targ_map[value]
 
-        diag_data_dic = load_diagnostic_tsv(
+        diag_data_dic = load_diagnostic_tsv(self._tokenizer_name,
             os.path.join(
                 path,
                 'diagnostic-full.tsv'),
@@ -806,7 +808,6 @@ class NPSTask(PairClassificationTask):
                             s1_idx=0, s2_idx=1, label_idx=2, targ_map=targ_map, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, has_labels=False, targ_map=targ_map, skip_rows=0)
-
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -881,7 +882,6 @@ class WNLITask(PairClassificationTask):
         '''Load the data'''
         tr_data = load_tsv(os.path.join(path, "train.tsv"), max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
-        import pdb; pdb.set_trace()
         val_data = load_tsv(os.path.join(path, "dev.tsv"), max_seq_len,
                             s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,

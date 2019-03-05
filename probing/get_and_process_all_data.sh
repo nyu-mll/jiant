@@ -92,7 +92,17 @@ function get_ud() {
     preproc_task $OUTPUT_DIR/dep_ewt
 }
 
+function get_semeval() {
+    ## SemEval 2010 Task 8 relation classification
+    ## Gives semeval/{split}.json, where split = {train.0.85, dev, test}
+    mkdir $OUTPUT_DIR/semeval
+    bash $HERE/data/get_semeval_data.sh $OUTPUT_DIR/semeval
+    preproc_task $OUTPUT_DIR/semeval
+}
+
 get_ontonotes
 get_spr_dpr
 get_ud
+
+get_semeval
 
