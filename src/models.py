@@ -388,7 +388,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                            PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model.vocab, task_params)
+        module = build_pair_sentence_module(task, d_sent, model, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
@@ -506,7 +506,7 @@ def build_single_sentence_module(task, d_inp, use_bert, params):
     return SingleClassifier(pooler, classifier)
 
 
-def build_pair_sentence_module(task, d_inp, vocab, params):
+def build_pair_sentence_module(task, d_inp, model, params):
     ''' Build a pair classifier, shared if necessary '''
 
     def build_pair_attn(d_in, use_attn, d_hid_attn):
@@ -515,7 +515,7 @@ def build_pair_sentence_module(task, d_inp, vocab, params):
         modeling_layer = s2s_e.by_name('lstm').from_params(
             Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
                     'num_layers': 1, 'bidirectional': True}))
-        pair_attn = AttnPairEncoder(vocab, modeling_layer, dropout=params["dropout"])
+        pair_attn = AttnPairEncoder(model.vocab, modeling_layer, dropout=params["dropout"])
         return pair_attn
 
     # Build the "pooler", which does pools a variable length sequence

@@ -344,6 +344,8 @@ def main(cl_arguments):
                 load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
             else:
                 # Load the current overall best model.
+                # Save the best checkpoint from that target task training to be
+                # specific to that target task.
                 load_model_state(model, layer_path, args.cuda,
                                  skip_task_models=task_names_to_avoid_loading,
                                  strict=strict)

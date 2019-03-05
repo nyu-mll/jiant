@@ -269,10 +269,6 @@ def build_tasks(args):
                              ("BERT models use custom WPM tokenization for "
                               "each model, so tokenizer must match the "
                               "specified BERT model.")
-        assert args.bert_fine_tune == args.transfer_paradigm, \
-                            ("If we are finetuning Bert-style, make sure that"
-                             "both bert_fine_tune and transfer_paradigm is set"
-                             "to 1")
         assert args.max_epochs_per_task is None or args.max_epochs_per_task > 0, \
                             ("max_epochs_per_task must be a positive number if "
                             "it is used")
