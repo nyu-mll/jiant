@@ -1,4 +1,4 @@
-import src.utils.utils as utils
+import src.utils.data_loaders as data_loaders
 import unittest
 from io import StringIO
 import csv
@@ -19,7 +19,7 @@ class TestLoadTsvLabelsOneSentence(unittest.TestCase):
 
     def test(self):
         max_seq_len = 30
-        sent1s, sent2s, labels = utils.load_tsv(TEMP_DATASET_ONE_SENTENCE_DIRLINK, max_seq_len, s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
+        sent1s, sent2s, labels = data_loaders.load_tsv("MosesTokenizer", TEMP_DATASET_ONE_SENTENCE_DIRLINK, max_seq_len, s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
         print(sent2s)
         assert sent2s == []
         assert len(sent1s) == 2, "The length of the set of first sentences != total rows in data file"
@@ -37,7 +37,7 @@ class TestLoadTsvLablesTwoSentencesReturnIndices(unittest.TestCase):
 
     def test(self):
         max_seq_len = 30
-        sent1s, sent2s, labels, indices = utils.load_tsv('temp_dataset_two_sentences.tsv', max_seq_len, s1_idx=0, s2_idx=1, return_indices=1, label_idx=1, skip_rows=1)
+        sent1s, sent2s, labels, indices = data_loaders.load_tsv("MosesTokenizer", 'temp_dataset_two_sentences.tsv', max_seq_len, s1_idx=0, s2_idx=1, return_indices=1, label_idx=1, skip_rows=1)
         assert "charming" in sent1s[0], "sent1s is not tokenized first sentence"
         assert "agree" in sent2s[0] , "sent2s is not tokenized second sentence"
         assert len(sent1s) == 2, "The length of the set of first sentences != total rows in data file"
@@ -59,7 +59,7 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
         label_map = {"contradiction": 0, "entailment":1}
         def label_fn(x):
             return label_map[x]
-        output_dictionary = utils.load_diagnostic_tsv('temp_dataset_diagnostic.tsv', max_seq_len, s1_idx="Premise", s2_idx="Hypothesis", label_idx="Label", label_fn=label_fn)
+        output_dictionary = data_loaders.load_diagnostic_tsv("MosesTokenizer", 'temp_dataset_diagnostic.tsv', max_seq_len, s1_col="Premise", s2_col="Hypothesis", label_col="Label", label_fn=label_fn)
         assert len(output_dictionary["sents1"]) == 1, "The length of the set of first sentences != total rows in data file"
         assert len(output_dictionary["sents2"]) == 1, "Second sentence does not exist yet len(sent2s) != 0"
         assert len(output_dictionary["targs"]) == 1, "The length of labels should be equal to rows in data file"
