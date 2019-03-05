@@ -10,12 +10,8 @@ import random
 import logging
 import codecs
 import time
-import pandas as pd
-import csv
 import numpy as np
-
 import torch
-import itertools
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear
 from torch.nn import Parameter
