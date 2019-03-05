@@ -51,6 +51,10 @@ class BertEmbedderModule(nn.Module):
                 pair_task=False) -> torch.FloatTensor:
         """ Run BERT to get hidden states.
 
+        This forward method does preprocessing on the go,
+        changing token IDS from preprocessed bert to
+        what AllenNLP indexes.
+
         Args:
             sent: batch dictionary
 
@@ -59,10 +63,9 @@ class BertEmbedderModule(nn.Module):
         """
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
-        var_ids = sent["bert_wpm_pretokenized"]
+        ids = sent["bert_wpm_pretokenized"]
         # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
-        assert var_ids.size()[1] <= 512
-        ids = var_ids
+        assert ids.size()[1] <= 512
 
         mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
@@ -70,8 +73,8 @@ class BertEmbedderModule(nn.Module):
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
         # reserved for padding).
-        FILL_ID = 0  # [PAD] for BERT models.
-        ids[ids == 0] = FILL_ID + 2
+        PAD_ID = 0  # [PAD] for BERT models.
+        ids[ids == 0] = PAD_ID + 2 # Shift the indices that were at 0 to become 2.
         # Index 1 should never be used since the BERT WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
@@ -95,6 +98,7 @@ class BertEmbedderModule(nn.Module):
             # <float32> [batch_size, seq_len, output_dim]
             if pair_task:
                 SEP_ID = 104 # [SEP] for BERT models.
+                import pdb; pdb.set_trace()
                 sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
                 # TODO(Alex): some kind of assert
                 token_types = torch.ones_like(ids)
@@ -129,5 +133,3 @@ class BertEmbedderModule(nn.Module):
             return 2*self.model.config.hidden_size
         else:
             return self.model.config.hidden_size
-
-
