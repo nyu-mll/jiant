@@ -212,7 +212,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, 'openai_bpe')
-    if args.use_bert:
+    if args.bert_model_name:
         # Add pre-computed BPE vocabulary for BERT model.
         add_bert_wpm_vocab(vocab, args.bert_model_name)
 
