@@ -21,6 +21,7 @@ def load_tsv(
         s1_idx=0,
         s2_idx=1,
         label_fn=None,
+        col_indices=None,
         skip_rows=0,
         return_indices=False,
         delimiter='\t',
@@ -44,32 +45,32 @@ def load_tsv(
         List of first and second sentences, labels, and if applicable indices
     '''
     # TODO(Yada): Instead of index integers, adjust this to pass ins column names
-    sent1s, sent2s, labels = pd.Series(), pd.Series(), pd.Series()
+    # get the first row as the columns to pass into the pandas reader
     # This reads the data file given the delimiter, skipping over any rows (usually header row)
     rows = pd.read_csv(data_file, \
                         sep=delimiter, \
                         error_bad_lines=False, \
+                        names=col_indices, \
                         header=None, \
                         skiprows=skip_rows, \
                         quoting=csv.QUOTE_NONE,\
                         encoding='utf-8')
     if filter_idx:
         rows = rows[rows[filter_idx] == filter_value]
+    sent2s = pd.Series()
     # Filter for sentence1s that are of length 0
     # Filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
     if has_labels:
-        mask = mask & (~rows[label_idx].isnull())
+        mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
     sent1s = rows[s1_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
-    if s2_idx:
+    if s2_idx is not None:
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
 
+    label_fn = label_fn if label_fn is not None else (lambda x: x)
     if has_labels:
-        if label_fn is None:
-            labels = rows[label_idx]
-        else:
-            labels = rows[label_idx].apply(lambda x: label_fn(x))
+        labels = rows[label_idx].apply(lambda x: label_fn(x))
     else:
         # If dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
@@ -110,7 +111,6 @@ def load_diagnostic_tsv(
     '''
     # TODO: Abstract indexing layer from this function so that MNLI-diagnostic calls load_tsv
     assert len(s1_col) > 0 and len(label_col) > 0, "Make sure you passed in column names for sentence 1 and labels"
-    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = pd.Series(), pd.Series(), pd.Series(), pd.Series(), pd.Series(), pd.Series(), pd.Series(), pd.Series()
     rows = pd.read_csv(data_file, \
                         sep=delimiter, \
                         error_bad_lines=False, \
