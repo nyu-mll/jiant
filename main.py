@@ -263,7 +263,7 @@ def main(cl_arguments):
         # This is to load a particular eval checkpoint.
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint,
-                         args.cuda, task_names_tof_avoid_loading, strict=strict)
+                         args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
