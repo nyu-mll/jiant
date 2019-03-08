@@ -65,7 +65,7 @@ def load_tsv(
     rows = rows.loc[mask]
     sent1s = rows[s1_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
     if s2_idx is None:
-        s2_idx = pd.Series()
+        sent2s = pd.Series()
     else:
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
 
