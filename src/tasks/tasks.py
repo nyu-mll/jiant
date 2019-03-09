@@ -25,13 +25,13 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField, \
+from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
     SpanField, ListField, MetadataField
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, TSVLoader
 from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
@@ -101,6 +101,42 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     #  return list(instances)
     return instances  # lazy iterator
 
+def create_subset_scorers(count, scorer_type, **args_to_scorer):
+    '''
+    Inputs
+    count: N_tag, number of different "coarse:fine" tags
+    scorer_type: which scorer to use
+    **args_to_scorer: arguments passed to the scorer
+    Outputs
+    scorer_list: a list of N_tag scorer object
+    '''
+    scorer_list = [scorer_type(**args_to_scorer) for _ in range(count)]
+    return scorer_list
+
+def update_subset_scorers(scorer_list, estimations, labels, tagmask):
+    '''
+    Inputs
+    scorer_list: a list of N_tag scorer object
+    estimations: a (bs, *) tensor, model estimation
+    labels: a (bs, *) tensor, ground truth
+    tagmask: a (bs, N_tag) 0-1 tensor, indicating tags of each sample
+    '''
+    for ix, scorer in enumerate(scorer_list):
+        subset_idx = torch.nonzero(tagmask[:, ix]).squeeze(dim=1)
+        subset_estimations = estimations[subset_idx]
+        subset_labels = labels[subset_idx]
+        scorer(subset_estimations, subset_labels)
+    return
+
+def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
+    '''
+    Inputs
+    scorer_list: a list of N_tag scorer object
+    metric_name: 
+    tag_list: "coarse:fine" tag strings
+    '''
+    subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(reset) for tag_str, scorer in zip(tag_list, scorer_list)}
+    return subset_scores
 
 class Task(object):
     '''Generic class for a task
@@ -366,6 +402,83 @@ class CoLATask(SingleClassificationTask):
         return {'mcc': self.scorer1.get_metric(reset),
                 'accuracy': self.scorer2.get_metric(reset)}
 
+@register_task('cola-analysis', rel_path='CoLA/')
+class CoLAAnalysisTask(SingleClassificationTask):
+    def __init__(self, path, max_seq_len, name, files_by_split, **kw):
+        super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        # Load data from tsv
+        tsv_loader = TSVLoader(
+            tokenizer_name=self._tokenizer_name,
+            max_seq_len=max_seq_len,
+            tag_eval=True)
+        
+        tr_data = tsv_loader.load_file(os.path.join(path, "train_analysis.tsv"),
+            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={'Domain': 1})
+        val_data = tsv_loader.load_file(os.path.join(path, "dev_analysis.tsv"),
+            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={
+                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7,
+                'Arg Altern': 8, 'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12,
+                'Auxillary': 13, 'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18})
+        te_data = tsv_loader.load_file(os.path.join(path, "test_analysis.tsv"),
+            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={'Domain': 1})
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        
+        # Create score for each tag from tag-index dict 
+        self.tag_list = tsv_loader.get_tag_list()
+        self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
+        self.tag_scorers2 = create_subset_scorers(count=len(self.tag_list), scorer_type=CategoricalAccuracy)
+
+        log.info("\tFinished loading CoLA sperate domain.")
+
+    def process_split(self, split, indexers):
+        def _make_instance(data_pack):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            d["input1"] = sentence_to_text_field(data_pack['sent1s'], indexers)
+            d['sent1_str'] = MetadataField(" ".join(data_pack['sent1s'][1:-1]))
+            if 'sent2s' in data_pack:
+                d["input2"] = sentence_to_text_field(data_pack['sent2s'], indexers)
+                d['sent2_str'] = MetadataField(" ".join(data_pack['sent2s'][1:-1]))
+            d["labels"] = LabelField(data_pack['labels'], label_namespace="labels",
+                                     skip_indexing=True)
+            d["idx"] = LabelField(data_pack['idx'], label_namespace="idx",
+                                  skip_indexing=True)
+            if 'tagids' in data_pack:
+                d['tagmask'] = MultiLabelField(data_pack['tagids'], label_names="tags",
+                                    skip_indexing=True, num_labels=len(self.tag_list))
+            return Instance(d)
+
+        instances = map(_make_instance, split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        _, preds = logits.max(dim=1)
+        self.scorer1(logits, labels)
+        self.scorer2(preds, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, logits, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, preds, labels, tagmask)
+        return
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        
+        collected_metrics = {'mcc': self.scorer1.get_metric(reset), 'accuracy': self.scorer2.get_metric(reset)}
+        collected_metrics.update(collect_subset_scores(self.tag_scorers1, 'mcc', self.tag_list, reset))
+        collected_metrics.update(collect_subset_scores(self.tag_scorers2, 'accuracy', self.tag_list, reset))
+        return collected_metrics
 
 @register_task('qqp', rel_path='QQP/')
 @register_task('qqp-alt', rel_path='QQP/')  # second copy for different params
