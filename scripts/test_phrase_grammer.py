@@ -296,10 +296,9 @@ if __name__ == '__main__':
                                                 "model_state_main_epoch*"))
     load_model_state(model,macro_best[-1],args.cuda)
     corpus=data.Corpus(vocab._token_to_index['tokens'])
-    f1_list=[]
+    f1_list=[[],[],[]]
     prec_list=[]
     reca_list=[]
-    f1_list=[]
     model.eval()
     for i in range(len(corpus.test)):
         st=corpus.test[i].reshape(1, -1)
@@ -312,29 +311,34 @@ if __name__ == '__main__':
         tmp1['words']=ta
         inp['targs']=tmp1
         inp['targs_b']=tmp1
-        output=model.forward(tasks[0],inp)
-        distances=model.sent_encoder._phrase_layer.distances
-        dc=distances[1][1:-1]
-        sen_cut=corpus.test[i][1:-1]
-        sen_tree=corpus.test_trees[i]
-        parse_tree=build_tree(dc.detach(), sen_cut)
-        model_out, _ = get_brackets(parse_tree)
-        std_out, _ = get_brackets(sen_tree)
-        overlap = model_out.intersection(std_out)
-        prec = float(len(overlap)) / (len(model_out) + 1e-8)
-        reca = float(len(overlap)) / (len(std_out) + 1e-8)
-        if len(std_out) == 0:
-            reca = 1.
-            if len(model_out) == 0:
-                prec = 1.
-        f1 = 2 * prec * reca / (prec + reca + 1e-8)
-        print(f1)
-        prec_list.append(prec)
-        reca_list.append(reca)
-        f1_list.append(f1)
+        #sent_encoder(batch['input'], task)
+        _ , _ = model.sent_encoder.forward(tmp, tasks[0])
+        
+        distances = model.sent_encoder._phrase_layer.distances
+        for layerID in [0, 1, 2]:
+            dc = distances[layerID][1:-1]
+            sen_cut = corpus.test[i][1:-1]
+            sen_tree = corpus.test_trees[i]
+            parse_tree = build_tree(dc.detach(), sen_cut)
+            model_out, _ = get_brackets(parse_tree)
+            std_out, _  = get_brackets(sen_tree)
+            overlap = model_out.intersection(std_out)
+            prec = float(len(overlap)) / (len(model_out) + 1e-8)
+            reca = float(len(overlap)) / (len(std_out) + 1e-8)
+            if len(std_out) == 0:
+                reca = 1.
+                if len(model_out) == 0:
+                    prec = 1.
+            f1 = 2 * prec * reca / (prec + reca + 1e-8)
+            f1_list[layerID].append(f1)
 
-        if i%100==0:
-            print("-----")
-            print(str(i)+"___")
-            print(mean(f1_list))
-            print("----")
+        # if i%100==0:
+        #     print("-----")
+        #     print(str(i)+"___")
+        #     print(mean(f1_list))
+        #     print("----")
+    print("\n")
+    for layerId in [0, 1, 2]:
+        print("Layer " + str(layerID))
+        print(mean(f1_list))
+        print("\n")
