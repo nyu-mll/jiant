@@ -268,14 +268,6 @@ if __name__ == '__main__':
                         help='use CUDA')
     parser.add_argument('--wsj10', action='store_true',
                         help='use WSJ10')
-    # parser.add_argument('--pretrain_tasks', type=str, default='',
-    #                     help='use WSJ10')
-    # parser.add_argument('--target_tasks', type=str, default='wsj',
-    #                     help='use WSJ10')
-    # parser.add_argument('--max_seq_len', type=int, default=70,
-    #                     help='use WSJ10')
-    # parser.add_argument('--reload_tasks', type=bool, default=70,
-    #                     help='reload tasks')
     parser.add_argument('--data_dir', type=str, default="data/",
                         help='reload tasks')
 
@@ -301,8 +293,8 @@ if __name__ == '__main__':
     reca_list=[]
     model.eval()
     for i in range(len(corpus.test)):
-        st=corpus.test[i].reshape(1, -1)
-        ta=torch.cat([corpus.test[i][1:],corpus.test[i][:1]]).reshape(1,-1)
+        st=corpus.test[i].reshape(1, -1).cuda()
+        ta=torch.cat([corpus.test[i][1:].cuda(),corpus.test[i][:1].cuda()]).reshape(1,-1)
         inp={}
         tmp={}
         tmp['words']=st
@@ -319,7 +311,7 @@ if __name__ == '__main__':
             dc = distances[layerID][1:-1]
             sen_cut = corpus.test[i][1:-1]
             sen_tree = corpus.test_trees[i]
-            parse_tree = build_tree(dc.detach(), sen_cut)
+            parse_tree = build_tree(dc.cpu().detach(), sen_cut)
             model_out, _ = get_brackets(parse_tree)
             std_out, _  = get_brackets(sen_tree)
             overlap = model_out.intersection(std_out)
@@ -332,11 +324,6 @@ if __name__ == '__main__':
             f1 = 2 * prec * reca / (prec + reca + 1e-8)
             f1_list[layerID].append(f1)
 
-        # if i%100==0:
-        #     print("-----")
-        #     print(str(i)+"___")
-        #     print(mean(f1_list))
-        #     print("----")
     print("\n")
     for layerId in [0, 1, 2]:
         print("Layer " + str(layerID))
