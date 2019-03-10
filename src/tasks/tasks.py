@@ -121,8 +121,8 @@ def update_subset_scorers(scorer_list, estimations, labels, tagmask):
     labels: a (bs, *) tensor, ground truth
     tagmask: a (bs, N_tag) 0-1 tensor, indicating tags of each sample
     '''
-    for ix, scorer in enumerate(scorer_list):
-        subset_idx = torch.nonzero(tagmask[:, ix]).squeeze(dim=1)
+    for tid, scorer in enumerate(scorer_list):
+        subset_idx = torch.nonzero(tagmask[:, tid]).squeeze(dim=1)
         subset_estimations = estimations[subset_idx]
         subset_labels = labels[subset_idx]
         if len(subset_idx) > 0:
