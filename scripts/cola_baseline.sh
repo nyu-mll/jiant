@@ -17,8 +17,8 @@ srun --gres=gpu:k80:1 python main.py --config_file "config/cola-elmo.conf" --ove
 # JIANT_OVERRIDES="exp_name = cola-elmo-baseline, run_name = random-elmo, allow_untrained_encoder_parameters = 1, allow_missing_task_map = 1, do_pretrain = 0" JIANT_CONF="config/cola-elmo.conf" sbatch ~/prince.sbatch
 
 # elmo
-srun --gres=gpu:k80:1 python main.py --config_file "config/cola-elmo.conf" --overrides "exp_name = cola-elmo-baseline, run_name = random-elmo, allow_untrained_encoder_parameters = 1, allow_missing_task_map = 1, do_pretrain = 0" 
-# JIANT_OVERRIDES="exp_name = cola-elmo-baseline, run_name = elmo, allow_reuse_of_pretraining_parameters = 1" JIANT_CONF="config/cola-elmo.conf" sbatch nyu_cilvr_cluster.sbatch
+srun --gres=gpu:k80:1 python main.py --config_file "config/cola-elmo.conf" --overrides "exp_name = cola-elmo-baseline, run_name = elmo" 
+# JIANT_OVERRIDES="exp_name = cola-elmo-baseline, run_name = elmo JIANT_CONF="config/cola-elmo.conf" sbatch nyu_cilvr_cluster.sbatch
 
 # gpt
 srun --gres=gpu:k80:1 python main.py --config_file "cconfig/cola-openai.conf" --overrides "exp_name = cola-gpt-baseline, run_name = gpt" 
