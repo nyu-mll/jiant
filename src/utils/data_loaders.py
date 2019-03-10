@@ -190,9 +190,9 @@ class TSVLoader(object):
             tag2cid_dict is a <string, int> dictionary from coarse category name to column index 
         Returns:
             data_pack: a dictionary that may include
-            sent1s: first sentence, sent2s: second sentence, 
-            labels, indexes,
-            tagids: list of "coarse:fine" tag indexes
+                sent1s: first sentence, sent2s: second sentence, 
+                labels, idx,
+                tagids: list of "coarse__fine" tag indexes
         '''
         data_pack = {}
         rows = pd.read_csv(data_file,
@@ -228,9 +228,9 @@ class TSVLoader(object):
         if self.tag_eval:
             # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab
             def tags_to_tids(coarse_tag, fine_tags):
-                return ([self.tag_vocab.add_token_to_namespace(coarse_tag) - 2] + \
-                    [self.tag_vocab.add_token_to_namespace('%s:%s' % (coarse_tag, fine_tag)) - 2 \
-                    for fine_tag in fine_tags.split(';')]) if fine_tags else []
+                return [] if pd.isna(fine_tags) else ([self.tag_vocab.add_token_to_namespace(coarse_tag) - 2] + \
+                    [self.tag_vocab.add_token_to_namespace('%s__%s' % (coarse_tag, fine_tag)) - 2 \
+                    for fine_tag in fine_tags.split(';')])
             tid_temp = [rows[cid].apply(lambda x: tags_to_tids(coarse_tag, x)).tolist() for coarse_tag, cid in tag2cid_dict.items()]
             data_pack['tagids'] = [[tid for column in tid_temp for tid in column[idx]] for idx in range(len(rows))]
         return data_pack
@@ -238,14 +238,14 @@ class TSVLoader(object):
     def get_tag_list(self):
         '''
         Returns:
-            tag_list: a list of "coarse:fine" tag strings
+            tag_list: a list of "coarse__fine" tag strings
         '''
         assert self.tag_eval
         # get dictionary from allennlp vocab, neglecting @@unknown@@ and @@padding@@
         tid2tag_dict = {key-2: tag \
             for key, tag in self.tag_vocab.get_index_to_token_vocabulary().items() \
                 if key - 2 >= 0}
-        tag_list = [tid2tag_dict[tid] for tid in range(len(tid2tag_dict))]
+        tag_list = [tid2tag_dict[tid].replace(':', '_').replace(', ', '_').replace(' ', '_').replace('+', '_') for tid in range(len(tid2tag_dict))]
         return tag_list
 
 

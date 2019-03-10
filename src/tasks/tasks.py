@@ -104,7 +104,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 def create_subset_scorers(count, scorer_type, **args_to_scorer):
     '''
     Inputs
-    count: N_tag, number of different "coarse:fine" tags
+    count: N_tag, number of different "coarse__fine" tags
     scorer_type: which scorer to use
     **args_to_scorer: arguments passed to the scorer
     Outputs
@@ -125,7 +125,8 @@ def update_subset_scorers(scorer_list, estimations, labels, tagmask):
         subset_idx = torch.nonzero(tagmask[:, ix]).squeeze(dim=1)
         subset_estimations = estimations[subset_idx]
         subset_labels = labels[subset_idx]
-        scorer(subset_estimations, subset_labels)
+        if len(subset_idx) > 0:
+            scorer(subset_estimations, subset_labels)
     return
 
 def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
@@ -133,7 +134,7 @@ def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     Inputs
     scorer_list: a list of N_tag scorer object
     metric_name: 
-    tag_list: "coarse:fine" tag strings
+    tag_list: "coarse__fine" tag strings
     '''
     subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(reset) for tag_str, scorer in zip(tag_list, scorer_list)}
     return subset_scores
@@ -404,7 +405,7 @@ class CoLATask(SingleClassificationTask):
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
-    def __init__(self, path, max_seq_len, name, files_by_split, **kw):
+    def __init__(self, path, max_seq_len, name, **kw):
         super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
@@ -430,10 +431,9 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 'Auxillary': 13, 'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18})
         te_data = tsv_loader.load_file(os.path.join(path, "test_analysis.tsv"),
             s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={'Domain': 1})
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        
+        self.train_data_text = [tr_data[key] for key in ['sent1s', 'labels', 'tagids']]
+        self.val_data_text = [val_data[key] for key in ['sent1s', 'labels', 'tagids']]
+        self.test_data_text = [te_data[key] for key in ['sent1s', 'labels', 'tagids']]
         # Create score for each tag from tag-index dict 
         self.tag_list = tsv_loader.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
@@ -442,34 +442,28 @@ class CoLAAnalysisTask(SingleClassificationTask):
         log.info("\tFinished loading CoLA sperate domain.")
 
     def process_split(self, split, indexers):
-        def _make_instance(data_pack):
+        def _make_instance(input1, labels, tagids):
             ''' from multiple types in one column create multiple fields '''
             d = {}
-            d["input1"] = sentence_to_text_field(data_pack['sent1s'], indexers)
-            d['sent1_str'] = MetadataField(" ".join(data_pack['sent1s'][1:-1]))
-            if 'sent2s' in data_pack:
-                d["input2"] = sentence_to_text_field(data_pack['sent2s'], indexers)
-                d['sent2_str'] = MetadataField(" ".join(data_pack['sent2s'][1:-1]))
-            d["labels"] = LabelField(data_pack['labels'], label_namespace="labels",
-                                     skip_indexing=True)
-            d["idx"] = LabelField(data_pack['idx'], label_namespace="idx",
-                                  skip_indexing=True)
-            if 'tagids' in data_pack:
-                d['tagmask'] = MultiLabelField(data_pack['tagids'], label_names="tags",
-                                    skip_indexing=True, num_labels=len(self.tag_list))
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                    skip_indexing=True)
+            d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
+                                skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
 
-        instances = map(_make_instance, split)
-        #  return list(instances)
+        instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
     def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
-        self.scorer1(logits, labels)
-        self.scorer2(preds, labels)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
         if tagmask is not None:
-            update_subset_scorers(self.tag_scorers1, logits, labels, tagmask)
-            update_subset_scorers(self.tag_scorers2, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
         return
 
     def get_metrics(self, reset=False):
