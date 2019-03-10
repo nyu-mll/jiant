@@ -679,6 +679,7 @@ class MultiTaskModel(nn.Module):
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
                     task.scorer2(logits, labels)
+
         if predict:
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:

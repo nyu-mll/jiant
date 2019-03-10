@@ -57,7 +57,6 @@ def load_tsv(
                         encoding='utf-8')
     if filter_idx:
         rows = rows[rows[filter_idx] == filter_value]
-    sent2s = pd.Series()
     # Filter for sentence1s that are of length 0
     # Filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
@@ -65,7 +64,9 @@ def load_tsv(
         mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
     sent1s = rows[s1_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
-    if s2_idx is not None:
+    if s2_idx is None:
+        sent2s = pd.Series()
+    else:
         sent2s = rows[s2_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
 
     label_fn = label_fn if label_fn is not None else (lambda x: x)
