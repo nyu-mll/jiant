@@ -177,16 +177,21 @@ def run_corpus_inference(model, vocab, indexers, task, args,
 
     logits = np.concatenate(logit_batches, axis=0)
     probs = torch.softmax(torch.tensor(logits), dim=1).numpy()
+    preds = np.argmax(probs, axis=1)
 
     data_out = np.concatenate([logits, probs], axis=1)
 
     # Future-proofing
     assert task.name == "cola"
     num_classes = logits.shape[1]
-    columns = [f"logit_{i}" for i in range(num_classes)] + \
-        [f"prob_{i}" for i in range(num_classes)]
+    columns = (
+        [f"logit_{i}" for i in range(num_classes)]
+        + [f"prob_{i}" for i in range(num_classes)]
+    )
 
     df = pd.DataFrame(data_out, columns=columns)
+    df["pred"] = preds
+
     df.to_csv(output_path, index=False)
 
 
