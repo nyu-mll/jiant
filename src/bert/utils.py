@@ -98,7 +98,6 @@ class BertEmbedderModule(nn.Module):
             # <float32> [batch_size, seq_len, output_dim]
             if pair_task:
                 SEP_ID = 104 # [SEP] for BERT models.
-                import pdb; pdb.set_trace()
                 sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
                 # TODO(Alex): some kind of assert
                 token_types = torch.ones_like(ids)
