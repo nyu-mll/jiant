@@ -270,7 +270,7 @@ class Pooler(nn.Module):
 
     @classmethod
     def from_params(cls, d_inp, d_proj, project=True):
-        return (cls(d_inp, d_proj=d_proj, project=project)
+        return cls(d_inp, d_proj=d_proj, project=project)
 
 
 class Classifier(nn.Module):
