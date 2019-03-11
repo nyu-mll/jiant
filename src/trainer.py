@@ -435,14 +435,15 @@ class SamplingMultiTaskTrainer:
             scaling_method,
             str(scaling_weights))
 
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
+        offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[n_pass % validation_interval]  # randomly select a task
+            task = samples[(n_pass + offset) % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info['stopped']:
+                offset += 1
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
@@ -495,7 +496,6 @@ class SamplingMultiTaskTrainer:
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
-
                 task_info['last_log'] = time.time()
 
                 if self._model.utilization is not None:

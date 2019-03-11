@@ -93,8 +93,7 @@ class RedditTask(RankingTask):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-@register_task('reddit_pair_classif', rel_path='Reddit_2008/')
-@register_task('reddit_pair_classif_dummy', rel_path='Reddit_2008_TestSample/')
+@register_task('reddit_pair_classif', rel_path='Reddit/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
 class RedditPairClassificationTask(PairClassificationTask):
     ''' Task class for Reddit data.  '''

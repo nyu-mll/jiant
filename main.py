@@ -358,9 +358,9 @@ def main(cl_arguments):
             for task in tasks:
                 # TODO(Alex): special case for MNLI and MNLI-diagnostic
                 if task.name == 'mnli-diagnostic':
-                    continue
-
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % "mnli")
+                else:
+                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
