@@ -751,6 +751,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
 
         def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
             # If there is something in this row then tag_group should be set to 1.
@@ -770,8 +771,12 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
             ''' from multiple types in one column create multiple fields '''
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["input2"] = sentence_to_text_field(input2, indexers)
+            if bert_pair:
+                inp = input1 + input2[1:]
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
             d["labels"] = LabelField(label, label_namespace="labels",
                                      skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idx",
@@ -877,7 +882,9 @@ class RTETask(PairClassificationTask):
 
 
 @register_task('qnli', rel_path='QNLI/')
-@register_task('qnli-alt', rel_path='QNLI/')  # second copy for different params
+@register_task('qnli-alt', rel_path='QNLI/') # second copy for different params
+@register_task('qnliv2', rel_path='QNLIv2/')
+@register_task('qnliv2-alt', rel_path='QNLIv2/') # second copy for different params
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
