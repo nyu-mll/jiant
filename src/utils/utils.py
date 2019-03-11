@@ -10,10 +10,6 @@ import random
 import logging
 import codecs
 import time
-
-from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
-from pytorch_pretrained_bert import BertTokenizer
-
 import numpy as np
 import torch
 from torch.autograd import Variable

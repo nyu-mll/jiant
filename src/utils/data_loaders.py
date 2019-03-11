@@ -5,6 +5,10 @@ files downloaded in scripts/download_data_glue.py
 """
 from .tokenizers import get_tokenizer
 import codecs
+import pandas as pd
+import csv
+import numpy as np
+from allennlp.data import vocabulary
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -13,157 +17,136 @@ def load_tsv(
         tokenizer_name,
         data_file,
         max_seq_len,
+        label_idx=2,
         s1_idx=0,
         s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
+        label_fn=None,
+        col_indices=None,
         skip_rows=0,
+        return_indices=False,
         delimiter='\t',
         filter_idx=None,
-        filter_value=None,):
-    '''Load a tsv
-
-    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
-    sent1s, sent2s, targs, idxs = [], [], [], []
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            row = row.strip().split(delimiter)
-            if filter_idx and row[filter_idx] != filter_value:
-                continue
-            sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
-            if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
-                continue
-
-            if targ_idx is not None:
-                if targ_map is not None:
-                    targ = targ_map[row[targ_idx]]
-                elif targ_fn is not None:
-                    targ = targ_fn(row[targ_idx])
-                else:
-                    targ = int(row[targ_idx])
-            else:
-                targ = 0
-
-            if s2_idx is not None:
-                sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
-                if not len(sent2):
-                    continue
-                sent2s.append(sent2)
-
-            if idx_idx is not None:
-                idx = int(row[idx_idx])
-                idxs.append(idx)
-
-            sent1s.append(sent1)
-            targs.append(targ)
-
-    if idx_idx is not None:
-        return sent1s, sent2s, targs, idxs
+        has_labels=True,
+        filter_value=None):
+    '''
+    Load a tsv.
+    To load only rows that have a certain value for a certain column,
+    like genre in MNLI, set filter_idx and filter_value (for example,
+    for mnli-fiction  we want columns where genre == 'fiction' ).
+    Args:
+        s1_idx; int
+        s2_idx: int
+        targ_idx: int
+        filter_idx: int this is the index that we want to filter from
+        filter_value: string the value in which we want filter_idx to be equal to
+        return_indices: bool that describes if you need to return indices (for purposes of matching)
+        label_fn is a function that expects a row and outputs the label
+    Returns:
+        List of first and second sentences, labels, and if applicable indices
+    '''
+    # TODO(Yada): Instead of index integers, adjust this to pass ins column names
+    # get the first row as the columns to pass into the pandas reader
+    # This reads the data file given the delimiter, skipping over any rows (usually header row)
+    rows = pd.read_csv(data_file, \
+                        sep=delimiter, \
+                        error_bad_lines=False, \
+                        names=col_indices, \
+                        header=None, \
+                        skiprows=skip_rows, \
+                        quoting=csv.QUOTE_NONE,\
+                        encoding='utf-8')
+    if filter_idx:
+        rows = rows[rows[filter_idx] == filter_value]
+    # Filter for sentence1s that are of length 0
+    # Filter if row[targ_idx] is nan
+    mask = (rows[s1_idx].str.len() > 0)
+    if has_labels:
+        mask = mask & rows[label_idx].notnull()
+    rows = rows.loc[mask]
+    sent1s = rows[s1_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+    if s2_idx is None:
+        sent2s = pd.Series()
     else:
-        return sent1s, sent2s, targs
+        sent2s = rows[s2_idx].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+
+    label_fn = label_fn if label_fn is not None else (lambda x: x)
+    if has_labels:
+        labels = rows[label_idx].apply(lambda x: label_fn(x))
+    else:
+        # If dataset doesn't have labels, for example for test set, then mock labels
+        labels = np.zeros(len(rows), dtype=int)
+    if return_indices:
+        idxs = rows.index.tolist()
+        # Get indices of the remaining rows after filtering
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
+    else:
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist()
 
 def load_diagnostic_tsv(
         tokenizer_name,
         data_file,
         max_seq_len,
-        s1_idx=0,
-        s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
+        label_col,
+        s1_col="",
+        s2_col="",
+        label_fn=None,
         skip_rows=0,
-        delimiter='\t',
-        filter_idx=None,
-        filter_value=None):
-    '''Load a tsv
+        delimiter='\t'):
+    '''Load a tsv and  indexes the columns from the diagnostic tsv.
+        This is only used for MNLI-diagnostic right now.
+    Args:
+        data_file: string
+        max_seq_len: int
+        s1_col: string
+        s2_col: string
+        label_col: string
+        label_fn: function
+        skip_rows: list of ints
+        delimiter: string
+    Returns:
+        A dictionary of the necessary indexed fields, the tokenized sent1 and sent2
+        and indices
+        Note: If a field in a particular row in the dataset is empty, we return []
+        for that field for that row, otherwise we return an array of ints (indices)
+        Else, we return an array of indices
+    '''
+    # TODO: Abstract indexing layer from this function so that MNLI-diagnostic calls load_tsv
+    assert len(s1_col) > 0 and len(label_col) > 0, "Make sure you passed in column names for sentence 1 and labels"
+    rows = pd.read_csv(data_file, \
+                        sep=delimiter, \
+                        error_bad_lines=False, \
+                        quoting=csv.QUOTE_NONE,\
+                        encoding='utf-8')
+    rows = rows.fillna('')
+    def targs_to_idx(col_name):
+        # This function builds the index to vocab (and its inverse) mapping
+        values = set(rows[col_name].values)
+        vocab = vocabulary.Vocabulary(counter=None)
+        for value in values:
+            vocab.add_token_to_namespace(value, col_name)
+        idx_to_word = vocab.get_index_to_token_vocabulary(col_name)
+        word_to_idx = vocab.get_token_to_index_vocabulary(col_name)
+        rows[col_name] = rows[col_name].apply(lambda x: [word_to_idx[x]] if x != '' else [])
+        return word_to_idx, idx_to_word, rows[col_name]
 
-    It loads the data with all it's attributes from diagnostic dataset for MNLI'''
-    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
+    sent1s = rows[s1_col].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+    sent2s = rows[s2_col].apply(lambda x: process_sentence(tokenizer_name, x, max_seq_len))
+    labels = rows[label_col].apply(lambda x: label_fn(x))
+    # Build indices for field attributes
+    lex_sem_to_ix_dic, ix_to_lex_sem_dic, lex_sem = targs_to_idx("Lexical Semantics")
+    pr_ar_str_to_ix_di, ix_to_pr_ar_str_dic, pr_ar_str = targs_to_idx("Predicate-Argument Structure")
+    logic_to_ix_dic, ix_to_logic_dic, logic = targs_to_idx("Logic")
+    knowledge_to_ix_dic, ix_to_knowledge_dic, knowledge = targs_to_idx("Knowledge")
+    idxs = rows.index
 
-    # There are 4 columns and every column could containd multiple values.
-    # For every column there is a dict which maps index to (string) value and
-    # different dict which maps value to index.
-    ix_to_lex_sem_dic = {}
-    ix_to_pr_ar_str_dic = {}
-    ix_to_logic_dic = {}
-    ix_to_knowledge_dic = {}
-
-    lex_sem_to_ix_dic = {}
-    pr_ar_str_to_ix_dic = {}
-    logic_to_ix_dic = {}
-    knowledge_to_ix_dic = {}
-
-    # This converts tags to indices and adds new indices to dictionaries above.
-    # In every row there could be multiple tags in one column
-    def tags_to_ixs(tags, tag_to_ix_dict, ix_to_tag_dic):
-        splitted_tags = tags.split(';')
-        indexes = []
-        for t in splitted_tags:
-            if t == '':
-                continue
-            if t in tag_to_ix_dict:
-                indexes.append(tag_to_ix_dict[t])
-            else:
-                # index 0 will be used for missing value
-                highest_ix = len(tag_to_ix_dict)
-                new_index = highest_ix + 1
-                tag_to_ix_dict[t] = new_index
-                ix_to_tag_dic[new_index] = t
-                indexes.append(new_index)
-        return indexes
-
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            row = row.rstrip().split(delimiter)
-            sent1 = process_sentence(tokenizer_name, row[s1_idx], max_seq_len)
-            if targ_map is not None:
-                targ = targ_map[row[targ_idx]]
-            elif targ_fn is not None:
-                targ = targ_fn(row[targ_idx])
-            else:
-                targ = int(row[targ_idx])
-            sent2 = process_sentence(tokenizer_name, row[s2_idx], max_seq_len)
-            sent2s.append(sent2)
-
-            sent1s.append(sent1)
-            targs.append(targ)
-
-            lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
-            pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
-            logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
-            knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
-
-            idxs.append(row_idx)
-            lex_sem.append(lex_sem_sample)
-            pr_ar_str.append(pr_ar_str_sample)
-            logic.append(logic_sample)
-            knowledge.append(knowledge_sample)
-
-    ix_to_lex_sem_dic[0] = "missing"
-    ix_to_pr_ar_str_dic[0] = "missing"
-    ix_to_logic_dic[0] = "missing"
-    ix_to_knowledge_dic[0] = "missing"
-
-    lex_sem_to_ix_dic["missing"] = 0
-    pr_ar_str_to_ix_dic["missing"] = 0
-    logic_to_ix_dic["missing"] = 0
-    knowledge_to_ix_dic["missing"] = 0
-
-    return {'sents1': sent1s,
-            'sents2': sent2s,
-            'targs': targs,
-            'idxs': idxs,
-            'lex_sem': lex_sem,
-            'pr_ar_str': pr_ar_str,
-            'logic': logic,
-            'knowledge': knowledge,
+    return {'sents1': sent1s.tolist(),
+            'sents2': sent2s.tolist(),
+            'targs': labels.tolist(),
+            'idxs': idxs.tolist(),
+            'lex_sem': lex_sem.tolist(),
+            'pr_ar_str': pr_ar_str.tolist(),
+            'logic': logic.tolist(),
+            'knowledge': knowledge.tolist(),
             'ix_to_lex_sem_dic': ix_to_lex_sem_dic,
             'ix_to_pr_ar_str_dic': ix_to_pr_ar_str_dic,
             'ix_to_logic_dic': ix_to_logic_dic,
