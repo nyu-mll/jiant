@@ -103,23 +103,23 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
 def create_subset_scorers(count, scorer_type, **args_to_scorer):
     '''
-    Inputs
-    count: N_tag, number of different "coarse__fine" tags
-    scorer_type: which scorer to use
-    **args_to_scorer: arguments passed to the scorer
-    Outputs
-    scorer_list: a list of N_tag scorer object
+    Parameters:
+        count: N_tag, number of different "coarse__fine" tags
+        scorer_type: which scorer to use
+        **args_to_scorer: arguments passed to the scorer
+    Returns:
+        scorer_list: a list of N_tag scorer object
     '''
     scorer_list = [scorer_type(**args_to_scorer) for _ in range(count)]
     return scorer_list
 
 def update_subset_scorers(scorer_list, estimations, labels, tagmask):
     '''
-    Inputs
-    scorer_list: a list of N_tag scorer object
-    estimations: a (bs, *) tensor, model estimation
-    labels: a (bs, *) tensor, ground truth
-    tagmask: a (bs, N_tag) 0-1 tensor, indicating tags of each sample
+    Parameters:
+        scorer_list: a list of N_tag scorer object
+        estimations: a (bs, *) tensor, model estimation
+        labels: a (bs, *) tensor, ground truth
+        tagmask: a (bs, N_tag) 0-1 tensor, indicating tags of each sample
     '''
     for tid, scorer in enumerate(scorer_list):
         subset_idx = torch.nonzero(tagmask[:, tid]).squeeze(dim=1)
@@ -131,10 +131,12 @@ def update_subset_scorers(scorer_list, estimations, labels, tagmask):
 
 def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     '''
-    Inputs
-    scorer_list: a list of N_tag scorer object
-    metric_name: 
-    tag_list: "coarse__fine" tag strings
+    Parameters:
+        scorer_list: a list of N_tag scorer object
+        metric_name: string, name prefix for this group
+        tag_list: "coarse__fine" tag strings
+    Returns:
+        subset_scores: a dictionary from subset tags to scores
     '''
     subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(reset) for tag_str, scorer in zip(tag_list, scorer_list)}
     return subset_scores
