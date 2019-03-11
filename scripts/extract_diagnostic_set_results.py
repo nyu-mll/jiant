@@ -15,21 +15,19 @@ def get_strings(path, row_filter=None):
     strings = []
     with open(path) as f:
         for line in f:
-            if "mnli-diagnostic" not in line or "micro_avg" not in line:
+            if "mnli-diagnostic" not in line:
                 continue
             if row_filter and row_filter not in line:
                 continue
 
-            #name, results = line.strip().split(None, 1)
-            results = line.strip()#.split(None, 1)
+            name, results = line.strip().split(None, 1)
 
             coarse = {}
             fine = defaultdict(dict)
             if row_filter:
                 outstr = ""
             else:
-                #outstr = name + "\t"
-                outstr = ""
+                outstr = name + "\t"
 
             for result in results.split(', '):
                 dataset, value = result.split(': ')
@@ -44,11 +42,11 @@ def get_strings(path, row_filter=None):
                     fine[sp[0]][sp[1]] = value
 
             for key in sorted(coarse.keys()):
-                outstr += "%.02f " % coarse[key]
+                outstr += "%.02f\t" % coarse[key]
 
             for key in sorted(fine.keys()):
                 for inner_key in sorted(fine[key].keys()):
-                    outstr += "%.02f " % fine[key][inner_key]
+                    outstr += "%.02f\t" % fine[key][inner_key]
             strings.append(outstr)
     return strings
 
@@ -64,11 +62,11 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     for path in args.log_files:
-        #try:
-        #print(path)
-        strings = get_strings(path)
-        for outstr in strings:
-            print(outstr)
+        try:
+            print(path)
+            strings = get_strings(path)
+            for outstr in strings:
+                print(outstr)
 
-        #except BaseException as e:
-        #    print("Error:", e, path)
+        except BaseException as e:
+            print("Error:", e, path)
