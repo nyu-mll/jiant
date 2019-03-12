@@ -171,7 +171,8 @@ def load_diagnostic_tsv(
 
 def get_tag_list(tag_vocab):
     '''
-    Params:
+    retrieve tag strings from the tag vocab object
+    Args:
         tag_vocab: the vocab that contains all tags 
     Returns:
         tag_list: a list of "coarse__fine" tag strings
