@@ -32,7 +32,7 @@ from ..allennlp_mods.numeric_field import NumericField
 from ..utils import utils
 from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
-from ..utils.tokenizers import AVAILABLE_TOKENIZERS
+from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -141,7 +141,7 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
-        return tokenizer_name in AVAILABLE_TOKENIZERS.keys()
+        return get_tokenizer(tokenizer_name) is not None
 
     @property
     def tokenizer_name(self):
@@ -323,11 +323,11 @@ class SSTTask(SingleClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Load data '''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+                           s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=1)
+                            s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -352,11 +352,11 @@ class CoLATask(SingleClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=None, targ_idx=1)
+                           s1_idx=3, s2_idx=None, label_idx=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=None, targ_idx=1)
+                            s1_idx=3, s2_idx=None, label_idx=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -384,11 +384,11 @@ class QQPTask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
+                           s1_idx=3, s2_idx=4, label_idx=5, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=4, targ_idx=5, skip_rows=1)
+                            s1_idx=3, s2_idx=4, label_idx=5, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -422,7 +422,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
     def load_data(self, path, max_seq_len, genre):
         '''Process the dataset located at path. We only use the in-genre matche data.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-
         tr_data = load_tsv(self._tokenizer_name,
             os.path.join(
                 path,
@@ -430,9 +429,9 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             max_seq_len,
             s1_idx=8,
             s2_idx=9,
-            targ_idx=11,
-            targ_map=targ_map,
-            idx_idx=0,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            return_indices=True,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -444,9 +443,9 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             max_seq_len,
             s1_idx=8,
             s2_idx=9,
-            targ_idx=11,
-            targ_map=targ_map,
-            idx_idx=0,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            return_indices=True,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -458,8 +457,8 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             max_seq_len,
             s1_idx=8,
             s2_idx=9,
-            targ_idx=None,
-            idx_idx=0,
+            has_labels=False,
+            return_indices=True,
             skip_rows=1,
             filter_idx=3,
             filter_value=genre)
@@ -491,11 +490,11 @@ class MRPCTask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+                           s1_idx=3, s2_idx=4, label_idx=0, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=1)
+                            s1_idx=3, s2_idx=4, label_idx=0, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=3, s2_idx=4, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=3, s2_idx=4, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -530,11 +529,11 @@ class STSBTask(PairRegressionTask):
     def load_data(self, path, max_seq_len):
         ''' Load data '''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+                           s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=7, s2_idx=8, targ_idx=9, targ_fn=lambda x: float(x) / 5)
+                            s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -550,7 +549,6 @@ class STSBTask(PairRegressionTask):
 @register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
-
     def __init__(self, path, max_seq_len, name, **kw):
         ''' Do stuff '''
         super(SNLITask, self).__init__(name, n_classes=3, **kw)
@@ -561,17 +559,16 @@ class SNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
-                            s1_idx=7, s2_idx=8, targ_idx=-1, skip_rows=1)
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
+                           s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
+                           s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=7, s2_idx=8, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=7, s2_idx=8, has_labels=False, return_indices=True,  skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
-
 
 @register_task('mnli', rel_path='MNLI/')
 @register_task('mnli-alt', rel_path='MNLI/')  # second copy for different params
@@ -589,13 +586,13 @@ class MultiNLITask(PairClassificationTask):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map, skip_rows=1)
+                           s1_idx=8, s2_idx=9, label_idx=11, label_fn=targ_map.__getitem__, skip_rows=1)
 
         # Warning to anyone who edits this: The reference label is column *15*, not 11 as above.
         val_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_matched.tsv'), max_seq_len,
-                                    s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map, skip_rows=1)
+                                    s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, skip_rows=1)
         val_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, targ_idx=15, targ_map=targ_map,
+                                       s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, has_labels=False,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
@@ -645,10 +642,10 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 path,
                 'diagnostic-full.tsv'),
             max_seq_len,
-            s1_idx=5,
-            s2_idx=6,
-            targ_idx=7,
-            targ_map=targ_map,
+            s1_col="Premise",
+            s2_col="Hypothesis",
+            label_col="Label",
+            label_fn=targ_map.__getitem__,
             skip_rows=1)
 
         self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
@@ -794,12 +791,11 @@ class NPSTask(PairClassificationTask):
     def load_data(self, path, max_seq_len, probe_path):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
+                           s1_idx=1, s2_idx=2, has_labels=False, targ_map=targ_map, skip_rows=0)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
+                            s1_idx=0, s2_idx=1, label_idx=2, targ_map=targ_map, skip_rows=0)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, targ_map=targ_map, skip_rows=0)
-
+                           s1_idx=1, s2_idx=2, has_labels=False, targ_map=targ_map, skip_rows=0)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -821,11 +817,11 @@ class RTETask(PairClassificationTask):
         ''' Process the datasets located at path. '''
         targ_map = {"not_entailment": 0, "entailment": 1}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len, targ_map=targ_map,
-                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len, targ_map=targ_map,
-                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -848,11 +844,11 @@ class QNLITask(PairClassificationTask):
         '''Load the data'''
         targ_map = {'not_entailment': 0, 'entailment': 1}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, targ_map=targ_map,
-                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -873,11 +869,11 @@ class WNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=1)
+                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -896,11 +892,11 @@ class JOCITask(PairOrdinalRegressionTask):
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
+                           s1_idx=0, s2_idx=1, label_idx=2)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=0, s2_idx=1, targ_idx=2)
+                            s1_idx=0, s2_idx=1, label_idx=2)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=0, s2_idx=1, targ_idx=2)
+                           s1_idx=0, s2_idx=1, label_idx=2)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -1069,11 +1065,11 @@ class WeakGroundedTask(PairClassificationTask):
         targ_map = {'0': 0, '1': 1}
 
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train_aug.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+                           s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
-                            s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+                            s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
+                           s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1275,11 +1271,11 @@ class RecastNLITask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
+                           s1_idx=1, s2_idx=2, skip_rows=0, label_idx=3)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=1, skip_rows=0, targ_idx=3)
+                            s1_idx=0, s2_idx=1, skip_rows=0, label_idx=3)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, skip_rows=0, targ_idx=3)
+                           s1_idx=1, s2_idx=2, skip_rows=0, label_idx=3)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1345,12 +1341,12 @@ class CCGTaggingTask(TaggingTask):
            The target needs to be split into tokens because
            it is a sequence (one tag per input token). '''
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                            s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, targ_idx=1, targ_fn=lambda t: t.split(' '))
+                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading CCGTagging data.")
+        log.info('\tFinished loading CCGTagging data.')

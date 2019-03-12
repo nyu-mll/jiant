@@ -229,6 +229,7 @@ To activate fastText model within our framework, set the flag ``fastText = 1``
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
+
 ### GloVe
 
 To use [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
