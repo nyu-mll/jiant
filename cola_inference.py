@@ -168,15 +168,31 @@ def run_corpus_inference(model, vocab, indexers, task, args,
     ''' Run inference on corpus '''
     with open(input_path, "r") as f_in:
         data_in = f_in.readlines()
-    data_out_batches = []
+    logit_batches = []
     for batch_string_ls in tqdm(list(batchify(data_in, args.batch_size))):
         batch, _ = prepare_batch(batch_string_ls, task, vocab, indexers, args)
         with torch.no_grad():
             out = model.forward(task, batch, predict=True)
-            data_out_batches.append(out["logits"].cpu().numpy())
-    data_out = np.concatenate(data_out_batches, axis=0)
-    df = pd.DataFrame(data_out)
-    df.to_csv(output_path, header=False, index=False)
+            logit_batches.append(out["logits"].cpu().numpy())
+
+    logits = np.concatenate(logit_batches, axis=0)
+    probs = torch.softmax(torch.tensor(logits), dim=1).numpy()
+    preds = np.argmax(probs, axis=1)
+
+    data_out = np.concatenate([logits, probs], axis=1)
+
+    # Future-proofing
+    assert task.name == "cola"
+    num_classes = logits.shape[1]
+    columns = (
+        [f"logit_{i}" for i in range(num_classes)]
+        + [f"prob_{i}" for i in range(num_classes)]
+    )
+
+    df = pd.DataFrame(data_out, columns=columns)
+    df["pred"] = preds
+
+    df.to_csv(output_path, index=False)
 
 
 def batchify(ls, batch_size):
