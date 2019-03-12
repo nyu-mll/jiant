@@ -27,7 +27,10 @@ def load_tsv(
         delimiter='\t',
         filter_idx=None,
         has_labels=True,
-        filter_value=None):
+        filter_value=None,
+        tag_vocab=None,
+        tag2idx_dict=None
+        ):
     '''
     Load a tsv.
     To load only rows that have a certain value for a certain column,
@@ -41,6 +44,8 @@ def load_tsv(
         filter_value: string the value in which we want filter_idx to be equal to
         return_indices: bool that describes if you need to return indices (for purposes of matching)
         label_fn is a function that expects a row and outputs the label
+        tag_vocab is a allenlp vocab object contains the tags
+        tag2idx_dict is a <string, int> dictionary from coarse category name to column index
     Returns:
         List of first and second sentences, labels, and if applicable indices
     '''
@@ -75,10 +80,20 @@ def load_tsv(
     else:
         # If dataset doesn't have labels, for example for test set, then mock labels
         labels = np.zeros(len(rows), dtype=int)
+    if tag2idx_dict is not None:
+        # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab
+        def tags_to_tids(coarse_tag, fine_tags):
+            return [] if pd.isna(fine_tags) else ([tag_vocab.add_token_to_namespace(coarse_tag) - 2] + \
+                [tag_vocab.add_token_to_namespace('%s__%s' % (coarse_tag, fine_tag)) - 2 \
+                for fine_tag in fine_tags.split(';')])
+        tid_temp = [rows[idx].apply(lambda x: tags_to_tids(coarse_tag, x)).tolist() for coarse_tag, idx in tag2idx_dict.items()]
+        tagids = [[tid for column in tid_temp for tid in column[idx]] for idx in range(len(rows))]
     if return_indices:
         idxs = rows.index.tolist()
         # Get indices of the remaining rows after filtering
         return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
+    elif tag2idx_dict is not None:
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), tagids
     else:
         return sent1s.tolist(), sent2s.tolist(), labels.tolist()
 
@@ -153,101 +168,20 @@ def load_diagnostic_tsv(
             'ix_to_knowledge_dic': ix_to_knowledge_dic
             }
 
-class TSVLoader(object):
-    def __init__(self, tokenizer_name=None, max_seq_len=None, tag_eval=False):
-        '''
-        Create a tsv loader
-        Args:
-            tokenizer
-            max_seq_len
-            tag_eval: Set true for fine-grained evaluation (mnli-diagnostic, cola-analysis)
-        '''
-        self.tokenizer_name = tokenizer_name
-        self.max_seq_len = max_seq_len
-        self.tag_eval = tag_eval
-        if self.tag_eval:
-            self.tag_vocab = vocabulary.Vocabulary(counter=None)
-        return
 
-    def load_file(self, data_file,
-        label_cid=2, s1_cid=0, s2_cid=1,
-        label_fn=None, col_indices=None,
-        skip_rows=0, tag2cid_dict=None,
-        delimiter='\t', filter_cid=None,
-        has_labels=True, filter_value=None):
-        '''
-        Load a tsv.
-        To load only rows that have a certain value for a certain column,
-        like genre in MNLI, set filter_idx and filter_value (for example,
-        for mnli-fiction  we want columns where genre == 'fiction' ).
-        Naming principle: idx = sample index, cid = column index, tid = tag index
-        Args:
-            s1_cid; int
-            s2_cid: int
-            label_cid: int
-            filter_cid: int this is the index that we want to filter from
-            filter_value: string the value in which we want filter_idx to be equal to
-            label_fn is a function that expects a row and outputs the label
-            tag2cid_dict is a <string, int> dictionary from coarse category name to column index 
-        Returns:
-            data_pack: a dictionary that may include
-                sent1s: first sentence, sent2s: second sentence, 
-                labels, idx,
-                tagids: list of "coarse__fine" tag indexes
-        '''
-        data_pack = {}
-        rows = pd.read_csv(data_file,
-            sep=delimiter,
-            error_bad_lines=False,
-            names=col_indices,
-            header=None,
-            skiprows=skip_rows,
-            quoting=csv.QUOTE_NONE,
-            encoding='utf-8')
-        
-        # Filter for sentence1s that are of length 0
-        # Filter if row[targ_cid] is nan
-        if filter_cid:
-            rows = rows[rows[filter_cid] == filter_value]
-        mask = (rows[s1_cid].str.len() > 0)
-        if s2_cid is not None:
-            mask = mask & (rows[s2_cid].str.len() > 0)
-        if has_labels:
-            mask = mask & rows[label_cid].notnull()
-        rows = rows.loc[mask]
-        
-        data_pack['idx'] = rows.index.tolist()
-        data_pack['sent1s'] = rows[s1_cid].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)).tolist()
-        if s2_cid is not None:
-            data_pack['sent2s'] = rows[s2_cid].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)).tolist()
-        if has_labels:
-            label_fn = label_fn if label_fn is not None else (lambda x: x)
-            data_pack['labels'] = rows[label_cid].apply(lambda x: label_fn(x)).tolist()
-        else:
-            # If dataset doesn't have labels, for example for test set, then mock labels
-            data_pack['labels'] = np.zeros(len(rows), dtype=int).tolist()
-        if self.tag_eval:
-            # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab
-            def tags_to_tids(coarse_tag, fine_tags):
-                return [] if pd.isna(fine_tags) else ([self.tag_vocab.add_token_to_namespace(coarse_tag) - 2] + \
-                    [self.tag_vocab.add_token_to_namespace('%s__%s' % (coarse_tag, fine_tag)) - 2 \
-                    for fine_tag in fine_tags.split(';')])
-            tid_temp = [rows[cid].apply(lambda x: tags_to_tids(coarse_tag, x)).tolist() for coarse_tag, cid in tag2cid_dict.items()]
-            data_pack['tagids'] = [[tid for column in tid_temp for tid in column[idx]] for idx in range(len(rows))]
-        return data_pack
-
-    def get_tag_list(self):
-        '''
-        Returns:
-            tag_list: a list of "coarse__fine" tag strings
-        '''
-        assert self.tag_eval
-        # get dictionary from allennlp vocab, neglecting @@unknown@@ and @@padding@@
-        tid2tag_dict = {key-2: tag \
-            for key, tag in self.tag_vocab.get_index_to_token_vocabulary().items() \
-                if key - 2 >= 0}
-        tag_list = [tid2tag_dict[tid].replace(':', '_').replace(', ', '_').replace(' ', '_').replace('+', '_') for tid in range(len(tid2tag_dict))]
-        return tag_list
+def get_tag_list(tag_vocab):
+    '''
+    Params:
+        tag_vocab: the vocab that contains all tags 
+    Returns:
+        tag_list: a list of "coarse__fine" tag strings
+    '''
+    # get dictionary from allennlp vocab, neglecting @@unknown@@ and @@padding@@
+    tid2tag_dict = {key-2: tag \
+        for key, tag in tag_vocab.get_index_to_token_vocabulary().items() \
+            if key - 2 >= 0}
+    tag_list = [tid2tag_dict[tid].replace(':', '_').replace(', ', '_').replace(' ', '_').replace('+', '_') for tid in range(len(tid2tag_dict))]
+    return tag_list
 
 
 def process_sentence(tokenizer_name, sent, max_seq_len):

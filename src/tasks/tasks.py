@@ -22,6 +22,7 @@ from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure, Average
 from ..allennlp_mods.correlation import Correlation, FastMatthews
 from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.data import vocabulary
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
@@ -31,7 +32,7 @@ from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, TSVLoader
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
 from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
@@ -431,25 +432,24 @@ class CoLAAnalysisTask(SingleClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         # Load data from tsv
-        tsv_loader = TSVLoader(
-            tokenizer_name=self._tokenizer_name,
-            max_seq_len=max_seq_len,
-            tag_eval=True)
-        
-        tr_data = tsv_loader.load_file(os.path.join(path, "train_analysis.tsv"),
-            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={'Domain': 1})
-        val_data = tsv_loader.load_file(os.path.join(path, "dev_analysis.tsv"),
-            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={
-                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7,
-                'Arg Altern': 8, 'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12,
-                'Auxillary': 13, 'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18})
-        te_data = tsv_loader.load_file(os.path.join(path, "test_analysis.tsv"),
-            s1_cid=3, s2_cid=None, label_cid=2, skip_rows=1, tag2cid_dict={'Domain': 1})
-        self.train_data_text = [tr_data[key] for key in ['sent1s', 'labels', 'tagids']]
-        self.val_data_text = [val_data[key] for key in ['sent1s', 'labels', 'tagids']]
-        self.test_data_text = [te_data[key] for key in ['sent1s', 'labels', 'tagids']]
+        tag_vocab = vocabulary.Vocabulary(counter=None)
+        tr_data = load_tsv(tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len, 
+            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
+        val_data = load_tsv(tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
+            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
+                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8, 
+                'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
+                'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
+        te_data = load_tsv(tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(path, "test_analysis.tsv"), max_seq_len=max_seq_len,
+            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
+        self.train_data_text = tr_data[:1] + tr_data[2:]
+        self.val_data_text = val_data[:1] + val_data[2:]
+        self.test_data_text = te_data[:1] + te_data[2:]
         # Create score for each tag from tag-index dict 
-        self.tag_list = tsv_loader.get_tag_list()
+        self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
         self.tag_scorers2 = create_subset_scorers(count=len(self.tag_list), scorer_type=CategoricalAccuracy)
 
