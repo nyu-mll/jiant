@@ -103,6 +103,10 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
 def create_subset_scorers(count, scorer_type, **args_to_scorer):
     '''
+    Create a list scorers of designated type for each "coarse__fine" tag.
+    This function is only used by tasks that need evalute results on tags,
+    and should be called after loading all the splits.
+
     Parameters:
         count: N_tag, number of different "coarse__fine" tags
         scorer_type: which scorer to use
@@ -115,6 +119,10 @@ def create_subset_scorers(count, scorer_type, **args_to_scorer):
 
 def update_subset_scorers(scorer_list, estimations, labels, tagmask):
     '''
+    Add the output and label of one minibatch to the subset scorer objects.
+    This function is only used by tasks that need evalute results on tags,
+    and should be called every minibatch when task.scorer are updated.
+
     Parameters:
         scorer_list: a list of N_tag scorer object
         estimations: a (bs, *) tensor, model estimation
@@ -131,6 +139,10 @@ def update_subset_scorers(scorer_list, estimations, labels, tagmask):
 
 def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     '''
+    Get the scorer measures of each tag.
+    This function is only used by tasks that need evalute results on tags,
+    and should be called in get_metrics.
+
     Parameters:
         scorer_list: a list of N_tag scorer object
         metric_name: string, name prefix for this group
