@@ -442,8 +442,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             return_indices=True,
             skip_rows=1,
             filter_idx=3,
-            filter_value=genre,
-            tokenizer_name=self._tokenizer_name)
+            filter_value=genre)
 
         val_matched_data = load_tsv(self._tokenizer_name,
             os.path.join(
@@ -457,8 +456,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             return_indices=True,
             skip_rows=1,
             filter_idx=3,
-            filter_value=genre,
-            tokenizer_name=self._tokenizer_name)
+            filter_value=genre)
 
         te_matched_data = load_tsv(self._tokenizer_name,
             os.path.join(
@@ -471,8 +469,7 @@ class MultiNLISingleGenreTask(PairClassificationTask):
             return_indices=True,
             skip_rows=1,
             filter_idx=3,
-            filter_value=genre,
-            tokenizer_name=self._tokenizer_name)
+            filter_value=genre)
 
         self.train_data_text = tr_data
         self.val_data_text = val_matched_data
@@ -602,9 +599,7 @@ class MultiNLITask(PairClassificationTask):
                                     s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, skip_rows=1)
         val_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
                                        s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__,
-                                       has_labels=False,
-                                       skip_rows=1,
-                                       tokenizer_name=self._tokenizer_name)
+                                       has_labels=False, skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
 
@@ -657,8 +652,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             s2_col="Hypothesis",
             label_col="Label",
             label_fn=targ_map.__getitem__,
-            skip_rows=1,
-            tokenizer_name=self._tokenizer_name)
+            skip_rows=1)
 
         self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
         self.ix_to_pr_ar_str_dic = diag_data_dic['ix_to_pr_ar_str_dic']
