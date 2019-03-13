@@ -28,8 +28,7 @@ from .utils import config
 
 
 def build_trainer_params(args, task_names):
-    ''' In an act of not great code design, we wrote this helper function which
-    extracts trainer parameters from args. In particular, we want to search args
+    ''' helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(args, task_names,
                                                                attr_name)
@@ -52,7 +51,7 @@ def build_trainer_params(args, task_names):
     return Params(params)
 
 
-def build_trainer(params, model, run_dir, metric_should_decrease=True):
+def build_trainer(args, task_names, model, run_dir, metric_should_decrease=True, train_type="SamplingMultiTaskTrainer"):
     '''Build a trainer from params.
 
     Parameters
@@ -65,7 +64,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
-
+    params = build_trainer_params(args, task_names)
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
@@ -101,8 +100,9 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'val_data_limit': params['val_data_limit'],
                            'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
-    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
-                                                   copy.deepcopy(train_params))
+    if train_type == "SamplingMultiTaskTrainer":
+        trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
+                                                       copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
 
@@ -447,7 +447,7 @@ class SamplingMultiTaskTrainer:
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
-                output_dict = self._forward(batch, task=task, for_training=True)
+                output_dict = self._forward(batch, task=task)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
@@ -580,7 +580,7 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _update_metric_history(self, epoch, all_val_metrics, metric_infos, metric_decreases, periodic_save):
+    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, periodic_save):
         """
         This function updates metric history with the best validation score so far
         Parameters
@@ -644,7 +644,7 @@ class SamplingMultiTaskTrainer:
 
         for batch in val_generator:
             batch_num += 1
-            out = self._forward(batch, task=task, for_training=False)
+            out = self._forward(batch, task=task)
             loss = out["loss"]
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
@@ -708,7 +708,7 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples_overall, task_infos, all_val_metrics =
+            n_examples_overall, task_infos, all_val_metrics = \
                 self._get_validation_performance(task,
                                                  task_infos,
                                                  tasks,
@@ -732,7 +732,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(task, tasks, epoch, all_val_metrics, metric_infos, periodic_save)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, all_val_metrics, metric, metric_infos, metric_decreases, periodic_save)
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
             if task_name not in ['micro', 'macro'] and g_scheduler is None:
@@ -794,7 +794,7 @@ class SamplingMultiTaskTrainer:
 
         return should_stop
 
-    def _forward(self, batch, for_training, task=None):
+    def _forward(self, batch, task=None):
         tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)
         return model_out
