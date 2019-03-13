@@ -47,13 +47,14 @@ def sentence_to_text_field(sent: Sequence[str], indexers: Any):
     return TextField(list(map(Token, sent)), token_indexers=indexers)
 
 
-def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int):
+def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_seq_len: int,
+                    tokenizer_name: str):
     ''' Replace tokens that will be split by tokenizer with a
     placeholder token. Tokenize, and then substitute the placeholder
     with the *first* nonatomic token in the list. '''
     for nonatomic_tok in nonatomic_toks:
         sent = sent.replace(nonatomic_tok, atomic_tok)
-    sent = process_sentence(sent, max_seq_len)
+    sent = process_sentence(sent, max_seq_len, tokenizer_name=tokenizer_name)
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
@@ -65,11 +66,12 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
 
     Args:
         - split (list[list[str]]): list of inputs (possibly pair) and outputs
-        - pair_input (int)
-        - tok2idx (dict)
+        - indexers ()
+        - is_pair (Bool)
+        - classification (Bool)
 
     Returns:
-        - instances (list[Instance]): a list of AllenNLP Instances with fields
+        - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     '''
     def _make_instance(input1, input2, labels, idx):
         d = {}
@@ -96,9 +98,8 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         assert len(split) == 3
         split.append(itertools.count())
 
-    # Map over columns: input2, (input2), labels, idx
+    # Map over columns: input1, (input2), labels, idx
     instances = map(_make_instance, *split)
-    #  return list(instances)
     return instances  # lazy iterator
 
 
@@ -592,7 +593,7 @@ class MultiNLITask(PairClassificationTask):
         val_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_matched.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, skip_rows=1)
         val_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, has_labels=False,
+                                       s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__,
                                        skip_rows=1)
         val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
         val_data = tuple(val_data)
@@ -933,7 +934,8 @@ class Wiki103Classification(PairClassificationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len,
+                                       tokenizer_name=self._tokenizer_name)
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
                     continue
                 yield sent
@@ -1013,8 +1015,8 @@ class DisSentTask(PairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) != 3 or not (row[0] and row[1] and row[2]):
                     continue
-                sent1 = process_sentence(row[0], self.max_seq_len)
-                sent2 = process_sentence(row[1], self.max_seq_len)
+                sent1 = process_sentence(row[0], self.max_seq_len, tokenizer_name=self._tokenizer_name)
+                sent2 = process_sentence(row[1], self.max_seq_len, tokenizer_name=self._tokenizer_name)
                 targ = int(row[2])
                 yield (sent1, sent2, targ)
 
