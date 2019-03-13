@@ -211,11 +211,45 @@ def _build_vocab(args, tasks, vocab_path: str):
         add_task_label_vocab(vocab, task)
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
-        add_openai_bpe_vocab(vocab)
+        add_openai_bpe_vocab(vocab, 'openai_bpe')
+    if args.bert_model_name:
+        # Add pre-computed BPE vocabulary for BERT model.
+        add_bert_wpm_vocab(vocab, args.bert_model_name)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
+
+
+def build_indexers(args):
+    indexers = {}
+    if not args.word_embs == 'none':
+        indexers["words"] = SingleIdTokenIndexer()
+    if args.elmo:
+        indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
+        assert args.tokenizer in {"", "MosesTokenizer"}
+    if args.char_embs:
+        indexers["chars"] = TokenCharactersIndexer("chars")
+    if args.cove:
+        assert args.tokenizer == "MosesTokenizer", \
+                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
+                 " you are using args.tokenizer = {args.tokenizer}")
+    if args.openai_transformer:
+        assert not indexers, ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
+        assert args.tokenizer == "OpenAI.BPE", \
+                             ("OpenAI transformer is not supported alongside"
+                              " other indexers due to tokenization!")
+        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+    if args.bert_model_name:
+        assert not indexers, ("BERT is not supported alongside"
+                              " other indexers due to tokenization!")
+        assert args.tokenizer == args.bert_model_name, \
+                             ("BERT models use custom WPM tokenization for "
+                              "each model, so tokenizer must match the "
+                              "specified BERT model.")
+        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
+    return indexers
 
 
 def build_tasks(args):
@@ -240,25 +274,7 @@ def build_tasks(args):
               " Tokenizations: {tokenizer_names:s}")
 
     # 2) build / load vocab and indexers
-    indexers = {}
-    if not args.word_embs == 'none':
-        indexers["words"] = SingleIdTokenIndexer()
-    if args.elmo:
-        indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
-        assert args.tokenizer in {"", "MosesTokenizer"}
-    if args.char_embs:
-        indexers["chars"] = TokenCharactersIndexer("chars")
-    if args.cove:
-        assert args.tokenizer == "MosesTokenizer", \
-                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
-                 " you are using args.tokenizer = {args.tokenizer}")
-    if args.openai_transformer:
-        assert not indexers, ("OpenAI transformer is not supported alongside"
-                              " other indexers due to tokenization!")
-        assert args.tokenizer == "OpenAI.BPE", \
-                             ("OpenAI transformer is not supported alongside"
-                              " other indexers due to tokenization!")
-        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+    indexers = build_indexers(args)
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
@@ -276,7 +292,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.word_embs != 'none':
+    if args.word_embs not in ['none' ,'scratch']:
         emb_file = os.path.join(args.exp_dir, 'embs.pkl')
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
@@ -536,6 +552,22 @@ def add_task_label_vocab(vocab, task):
     log.info("\tTask '%s': adding vocab namespace '%s'", task.name, namespace)
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
+
+def add_bert_wpm_vocab(vocab, bert_model_name):
+    '''Add BERT WPM vocabulary for use with pre-tokenized data.
+
+    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
+    anything special so we can just use the standard indexers.
+    '''
+    from pytorch_pretrained_bert import BertTokenizer
+    do_lower_case = bert_model_name.endswith('uncased')
+    tokenizer = BertTokenizer.from_pretrained(bert_model_name,
+                                              do_lower_case=do_lower_case)
+    ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
+    log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name,
+             len(ordered_vocab))
+    for word in ordered_vocab:
+        vocab.add_token_to_namespace(word, bert_model_name)
 
 def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     '''Add OpenAI BPE vocabulary for use with pre-tokenized data.'''

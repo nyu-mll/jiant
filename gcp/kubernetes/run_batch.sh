@@ -32,17 +32,19 @@ GPU_TYPE="p100"
 PROJECT="$USER"
 NOTIFY_EMAIL=""
 
+BERT_CACHE="/nfs/jsalt/share/bert_cache"
+
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts ":m:g:p:n:" opt; do
     case "$opt" in
-    m)	MODE=$OPTARG
+    m)  MODE=$OPTARG
         ;;
     g)  GPU_TYPE=$OPTARG
         ;;
     p)  PROJECT=$OPTARG
         ;;
-    n)	NOTIFY_EMAIL=$OPTARG
+    n)  NOTIFY_EMAIL=$OPTARG
         ;;
     \? )
         echo "Invalid flag $opt."
@@ -65,7 +67,7 @@ if [ ! -d "${PROJECT_DIR}" ]; then
 fi
 
 GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v4"
+IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v7"
 
 ##
 # Create custom config and create a Kubernetes pod.
@@ -97,8 +99,15 @@ spec:
       value: ${PROJECT_DIR}
     - name: NOTIFY_EMAIL
       value: ${NOTIFY_EMAIL}
+    - name: PYTORCH_PRETRAINED_BERT_CACHE
+      value: ${BERT_CACHE}
   nodeSelector:
     cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
+  tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Equal"
+    value: "present"
+    effect: "NoSchedule"
   volumes:
   - name: nfs-jsalt
     persistentVolumeClaim:
