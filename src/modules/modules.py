@@ -268,10 +268,6 @@ class Pooler(nn.Module):
             seq_emb = proj_seq[:,0]
         return seq_emb
 
-    @classmethod
-    def from_params(cls, d_inp, d_proj, project=True):
-        return cls(d_inp, d_proj=d_proj, project=project)
-
 
 class Classifier(nn.Module):
     ''' Logistic regression or MLP classifier '''
