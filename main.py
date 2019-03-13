@@ -26,6 +26,9 @@ from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
 from src import evaluate
 
+# Global notification handler, can be accessed outside main() during exception
+# handling.
+EMAIL_NOTIFIER = None
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
@@ -106,9 +109,21 @@ def get_best_checkpoint_path(run_dir):
 
     return ""
 
-# Global notification handler, can be accessed outside main() during exception
-# handling.
-EMAIL_NOTIFIER = None
+def evaluate_and_write(args, model, tasks, splits_to_write):
+    """ Evaluate a model on dev and/or test, then write predictions """
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    if 'val' in splits_to_write:
+        evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
+                             strict_glue_format=args.write_strict_glue_format)
+    if 'test' in splits_to_write:
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
+                             strict_glue_format=args.write_strict_glue_format)
+    run_name = args.get("run_name", os.path.basename(args.run_dir))
+
+    results_tsv = os.path.join(args.exp_dir, "results.tsv")
+    log.info("Writing results for split 'val' to %s", results_tsv)
+    evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
 
 def main(cl_arguments):
@@ -370,41 +385,11 @@ def main(cl_arguments):
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-                val_results, val_preds = evaluate.evaluate(model, [task],
-                                                           args.batch_size,
-                                                           args.cuda, "val")
-                if 'val' in splits_to_write:
-                    evaluate.write_preds([task], val_preds, args.run_dir, 'val',
-                                         strict_glue_format=args.write_strict_glue_format)
-                if 'test' in splits_to_write:
-                    _, te_preds = evaluate.evaluate(model, [task],
-                                                    args.batch_size, args.cuda, "test")
-                    evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                                         strict_glue_format=args.write_strict_glue_format)
-                run_name = args.get("run_name", os.path.basename(args.run_dir))
 
-                results_tsv = os.path.join(args.exp_dir, "results.tsv")
-                log.info("Writing results for split 'val' to %s", results_tsv)
-                evaluate.write_results(val_results, results_tsv, run_name=run_name)
+                evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
-            val_results, val_preds = evaluate.evaluate(model, target_tasks,
-                                                       args.batch_size,
-                                                       args.cuda, "val")
-
-            if 'val' in splits_to_write:
-                evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
-                                     strict_glue_format=args.write_strict_glue_format)
-            if 'test' in splits_to_write:
-                _, te_preds = evaluate.evaluate(model, target_tasks,
-                                                args.batch_size, args.cuda, "test")
-                evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                                     strict_glue_format=args.write_strict_glue_format)
-            run_name = args.get("run_name", os.path.basename(args.run_dir))
-
-            results_tsv = os.path.join(args.exp_dir, "results.tsv")
-            log.info("Writing results for split 'val' to %s", results_tsv)
-            evaluate.write_results(val_results, results_tsv, run_name=run_name)
+            evaluate_and_write(args, model, target_tasks, splits_to_write)
 
     log.info("Done!")
 
