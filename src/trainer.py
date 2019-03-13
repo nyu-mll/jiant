@@ -31,16 +31,13 @@ def build_trainer_params(args, task_names):
     ''' In an act of not great code design, we wrote this helper function which
     extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
+    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names,
+                                                               attr_name)
+
     assert args.max_epochs_per_task is None or args.max_epochs_per_task > 0, \
                         ("max_epochs_per_task must be a positive number if "
                         "it is used")
-    assert args.optimizer == "bert_adam" and args.max_epochs_per_task > 0, \
-                        ("For now, you have to set max_epochs_per_task to be a"
-                        "positive number for bert adams since the optimizer"
-                        "relies on it")
 
-    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names,
-                                                               attr_name)
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'lr_patience', 'patience', 'scheduler_threshold']
@@ -79,9 +76,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params['amsgrad'] = True
-    elif params['optimizer'] == 'bert_adam':
-        opt_params['t_total'] = -1
-        opt_params['warmup'] = 0.1
     opt_params = Params(opt_params)
 
     if 'transformer' in params['sent_enc']:
@@ -328,8 +322,6 @@ class SamplingMultiTaskTrainer:
                 # TODO(Alex or Yada): make this generalizable to not depend
                 # on max_epochs_per_tasks.
                 n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-                if optimizer_params["type"] == "bert_adam":
-                    optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
