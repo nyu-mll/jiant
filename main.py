@@ -20,7 +20,6 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import torch
 
 from src.utils import config
-
 from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
@@ -87,7 +86,8 @@ def get_best_checkpoint_path(run_dir):
     Hierarchy is
         1) best checkpoint from eval (target_task_training)
         2) best checkpoint from pretraining
-        3) nothing found (empty string) """
+        3) checkpoint created from before any target task training
+        4) nothing found (empty string) """
     eval_best = glob.glob(os.path.join(run_dir, "model_state_eval_best.th"))
     if len(eval_best) > 0:
         assert_for_log(len(eval_best) == 1,
@@ -191,6 +191,9 @@ def main(cl_arguments):
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
+
+    assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
+                   "Transfer paradigm %s not supported!" % args.transfer_paradigm)
 
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
@@ -304,7 +307,7 @@ def main(cl_arguments):
             if args.transfer_paradigm == "finetune":
                 # Train both the task specific models as well as sentence encoder.
                 to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-            elif args.transfer_paradigm == "frozen":
+            else: # args.transfer_paradigm == "frozen":
                 # Only train task-specific module.
                 pred_module = getattr(model, "%s_mdl" % task.name)
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
@@ -344,7 +347,7 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task training.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
-            elif args.transfer_paradigm == "frozen":
+            else: # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 # Save the best checkpoint from that target task training to be
                 # specific to that target task.
@@ -360,7 +363,8 @@ def main(cl_arguments):
             for task in tasks:
                 if task.name == 'mnli-diagnostic':
                     finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % "mnli")
-
+                else:
+                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
