@@ -17,6 +17,8 @@ from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
+from nltk.tokenize.moses import MosesDetokenizer
+
 from allennlp.nn.util import masked_softmax, device_mapping
 from allennlp.common.checks import ConfigurationError
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
