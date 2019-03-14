@@ -62,9 +62,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
             out = model.forward(task, batch, predict=True)
             # We don't want mnli-diagnostic to affect the micro and macro average.
             # Accuracy of mnli-diagnostic is hardcoded to 0.
-            #if task.name != "mnli-diagnostic":
-            #    n_examples += out["n_exs"]
-            n_examples += out["n_exs"]
+            if task.name != "mnli-diagnostic":
+                n_examples += out["n_exs"]
             # get predictions
             if 'preds' not in out:
                 continue
