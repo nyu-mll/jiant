@@ -29,7 +29,7 @@ from allennlp.data.fields import TextField, LabelField, \
     SpanField, ListField, MetadataField
 from ..allennlp_mods.numeric_field import NumericField
 
-from ..utils import utils
+from ..utils import utils, retokenize
 from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
 from ..utils.tokenizers import get_tokenizer
@@ -1324,7 +1324,6 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
-
 @register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
@@ -1335,6 +1334,7 @@ class CCGTaggingTask(TaggingTask):
         super().__init__(name, num_tags=1363, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.max_seq_len = max_seq_len
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at each data file.
@@ -1345,7 +1345,24 @@ class CCGTaggingTask(TaggingTask):
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.dev"), max_seq_len,
                             s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
+                           s1_idx=0, s2_idx=None, label_idx=1, has_labels=False)
+
+        # you might not know what these actually mean, but they are the CCG parsing.
+        if self._tokenizer_name != "MosesTokenizer":
+            # align tags, which were created with MossTokenized text,
+            # with
+            def moses_tokenizer(text):
+                from nltk.tokenize.moses import MosesTokenizer
+                mt = MosesTokenizer()
+                return mt.tokenize(text)
+
+            for data in [val_data]:
+                # data[-1] is the original data pre-Moses Tokenization
+                # data[2] is the labels
+                # data[0] is the tokenized dta.
+                for i in range(len(data[2])):
+                    data[2][i] = retokenize.adjust_targs_moses_to_BPE(data[2][i], data[0][i], data[-1][i], moses_tokenizer)
+
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

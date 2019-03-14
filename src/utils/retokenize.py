@@ -13,23 +13,86 @@ from io import StringIO
 
 import numpy as np
 from scipy import sparse
-
+from ..utils import utils
+import re
 from nltk.tokenize.simple import SpaceTokenizer
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
-
+from typing import Tuple, List, Text
 # Tokenizer instance for internal use.
 _SIMPLE_TOKENIZER = SpaceTokenizer()
 _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
+
+def adjust_targs_moses_to_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
+    """
+    Adjusts target tokens so that it matches with the newly BPE-retokenized
+    input
+    This function is called only for OpenAI -> TaggingTasks
+    BPE tokenization will add more tokens to the sentence than the original
+    tokens (thus len(bpe_input) >= len(orig_input)).
+    However, MosesTokenizer can add ;apos to the text, thus we first must remove
+    the tags correlating to &apos; as well as the &apos; in the Moses-tokenized
+    text.
+    We handle aligning by assuming that the target token of the
+    new added bpe token is the same as its left neighbor for simplicity.
+    Parameters
+    ----------
+    targs :  A list of string, required.
+        target tokens
+    bpe_input : list of string, required
+        This is the output of the BPE tokenizer
+    orig_input: string, required
+        This is the original input from the dataset
+    orig_tokenizer_func: func: str -> list of strings
+        This is a function that tokenizes it the way that the dataset is
+        tokenized. For example, CCGBank was created by tokenizing the input
+        using MosesTokenizer
+    Returns
+    -------
+    A list of strings of the newly adjusted target tokens
+    """
+    orig_input = orig_tokenizer_func(orig_input)
+    indices = [i[0] for i in enumerate(orig_input) if i[1] == '&apos;']
+    for index in sorted(indices, reverse=True):
+        del targs[index]
+    orig_input = [tok for tok in orig_input if tok != '&apos;']
+    orig_toks = [s.lower() for s in orig_input]
+
+    bpe_input = bpe_input[1:-1]
+    new_toks = [s.replace("</w>", "") for s in bpe_input]
+
+    c_index = len(targs) - 1
+    curr_targ = targs[c_index]
+    next_expected_tok = orig_toks[c_index-1]
+    next_expected_tok = "".join(re.findall("[a-zA-Z]+", next_expected_tok))
+    new_targs = [curr_targ]
+    current_tok_up_to_now = ""
+    # move from last to front
+    for i in range(len(new_toks) - 2, -1, -1):
+        current_tok_up_to_now = "%s%s" % (new_toks[i], current_tok_up_to_now)
+        current_tok_up_to_now = "".join(re.findall("[a-zA-Z]+", current_tok_up_to_now))
+        if current_tok_up_to_now != next_expected_tok:
+            new_targs.append(curr_targ)
+        else:
+            c_index -= 1
+            current_tok_up_to_now = ""
+            curr_targ = targs[c_index]
+            new_targs.append(curr_targ)
+            next_expected_tok = orig_toks[c_index-1]
+            next_expected_tok = "".join(re.findall("[a-zA-Z]+", next_expected_tok))
+    # add EOS/SOS to the target tokens.
+    targ_final = [str(int(t)+utils.EOS_INDEX+1) for t in new_targs]
+    targ_final = [str(utils.EOS_INDEX)] + targ_final + [str(utils.SOS_INDEX)]
+    targ_final.reverse()
+    return targ_final
 
 # Type alias for internal matricies
 Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
                                  Type[np.ndarray]])
 
 _DTYPE = np.int32
-
 
 def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
     M = np.zeros((n_chars_src, n_chars_tgt), dtype=_DTYPE)

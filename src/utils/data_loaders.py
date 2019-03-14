@@ -78,9 +78,9 @@ def load_tsv(
     if return_indices:
         idxs = rows.index.tolist()
         # Get indices of the remaining rows after filtering
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs, rows[s1_idx].tolist()
     else:
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist()
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), rows[s1_idx].tolist()
 
 def load_diagnostic_tsv(
         tokenizer_name,

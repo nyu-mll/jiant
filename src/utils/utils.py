@@ -47,6 +47,10 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         return [item]
     return item
 
+def moses_tokenizer(text):
+    from sacremoses import MosesTokenizer
+    mt = MosesTokenizer()
+    return mt.tokenize(text, return_str=True)
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state

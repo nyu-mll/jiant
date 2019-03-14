@@ -873,40 +873,39 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
+    def _tagger_forward(self, batch, task, predict):
         '''
-            This function is the specific task-component forward func
-            Args:
-                    batch: a dict of inputs and target tags
-                    task: TaggingTask
-                    predict: (boolean) predict mode (not supported)
-            Returns
-                out: (dict)
-                    - 'logits': output layer, dimension: [batchSize * task.max_seq_len, task.num_tags]
-                    - 'loss': size average CE loss
+        This function is for sequence tagging
+        Args:
+                batch: a dict of inputs and target tags
+                task: TaggingTask
+                predict: (boolean) predict mode (not supported)
+        Returns
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * task.max_seq_len, task.num_tags]
+                - 'loss': size average CE loss
         '''
         out = {}
-        b_size, _ = batch['targs']['words'].size()
+        b_size, seq_len = list(batch['inputs'].values())[0].size()
+        # batch["inputs"] has only 1 key
+        seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
         if not isinstance(sent_encoder, BiLMEncoder):
-            # Tihs si the targs which are the labels.
             sent, mask = sent_encoder(batch['inputs'], task)
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
+            sent = sent[:, 1:-1, :]
             hid2tag = self._get_classifier(task)
             logits = hid2tag(sent)
-            logits = logits.view(b_size * (task.max_seq_len), -1) #inputs.
+            logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
-            #pad the targs.
-            padded_targs = torch.zeros((b_size, task.max_seq_len),dtype=torch.long)
-            targs = batch['targs']['words']
-            padded_targs[:targs.size()[0], :targs.size()[1]] = targs
-            padded_targs = padded_targs.view(-1)
+            targs = batch['targs']['words'][:, :seq_len].contiguous().view(-1)
 
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
-        out['loss'] = F.cross_entropy(logits, padded_targs, ignore_index=pad_idx)
-        task.scorer1(logits, padded_targs)
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(logits, targs)
         return out
+
 
     def _lm_forward(self, batch, task, predict):
         """Forward pass for LM model
