@@ -55,7 +55,7 @@ def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_s
     with the *first* nonatomic token in the list. '''
     for nonatomic_tok in nonatomic_toks:
         sent = sent.replace(nonatomic_tok, atomic_tok)
-    sent = process_sentence(sent, max_seq_len, tokenizer_name=tokenizer_name)
+    sent = process_sentence(tokenizer_name, sent, max_seq_len)
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
@@ -435,12 +435,12 @@ class CoLAAnalysisTask(SingleClassificationTask):
         # Load data from tsv
         tag_vocab = vocabulary.Vocabulary(counter=None)
         tr_data = load_tsv(tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len, 
+            data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len,
             s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
         val_data = load_tsv(tokenizer_name=self._tokenizer_name,
             data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
             s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
-                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8, 
+                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
                 'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
                 'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
         te_data = load_tsv(tokenizer_name=self._tokenizer_name,
@@ -449,7 +449,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.train_data_text = tr_data[:1] + tr_data[2:]
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
-        # Create score for each tag from tag-index dict 
+        # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
         self.tag_scorers2 = create_subset_scorers(count=len(self.tag_list), scorer_type=CategoricalAccuracy)
@@ -483,7 +483,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        
+
         collected_metrics = {'mcc': self.scorer1.get_metric(reset), 'accuracy': self.scorer2.get_metric(reset)}
         collected_metrics.update(collect_subset_scores(self.tag_scorers1, 'mcc', self.tag_list, reset))
         collected_metrics.update(collect_subset_scores(self.tag_scorers2, 'accuracy', self.tag_list, reset))
