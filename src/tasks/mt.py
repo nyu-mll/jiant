@@ -66,11 +66,9 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                src_sent = process_sentence(row[0], self.max_seq_len,
-                                            tokenizer_name=self._tokenizer_name)
+                src_sent = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
                 # Currently: force Moses tokenization on targets
-                tgt_sent = process_sentence(row[1], self.max_seq_len,
-                                            tokenizer_name="MosesTokenizer")
+                tgt_sent = process_sentence("MosesTokenizer", row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -137,15 +135,13 @@ class RedditSeq2SeqTask(MTTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                src_sent = process_sentence(row[2], self.max_seq_len,
-                                            tokenizer_name=self._tokenizer_name)
-                tgt_sent = process_sentence(row[3], self.max_seq_len,
-                                            tokenizer_name=self._tokenizer_name)
+                src_sent = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
+                tgt_sent = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(input_target):
+        def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
             d["targs"] = sentence_to_text_field(target, self.target_indexer)

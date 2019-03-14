@@ -50,8 +50,8 @@ class RedditTask(RankingTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(row[2], self.max_seq_len, tokenizer_name=self._tokenizer_name)
-                sent2 = process_sentence(row[3], self.max_seq_len, tokenizer_name=self._tokenizer_name)
+                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -122,8 +122,8 @@ class RedditPairClassificationTask(PairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(row[2], self.max_seq_len, tokenizer_name=self._tokenizer_name)
-                sent2 = process_sentence(row[3], self.max_seq_len, tokenizer_name=self._tokenizer_name)
+                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -186,8 +186,8 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                sent1 = process_sentence(row[0], self.max_seq_len, tokenizer_name=self._tokenizer_name)
-                sent2 = process_sentence(row[1], self.max_seq_len, tokenizer_name=self._tokenizer_name)
+                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
