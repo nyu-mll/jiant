@@ -31,16 +31,13 @@ def build_trainer_params(args, task_names):
     ''' In an act of not great code design, we wrote this helper function which
     extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
-    assert args.max_epochs_per_task is None or args.max_epochs_per_task > 0, \
-                        ("max_epochs_per_task must be a positive number if "
-                        "it is used")
     assert args.optimizer == "bert_adam" and args.max_epochs_per_task > 0, \
                         ("For now, you have to set max_epochs_per_task to be a"
                         "positive number for bert adams since the optimizer"
                         "relies on it")
 
-    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names,
-                                                               attr_name)
+    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names, attr_name)
+
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'lr_patience', 'patience', 'scheduler_threshold']
@@ -48,7 +45,7 @@ def build_trainer_params(args, task_names):
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'cuda', 'keep_all_checkpoints',
-                  'val_data_limit', 'max_epochs_per_task', 'training_data_fraction']
+                  'val_data_limit', 'max_epochs', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
@@ -109,7 +106,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
-                           'max_epochs_per_task': params['max_epochs_per_task'],
+                           'max_epochs': params['max_epochs'],
                            'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
     trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
@@ -121,7 +118,7 @@ class SamplingMultiTaskTrainer:
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 keep_all_checkpoints=False, val_data_limit=5000, max_epochs_per_task=-1,
+                 keep_all_checkpoints=False, val_data_limit=5000, max_epochs=-1,
                  dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -173,7 +170,7 @@ class SamplingMultiTaskTrainer:
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
-        self._max_epochs_per_task = max_epochs_per_task
+        self._max_epochs = max_epochs
         self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
@@ -324,12 +321,6 @@ class SamplingMultiTaskTrainer:
                                                         optimizer_params, scheduler_params, phase)
 
         if shared_optimizer:  # If shared_optimizer, ignore task_specific optimizers
-            if self._max_epochs_per_task:
-                # TODO(Alex or Yada): make this generalizable to not depend
-                # on max_epochs_per_tasks.
-                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-                if optimizer_params["type"] == "bert_adam":
-                    optimizer_params["t_total"] = n_epoch_steps * self._max_epochs_per_task
             g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
@@ -712,46 +703,44 @@ class SamplingMultiTaskTrainer:
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
 
-    def _check_stop(self, epoch, stop_metric, tasks):
+    def _check_stop(self, val_n, stop_metric, tasks):
         ''' Check to see if should stop '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_optimizer = self._g_optimizer
 
-        if self._max_epochs_per_task > 0:
+        should_stop = False
+        if self._max_epochs > 0: # check if max # epochs hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
-                if n_epochs_trained >= self._max_epochs_per_task:
-                    log.info("Maximum batches trained on %s.", task.name)
+                if n_epochs_trained >= self._max_epochs:
+                    log.info("Maximum epochs trained on %s.", task.name)
                     task_info['stopped'] = True
+            stop_epochs = min([info["stopped"] for info in task_infos.values()])
+            if stop_epochs:
+                log.info("Maximum epochs trained on all tasks.")
+                should_stop = True
 
-        if g_optimizer is None:
-            stop_tr = True
+        if g_optimizer is None: # check if minimum LR hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
                     log.info("Minimum lr hit on %s.", task.name)
                     task_info['stopped'] = True
-                stop_tr = stop_tr and task_info['stopped']
+            stop_lr = min([info['stopped'] for info in task_infos.values()])
         else:
-            stop_tr = False
-            if g_optimizer.param_groups[0]['lr'] < self._min_lr:
-                log.info("Minimum lr hit.")
-                stop_tr = True
-            if min([info["stopped"] for info in task_infos.values()]):
-                log.info("Maximum batches trained on all tasks.")
-                stop_tr = True
+            stop_lr = g_optimizer.param_groups[0]['lr'] < self._min_lr
+        if stop_lr:
 
-        stop_val = metric_infos[stop_metric]['stopped']
-
-        should_stop = False
-        if stop_tr:
-            should_stop = True
-            log.info("All tasks hit minimum lr. Stopping training.")
-        if stop_val:
-            should_stop = True
+        # check if validation metric is stopped
+        stop_metric = metric_infos[stop_metric]['stopped']
+        if stop_metric:
             log.info("All metrics ran out of patience. Stopping training.")
-        if epoch >= self._max_vals:
+            should_stop = True
+
+        # check if max number of validations hit
+        stop_val = bool(val_n >= self._max_vals)
+        if stop_val:
             log.info("Maximum number of validations hit. Stopping training.")
             should_stop = True
 
@@ -1000,7 +989,7 @@ class SamplingMultiTaskTrainer:
         min_lr = params.pop("min_lr", None)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
-        max_epochs_per_task = params.pop("max_epochs_per_task", -1)
+        max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
 
@@ -1013,6 +1002,6 @@ class SamplingMultiTaskTrainer:
                                         min_lr=min_lr,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
-                                        max_epochs_per_task=max_epochs_per_task,
+                                        max_epochs=max_epochs,
                                         dec_val_scale=dec_val_scale,
                                         training_data_fraction=training_data_fraction)
