@@ -498,7 +498,7 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pool_type = "first" # params["pool_type"]
+    pool_type = "max"
     pooler = Pooler(d_inp, project=True, d_proj=params['d_proj'], pool_type=pool_type)
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
