@@ -423,14 +423,15 @@ class SamplingMultiTaskTrainer:
             scaling_method,
             str(scaling_weights))
 
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
+        offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[n_pass % validation_interval]  # randomly select a task
+            task = samples[(n_pass + offset) % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info['stopped']:
+                offset += 1
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
@@ -700,46 +701,46 @@ class SamplingMultiTaskTrainer:
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
 
-    def _check_stop(self, epoch, stop_metric, tasks):
+    def _check_stop(self, val_n, stop_metric, tasks):
         ''' Check to see if should stop '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_optimizer = self._g_optimizer
 
-        if self._max_epochs > 0:
+        should_stop = False
+        if self._max_epochs > 0: # check if max # epochs hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
                 if n_epochs_trained >= self._max_epochs:
                     log.info("Maximum epochs trained on %s.", task.name)
                     task_info['stopped'] = True
+            stop_epochs = min([info["stopped"] for info in task_infos.values()])
+            if stop_epochs:
+                log.info("Maximum epochs trained on all tasks.")
+                should_stop = True
 
-        if g_optimizer is None:
-            stop_tr = True
+        if g_optimizer is None: # check if minimum LR hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
                     log.info("Minimum lr hit on %s.", task.name)
                     task_info['stopped'] = True
-                stop_tr = stop_tr and task_info['stopped']
+            stop_lr = min([info['stopped'] for info in task_infos.values()])
         else:
-            stop_tr = False
-            if g_optimizer.param_groups[0]['lr'] < self._min_lr:
-                log.info("Minimum lr hit.")
-                stop_tr = True
-            if min([info["stopped"] for info in task_infos.values()]):
-                log.info("Maximum batches trained on all tasks.")
-                stop_tr = True
-
-        stop_val = metric_infos[stop_metric]['stopped']
-
-        should_stop = False
-        if stop_tr:
-            should_stop = True
+            stop_lr = g_optimizer.param_groups[0]['lr'] < self._min_lr
+        if stop_lr:
             log.info("All tasks hit minimum lr. Stopping training.")
-        if stop_val:
             should_stop = True
+
+        # check if validation metric is stopped
+        stop_metric = metric_infos[stop_metric]['stopped']
+        if stop_metric:
             log.info("All metrics ran out of patience. Stopping training.")
-        if epoch >= self._max_vals:
+            should_stop = True
+
+        # check if max number of validations hit
+        stop_val = bool(val_n >= self._max_vals)
+        if stop_val:
             log.info("Maximum number of validations hit. Stopping training.")
             should_stop = True
 
