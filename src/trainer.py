@@ -710,7 +710,7 @@ class SamplingMultiTaskTrainer:
                 task_info = task_infos[task.name]
                 n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
                 if n_epochs_trained >= self._max_epochs:
-                    log.info("Maximum batches trained on %s.", task.name)
+                    log.info("Maximum epochs trained on %s.", task.name)
                     task_info['stopped'] = True
 
         if g_optimizer is None:
