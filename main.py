@@ -83,7 +83,8 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
-
+# TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
+# from here to trainer.py.
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
@@ -334,24 +335,17 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
-            best_epoch = trainer.train(tasks=[task], stop_metric=task.val_metric,
-                                       batch_size=args.batch_size, n_batches_per_pass=1,
-                                       weighting_method=args.weighting_method,
-                                       scaling_method=args.scaling_method,
-                                       train_params=to_train,
-                                       optimizer_params=opt_params,
-                                       scheduler_params=schd_params,
-                                       shared_optimizer=args.shared_optimizer,
-                                       load_model=False, phase="eval")
+            _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
+                              n_batches_per_pass=1, weighting_method=args.weighting_method,
+                              scaling_method=args.scaling_method, train_params=to_train,
+                              optimizer_params=opt_params, scheduler_params=schd_params,
+                              shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
-            best_epoch = best_epoch[task.name]
-            # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
-            # from here to trainer.py.
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             if args.transfer_paradigm == "finetune":
                 # If we finetune,
@@ -366,27 +360,29 @@ def main(cl_arguments):
                 # Load the current overall best model.
                 # Save the best checkpoint from that target task training to be
                 # specific to that target task.
-                load_model_state(model, layer_path, args.cuda,
-                                 skip_task_models=task_names_to_avoid_loading,
-                                 strict=strict)
+                load_model_state(model, layer_path, args.cuda, strict=strict,
+                                 skip_task_models=task_names_to_avoid_loading)
 
     if args.do_full_eval:
         # Evaluate #
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
-            for task in tasks:
-                if task.name == 'mnli-diagnostic':
-                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % "mnli")
-                else:
-                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+            for task in target_tasks:
+                if task.name == 'mnli-diagnostic': # we'll load mnli-diagnostic during mnli
+                    continue
+
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                evaluate_and_write(args, model, [task], splits_to_write)
+                tasks = [task]
+                if task.name == 'mnli':
+                    tasks = tasks + [t for t in target_tasks if t.name == 'mnli-diagnostic']
+                evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             evaluate_and_write(args, model, target_tasks, splits_to_write)
