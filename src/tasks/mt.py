@@ -66,11 +66,9 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                src_sent = process_sentence(row[0], self.max_seq_len, tokenizer_name=self._tokenizer_name)
-                # NOTE(Alex): don't use BERT tokenization on targets
-                tgt_sent = process_sentence(
-                    row[1], self.max_seq_len,
-                    tokenizer_name="MosesTokenizer")
+                src_sent = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
+                # Currently: force Moses tokenization on targets
+                tgt_sent = process_sentence("MosesTokenizer", row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -96,7 +94,7 @@ class MTTask(SequenceGenerationTask):
         def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer) # this line changed
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
             return Instance(d)
 
         for sent1, sent2 in split:
@@ -137,9 +135,8 @@ class RedditSeq2SeqTask(MTTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                src_sent = process_sentence(row[2], self.max_seq_len, tokenizer_name=self._tokenizer_name)
-                tgt_sent = process_sentence(row[3], self.max_seq_len,
-                                            tokenizer_name=self._tokenizer_name)
+                src_sent = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
+                tgt_sent = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -147,15 +144,13 @@ class RedditSeq2SeqTask(MTTask):
         def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer) # this line changed
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
             return Instance(d)
 
         for sent1, sent2 in split:
             yield _make_instance(sent1, sent2)
 
-
 @register_task('wiki2_s2s', rel_path='WikiText2/', max_targ_v_size=0)
-@register_task('wiki_s2s_debug', rel_path='WikiText-debug/', max_targ_v_size=0)
 @register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
 class Wiki103Seq2SeqTask(MTTask):
     ''' Skipthought objective on Wiki103 '''
@@ -181,9 +176,8 @@ class Wiki103Seq2SeqTask(MTTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                # TODO(Alex): this does tokenization earlier than the rest of our tasks
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
-                                       self.max_seq_len, tokenizer_name=self._tokenizer_name)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks, self.max_seq_len,
+                                       tokenizer_name=self._tokenizer_name)
                 yield sent, []
 
     def get_num_examples(self, split_text):

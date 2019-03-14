@@ -245,7 +245,7 @@ class BoWSentEncoder(Model):
 class Pooler(nn.Module):
     ''' Do pooling, possibly with a projection beforehand '''
 
-    def __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
+    def __init__(self, project=True, d_inp=512, d_proj=512, pool_type='max'):
         super(Pooler, self).__init__()
         self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
         self.pool_type = pool_type

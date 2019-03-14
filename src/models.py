@@ -29,8 +29,8 @@ from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedSWTask, \
-    GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
+    GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
@@ -386,8 +386,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, model.use_bert, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
-                           PairOrdinalRegressionTask)):
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
@@ -484,23 +483,21 @@ def get_task_specific_params(args, task_name):
 
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pooler = Pooler(d_inp, d_proj=params['d_proj'])
+    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
     dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
-                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']),
-                                      )
-    #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']))
     return pooler, dnn_ResponseModel
 
 
 def build_image_sent_module(task, d_inp, params):
-    pooler = Pooler(d_inp, d_proj=params['d_proj'])
+    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
     return pooler
 
 
 def build_single_sentence_module(task, d_inp, use_bert, params):
     ''' Build a single classifier '''
     pool_type = "first" if use_bert else "max"
-    pooler = Pooler(d_inp, project=not use_bert, d_proj=params['d_proj'], pool_type=pool_type)
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     return SingleClassifier(pooler, classifier)
@@ -509,8 +506,8 @@ def build_single_sentence_module(task, d_inp, use_bert, params):
 def build_pair_sentence_module(task, d_inp, model, params):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_attn(d_in, use_attn, d_hid_attn):
-        ''' Build the pair attn module '''
+    def build_pair_attn(d_in, d_hid_attn):
+        ''' Build the pair model '''
         d_inp_model = 2 * d_in
         modeling_layer = s2s_e.by_name('lstm').from_params(
             Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
@@ -521,25 +518,27 @@ def build_pair_sentence_module(task, d_inp, model, params):
     # Build the "pooler", which does pools a variable length sequence
     #   possibly with a projection layer beforehand
     if params["attn"] and not model.use_bert:
-        pooler = Pooler(d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"], project=False)
+        pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
         pool_type = "first" if model.use_bert else "max"
-        pooler = Pooler(d_inp, project=not model.use_bert, d_proj=params["d_proj"], pool_type=pool_type)
+        pooler = Pooler(project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
         d_out = d_inp if model.use_bert else params["d_proj"]
 
-    # Build the pair attn mechanism
-    if params["shared_pair_attn"] and not model.use_bert:
+
+    # Build an attention module if necessary
+    if params["shared_pair_attn"] and not model.use_bert: # shared attn
         if not hasattr(model, "pair_attn"):
-            pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
+            pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    elif params["attn"] and not model.use_bert:
-        pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
-    else:
+    elif params["attn"] and not model.use_bert: # non-shared attn
+        pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
+    else: # no attn
         pair_attn = None
 
+    # Build the classifier
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
     if model.use_bert:
         classifier = Classifier.from_params(d_out, n_classes, params)
@@ -679,6 +678,8 @@ class MultiTaskModel(nn.Module):
                 task.scorer2(logits, labels)
                 _, preds = logits.max(dim=1)
                 task.scorer1(labels, preds)
+            elif isinstance(task, CoLAAnalysisTask):
+                task.update_metrics(logits, labels, tagmask=batch['tagmask'])
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
