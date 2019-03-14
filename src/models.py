@@ -388,10 +388,8 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
-                           PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model, vocab,
-                                            task_params)
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
+        module = build_pair_sentence_module(task, d_sent, model, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
@@ -500,6 +498,7 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp, params):
     ''' Build a single classifier '''
+    pool_type = "first" # params["pool_type"]
     pooler = Pooler(d_inp, project=True, d_proj=params['d_proj'], pool_type=pool_type)
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
@@ -522,7 +521,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pooler = Pooler(d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"], project=False)
         d_out = params["d_hid_attn"] * 2
     else:
-        pooler = Pooler(d_inp=d_inp, project=True, d_proj=params["d_proj"], project=True)
+        pooler = Pooler(d_inp=d_inp, project=True, d_proj=params["d_proj"])
         d_out = params["d_proj"]
 
     if params["shared_pair_attn"]:
