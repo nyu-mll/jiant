@@ -497,7 +497,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         return collected_metrics
 
 @register_task('qqp', rel_path='QQP/')
-@register_task('qqp-alt', rel_path='QQP/')
+@register_task('qqp-alt', rel_path='QQP/') # second copy for different params
 class QQPTask(PairClassificationTask):
     ''' Task class for Quora Question Pairs. '''
 
@@ -638,7 +638,7 @@ class MRPCTask(PairClassificationTask):
 
 
 @register_task('sts-b', rel_path='STS-B/')
-@register_task('sts-b-alt', rel_path='STS-B/')
+@register_task('sts-b-alt', rel_path='STS-B/') # second copy for different params
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
@@ -700,7 +700,7 @@ class SNLITask(PairClassificationTask):
         log.info("\tFinished loading SNLI data.")
 
 @register_task('mnli', rel_path='MNLI/')
-@register_task('mnli-alt', rel_path='MNLI/')
+@register_task('mnli-alt', rel_path='MNLI/') # second copy for different params
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
