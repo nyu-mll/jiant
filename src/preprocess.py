@@ -428,7 +428,7 @@ def _get_task(name, args, data_path, scratch_path):
             # to pass custom loader args to task.
             task_kw['probe_path'] = args['nli-prob'].probe_path
         if name in ALL_TARG_VOC_TASKS:
-            task_kw['max_targ_v_size'] = args.max_targ_v_size
+            task_kw['max_targ_v_size'] = args.max_targ_word_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
                         tokenizer_name=args.tokenizer, **task_kw)
