@@ -29,8 +29,8 @@ from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedSWTask, \
-    GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
+    GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
@@ -673,6 +673,8 @@ class MultiTaskModel(nn.Module):
                 task.scorer2(logits, labels)
                 _, preds = logits.max(dim=1)
                 task.scorer1(labels, preds)
+            elif isinstance(task, CoLAAnalysisTask):
+                task.update_metrics(logits, labels, tagmask=batch['tagmask'])
             else:
                 task.scorer1(logits, labels)
                 if task.scorer2 is not None:
