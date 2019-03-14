@@ -388,10 +388,8 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
-                           PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model, vocab,
-                                            task_params)
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
+        module = build_pair_sentence_module(task, d_sent, model, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
@@ -487,57 +485,56 @@ def get_task_specific_params(args, task_name):
 
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
     dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
-                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']),
-                                      )
-    #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']))
     return pooler, dnn_ResponseModel
 
 
 def build_image_sent_module(task, d_inp, params):
-    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
     return pooler
 
 
 def build_single_sentence_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    pool_type = "max"
+    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
 
 
-def build_pair_sentence_module(task, d_inp, model, vocab, params):
+def build_pair_sentence_module(task, d_inp, model, params):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_attn(d_in, use_attn, d_hid_attn):
+    def build_pair_attn(d_in, d_hid_attn):
         ''' Build the pair model '''
-        if not use_attn:
-            pair_attn = None
-        else:
-            d_inp_model = 2 * d_in
-            modeling_layer = s2s_e.by_name('lstm').from_params(
-                Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
-                        'num_layers': 1, 'bidirectional': True}))
-            pair_attn = AttnPairEncoder(vocab, modeling_layer,
-                                        dropout=params["dropout"])
+        d_inp_model = 2 * d_in
+        modeling_layer = s2s_e.by_name('lstm').from_params(
+            Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
+                    'num_layers': 1, 'bidirectional': True}))
+        pair_attn = AttnPairEncoder(model.vocab, modeling_layer,
+                                    dropout=params["dropout"])
         return pair_attn
 
+    # pool given the expected input dimension
     if params["attn"]:
-        pooler = Pooler.from_params(params["d_hid_attn"], params["d_hid_attn"], project=False)
+        pooler = Pooler(project=False)
         d_out = params["d_hid_attn"] * 2
     else:
-        pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
+        pooler = Pooler(project=True, d_inp=d_inp, d_proj=params["d_proj"])
         d_out = params["d_proj"]
 
-    if params["shared_pair_attn"]:
+    if params["shared_pair_attn"] and params["attn"]: # shared attn
         if not hasattr(model, "pair_attn"):
-            pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
+            pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    else:
-        pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
+    elif params["attn"]: # non-shared attn
+        pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
+    else: # no attn
+        pair_attn = None
 
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
     classifier = Classifier.from_params(4 * d_out, n_classes, params)
