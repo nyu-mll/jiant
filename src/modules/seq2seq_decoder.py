@@ -68,8 +68,7 @@ class Seq2SeqDecoder(Model):
         self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
 
         # Used to get an initial hidden state from the encoder states
-        self._sent_pooler = Pooler.from_params(
-            d_inp=input_dim, d_proj=decoder_hidden_size, project=True)
+        self._sent_pooler = Pooler(project=True, d_inp=input_dim, d_proj=decoder_hidden_size)
 
         if attention == "bilinear":
             self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)

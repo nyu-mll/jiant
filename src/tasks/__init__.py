@@ -14,7 +14,7 @@ from .registry import REGISTRY
 from .tasks import Task
 
 ##
-# Task lists for handling as a group; these names correspond to the keys in 
+# Task lists for handling as a group; these names correspond to the keys in
 # the task registry.
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
@@ -24,5 +24,6 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
 
 # Tasks for which we need to construct task-specific vocabularies
-ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
-                      'reddit_s2s_3.4G', 'reddit_s2s_dummy', 'wiki103_s2s']
+ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de',
+                      'reddit_s2s', 'reddit_s2s_3.4G',
+                      'wiki103_s2s', 'wiki2_s2s']
