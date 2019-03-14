@@ -135,10 +135,7 @@ class Seq2SeqDecoder(Model):
         batch_size, _, _ = encoder_outputs.size()
 
         if target_tokens is not None:
-            # TODO(Alex): should really have some kind of check that the
-            # namespace found is the one expected (pass in at model creation time)
-            assert len(target_tokens) == 1
-            targets = [v for v in target_tokens.values()][0] #target_tokens["words"]
+            targets = target_tokens["words"]
             target_sequence_length = targets.size()[1]
             num_decoding_steps = target_sequence_length - 1
         else:

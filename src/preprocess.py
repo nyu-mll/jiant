@@ -241,7 +241,7 @@ def build_indexers(args):
                              ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.use_bert:
+    if args.bert_model_name:
         assert not indexers, ("BERT is not supported alongside"
                               " other indexers due to tokenization!")
         assert args.tokenizer == args.bert_model_name, \

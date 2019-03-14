@@ -139,7 +139,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         cove_layer = None
         embedder = OpenAIEmbedderModule(args) # Here, this uses openAIEmbedder.
         d_emb = embedder.get_output_dim()
-    elif args.use_bert:
+    elif args.bert_model_name:
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .bert.utils import BertEmbedderModule
@@ -586,7 +586,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.use_bert = args.use_bert
+        self.use_bert = bool(args.bert_model_name)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
