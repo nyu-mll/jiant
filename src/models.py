@@ -872,7 +872,7 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch, task, predict):
+    def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
         '''
         This function is for sequence tagging
         Args:

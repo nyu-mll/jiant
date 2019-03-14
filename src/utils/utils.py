@@ -10,12 +10,6 @@ import random
 import logging
 import codecs
 import time
-import numpy as np
-import torch
-from torch.autograd import Variable
-from torch.nn import Dropout, Linear
-from torch.nn import Parameter
-from torch.nn import init
 
 from nltk.tokenize.moses import MosesDetokenizer
 
@@ -169,7 +163,6 @@ def load_lines(filename: str) -> Iterable[str]:
     with open(filename) as fd:
         for line in fd:
             yield line.strip()
-
 
 
 def split_data(data, ratio, shuffle=1):

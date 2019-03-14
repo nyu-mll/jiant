@@ -194,7 +194,11 @@ class Task(object):
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' Check if the tokenizer is supported for this task. '''
+<<<<<<< HEAD
         return get_tokenizer(tokenizer_name) is not None
+=======
+        return tokenizer_name in utils.TOKENIZERS.keys()
+>>>>>>> f9974f4533fae2ececb7fa203705043412214609
 
     @property
     def tokenizer_name(self):
@@ -1440,7 +1444,6 @@ class TaggingTask(Task):
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
                  for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
         instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
         return instances
 
@@ -1451,10 +1454,10 @@ class TaggingTask(Task):
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
+    def __init__(self, path, max_seq_len, name="ccg", **kw):
         ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, num_tags=1363, **kw)
+        import pdb; pdb.set_trace()
+        super().__init__(name, 1363, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len
@@ -1485,7 +1488,6 @@ class CCGTaggingTask(TaggingTask):
                 # data[0] is the tokenized dta.
                 for i in range(len(data[2])):
                     data[2][i] = retokenize.adjust_targs_moses_to_BPE(data[2][i], data[0][i], data[-1][i], moses_tokenizer)
-
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
