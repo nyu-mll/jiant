@@ -245,7 +245,7 @@ class BoWSentEncoder(Model):
 class Pooler(nn.Module):
     ''' Do pooling, possibly with a projection beforehand '''
 
-    def __init__(self, d_inp, project=True, d_proj=512, pool_type='max'):
+    def __init__(self, project=True, d_inp=512, d_proj=512, pool_type='max'):
         super(Pooler, self).__init__()
         self.project = nn.Linear(d_inp, d_proj) if project else lambda x: x
         self.pool_type = pool_type
@@ -267,10 +267,6 @@ class Pooler(nn.Module):
         elif self.pool_type == 'first':
             seq_emb = proj_seq[:,0]
         return seq_emb
-
-    @classmethod
-    def from_params(cls, d_inp, d_proj, project=True):
-        return cls(d_inp, d_proj=d_proj, project=project)
 
 
 class Classifier(nn.Module):
