@@ -406,7 +406,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
                                  'decoder_hidden_size': args.s2s['d_hid_dec'],
                                  'output_proj_input_dim': args.s2s['output_proj_input_dim'],
                                  'max_decoding_steps': args.max_seq_len,
-                                 'target_namespace': 'tokens', #task.tokenizer_name,
+                                 'target_namespace': 'tokens',
                                  'attention': args.s2s['attention'],
                                  'dropout': args.dropout,
                                  'scheduled_sampling_ratio': 0.0})

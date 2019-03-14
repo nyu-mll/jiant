@@ -123,7 +123,7 @@ class RedditSeq2SeqTask(MTTask):
                          max_targ_v_size=max_targ_v_size, name=name,
                          **kw)
         self._label_namespace = None
-        self.target_indexer = {"words": SingleIdTokenIndexer()}
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
         self.files_by_split = {"train": os.path.join(path, "train.csv"),
                                "val": os.path.join(path, "val.csv"),
                                "test": os.path.join(path, "test.csv")}
@@ -163,7 +163,7 @@ class Wiki103Seq2SeqTask(MTTask):
         # Similar for self.target_sentences
         self._nonatomic_toks = [UNK_TOK_ALLENNLP, '<unk>']
         self._label_namespace = None
-        self.target_indexer = {"words": SingleIdTokenIndexer()}
+        self.target_indexer = {"words": SingleIdTokenIndexer("tokens")}
         self.files_by_split = {"train": os.path.join(path, "train.sentences.txt"),
                                "val": os.path.join(path, "valid.sentences.txt"),
                                "test": os.path.join(path, "test.sentences.txt")}
