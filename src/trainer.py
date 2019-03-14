@@ -731,6 +731,8 @@ class SamplingMultiTaskTrainer:
         else:
             stop_lr = g_optimizer.param_groups[0]['lr'] < self._min_lr
         if stop_lr:
+            log.info("All tasks hit minimum lr. Stopping training.")
+            should_stop = True
 
         # check if validation metric is stopped
         stop_metric = metric_infos[stop_metric]['stopped']
