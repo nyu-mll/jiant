@@ -532,7 +532,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
         else:
             pair_attn = model.pair_attn
     elif params["attn"]: # non-shared attn
-        build_pair_attn(d_inp, params["d_hid_attn"])
+        pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
     else: # no attn
         pair_attn = None
 
