@@ -248,13 +248,6 @@ def build_indexers(args):
                              ("BERT models use custom WPM tokenization for "
                               "each model, so tokenizer must match the "
                               "specified BERT model.")
-        assert args.max_epochs_per_task is None or args.max_epochs_per_task > 0, \
-                            ("max_epochs_per_task must be a positive number if "
-                            "it is used")
-        assert args.optimizer == "bert_adam" and args.max_epochs_per_task > 0, \
-                            ("For now, you have to set max_epochs_per_task to be a"
-                            "positive number for bert adams since the optimizer"
-                            "relies on it")
         indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
     return indexers
 
