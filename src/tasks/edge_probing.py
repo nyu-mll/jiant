@@ -83,8 +83,8 @@ class EdgeProbingTask(Task):
 
         assert files_by_split is not None
         self.path = path
-        self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
+        self._iters_by_split = self.load_data()
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
@@ -239,7 +239,7 @@ class GapCorefTask(EdgeProbingTask):
                            'val': "__validation__%s" % (kw["tokenizer_name"]),
                            'test': "__test__%s" % (kw["tokenizer_name"]) 
                        }
-        super().__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
+        super(GapCorefTask, self).__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
 
     def load_data(self):
         iters_by_split = collections.OrderedDict()
@@ -250,28 +250,17 @@ class GapCorefTask(EdgeProbingTask):
                 if myList[i] == target:
                     yield i
 
-        def find_with_list(myList, target):
-             inds = []
-             for i in range(len(myList)):
-                 if myList[i] == target:
-                     inds += i,
-             return inds
-
-        # only get ones that are of length 768. 
         for split in self._files_by_split.keys():
+            """
+               Only Loading all sentences of up to length max_seq_len.
+            """
             tr_data = pd.read_pickle(os.path.join(self.path, self._files_by_split[split]))
             text = tr_data["text"]
-            """
-              Filtering for size 768 since OpenAI tarnsformer model that we pretrianed
-              has max_seq_len 512
-            """
             lengths = [len(hey.split(" ")) for hey in text.tolist()]
-            to_include = [1 if length < 511 else 0 for length in lengths]
-            indices = find_with_list(to_include, 1)
+            to_include = [1 if length < self.max_seq_len - 1  else 0 for length in lengths]
+            indices = [i for i,x in enumerate(to_include) if x == 1]
             tr_data = tr_data.loc[indices]
             text = tr_data["text"].tolist()
-            # filter out the data that doesn't satisfy this condition. 
-            # is it the wrong convolution? 
             s1start = tr_data["prompt_start_index"].tolist()
             s1end = tr_data["prompt_end_index"].tolist()
             s2start = tr_data["candidate_start_index"].tolist()

@@ -74,7 +74,6 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 0})
-    import pdb; pdb.set_trace()
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
         schd_params = Params({'type': 'noam',
@@ -438,7 +437,6 @@ class SamplingMultiTaskTrainer:
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
-                import pdb; pdb.set_trace()
                 output_dict = self._forward(batch, task=task, for_training=True)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
@@ -480,7 +478,14 @@ class SamplingMultiTaskTrainer:
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
-
+                def print_mem(bnum):
+                    import os
+                    import psutil
+                    pid = os.getpid()
+                    py = psutil.Process(pid)
+                    memoryUse = py.memory_info()[0]/2.**20
+                    return 'batchnum {} memory use: {}MB'.format(bnum, memoryUse)
+                print_mem(total_batches_trained)
                 task_info['last_log'] = time.time()
 
                 if self._model.utilization is not None:
@@ -603,7 +608,6 @@ class SamplingMultiTaskTrainer:
                 loss = out["loss"]
                 all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
                 n_examples += out["n_exs"]
-
                 # log
                 if time.time() - task_info['last_log'] > self._log_interval:
                     task_metrics = task.get_metrics()
