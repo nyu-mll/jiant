@@ -65,6 +65,8 @@ def load_tsv(
     # Filter for sentence1s that are of length 0
     # Filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
+    if s2_idx is not None:
+        mas = mask & (rows[s2_idx].str.len() > 0)
     if has_labels:
         mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
@@ -173,7 +175,7 @@ def get_tag_list(tag_vocab):
     '''
     retrieve tag strings from the tag vocab object
     Args:
-        tag_vocab: the vocab that contains all tags 
+        tag_vocab: the vocab that contains all tags
     Returns:
         tag_list: a list of "coarse__fine" tag strings
     '''
