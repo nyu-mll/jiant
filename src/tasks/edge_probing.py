@@ -235,9 +235,9 @@ class EdgeProbingTask(Task):
 @register_task('gap-coreference', rel_path = 'processed/gap-coreference')
 class GapCorefTask(EdgeProbingTask):
     def __init__(self, path, single_sided=False, **kw):
-        self._files_by_split = {'train': "__development__bert-base-cased",
-                           'val': "__validation__bert-base-cased",
-                           'test': "__test__bert-base-cased",
+        self._files_by_split = {'train': "__development__%s" % (kw["tokenizer_name"]),
+                           'val': "__validation__%s" % (kw["tokenizer_name"]),
+                           'test': "__test__%s" % (kw["tokenizer_name"]) 
                        }
         super().__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
 
@@ -266,7 +266,7 @@ class GapCorefTask(EdgeProbingTask):
               has max_seq_len 512
             """
             lengths = [len(hey.split(" ")) for hey in text.tolist()]
-            to_include = [1 if length < 512 else 0 for length in lengths]
+            to_include = [1 if length < 511 else 0 for length in lengths]
             indices = find_with_list(to_include, 1)
             tr_data = tr_data.loc[indices]
             text = tr_data["text"].tolist()
