@@ -41,7 +41,7 @@ class MTTask(SequenceGenerationTask):
         self.max_targ_v_size = max_targ_v_size
         self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
-                               split in ["train", "valid", "test"]}
+                               split in ["train", "val", "test"]}
 
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
@@ -66,13 +66,9 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                src_sent = process_sentence(row[0], self.max_seq_len)
-                # target sentence sos_tok, eos_tok need to match Seq2SeqDecoder class
-                tgt_sent = process_sentence(
-                    row[1], self.max_seq_len,
-                    sos_tok=allennlp_util.START_SYMBOL,
-                    eos_tok=allennlp_util.END_SYMBOL,
-                )
+                src_sent = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
+                # Currently: force Moses tokenization on targets
+                tgt_sent = process_sentence("MosesTokenizer", row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -98,7 +94,7 @@ class MTTask(SequenceGenerationTask):
         def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer)  # this line changed
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
             return Instance(d)
 
         for sent1, sent2 in split:
@@ -114,9 +110,8 @@ class MTTask(SequenceGenerationTask):
             'unk_ratio_macroavg': unk_ratio_macroavg}
 
 
-@register_task('reddit_s2s', rel_path='Reddit_2008/', max_targ_v_size=0)
+@register_task('reddit_s2s', rel_path='Reddit/', max_targ_v_size=0)
 @register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/', max_targ_v_size=0)
-@register_task('reddit_s2s_dummy', rel_path='Reddit_2008_TestSample/', max_targ_v_size=0)
 class RedditSeq2SeqTask(MTTask):
     ''' Task for seq2seq using reddit data
 
@@ -140,13 +135,22 @@ class RedditSeq2SeqTask(MTTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                src_sent = process_sentence(row[2], self.max_seq_len)
-                tgt_sent = process_sentence(row[3], self.max_seq_len,
-                                            sos_tok=allennlp_util.START_SYMBOL,
-                                            eos_tok=allennlp_util.END_SYMBOL,
-                                            )
+                src_sent = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
+                tgt_sent = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _make_instance(input, target):
+            d = {}
+            d["inputs"] = sentence_to_text_field(input, indexers)
+            d["targs"] = sentence_to_text_field(target, self.target_indexer)
+            return Instance(d)
+
+        for sent1, sent2 in split:
+            yield _make_instance(sent1, sent2)
+
+@register_task('wiki2_s2s', rel_path='WikiText2/', max_targ_v_size=0)
 @register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
 class Wiki103Seq2SeqTask(MTTask):
     ''' Skipthought objective on Wiki103 '''
@@ -172,8 +176,8 @@ class Wiki103Seq2SeqTask(MTTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks,
-                                        self.max_seq_len)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomic_toks, self.max_seq_len,
+                                       tokenizer_name=self._tokenizer_name)
                 yield sent, []
 
     def get_num_examples(self, split_text):
@@ -189,12 +193,10 @@ class Wiki103Seq2SeqTask(MTTask):
 
         Split is a single list of sentences here.
         '''
-        target_indexer = self.target_indexer
-
         def _make_instance(prev_sent, sent):
             d = {}
             d["inputs"] = sentence_to_text_field(prev_sent, indexers)
-            d["targs"] = sentence_to_text_field(sent, target_indexer)
+            d["targs"] = sentence_to_text_field(sent, self.target_indexer)
             return Instance(d)
 
         prev_sent = None

@@ -76,7 +76,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield process_sentence(toks, self.max_seq_len)
+                yield process_sentence(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
@@ -133,7 +133,8 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len,
+                                       tokenizer_name=self._tokenizer_name)
                 # we also filtering out headers (artifact of the data)
                 # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:

@@ -347,10 +347,6 @@ register_task('edges-dpr', rel_path='edges/dpr',
                    'val': "dev.edges.json",
                    'test': "test.edges.json",
                }, is_symmetric=False)(EdgeProbingTask)
-
-##
-# New or experimental tasks.
-##
 # Relation classification on SemEval 2010 Task8. 19 labels.
 register_task('edges-rel-semeval', rel_path='edges/semeval',
                label_file="labels.txt", files_by_split={
@@ -358,6 +354,10 @@ register_task('edges-rel-semeval', rel_path='edges/semeval',
                    'val': "dev.json",
                    'test': "test.json",
                }, is_symmetric=False)(EdgeProbingTask)
+
+##
+# New or experimental tasks.
+##
 # Relation classification on TACRED. 42 labels.
 register_task('edges-rel-tacred', rel_path='edges/tacred/rel',
                label_file="labels.txt", files_by_split={
@@ -365,7 +365,6 @@ register_task('edges-rel-tacred', rel_path='edges/tacred/rel',
                    'val': "dev.json",
                    'test': "test.json",
                }, is_symmetric=False)(EdgeProbingTask)
-
 
 ##
 # Older tasks or versions for backwards compatibility.
