@@ -261,11 +261,9 @@ class GapCoreferenceTask(EdgeProbingTask):
 
         d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
                                  for t in record['targets']])
-        # single-sided. And we reused the cod ehre
         if not self.single_sided:
             d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
                                      for t in record['targets']])
-        # Always use multilabel targets, so be sure each label is a list.
         labels = [[t['label']] for t in record['targets']]
 
         d['labels'] = ListField([MultiLabelField(label_set, label_namespace=self._label_namespace, skip_indexing=False) for label_set in labels])
