@@ -296,7 +296,7 @@ class GapCoreferenceTask(EdgeProbingTask):
             """
                Only Loading all sentences of up to length max_seq_len.
             """
-            data = pd.read_csv(os.path.join(self.path, self._files_by_split[split]), delimiter="\t")
+            data = pd.read_csv(self._files_by_split[split], delimiter="\t")
             text = data["text"]
             lengths = [len(sent.split(" ")) for sent in text.tolist()]
             to_include = [1 if length < self.max_seq_len - 1  else 0 for length in lengths]
