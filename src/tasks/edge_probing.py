@@ -11,19 +11,26 @@ from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure
 from ..allennlp_mods.correlation import FastMatthews
 
+from allennlp.data.tokenizers import Token
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, \
     SpanField, ListField, MetadataField
 from ..allennlp_mods.multilabel_field import MultiLabelField
+from allennlp.data import vocabulary
 
 from ..utils import serialize
 from ..utils import utils
 from ..utils import data_loaders
 
+import torch
+import torch.nn as nn
+import numpy as np
+import torch.nn.functional as F
+
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
-from .tasks import Task, sentence_to_text_field
+from .tasks import Task, sentence_to_text_field, create_subset_scorers, collect_subset_scores, update_subset_scorers
 from .registry import register_task, REGISTRY  # global task registry
 
 ##
@@ -88,8 +95,9 @@ class EdgeProbingTask(Task):
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
-        #label_file = os.path.join(path, label_file)
-        self.n_classes = 2
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
@@ -150,7 +158,7 @@ class EdgeProbingTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        ''' Get split text as fiterable of records.
+        ''' Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
         '''
@@ -163,9 +171,8 @@ class EdgeProbingTask(Task):
         '''
         return len(split_text)
 
-    def _make_span_field(self, span, text_field, offset=1):
-        # TODO: Doing the span fields
-        return SpanField(span[0] + offset, span[1] - 1 + offset, text_field)
+    def _make_span_field(self, s, text_field, offset=1):
+        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
     def _pad_tokens(self, tokens):
         """Pad tokens according to the current tokenization style."""
@@ -178,7 +185,7 @@ class EdgeProbingTask(Task):
 
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
-        tokens = record['text'].split(" ")  # already space-tokenized by Moses
+        tokens = record['text'].split()  # already space-tokenized by Moses
         tokens = self._pad_tokens(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
@@ -193,14 +200,10 @@ class EdgeProbingTask(Task):
         if not self.single_sided:
             d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
                                      for t in record['targets']])
-        # so here is where you loop over the targets.
         # Always use multilabel targets, so be sure each label is a list.
-        labels = [ [str(utils.wrap_singleton_string(t['label']))]
-                  for t in record['targets']]
-        d['labels'] = ListField([MultiLabelField(label_set,
-                                                 label_namespace=self._label_namespace,
-                                                 skip_indexing=False)
-                                 for label_set in labels])
+        labels = [[t['label']] for t in record['targets']]
+
+        d['labels'] = ListField([MultiLabelField(label_set, label_namespace=self._label_namespace, skip_indexing=False) for label_set in labels])
         return Instance(d)
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
@@ -209,7 +212,7 @@ class EdgeProbingTask(Task):
         return map(_map_fn, records, itertools.count())
 
     def get_all_labels(self) -> List[str]:
-        return ["True", "False"]
+        return self.all_labels
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
@@ -231,17 +234,31 @@ class EdgeProbingTask(Task):
         metrics['f1'] = f1
         return metrics
 
+    def update_metrics(logits, labels, tagmask=None):
+      return
 
 @register_task('gap-coreference', rel_path = 'processed/gap-coreference')
-class GapCorefTask(EdgeProbingTask):
+class GapCoreferenceTask(EdgeProbingTask):
     def __init__(self, path, single_sided=False, **kw):
         self._files_by_split = {'train': "__development__%s" % (kw["tokenizer_name"]),
                            'val': "__validation__%s" % (kw["tokenizer_name"]),
                            'test': "__test__%s" % (kw["tokenizer_name"]) 
                        }
-        super(GapCorefTask, self).__init__(files_by_split=self._files_by_split, path=path, single_sided=single_sided, **kw)
+        super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
+
+    def process_split(self, split, indexers):
+        ''' Process split text into a list of AllenNLP Instances with tag masking'''
+        def _map_fn(r, idx): 
+          instance = self.make_instance(r, idx, indexers)
+          tag_field = MultiLabelField(r["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
+          instance.add_field("tagmask", field=tag_field)
+          return instance
+        instances = map(_map_fn, split, itertools.count())
+        return instances
 
     def load_data(self):
+        tag_vocab = vocabulary.Vocabulary(counter=None)
+
         iters_by_split = collections.OrderedDict()
         import pandas as pd
 
@@ -254,23 +271,52 @@ class GapCorefTask(EdgeProbingTask):
             """
                Only Loading all sentences of up to length max_seq_len.
             """
-            tr_data = pd.read_pickle(os.path.join(self.path, self._files_by_split[split]))
-            text = tr_data["text"]
-            lengths = [len(hey.split(" ")) for hey in text.tolist()]
+            data = pd.read_csv(os.path.join(self.path, self._files_by_split[split]), delimiter="\t")
+            text = data["text"]
+            lengths = [len(sent.split(" ")) for sent in text.tolist()]
             to_include = [1 if length < self.max_seq_len - 1  else 0 for length in lengths]
             indices = [i for i,x in enumerate(to_include) if x == 1]
-            tr_data = tr_data.loc[indices]
-            text = tr_data["text"].tolist()
-            s1start = tr_data["prompt_start_index"].tolist()
-            s1end = tr_data["prompt_end_index"].tolist()
-            s2start = tr_data["candidate_start_index"].tolist()
-            s2end = tr_data["candidate_end_index"].tolist()
-            labels = tr_data["label"].tolist()
-            # transform labels
-            structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label":labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
+            data = data.loc[indices]
+            text = data["text"].tolist()
+            s1start = data["prompt_start_index"].tolist()
+            s1end = data["prompt_end_index"].tolist()
+            s2start = data["candidate_start_index"].tolist()
+            s2end = data["candidate_end_index"].tolist()
+            labels_map = {True: "true", False: "false"}
+            labels = data["label"]
+            labels = labels.apply(lambda x: labels_map[x]).tolist()
+            tagids = data["gender"].tolist()
+            for tag in set(tagids):
+              tag_vocab.add_token_to_namespace(tag)
+            # we minus 2 here for tag_vocab so that we ignore @@unknown@@ etc
+            structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "gender": [tag_vocab.get_token_index(tagids[i]) - 2], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label": labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
             iters_by_split[split] = structured_data
-
+        self.tag_list = utils.get_tag_list(tag_vocab)
+        subset_mcc_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=FastMatthews)
+        subset_acc_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=BooleanAccuracy)
+        subset_f1_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=F1Measure, positive_label=1)  # binary F1 overall
+        self.subset_scorers = {"mcc": subset_mcc_scorers, "acc": subset_acc_scorers, "f1": subset_f1_scorers}
         return iters_by_split
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        if tagmask is not None:
+            binary_preds = logits.ge(0).long()  # {0,1}
+            update_subset_scorers(self.subset_scorers["mcc"], binary_preds, labels.long(), tagmask)
+            update_subset_scorers(self.subset_scorers["acc"], binary_preds, labels.long(), tagmask)
+            # F1Measure() expects [total_num_targets, n_classes, 2]
+            # to compute binarized F1.
+            binary_scores = torch.stack([-1 * logits, logits], dim=2)
+            update_subset_scorers(self.subset_scorers["f1"], binary_scores, labels, tagmask)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {'mcc': self.mcc_scorer.get_metric(reset), 'accuracy': self.acc_scorer.get_metric(reset), "f1": self.f1_scorer.get_metric(reset)[2]}
+        for score_name, scorer in list(self.subset_scorers.items()):
+          collected_metrics.update(collect_subset_scores(scorer, score_name, self.tag_list, reset))
+        collected_metrics.update({"bias": collected_metrics["f1_Male"] / collected_metrics["f1_Female"]})
+        return collected_metrics
 
 ##
 # Task definitions. We call the register_task decorator explicitly so that we

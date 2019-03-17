@@ -12,21 +12,20 @@ import pickle
 from enum import Enum
 
 
-class Gender(Enum):
-  UNKNOWN = 0
-  MASCULINE = 1
-  FEMININE = 2
+UNKNOWN = "Unknown"
+MASCULINE = "Male"
+FEMININE = "Female"
 
 
 # Mapping of (lowercased) pronoun form to gender value. Note that reflexives
 # are not included in GAP, so do not appear here.
 PRONOUNS = {
-    'she': Gender.FEMININE,
-    'her': Gender.FEMININE,
-    'hers': Gender.FEMININE,
-    'he': Gender.MASCULINE,
-    'his': Gender.MASCULINE,
-    'him': Gender.MASCULINE,
+    'she': FEMININE,
+    'her': FEMININE,
+    'hers': FEMININE,
+    'he': MASCULINE,
+    'his': MASCULINE,
+    'him': MASCULINE,
 }
 
 def getEnd(index, word):
@@ -85,7 +84,8 @@ def align_spans(split, tokenizer_name, data_dir):
         For example, 
          "I like Bob Sutter yeah " becomes soemthing like
         ["I", "like", "Bob", "Sut", "ter", "yeah"]
-        The gold labels given in GAP has noun index as [7:16], however, with tokenization, we
+        The gold labels given in GAP ha
+        s noun index as [7:16], however, with tokenization, we
         want tokenization of [2:4]
 
         Output: 
@@ -105,14 +105,15 @@ def align_spans(split, tokenizer_name, data_dir):
         orig_end_index = getEnd(orig_first_index, first_word)
         pronoun_index, end_index_prnn, first_index, end_index,text = build_spans_aligned_with_tokenization(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, orig_first_index, orig_end_index)
         
-        label = row["A-coref"]
-        new_pandas.append([text, pronoun_index, end_index_prnn, first_index, end_index, label])
+        label = str(row["A-coref"]).lower()
+        new_pandas.append([text, gender, pronoun_index, end_index_prnn, first_index, end_index, label])
 
         second_index = row["B-offset"]
         second_word = row["A"]
         end_index_b = getEnd(second_index, second_word)
         _, _, second_index, end_index_b, text = build_spans_aligned_with_tokenization(text, tokenizer_name, orig_pronoun_index, orig_end_index_prnn, second_index, end_index_b)
-        label_b = row['B-coref']
+        label_b = str(row['B-coref']).lower()
+
         new_pandas.append([text, gender, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
 
     result = pd.DataFrame(new_pandas, columns=["text", "gender", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])

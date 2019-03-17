@@ -32,7 +32,7 @@ from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
 from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
@@ -153,6 +153,8 @@ def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
         subset_scores: a dictionary from subset tags to scores
     '''
     subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(reset) for tag_str, scorer in zip(tag_list, scorer_list)}
+    if metric_name == "f1":
+        subset_scores = { key: value[2] for key, value in list(subset_scores.items())}
     return subset_scores
 
 class Task(object):
@@ -453,7 +455,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
         # Create score for each tag from tag-index dict
-        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_list = utils.get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
         self.tag_scorers2 = create_subset_scorers(count=len(self.tag_list), scorer_type=CategoricalAccuracy)
 
@@ -467,14 +469,15 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels",
                                     skip_indexing=True)
+            import pdb; pdb.set_trace()
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                 skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-
+        import pdb; pdb.set_trace()
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, logits, labels, batch=None):
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)

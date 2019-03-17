@@ -46,6 +46,22 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         return [item]
     return item
 
+def get_tag_list(tag_vocab):
+    '''
+    retrieve tag strings from the tag vocab object
+    Args:t
+        tag_vocab: the vocab that contains all tags 
+    Returns:
+        tag_list: a list of "coarse__fine" tag strings
+    '''
+    # get dictionary from allennlp vocab, neglecting @@unknown@@ and @@padding@@
+    tid2tag_dict = {key-2: tag \
+        for key, tag in tag_vocab.get_index_to_token_vocabulary().items() \
+            if key - 2 >= 0}
+    tag_list = [tid2tag_dict[tid].replace(':', '_').replace(', ', '_').replace(' ', '_').replace('+', '_') for tid in range(len(tid2tag_dict))]
+    return tag_list
+
+
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
     ''' Helper function to load a model state
 

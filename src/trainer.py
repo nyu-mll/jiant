@@ -441,7 +441,7 @@ class SamplingMultiTaskTrainer:
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
-                output_dict = self._forward(batch, task=task, for_training=True)
+                output_dict = self._forward(batch, task=task)
                 assert_for_log("loss" in output_dict,
                                "Model must return a dict containing a 'loss' key")
                 loss = output_dict["loss"]  # optionally scale loss
@@ -470,7 +470,6 @@ class SamplingMultiTaskTrainer:
             # Intermediate log to logger and tensorboard
             if time.time() - task_info['last_log'] > self._log_interval:
                 task_metrics = task.get_metrics()
-
                 # log to tensorboard
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
@@ -482,20 +481,11 @@ class SamplingMultiTaskTrainer:
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
-                def print_mem(bnum):
-                    import os
-                    import psutil
-                    pid = os.getpid()
-                    py = psutil.Process(pid)
-                    memoryUse = py.memory_info()[0]/2.**20
-                    return 'batchnum {} memory use: {}MB'.format(bnum, memoryUse)
-                print_mem(total_batches_trained)
                 task_info['last_log'] = time.time()
 
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
-
             # Validation
             if n_pass % validation_interval == 0:
 
@@ -608,7 +598,7 @@ class SamplingMultiTaskTrainer:
 
             for batch in val_generator:
                 batch_num += 1
-                out = self._forward(batch, task=task, for_training=False)
+                out = self._forward(batch, task=task)
                 loss = out["loss"]
                 all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
                 n_examples += out["n_exs"]
@@ -750,7 +740,7 @@ class SamplingMultiTaskTrainer:
 
         return should_stop
 
-    def _forward(self, batch, for_training, task=None):
+    def _forward(self, batch, task=None):
         ''' At one point this does something, now it doesn't really do anything '''
         tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)

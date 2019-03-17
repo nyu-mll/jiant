@@ -666,6 +666,7 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
+            # update scores for each task
             if isinstance(task, CoLATask):
                 task.scorer2(logits, labels)
                 _, preds = logits.max(dim=1)
