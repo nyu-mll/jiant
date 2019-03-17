@@ -364,6 +364,7 @@ class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
 
+
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -468,6 +469,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                 skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
+            
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
