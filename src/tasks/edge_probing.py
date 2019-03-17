@@ -89,7 +89,6 @@ class EdgeProbingTask(Task):
         super().__init__(name, **kw)
 
         assert files_by_split is not None
-        self.path = path
         self.max_seq_len = max_seq_len
         self._files_by_split = {
             split: os.path.join(path, fname) + self._tokenizer_suffix
@@ -200,7 +199,6 @@ class EdgeProbingTask(Task):
 
         d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
                                  for t in record['targets']])
-        # single-sided. And we reused the cod ehre
         if not self.single_sided:
             d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
                                      for t in record['targets']])

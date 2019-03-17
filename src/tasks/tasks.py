@@ -364,10 +364,6 @@ class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
 
-class PointerTask(Task):
-    """ Genering task where you point out the start and end"""
-
-
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -469,11 +465,9 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels",
                                     skip_indexing=True)
-            import pdb; pdb.set_trace()
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                 skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-        import pdb; pdb.set_trace()
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
