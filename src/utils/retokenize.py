@@ -204,5 +204,5 @@ class TokenAligner(object):
         Span end is taken to be exclusive, so this actually projects end - 1
         and maps back to an exclusive target span.
         """
-        tgt_idxs = self.project_tokens([start, end])
+        tgt_idxs = self.project_tokens([start, end - 1])
         return min(tgt_idxs), max(tgt_idxs) + 1
