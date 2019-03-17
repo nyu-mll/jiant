@@ -117,7 +117,7 @@ def align_spans(split, tokenizer_name, data_dir):
         new_pandas.append([text, gender, pronoun_index, end_index_prnn, second_index, end_index_b, label_b])
 
     result = pd.DataFrame(new_pandas, columns=["text", "gender", "prompt_start_index", "prompt_end_index", "candidate_start_index", "candidate_end_index", "label"])
-    result.to_csv(data_dir+"processed/gap-coreference/__"+split+"__"+tokenizer_name, sep="\t")
+    result.to_csv(data_dir+"processed/gap-coreference/__"+split+"__.retokenized."+tokenizer_name, sep="\t")
 
 
 def main(arguments):

@@ -91,6 +91,10 @@ class EdgeProbingTask(Task):
         assert files_by_split is not None
         self.path = path
         self.max_seq_len = max_seq_len
+        self._files_by_split = {
+            split: os.path.join(path, fname) + self._tokenizer_suffix
+            for split, fname in files_by_split.items()
+        }
         self._iters_by_split = self.load_data()
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
@@ -240,10 +244,7 @@ class EdgeProbingTask(Task):
 @register_task('gap-coreference', rel_path = 'processed/gap-coreference')
 class GapCoreferenceTask(EdgeProbingTask):
     def __init__(self, path, single_sided=False, **kw):
-        self._files_by_split = {'train': "__development__%s" % (kw["tokenizer_name"]),
-                           'val': "__validation__%s" % (kw["tokenizer_name"]),
-                           'test': "__test__%s" % (kw["tokenizer_name"]) 
-                       }
+        self._files_by_split = {'train': "__development__", 'val': "__validation__",'test': "__test__"}
         super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
 
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
@@ -504,3 +505,4 @@ register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
                    'val': "ccg.parse.dev.json",
                    'test': "ccg.parse.test.json",
                }, single_sided=True)(EdgeProbingTask)
+
