@@ -201,8 +201,8 @@ class EdgeProbingTask(Task):
             d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
                                      for t in record['targets']])
         # Always use multilabel targets, so be sure each label is a list.
-        labels = [[t['label']] for t in record['targets']]
-
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
         d['labels'] = ListField([MultiLabelField(label_set, label_namespace=self._label_namespace, skip_indexing=False) for label_set in labels])
         return Instance(d)
 
@@ -234,7 +234,7 @@ class EdgeProbingTask(Task):
         metrics['f1'] = f1
         return metrics
 
-    def update_metrics(logits, labels, tagmask=None):
+    def update_subset_metrics(logits, labels, tagmask=None):
       return
 
 @register_task('gap-coreference', rel_path = 'processed/gap-coreference')
@@ -245,6 +245,29 @@ class GapCoreferenceTask(EdgeProbingTask):
                            'test': "__test__%s" % (kw["tokenizer_name"]) 
                        }
         super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        d = {}
+        d["idx"] = MetadataField(idx)
+
+        d['input1'] = text_field
+
+        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
+                                 for t in record['targets']])
+        # single-sided. And we reused the cod ehre
+        if not self.single_sided:
+            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                     for t in record['targets']])
+        # Always use multilabel targets, so be sure each label is a list.
+        labels = [[t['label']] for t in record['targets']]
+
+        d['labels'] = ListField([MultiLabelField(label_set, label_namespace=self._label_namespace, skip_indexing=False) for label_set in labels])
+        return Instance(d)
 
     def process_split(self, split, indexers):
         ''' Process split text into a list of AllenNLP Instances with tag masking'''
@@ -298,7 +321,7 @@ class GapCoreferenceTask(EdgeProbingTask):
         self.subset_scorers = {"mcc": subset_mcc_scorers, "acc": subset_acc_scorers, "f1": subset_f1_scorers}
         return iters_by_split
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_subset_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         if tagmask is not None:
