@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from ..tasks.edge_probing import EdgeProbingTask, GapCoreferenceTask
+from ..tasks.edge_probing import EdgeProbingTask
 from .import modules
 
 from allennlp.modules.span_extractors import \
@@ -137,7 +137,6 @@ class EdgeClassifierModule(nn.Module):
             se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
 
         # Span extraction.
-        # for our puroses, this should alway be not -1. s
         span_mask = (batch['span1s'][:, :, 0] != -1)  # [batch_size, num_targets] bool
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
@@ -157,6 +156,7 @@ class EdgeClassifierModule(nn.Module):
         # [batch_size, num_targets, n_classes]
         logits = self.classifier(span_emb)
         out['logits'] = logits
+
         # Compute loss if requested.
         if 'labels' in batch:
             # Labels is [batch_size, num_targets, n_classes],
@@ -171,7 +171,6 @@ class EdgeClassifierModule(nn.Module):
             # Return preds as a list.
             preds = self.get_predictions(logits)
             out['preds'] = list(self.unbind_predictions(preds, span_mask))
-
 
         return out
 

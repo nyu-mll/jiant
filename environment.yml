@@ -1,4 +1,4 @@
-name: jiant_upgrade
+name: jiant
 channels:
     - pytorch
 dependencies:
@@ -16,4 +16,3 @@ dependencies:
         - tensorboard
         - tensorboardX==1.2
         - sendgrid==5.4.1
-        - nose2

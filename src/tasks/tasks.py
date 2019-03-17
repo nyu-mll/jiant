@@ -477,7 +477,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
-    def update_metrics(self, logits, labels, batch=None):
+    def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
@@ -672,6 +672,7 @@ class STSBTask(PairRegressionTask):
         spearmanr = self.scorer2.get_metric(reset)
         return {'corr': (pearsonr + spearmanr) / 2,
                 'pearsonr': pearsonr, 'spearmanr': spearmanr}
+
 
 @register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
