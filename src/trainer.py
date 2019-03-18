@@ -31,11 +31,6 @@ def build_trainer_params(args, task_names):
     ''' In an act of not great code design, we wrote this helper function which
     extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
-    assert args.optimizer == "bert_adam" and args.max_epochs_per_task > 0, \
-                        ("For now, you have to set max_epochs_per_task to be a"
-                        "positive number for bert adams since the optimizer"
-                        "relies on it")
-
     def _get_task_attr(attr_name): return config.get_task_attr(args, task_names, attr_name)
 
     params = {}
