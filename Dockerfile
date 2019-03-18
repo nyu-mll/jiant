@@ -43,6 +43,7 @@ ENV PATH /usr/share/anaconda3/bin:$PATH
 # Fix some package issues
 RUN pip install --upgrade pip
 RUN pip install msgpack
+RUN pip install nose2
 
 # Install latest TensorFlow
 # TODO: pin this to a specific version!

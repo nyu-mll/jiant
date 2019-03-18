@@ -2,10 +2,12 @@
 Tokenizer class
 To add a tokenizer, add to the below inherting from
 main Tokenizer class.
-
 """
 import os
+import functools
+import logging as log
 from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer, MosesDetokenizer
+from nltk.tokenize.simple import SpaceTokenizer
 
 class Tokenizer(object):
 
@@ -53,8 +55,19 @@ class MosesTokenizer(Tokenizer):
         '''
         return [self._detokenizer.unescape_xml(t) for t in tokens]
 
-
-AVAILABLE_TOKENIZERS = {
-    "OpenAI.BPE": OpenAIBPETokenizer(),
-    "MosesTokenizer": MosesTokenizer()
-}
+@functools.lru_cache(maxsize=8, typed=False)
+def get_tokenizer(tokenizer_name):
+    log.info(f"Loading Tokenizer {tokenizer_name}")
+    if tokenizer_name.startswith("bert-"):
+        from pytorch_pretrained_bert import BertTokenizer
+        do_lower_case = tokenizer_name.endswith('uncased')
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name == "OpenAI.BPE":
+        tokenizer = OpenAIBPETokenizer()
+    elif tokenizer_name == "MosesTokenizer":
+        tokenizer = MosesTokenizer()
+    elif tokenizer_name == "":
+        tokenizer = SpaceTokenizer()
+    else:
+        tokenizer = None
+    return tokenizer

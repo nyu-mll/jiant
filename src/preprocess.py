@@ -221,28 +221,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     #  del word2freq, char2freq, target2freq
 
 
-def build_tasks(args):
-    '''Main logic for preparing tasks, doing so by
-    1) creating / loading the tasks
-    2) building / loading the vocabulary
-    3) building / loading the word vectors
-    4) indexing each task's data
-    5) initializing lazy loaders (streaming iterators)
-    '''
-
-    # 1) create / load tasks
-    tasks, train_task_names, eval_task_names = get_tasks(args)
-    for task in tasks:
-        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
-        setattr(task, "_classifier_name",
-                task_classifier if task_classifier else task.name)
-
-    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
-    assert len(set(tokenizer_names.values())) == 1, \
-            (f"Error: mixing tasks with different tokenizers!"
-              " Tokenizations: {tokenizer_names:s}")
-
-    # 2) build / load vocab and indexers
+def build_indexers(args):
     indexers = {}
     if not args.word_embs == 'none':
         indexers["words"] = SingleIdTokenIndexer()
@@ -270,6 +249,32 @@ def build_tasks(args):
                               "each model, so tokenizer must match the "
                               "specified BERT model.")
         indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
+    return indexers
+
+
+def build_tasks(args):
+    '''Main logic for preparing tasks, doing so by
+    1) creating / loading the tasks
+    2) building / loading the vocabulary
+    3) building / loading the word vectors
+    4) indexing each task's data
+    5) initializing lazy loaders (streaming iterators)
+    '''
+
+    # 1) create / load tasks
+    tasks, train_task_names, eval_task_names = get_tasks(args)
+    for task in tasks:
+        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        setattr(task, "_classifier_name",
+                task_classifier if task_classifier else task.name)
+
+    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
+    assert len(set(tokenizer_names.values())) == 1, \
+            (f"Error: mixing tasks with different tokenizers!"
+              " Tokenizations: {tokenizer_names:s}")
+
+    # 2) build / load vocab and indexers
+    indexers = build_indexers(args)
 
     vocab_path = os.path.join(args.exp_dir, 'vocab')
     if args.reload_vocab or not os.path.exists(vocab_path):
@@ -423,7 +428,7 @@ def _get_task(name, args, data_path, scratch_path):
             # to pass custom loader args to task.
             task_kw['probe_path'] = args['nli-prob'].probe_path
         if name in ALL_TARG_VOC_TASKS:
-            task_kw['max_targ_v_size'] = args.max_targ_v_size
+            task_kw['max_targ_v_size'] = args.max_targ_word_v_size
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
                         tokenizer_name=args.tokenizer, **task_kw)

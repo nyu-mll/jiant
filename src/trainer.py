@@ -30,8 +30,8 @@ from .utils import config
 def build_trainer_params(args, task_names):
     ''' helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
-    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names,
-                                                               attr_name)
+    def _get_task_attr(attr_name): return config.get_task_attr(args, task_names, attr_name)
+
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'lr_patience', 'patience', 'scheduler_threshold']
@@ -39,7 +39,7 @@ def build_trainer_params(args, task_names):
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'cuda', 'keep_all_checkpoints',
-                  'val_data_limit', 'training_data_fraction']
+                  'val_data_limit', 'max_epochs', 'training_data_fraction']
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
@@ -65,13 +65,17 @@ def build_trainer(args, task_names, model, run_dir, metric_should_decrease=True,
         and a scheduler config object.
     '''
     params = build_trainer_params(args, task_names)
+
+    opt_params = {'type': params['optimizer'], 'lr': params['lr']}
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
-        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0, 'amsgrad': True})
-    else:
-        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0})
+        opt_params['amsgrad'] = True
+    elif params['optimizer'] == 'bert_adam':
+        # Transformer scheduler uses number of opt steps, if known in advance, to set the LR.
+        # We leave it as -1 here (unknown) and set it if known later.
+        opt_params['t_total'] = -1
+        opt_params['warmup'] = 0.1
+    opt_params = Params(opt_params)
 
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
@@ -98,6 +102,7 @@ def build_trainer(args, task_names, model, run_dir, metric_should_decrease=True,
                            'lr_decay': .99, 'min_lr': params['min_lr'],
                            'keep_all_checkpoints': params['keep_all_checkpoints'],
                            'val_data_limit': params['val_data_limit'],
+                           'max_epochs': params['max_epochs'],
                            'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
     if train_type == "SamplingMultiTaskTrainer":
@@ -110,7 +115,7 @@ class SamplingMultiTaskTrainer:
     def __init__(self, model, patience=2, val_interval=100, max_vals=50,
                  serialization_dir=None, cuda_device=-1,
                  grad_norm=None, grad_clipping=None, lr_decay=None, min_lr=None,
-                 keep_all_checkpoints=False, val_data_limit=5000,
+                 keep_all_checkpoints=False, val_data_limit=5000, max_epochs=-1,
                  dec_val_scale=100, training_data_fraction=1.0):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -162,6 +167,7 @@ class SamplingMultiTaskTrainer:
         self._min_lr = min_lr
         self._keep_all_checkpoints = keep_all_checkpoints
         self._val_data_limit = val_data_limit
+        self._max_epochs = max_epochs
         self._dec_val_scale = dec_val_scale
         self._training_data_fraction = training_data_fraction
         self._task_infos = None
@@ -265,12 +271,17 @@ class SamplingMultiTaskTrainer:
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
             task_info['n_batches_since_val'] = 0
-            task_info['optimizer'] = Optimizer.from_params(train_params,
-                                                           copy.deepcopy(optimizer_params))
+            # deepcopy b/c using Params pops values and we may want to reuse the Params object later
+            opt_params = copy.deepcopy(optimizer_params)
+            if self._max_epochs > 0 and "t_total" in optimizer_params:
+                # If we know in advance how many opt steps for the transformer there are, set it.
+                opt_params['t_total'] = task_info["n_tr_batches"] * self._max_epochs
+            task_info['optimizer'] = Optimizer.from_params(train_params, opt_params)
             task_info['scheduler'] = LearningRateScheduler.from_params(
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
             task_info['last_log'] = time.time()
+
         # Metric bookkeeping
         all_metrics = [task.val_metric for task in tasks] + ['micro_avg', 'macro_avg']
         metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for
@@ -380,8 +391,12 @@ class SamplingMultiTaskTrainer:
         task_infos, metric_infos = self._setup_training(tasks, batch_size, train_params,
                                                         optimizer_params, scheduler_params, phase)
 
-        if shared_optimizer:  # if shared_optimizer, ignore task_specific optimizers
-            g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
+        if shared_optimizer:  # If shared_optimizer, ignore task_specific optimizers
+            optimizer_params = copy.deepcopy(optimizer_params)
+            if "t_total" in optimizer_params and self._max_epochs > 0:
+                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+                optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
+            g_optimizer = Optimizer.from_params(train_params, optimizer_params)
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
         else:
@@ -429,13 +444,15 @@ class SamplingMultiTaskTrainer:
 
         scaling_weights = self.get_scaling_weights(scaling_method, tasks, task_names, task_n_train_examples)
         log.info("Beginning training. Stopping metric: %s", stop_metric)
+        offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[n_pass % validation_interval]  # randomly select a task
+            task = samples[(n_pass + offset) % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info['stopped']:
+                offset += 1
                 continue
             tr_generator = task_info['tr_generator']
             optimizer = g_optimizer if shared_optimizer else task_info['optimizer']
@@ -488,7 +505,6 @@ class SamplingMultiTaskTrainer:
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
-
                 task_info['last_log'] = time.time()
 
                 if self._model.utilization is not None:
@@ -759,36 +775,46 @@ class SamplingMultiTaskTrainer:
                 lrs["%s_lr" % task] = task_info['optimizer'].param_groups[0]['lr']
         return lrs
 
-    def _check_stop(self, epoch, stop_metric, tasks):
+    def _check_stop(self, val_n, stop_metric, tasks):
         ''' Check to see if should stop '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_optimizer = self._g_optimizer
-        if g_optimizer is None:
-            stop_tr = True
+
+        should_stop = False
+        if self._max_epochs > 0: # check if max # epochs hit
+            for task in tasks:
+                task_info = task_infos[task.name]
+                n_epochs_trained = task_info['total_batches_trained'] / task_info['n_tr_batches']
+                if n_epochs_trained >= self._max_epochs:
+                    log.info("Maximum epochs trained on %s.", task.name)
+                    task_info['stopped'] = True
+            stop_epochs = min([info["stopped"] for info in task_infos.values()])
+            if stop_epochs:
+                log.info("Maximum epochs trained on all tasks.")
+                should_stop = True
+
+        if g_optimizer is None: # check if minimum LR hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 if task_info['optimizer'].param_groups[0]['lr'] < self._min_lr:
                     log.info("Minimum lr hit on %s.", task.name)
                     task_info['stopped'] = True
-                stop_tr = stop_tr and task_info['stopped']
-                #stop_val = stop_val and metric_infos[task.val_metric]['stopped']
+            stop_lr = min([info['stopped'] for info in task_infos.values()])
         else:
-            if g_optimizer.param_groups[0]['lr'] < self._min_lr:
-                log.info("Minimum lr hit.")
-                stop_tr = True
-            else:
-                stop_tr = False
-
-        stop_val = metric_infos[stop_metric]['stopped']
-
-        should_stop = False
-        if stop_tr:
-            should_stop = True
+            stop_lr = g_optimizer.param_groups[0]['lr'] < self._min_lr
+        if stop_lr:
             log.info("All tasks hit minimum lr. Stopping training.")
-        if stop_val:
             should_stop = True
+
+        # check if validation metric is stopped
+        stop_metric = metric_infos[stop_metric]['stopped']
+        if stop_metric:
             log.info("All metrics ran out of patience. Stopping training.")
-        if epoch >= self._max_vals:
+            should_stop = True
+
+        # check if max number of validations hit
+        stop_val = bool(val_n >= self._max_vals)
+        if stop_val:
             log.info("Maximum number of validations hit. Stopping training.")
             should_stop = True
 
@@ -1036,6 +1062,7 @@ class SamplingMultiTaskTrainer:
         min_lr = params.pop("min_lr", None)
         keep_all_checkpoints = params.pop("keep_all_checkpoints", False)
         val_data_limit = params.pop("val_data_limit", 5000)
+        max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
 
@@ -1048,5 +1075,6 @@ class SamplingMultiTaskTrainer:
                                         min_lr=min_lr,
                                         keep_all_checkpoints=keep_all_checkpoints,
                                         val_data_limit=val_data_limit,
+                                        max_epochs=max_epochs,
                                         dec_val_scale=dec_val_scale,
                                         training_data_fraction=training_data_fraction)
