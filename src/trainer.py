@@ -71,6 +71,11 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params['amsgrad'] = True
+    elif params['optimizer'] == 'bert_adam':
+        # Transformer scheduler uses number of opt steps, if known in advance, to set the LR.
+        # We leave it as -1 here (unknown) and set it if known later.
+        opt_params['t_total'] = -1
+        opt_params['warmup'] = 0.1
     opt_params = Params(opt_params)
 
     if 'transformer' in params['sent_enc']:
@@ -266,12 +271,17 @@ class SamplingMultiTaskTrainer:
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
             task_info['n_batches_since_val'] = 0
-            task_info['optimizer'] = Optimizer.from_params(train_params,
-                                                           copy.deepcopy(optimizer_params))
+            # deepcopy b/c using Params pops values and we may want to reuse the Params object later
+            opt_params = copy.deepcopy(optimizer_params)
+            if self._max_epochs > 0 and "t_total" in optimizer_params:
+                # If we know in advance how many opt steps for the transformer there are, set it.
+                opt_params['t_total'] = task_info["n_tr_batches"] * self._max_epochs
+            task_info['optimizer'] = Optimizer.from_params(train_params, opt_params)
             task_info['scheduler'] = LearningRateScheduler.from_params(
                 task_info['optimizer'], copy.deepcopy(scheduler_params))
             task_info['stopped'] = False
             task_info['last_log'] = time.time()
+
         # Metric bookkeeping
         all_metrics = [task.val_metric for task in tasks] + ['micro_avg', 'macro_avg']
         metric_infos = {metric: {'hist': [], 'stopped': False, 'best': (-1, {})} for
@@ -313,7 +323,11 @@ class SamplingMultiTaskTrainer:
                                                         optimizer_params, scheduler_params, phase)
 
         if shared_optimizer:  # If shared_optimizer, ignore task_specific optimizers
-            g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(optimizer_params))
+            optimizer_params = copy.deepcopy(optimizer_params)
+            if "t_total" in optimizer_params and self._max_epochs > 0:
+                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+                optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
+            g_optimizer = Optimizer.from_params(train_params, optimizer_params)
             g_scheduler = LearningRateScheduler.from_params(
                 g_optimizer, copy.deepcopy(scheduler_params))
         else:
@@ -479,7 +493,6 @@ class SamplingMultiTaskTrainer:
                 description = self._description_from_metrics(task_metrics)
                 log.info("Update %d: task %s, batch %d (%d): %s", n_pass,
                          task.name, n_batches_since_val, total_batches_trained, description)
-
                 task_info['last_log'] = time.time()
 
                 if self._model.utilization is not None:
