@@ -48,6 +48,9 @@ class RepeatableIterator(object):
         self._counter += 1
         return self._iter_fn().__iter__()
 
+    def next(self):
+        return self._iter_fn().__iter__()
+
 
 def bytes_to_float(b):
     """ Maps a byte string to a float in [0, 1].

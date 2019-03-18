@@ -8,7 +8,7 @@ then access the registry as registry.REGISTRY.
 REGISTRY = {}  # Do not edit manually!
 
 
-def register_task(name, rel_path, **kw):
+def register_tokenizer(name, rel_path, **kw):
     '''Decorator to register a task.
 
     Use this instead of adding to NAME2INFO in preprocess.py

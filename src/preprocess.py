@@ -39,8 +39,10 @@ from .tasks import REGISTRY as TASKS_REGISTRY
 from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
 from .tasks.mt import MTTask
 
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"  # NOTE: these are not that same as AllenNLP SOS, EOS tokens
-SPECIALS = [SOS_TOK, EOS_TOK]  # NOTE: pad and unk tokens are created by AllenNLP vocabs by default
+# NOTE: these are not that same as AllenNLP SOS, EOS tokens
+SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+# NOTE: pad and unk tokens are created by AllenNLP vocabs by default
+SPECIALS = [SOS_TOK, EOS_TOK]
 UNK_TOK = "@@UNKNOWN@@"  # AllenNLP unk token
 
 ALL_SPLITS = ['train', 'val', 'test']
@@ -147,7 +149,7 @@ def _index_split(task, split, indexers, vocab, record_file):
 
 
 def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
-                      relative_path: str, log_prefix: str="") -> bool:
+                      relative_path: str, log_prefix: str = "") -> bool:
     """Find a cached file.
 
     Look in local exp_dir first, then in global_exp_cache_dir. If found in the
@@ -172,9 +174,16 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
     # Try in global preproc dir; if found, make a symlink.
     global_file = os.path.join(global_exp_cache_dir, relative_path)
     if os.path.exists(global_file):
-        log.info("%sFound (global) preprocessed copy in %s", log_prefix, global_file)
+        log.info(
+            "%sFound (global) preprocessed copy in %s",
+            log_prefix,
+            global_file)
         os.symlink(global_file, local_file)
-        log.info("%sCreated symlink: %s -> %s", log_prefix, local_file, global_file)
+        log.info(
+            "%sCreated symlink: %s -> %s",
+            log_prefix,
+            local_file,
+            global_file)
         return True
     return False
 
@@ -232,23 +241,25 @@ def build_indexers(args):
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.cove:
         assert args.tokenizer == "MosesTokenizer", \
-                (f"CoVe model expects Moses tokenization (MosesTokenizer);"
-                 " you are using args.tokenizer = {args.tokenizer}")
+            (f"CoVe model expects Moses tokenization (MosesTokenizer);"
+             " you are using args.tokenizer = {args.tokenizer}")
     if args.openai_transformer:
         assert not indexers, ("OpenAI transformer is not supported alongside"
                               " other indexers due to tokenization!")
         assert args.tokenizer == "OpenAI.BPE", \
-                             ("OpenAI transformer is not supported alongside"
-                              " other indexers due to tokenization!")
-        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
+            ("OpenAI transformer is not supported alongside"
+             " other indexers due to tokenization!")
+        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer(
+            "openai_bpe")
     if args.bert_model_name:
         assert not indexers, ("BERT is not supported alongside"
                               " other indexers due to tokenization!")
         assert args.tokenizer == args.bert_model_name, \
-                             ("BERT models use custom WPM tokenization for "
-                              "each model, so tokenizer must match the "
-                              "specified BERT model.")
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
+            ("BERT models use custom WPM tokenization for "
+             "each model, so tokenizer must match the "
+             "specified BERT model.")
+        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(
+            args.bert_model_name)
     return indexers
 
 
@@ -264,14 +275,15 @@ def build_tasks(args):
     # 1) create / load tasks
     tasks, train_task_names, eval_task_names = get_tasks(args)
     for task in tasks:
-        task_classifier = config.get_task_attr(args, task.name, "use_classifier")
+        task_classifier = config.get_task_attr(
+            args, task.name, "use_classifier")
         setattr(task, "_classifier_name",
                 task_classifier if task_classifier else task.name)
 
-    tokenizer_names = {task.name:task.tokenizer_name for task in tasks}
+    tokenizer_names = {task.name: task.tokenizer_name for task in tasks}
     assert len(set(tokenizer_names.values())) == 1, \
-            (f"Error: mixing tasks with different tokenizers!"
-              " Tokenizations: {tokenizer_names:s}")
+        (f"Error: mixing tasks with different tokenizers!"
+         " Tokenizations: {tokenizer_names:s}")
 
     # 2) build / load vocab and indexers
     indexers = build_indexers(args)
@@ -292,7 +304,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.word_embs not in ['none' ,'scratch']:
+    if args.word_embs not in ['none', 'scratch']:
         emb_file = os.path.join(args.exp_dir, 'embs.pkl')
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
@@ -312,7 +324,8 @@ def build_tasks(args):
         force_reindex = (args.reload_indexing and task.name in reindex_tasks)
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            relative_path = _get_serialized_record_path(task.name, split, "preproc")
+            relative_path = _get_serialized_record_path(
+                task.name, split, "preproc")
             cache_found = _find_cached_file(args.exp_dir, args.global_ro_exp_dir,
                                             relative_path, log_prefix=log_prefix)
             if force_reindex or not cache_found:
@@ -341,19 +354,27 @@ def build_tasks(args):
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        task.test_data = _get_instance_generator(
+            task.name, "test", preproc_dir)
         # When using training_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if args.training_data_fraction < 1 and task.name in train_task_names:
-            log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
+            log.info(
+                "Creating trimmed pretraining-only version of " +
+                task.name +
+                " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.training_data_fraction)
             pretrain_tasks.append(task)
             if task.name in eval_task_names:
                 # Rebuild the iterator so we see the full dataset in the eval training
                 # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name (task.name).
-                log.info("Creating un-trimmed eval training version of " + task.name + " train.")
+                # and therefore there could be two tasks with the same name
+                # (task.name).
+                log.info(
+                    "Creating un-trimmed eval training version of " +
+                    task.name +
+                    " train.")
                 log.warn("When using un-trimmed eval training version of train split, "
                          "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
@@ -364,15 +385,22 @@ def build_tasks(args):
         # When using eval_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
         elif args.eval_data_fraction < 1 and task.name in eval_task_names:
-            log.info("Creating trimmed train-for-eval-only version of " + task.name + " train.")
+            log.info(
+                "Creating trimmed train-for-eval-only version of " +
+                task.name +
+                " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.eval_data_fraction)
             target_tasks.append(task)
             if task.name in train_task_names:
                 # Rebuild the iterator so we see the full dataset in the pretraining
                 # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name (task.name).
-                log.info("Creating un-trimmed pretraining version of " + task.name + " train.")
+                # and therefore there could be two tasks with the same name
+                # (task.name).
+                log.info(
+                    "Creating un-trimmed pretraining version of " +
+                    task.name +
+                    " train.")
                 log.warn("When using un-trimmed pretraining version of train split, "
                          "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
@@ -409,6 +437,7 @@ def parse_task_list_arg(task_list):
             task_names.append(task_name)
     return task_names
 
+
 def _get_task(name, args, data_path, scratch_path):
     ''' Build or load a single task. '''
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
@@ -436,6 +465,7 @@ def _get_task(name, args, data_path, scratch_path):
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
     return task
+
 
 def get_tasks(args):
     ''' Actually build or load (from pickles) the tasks. '''
@@ -466,7 +496,8 @@ def get_tasks(args):
                  " ".join(("%s=%d" % kv for kv in
                            task.example_counts.items())))
 
-    log.info("\tFinished loading tasks: %s.", ' '.join([task.name for task in tasks]))
+    log.info("\tFinished loading tasks: %s.",
+             ' '.join([task.name for task in tasks]))
     return tasks, train_task_names, eval_task_names
 
 
@@ -553,6 +584,7 @@ def add_task_label_vocab(vocab, task):
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
+
 def add_bert_wpm_vocab(vocab, bert_model_name):
     '''Add BERT WPM vocabulary for use with pre-tokenized data.
 
@@ -563,11 +595,13 @@ def add_bert_wpm_vocab(vocab, bert_model_name):
     do_lower_case = bert_model_name.endswith('uncased')
     tokenizer = BertTokenizer.from_pretrained(bert_model_name,
                                               do_lower_case=do_lower_case)
-    ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
+    ordered_vocab = tokenizer.convert_ids_to_tokens(
+        range(len(tokenizer.vocab)))
     log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name,
              len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, bert_model_name)
+
 
 def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     '''Add OpenAI BPE vocabulary for use with pre-tokenized data.'''
@@ -580,10 +614,12 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
     vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
 
+
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.
     Works for fastText and GloVe embedding files. '''
-    word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
+    word_v_size, unk_idx = vocab.get_vocab_size(
+        'tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
     with io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
         for line in vec_fh:
@@ -604,7 +640,8 @@ def get_fastText_model(vocab, d_word, model_file=None):
     **Crucially, the embeddings from the pretrained model DO NOT match those from the released
     vector file**
     '''
-    word_v_size, unk_idx = vocab.get_vocab_size('tokens'), vocab.get_token_index(vocab._oov_token)
+    word_v_size, unk_idx = vocab.get_vocab_size(
+        'tokens'), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, d_word)
     model = fastText.FastText.load_model(model_file)
     special_tokens = [vocab._padding_token, vocab._oov_token]
