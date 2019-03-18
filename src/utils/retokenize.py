@@ -25,6 +25,42 @@ from typing import Tuple, List, Text
 _SIMPLE_TOKENIZER = SpaceTokenizer()
 _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
 
+def align_tags(orig_text, current_tags, introduce_tag):
+    """
+    Align tag labels from source tokenization to target tokenization.
+    Parameters
+    -------------
+    text: List[str] the text tokenized in target tokenization
+    orig_text: the original text input pre-tokenization
+    alignment_tokenizer_func: Func that returns TokenAligner between two tokenizations
+    current_tags: List of tags in source tokenization
+    Returns
+    -------------
+    List of tags in target tokenization
+    """
+    import pdb; pdb.set_trace()
+    # remove apos&  introduced by Moses Tokenization,apos is 42 in vocab.
+    text = text[1:-1]
+    ta, _ = align_bert(orig_text, model_name="bert-base-uncased")
+    current_indices = [(i, i+1) for i in range(len(current_tags))]
+    new_tag_indices = []
+    import pdb; pdb.set_trace()
+    for tag_index in current_indices:
+        new_tag_indices.append(ta.project_span(tag_index[0], tag_index[1]))
+    aligned_tags = []
+    for i in range(len(new_tag_indices)):
+        new_start = new_tag_indices[i][0]
+        new_end = new_tag_indices[i][1]
+        aligned_tags.append(current_tags[i])
+        if (new_end - new_start) > 1:
+            for i in new_end - new_start - 1:
+                aligned_tags.append(introduce_tag)
+    assert len(text) == len(aligned_tags)
+    res_aligned_tags = [str(int(tag) + utils.EOS_INDEX + 1) for tag in aligned_tags]
+    res_aligned_tags = [str(utils.SOS_INDEX)] + res_aligned_tags + [str(utils.EOS_INDEX)]
+    return res_aligned_tags
+
+
 def adjust_targs_moses_to_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
     """
     Adjusts target tokens so that it matches with the newly BPE-retokenized
@@ -71,6 +107,7 @@ def adjust_targs_moses_to_BPE(targs, bpe_input, orig_input, orig_tokenizer_func)
     current_tok_up_to_now = ""
     # move from last to front
     for i in range(len(new_toks) - 2, -1, -1):
+        # if the levenshtein distance is similar enough, then create it 
         current_tok_up_to_now = "%s%s" % (new_toks[i], current_tok_up_to_now)
         current_tok_up_to_now = "".join(re.findall("[a-zA-Z]+", current_tok_up_to_now))
         if current_tok_up_to_now != next_expected_tok:

@@ -50,6 +50,7 @@ from typing import Tuple, List, Text
 MosesTokenizer = tokenizers.get_tokenizer("MosesTokenizer")
 assert MosesTokenizer is not None
 
+
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
     return [t + "</w>" for t in sentence.split()]
@@ -125,6 +126,20 @@ def retokenize_record(record, tokenizer_name):
             target['span2'] = list(map(int,
                                        ta.project_span(*target['span2'])))
     return record
+
+def retokenize_text(text, tokenizer_name, targets):
+    """Retokenize an edge probing example. Modifies in-place."""
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    ta, new_tokens = aligner_fn(text)
+    for target in targets:
+        if 'span1' in target:
+            target['span1'] = list(map(int,
+                                       ta.project_span(*target['span1'])))
+        if 'span2' in target:
+            target['span2'] = list(map(int,
+                                       ta.project_span(*target['span2'])))
+    return
+
 
 def _map_fn(line, tokenizer_name):
     record = json.loads(line)

@@ -10,6 +10,12 @@ import random
 import logging
 import codecs
 import time
+import numpy as np
+import torch
+from torch.autograd import Variable
+from torch.nn import Dropout, Linear
+from torch.nn import Parameter
+from torch.nn import init
 
 from nltk.tokenize.moses import MosesDetokenizer
 

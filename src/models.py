@@ -886,7 +886,6 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
         b_size, seq_len = list(batch['inputs'].values())[0].size()
-        # batch["inputs"] has only 1 key
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
@@ -899,7 +898,15 @@ class MultiTaskModel(nn.Module):
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
             targs = batch['targs']['words'][:, :seq_len].contiguous().view(-1)
-
+        # prevent backprop for tags generated for indices introduced by tokenization
+        # which we do via masking - masks generated during preprocessing
+        if "mask" in batch:
+            mask = batch["mask"]
+            same_length_mask = [mask[i][:seq_len] for i in range(b_size)]
+            same_length_mask = torch.stack(same_length_mask)
+            keep_idxs = torch.nonzero(same_length_mask.view(-1).data).squeeze()
+            logits = logits.index_select(0, keep_idxs)
+            targs = targs.index_select(0, keep_idxs)
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(logits, targs)

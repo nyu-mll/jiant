@@ -29,7 +29,8 @@ def load_tsv(
         has_labels=True,
         filter_value=None,
         tag_vocab=None,
-        tag2idx_dict=None
+        tag2idx_dict=None,
+        quoting=csv.QUOTE_NONE
         ):
     '''
     Load a tsv.
@@ -54,11 +55,10 @@ def load_tsv(
     # This reads the data file given the delimiter, skipping over any rows (usually header row)
     rows = pd.read_csv(data_file, \
                         sep=delimiter, \
-                        error_bad_lines=False, \
-                        names=col_indices, \
+                        error_bad_lines=False, names=col_indices, \
                         header=None, \
                         skiprows=skip_rows, \
-                        quoting=csv.QUOTE_NONE,\
+                        quoting=quoting,\
                         encoding='utf-8')
     if filter_idx:
         rows = rows[rows[filter_idx] == filter_value]
@@ -91,11 +91,11 @@ def load_tsv(
     if return_indices:
         idxs = rows.index.tolist()
         # Get indices of the remaining rows after filtering
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs, rows[s1_idx].tolist()
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
     elif tag2idx_dict is not None:
         return sent1s.tolist(), sent2s.tolist(), labels.tolist(), tagids
     else:
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), rows[s1_idx].tolist()
+        return sent1s.tolist(), sent2s.tolist(), labels.tolist()
 
 def load_diagnostic_tsv(
         tokenizer_name,
