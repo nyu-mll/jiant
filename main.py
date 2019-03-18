@@ -20,13 +20,15 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 import torch
 
 from src.utils import config
-
 from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer, build_trainer_params
 from src import evaluate
 
+# Global notification handler, can be accessed outside main() during exception
+# handling.
+EMAIL_NOTIFIER = None
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
@@ -81,13 +83,15 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
-
+# TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
+# from here to trainer.py.
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from eval (target_task_training)
         2) best checkpoint from pretraining
-        3) nothing found (empty string) """
+        3) checkpoint created from before any target task training
+        4) nothing found (empty string) """
     eval_best = glob.glob(os.path.join(run_dir, "model_state_eval_best.th"))
     if len(eval_best) > 0:
         assert_for_log(len(eval_best) == 1,
@@ -106,10 +110,21 @@ def get_best_checkpoint_path(run_dir):
 
     return ""
 
-# Global notification handler, can be accessed outside main() during exception
-# handling.
-EMAIL_NOTIFIER = None
+def evaluate_and_write(args, model, tasks, splits_to_write):
+    """ Evaluate a model on dev and/or test, then write predictions """
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    if 'val' in splits_to_write:
+        evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
+                             strict_glue_format=args.write_strict_glue_format)
+    if 'test' in splits_to_write:
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
+                             strict_glue_format=args.write_strict_glue_format)
+    run_name = args.get("run_name", os.path.basename(args.run_dir))
 
+    results_tsv = os.path.join(args.exp_dir, "results.tsv")
+    log.info("Writing results for split 'val' to %s", results_tsv)
+    evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -192,6 +207,9 @@ def main(cl_arguments):
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
 
+    assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
+                   "Transfer paradigm %s not supported!" % args.transfer_paradigm)
+
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
@@ -236,11 +254,11 @@ def main(cl_arguments):
                                                             args.run_dir,
                                                             should_decrease)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-        best_epochs = trainer.train(pretrain_tasks, stop_metric,
-                                    args.batch_size, args.bpp_base,
-                                    args.weighting_method, args.scaling_method,
-                                    to_train, opt_params, schd_params,
-                                    args.shared_optimizer, args.load_model, phase="main")
+        _ = trainer.train(pretrain_tasks, stop_metric,
+                          args.batch_size, args.bpp_base,
+                          args.weighting_method, args.scaling_method,
+                          to_train, opt_params, schd_params,
+                          args.shared_optimizer, args.load_model, phase="main")
 
     # Select model checkpoint from main training run to load
     if not args.do_target_task_training:
@@ -269,14 +287,15 @@ def main(cl_arguments):
         # finished), then look for training checkpoints.
 
         if args.transfer_paradigm == "finetune":
-            # Save model to refer back to after each target task training.
+            # Save model so we have a checkpoint to go back to after each task-specific finetune.
             model_state = model.state_dict()
             model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
             torch.save(model_state, model_path)
 
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
-            load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
+            load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
+                             strict=strict)
         else:
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
@@ -304,7 +323,7 @@ def main(cl_arguments):
             if args.transfer_paradigm == "finetune":
                 # Train both the task specific models as well as sentence encoder.
                 to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-            else:
+            else: # args.transfer_paradigm == "frozen":
                 # Only train task-specific module.
                 pred_module = getattr(model, "%s_mdl" % task.name)
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
@@ -316,24 +335,17 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(params, model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
-            best_epoch = trainer.train(tasks=[task], stop_metric=task.val_metric,
-                                       batch_size=args.batch_size, n_batches_per_pass=1,
-                                       weighting_method=args.weighting_method,
-                                       scaling_method=args.scaling_method,
-                                       train_params=to_train,
-                                       optimizer_params=opt_params,
-                                       scheduler_params=schd_params,
-                                       shared_optimizer=args.shared_optimizer,
-                                       load_model=False, phase="eval")
+            _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
+                              n_batches_per_pass=1, weighting_method=args.weighting_method,
+                              scaling_method=args.scaling_method, train_params=to_train,
+                              optimizer_params=opt_params, scheduler_params=schd_params,
+                              shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
-            best_epoch = best_epoch[task.name]
-            # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
-            # from here to trainer.py.
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             if args.transfer_paradigm == "finetune":
                 # If we finetune,
@@ -344,66 +356,36 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task training.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
-            else:
+            else: # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 # Save the best checkpoint from that target task training to be
                 # specific to that target task.
-                load_model_state(model, layer_path, args.cuda,
-                                 skip_task_models=task_names_to_avoid_loading,
-                                 strict=strict)
+                load_model_state(model, layer_path, args.cuda, strict=strict,
+                                 skip_task_models=task_names_to_avoid_loading)
 
     if args.do_full_eval:
         # Evaluate #
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
-            for task in tasks:
-                # TODO(Alex): special case for MNLI and MNLI-diagnostic
-                if task.name == 'mnli-diagnostic':
-                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % "mnli")
-                else:
-                    finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+            for task in target_tasks:
+                if task.name == 'mnli-diagnostic': # we'll load mnli-diagnostic during mnli
+                    continue
+
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-                val_results, val_preds = evaluate.evaluate(model, [task],
-                                                           args.batch_size,
-                                                           args.cuda, "val")
-                if 'val' in splits_to_write:
-                    evaluate.write_preds([task], val_preds, args.run_dir, 'val',
-                                         strict_glue_format=args.write_strict_glue_format)
-                if 'test' in splits_to_write:
-                    _, te_preds = evaluate.evaluate(model, [task],
-                                                    args.batch_size, args.cuda, "test")
-                    evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                                         strict_glue_format=args.write_strict_glue_format)
-                run_name = args.get("run_name", os.path.basename(args.run_dir))
 
-                results_tsv = os.path.join(args.exp_dir, "results.tsv")
-                log.info("Writing results for split 'val' to %s", results_tsv)
-                evaluate.write_results(val_results, results_tsv, run_name=run_name)
+                tasks = [task]
+                if task.name == 'mnli':
+                    tasks += [t for t in target_tasks if t.name == 'mnli-diagnostic']
+                evaluate_and_write(args, model, tasks, splits_to_write)
 
-        else:
-            # transfer_paradigm: frozen'
-            val_results, val_preds = evaluate.evaluate(model, target_tasks,
-                                                       args.batch_size,
-                                                       args.cuda, "val")
-
-            if 'val' in splits_to_write:
-                evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
-                                     strict_glue_format=args.write_strict_glue_format)
-            if 'test' in splits_to_write:
-                _, te_preds = evaluate.evaluate(model, target_tasks,
-                                                args.batch_size, args.cuda, "test")
-                evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                                     strict_glue_format=args.write_strict_glue_format)
-            run_name = args.get("run_name", os.path.basename(args.run_dir))
-
-            results_tsv = os.path.join(args.exp_dir, "results.tsv")
-            log.info("Writing results for split 'val' to %s", results_tsv)
-            evaluate.write_results(val_results, results_tsv, run_name=run_name)
+        elif args.transfer_paradigm == "frozen":
+            evaluate_and_write(args, model, target_tasks, splits_to_write)
 
     log.info("Done!")
 
