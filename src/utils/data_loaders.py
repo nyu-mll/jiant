@@ -38,8 +38,11 @@ def load_tsv(
     for mnli-fiction  we want columns where genre == 'fiction' ).
     Args:
         s1_idx; int
-        s2_idx: int
+        s2_idx (int|None): if not None, look for sentence2 at s2_idx.
+                           else, return empty list
         targ_idx: int
+        has_labels: if False, don't look for labels at position label_idx.
+                    No value for labels will be returned.
         filter_idx: int this is the index that we want to filter from
         filter_value: string the value in which we want filter_idx to be equal to
         return_indices: bool that describes if you need to return indices (for purposes of matching)
@@ -65,6 +68,8 @@ def load_tsv(
     # Filter for sentence1s that are of length 0
     # Filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
+    if s2_idx is not None:
+        mask = mask & (rows[s2_idx].str.len() > 0)
     if has_labels:
         mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
@@ -173,7 +178,7 @@ def get_tag_list(tag_vocab):
     '''
     retrieve tag strings from the tag vocab object
     Args:
-        tag_vocab: the vocab that contains all tags 
+        tag_vocab: the vocab that contains all tags
     Returns:
         tag_list: a list of "coarse__fine" tag strings
     '''
