@@ -66,7 +66,7 @@ def load_tsv(
     # Filter if row[targ_idx] is nan
     mask = (rows[s1_idx].str.len() > 0)
     if s2_idx is not None:
-        mas = mask & (rows[s2_idx].str.len() > 0)
+        mask = mask & (rows[s2_idx].str.len() > 0)
     if has_labels:
         mask = mask & rows[label_idx].notnull()
     rows = rows.loc[mask]
