@@ -14,7 +14,7 @@ import pytorch_pretrained_bert
 
 SEP_ID = 104 # [SEP] for BERT models.
 
-def _concat_sents(ids):
+def _get_seg_ids(ids):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
     Searches for index SEP_ID in the tensor """
     sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
