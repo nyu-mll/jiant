@@ -38,8 +38,11 @@ def load_tsv(
     for mnli-fiction  we want columns where genre == 'fiction' ).
     Args:
         s1_idx; int
-        s2_idx: int
+        s2_idx (int|None): if not None, look for sentence2 at s2_idx.
+                           else, return empty list
         targ_idx: int
+        has_labels: if False, don't look for labels at position label_idx.
+                    No value for labels will be returned.
         filter_idx: int this is the index that we want to filter from
         filter_value: string the value in which we want filter_idx to be equal to
         return_indices: bool that describes if you need to return indices (for purposes of matching)
