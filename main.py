@@ -382,7 +382,7 @@ def main(cl_arguments):
 
                 tasks = [task]
                 if task.name == 'mnli':
-                    tasks = tasks + [t for t in target_tasks if t.name == 'mnli-diagnostic']
+                    tasks += [t for t in target_tasks if t.name == 'mnli-diagnostic']
                 evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
