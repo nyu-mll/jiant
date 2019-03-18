@@ -686,7 +686,7 @@ class SNLITask(PairClassificationTask):
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
                            s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=7, s2_idx=8, has_labels=False, return_indices=True,  skip_rows=1)
+                           s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -720,11 +720,11 @@ class MultiNLITask(PairClassificationTask):
         val_data = tuple(val_data)
 
         te_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_matched.tsv'), max_seq_len,
-                                   s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+                                   s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
         te_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
-                                      s1_idx=8, s2_idx=9, targ_idx=None, idx_idx=0, skip_rows=1)
+                                      s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
         te_diagnostic_data = load_tsv(self._tokenizer_name, os.path.join(path, 'diagnostic.tsv'), max_seq_len,
-                                      s1_idx=1, s2_idx=2, targ_idx=None, idx_idx=0, skip_rows=1)
+                                      s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
 
