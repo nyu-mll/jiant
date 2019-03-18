@@ -46,6 +46,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 
+
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
 ELMO_OPT_NAME = "elmo_2x4096_512_2048cnn_2xhighway_options.json"
@@ -54,6 +55,7 @@ ELMO_SRC_DIR = (os.getenv("ELMO_SRC_DIR") or
                 "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/")
 ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
+
 
 def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Build single sentence encoder: the main component of interest
@@ -737,28 +739,27 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
 
-        if self.use_bert:
-            # batch will be a dict with torch.Tensor values
-            # so input1 and input2 will be padded already... fuck
-            pass
-        else:
-            # embed the sentence
-            sent1, mask1 = self.sent_encoder(batch['input1'], task)
-            sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            classifier = self._get_classifier(task)
+        assert_for_log(not self.use_bert, "BERT is currently not supported for negative sampling!")
+        # issue with using BERT here is that input1 and input2 are padded already
+        # so concatenating to get negative samples is fairly annoying
 
-            # Negative pairs are created by rotating sent2
-            # Note that we need to rotate corresponding mask also. *_new contain
-            # positive and negative pairs
-            sent1_new = torch.cat([sent1, sent1], 0)
-            mask1_new = torch.cat([mask1, mask1], 0)
-            sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
-            mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
-            logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
-            out['logits'] = logits
-            out['n_exs'] = len(sent1_new)
-            labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
-            labels = torch.tensor(labels, dtype=torch.long).cuda()
+        # embed the sentence
+        sent1, mask1 = self.sent_encoder(batch['input1'], task)
+        sent2, mask2 = self.sent_encoder(batch['input2'], task)
+        classifier = self._get_classifier(task)
+
+        # Negative pairs are created by rotating sent2
+        # Note that we need to rotate corresponding mask also. *_new contain
+        # positive and negative pairs
+        sent1_new = torch.cat([sent1, sent1], 0)
+        mask1_new = torch.cat([mask1, mask1], 0)
+        sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
+        mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
+        logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
+        out['logits'] = logits
+        out['n_exs'] = len(sent1_new)
+        labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
+        labels = torch.tensor(labels, dtype=torch.long).cuda()
         out['loss'] = F.cross_entropy(logits, labels)
         task.scorer1(logits, labels)
         if task.scorer2 is not None:

@@ -162,7 +162,7 @@ If you're training only on one task, you don't need to worry about sampling sche
 
 For multi-task training, we use a shared global optimizer and LR scheduler for all tasks. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro-average will be well-behaved.
 
-We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. We also have support for BertAdam optimizer.
+We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. We also have support for the version of Adam that was used in training BERT (`bert_adam`).
 
 Within a run, tasks are distinguished between training tasks (pretrain_tasks) and evaluation tasks (target tasks). The logic of ``main.py`` is that the entire model is pretrained on all the `pre_training` tasks, then the best model is then loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_pretrain, do_target_task_training, do_full_eval``.

@@ -126,6 +126,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
+
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
     cl_args = handle_arguments(cl_arguments)

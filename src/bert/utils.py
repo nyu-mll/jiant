@@ -12,6 +12,19 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
+SEP_ID = 104 # [SEP] for BERT models.
+
+def _concat_sents(ids):
+    """ Dynamically build the segment IDs for a concatenated pair of sentences
+    Searches for index SEP_ID in the tensor """
+    sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
+    assert sep_idxs.size(1) == 2
+    seg_ids = torch.ones_like(ids)
+    for row, idx in zip(seg_ids, sep_idxs[::2]):
+        row[:idx + 1].fill_(0)
+    return seg_ids
+
+
 class BertEmbedderModule(nn.Module):
     """ Wrapper for BERT module to fit into jiant APIs. """
 
@@ -52,7 +65,7 @@ class BertEmbedderModule(nn.Module):
         """ Run BERT to get hidden states.
 
         This forward method does preprocessing on the go,
-        changing token IDS from preprocessed bert to
+        changing token IDs from preprocessed bert to
         what AllenNLP indexes.
 
         Args:
@@ -96,17 +109,7 @@ class BertEmbedderModule(nn.Module):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            if pair_task:
-                SEP_ID = 104 # [SEP] for BERT models.
-                sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
-                # TODO(Alex): some kind of assert
-                token_types = torch.ones_like(ids)
-                # fill in with zeros
-                # TODO(Alex): some way to vectorize this?
-                for row, idx in zip(token_types, sep_idxs[::2]):
-                    row[:idx + 1].fill_(0)
-            else:
-                token_types = torch.zeros_like(ids)
+            token_types = _get_seg_ids(ids) if pair_task else torch.zeros_like(ids)
             encoded_layers, _ = self.model(ids, token_type_ids=token_types,
                                            attention_mask=mask,
                                            output_all_encoded_layers=True)
