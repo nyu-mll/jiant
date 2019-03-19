@@ -322,7 +322,7 @@ class SamplingMultiTaskTrainer:
         return task_infos, metric_infos
 
     def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_example):
-                """
+        """
         Parameters
         ----------------
         scaling_method : str, scaling method
