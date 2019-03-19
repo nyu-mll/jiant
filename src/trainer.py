@@ -28,7 +28,7 @@ from .utils import config
 
 
 def build_trainer_params(args, task_names):
-    ''' helper function which extracts trainer parameters from args. In particular, we want to search args
+    ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(
         args, task_names, attr_name)
@@ -113,6 +113,7 @@ def build_trainer(
                            'max_epochs': params['max_epochs'],
                            'dec_val_scale': params['dec_val_scale'],
                            'training_data_fraction': params['training_data_fraction']})
+    assert train_type == "SamplingMultiTaskTrainer", "We currently only support SamplingMultiTaskTrainer"
     if train_type == "SamplingMultiTaskTrainer":
         trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
                                                        copy.deepcopy(train_params))
@@ -417,18 +418,22 @@ class SamplingMultiTaskTrainer:
 
         Parameters
         ----------
-        tasks: A list of task objects to train on.
-        stop_metric: The metric to use for early stopping.
-        batch_size: The batch size to use for the tasks
-        n_batches_per_pass: How many training steps per task per pass.
-        weighting_method: How to sample which task to use.
-        scaling_method: How to scale gradients.
-        train_params: Trainer config object.
-        optimizer_params: Optimizer config object.
-        scheduler_params: Scheduler config object.
-        shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
-        load_model: Whether to restore and continue training if a checkpoint is found.
-        phase: Usually 'main' or 'eval'.
+        tasks: a list of task objects to train on
+        stop_metric: str, metric to use for early stopping
+        batch_size: int, batch size to use for the tasks
+        n_batches_per_pass: int, how many training steps per task per pass
+        weighting_method: str, how to sample which task to use
+        scaling_method:  str, how to scale gradients
+        train_params: trainer config object
+        optimizer_params: optimizer config object
+        scheduler_params: scheduler config object
+        shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
+        load_model: bool, whether to restore and continue training if a checkpoint is found
+        phase: str, usually 'main' or 'eval'
+
+        Returns
+        ----------
+        Validation results
         """
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(
@@ -694,7 +699,7 @@ class SamplingMultiTaskTrainer:
 
     def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, should_save, new_best_macro):
         """
-        This function updates metric history with the best validation score so far
+        This function updates metric history with the best validation score so far.
         Parameters
         ---------
         epoch: int
@@ -735,17 +740,18 @@ class SamplingMultiTaskTrainer:
         This function evaluates each task, builds validation generator, and gets the validation metrics.
         Parameters
         ----------
-        task: Current task to get validation performance of.
-        task_infos: Instance of information about the task.
-        tasks: A list of task objects to train on.
-        batch_size: The batch size to use for the tasks.
-        all_val_metrics: A dcitionary storing the validation performance.
-        n_Examples_overall = int, current number of examples the model is validated on.
+        task: current task to get validation performance of
+        task_infos: Instance of information about the task (see _setup_training for definition)
+        tasks: list of task objects to train on
+        batch_size: int, batch size to use for the tasks
+        all_val_metrics: dictionary. storing the validation performance
+        n_examples_overall = int, current number of examples the model is validated on
+
         Returns
         -------
-        n_examples_overall - int, current number of examples.
-        task_infos = updated Instance with reset training progress.
-        all_val_metrics = updated with micro and macro average validation performance.
+        n_examples_overall: int, current number of examples
+        task_infos: updated Instance with reset training progress
+        all_val_metrics: dictinary updated with micro and macro average validation performance
         """
         n_examples, batch_num = 0, 0
         task_info = task_infos[task.name]
@@ -803,18 +809,20 @@ class SamplingMultiTaskTrainer:
 
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         '''
-        Validate on all tasks and return the results and whether to save this epoch or not
+        Validate on all tasks and return the results and whether to save this epoch or not.
+
         Parameters
         ----------
-        epoch: int,
-        tasks: A list of task objects to train on.
+        epoch: int
+        tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
-        periodic_save: Boolean value of whether or not to save model and progress periodically
+        periodic_save: bool, alue of whether or not to save model and progress periodically
 
         Returns
         __________
-
-    
+        all_val_metrics: dictinary updated with micro and macro average validation performance
+        should_save: bool, determines whether to save a checkpoint
+        new_best_macro: bool, whether or not the macro performance increased
         '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
