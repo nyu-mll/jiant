@@ -52,7 +52,13 @@ def build_trainer_params(args, task_names):
     return Params(params)
 
 
-def build_trainer(args, task_names, model, run_dir, metric_should_decrease=True, train_type="SamplingMultiTaskTrainer"):
+def build_trainer(
+    args,
+    task_names,
+    model,
+    run_dir,
+    metric_should_decrease=True,
+     train_type="SamplingMultiTaskTrainer"):
     '''Build a trainer from params.
 
     Parameters
@@ -60,6 +66,7 @@ def build_trainer(args, task_names, model, run_dir, metric_should_decrease=True,
     params: Trainer parameters as built by build_trainer_params.
     model: A module with trainable parameters.
     run_dir: The directory where we save the models.
+
     Returns
     -------
     A trainer object, a trainer config object, an optimizer config object,
@@ -314,9 +321,20 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
-    def get_scaling_weights(self, scaling_method, tasks, task_names, task_n_train_example):
+    def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_example):
+                """
+        Parameters
+        ----------------
+        scaling_method : str, scaling method
+        num_tasks: int
+        task_names: list of str
+        task_n_train_examples: list of ints of number of examples per task
+        Returns
+        ----------------
+            Scaling weights: list of ints, to scale loss
+        """
         if scaling_method == 'uniform':
-            scaling_weights = [1.0] * len(tasks)
+            scaling_weights = [1.0] * num_tasks
         elif scaling_method == 'max_proportional':
             scaling_weights = task_n_train_examples.astype(float)
         elif scaling_method == 'max_proportional_log':
@@ -352,9 +370,10 @@ class SamplingMultiTaskTrainer:
         ----------------
         weighting_method : str, weighting method
         num_tasks: int
-        task_n_train_examples: 
-        Returns:
-            Sampling weights
+        task_n_train_examples: list of ints of number of examples per task
+        Returns
+        ----------------
+            Sampling weights: list of ints, to sample tasks to train on
         """
         if weighting_method == 'uniform':
             sample_weights = [1.0] * num_tasks
@@ -410,10 +429,6 @@ class SamplingMultiTaskTrainer:
         shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
         load_model: Whether to restore and continue training if a checkpoint is found.
         phase: Usually 'main' or 'eval'.
-
-        Returns
-        -------
-        Validation results
         """
         validation_interval = self._val_interval
         task_infos, metric_infos = self._setup_training(
@@ -493,7 +508,7 @@ class SamplingMultiTaskTrainer:
             weights=sample_weights,
             k=validation_interval)
 
-        scaling_weights = self.get_scaling_weights(scaling_method, tasks, task_names, task_n_train_examples)
+        scaling_weights = self.get_scaling_weights(scaling_method, len(tasks), task_names, task_n_train_examples)
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -684,12 +699,20 @@ class SamplingMultiTaskTrainer:
         ---------
         epoch: int
         all_val_metrics: dict with current epoch's validation performance
-        metric_infos: metric_infos
-        to_increase_or_decrease_score: bool, marker to show if we should increase or
+        metric: str, name of metric
+        task_name: str, name of task
+        metric_infos: dict storing information about the various metrics
+        metric_decreases: bool, marker to show if we should increase or
         decrease validation metric.
+        should_save: bool, for checkpointing
+        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded 
+
         Returns
         ________
-
+        metric_infos: dict storing information about the various metrics
+        this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
+        should_save: bool
+        new_best_macro: bool 
         """
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]['hist']
