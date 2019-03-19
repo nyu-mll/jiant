@@ -322,14 +322,18 @@ class SamplingMultiTaskTrainer:
             str(scaling_weights))
         return scaling_weights
 
-    def get_sampling_weights(self, weighting_method, tasks, task_n_train_examples):
+    def get_sampling_weights(self, weighting_method, num_tasks, task_n_train_examples):
         """
-        Args:
+        Parameters
+        ----------------
+        weighting_method : str, weighting method
+        num_tasks: int
+        task_n_train_examples: 
         Returns:
             Sampling weights
         """
         if weighting_method == 'uniform':
-            sample_weights = [1.0] * len(tasks)
+            sample_weights = [1.0] * num_tasks
             log.info("Sampling tasks uniformly.")
         elif weighting_method == 'proportional':
             sample_weights = task_n_train_examples.astype(float)
@@ -433,7 +437,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_examples = np.array([task.n_train_examples for task in tasks])
         task_n_train_batches = np.array([task_infos[task.name]['n_tr_batches'] for task in tasks])
         log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
-        sample_weights = self.get_sampling_weights(weighting_method, tasks, task_n_train_examples)
+        sample_weights = self.get_sampling_weights(weighting_method, len(tasks), task_n_train_examples)
 
         normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
         log.info("Using weighting method: %s, with normalized sample weights %s ",
