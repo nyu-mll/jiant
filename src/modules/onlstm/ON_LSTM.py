@@ -4,7 +4,6 @@ import torch
 from ...utils.locked_dropout import LockedDropout
 import numpy as np
 class LayerNorm(nn.Module):
-
     def __init__(self, features, eps=1e-6):
         super(LayerNorm, self).__init__()
         self.gamma = nn.Parameter(torch.ones(features))
@@ -32,23 +31,6 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
                                     padding_idx, embed.max_norm, embed.norm_type,
                                     embed.scale_grad_by_freq, embed.sparse)
     return X
-
-if __name__ == '__main__':
-  V = 50
-  h = 4
-  bptt = 10
-  batch_size = 2
-
-  embed = torch.nn.Embedding(V, h)
-
-  words = np.random.random_integers(low=0, high=V-1, size=(batch_size, bptt))
-  words = torch.LongTensor(words)
-
-  origX = embed(words)
-  X = embedded_dropout(embed, words)
-
-  print(origX)
-  print(X)
 
 class LinearDropConnect(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, dropout=0.):
@@ -92,15 +74,10 @@ class ONLSTMCell(nn.Module):
         self.hidden_size = hidden_size
         self.chunk_size = chunk_size
         self.n_chunk = int(hidden_size / chunk_size)
-
         self.ih = nn.Sequential(
             nn.Linear(input_size, 4 * hidden_size + self.n_chunk * 2, bias=True),
-            # LayerNorm(3 * hidden_size)
         )
         self.hh = LinearDropConnect(hidden_size, hidden_size*4+self.n_chunk*2, bias=True, dropout=dropconnect)
-
-        # self.c_norm = LayerNorm(hidden_size)
-
         self.drop_weight_modules = [self.hh]
 
     def forward(self, input, hidden,
@@ -111,30 +88,21 @@ class ONLSTMCell(nn.Module):
             transformed_input = self.ih(input)
         gates = transformed_input + self.hh(hx)
         cingate, cforgetgate = gates[:, :self.n_chunk*2].chunk(2, 1)
-        outgate, cell, ingate, forgetgate = gates[:,self.n_chunk*2:].view(-1, self.n_chunk*4, self.chunk_size).chunk(4,1)
-
+        outgate, cell, ingate, forgetgate = gates[:, self.n_chunk*2:].view(-1, self.n_chunk*4, self.chunk_size).chunk(4, 1)
         cingate = 1. - cumsoftmax(cingate)
         cforgetgate = cumsoftmax(cforgetgate)
-
         distance_cforget = 1. - cforgetgate.sum(dim=-1) / self.n_chunk
         distance_cin = cingate.sum(dim=-1) / self.n_chunk
-
         cingate = cingate[:, :, None]
         cforgetgate = cforgetgate[:, :, None]
-
         ingate = F.sigmoid(ingate)
         forgetgate = F.sigmoid(forgetgate)
         cell = F.tanh(cell)
         outgate = F.sigmoid(outgate)
-
-        # cy = cforgetgate * forgetgate * cx + cingate * ingate * cell
-
         overlap = cforgetgate * cingate
         forgetgate = forgetgate * overlap + (cforgetgate - overlap)
         ingate = ingate * overlap + (cingate - overlap)
         cy = forgetgate * cx + ingate * cell
-
-        # hy = outgate * F.tanh(self.c_norm(cy))
         hy = outgate * F.tanh(cy)
         return hy.view(-1, self.hidden_size), cy, (distance_cforget, distance_cin)
 
@@ -149,6 +117,10 @@ class ONLSTMCell(nn.Module):
 
 
 class ONLSTMStack(nn.Module):
+    """
+    ON-LSTM encoder composed of multiple ON-LSTM layers. Each layer is constructed
+    through ONLSTMCell structures.
+    """
     def __init__(self, layer_sizes, chunk_size, dropout=0., dropconnect=0., embedder=None, phrase_layer=None, dropouti=0.5, dropoutw=0.1, dropouth=0.3, batch_size=20):
         super(ONLSTMStack, self).__init__()
         self.layer_sizes = layer_sizes
@@ -158,7 +130,6 @@ class ONLSTMStack(nn.Module):
                                                dropconnect=dropconnect)
                                     for i in range(len(layer_sizes) - 1)])
         self.lockdrop = LockedDropout()
-        #self.lockdrop2= LockedDropout()
         self.dropout = dropout
         self.dropouti = dropouti
         self.dropouth = dropouth
@@ -166,7 +137,6 @@ class ONLSTMStack(nn.Module):
         self.embedder = embedder
         dim = self.embedder.token_embedder_words.weight.shape
         self.emb = nn.Embedding(dim[0], dim[1])
-        #self.hidden=self.init_hidden(batch_size)
         self._phrase_layer = phrase_layer
 
         self.dropoutw = dropoutw
@@ -181,9 +151,7 @@ class ONLSTMStack(nn.Module):
         return [c.init_hidden(bsz) for c in self.cells]
 
     def forward(self, input, task=None):
-        #input= torch.transpose(input, 0, 1)
         batch_size = input.size()[1]
-        #hidden=self.hidden
         hidden = self.init_hidden(batch_size)
         return self.forward_actual(input, hidden)
 
@@ -231,11 +199,3 @@ class ONLSTMStack(nn.Module):
         mask = abs_inp != 0
         self.distances = torch.stack(distances_forget)
         return output, mask
-        #return output, prev_state, raw_outputs, outputs, (torch.stack(distances_forget), torch.stack(distances_in))
-
-
-if __name__ == "__main__":
-    x = torch.Tensor(10, 10, 10)
-    x.data.normal_()
-    lstm = LSTMCellStack([10, 10, 10])
-    print(lstm(x, lstm.init_hidden(10))[1])

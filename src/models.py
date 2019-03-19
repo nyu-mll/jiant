@@ -35,6 +35,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedS
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
+from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
@@ -106,10 +107,10 @@ def build_model(args, vocab, pretrained_embs, tasks):
         phrase_layer = ONLSTMStack(
             [args.d_word] + [args.d_hid] * (args.n_layers_enc - 1) + [args.d_word],
             chunk_size=args.chunk_size,
-            dropconnect=args.dropconnect,
-            dropouti=args.dropouti,
+            dropconnect=args.onlstm_dropconnect,
+            dropouti=args.onlstm_dropouti,
             dropout=args.dropout,
-            dropouth=args.dropouth,
+            dropouth=args.onlstm_dropouth,
             embedder=embedder,
             phrase_layer=None,
             batch_size=args.batch_size
@@ -121,7 +122,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
-        if tasks[0].name == "wsj" and args.sent_enc == 'onlstm' and (args.tying == 1):
+        if tasks[0].name == "wsj" and args.sent_enc == 'onlstm' and (args.onlstm_tying == 1):
             model.sent_encoder._phrase_layer.emb.weight = model.wsj_hid2voc.weight
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
@@ -397,9 +398,12 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         module = build_pair_sentence_module(task, d_sent, model, vocab,
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, LanguageModelingParsingTask):
+        hid2voc = build_lm(task, d_sent, args)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
-        if args.sent_enc != "onlstm":
-            d_sent = args.d_hid + (args.skip_embs * d_emb)
+        d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
         setattr(model, '%s_mdl' % task.name, hid2voc)
