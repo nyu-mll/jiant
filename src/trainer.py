@@ -597,7 +597,7 @@ class SamplingMultiTaskTrainer:
                 # Dump and log all of our current info
                 epoch = int(n_pass / validation_interval)
                 log.info("***** Pass %d / Epoch %d *****", n_pass, epoch)
-                # Get metrics for all training progress fdef so far
+                # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
                     n_batches_since_val = task_info['n_batches_since_val']
