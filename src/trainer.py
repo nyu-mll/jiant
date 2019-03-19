@@ -332,7 +332,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_examples: list of ints of number of examples per task
         Returns
         ----------------
-            Scaling weights: list of ints, to scale loss
+        scaling weights: list of ints, to scale loss
         """
         if scaling_method == 'uniform':
             scaling_weights = [1.0] * num_tasks
@@ -374,7 +374,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_examples: list of ints of number of examples per task
         Returns
         ----------------
-            Sampling weights: list of ints, to sample tasks to train on
+        sampling weights: list of ints, to sample tasks to train on
         """
         if weighting_method == 'uniform':
             sample_weights = [1.0] * num_tasks
