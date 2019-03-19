@@ -32,6 +32,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
+
 def copy_iter(elems):
     '''Simple iterator yielding copies of elements.'''
     for elem in elems:
@@ -47,7 +48,8 @@ def wrap_singleton_string(item: Union[Sequence, str]):
     return item
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
+def load_model_state(model, state_path, gpu_id,
+                     skip_task_models=[], strict=True):
     ''' Helper function to load a model state
 
     Parameters
@@ -82,12 +84,18 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     if skip_task_models:
         keys_to_skip = []
         for task in skip_task_models:
-            new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
+            new_keys_to_skip = [
+                key for key in model_state if "%s_mdl" %
+                task in key]
             if new_keys_to_skip:
-                logging.info("Skipping task-specific parameters for task: %s" % task)
+                logging.info(
+                    "Skipping task-specific parameters for task: %s" %
+                    task)
                 keys_to_skip += new_keys_to_skip
             else:
-                logging.info("Found no task-specific parameters to skip for task: %s" % task)
+                logging.info(
+                    "Found no task-specific parameters to skip for task: %s" %
+                    task)
         for key in keys_to_skip:
             del model_state[key]
 
@@ -180,6 +188,7 @@ def split_data(data, ratio, shuffle=1):
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
 
+
 @Seq2SeqEncoder.register("masked_multi_head_self_attention")
 class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
     # pylint: disable=line-too-long
@@ -227,9 +236,16 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         self._attention_dim = attention_dim
         self._values_dim = values_dim
 
-        self._query_projections = Parameter(torch.FloatTensor(num_heads, input_dim, attention_dim))
-        self._key_projections = Parameter(torch.FloatTensor(num_heads, input_dim, attention_dim))
-        self._value_projections = Parameter(torch.FloatTensor(num_heads, input_dim, values_dim))
+        self._query_projections = Parameter(
+            torch.FloatTensor(
+                num_heads, input_dim, attention_dim))
+        self._key_projections = Parameter(
+            torch.FloatTensor(
+                num_heads,
+                input_dim,
+                attention_dim))
+        self._value_projections = Parameter(
+            torch.FloatTensor(num_heads, input_dim, values_dim))
 
         self._scale = input_dim ** 0.5
         self._output_projection = Linear(num_heads * values_dim,
@@ -298,7 +314,8 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
         values_per_head = torch.bmm(inputs_per_head, self._value_projections)
         # shape (num_heads * batch_size, timesteps, attention_dim)
-        values_per_head = values_per_head.view(num_heads * batch_size, timesteps, self._values_dim)
+        values_per_head = values_per_head.view(
+            num_heads * batch_size, timesteps, self._values_dim)
 
         # shape (num_heads * batch_size, timesteps, timesteps)
         scaled_similarities = torch.bmm(
@@ -307,11 +324,14 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
         # Masking should go here
         causality_mask = subsequent_mask(timesteps).cuda()
-        masked_scaled_similarities = scaled_similarities.masked_fill(causality_mask == 0, -1e9)
+        masked_scaled_similarities = scaled_similarities.masked_fill(
+            causality_mask == 0, -1e9)
 
         # shape (num_heads * batch_size, timesteps, timesteps)
         # Normalise the distributions, using the same mask for all heads.
-        attention = masked_softmax(masked_scaled_similarities, mask.repeat(num_heads, 1))
+        attention = masked_softmax(
+            masked_scaled_similarities, mask.repeat(
+                num_heads, 1))
         attention = self._attention_dropout(attention)
         # This is doing the following batch-wise matrix multiplication:
         # (num_heads * batch_size, timesteps, timesteps) *
@@ -340,7 +360,8 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         attention_dim = params.pop_int('attention_dim')
         values_dim = params.pop_int('values_dim')
         output_projection_dim = params.pop_int('output_projection_dim', None)
-        attention_dropout_prob = params.pop_float('attention_dropout_prob', 0.1)
+        attention_dropout_prob = params.pop_float(
+            'attention_dropout_prob', 0.1)
         params.assert_empty(cls.__name__)
         return cls(num_heads=num_heads,
                    input_dim=input_dim,
@@ -357,13 +378,13 @@ def assert_for_log(condition, error_message):
 def check_arg_name(args):
     ''' Raise error if obsolete arg names are present. '''
     # Mapping - key: old name, value: new name
-    name_dict = {'task_patience':'lr_patience',
+    name_dict = {'task_patience': 'lr_patience',
                  'do_train': 'do_pretrain',
-                 'train_for_eval':'do_target_task_training',
+                 'train_for_eval': 'do_target_task_training',
                  'do_eval': 'do_full_eval',
-                 'train_tasks':'pretrain_tasks',
-                 'eval_tasks':'target_tasks'}
+                 'train_tasks': 'pretrain_tasks',
+                 'eval_tasks': 'target_tasks'}
     for old_name, new_name in name_dict.items():
         assert_for_log(old_name not in args,
-                      "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
-                      (old_name,name_dict[old_name]))
+                       "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
+                       (old_name, name_dict[old_name]))

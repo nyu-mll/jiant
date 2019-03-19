@@ -1,3 +1,8 @@
+from typing import Type, Union, Sequence, Iterable
+from . import hocon_writer
+import json
+import pyhocon
+import argparse
 '''Train a multi-task model using AllenNLP '''
 import os
 import sys
@@ -7,14 +12,6 @@ import types
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
-
-import argparse
-import pyhocon
-import json
-
-from . import hocon_writer
-
-from typing import Type, Union, Sequence, Iterable
 
 
 class Params(object):
@@ -50,7 +47,9 @@ class Params(object):
     def __setitem__(self, k, v):
         assert isinstance(k, str)
         if isinstance(self.get(k, None), types.FunctionType):
-            raise ValueError("Invalid parameter name (overrides reserved name '%s')." % k)
+            raise ValueError(
+                "Invalid parameter name (overrides reserved name '%s')." %
+                k)
 
         converted_val = Params.clone(v, strict=False)
         if converted_val is not None:
@@ -115,7 +114,7 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
 
 
 def params_from_file(config_files: Union[str, Iterable[str]],
-                     overrides: str=None):
+                     overrides: str = None):
     config_string = ''
     if isinstance(config_files, str):
         config_files = [config_files]

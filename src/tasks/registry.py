@@ -7,6 +7,7 @@ then access the registry as registry.REGISTRY.
 # Entries have form name -> (cls, rel_path, kw)
 REGISTRY = {}  # Do not edit manually!
 
+
 def register_task(name, rel_path, **kw):
     '''Decorator to register a task.
 
@@ -24,5 +25,3 @@ def register_task(name, rel_path, **kw):
         REGISTRY[name] = (cls, rel_path, kw)
         return cls
     return _wrap
-
-

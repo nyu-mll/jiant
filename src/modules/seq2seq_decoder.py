@@ -47,9 +47,12 @@ class Seq2SeqDecoder(Model):
 
         # We need the start symbol to provide as the input at the first timestep of decoding, and
         # end symbol as a way to indicate the end of the decoded sequence.
-        self._start_index = self.vocab.get_token_index(START_SYMBOL, self._target_namespace)
-        self._end_index = self.vocab.get_token_index(END_SYMBOL, self._target_namespace)
-        self._unk_index = self.vocab.get_token_index("@@UNKNOWN@@", self._target_namespace)
+        self._start_index = self.vocab.get_token_index(
+            START_SYMBOL, self._target_namespace)
+        self._end_index = self.vocab.get_token_index(
+            END_SYMBOL, self._target_namespace)
+        self._unk_index = self.vocab.get_token_index(
+            "@@UNKNOWN@@", self._target_namespace)
         num_classes = self.vocab.get_vocab_size(self._target_namespace)
 
         # Decoder output dim needs to be the same as the encoder output dim since we initialize the
@@ -65,15 +68,21 @@ class Seq2SeqDecoder(Model):
         self._decoder_output_dim = self._decoder_hidden_dim
         self._output_proj_input_dim = output_proj_input_dim
         self._target_embedding_dim = target_embedding_dim
-        self._target_embedder = Embedding(num_classes, self._target_embedding_dim)
+        self._target_embedder = Embedding(
+            num_classes, self._target_embedding_dim)
 
         # Used to get an initial hidden state from the encoder states
-        self._sent_pooler = Pooler(project=True, d_inp=input_dim, d_proj=decoder_hidden_size)
+        self._sent_pooler = Pooler(
+            project=True,
+            d_inp=input_dim,
+            d_proj=decoder_hidden_size)
 
         if attention == "bilinear":
-            self._decoder_attention = BilinearAttention(decoder_hidden_size, input_dim)
+            self._decoder_attention = BilinearAttention(
+                decoder_hidden_size, input_dim)
             # The output of attention, a weighted average over encoder outputs, will be
-            # concatenated to the input vector of the decoder at each time step.
+            # concatenated to the input vector of the decoder at each time
+            # step.
             self._decoder_input_dim = input_dim + target_embedding_dim
         elif attention == "none":
             self._decoder_attention = None
@@ -81,7 +90,9 @@ class Seq2SeqDecoder(Model):
         else:
             raise Exception("attention not implemented {}".format(attention))
 
-        self._decoder_cell = LSTMCell(self._decoder_input_dim, self._decoder_hidden_dim)
+        self._decoder_cell = LSTMCell(
+            self._decoder_input_dim,
+            self._decoder_hidden_dim)
         # Allow for a bottleneck layer between encoder outputs and distribution over vocab
         # The bottleneck layer consists of a linear transform and helps to reduce
         # number of parameters
@@ -90,10 +101,12 @@ class Seq2SeqDecoder(Model):
                 self._decoder_output_dim, self._output_proj_input_dim)
         else:
             self._projection_bottleneck = lambda x: x
-        self._output_projection_layer = Linear(self._output_proj_input_dim, num_classes)
+        self._output_projection_layer = Linear(
+            self._output_proj_input_dim, num_classes)
         self._dropout = torch.nn.Dropout(p=dropout)
 
-    def _initalize_hidden_context_states(self, encoder_outputs, encoder_outputs_mask):
+    def _initalize_hidden_context_states(
+            self, encoder_outputs, encoder_outputs_mask):
         """
         Initialization of the decoder state, based on the encoder output.
         Parameters
@@ -104,13 +117,15 @@ class Seq2SeqDecoder(Model):
 
         if self._decoder_attention is not None:
             encoder_outputs = self._projection_encoder_out(encoder_outputs)
-            encoder_outputs.data.masked_fill_(1 - encoder_outputs_mask.byte().data, -float('inf'))
+            encoder_outputs.data.masked_fill_(
+                1 - encoder_outputs_mask.byte().data, -float('inf'))
 
             decoder_hidden = encoder_outputs.new_zeros(
                 encoder_outputs_mask.size(0), self._decoder_hidden_dim)
             decoder_context = encoder_outputs.max(dim=1)[0]
         else:
-            decoder_hidden = self._sent_pooler(encoder_outputs, encoder_outputs_mask)
+            decoder_hidden = self._sent_pooler(
+                encoder_outputs, encoder_outputs_mask)
             decoder_context = encoder_outputs.new_zeros(
                 encoder_outputs_mask.size(0), self._decoder_hidden_dim)
 
@@ -279,7 +294,10 @@ class Seq2SeqDecoder(Model):
            against                l1  l2  l3  l4  l5  l6
            (where the input was)  <S> w1  w2  w3  <E> <P>
         """
-        relevant_targets = targets[:, 1:].contiguous()  # (batch_size, num_decoding_steps)
-        relevant_mask = target_mask[:, 1:].contiguous()  # (batch_size, num_decoding_steps)
-        loss = sequence_cross_entropy_with_logits(logits, relevant_targets, relevant_mask)
+        relevant_targets = targets[:, 1:].contiguous(
+        )  # (batch_size, num_decoding_steps)
+        # (batch_size, num_decoding_steps)
+        relevant_mask = target_mask[:, 1:].contiguous()
+        loss = sequence_cross_entropy_with_logits(
+            logits, relevant_targets, relevant_mask)
         return loss
