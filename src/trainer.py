@@ -517,7 +517,7 @@ class SamplingMultiTaskTrainer:
                 # Dump and log all of our current info
                 epoch = int(n_pass / validation_interval)
                 log.info("***** Pass %d / Epoch %d *****", n_pass, epoch)
-                # Get metrics for all training progress so far
+                # Get metrics for all training progress fdef so far
                 for task in tasks:
                     task_info = task_infos[task.name]
                     n_batches_since_val = task_info['n_batches_since_val']
@@ -596,7 +596,7 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, periodic_save):
+    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, should_save, new_best_macro):
         """
         This function updates metric history with the best validation score so far
         Parameters
@@ -622,8 +622,6 @@ class SamplingMultiTaskTrainer:
             if task_name == 'macro':
                 new_best_macro = True
         if out_of_patience:
-            if periodic_save:
-                should_save = True
             metric_infos[metric]['stopped'] = True
             log.info("Out of patience. Stopped tracking %s", task_name)
         return metric_infos, this_epoch_metric, should_save, new_best_macro
@@ -712,7 +710,7 @@ class SamplingMultiTaskTrainer:
         Returns
         __________
 
-
+    
         '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -748,7 +746,10 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, all_val_metrics, metric, metric_infos, metric_decreases, periodic_save)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, \
+                                                                                                    all_val_metrics, 
+                                                                                                    metric, task_name, metric_infos, \
+                                                                                                    metric_decreases, should_save, new_best_macro)
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
             if task_name not in ['micro', 'macro'] and g_scheduler is None:
@@ -763,7 +764,7 @@ class SamplingMultiTaskTrainer:
                 log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
                 log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
 
-        return all_val_metrics, should_save, new_best_macro, metric_infos, metric_history
+        return all_val_metrics, should_save, new_best_macro
 
     def _get_lr(self):
         ''' Get learning rate from the optimizer we're using '''
