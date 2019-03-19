@@ -37,6 +37,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
 from .tasks.lm import LanguageModelingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
+from .tasks.qa import MultiRCTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -442,6 +443,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
+    elif isinstance(task, MultiRCTask):
+        module = build_qa_module(task, d_sent, model.use_bert, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -573,6 +577,15 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     hid2voc = nn.Linear(args.s2s['d_hid_dec'], args.max_word_v_size)
     return decoder, hid2voc
 
+def build_qa_module(task, d_inp, use_bert, params):
+    ''' '''
+    assert_for_log(use_bert, "Must use BERT for MultiRC!")
+    pool_type = "first"
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
+    d_out = d_inp if use_bert else params["d_proj"]
+    classifier = Classifier.from_params(d_out, 2, params)
+    return SingleClassifier(pooler, classifier)
+
 
 class MultiTaskModel(nn.Module):
     '''
@@ -640,6 +653,8 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
+        elif isinstance(task, MultiRCTask):
+            out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1056,6 +1071,26 @@ class MultiTaskModel(nn.Module):
         total_correct = torch.sum(pred == labels)
         batch_acc = total_correct.item() / len(labels)
         task.scorer1.__call__(batch_acc)
+
+        return out
+
+    def _multiple_choice_reading_comprehension_forward(self, batch, task, predict):
+        ''' Forward call for multiple choice (selecting from a fixed set of answers)
+        reading comprehension (have a supporting paragraph).
+        Batch has keys `paragraph`, `question`, `answer`, `labels` '''
+        out = {}
+        ex_embs, ex_mask = self.sent_encoder(batch['paragraph_question_answer'], task)
+        classifier = self._get_classifier(task)
+        logits = classifier(ex_embs, ex_mask)
+        out['logits'] = logits
+
+        keys = [k for k in batch['paragraph_question_answer']]
+        out['n_exs'] = batch['paragraph_question_answer'][keys[0]].size(0)
+
+        if 'labels' in batch:
+            labels = batch['labels']
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.scorer1(logits, labels)
 
         return out
 

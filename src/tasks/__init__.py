@@ -5,6 +5,7 @@ from . import lm
 from . import mt
 from . import nli_probing
 from . import reddit
+from . import qa
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
