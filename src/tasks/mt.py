@@ -39,7 +39,9 @@ class MTTask(SequenceGenerationTask):
         self.max_seq_len = max_seq_len
         self._label_namespace = self.name + "_tokens"
         self.max_targ_v_size = max_targ_v_size
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
+        self.target_indexer = {
+            "words": SingleIdTokenIndexer(
+                namespace=self._label_namespace)}
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
                                split in ["train", "val", "test"]}
 
@@ -66,9 +68,11 @@ class MTTask(SequenceGenerationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                src_sent = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
+                src_sent = process_sentence(
+                    self._tokenizer_name, row[0], self.max_seq_len)
                 # Currently: force Moses tokenization on targets
-                tgt_sent = process_sentence("MosesTokenizer", row[1], self.max_seq_len)
+                tgt_sent = process_sentence(
+                    "MosesTokenizer", row[1], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -135,8 +139,10 @@ class RedditSeq2SeqTask(MTTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                src_sent = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
-                tgt_sent = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
+                src_sent = process_sentence(
+                    self._tokenizer_name, row[2], self.max_seq_len)
+                tgt_sent = process_sentence(
+                    self._tokenizer_name, row[3], self.max_seq_len)
                 yield (src_sent, tgt_sent)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -149,6 +155,7 @@ class RedditSeq2SeqTask(MTTask):
 
         for sent1, sent2 in split:
             yield _make_instance(sent1, sent2)
+
 
 @register_task('wiki2_s2s', rel_path='WikiText2/', max_targ_v_size=0)
 @register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
