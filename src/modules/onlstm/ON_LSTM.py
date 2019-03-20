@@ -66,6 +66,9 @@ class LinearDropConnect(nn.Linear):
 
 
 def cumsoftmax(x, dim=-1):
+    ""
+    Cummulative softmax
+    ""
     return torch.cumsum(F.softmax(x, dim=dim), dim=dim)
 
 
@@ -123,6 +126,7 @@ class ONLSTMStack(nn.Module):
     """
     ON-LSTM encoder composed of multiple ON-LSTM layers. Each layer is constructed
     through ONLSTMCell structures.
+    Code credits: https://github.com/yikangshen/Ordered-Neurons
     """
     def __init__(self, layer_sizes, chunk_size, dropout=0., dropconnect=0., embedder=None, phrase_layer=None, dropouti=0.5, dropoutw=0.1, dropouth=0.3, batch_size=20):
         super(ONLSTMStack, self).__init__()
