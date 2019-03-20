@@ -17,6 +17,7 @@ from .tasks import RankingTask, PairClassificationTask
 from .tasks import sentence_to_text_field
 from .registry import register_task
 
+
 @register_task('reddit', rel_path='Reddit_2008/')
 @register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
@@ -50,8 +51,10 @@ class RedditTask(RankingTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -93,6 +96,7 @@ class RedditTask(RankingTask):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+
 @register_task('reddit_pair_classif', rel_path='Reddit/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
 class RedditPairClassificationTask(PairClassificationTask):
@@ -122,8 +126,10 @@ class RedditPairClassificationTask(PairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -186,8 +192,10 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[1], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
