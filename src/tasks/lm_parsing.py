@@ -1,4 +1,4 @@
-"""Task definitions for language modeling tasks."""
+"""Task definitions for language modeling parsing tasks."""
 import json
 import logging as log
 import math
@@ -24,7 +24,7 @@ from .registry import register_task
 class LanguageModelingParsingTask(LanguageModelingTask):
     def count_examples(self):
         """Computes number of samples.
-        Every example is made up of sentence concatenated together, capped by max_seq_len.
+        Every example is made up of sentences concatenated together, capped by max_seq_len.
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
