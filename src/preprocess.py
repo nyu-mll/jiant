@@ -131,7 +131,6 @@ def _index_split(task, split, indexers, vocab, record_file):
 
     # Counter for lazy-loaded data, so we can log the # of elements.
     _instance_counter = 0
-
     def _counter_iter(elems):
         nonlocal _instance_counter
         for elem in elems:
@@ -209,13 +208,13 @@ def _build_vocab(args, tasks, vocab_path: str):
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
+        add_task_domain_vocab(vocab, task)
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, 'openai_bpe')
     if args.bert_model_name:
         # Add pre-computed BPE vocabulary for BERT model.
         add_bert_wpm_vocab(vocab, args.bert_model_name)
-
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
@@ -553,16 +552,42 @@ def add_task_label_vocab(vocab, task):
     for label in task.get_all_labels():
         vocab.add_token_to_namespace(label, namespace)
 
+def add_task_domain_vocab(vocab, task):
+    '''Add custom task labels to a separate namespace.
+
+    If task has a 'get_all_labels' method, call that to get a list of labels
+    to populate the <task_name>_labels vocabulary namespace.
+
+    This is the recommended way to implement multiclass models: in your task's
+    process_split code, make instances that use LabelFields with the task label
+    namespace, e.g.:
+        label_namespace = "%s_labels" % self.name
+        label = LabelField(label_string, label_namespace=label_namespace)
+    This will cause them to be properly indexed by the Vocabulary.
+
+    This can then be accessed when generating Instances, either via a custom
+    Indexer or by invoking the namespace when creating a LabelField.
+    '''
+    if not hasattr(task, 'tag_list'):
+        return
+    utils.assert_for_log(hasattr(task, "_domain_namespace"),
+                         "Task %s is missing method `_domain_namespace`!" % task.name)
+    namespace = task._domain_namespace
+    if namespace is None:
+        return
+    log.info("\tTask '%s': adding domain vocab namespace '%s'", task.name, namespace)
+    for domain in task.tag_list:
+        vocab.add_token_to_namespace(domain, namespace)
+
 def add_bert_wpm_vocab(vocab, bert_model_name):
     '''Add BERT WPM vocabulary for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
+    BertTokenizer has a convert_tokens_to_ids method,    but this doesn't do
     anything special so we can just use the standard indexers.
     '''
     from pytorch_pretrained_bert import BertTokenizer
     do_lower_case = bert_model_name.endswith('uncased')
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name,
-                                              do_lower_case=do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained(bert_model_name,do_lower_case=do_lower_case)
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
     log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name,
              len(ordered_vocab))

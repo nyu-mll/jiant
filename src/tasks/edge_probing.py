@@ -33,6 +33,92 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 from .tasks import Task, sentence_to_text_field, create_subset_scorers, collect_subset_scores, update_subset_scorers
 from .registry import register_task, REGISTRY  # global task registry
 
+
+class GAPScorer(object):
+    """
+    Container class for storing scores, and generating evaluation metrics.
+    From Google. 
+    Attributes:
+    true_positives: Tally of true positives seen.
+    false_positives: Tally of false positives seen.
+    true_negatives: Tally of true negatives seen.
+    false_negatives: Tally of false negatives seen.
+    """
+    def __init__(self):
+        self.true_positives = 0
+        self.false_positives = 0
+        self.true_negatives = 0
+        self.false_negatives = 0
+
+    def recall(self):
+        """Calculates recall based on the observed scores.
+        Returns:
+          float, the recall.
+        """
+        numerator = self.true_positives
+        denominator = self.true_positives + self.false_negatives
+        return 100.0 * numerator / denominator if denominator else 0.0
+
+    def precision(self):
+        """Calculates precision based on the observed scores.
+        Returns:
+          float, the precision.
+        """
+        numerator = self.true_positives
+        denominator = self.true_positives + self.false_positives
+        return 100.0 * numerator / denominator if denominator else 0.0
+
+    def f1(self):
+        """Calculates F1 based on the observed scores.
+        Returns:
+          float, the F1 score.
+        """
+        recall = self.recall()
+        precision = self.precision()
+
+        numerator = 2 * precision * recall
+        denominator = precision + recall
+        return numerator / denominator if denominator else 0.0
+
+    def get_metric(self, reset=False):
+        recall = self.recall()
+        precision = self.precision()
+        f1 = self.f1()
+        if reset:
+            self.true_positives = 0
+            self.false_positives = 0
+            self.true_negatives = 0
+            self.false_negatives = 0
+        return recall, precision, f1
+
+    def __call__(self, predictions, labels):
+        """Score the system annotations against gold.
+        Args:
+        predictiosn: torch tensor of batch x 3
+        system_annotations: batch x 3 Torch numpy list
+        Returns:
+        None
+        """
+        pred_indices = torch.max(predictions, dim=1)[1].view(-1, 1)
+        num_classes = 3
+        one_hot_logits = (pred_indices == torch.arange(num_classes).reshape(1, num_classes).cuda()).float()
+        predictions = one_hot_logits[:,:2].cpu().numpy()
+        labels = labels[:,:2].cpu().numpy()
+        b_size = predictions.shape[0]
+        for i in range(b_size):
+            for j in range(2):
+                pred = predictions[i][j].item()
+                gold = labels[i][j].item()
+                if gold and pred:
+                  self.true_positives += 1
+                elif not gold and pred:
+                  self.false_positives += 1
+                elif not gold and not pred:
+                  self.true_negatives += 1
+                elif gold and not pred:
+                  self.false_negatives += 1
+            return
+
 ##
 # Class definitions for edge probing. See below for actual task registration.
 class EdgeProbingTask(Task):
@@ -106,9 +192,7 @@ class EdgeProbingTask(Task):
 
         # Scorers
         #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
-        self.mcc_scorer = FastMatthews()
-        self.acc_scorer = BooleanAccuracy()  # binary accuracy
-        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        self.f1_scorer = GAPScorer()
         self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
@@ -123,6 +207,7 @@ class EdgeProbingTask(Task):
                 skip_ctr += 1
                 continue
             yield record
+
         log.info("Read=%d, Skip=%d, Total=%d from %s",
                  total_ctr - skip_ctr, skip_ctr, total_ctr,
                  filename)
@@ -158,6 +243,8 @@ class EdgeProbingTask(Task):
             #  iter = serialize.RepeatableIterator(loader)
             iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
+        subset_f1_scorers = create_subset_scorers(count=self.num_domains, scorer_type=GAPScorer)# binary F1 overall
+        self.subset_scorers = {"f1": subset_f1_scorers}
         return iters_by_split
 
     def get_split_text(self, split: str):
@@ -228,120 +315,32 @@ class EdgeProbingTask(Task):
             for record in iter:
                 yield record["text"].split()
 
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        metrics = {}
-        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
-        metrics['acc'] = self.acc_scorer.get_metric(reset)
-        precision, recall, f1 = self.f1_scorer.get_metric(reset)
-        metrics['precision'] = precision
-        metrics['recall'] = recall
-        metrics['f1'] = f1
-        return metrics
-
-    def update_subset_metrics(logits, labels, tagmask=None):
-      return
-
-@register_task('gap-coreference', rel_path = 'processed/gap-coreference')
-class GapCoreferenceTask(EdgeProbingTask):
-    def __init__(self, path, single_sided=False, **kw):
-        self._files_by_split = {'train': "__development__", 'val': "__validation__",'test': "__test__"}
-        super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
-
-    def make_instance(self, record, idx, indexers) -> Type[Instance]:
-        """Convert a single record to an AllenNLP Instance."""
-        tokens = record['text'].split()  # already space-tokenized by Moses
-        tokens = self._pad_tokens(tokens)
-        text_field = sentence_to_text_field(tokens, indexers)
-
-        d = {}
-        d["idx"] = MetadataField(idx)
-
-        d['input1'] = text_field
-
-        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
-                                 for t in record['targets']])
-        # single-sided. And we reused the cod ehre
-        if not self.single_sided:
-            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
-                                     for t in record['targets']])
-        # Always use multilabel targets, so be sure each label is a list.
-        labels = [[t['label']] for t in record['targets']]
-
-        d['labels'] = ListField([MultiLabelField(label_set, label_namespace=self._label_namespace, skip_indexing=False) for label_set in labels])
-        return Instance(d)
-
-    def process_split(self, split, indexers):
-        ''' Process split text into a list of AllenNLP Instances with tag masking'''
-        def _map_fn(r, idx): 
-          instance = self.make_instance(r, idx, indexers)
-          tag_field = MultiLabelField(r["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
-          instance.add_field("tagmask", field=tag_field)
-          return instance
-        instances = map(_map_fn, split, itertools.count())
-        return instances
-
-    def load_data(self):
-        tag_vocab = vocabulary.Vocabulary(counter=None)
-
-        iters_by_split = collections.OrderedDict()
-        import pandas as pd
-
-        def find(target, myList):
-            for i in range(len(myList)):
-                if myList[i] == target:
-                    yield i
-
-        for split in self._files_by_split.keys():
-            """
-               Only Loading all sentences of up to length max_seq_len.
-            """
-            data = pd.read_csv(self._files_by_split[split], delimiter="\t")
-            text = data["text"]
-            lengths = [len(sent.split(" ")) for sent in text.tolist()]
-            to_include = [1 if length < self.max_seq_len - 1  else 0 for length in lengths]
-            indices = [i for i,x in enumerate(to_include) if x == 1]
-            data = data.loc[indices]
-            text = data["text"].tolist()
-            s1start = data["prompt_start_index"].tolist()
-            s1end = data["prompt_end_index"].tolist()
-            s2start = data["candidate_start_index"].tolist()
-            s2end = data["candidate_end_index"].tolist()
-            labels_map = {True: "true", False: "false"}
-            labels = data["label"]
-            labels = labels.apply(lambda x: labels_map[x]).tolist()
-            tagids = data["gender"].tolist()
-            for tag in set(tagids):
-              tag_vocab.add_token_to_namespace(tag)
-            # we minus 2 here for tag_vocab so that we ignore @@unknown@@ etc
-            structured_data = [{"info": {"document_id": "XX","sentence_id":i}, "text": text[i], "gender": [tag_vocab.get_token_index(tagids[i]) - 2], "targets":[{"span1":[int(s1start[i]), int(s1end[i])], "label": labels[i], "span2":[int(s2start[i]), int(s2end[i])]}]} for i in range(len(text))]
-            iters_by_split[split] = structured_data
-        self.tag_list = utils.get_tag_list(tag_vocab)
-        subset_mcc_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=FastMatthews)
-        subset_acc_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=BooleanAccuracy)
-        subset_f1_scorers = create_subset_scorers(count=len(self.tag_list), scorer_type=F1Measure, positive_label=1)  # binary F1 overall
-        self.subset_scorers = {"mcc": subset_mcc_scorers, "acc": subset_acc_scorers, "f1": subset_f1_scorers}
-        return iters_by_split
-
     def update_subset_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-        _, preds = logits.max(dim=1)
+        targets = (labels == 1).nonzero()[:,1]
         if tagmask is not None:
-            binary_preds = logits.ge(0).long()  # {0,1}
-            update_subset_scorers(self.subset_scorers["mcc"], binary_preds, labels.long(), tagmask)
-            update_subset_scorers(self.subset_scorers["acc"], binary_preds, labels.long(), tagmask)
             # F1Measure() expects [total_num_targets, n_classes, 2]
             # to compute binarized F1.
-            binary_scores = torch.stack([-1 * logits, logits], dim=2)
-            update_subset_scorers(self.subset_scorers["f1"], binary_scores, labels, tagmask)
+            update_subset_scorers(self.subset_scorers["f1"], logits, labels, tagmask)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        collected_metrics = {'mcc': self.mcc_scorer.get_metric(reset), 'accuracy': self.acc_scorer.get_metric(reset), "f1": self.f1_scorer.get_metric(reset)[2]}
+        collected_metrics = {"f1": self.f1_scorer.get_metric(reset)[2]}
         for score_name, scorer in list(self.subset_scorers.items()):
           collected_metrics.update(collect_subset_scores(scorer, score_name, self.tag_list, reset))
-        collected_metrics.update({"bias": collected_metrics["f1_Male"] / collected_metrics["f1_Female"]})
+        if collected_metrics["f1_FEMININE"] != 0.0:
+            collected_metrics.update({"bias": collected_metrics["f1_MASCULINE"] / collected_metrics["f1_FEMININE"]})
         return collected_metrics
+
+@register_task('gap-coreference', rel_path = '')
+class GapCoreferenceTask(EdgeProbingTask):
+    def __init__(self, path, single_sided=False, domains=["FEMININE", "MASCULINE"], **kw):
+        self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
+        self.num_domains = len(domains)
+        self.tag_list = domains
+        self._domain_namespace = kw["name"] + "_tags"
+        super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
+
 
 ##
 # Task definitions. We call the register_task decorator explicitly so that we
