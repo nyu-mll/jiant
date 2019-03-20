@@ -898,7 +898,7 @@ class MultiTaskModel(nn.Module):
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
             targs = batch['targs']['words'][:, :seq_len].contiguous().view(-1)
-        # prevent backprop for tags generated for indices introduced by tokenization
+        # prevent backprop for tags generated for tokens introduced by tokenization
         # which we do via masking - masks generated during preprocessing
         if "mask" in batch:
             mask = batch["mask"]

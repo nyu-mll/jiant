@@ -170,7 +170,7 @@ class Task(object):
     '''
     def __init__(self, name, tokenizer_name):
         self.name = name
-        #assert self.tokenizer_is_supported(tokenizer_name)
+        assert self.tokenizer_is_supported(tokenizer_name)
         self._tokenizer_name = tokenizer_name
 
     def load_data(self, path, max_seq_len):
@@ -1441,7 +1441,7 @@ class TaggingTask(Task):
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
         mask =  [MultiLabelField(so, label_namespace="indices", skip_indexing=True, num_labels=511) for so in split[3]]
-        instances = [Instance({"inputs": x, "targs": t}) for (x, t, m) in zip(inputs, targs, mask)]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
         
         return instances
 
@@ -1471,10 +1471,10 @@ class CCGTaggingTask(TaggingTask):
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.'+self._tokenizer_name), max_seq_len,
                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
         self.max_seq_len = max_seq_len
-        import pdb; pdb.set_trace()
+
         # Get the mask for each sentence, where the mask is whether or not 
-        # the token was split off by tokenization. We want to generate predictions 
-        # for the first sub-piece of each word, following the BERT author's NER
+        # the token was split off by tokenization. We want to only count the first
+        # sub-peice in the BERT tokenization in the loss and score following the BERT author's NER
         # experiment.
         from ast import literal_eval
         import numpy.ma as ma
