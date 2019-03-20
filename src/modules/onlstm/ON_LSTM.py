@@ -66,9 +66,9 @@ class LinearDropConnect(nn.Linear):
 
 
 def cumsoftmax(x, dim=-1):
-    ""
+    """
     Cummulative softmax
-    ""
+    """
     return torch.cumsum(F.softmax(x, dim=dim), dim=dim)
 
 

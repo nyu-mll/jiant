@@ -24,7 +24,7 @@ from .registry import register_task
 class LanguageModelingParsingTask(LanguageModelingTask):
     def count_examples(self):
         """Computes number of samples.
-        Assuming every line is one example.
+        Every example is made up of sentence concatenated together, capped by max_seq_len.
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
@@ -61,7 +61,7 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
             yield _make_instance(sent)
 
     def load_data(self, path):
-        """Loading data file and tokenizing the text
+        """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """
@@ -105,7 +105,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
             yield _make_instance(sent)
 
     def load_data(self, path):
-        """Loading data file and tokenizing the text
+        """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """
@@ -168,7 +168,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
             yield _make_instance(sent)
 
     def load_data(self, path):
-        """Loading data file and tokenizing the text
+        """Load data file (combine the entailment and contradiction sentence), tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """
