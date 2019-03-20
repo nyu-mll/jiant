@@ -178,6 +178,7 @@ class Task(object):
         self.name = name
         assert self.tokenizer_is_supported(tokenizer_name)
         self._tokenizer_name = tokenizer_name
+        self.scorers = []
 
     def load_data(self, path, max_seq_len):
         ''' Load data from path and create splits. '''
@@ -237,6 +238,13 @@ class Task(object):
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
 
+    def get_scorers():
+        return self.scorers
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        assert len(task.get_scorers()) > 0, 'Please specify a score metric'
+        for scorer in task.get_scorers():
+            scorer(logits, labels)
 
 class ClassificationTask(Task):
     ''' General classification task '''
@@ -285,7 +293,7 @@ class PairClassificationTask(ClassificationTask):
         assert n_classes > 0
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
@@ -306,7 +314,7 @@ class PairRegressionTask(RegressionTask):
         super().__init__(name, **kw)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_mse" % self.name
         self.val_metric_decreases = True
 
@@ -331,6 +339,7 @@ class PairOrdinalRegressionTask(RegressionTask):
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = Correlation('spearman')
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
 
@@ -353,7 +362,7 @@ class SequenceGenerationTask(Task):
     def __init__(self, name, **kw):
         super().__init__(name, **kw)
         self.scorer1 = Average()  # for average BLEU or something
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
         log.warning("BLEU scoring is turned off (current code in progress)."
@@ -368,7 +377,6 @@ class SequenceGenerationTask(Task):
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
-
 
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
@@ -408,6 +416,7 @@ class CoLATask(SingleClassificationTask):
         #self.scorer1 = Average()
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -426,6 +435,12 @@ class CoLATask(SingleClassificationTask):
         return {'mcc': self.scorer1.get_metric(reset),
                 'accuracy': self.scorer2.get_metric(reset)}
 
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        return
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
@@ -437,6 +452,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers =[self.scorer1, self.scorer2]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -563,7 +579,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
         super(MultiNLISingleGenreTask, self).__init__(name, n_classes=3,
                                                       **kw)
         self.load_data(path, max_seq_len, genre)
-        self.scorer2 = None
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
@@ -1281,7 +1296,7 @@ class GroundedTask(Task):
         ''' Do stuff '''
         super(GroundedTask, self).__init__(name, **kw)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_metric" % self.name
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + \
@@ -1380,7 +1395,7 @@ class GroundedSWTask(Task):
     def __init__(self, path, max_seq_len, name, **kw):
         super(GroundedSWTask, self).__init__(name, **kw)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_metric" % self.name
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + \

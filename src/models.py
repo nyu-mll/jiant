@@ -712,16 +712,10 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
-            if isinstance(task, CoLATask):
-                task.scorer2(logits, labels)
-                _, preds = logits.max(dim=1)
-                task.scorer1(labels, preds)
-            elif isinstance(task, CoLAAnalysisTask):
-                task.update_metrics(logits, labels, tagmask=batch['tagmask'])
-            else:
-                task.scorer1(logits, labels)
-                if task.scorer2 is not None:
-                    task.scorer2(logits, labels)
+            for scorer in task.get_scorers():
+                scorer(logits, labels)
+                if 'tagmask' in batch:
+                    task.update_metrics(logits, labels, tagmask=batch['tagmask'])
 
         if predict:
             if isinstance(task, RegressionTask):
