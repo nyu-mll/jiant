@@ -712,10 +712,10 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
-            for scorer in task.get_scorers():
-                scorer(logits, labels)
-                if 'tagmask' in batch:
-                    task.update_metrics(logits, labels, tagmask=batch['tagmask'])
+            tagmask = None
+            if 'tagmask' in batch:
+                tagmask = batch['tagmask']
+            task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):
