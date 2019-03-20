@@ -35,12 +35,6 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             example_counts[split] = int(math.ceil(allf / self.max_seq_len))
         self.example_counts = example_counts
 
-
-@register_task('wsj', rel_path='Penn/')
-class WSJLanguageModelling(LanguageModelingParsingTask):
-    """ Language modeling on a PTB dataset
-    See base class: LanguageModelingTask
-    """
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
@@ -59,6 +53,13 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
+
+
+@register_task('wsj', rel_path='Penn/')
+class WSJLanguageModelling(LanguageModelingParsingTask):
+    """ Language modeling on a PTB dataset
+    See base class: LanguageModelingTask
+    """
 
     def load_data(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
@@ -84,25 +85,6 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on a PTB dataset
     See base class: LanguageModelingTask
     """
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """Process a language modeling split by indexing and creating fields.
-        Args:
-            split: (list) a single list of sentences
-            indexers: (Indexer object) indexer to index input words
-        """
-        def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
-            d = {}
-            d["input"] = sentence_to_text_field(sent[:-1], indexers)
-            d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
-            return Instance(d)
-        for sent in split:
-            yield _make_instance(sent)
 
     def load_data(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
@@ -147,25 +129,6 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         self.files_by_split = {'train': os.path.join(path, "train.tsv"),
                                'val': os.path.join(path, "dev_matched.tsv"),
                                'test': os.path.join(path, "test_matched.tsv")}
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """Process a language modeling split by indexing and creating fields.
-        Args:
-            split: (list) a single list of sentences
-            indexers: (Indexer object) indexer to index input words
-        """
-        def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
-            and bwd targs adds </s> as a target for input <s>
-            to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
-            d = {}
-            d["input"] = sentence_to_text_field(sent[:-1], indexers)
-            d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
-            return Instance(d)
-        for sent in split:
-            yield _make_instance(sent)
 
     def load_data(self, path):
         """Load data file (combine the entailment and contradiction sentence), tokenize text and concat sentences to create long term dependencies.
