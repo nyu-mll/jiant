@@ -1,4 +1,3 @@
-
 """Task definitions for reddit."""
 import codecs
 import logging as log

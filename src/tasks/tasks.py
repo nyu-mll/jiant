@@ -242,8 +242,8 @@ class Task(object):
         return self.scorers
 
     def update_metrics(self, logits, labels, tagmask=None):
-        assert len(task.get_scorers()) > 0, 'Please specify a score metric'
-        for scorer in task.get_scorers():
+        assert len(self.get_scorers()) > 0, 'Please specify a score metric'
+        for scorer in self.get_scorers():
             scorer(logits, labels)
 
 class ClassificationTask(Task):
