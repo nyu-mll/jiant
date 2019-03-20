@@ -485,7 +485,6 @@ class SamplingMultiTaskTrainer:
                 if self._model.utilization is not None:
                     batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
-
             # Validation
             if n_pass % validation_interval == 0:
 

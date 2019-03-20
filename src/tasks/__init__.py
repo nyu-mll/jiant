@@ -19,6 +19,7 @@ from .tasks import Task
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
+ALL_SUPERGLUE_TASKS = ["gap-coreference"]
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
 ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
