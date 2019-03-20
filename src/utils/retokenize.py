@@ -13,123 +13,23 @@ from io import StringIO
 
 import numpy as np
 from scipy import sparse
-from ..utils import utils
-import re
+
 from nltk.tokenize.simple import SpaceTokenizer
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
-from typing import Tuple, List, Text
+
 # Tokenizer instance for internal use.
 _SIMPLE_TOKENIZER = SpaceTokenizer()
 _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
-
-def align_tags(orig_text, current_tags, introduce_tag):
-    """
-    Align tag labels from source tokenization to target tokenization.
-    Parameters
-    -------------
-    text: List[str] the text tokenized in target tokenization
-    orig_text: the original text input pre-tokenization
-    alignment_tokenizer_func: Func that returns TokenAligner between two tokenizations
-    current_tags: List of tags in source tokenization
-    Returns
-    -------------
-    List of tags in target tokenization
-    """
-    import pdb; pdb.set_trace()
-    # remove apos&  introduced by Moses Tokenization,apos is 42 in vocab.
-    text = text[1:-1]
-    ta, _ = align_bert(orig_text, model_name="bert-base-uncased")
-    current_indices = [(i, i+1) for i in range(len(current_tags))]
-    new_tag_indices = []
-    import pdb; pdb.set_trace()
-    for tag_index in current_indices:
-        new_tag_indices.append(ta.project_span(tag_index[0], tag_index[1]))
-    aligned_tags = []
-    for i in range(len(new_tag_indices)):
-        new_start = new_tag_indices[i][0]
-        new_end = new_tag_indices[i][1]
-        aligned_tags.append(current_tags[i])
-        if (new_end - new_start) > 1:
-            for i in new_end - new_start - 1:
-                aligned_tags.append(introduce_tag)
-    assert len(text) == len(aligned_tags)
-    res_aligned_tags = [str(int(tag) + utils.EOS_INDEX + 1) for tag in aligned_tags]
-    res_aligned_tags = [str(utils.SOS_INDEX)] + res_aligned_tags + [str(utils.EOS_INDEX)]
-    return res_aligned_tags
-
-
-def adjust_targs_moses_to_BPE(targs, bpe_input, orig_input, orig_tokenizer_func):
-    """
-    Adjusts target tokens so that it matches with the newly BPE-retokenized
-    input
-    This function is called only for OpenAI -> TaggingTasks
-    BPE tokenization will add more tokens to the sentence than the original
-    tokens (thus len(bpe_input) >= len(orig_input)).
-    However, MosesTokenizer can add ;apos to the text, thus we first must remove
-    the tags correlating to &apos; as well as the &apos; in the Moses-tokenized
-    text.
-    We handle aligning by assuming that the target token of the
-    new added bpe token is the same as its left neighbor for simplicity.
-    Parameters
-    ----------
-    targs :  A list of string, required.
-        target tokens
-    bpe_input : list of string, required
-        This is the output of the BPE tokenizer
-    orig_input: string, required
-        This is the original input from the dataset
-    orig_tokenizer_func: func: str -> list of strings
-        This is a function that tokenizes it the way that the dataset is
-        tokenized. For example, CCGBank was created by tokenizing the input
-        using MosesTokenizer
-    Returns
-    -------
-    A list of strings of the newly adjusted target tokens
-    """
-    orig_input = orig_tokenizer_func(orig_input)
-    indices = [i[0] for i in enumerate(orig_input) if i[1] == '&apos;']
-    for index in sorted(indices, reverse=True):
-        del targs[index]
-    orig_input = [tok for tok in orig_input if tok != '&apos;']
-    orig_toks = [s.lower() for s in orig_input]
-
-    bpe_input = bpe_input[1:-1]
-    new_toks = [s.replace("</w>", "") for s in bpe_input]
-
-    c_index = len(targs) - 1
-    curr_targ = targs[c_index]
-    next_expected_tok = orig_toks[c_index-1]
-    next_expected_tok = "".join(re.findall("[a-zA-Z]+", next_expected_tok))
-    new_targs = [curr_targ]
-    current_tok_up_to_now = ""
-    # move from last to front
-    for i in range(len(new_toks) - 2, -1, -1):
-        # if the levenshtein distance is similar enough, then create it 
-        current_tok_up_to_now = "%s%s" % (new_toks[i], current_tok_up_to_now)
-        current_tok_up_to_now = "".join(re.findall("[a-zA-Z]+", current_tok_up_to_now))
-        if current_tok_up_to_now != next_expected_tok:
-            new_targs.append(curr_targ)
-        else:
-            c_index -= 1
-            current_tok_up_to_now = ""
-            curr_targ = targs[c_index]
-            new_targs.append(curr_targ)
-            next_expected_tok = orig_toks[c_index-1]
-            next_expected_tok = "".join(re.findall("[a-zA-Z]+", next_expected_tok))
-    # add EOS/SOS to the target tokens.
-    targ_final = [str(int(t)+utils.EOS_INDEX+1) for t in new_targs]
-    targ_final = [str(utils.EOS_INDEX)] + targ_final + [str(utils.SOS_INDEX)]
-    targ_final.reverse()
-    return targ_final
 
 # Type alias for internal matricies
 Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
                                  Type[np.ndarray]])
 
 _DTYPE = np.int32
+
 
 def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
     M = np.zeros((n_chars_src, n_chars_tgt), dtype=_DTYPE)
@@ -144,7 +44,8 @@ def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
             e1 = b[1]         # right
             M[s0:e0, s1:e1] = 1
         # Fill matching region on diagonal
-        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * np.identity(b[2], dtype=_DTYPE)
+        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * \
+            np.identity(b[2], dtype=_DTYPE)
     return M
 
 

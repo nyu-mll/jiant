@@ -874,7 +874,7 @@ class MultiTaskModel(nn.Module):
 
     def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
         '''
-        This function is for sequence tagging
+        This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
                 batch: a dict of inputs and target tags
                 task: TaggingTask
@@ -911,7 +911,6 @@ class MultiTaskModel(nn.Module):
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(logits, targs)
         return out
-
 
     def _lm_forward(self, batch, task, predict):
         """Forward pass for LM model
