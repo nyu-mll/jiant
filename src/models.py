@@ -399,7 +399,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
     elif task.name == "gap-coreference":
-        module = EdgeClassifierModule(task, d_sent, task_params)
+        module = ThreeEdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
