@@ -122,8 +122,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
-        if tasks[0].name == "wsj" and args.sent_enc == 'onlstm' and (args.onlstm_tying == 1):
-            model.sent_encoder._phrase_layer.emb.weight = model.wsj_hid2voc.weight
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
