@@ -631,7 +631,7 @@ class MultiTaskModel(nn.Module):
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
-                out = self._lm_only_forward(batch, task, predict)
+                out = self._lm_only_lr_forward(batch, task, predict)
             else:
                 out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
@@ -961,8 +961,8 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-    def _lm_only_forward(self, batch, task, predict):
-        """Only forward pass for LM model - consider for non-bidirectional models
+    def _lm_only_lr_forward(self, batch, task, predict):
+        """Only left to right pass for LM model - consider for non-bidirectional models.
         Args:
             batch: indexed input data
             task: (Task obejct)
@@ -985,13 +985,15 @@ class MultiTaskModel(nn.Module):
         sent, mask = sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        # left to right LM logits
         logits = hid2voc(sent).view(b_size * seq_len, -1)
         out['logits'] = logits
         trg_fwd = batch['targs']['words'].view(-1)
+        # set targs to contain only left to right LM targets.
         targs = trg_fwd
         assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
+        # cross entropy for loss
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
-        #print("\nPerplexity:"+str(math.exp(out['loss'])))
         task.scorer1(out['loss'].item())
         if predict:
             pass

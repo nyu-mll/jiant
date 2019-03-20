@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch
 from ...utils.locked_dropout import LockedDropout
 import numpy as np
+
+
 class LayerNorm(nn.Module):
     def __init__(self, features, eps=1e-6):
         super(LayerNorm, self).__init__()
@@ -28,9 +30,10 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
     if padding_idx is None:
         padding_idx = -1
     X = torch.nn.functional.embedding(words, masked_embed_weight,
-                                    padding_idx, embed.max_norm, embed.norm_type,
-                                    embed.scale_grad_by_freq, embed.sparse)
+                                      padding_idx, embed.max_norm, embed.norm_type,
+                                      embed.scale_grad_by_freq, embed.sparse)
     return X
+
 
 class LinearDropConnect(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, dropout=0.):
