@@ -1,4 +1,7 @@
-"""Task definitions for language modeling parsing tasks."""
+"""
+Task definitions for language modeling parsing tasks. Used for unsupervised parsing encoders.
+Long term dependencies for language modeling: sentences concatenated together seperated by <EOS> token.
+"""
 import json
 import logging as log
 import math
