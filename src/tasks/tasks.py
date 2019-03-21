@@ -1495,3 +1495,55 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
+
+@register_task('wic', rel_path='WiC/')
+class WiCTask(PairClassificationTask):
+    ''' Task class for Words in Context. '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+        self.scorer2 = F1Measure(1)
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+
+        def _load_inputs(data_file):
+            sents1, sents2 = [], []
+            with open(data_file, 'r') as data_fh:
+                for row in data_fh:
+                    raw = row.split('\t')
+                    sent1 = process_sentence(self._tokenizer_name, raw[3], max_seq_len)
+                    sent2 = process_sentence(self._tokenizer_name, raw[4], max_seq_len)
+                    sents1.append(sent1)
+                    sents2.append(sent2)
+                return [sents1, sents2]
+
+        targ_map = {'T': 1, 'F': 0}
+        def _load_targets(targ_file):
+            with open(targ_file, 'r') as targ_fh:
+                targets = [targ_map[t.strip()] for t in targ_fh.readlines()]
+            return [targets]
+
+        tr_data = _load_inputs(os.path.join(path, "train/train.data.txt")) + \
+                    _load_targets(os.path.join(path, "train/train.gold.txt"))
+        val_data = _load_inputs(os.path.join(path, "dev/dev.data.txt")) + \
+                    _load_targets(os.path.join(path, "dev/dev.gold.txt"))
+        te_data = _load_inputs(os.path.join(path, "test/test.data.txt"))
+        te_data += [[0 for _ in range(len(te_data[0]))]]
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WiC data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
+
+
