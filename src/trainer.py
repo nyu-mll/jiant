@@ -735,9 +735,9 @@ class SamplingMultiTaskTrainer:
             log.info("Out of patience. Stopped tracking %s", task_name)
         return metric_infos, this_epoch_metric, should_save, new_best_macro
 
-    def _get_validation_performance(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+    def _calculate_validation_performance(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
         """
-        This function evaluates each task, builds validation generator, and gets the validation metrics.
+        This function builds validation generator, evaluates on each task and produces validation metrics.
         Parameters
         ----------
         task: current task to get validation performance of
@@ -835,7 +835,7 @@ class SamplingMultiTaskTrainer:
         # Get validation numbers for each task
         for task in tasks:
             n_examples_overall, task_infos, all_val_metrics = \
-                self._get_validation_performance(task,
+                self._calculate_validation_performance(task,
                                                  task_infos,
                                                  tasks,
                                                  batch_size,
