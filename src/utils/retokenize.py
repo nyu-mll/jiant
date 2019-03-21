@@ -16,7 +16,6 @@ from scipy import sparse
 
 from nltk.tokenize.simple import SpaceTokenizer
 from .tokenizers import get_tokenizer
-import functools
 
 from typing import Tuple, List, Text
 
