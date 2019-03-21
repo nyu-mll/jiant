@@ -33,18 +33,11 @@ def get_bpe_tags(text, current_tags, tokenizer_name, tag_dict):
 
 def align_tags_BERT(split, tokenizer_name, data_dir):
     """
-        This processes the dataset into the form that edge probing can read in
-        and aligns the spain indices from character to tokenizerspan-aligned indices. 
-        For example, 
-         "I like Bob Sutter yeah " becomes soemthing like
-        ["I", "like", "Bob", "Sut", "ter", "yeah"]
-        The gold labels given in GAP ha
-        s noun index as [7:16], however, with tokenization, we
-        want tokenization of [2:4]
-        Output: 
-        A TSV file readable
-
-        Here, we asign index 0 to be the BPE_tokenized word boundary
+        Here, we align BERT tags such that any introduced tokens introudced 
+        by BERT will be assigned a special tag, which later on in 
+        preprocessing/task building will be converted into a tag mask (so that 
+        we do not take into account the model predictin for tokens introduced by 
+        the tokenizer)
     """
     tags_to_id = pickle.load(open("tags_to_id", "rb"))
     ccg_text = pd.read_csv(data_dir+"ccg." + split, names=[ "text", "tags"], delimiter="\t")
