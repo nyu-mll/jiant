@@ -240,7 +240,7 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
 
 def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
     eow_tokens = space_tokenize_with_eow(text)
-    openai_utils = get_tokenizer("OpenAI.bpe_tokens")
+    openai_utils = get_tokenizer("OpenAI.BPE")
     bpe_tokens = openai_utils.tokenize(text)
     ta = TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
@@ -250,7 +250,7 @@ def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
     do_lower_case = model_name.endswith('uncased')
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
                                          text)
-    bert_tokenizer = get_tokenizer(bow_tokens)
+    bert_tokenizer = get_tokenizer(model_name)
     wpm_tokens = bert_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
