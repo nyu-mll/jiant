@@ -4,6 +4,13 @@ import argparse
 import pandas as pd
 import pickle
 
+"""
+Usage:
+    python ccg_allignment.py --data_dir {path/to/data/file} -t {tokenizer_name}
+This preprocessing file will preprocess the CCG data using the tokenizer, 
+saving it alongside the original files. 
+
+"""
 
 def get_bpe_tags(text, current_tags, tokenizer_name, tag_dict):
     """ Helper functin that gets the tags for the BPE-tokenized text. """
