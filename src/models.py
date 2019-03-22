@@ -390,7 +390,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
                                               params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model, task_params)
+        module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)

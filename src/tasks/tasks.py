@@ -74,18 +74,17 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     '''
     # check here if using bert to avoid passing model info to tasks
-    bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+    bert_pair = any(["bert" in idx_name for idx_name in indexers])
 
     def _make_instance(input1, input2, labels, idx):
         d = {}
+        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if bert_pair and is_pair:
             inp = input1 + input2[1:] # throw away input2 leading [CLS]
             d["inputs"] = sentence_to_text_field(inp, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         else:
             d["input1"] = sentence_to_text_field(input1, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             if input2:
                 d["input2"] = sentence_to_text_field(input2, indexers)
                 d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
@@ -841,7 +840,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+        bert_pair = any(["bert" in idx_name for idx_name in indexers])
 
         def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
             # If there is something in this row then tag_group should be set to 1.
@@ -862,7 +861,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             if bert_pair:
-                inp = input1 + input2[1:]
+                inp = input1 + input2[1:] # drop the leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1177,12 +1176,12 @@ class DisSentTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+        bert_pair = any(["bert" in idx_name for idx_name in indexers])
 
         def _make_instance(input1, input2, labels):
             d = {}
             if bert_pair:
-                inp = input1 + input2[1:]
+                inp = input1 + input2[1:] # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
