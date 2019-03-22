@@ -12,12 +12,22 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
-SEP_ID = 104 # [SEP] for BERT models.
-
-def _get_seg_ids(ids):
+def _get_seg_ids(ids, sep_id):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
-    Searches for index SEP_ID in the tensor """
-    sep_idxs = (ids == SEP_ID).nonzero()[:, 1]
+    Searches for index SEP_ID in the tensor
+
+    args:
+        ids (torch.LongTensor): batch of token IDs
+
+    returns:
+        seg_ids (torch.LongTensor): batch of segment IDs
+
+    example:
+    _get_seg_ids(["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"])
+     returns torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+     (assuming the input is a tensor of indices)
+    """
+    sep_idxs = (ids == sep_id).nonzero()[:, 1]
     assert sep_idxs.size(1) == 2
     seg_ids = torch.ones_like(ids)
     for row, idx in zip(seg_ids, sep_idxs[::2]):
@@ -36,6 +46,14 @@ class BertEmbedderModule(nn.Module):
                 args.bert_model_name,
                 cache_dir=cache_dir)
         self.embeddings_mode = args.bert_embeddings_mode
+
+        tokenizer = \
+            pytorch_pretrained_bert.BertTokenizer.from_pretrained(
+                args.bert_model_name,
+                cache_dir=cache_dir)
+        self._sep_id = tokenizer.vocab["[SEP]"]
+        self._pad_id = tokenizer.vocab["[PAD]"]
+
 
         # Set trainability of this module.
         for param in self.model.parameters():
@@ -61,7 +79,7 @@ class BertEmbedderModule(nn.Module):
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="",
-                pair_task=False) -> torch.FloatTensor:
+                is_pair_task=False) -> torch.FloatTensor:
         """ Run BERT to get hidden states.
 
         This forward method does preprocessing on the go,
@@ -70,6 +88,7 @@ class BertEmbedderModule(nn.Module):
 
         Args:
             sent: batch dictionary
+            is_pair_task (bool): true if input is a batch from a pair task
 
         Returns:
             h: [batch_size, seq_len, d_emb]
@@ -86,8 +105,7 @@ class BertEmbedderModule(nn.Module):
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
         # reserved for padding).
-        PAD_ID = 0  # [PAD] for BERT models.
-        ids[ids == 0] = PAD_ID + 2 # Shift the indices that were at 0 to become 2.
+        ids[ids == 0] = self._pad_id + 2 # Shift the indices that were at 0 to become 2.
         # Index 1 should never be used since the BERT WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
@@ -109,7 +127,7 @@ class BertEmbedderModule(nn.Module):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            token_types = _get_seg_ids(ids) if pair_task else torch.zeros_like(ids)
+            token_types = _get_seg_ids(ids, self._sep_id + 2) if is_pair_task else torch.zeros_like(ids)
             encoded_layers, _ = self.model(ids, token_type_ids=token_types,
                                            attention_mask=mask,
                                            output_all_encoded_layers=True)
