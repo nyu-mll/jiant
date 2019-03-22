@@ -386,7 +386,8 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
      '''
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
-        module = build_single_sentence_module(task, d_sent, model.use_bert, task_params)
+        module = build_single_sentence_module(task, d_sent, use_bert=model.use_bert,
+                                              params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model, task_params)
@@ -497,7 +498,20 @@ def build_image_sent_module(task, d_inp, params):
 
 
 def build_single_sentence_module(task, d_inp, use_bert, params):
-    ''' Build a single classifier '''
+    ''' Build a single sentence classifier
+
+    args:
+        - task (Task): task object, used to get the number of output classes
+        - d_inp (int): input dimension to the module, needed for optional linear projection
+        - use_bert (bool): if using BERT, extract the first vector from the inputted
+            sequence, rather than max pooling. We do this for BERT specifically to follow
+            the convention set in the paper (Devlin et al., 2019).
+        - params (Params): Params object with task-specific parameters
+
+    returns:
+        - SingleClassifier (nn.Module): single-sentence classifier consisting of
+            (optional) a linear projection, pooling, and an MLP classifier
+    '''
     pool_type = "first" if use_bert else "max"
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
@@ -543,6 +557,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
     # Build the classifier
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
     if model.use_bert:
+        # BERT handles pair tasks by concatenating the inputs and classifying the joined
+        # sequence, so we use a single sentence classifier
         classifier = Classifier.from_params(d_out, n_classes, params)
         module = SingleClassifier(pooler, classifier)
     else:
