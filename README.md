@@ -144,12 +144,20 @@ tensorboard --logdir <exp_dir>/<run_name>/tensorboard
 
 The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks. We also provide bag of words and RNN sentence encoder.
 
-The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in build_model()) in src/models.py.
-
-We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``openai_ transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer` and `openai_transformer_fine_tune` in your code. We support freezing BERT and openai transformer and using the out-of-the-box pretrained model as well.
+The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in ``build_model()``) in src/models.py.
 
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
+
+### Transformers
+
+We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer = 1` and `openai_transformer_fine_tune = 1` in your code. 
+
+### BERT 
+
+We also support using the [BERT](https://arxiv.org/abs/1810.04805) architecture and pretrained models. To use BERT, set ``bert_model_name`` to one of the models listed [here](https://github.com/huggingface/pytorch-pretrained-BERT#loading-google-ai-or-openai-pre-trained-weigths-or-pytorch-dump), e.g. ``bert-base-cased``. You should also set ``tokenizer`` to be the BERT model used in order to ensure you are using the same tokenization and vocabulary.
+
+When using BERT, we follow the procedures set out in the original work as closely as possible: For pair sentence tasks, we concatenate the sentences with a sepcial `[SEP]` token. Rather than max-pooling, we take the first representation of the sequence (corresponding to the special `[CLS]` token) as the representation of the entire sequence.
 
 ## Trainer
 
