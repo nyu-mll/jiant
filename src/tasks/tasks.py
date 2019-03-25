@@ -424,6 +424,38 @@ class CoLATask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         return {'mcc': self.scorer1.get_metric(reset),
                 'accuracy': self.scorer2.get_metric(reset)}
+@register_task('npi', rel_path='npi/')
+class NPITask(SingleClassificationTask):
+    '''Class for NPI acceptability task.'''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super(NPITask, self).__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        #self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+
+    def load_data(self, path, max_seq_len):
+        '''Load the NPI data'''
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=1)
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, "test.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NPI data.")
+
+    def get_metrics(self, reset=False):
+        return {'mcc': self.scorer1.get_metric(reset),
+                'accuracy': self.scorer2.get_metric(reset)}
+
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
