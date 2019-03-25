@@ -44,7 +44,8 @@ def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
             e1 = b[1]         # right
             M[s0:e0, s1:e1] = 1
         # Fill matching region on diagonal
-        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * np.identity(b[2], dtype=_DTYPE)
+        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * \
+            np.identity(b[2], dtype=_DTYPE)
     return M
 
 

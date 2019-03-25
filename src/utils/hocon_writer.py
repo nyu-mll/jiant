@@ -31,12 +31,14 @@ class HOCONConverter(object):
                 for key, item in config.items():
                     bet_lines.append('{indent}"{key}": {value}'.format(
                         indent=''.rjust((level + 1) * indent, ' '),
-                        # for dotted keys enclosed with "" to not be interpreted as nested key
+                        # for dotted keys enclosed with "" to not be
+                        # interpreted as nested key
                         key=key.strip('"'),
                         value=cls.to_json(item, compact, indent, level + 1))
                     )
                 lines += ',\n'.join(bet_lines)
-                lines += '\n{indent}}}'.format(indent=''.rjust(level * indent, ' '))
+                lines += '\n{indent}}}'.format(
+                    indent=''.rjust(level * indent, ' '))
         elif isinstance(config, list):
             if len(config) == 0:
                 lines += '[]'
@@ -49,9 +51,13 @@ class HOCONConverter(object):
                         value=cls.to_json(item, compact, indent, level + 1))
                     )
                 lines += ',\n'.join(bet_lines)
-                lines += '\n{indent}]'.format(indent=''.rjust(level * indent, ' '))
+                lines += '\n{indent}]'.format(
+                    indent=''.rjust(level * indent, ' '))
         elif isinstance(config, basestring):
-            lines = '"{value}"'.format(value=config.replace('\n', '\\n').replace('"', '\\"'))
+            lines = '"{value}"'.format(
+                value=config.replace(
+                    '\n', '\\n').replace(
+                    '"', '\\"'))
         elif config is None or isinstance(config, NoneValue):
             lines = 'null'
         elif config is True:
@@ -95,7 +101,8 @@ class HOCONConverter(object):
                 lines += '\n'.join(bet_lines)
 
                 if level > 0:  # don't display { at root level
-                    lines += '\n{indent}}}'.format(indent=''.rjust((level - 1) * indent, ' '))
+                    lines += '\n{indent}}}'.format(
+                        indent=''.rjust((level - 1) * indent, ' '))
         elif isinstance(config, list):
             if len(config) == 0:
                 lines += '[]'
@@ -114,12 +121,16 @@ class HOCONConverter(object):
                                 indent,
                                 level + 1)))
                 lines += '\n'.join(bet_lines)
-                lines += '\n{indent}]'.format(indent=''.rjust((level - 1) * indent, ' '))
+                lines += '\n{indent}]'.format(
+                    indent=''.rjust((level - 1) * indent, ' '))
         elif isinstance(config, basestring):
             if '\n' in config:
                 lines = '"""{value}"""'.format(value=config)  # multilines
             else:
-                lines = '"{value}"'.format(value=config.replace('\n', '\\n').replace('"', '\\"'))
+                lines = '"{value}"'.format(
+                    value=config.replace(
+                        '\n', '\\n').replace(
+                        '"', '\\"'))
         elif isinstance(config, float):
             # don't use scientific notation (e.g. 1e-5) because pyhocon will
             # misinterpret it as a string.
@@ -152,7 +163,8 @@ class HOCONConverter(object):
                 for key, item in config.items():
                     bet_lines.append('{indent}{key}: {value}'.format(
                         indent=''.rjust(level * indent, ' '),
-                        # for dotted keys enclosed with "" to not be interpreted as nested key,
+                        # for dotted keys enclosed with "" to not be
+                        # interpreted as nested key,
                         key=key.strip('"'),
                         value=cls.to_yaml(item, compact, indent, level + 1))
                     )
@@ -174,7 +186,9 @@ class HOCONConverter(object):
             if len(lines) == 1:
                 lines = config
             else:
-                lines = '|\n' + '\n'.join([line.rjust(level * indent, ' ') for line in lines])
+                lines = '|\n' + \
+                    '\n'.join([line.rjust(level * indent, ' ')
+                               for line in lines])
         elif config is None or isinstance(config, NoneValue):
             lines = 'null'
         elif config is True:
@@ -222,7 +236,10 @@ class HOCONConverter(object):
                     lines.append(cls.to_properties(item, compact, indent,
                                                    stripped_key_stack + [str(index)]))
         elif isinstance(config, basestring):
-            lines.append('.'.join(stripped_key_stack) + ' = ' + escape_value(config))
+            lines.append(
+                '.'.join(stripped_key_stack) +
+                ' = ' +
+                escape_value(config))
         elif config is True:
             lines.append('.'.join(stripped_key_stack) + ' = true')
         elif config is False:

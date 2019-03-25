@@ -69,17 +69,20 @@ class BertEmbedderModule(nn.Module):
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
             assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
-                    ("bert_embeddings_mode='mix' only supports a single set of "
-                     "scalars (but if you need this feature, see the TODO in "
-                     "the code!)")
+                ("bert_embeddings_mode='mix' only supports a single set of "
+                 "scalars (but if you need this feature, see the TODO in "
+                 "the code!)")
             num_layers = self.model.config.num_hidden_layers
             self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1,
                                                    do_layer_norm=False)
 
-
     def forward(self, sent: Dict[str, torch.LongTensor],
+<<<<<<< HEAD
                 unused_task_name: str="",
                 is_pair_task=False) -> torch.FloatTensor:
+=======
+                unused_task_name: str = "") -> torch.FloatTensor:
+>>>>>>> master
         """ Run BERT to get hidden states.
 
         This forward method does preprocessing on the go,
@@ -95,9 +98,17 @@ class BertEmbedderModule(nn.Module):
         """
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
+<<<<<<< HEAD
         ids = sent["bert_wpm_pretokenized"]
         # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
         assert ids.size()[1] <= 512
+=======
+        var_ids = sent["bert_wpm_pretokenized"]
+        # BERT supports up to 512 tokens; see section 3.2 of
+        # https://arxiv.org/pdf/1810.04805.pdf
+        assert var_ids.size()[1] <= 512
+        ids = var_ids
+>>>>>>> master
 
         mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
@@ -143,13 +154,13 @@ class BertEmbedderModule(nn.Module):
             h = self.scalar_mix([h_lex] + encoded_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
-                                       " not supported.")
+                                      " not supported.")
 
         # <float32> [batch_size, var_seq_len, output_dim]
         return h
 
     def get_output_dim(self):
         if self.embeddings_mode == "cat":
-            return 2*self.model.config.hidden_size
+            return 2 * self.model.config.hidden_size
         else:
             return self.model.config.hidden_size
