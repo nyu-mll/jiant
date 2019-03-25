@@ -238,7 +238,7 @@ class Task(object):
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
 
-    def get_scorers():
+    def get_scorers(self):
         return self.scorers
 
     def update_metrics(self, logits, labels, tagmask=None):
@@ -263,7 +263,7 @@ class SingleClassificationTask(ClassificationTask):
         super().__init__(name, **kw)
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.subset_scorer]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
@@ -327,8 +327,6 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
-
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -354,7 +352,10 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
+    def update_metrics():
+        # currently don't support metrics for regression task
+        # TODO(Yada): support them! 
+        return
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -372,6 +373,11 @@ class SequenceGenerationTask(Task):
         '''Get metrics specific to the task'''
         bleu = self.scorer1.get_metric(reset)
         return {'bleu': bleu}
+
+    def update_metrics():
+        # currently don't support metrics for regression task
+        # TODO(Yada): support them! 
+        return
 
 
 class RankingTask(Task):
@@ -1105,7 +1111,6 @@ class JOCITask(PairOrdinalRegressionTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading JOCI data.")
 
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
