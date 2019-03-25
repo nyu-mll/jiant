@@ -23,8 +23,9 @@ def _get_seg_ids(ids, sep_id):
         seg_ids (torch.LongTensor): batch of segment IDs
 
     example:
-    _get_seg_ids(["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"])
-     returns torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    token_tensor = torch.Tensor([vocab[w] for w in
+    seg_ids = _get_seg_ids(["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"])
+     torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
      (assuming the input is a tensor of indices)
     """
     sep_idxs = (ids == sep_id).nonzero()[:, 1]
@@ -77,12 +78,8 @@ class BertEmbedderModule(nn.Module):
                                                    do_layer_norm=False)
 
     def forward(self, sent: Dict[str, torch.LongTensor],
-<<<<<<< HEAD
                 unused_task_name: str="",
                 is_pair_task=False) -> torch.FloatTensor:
-=======
-                unused_task_name: str = "") -> torch.FloatTensor:
->>>>>>> master
         """ Run BERT to get hidden states.
 
         This forward method does preprocessing on the go,
@@ -98,17 +95,9 @@ class BertEmbedderModule(nn.Module):
         """
         assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
-<<<<<<< HEAD
         ids = sent["bert_wpm_pretokenized"]
         # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
         assert ids.size()[1] <= 512
-=======
-        var_ids = sent["bert_wpm_pretokenized"]
-        # BERT supports up to 512 tokens; see section 3.2 of
-        # https://arxiv.org/pdf/1810.04805.pdf
-        assert var_ids.size()[1] <= 512
-        ids = var_ids
->>>>>>> master
 
         mask = (ids != 0)
         # "Correct" ids to account for different indexing between BERT and
