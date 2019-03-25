@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 
 from ..preprocess import parse_task_list_arg
+from ..tasks.tasks import BERT_INDEXER_NAME
 
 from allennlp.modules import scalar_mix
 
@@ -93,9 +94,9 @@ class BertEmbedderModule(nn.Module):
         Returns:
             h: [batch_size, seq_len, d_emb]
         """
-        assert "bert_wpm_pretokenized" in sent
+        assert BERT_INDEXER_NAME in sent
         # <int32> [batch_size, var_seq_len]
-        ids = sent["bert_wpm_pretokenized"]
+        ids = sent[BERT_INDEXER_NAME]
         # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
         assert ids.size()[1] <= 512
 

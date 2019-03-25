@@ -896,7 +896,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = any(["bert" in idx_name for idx_name in indexers])
+        bert_pair = any([idx_name == BERT_INDEXER_NAME for idx_name in indexers])
 
         def create_labels_from_tags(
                 fields_dict, ix_to_tag_dict, tag_arr, tag_group):
@@ -1244,7 +1244,7 @@ class DisSentTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = any(["bert" in idx_name for idx_name in indexers])
+        bert_pair = any([idx_name == BERT_INDEXER_NAME for idx_name in indexers])
 
         def _make_instance(input1, input2, labels):
             d = {}
