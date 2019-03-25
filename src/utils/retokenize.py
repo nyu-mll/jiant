@@ -7,17 +7,18 @@
 # Current implementation is not fast; TODO to profile this and see why.
 
 from typing import Sequence, Iterable, Tuple, \
-    Union, Type, NewType
+    Union, Type, NewType, List, Text
 
 from io import StringIO
 
 import numpy as np
 from scipy import sparse
 
+import functools
+import re
+
 from nltk.tokenize.simple import SpaceTokenizer
 from .tokenizers import get_tokenizer
-
-from typing import Tuple, List, Text
 
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
