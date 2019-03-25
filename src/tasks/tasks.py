@@ -38,7 +38,7 @@ from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
-BERT_INDEXER_NAME = "bert_wpm_pretrained"
+BERT_INDEXER_NAME = "bert_wpm_pretokenized"
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
 UNK_TOK_ATOMIC = "UNKNOWN"  # an unk token that won't get split by tokenizers
 
