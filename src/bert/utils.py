@@ -23,10 +23,10 @@ def _get_seg_ids(ids, sep_id):
         seg_ids (torch.LongTensor): batch of segment IDs
 
     example:
-    token_tensor = torch.Tensor([vocab[w] for w in
-    seg_ids = _get_seg_ids(["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"])
-     torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
-     (assuming the input is a tensor of indices)
+    > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"]
+    > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
+    > seg_ids = _get_seg_ids(token_tensor, sep_id=102) # BERT [SEP] ID
+    > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
     """
     sep_idxs = (ids == sep_id).nonzero()[:, 1]
     assert sep_idxs.size(1) == 2

@@ -38,6 +38,7 @@ from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
+BERT_INDEXER_NAME = "bert_wpm_pretrained"
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
 UNK_TOK_ATOMIC = "UNKNOWN"  # an unk token that won't get split by tokenizers
 
@@ -76,7 +77,7 @@ def process_single_pair_task_split(
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     '''
     # check here if using bert to avoid passing model info to tasks
-    bert_pair = any(["bert" in idx_name for idx_name in indexers])
+    bert_pair = any([idx_name == BERT_INDEXER_NAME for idx_name in indexers])
 
     def _make_instance(input1, input2, labels, idx):
         d = {}

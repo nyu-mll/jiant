@@ -37,6 +37,7 @@ from .utils import utils
 
 from .tasks import REGISTRY as TASKS_REGISTRY
 from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
+from .tasks.tasks import BERT_INDEXER_NAME
 from .tasks.mt import MTTask
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -258,7 +259,7 @@ def build_indexers(args):
             ("BERT models use custom WPM tokenization for "
              "each model, so tokenizer must match the "
              "specified BERT model.")
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(
+        indexers[BERT_INDEXER_NAME] = SingleIdTokenIndexer(
             args.bert_model_name)
     return indexers
 

@@ -423,8 +423,8 @@ def build_task_specific_modules(
      '''
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
-        module = build_single_sentence_module(task, d_sent, use_bert=model.use_bert,
-                                              params=task_params)
+        module = build_single_sentence_module(task=task, d_inp=d_sent,
+                                              use_bert=model.use_bert, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
@@ -536,7 +536,7 @@ def build_image_sent_module(task, d_inp, params):
     return pooler
 
 
-def build_single_sentence_module(task, d_inp, use_bert, params):
+def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Params):
     ''' Build a single sentence classifier
 
     args:
