@@ -960,7 +960,7 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _lm_only_lr_forward(self, batch, task, predict):
-        """Only left to right pass for LM model - consider for non-bidirectional models.
+        """Only left to right pass for LM model - non-bidirectional models.
         Args:
             batch: indexed input data
             task: (Task obejct)
@@ -972,6 +972,7 @@ class MultiTaskModel(nn.Module):
                             second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
                 - 'loss': size average CE loss
         """
+
         out = {}
         sent_encoder = self.sent_encoder
         assert_for_log('targs' in batch and 'words' in batch['targs'],

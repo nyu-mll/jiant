@@ -52,13 +52,14 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             d = {}
             d["input"] = sentence_to_text_field(sent[:-1], indexers)
             d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field(
+                [sent[-1]] + sent[:-2], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
 
 
-@register_task('wsj', rel_path='Penn/')
+@register_task('wsj', rel_path='WSJ/')
 class WSJLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on a PTB dataset
     See base class: LanguageModelingTask
@@ -128,7 +129,8 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.target_indexer = {
+            "words": SingleIdTokenIndexer(namespace="tokens")}
         self.files_by_split = {'train': os.path.join(path, "train.tsv"),
                                'val': os.path.join(path, "dev_matched.tsv"),
                                'test': os.path.join(path, "test_matched.tsv")}
@@ -141,7 +143,8 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         seq_len = self.max_seq_len
         tokens = []
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        data = load_tsv(os.path.join(path), 1000, skip_rows=1, s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map)
+        data = load_tsv(os.path.join(path), 1000, skip_rows=1,
+                        s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map)
         rows = []
         tokens = []
         for x, y in zip(data[0], data[1]):

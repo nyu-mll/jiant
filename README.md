@@ -141,7 +141,7 @@ We also include an experimental option to use a shared [Transformer](https://arx
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
 
-To use the ON-LSTM sentence encoder from the ICLR 2019 paper (https://arxiv.org/abs/1810.09536) [Yikang Shen, Shawn Tan, Alessandro Sordoni and Aaron Courville], set ``sent_enc = onlstm``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/onlstm.conf](config/onlstm.conf). Specific ON-LSTM modules use code from the github implementation of the paper (https://github.com/yikangshen/Ordered-Neurons).
+To use the ON-LSTM sentence encoder from the ICLR 2019 paper (https://arxiv.org/abs/1810.09536) [Yikang Shen, Shawn Tan, Alessandro Sordoni and Aaron Courville], set ``sent_enc = onlstm``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/onlstm.conf](config/onlstm.conf). Specific ON-LSTM modules use code from the Github implementation of the paper (https://github.com/yikangshen/Ordered-Neurons).
 
 ## Trainer
 
