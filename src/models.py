@@ -712,16 +712,8 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
-            if isinstance(task, CoLATask):
-                task.scorer2(logits, labels)
-                _, preds = logits.max(dim=1)
-                task.scorer1(labels, preds)
-            elif isinstance(task, CoLAAnalysisTask):
-                task.update_metrics(logits, labels, tagmask=batch['tagmask'])
-            else:
-                task.scorer1(logits, labels)
-                if task.scorer2 is not None:
-                    task.scorer2(logits, labels)
+            tagmask = batch.get('tagmask', None)
+            task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -791,9 +783,8 @@ class MultiTaskModel(nn.Module):
         labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
         labels = torch.tensor(labels, dtype=torch.long).cuda()
         out['loss'] = F.cross_entropy(logits, labels)
-        task.scorer1(logits, labels)
-        if task.scorer2 is not None:
-            task.scorer2(logits, labels)
+        tagmask = batch.get('tagmask', None)
+        task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -833,15 +824,12 @@ class MultiTaskModel(nn.Module):
                 logits = logits.squeeze(-1) if len(logits.size()
                                                    ) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
-                logits_np = logits.data.cpu().numpy()
-                labels_np = labels.data.cpu().numpy()
-                task.scorer1(logits_np, labels_np)
-                task.scorer2(logits_np, labels_np)
+                logits = logits.data.cpu().numpy()
+                labels = labels.data.cpu().numpy()
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
-                task.scorer1(logits, labels)
-                if task.scorer2 is not None:
-                    task.scorer2(logits, labels)
+            tagmask = batch.get('tagmask', None)
+            task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):
