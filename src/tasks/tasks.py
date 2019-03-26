@@ -458,7 +458,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
-        self.scorers =[self.scorer1, self.scorer2]
+        self.scorers = [self.scorer1, self.scorer2]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -1113,7 +1113,8 @@ class JOCITask(PairOrdinalRegressionTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-
+        log.info("\tFinished loading JOCI data.")
+        
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
