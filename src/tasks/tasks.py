@@ -263,7 +263,7 @@ class SingleClassificationTask(ClassificationTask):
         super().__init__(name, **kw)
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
-        self.scorers = [self.subset_scorer]
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
@@ -548,6 +548,7 @@ class QQPTask(PairClassificationTask):
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
@@ -653,6 +654,7 @@ class MRPCTask(PairClassificationTask):
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
