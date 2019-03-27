@@ -116,7 +116,6 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
 
     return all_metrics, all_preds
 
-
 def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_name,
                 strict_glue_format=False) -> None:
     for task in tasks:

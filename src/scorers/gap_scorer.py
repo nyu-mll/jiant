@@ -59,7 +59,7 @@ class GAPScorer(object):
             self.false_positives = 0
             self.true_negatives = 0
             self.false_negatives = 0
-        return recall, precision, f1
+        return f1
 
     def __call__(self, predictions, labels):
         """Score the system annotations against gold.
