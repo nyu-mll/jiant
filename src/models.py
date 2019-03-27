@@ -715,7 +715,7 @@ class MultiTaskModel(nn.Module):
                 labels = batch['labels']
             else:
                 labels = batch['labels'].squeeze(-1)
-            out['loss'] = F.cross_entropy(logits, labels)=
+            out['loss'] = F.cross_entropy(logits, labels)
             tagmask = batch.get('tagmask', None)
             task.update_metrics(logits, labels, tagmask=tagmask)
 

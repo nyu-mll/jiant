@@ -449,9 +449,10 @@ class GapEdgeProbingTask(EdgeProbingTask):
 
         d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
                                  for t in record['targets']])
-        if not self.single_sided:
-            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
-                                     for t in record['targets']])
+        d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                 for t in record['targets']])
+        d['span3s'] = ListField([self._make_span_field(t['span3'], text_field, 1)
+                         for t in record['targets']])
         # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
@@ -464,12 +465,13 @@ class GapEdgeProbingTask(EdgeProbingTask):
 
     def process_split(self, split, indexers):
         ''' Process split text into a list of AllenNLP Instances with tag masking'''
-        def _map_fn(r, idx): 
-          instance = self.make_instance(r, idx, indexers)
-          # there's only 1 target per sentence. 
-          tag_field = MultiLabelField(r["targets"][0]["info"]["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
-          instance.add_field("tagmask", field=tag_field)
-          return instance
+        def _map_fn(r, idx):
+            instance = self.make_instance(r, idx, indexers)
+            # there's only 1 target per sentence. 
+
+            tag_field = MultiLabelField([r["targets"][0]["gender"]], label_namespace=self._domain_namespace)
+            instance.add_field("tagmask", field=tag_field)
+            return instance
         instances = map(_map_fn, split, itertools.count())
         return instances
 
