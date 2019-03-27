@@ -31,7 +31,7 @@ from .preprocess import parse_task_list_arg, get_tasks
 
 from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
-    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, SpanTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
@@ -43,7 +43,8 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
-from .modules.edge_probing import EdgeClassifierModule, SpanClassifierModule, ThreeEdgeClassifierModule
+from .modules.edge_probing import EdgeClassifierModule
+from .modules.span_modules import ThreeSpanClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -302,7 +303,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # then we need count and reliably map each classifier to an index used by
     # allennlp internal ELMo.
     if args.sep_embs_for_skip:
-        import pdb; pdb.set_trace()
         # Determine a deterministic list of classifier names to use for each
         # task.
         classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
@@ -437,7 +437,8 @@ def build_task_specific_modules(
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
     elif task.name == "gap-coreference":
-        module = ThreeEdgeClassifierModule(task, d_sent, task_params)
+        # TODO(Yada): Generalize this.
+        module = ThreeSpanClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
@@ -680,6 +681,11 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
+        elif isinstance(task, SpanTask):
+            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+            module = getattr(self, "%s_mdl" % task.name)
+            out = module.forward(batch, sent_embs, sent_mask,
+                                 task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -1086,6 +1092,7 @@ class MultiTaskModel(nn.Module):
         task.scorer1.__call__(batch_acc)
 
         return out
+
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.

@@ -35,6 +35,7 @@ from ..utils import utils
 from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
 from ..utils.tokenizers import get_tokenizer
+from ..scorers import gap_scorer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -158,8 +159,6 @@ def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     '''
     subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(
         reset) for tag_str, scorer in zip(tag_list, scorer_list)}
-    if metric_name == "f1":
-        subset_scores = { key: value[2] for key, value in list(subset_scores.items())}
     return subset_scores
 
 
@@ -1581,3 +1580,289 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
+
+########
+# Span-related tasks
+########
+
+class SpanTask(Task):
+    ''' Generic class for span tasks.
+    Acts as a classifier, but with multiple targets for each input text.
+    Targets are of the form (span1, span2,..., span_n, label), where the spans are
+    half-open token intervals [i, j).
+    '''
+    @property
+    def _tokenizer_suffix(self):
+        ''' Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
+
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
+
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 num_spans: int = 2,
+                 is_symmetric: bool = False,
+                 single_sided: bool = False, **kw):
+        """Construct a span task.
+        path, max_seq_len, and name are passed by the code in preprocess.py;
+        remaining arguments should be provided by a subclass constructor or via
+        @register_task.
+        Args:
+            path: data directory
+            max_seq_len: maximum sequence length (currently ignored)
+            name: task name
+            label_file: relative path to labels file
+            files_by_split: split name ('train', 'val', 'test') mapped to
+                relative filenames (e.g. 'train': 'train.json')
+            is_symmetric: if true, span1 and span2 are assumed to be the same
+                type and share parameters. Otherwise, we learn a separate
+                projection layer and attention weight for each.
+            single_sided: if true, only use span1.
+        """
+        super().__init__(name, **kw)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname) + self._tokenizer_suffix
+            for split, fname in files_by_split.items()
+        }
+        self.num_spans = num_spans
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+        self.is_symmetric = is_symmetric
+        self.single_sided = single_sided
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        # see add_task_label_namespace in preprocess.py
+        self._label_namespace = self.name + "_labels"
+
+        # Scorers
+        #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
+        self.mcc_scorer = FastMatthews()
+        self.acc_scorer = BooleanAccuracy()  # binary accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    @staticmethod
+    def merge_preds(record: Dict, preds: Dict) -> Dict:
+        """ Merge predictions into record, in-place.
+        List-valued predictions should align to targets,
+        and are attached to the corresponding target entry.
+        Non-list predictions are attached to the top-level record.
+        """
+        record['preds'] = {}
+        for target in record['targets']:
+            target['preds'] = {}
+        for key, val in preds.items():
+            if isinstance(val, list):
+                assert len(val) == len(record['targets'])
+                for i, target in enumerate(record['targets']):
+                    target['preds'][key] = val[i]
+            else:
+                # non-list predictions, attach to top-level preds
+                record['preds'][key] = val
+        return record
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(utils.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def _make_span_field(self, s, text_field, offset=1):
+        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
+
+    def _pad_tokens(self, tokens):
+        """Pad tokens according to the current tokenization style."""
+        if self.tokenizer_name.startswith("bert-"):
+            # standard padding for BERT; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            return ["[CLS]"] + tokens + ["[SEP]"]
+        else:
+            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        d = {}
+        d["idx"] = MetadataField(idx)
+
+        d['input1'] = text_field
+
+        for i in range(self.num_spans):
+            d["span"+str(i)+"s"] = ListField([self._make_span_field(t['span'+str(i)], text_field, 1)
+                                 for t in record['targets']])
+
+        # Always use multilabel targets, so be sure each label is a list.
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        d['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+        return Instance(d)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metrics = {}
+        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
+        metrics['acc'] = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        metrics['precision'] = precision
+        metrics['recall'] = recall
+        metrics['f1'] = f1
+        return metrics
+
+##
+# Class definitions for edge probing. See below for actual task registration.
+@register_task('gap-coreference', rel_path = 'gap-coreference')
+class GapCoreferenceTask(SpanTask):
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 is_symmetric: bool = False,
+                 domains=["FEMININE", "MASCULINE"],
+                 single_sided: bool = False, **kw):
+        self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
+        # here, we want to split by domain, male or female, for subset evaluation.
+        self.num_domains = len(domains)
+        self.tag_list = domains
+        self._domain_namespace = name + "_tags"
+        label_file = "labels.txt"
+        num_spans = 3
+        super().__init__(path, max_seq_len, name, label_file, self._files_by_split, num_spans, is_symmetric, single_sided, **kw)
+
+        # Scorers
+        self.f1_scorer = gap_scorer.GAPScorer()
+        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
+        self.val_metric_decreases = False
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        subset_f1_scorers = create_subset_scorers(count=self.num_domains, scorer_type=gap_scorer.GAPScorer)# binary F1 overall
+        self.subset_scorers = {"f1": subset_f1_scorers}
+        return iters_by_split
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        d = {}
+        d["idx"] = MetadataField(idx)
+
+        d['input1'] = text_field
+
+        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
+                                 for t in record['targets']])
+        d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                 for t in record['targets']])
+        d['span3s'] = ListField([self._make_span_field(t['span3'], text_field, 1)
+                         for t in record['targets']])
+        # Always use multilabel targets, so be sure each label is a list.
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        d['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+
+        return Instance(d)
+
+    def process_split(self, split, indexers):
+        ''' Process split text into a list of AllenNLP Instances with tag masking'''
+        def _map_fn(r, idx):
+            instance = self.make_instance(r, idx, indexers)
+            tag_field = MultiLabelField([r["targets"][0]["gender"]], label_namespace=self._domain_namespace)
+            instance.add_field("tagmask", field=tag_field)
+            return instance
+        instances = map(_map_fn, split, itertools.count())
+        return instances
+
+    def update_subset_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        targets = (labels == 1).nonzero()[:,1]
+        if tagmask is not None:
+            update_subset_scorers(self.subset_scorers["f1"], logits, labels, tagmask)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {"f1": self.f1_scorer.get_metric(reset)}
+        for score_name, scorer in list(self.subset_scorers.items()):
+          collected_metrics.update(collect_subset_scores(scorer, score_name, self.tag_list, reset))
+        if collected_metrics["f1_FEMININE"] != 0.0:
+            collected_metrics.update({"bias": collected_metrics["f1_MASCULINE"] / collected_metrics["f1_FEMININE"]})
+        return collected_metrics
+
