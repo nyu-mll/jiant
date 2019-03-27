@@ -466,7 +466,8 @@ class GapEdgeProbingTask(EdgeProbingTask):
         ''' Process split text into a list of AllenNLP Instances with tag masking'''
         def _map_fn(r, idx): 
           instance = self.make_instance(r, idx, indexers)
-          tag_field = MultiLabelField(r["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
+          # there's only 1 target per sentence. 
+          tag_field = MultiLabelField(r["targets"][0]["info"]["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
           instance.add_field("tagmask", field=tag_field)
           return instance
         instances = map(_map_fn, split, itertools.count())
