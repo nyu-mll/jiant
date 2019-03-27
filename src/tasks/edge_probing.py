@@ -459,6 +459,7 @@ class GapEdgeProbingTask(EdgeProbingTask):
                                                  label_namespace=self._label_namespace,
                                                  skip_indexing=False)
                                  for label_set in labels])
+
         return Instance(d)
 
     def process_split(self, split, indexers):

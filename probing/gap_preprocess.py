@@ -1,9 +1,3 @@
-
-"""
-Loads gap coreference data and preproceses it, by 
-aligning  spans from output of scripts/gap_related_scripts.py
-
-"""
 import retokenize_edge_data as retokenize
 import sys
 import argparse
