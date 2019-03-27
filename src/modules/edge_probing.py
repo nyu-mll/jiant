@@ -227,7 +227,7 @@ class EdgeClassifierModule(nn.Module):
             raise ValueError("Unsupported loss type '%s' "
                              "for edge probing." % self.loss_type)
 
-class ThreeEdgeClassifierModule(nn.Module):
+class ThreeEdgeClassifierModule(EdgeClassifierModule):
     ''' Build edge classifier components as a sub-module.
 
     Use same classifier code as build_single_sentence_module,

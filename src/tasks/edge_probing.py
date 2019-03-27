@@ -369,7 +369,7 @@ class GapEdgeProbingTask(EdgeProbingTask):
                 projection layer and attention weight for each.
             single_sided: if true, only use span1.
         """
-        super().__init__(name, max_seq_len, label_file, files_by_Split, is_symmetric, single_sided, **kw)
+        super().__init__(path, max_seq_len, name,label_file, files_by_split, is_symmetric, single_sided, **kw)
 
         # Scorers
         #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
@@ -457,10 +457,16 @@ class GapEdgeProbingTask(EdgeProbingTask):
                                  for label_set in labels])
         return Instance(d)
 
-    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
-        return map(_map_fn, records, itertools.count())
+    def process_split(self, split, indexers):
+        ''' Process split text into a list of AllenNLP Instances with tag masking'''
+        def _map_fn(r, idx): 
+          instance = self.make_instance(r, idx, indexers)
+          tag_field = MultiLabelField(r["gender"], label_namespace="tagids",skip_indexing=True, num_labels=len(self.tag_list))
+          instance.add_field("tagmask", field=tag_field)
+          return instance
+        instances = map(_map_fn, split, itertools.count())
+        return instances
+
 
     def get_all_labels(self) -> List[str]:
         return self.all_labels
@@ -491,10 +497,9 @@ class GapEdgeProbingTask(EdgeProbingTask):
             collected_metrics.update({"bias": collected_metrics["f1_MASCULINE"] / collected_metrics["f1_FEMININE"]})
         return collected_metrics
 
-@register_task('gap-coreference', rel_path = 'data/gap-coreference')
+@register_task('gap-coreference', rel_path = 'gap-coreference')
 class GapCoreferenceTask(GapEdgeProbingTask):
     def __init__(self, path, single_sided=False, domains=["FEMININE", "MASCULINE"], **kw):
-        import pdb; pdb.set_trace()
         self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
         self.num_domains = len(domains)
         self.tag_list = domains

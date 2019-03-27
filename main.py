@@ -325,15 +325,15 @@ def main(cl_arguments):
             evaluate.write_preds(target_tasks, val_preds, args.run_dir, 'val',
                                  strict_glue_format=args.write_strict_glue_format)
         if 'test' in splits_to_write:
-            _, te_preds = evaluate.evaluate(model, target_tasks,
+            te_results, te_preds = evaluate.evaluate(model, target_tasks,
                                             args.batch_size, args.cuda, "test")
             evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                                  strict_glue_format=args.write_strict_glue_format)
         run_name = args.get("run_name", os.path.basename(args.run_dir))
 
         results_tsv = os.path.join(args.exp_dir, "results.tsv")
-        log.info("Writing results for split 'val' to %s", results_tsv)
-        evaluate.write_results(val_results, results_tsv, run_name=run_name)
+        log.info("Writing results for split 'test' to %s", results_tsv)
+        evaluate.write_results(te_results, results_tsv, run_name=run_name)
 
     log.info("Done!")
 

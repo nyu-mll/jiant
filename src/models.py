@@ -43,7 +43,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
-from .modules.edge_probing import EdgeClassifierModule, SpanClassifierModule
+from .modules.edge_probing import EdgeClassifierModule, SpanClassifierModule, ThreeEdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 
 
@@ -276,6 +276,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # then we need count and reliably map each classifier to an index used by
     # allennlp internal ELMo.
     if args.sep_embs_for_skip:
+        import pdb; pdb.set_trace()
         # Determine a deterministic list of classifier names to use for each task.
         classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
         # Reload existing classifier map, if it exists.
