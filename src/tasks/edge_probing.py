@@ -369,23 +369,7 @@ class GapEdgeProbingTask(EdgeProbingTask):
                 projection layer and attention weight for each.
             single_sided: if true, only use span1.
         """
-        super().__init__(name, **kw)
-
-        assert files_by_split is not None
-        self.max_seq_len = max_seq_len
-        self._files_by_split = {
-            split: os.path.join(path, fname) + self._tokenizer_suffix
-            for split, fname in files_by_split.items()
-        }
-        self._iters_by_split = self.load_data()
-        self.is_symmetric = is_symmetric
-        self.single_sided = single_sided
-
-        label_file = os.path.join(path, label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
-        # see add_task_label_namespace in preprocess.py
-        self._label_namespace = self.name + "_labels"
+        super().__init__(name, max_seq_len, label_file, files_by_Split, is_symmetric, single_sided, **kw)
 
         # Scorers
         #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
@@ -510,6 +494,7 @@ class GapEdgeProbingTask(EdgeProbingTask):
 @register_task('gap-coreference', rel_path = 'data/gap-coreference')
 class GapCoreferenceTask(GapEdgeProbingTask):
     def __init__(self, path, single_sided=False, domains=["FEMININE", "MASCULINE"], **kw):
+        import pdb; pdb.set_trace()
         self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
         self.num_domains = len(domains)
         self.tag_list = domains
