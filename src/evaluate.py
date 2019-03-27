@@ -47,7 +47,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     all_preds = {}
     n_examples_overall = 0
 
-    assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
+    assert len(
+        tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
         log.info("Evaluating on: %s, split: %s", task.name, split)
@@ -171,7 +172,7 @@ def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
 def _write_edge_preds(task: EdgeProbingTask,
                       preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
-                      join_with_input: bool=True):
+                      join_with_input: bool = True):
     ''' Write predictions for edge probing task.
 
     This reads the task data and joins with predictions,
@@ -205,7 +206,7 @@ def _write_edge_preds(task: EdgeProbingTask,
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
-                      strict_glue_format: bool=False):
+                      strict_glue_format: bool = False):
     ''' Write predictions to separate files located in pred_dir.
     We write special code to handle various GLUE tasks.
 
@@ -305,7 +306,8 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                 strict_glue_format),
             write_type=float)
     elif task_name in ['wmt']:
-        # convert each prediction to a single string if we find a list of tokens
+        # convert each prediction to a single string if we find a list of
+        # tokens
         if isinstance(preds_df['prediction'][0], list):
             assert isinstance(preds_df['prediction'][0][0], str)
             preds_df['prediction'] = [' '.join(pred)

@@ -22,7 +22,12 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 ALL_SUPERGLUE_TASKS = ["gap-coreference"]
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt']
+ALL_NLI_PROBING_TASKS = [
+    'nli-prob',
+    'nps',
+    'nli-prob-prepswap',
+    'nli-prob-negation',
+    'nli-alt']
 
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de',
