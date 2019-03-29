@@ -11,22 +11,25 @@ from .import modules
 
 from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor
-from allennlp.nn.util import move_to_device, device_mapping
 
 from typing import Dict, Iterable, List
 
 
 class EdgeClassifierModule(nn.Module):
     ''' Build edge classifier components as a sub-module.
+
     Use same classifier code as build_single_sentence_module,
     except instead of whole-sentence pooling we'll use span1 and span2 indices
     to extract span representations, and use these as input to the classifier.
+
     This works in the current form, but with some provisos:
         - Only considers the explicit set of spans in inputs; does not consider
         all other spans as negatives. (So, this won't work for argument
         _identification_ yet.)
+
     TODO: consider alternate span-pooling operators: max or mean-pooling,
     or SegRNN.
+
     TODO: add span-expansion to negatives, one of the following modes:
         - all-spans (either span1 or span2), treating not-seen as negative
         - all-tokens (assuming span1 and span2 are length-1), e.g. for
@@ -44,6 +47,7 @@ class EdgeClassifierModule(nn.Module):
 
     def _make_cnn_layer(self, d_inp):
         """Make a CNN layer as a projection of local context.
+
         CNN maps [batch_size, max_len, d_inp]
         to [batch_size, max_len, proj_dim] with no change in length.
         """
@@ -82,12 +86,10 @@ class EdgeClassifierModule(nn.Module):
         # Span extractor, shared for both span1 and span2.
         self.span_extractor1 = self._make_span_extractor()
         if self.is_symmetric or self.single_sided:
-            self.span_extractors = [
-                None, self.span_extractor1, self.span_extractor1]
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
         else:
             self.span_extractor2 = self._make_span_extractor()
-            self.span_extractors = [
-                None, self.span_extractor1, self.span_extractor2]
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
 
         # Classifier gets concatenated projections of span1, span2
         clf_input_dim = self.span_extractors[1].get_output_dim()
@@ -103,19 +105,23 @@ class EdgeClassifierModule(nn.Module):
                 task: EdgeProbingTask,
                 predict: bool) -> Dict:
         """ Run forward pass.
+
         Expects batch to have the following entries:
             'batch1' : [batch_size, max_len, ??]
             'labels' : [batch_size, num_targets] of label indices
             'span1s' : [batch_size, num_targets, 2] of spans
             'span2s' : [batch_size, num_targets, 2] of spans
+
         'labels', 'span1s', and 'span2s' are padded with -1 along second
         (num_targets) dimension.
+
         Args:
             batch: dict(str -> Tensor) with entries described above.
             sent_embs: [batch_size, max_len, repr_dim] Tensor
             sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
             task: EdgeProbingTask
             predict: whether or not to generate predictions
+
         Returns:
             out: dict(str -> Tensor)
         """
@@ -131,8 +137,7 @@ class EdgeClassifierModule(nn.Module):
             se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
 
         # Span extraction.
-        # [batch_size, num_targets] bool
-        span_mask = (batch['span1s'][:, :, 0] != -1)
+        span_mask = (batch['span1s'][:, :, 0] != -1)  # [batch_size, num_targets] bool
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
@@ -143,8 +148,7 @@ class EdgeClassifierModule(nn.Module):
         # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
         span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
         if not self.single_sided:
-            span2_emb = self.span_extractors[2](
-                se_proj2, batch['span2s'], **_kw)
+            span2_emb = self.span_extractors[2](se_proj2, batch['span2s'], **_kw)
             span_emb = torch.cat([span1_emb, span2_emb], dim=2)
         else:
             span_emb = span1_emb
@@ -172,9 +176,11 @@ class EdgeClassifierModule(nn.Module):
     def unbind_predictions(self, preds: torch.Tensor,
                            masks: torch.Tensor) -> Iterable[np.ndarray]:
         """ Unpack preds to varying-length numpy arrays.
+
         Args:
             preds: [batch_size, num_targets, ...]
             masks: [batch_size, num_targets] boolean mask
+
         Yields:
             np.ndarray for each row of preds, selected by the corresponding row
             of span_mask.
@@ -187,8 +193,10 @@ class EdgeClassifierModule(nn.Module):
 
     def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
+
         Args:
             logits: [batch_size, num_targets, n_classes]
+
         Returns:
             probs: [batch_size, num_targets, n_classes]
         """
@@ -201,11 +209,14 @@ class EdgeClassifierModule(nn.Module):
     def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task: EdgeProbingTask):
         """ Compute loss & eval metrics.
+
         Expect logits and labels to be already "selected" for good targets,
         i.e. this function does not do any masking internally.
+
         Args:
             logits: [total_num_targets, n_classes] Tensor of float scores
             labels: [total_num_targets, n_classes] Tensor of sparse binary targets
+
         Returns:
             loss: scalar Tensor
         """
