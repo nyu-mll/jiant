@@ -66,7 +66,8 @@ class NullPhraseLayer(nn.Module):
 
 class SentenceEncoder(Model):
     ''' Given a sequence of tokens, embed each token and pass through a sequence encoder. '''
-    # NOTE: Do not apply dropout to the input of this module. Will be applied internally.
+    # NOTE: Do not apply dropout to the input of this module. Will be applied
+    # internally.
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
@@ -80,7 +81,8 @@ class SentenceEncoder(Model):
         else:
             self._text_field_embedder = text_field_embedder
             d_emb = text_field_embedder.get_output_dim()
-            self._highway_layer = TimeDistributed(Highway(d_emb, num_highway_layers))
+            self._highway_layer = TimeDistributed(
+                Highway(d_emb, num_highway_layers))
 
         self._phrase_layer = phrase_layer
         self._cove_layer = cove_layer
@@ -116,7 +118,8 @@ class SentenceEncoder(Model):
             self.reset_states()
 
         # Embeddings
-        # Note: These highway modules are actually identity functions by default.
+        # Note: These highway modules are actually identity functions by
+        # default.
 
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
@@ -141,7 +144,10 @@ class SentenceEncoder(Model):
             # Slightly wasteful as this repeats the GloVe lookup internally,
             # but this allows CoVe to be used alongside other embedding models
             # if we want to.
-            sent_lens = torch.ne(sent['words'], self.pad_idx).long().sum(dim=-1).data
+            sent_lens = torch.ne(
+                sent['words'],
+                self.pad_idx).long().sum(
+                dim=-1).data
             # CoVe doesn't use <SOS> or <EOS>, so strip these before running.
             # Note that we need to also drop the last column so that CoVe returns
             # the right shape. If all inputs have <EOS> then this will be the
@@ -152,11 +158,13 @@ class SentenceEncoder(Model):
                                   sent_cove_embs_raw.size()[2],
                                   dtype=sent_cove_embs_raw.dtype,
                                   device=sent_cove_embs_raw.device)
-            sent_cove_embs = torch.cat([pad_col, sent_cove_embs_raw, pad_col], dim=1)
+            sent_cove_embs = torch.cat(
+                [pad_col, sent_cove_embs_raw, pad_col], dim=1)
             if sent_embs is not None:
                 sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
             if task_sent_embs is not None:
-                task_sent_embs = torch.cat([task_sent_embs, sent_cove_embs], dim=-1)
+                task_sent_embs = torch.cat(
+                    [task_sent_embs, sent_cove_embs], dim=-1)
 
         if sent_embs is not None:
             sent_embs = self._dropout(sent_embs)
@@ -172,10 +180,13 @@ class SentenceEncoder(Model):
             sent_enc = None
 
         # ELMoLSTM returns all layers, we just want to use the top layer
-        sent_enc = sent_enc[-1] if isinstance(self._phrase_layer, BiLMEncoder) else sent_enc
-        sent_enc = self._dropout(sent_enc) if sent_enc is not None else sent_enc
+        sent_enc = sent_enc[-1] if isinstance(
+            self._phrase_layer, BiLMEncoder) else sent_enc
+        sent_enc = self._dropout(
+            sent_enc) if sent_enc is not None else sent_enc
         if self.skip_embs:
-            # Use skip connection with original sentence embs or task sentence embs
+            # Use skip connection with original sentence embs or task sentence
+            # embs
             skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
             utils.assert_for_log(skip_vec is not None,
                                  "skip_vec is none - perhaps embeddings are not configured "
@@ -218,7 +229,8 @@ class BiLMEncoder(ElmoLstm):
 class BoWSentEncoder(Model):
     ''' Bag-of-words sentence encoder '''
 
-    def __init__(self, vocab, text_field_embedder, initializer=InitializerApplicator()):
+    def __init__(self, vocab, text_field_embedder,
+                 initializer=InitializerApplicator()):
         super(BoWSentEncoder, self).__init__(vocab)
 
         self._text_field_embedder = text_field_embedder
@@ -265,7 +277,7 @@ class Pooler(nn.Module):
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
             seq_emb = proj_seq.gather(dim=1, index=idxs)
         elif self.pool_type == 'first':
-            seq_emb = proj_seq[:,0]
+            seq_emb = proj_seq[:, 0]
         return seq_emb
 
 
@@ -273,7 +285,8 @@ class Classifier(nn.Module):
     ''' Logistic regression or MLP classifier '''
     # NOTE: Expects dropout to have already been applied to its input.
 
-    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+    def __init__(self, d_inp, n_classes,
+                 cls_type='mlp', dropout=.2, d_hid=512):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
@@ -285,7 +298,8 @@ class Classifier(nn.Module):
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid), nn.Dropout(dropout),
                                        nn.Linear(d_hid, d_hid), nn.Tanh(),
-                                       nn.LayerNorm(d_hid), nn.Dropout(p=dropout),
+                                       nn.LayerNorm(d_hid), nn.Dropout(
+                                           p=dropout),
                                        nn.Linear(d_hid, n_classes))
         else:
             raise ValueError("Classifier type %s not found" % type)
@@ -331,7 +345,8 @@ class PairClassifier(nn.Module):
             s1, s2 = self.attn(s1, s2, mask1, mask2)
         emb1 = self.pooler(s1, mask1)
         emb2 = self.pooler(s2, mask2)
-        pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
+        pair_emb = torch.cat(
+            [emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
 
@@ -372,7 +387,8 @@ class AttnPairEncoder(Model):
         d_out_model = modeling_layer.get_output_dim()
         self.output_dim = d_out_model
 
-        self._dropout = torch.nn.Dropout(p=dropout) if dropout > 0 else lambda x: x
+        self._dropout = torch.nn.Dropout(
+            p=dropout) if dropout > 0 else lambda x: x
         self._mask_lstms = mask_lstms
 
         initializer(self)
@@ -391,8 +407,11 @@ class AttnPairEncoder(Model):
         # batch_size, seq_len, 4*enc_dim
         s2_w_context = torch.cat([s2, s2_s1_vectors], 2)
 
-        # s1 representation, using same attn method as for the s2 representation
-        s1_s2_attn = util.masked_softmax(similarity_mat.transpose(1, 2).contiguous(), s2_mask)
+        # s1 representation, using same attn method as for the s2
+        # representation
+        s1_s2_attn = util.masked_softmax(
+            similarity_mat.transpose(
+                1, 2).contiguous(), s2_mask)
         # Shape: (batch_size, s1_length, encoding_dim)
         s1_s2_vectors = util.weighted_sum(s2, s1_s2_attn)
         s1_w_context = torch.cat([s1, s1_s2_vectors], 2)
@@ -404,15 +423,19 @@ class AttnPairEncoder(Model):
     @classmethod
     def from_params(cls, vocab, params):
         ''' Initialize from a Params object '''
-        similarity_function = SimilarityFunction.from_params(params.pop("similarity_function"))
-        modeling_layer = Seq2SeqEncoder.from_params(params.pop("modeling_layer"))
+        similarity_function = SimilarityFunction.from_params(
+            params.pop("similarity_function"))
+        modeling_layer = Seq2SeqEncoder.from_params(
+            params.pop("modeling_layer"))
         dropout = params.pop('dropout', 0.2)
-        initializer = InitializerApplicator.from_params(params.pop('initializer', []))
+        initializer = InitializerApplicator.from_params(
+            params.pop('initializer', []))
 
         mask_lstms = params.pop('mask_lstms', True)
         params.assert_empty(cls.__name__)
         return cls(vocab=vocab, modeling_layer=modeling_layer, dropout=dropout,
                    mask_lstms=mask_lstms, initializer=initializer)
+
 
 class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     # pylint: disable=line-too-long
@@ -478,7 +501,8 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
             feedfoward = FeedForward(feedfoward_input_dim,
                                      activations=[Activation.by_name('relu')(),
                                                   Activation.by_name('linear')()],
-                                     hidden_dims=[feedforward_hidden_dim, hidden_dim],
+                                     hidden_dims=[
+                                         feedforward_hidden_dim, hidden_dim],
                                      num_layers=2,
                                      dropout=dropout_prob)
 
@@ -486,7 +510,8 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
             self._feedfoward_layers.append(feedfoward)
 
             feedforward_layer_norm = LayerNorm(feedfoward.get_input_dim())
-            self.add_module("feedforward_layer_norm_{i}".format(feedforward_layer_norm))
+            self.add_module(
+                "feedforward_layer_norm_{i}".format(feedforward_layer_norm))
             self._feed_forward_layer_norm_layers.append(feedforward_layer_norm)
 
             self_attention = MaskedMultiHeadSelfAttention(num_heads=num_attention_heads,
@@ -551,7 +576,8 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
         feedforward_hidden_dim = params.pop_int("feedforward_hidden_dim")
         num_layers = params.pop_int("num_layers", 2)
         num_attention_heads = params.pop_int('num_attention_heads', 3)
-        use_positional_encoding = params.pop_bool('use_positional_encoding', True)
+        use_positional_encoding = params.pop_bool(
+            'use_positional_encoding', True)
         dropout_prob = params.pop_float("dropout_prob", 0.2)
         params.assert_empty(cls.__name__)
 
@@ -622,7 +648,8 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
         # Cache the arrays for use in forward -- +1 due to masking.
         self._beginning_of_sentence_characters = torch.from_numpy(
-            numpy.array(ELMoCharacterMapper.beginning_of_sentence_characters) + 1
+            numpy.array(
+                ELMoCharacterMapper.beginning_of_sentence_characters) + 1
         )
         self._end_of_sentence_characters = torch.from_numpy(
             numpy.array(ELMoCharacterMapper.end_of_sentence_characters) + 1
@@ -699,7 +726,8 @@ class ElmoCharacterEncoder(torch.nn.Module):
         # reshape to (batch_size, sequence_length, embedding_dim)
         batch_size, sequence_length, _ = character_ids_with_bos_eos.size()
 
-        return token_embedding.view(batch_size, sequence_length, -1)[:, 1:-1, :]
+        return token_embedding.view(
+            batch_size, sequence_length, -1)[:, 1:-1, :]
 
     def _load_weights(self):
         self._load_char_embedding()
@@ -739,7 +767,10 @@ class ElmoCharacterEncoder(torch.nn.Module):
                 weight = fin['CNN']['W_cnn_{}'.format(i)][...]
                 bias = fin['CNN']['b_cnn_{}'.format(i)][...]
 
-            w_reshaped = numpy.transpose(weight.squeeze(axis=0), axes=(2, 1, 0))
+            w_reshaped = numpy.transpose(
+                weight.squeeze(
+                    axis=0), axes=(
+                    2, 1, 0))
             if w_reshaped.shape != tuple(conv.weight.data.shape):
                 raise ValueError("Invalid weight file")
             conv.weight.data.copy_(torch.FloatTensor(w_reshaped))
@@ -755,31 +786,40 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
     def _load_highway(self):
         # pylint: disable=protected-access
-        # the highway layers have same dimensionality as the number of cnn filters
+        # the highway layers have same dimensionality as the number of cnn
+        # filters
         cnn_options = self._options['char_cnn']
         filters = cnn_options['filters']
         n_filters = sum(f[1] for f in filters)
         n_highway = cnn_options['n_highway']
 
         # create the layers, and load the weights
-        self._highways = Highway(n_filters, n_highway, activation=torch.nn.functional.relu)
+        self._highways = Highway(
+            n_filters,
+            n_highway,
+            activation=torch.nn.functional.relu)
         for k in range(n_highway):
             # The AllenNLP highway is one matrix multplication with concatenation of
             # transform and carry weights.
             with h5py.File(cached_path(self._weight_file), 'r') as fin:
                 # The weights are transposed due to multiplication order assumptions in tf
                 # vs pytorch (tf.matmul(X, W) vs pytorch.matmul(W, X))
-                w_transform = numpy.transpose(fin['CNN_high_{}'.format(k)]['W_transform'][...])
+                w_transform = numpy.transpose(
+                    fin['CNN_high_{}'.format(k)]['W_transform'][...])
                 # -1.0 since AllenNLP is g * x + (1 - g) * f(x) but tf is (1 - g) * x + g * f(x)
-                w_carry = -1.0 * numpy.transpose(fin['CNN_high_{}'.format(k)]['W_carry'][...])
+                w_carry = -1.0 * \
+                    numpy.transpose(
+                        fin['CNN_high_{}'.format(k)]['W_carry'][...])
                 weight = numpy.concatenate([w_transform, w_carry], axis=0)
-                self._highways._layers[k].weight.data.copy_(torch.FloatTensor(weight))
+                self._highways._layers[k].weight.data.copy_(
+                    torch.FloatTensor(weight))
                 self._highways._layers[k].weight.requires_grad = self.requires_grad
 
                 b_transform = fin['CNN_high_{}'.format(k)]['b_transform'][...]
                 b_carry = -1.0 * fin['CNN_high_{}'.format(k)]['b_carry'][...]
                 bias = numpy.concatenate([b_transform, b_carry], axis=0)
-                self._highways._layers[k].bias.data.copy_(torch.FloatTensor(bias))
+                self._highways._layers[k].bias.data.copy_(
+                    torch.FloatTensor(bias))
                 self._highways._layers[k].bias.requires_grad = self.requires_grad
 
     def _load_projection(self):
@@ -787,11 +827,13 @@ class ElmoCharacterEncoder(torch.nn.Module):
         filters = cnn_options['filters']
         n_filters = sum(f[1] for f in filters)
 
-        self._projection = torch.nn.Linear(n_filters, self.output_dim, bias=True)
+        self._projection = torch.nn.Linear(
+            n_filters, self.output_dim, bias=True)
         with h5py.File(cached_path(self._weight_file), 'r') as fin:
             weight = fin['CNN_proj']['W_proj'][...]
             bias = fin['CNN_proj']['b_proj'][...]
-            self._projection.weight.data.copy_(torch.FloatTensor(numpy.transpose(weight)))
+            self._projection.weight.data.copy_(
+                torch.FloatTensor(numpy.transpose(weight)))
             self._projection.bias.data.copy_(torch.FloatTensor(bias))
 
             self._projection.weight.requires_grad = self.requires_grad

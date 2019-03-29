@@ -17,6 +17,7 @@ from .tasks import RankingTask, PairClassificationTask
 from .tasks import sentence_to_text_field
 from .registry import register_task
 
+
 @register_task('reddit', rel_path='Reddit_2008/')
 @register_task('reddit_dummy', rel_path='Reddit_2008_TestSample/')
 @register_task('reddit_3.4G', rel_path='Reddit_3.4G/')
@@ -29,7 +30,7 @@ class RedditTask(RankingTask):
         ''' '''
         super().__init__(name, **kw)
         self.scorer1 = Average()  # CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for
@@ -50,8 +51,10 @@ class RedditTask(RankingTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -93,6 +96,7 @@ class RedditTask(RankingTask):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
+
 @register_task('reddit_pair_classif', rel_path='Reddit/')
 @register_task('reddit_pair_classif_3.4G', rel_path='Reddit_3.4G/')
 class RedditPairClassificationTask(PairClassificationTask):
@@ -101,7 +105,6 @@ class RedditPairClassificationTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
         super().__init__(name, n_classes=2, **kw)
-        self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for
@@ -122,8 +125,10 @@ class RedditPairClassificationTask(PairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 4 or not row[2] or not row[3]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[2], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[3], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[2], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[3], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 
@@ -186,8 +191,10 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) < 2 or not row[0] or not row[1]:
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[1], self.max_seq_len)
                 targ = 1
                 yield (sent1, sent2, targ)
 

@@ -20,6 +20,7 @@ from .tasks import sentence_to_text_field, atomic_tokenize
 from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
 from .registry import register_task
 
+
 class LanguageModelingTask(SequenceGenerationTask):
     """Generic language modeling task
     See base class: SequenceGenerationTask
@@ -44,7 +45,9 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.target_indexer = {
+            "words": SingleIdTokenIndexer(
+                namespace="tokens")}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test': os.path.join(path, "test.txt")}
@@ -91,8 +94,10 @@ class LanguageModelingTask(SequenceGenerationTask):
             in the input for each direction '''
             d = {}
             d["input"] = sentence_to_text_field(sent, indexers)
-            d["targs"] = sentence_to_text_field(sent[1:] + [sent[0]], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-1], self.target_indexer)
+            d["targs"] = sentence_to_text_field(
+                sent[1:] + [sent[0]], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field(
+                [sent[-1]] + sent[:-1], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
@@ -122,6 +127,7 @@ class WikiTextLMTask(LanguageModelingTask):
     """ Language modeling on a Wikitext dataset
     See base class: LanguageModelingTask
     """
+
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
         nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']

@@ -1,4 +1,4 @@
-# Implementation of edge probing module.
+# Implementation ofspan classification modules
 
 import torch
 import torch.nn as nn
@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from ..tasks.edge_probing import EdgeProbingTask
+from ..tasks.tasks import Task
 from .import modules
 
 from allennlp.modules.span_extractors import \
@@ -15,9 +15,10 @@ from allennlp.nn.util import move_to_device, device_mapping
 
 from typing import Dict, Iterable, List
 
-
-class EdgeClassifierModule(nn.Module):
-    ''' Build edge classifier components as a sub-module.
+#TODO(Yada): Generalize to N-Span module.
+class TwoSpanClassifierModule(nn.Module):
+    '''
+    Classifier that allows for spans and text as input.
     Use same classifier code as build_single_sentence_module,
     except instead of whole-sentence pooling we'll use span1 and span2 indices
     to extract span representations, and use these as input to the classifier.
@@ -25,14 +26,6 @@ class EdgeClassifierModule(nn.Module):
         - Only considers the explicit set of spans in inputs; does not consider
         all other spans as negatives. (So, this won't work for argument
         _identification_ yet.)
-    TODO: consider alternate span-pooling operators: max or mean-pooling,
-    or SegRNN.
-    TODO: add span-expansion to negatives, one of the following modes:
-        - all-spans (either span1 or span2), treating not-seen as negative
-        - all-tokens (assuming span1 and span2 are length-1), e.g. for
-        dependency parsing
-        - batch-negative (pairwise among spans seen in batch, where not-seen
-        are negative)
     '''
 
     def _make_span_extractor(self):
@@ -54,11 +47,11 @@ class EdgeClassifierModule(nn.Module):
                          groups=1, bias=True)
 
     def __init__(self, task, d_inp: int, task_params):
-        super(EdgeClassifierModule, self).__init__()
+        super(TwoSpanClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
         self.span_pooling = task_params['cls_span_pooling']
-        self.cnn_context = task_params['edgeprobe_cnn_context']
+        self.cnn_context = task_params.get('cnn_context', 0)
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
 
@@ -100,7 +93,7 @@ class EdgeClassifierModule(nn.Module):
     def forward(self, batch: Dict,
                 sent_embs: torch.Tensor,
                 sent_mask: torch.Tensor,
-                task: EdgeProbingTask,
+                task: Task,
                 predict: bool) -> Dict:
         """ Run forward pass.
         Expects batch to have the following entries:
@@ -114,7 +107,7 @@ class EdgeClassifierModule(nn.Module):
             batch: dict(str -> Tensor) with entries described above.
             sent_embs: [batch_size, max_len, repr_dim] Tensor
             sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
-            task: EdgeProbingTask
+            task: Task
             predict: whether or not to generate predictions
         Returns:
             out: dict(str -> Tensor)
@@ -195,11 +188,10 @@ class EdgeClassifierModule(nn.Module):
         if self.loss_type == 'sigmoid':
             return torch.sigmoid(logits)
         else:
-            raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % loss_type)
+            raise ValueError("Unsupported loss type" % loss_type)
 
     def compute_loss(self, logits: torch.Tensor,
-                     labels: torch.Tensor, task: EdgeProbingTask):
+                     labels: torch.Tensor, task: Task):
         """ Compute loss & eval metrics.
         Expect logits and labels to be already "selected" for good targets,
         i.e. this function does not do any masking internally.
@@ -224,5 +216,161 @@ class EdgeClassifierModule(nn.Module):
             return F.binary_cross_entropy(torch.sigmoid(logits),
                                           labels.float())
         else:
-            raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % self.loss_type)
+            raise ValueError("Unsupported loss type ." % self.loss_type)
+
+class ThreeSpanClassifierModule(TwoSpanClassifierModule):
+    ''' 
+    Extension of TwoSpan but where the input is 1 text and 3 spans.
+    '''
+
+    def __init__(self, task, d_inp: int, task_params):
+        super().__init__(task, d_inp, task_params)
+        # Set config options needed for forward pass.
+        self.loss_type = task_params['cls_loss_fn']
+        self.span_pooling = task_params['cls_span_pooling']
+        self.cnn_context = task_params.get('cnn_context', 0)
+        self.is_symmetric = task.is_symmetric
+        self.single_sided = task.single_sided
+
+        self.proj_dim = task_params['d_hid']
+        # Separate projection for span1, span2.
+        # Convolution allows using local context outside the span, with
+        # cnn_context = 0 behaving as a per-word linear layer.
+        # Use these to reduce dimensionality in case we're enumerating a lot of
+        # spans - we want to do this *before* extracting spans for greatest
+        # efficiency.
+        self.proj1 = self._make_cnn_layer(d_inp)
+        if self.is_symmetric or self.single_sided:
+            # Use None as dummy padding for readability,
+            # so that we can index projs[1] and projs[2]
+            self.projs = [None, self.proj1, self.proj1]
+        else:
+            # Separate params for span2
+            self.proj2 = self._make_cnn_layer(d_inp)
+            self.proj3 = self._make_cnn_layer(d_inp)
+            self.projs = [None, self.proj1, self.proj2, self.proj3]
+
+        # Span extractor, shared for both span1 and span2.
+        self.span_extractor1 = self._make_span_extractor()
+        if self.is_symmetric or self.single_sided:
+            self.span_extractors = [
+                None, self.span_extractor1, self.span_extractor1]
+        else:
+            self.span_extractor2 = self._make_span_extractor()
+            self.span_extractor3 = self._make_span_extractor()
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor2, self.span_extractor3]
+
+        # Classifier gets concatenated projections of span1, span2
+        clf_input_dim = self.span_extractors[1].get_output_dim()
+        if not self.single_sided:
+            clf_input_dim += self.span_extractors[2].get_output_dim()
+            clf_input_dim += self.span_extractors[3].get_output_dim()
+        self.classifier = modules.Classifier.from_params(clf_input_dim,
+                                                         task.n_classes,
+                                                         task_params)
+
+    def forward(self, batch: Dict,
+                sent_embs: torch.Tensor,
+                sent_mask: torch.Tensor,
+                task: Task,
+                predict: bool) -> Dict:
+        """ Run forward pass.
+
+        Expects batch to have the following entries:
+            'batch1' : [batch_size, max_len, ??]
+            'labels' : [batch_size, num_targets] of label indices
+            'span1s' : [batch_size, num_targets, 2] of spans
+            'span2s' : [batch_size, num_targets, 2] of spans
+
+        'labels', 'span1s', and 'span2s' are padded with -1 along second
+        (num_targets) dimension.
+
+        Args:
+            batch: dict(str -> Tensor) with entries described above.
+            sent_embs: [batch_size, max_len, repr_dim] Tensor
+            sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
+            task: Task
+            predict: whether or not to generate predictions
+
+        Returns:
+            out: dict(str -> Tensor)
+        """
+        out = {}
+
+        batch_size = sent_embs.shape[0]
+        out['n_inputs'] = batch_size
+
+        # Apply projection CNN layer for each span.
+        sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
+        se_proj1 = self.projs[1](sent_embs_t).transpose(2, 1).contiguous()
+        if not self.single_sided:
+            se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
+            se_proj3 = self.projs[3](sent_embs_t).transpose(2, 1).contiguous()
+        # Span extraction.
+        # [batch_size, num_targets] bool
+        span_mask = (batch['span1s'][:, :, 0] != -1)
+        out['mask'] = span_mask
+        total_num_targets = span_mask.sum()
+        out['n_targets'] = total_num_targets
+        out['n_exs'] = total_num_targets  # used by trainer.py
+
+        _kw = dict(sequence_mask=sent_mask.long(),
+                   span_indices_mask=span_mask.long())
+        # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
+        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
+        if not self.single_sided:
+            span2_emb = self.span_extractors[2](
+                se_proj2, batch['span2s'], **_kw)
+            span_emb = torch.cat([span1_emb, span2_emb], dim=2)
+            span3_emb = self.span_extractors[3](se_proj3, batch['span3s'], **_kw)
+            span_emb = torch.cat([span_emb, span3_emb], dim=2)
+        else:
+            span_emb = span1_emb
+        # [batch_size, num_targets, n_classes]
+        logits = self.classifier(span_emb)
+        out['logits'] = logits
+
+        # Compute loss if requested.
+        if 'labels' in batch:
+            # Labels is [batch_size, num_targets, n_classes],
+            # with k-hot encoding provided by AllenNLP's MultiLabelField.
+            # Flatten to [total_num_targets, ...] first.
+            out['loss'] = self.compute_loss(logits[span_mask],
+                                            batch['labels'][span_mask],
+                                            task)
+            task.update_subset_metrics(logits[span_mask], batch["labels"][span_mask], tagmask=batch['tagmask'])
+
+        if predict:
+            # Return preds as a list.
+            preds = self.get_predictions(logits)
+            out['preds'] = list(self.unbind_predictions(preds, span_mask))
+
+        return out
+
+    def compute_loss(self, logits: torch.Tensor,
+                     labels: torch.Tensor, task: Task):
+        """ Compute loss & eval metrics.
+
+        Expect logits and labels to be already "selected" for good targets,
+        i.e. this function does not do any masking internally.
+
+        Args:
+            logits: [total_num_targets, n_classes] Tensor of float scores
+            labels: [total_num_targets, n_classes] Tensor of sparse binary targets
+
+        Returns:
+            loss: scalar Tensor
+        """
+        # https://stackoverflow.com/questions/32013927/in-torch-how-do-i-create-a-1-hot-tensor-from-a-list-of-integer-labels 
+        # 3 - way loss. 
+
+        # Accuracy computed on {0,1} labels.
+
+        # this scorer wants a 1-hot encoding of the first two classes
+        # and the gold labels of the first two classes
+        task.f1_scorer(logits, labels)
+        targets = (labels == 1).nonzero()[:,1]
+        if self.loss_type == 'sigmoid':
+            return F.cross_entropy(logits, targets.long())
+        else:
+            raise ValueError("Unsupported loss type '%s' " % self.loss_type)
