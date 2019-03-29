@@ -588,6 +588,7 @@ def add_task_domain_vocab(vocab, task):
        Add domain vocab for subset evaluation.
     '''
     if not hasattr(task, 'domains'):
+        log.info("No domain for subset evaluation found.")
         return
     utils.assert_for_log(hasattr(task, "_domain_namespace"),
                          "Task %s is missing method `_domain_namespace`!" % task.name)

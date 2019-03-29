@@ -1791,7 +1791,6 @@ class GapCoreferenceTask(SpanTask):
                  domains=["FEMININE", "MASCULINE"],
                  single_sided: bool = False, **kw):
         self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
-        # here, we want to split by domain, male or female, for subset evaluation.
         self.num_domains = len(domains)
         self.domains = domains
         self._domain_namespace = name + "_tags"
@@ -1830,7 +1829,6 @@ class GapCoreferenceTask(SpanTask):
                                  for t in record['targets']])
         d['span3s'] = ListField([self._make_span_field(t['span3'], text_field, 1)
                          for t in record['targets']])
-        # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
         d['labels'] = ListField([MultiLabelField(label_set,
