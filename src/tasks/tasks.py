@@ -1780,8 +1780,6 @@ class SpanTask(Task):
         metrics['f1'] = f1
         return metrics
 
-##
-# Class definitions for edge probing. See below for actual task registration.
 @register_task('gap-coreference', rel_path = 'gap-coreference')
 class GapCoreferenceTask(SpanTask):
     def __init__(self, path: str, max_seq_len: int,
@@ -1794,7 +1792,7 @@ class GapCoreferenceTask(SpanTask):
         self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
         # here, we want to split by domain, male or female, for subset evaluation.
         self.num_domains = len(domains)
-        self.tag_list = domains
+        self.domains = domains
         self._domain_namespace = name + "_tags"
         label_file = "labels.txt"
         num_spans = 3

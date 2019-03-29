@@ -585,21 +585,9 @@ def add_task_label_vocab(vocab, task):
 
 def add_task_domain_vocab(vocab, task):
     '''Add custom task labels to a separate namespace.
-
-    If task has a 'get_all_labels' method, call that to get a list of labels
-    to populate the <task_name>_labels vocabulary namespace.
-
-    This is the recommended way to implement multiclass models: in your task's
-    process_split code, make instances that use LabelFields with the task label
-    namespace, e.g.:
-        label_namespace = "%s_labels" % self.name
-        label = LabelField(label_string, label_namespace=label_namespace)
-    This will cause them to be properly indexed by the Vocabulary.
-
-    This can then be accessed when generating Instances, either via a custom
-    Indexer or by invoking the namespace when creating a LabelField.
+       Add domain vocab for subset evaluation.
     '''
-    if not hasattr(task, 'tag_list'):
+    if not hasattr(task, 'domains'):
         return
     utils.assert_for_log(hasattr(task, "_domain_namespace"),
                          "Task %s is missing method `_domain_namespace`!" % task.name)
@@ -607,7 +595,7 @@ def add_task_domain_vocab(vocab, task):
     if namespace is None:
         return
     log.info("\tTask '%s': adding domain vocab namespace '%s'", task.name, namespace)
-    for domain in task.tag_list:
+    for domain in task.domains:
         vocab.add_token_to_namespace(domain, namespace)
 
 def add_bert_wpm_vocab(vocab, bert_model_name):
