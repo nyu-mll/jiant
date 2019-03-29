@@ -1579,3 +1579,198 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
+
+class SpanTask(Task):
+    ''' Generic class for span tasks.
+    Acts as a classifier, but with multiple targets for each input text.
+    Targets are of the form (span1, span2,..., span_n, label), where the spans are
+    half-open token intervals [i, j).
+    '''
+    @property
+    def _tokenizer_suffix(self):
+        ''' Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
+
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
+
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 num_spans: int = 2,
+                 is_symmetric: bool = False,
+                 single_sided: bool = False, **kw):
+        """Construct a span task.
+        path, max_seq_len, and name are passed by the code in preprocess.py;
+        remaining arguments should be provided by a subclass constructor or via
+        @register_task.
+        Args:
+            path: data directory
+            max_seq_len: maximum sequence length (currently ignored)
+            name: task name
+            label_file: relative path to labels file
+            files_by_split: split name ('train', 'val', 'test') mapped to
+                relative filenames (e.g. 'train': 'train.json')
+            is_symmetric: if true, span1 and span2 are assumed to be the same
+                type and share parameters. Otherwise, we learn a separate
+                projection layer and attention weight for each.
+            single_sided: if true, only use span1.
+        """
+        super().__init__(name, **kw)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname) + self._tokenizer_suffix
+            for split, fname in files_by_split.items()
+        }
+        self.num_spans = num_spans
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+        self.is_symmetric = is_symmetric
+        self.single_sided = single_sided
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        # see add_task_label_namespace in preprocess.py
+        self._label_namespace = self.name + "_labels"
+
+        # Scorers
+        #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
+        self.mcc_scorer = FastMatthews()
+        self.acc_scorer = BooleanAccuracy()  # binary accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    @staticmethod
+    def merge_preds(record: Dict, preds: Dict) -> Dict:
+        """ Merge predictions into record, in-place.
+        List-valued predictions should align to targets,
+        and are attached to the corresponding target entry.
+        Non-list predictions are attached to the top-level record.
+        """
+        record['preds'] = {}
+        for target in record['targets']:
+            target['preds'] = {}
+        for key, val in preds.items():
+            if isinstance(val, list):
+                assert len(val) == len(record['targets'])
+                for i, target in enumerate(record['targets']):
+                    target['preds'][key] = val[i]
+            else:
+                # non-list predictions, attach to top-level preds
+                record['preds'][key] = val
+        return record
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            #  # Lazy-load using RepeatableIterator.
+            #  loader = functools.partial(utils.load_json_data,
+            #                             filename=filename)
+            #  iter = serialize.RepeatableIterator(loader)
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' Get split text as iterable of records.
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' Return number of examples in the result of get_split_text.
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def _make_span_field(self, s, text_field, offset=1):
+        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
+
+    def _pad_tokens(self, tokens):
+        """Pad tokens according to the current tokenization style."""
+        if self.tokenizer_name.startswith("bert-"):
+            # standard padding for BERT; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            return ["[CLS]"] + tokens + ["[SEP]"]
+        else:
+            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        d = {}
+        d["idx"] = MetadataField(idx)
+
+        d['input1'] = text_field
+
+        for i in range(self.num_spans):
+            d["span"+str(i)+"s"] = ListField([self._make_span_field(t['span'+str(i)], text_field, 1)
+                                 for t in record['targets']])
+
+        # Always use multilabel targets, so be sure each label is a list.
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        d['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+        return Instance(d)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metrics = {}
+        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
+        metrics['acc'] = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        metrics['precision'] = precision
+        metrics['recall'] = recall
+        metrics['f1'] = f1
+        return metrics
