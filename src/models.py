@@ -432,7 +432,7 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-    elif isisntance(task, SpanTask):
+    elif isinstance(task, SpanTask):
         module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, TaggingTask):
