@@ -86,7 +86,31 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
 
 @register_task('toronto_lm', rel_path='toronto/')
 class TorontoLanguageModelling(LanguageModelingParsingTask):
-    """ Language modeling on a PTB dataset
+    """ Language modeling on the Toronto Books dataset
+    See base class: LanguageModelingTask
+    """
+
+    def load_data(self, path):
+        """Load data file, tokenize text and concat sentences to create long term dependencies.
+        Args:
+            path: (str) data file path
+        """
+        seq_len = self.max_seq_len
+        tokens = []
+        with open(path) as txt_fh:
+            for row in txt_fh:
+                toks = row.strip()
+                if not toks:
+                    continue
+                toks_v = toks.split()
+                toks = toks.split()+["<EOS>"]
+                tokens += toks
+            for i in range(0, len(tokens), seq_len):
+                yield tokens[i:i+seq_len]
+
+@register_task('egw_lm', rel_path='egw_corpus/')
+class EnglishgigawordLanguageModelling(LanguageModelingParsingTask):
+    """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
     """
 
