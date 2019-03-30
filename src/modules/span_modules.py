@@ -15,7 +15,9 @@ from allennlp.nn.util import move_to_device, device_mapping
 
  from typing import Dict, Iterable, List
 
- #TODO(Yada): Generalize to N-Span module.
+ # TODO(Yada): Generalize to N-Span module.
+
+
 class SpanClassifierModule(nn.Module):
     '''
     Classifier that allows for spans and text as input.
@@ -67,7 +69,7 @@ class SpanClassifierModule(nn.Module):
         for i in range(num_spans):
             proj = self._make_cnn_layer(d_inp)
             self.projs.append(proj)
-        self.span_extractors =  []
+        self.span_extractors = []
          # Span extractor, shared for both span1 and span2.
         for i in range(num_spans):
            span_extractor = self._make_span_extractor()
@@ -121,8 +123,10 @@ class SpanClassifierModule(nn.Module):
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
         for i in range(self.num_spans):
-            # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
-            span_emb = self.span_extractors[i](se_projs[0], batch['span'+str(i+1)+'s'], **_kw)
+            # span1_emb and span2_emb are [batch_size, num_targets,
+            # span_repr_dim]
+            span_emb = self.span_extractors[i](
+                se_projs[0], batch['span' + str(i + 1) + 's'], **_kw)
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
          # [batch_size, num_targets, n_classes]

@@ -246,6 +246,7 @@ class Task(object):
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
+
 class ClassificationTask(Task):
     ''' General classification task '''
     pass
@@ -327,6 +328,8 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+
+
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -352,10 +355,12 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
+
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -376,13 +381,14 @@ class SequenceGenerationTask(Task):
 
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
+
 
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
@@ -447,6 +453,7 @@ class CoLATask(SingleClassificationTask):
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
         return
+
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
@@ -1114,7 +1121,7 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-        
+
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
@@ -1580,6 +1587,7 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
 
+
 class SpanTask(Task):
     ''' Generic class for span tasks.
     Acts as a classifier, but with multiple targets for each input text.
@@ -1645,8 +1653,6 @@ class SpanTask(Task):
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
-        # Scorers
-        #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
         self.mcc_scorer = FastMatthews()
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
@@ -1735,8 +1741,8 @@ class SpanTask(Task):
         d['input1'] = text_field
 
         for i in range(self.num_spans):
-            d["span"+str(i)+"s"] = ListField([self._make_span_field(t['span'+str(i)], text_field, 1)
-                                 for t in record['targets']])
+            d["span" + str(i) + "s"] = ListField([self._make_span_field(t['span' + str(i)], text_field, 1)
+                                                  for t in record['targets']])
 
         # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
