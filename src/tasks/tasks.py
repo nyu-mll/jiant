@@ -1650,7 +1650,6 @@ class SpanTask(Task):
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
         self.n_classes = len(self.all_labels)
-        # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
         self.mcc_scorer = FastMatthews()

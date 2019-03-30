@@ -15,9 +15,6 @@ from allennlp.nn.util import move_to_device, device_mapping
 
  from typing import Dict, Iterable, List
 
- # TODO(Yada): Generalize to N-Span module.
-
-
 class SpanClassifierModule(nn.Module):
     '''
     Classifier that allows for spans and text as input.
