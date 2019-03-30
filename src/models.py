@@ -432,6 +432,9 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
+    elif isisntance(task, SpanTask):
+        module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
+        setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
@@ -644,9 +647,6 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch['input']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isisntance(task, SpanTask):
-            module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
-            setattr(model, '%s_mdl' % task.name, module)
         elif isinstance(task, MultiNLIDiagnosticTask):
             out = self._pair_sentence_MNLI_diagnostic_forward(
                 batch, task, predict)
@@ -668,7 +668,6 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask) or isinstance(task, SpanTask):
-            # Just get embeddings and invoke task module.
             sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
             module = getattr(self, "%s_mdl" % task.name)
             out = module.forward(batch, sent_embs, sent_mask,

@@ -1696,10 +1696,6 @@ class SpanTask(Task):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            #  # Lazy-load using RepeatableIterator.
-            #  loader = functools.partial(utils.load_json_data,
-            #                             filename=filename)
-            #  iter = serialize.RepeatableIterator(loader)
             iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
         return iters_by_split
@@ -1730,7 +1726,7 @@ class SpanTask(Task):
 
     def make_instance(self, record, idx, indexers) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
-        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = record['text'].split()
         tokens = self._pad_tokens(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
