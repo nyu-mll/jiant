@@ -13,7 +13,7 @@ from .import modules
 
 from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor
-from allennlp.nn.util import move_to_device, device_mapping
+from allennlp.nn.util import move_to_device
 from typing import Dict, Iterable, List
 
 
@@ -23,10 +23,6 @@ class SpanClassifierModule(nn.Module):
     Use same classifier code as build_single_sentence_module,
     except instead of whole-sentence pooling we'll use span indices
     to extract span representations, and use these as input to the classifier.
-    This works in the current form, but with some provisos:
-        - Only considers the explicit set of spans in inputs; does not consider
-        all other spans as negatives. (So, this won't work for argument
-        _identification_ yet.)
     '''
 
     def _make_span_extractor(self):
@@ -80,7 +76,7 @@ class SpanClassifierModule(nn.Module):
                 sent_mask: torch.Tensor,
                 task: Task,
                 predict: bool) -> Dict:
-        """ Run forward pass.
+        """ Run forward pass for task that takes in an input and k spans. 
         Expects batch to have the following entries:
             'batch1' : [batch_size, max_len, ??]
             'labels' : [batch_size, num_targets] of label indices
@@ -89,7 +85,7 @@ class SpanClassifierModule(nn.Module):
               .
               .
               .
-            'spanns' : [batch_size, num_targets, 2] of spans
+            'spanks' : [batch_size, num_targets, 2] of spans
         'labels', 'span1s', and 'span2s' are padded with -1 along second
         (num_targets) dimension.
         Args:

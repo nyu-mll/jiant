@@ -1615,8 +1615,7 @@ class SpanTask(Task):
                  label_file: str = None,
                  files_by_split: Dict[str, str] = None,
                  num_spans: int = 2,
-                 is_symmetric: bool = False,
-                 single_sided: bool = False, **kw):
+                 **kw):
         """Construct a span task.
         path, max_seq_len, and name are passed by the code in preprocess.py;
         remaining arguments should be provided by a subclass constructor or via
@@ -1626,12 +1625,10 @@ class SpanTask(Task):
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
             label_file: relative path to labels file
+                labels file should be a line-delimited file where each line is a value the 
+                label can take.
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
-            is_symmetric: if true, span1 and span2 are assumed to be the same
-                type and share parameters. Otherwise, we learn a separate
-                projection layer and attention weight for each.
-            single_sided: if true, only use span1.
         """
         super().__init__(name, **kw)
 
@@ -1644,8 +1641,6 @@ class SpanTask(Task):
         self.num_spans = num_spans
         self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
-        self.is_symmetric = is_symmetric
-        self.single_sided = single_sided
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
