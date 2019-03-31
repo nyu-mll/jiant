@@ -60,12 +60,14 @@ class SpanClassifierModule(nn.Module):
         self.proj_dim = task_params['d_hid']
         self.projs = []
         for i in range(num_spans):
-            proj = self._make_cnn_layer(d_inp).cuda() if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
+            proj = self._make_cnn_layer(d_inp).cuda() \
+                if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
             self.projs.append(proj)
-        self.span_extractors =  []
-         # Span extractor, shared for all spans.
+        self.span_extractors = []
+        # Span extractor, shared for all spans.
         for i in range(num_spans):
-            span_extractor = self._make_span_extractor().cuda() if torch.cuda.is_available() else  self._make_span_extractor()
+            span_extractor = self._make_span_extractor().cuda() \
+                 if torch.cuda.is_available() else self._make_span_extractor()
             self.span_extractors.append(span_extractor)
          # Classifier gets concatenated projections of spans.
         clf_input_dim = self.span_extractors[1].get_output_dim() * num_spans
@@ -84,9 +86,9 @@ class SpanClassifierModule(nn.Module):
             'labels' : [batch_size, num_targets] of label indices
             'span1s' : [batch_size, num_targets, 2] of spans
             'span2s' : [batch_size, num_targets, 2] of spans
-              . 
-              . 
-              . 
+              .
+              .
+              .
             'spanns' : [batch_size, num_targets, 2] of spans
         'labels', 'span1s', and 'span2s' are padded with -1 along second
         (num_targets) dimension.
@@ -105,7 +107,7 @@ class SpanClassifierModule(nn.Module):
             cuda_device = torch.cuda.current_device()
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
-         # Apply projection CNN layer for each span.
+        # Apply projection CNN layer for each span.
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
         sent_embs_t = move_to_device(sent_embs_t, cuda_device)
         se_projs = []
@@ -114,7 +116,8 @@ class SpanClassifierModule(nn.Module):
             se_projs.append(se_proj)
 
         # [batch_size, num_targets] bool
-        span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
+        span_embs = torch.Tensor([]).cuda() \
+            if torch.cuda.is_available() else torch.Tensor([])
         span_mask = (batch['span1s'][:, :, 0] != -1)
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
@@ -124,14 +127,15 @@ class SpanClassifierModule(nn.Module):
                    span_indices_mask=span_mask.long())
         for i in range(self.num_spans):
             # spans are  [batch_size, num_targets, span_repr_dim]
-            span_emb = self.span_extractors[i](se_projs[0], batch['span'+str(i+1)+'s'], **_kw)
+            span_emb = self.span_extractors[i](
+                se_projs[0], batch['span' + str(i + 1) + 's'], **_kw)
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
          # [batch_size, num_targets, n_classes]
         logits = self.classifier(span_embs)
         out['logits'] = logits
 
-         # Compute loss if requested.
+        # Compute loss if requested.
         if 'labels' in batch:
             # Labels is [batch_size, num_targets, n_classes],
             # with k-hot encoding provided by AllenNLP's MultiLabelField.
@@ -161,6 +165,7 @@ class SpanClassifierModule(nn.Module):
         for pred, mask in zip(torch.unbind(preds, dim=0),
                               torch.unbind(masks, dim=0)):
             yield pred[mask].numpy()  # only non-masked predictions
+
     def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
         Args:
@@ -200,12 +205,11 @@ class SpanClassifierModule(nn.Module):
         if self.loss_type == 'sigmoid':
             if self.num_spans == 2:
                 return F.binary_cross_entropy(torch.sigmoid(logits),
-                                          labels.float())
+                                              labels.float())
             else:
-                targets = (labels == 1).nonzero()[:,1]
-                return F.nll_loss(torch.sigmoid(logits), targets.long())
+                raise ValueError("Sigmoid only supported for binary output currently")
         elif self.loss_type == "softmax":
-            targets = (labels == 1).nonzero()[:,1]
+            targets = (labels == 1).nonzero()[:, 1]
             return F.cross_entropy(logits, targets.long())
         else:
             raise ValueError("Unsupported loss type ." % self.loss_type)
