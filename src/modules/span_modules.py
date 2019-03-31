@@ -1,25 +1,27 @@
-# Implementation ofspan classification modules
+# Implementation of span classification modules
 
- import torch
+import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
- from ..tasks.tasks import Task
+import logging as log
+
+from ..tasks.edge_probing import EdgeProbingTask, Task
 from .import modules
 
- from allennlp.modules.span_extractors import \
+from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor
 from allennlp.nn.util import move_to_device, device_mapping
+from typing import Dict, Iterable, List
 
- from typing import Dict, Iterable, List
 
 class SpanClassifierModule(nn.Module):
     '''
     Classifier that allows for spans and text as input.
     Use same classifier code as build_single_sentence_module,
-    except instead of whole-sentence pooling we'll use span1 and span2 indices
+    except instead of whole-sentence pooling we'll use span indices
     to extract span representations, and use these as input to the classifier.
     This works in the current form, but with some provisos:
         - Only considers the explicit set of spans in inputs; does not consider
@@ -46,7 +48,7 @@ class SpanClassifierModule(nn.Module):
                          groups=1, bias=True)
 
     def __init__(self, task, d_inp: int, task_params, num_spans=2):
-        assert num_spans > 0, "Please insert num_spans to be more than 0"
+        assert num_spans > 0, "Please set num_spans to be more than 0"
         super(SpanClassifierModule, self).__init__()
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
@@ -56,22 +58,16 @@ class SpanClassifierModule(nn.Module):
         self.single_sided = task.single_sided
         self.num_spans = num_spans
         self.proj_dim = task_params['d_hid']
-        # Separate projection for span1, span2.
-        # Convolution allows using local context outside the span, with
-        # cnn_context = 0 behaving as a per-word linear layer.
-        # Use these to reduce dimensionality in case we're enumerating a lot of
-        # spans - we want to do this *before* extracting spans for greatest
-        # efficiency.
         self.projs = []
         for i in range(num_spans):
-            proj = self._make_cnn_layer(d_inp)
+            proj = self._make_cnn_layer(d_inp).cuda() if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
             self.projs.append(proj)
-        self.span_extractors = []
-         # Span extractor, shared for both span1 and span2.
+        self.span_extractors =  []
+         # Span extractor, shared for all spans.
         for i in range(num_spans):
-           span_extractor = self._make_span_extractor()
-           self.span_extractors.append(span_extractor)
-         # Classifier gets concatenated projections of span1, span2
+            span_extractor = self._make_span_extractor().cuda() if torch.cuda.is_available() else  self._make_span_extractor()
+            self.span_extractors.append(span_extractor)
+         # Classifier gets concatenated projections of spans.
         clf_input_dim = self.span_extractors[1].get_output_dim() * num_spans
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
@@ -88,6 +84,10 @@ class SpanClassifierModule(nn.Module):
             'labels' : [batch_size, num_targets] of label indices
             'span1s' : [batch_size, num_targets, 2] of spans
             'span2s' : [batch_size, num_targets, 2] of spans
+              . 
+              . 
+              . 
+            'spanns' : [batch_size, num_targets, 2] of spans
         'labels', 'span1s', and 'span2s' are padded with -1 along second
         (num_targets) dimension.
         Args:
@@ -100,18 +100,21 @@ class SpanClassifierModule(nn.Module):
             out: dict(str -> Tensor)
         """
         out = {}
-
+        cuda_device = -1
+        if torch.cuda.is_available():
+            cuda_device = torch.cuda.current_device()
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
          # Apply projection CNN layer for each span.
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
+        sent_embs_t = move_to_device(sent_embs_t, cuda_device)
         se_projs = []
         for i in range(self.num_spans):
             se_proj = self.projs[i](sent_embs_t).transpose(2, 1).contiguous()
             se_projs.append(se_proj)
 
         # [batch_size, num_targets] bool
-        span_embs = torch.Tensor([])
+        span_embs = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
         span_mask = (batch['span1s'][:, :, 0] != -1)
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
@@ -120,10 +123,8 @@ class SpanClassifierModule(nn.Module):
         _kw = dict(sequence_mask=sent_mask.long(),
                    span_indices_mask=span_mask.long())
         for i in range(self.num_spans):
-            # span1_emb and span2_emb are [batch_size, num_targets,
-            # span_repr_dim]
-            span_emb = self.span_extractors[i](
-                se_projs[0], batch['span' + str(i + 1) + 's'], **_kw)
+            # spans are  [batch_size, num_targets, span_repr_dim]
+            span_emb = self.span_extractors[i](se_projs[0], batch['span'+str(i+1)+'s'], **_kw)
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
          # [batch_size, num_targets, n_classes]
@@ -145,7 +146,7 @@ class SpanClassifierModule(nn.Module):
             out['preds'] = list(self.unbind_predictions(preds, span_mask))
         return out
 
-     def unbind_predictions(self, preds: torch.Tensor,
+    def unbind_predictions(self, preds: torch.Tensor,
                            masks: torch.Tensor) -> Iterable[np.ndarray]:
         """ Unpack preds to varying-length numpy arrays.
         Args:
@@ -160,8 +161,7 @@ class SpanClassifierModule(nn.Module):
         for pred, mask in zip(torch.unbind(preds, dim=0),
                               torch.unbind(masks, dim=0)):
             yield pred[mask].numpy()  # only non-masked predictions
-
-     def get_predictions(self, logits: torch.Tensor):
+    def get_predictions(self, logits: torch.Tensor):
         """Return class probabilities, same shape as logits.
         Args:
             logits: [batch_size, num_targets, n_classes]
@@ -175,7 +175,7 @@ class SpanClassifierModule(nn.Module):
         else:
             raise ValueError("Unsupported loss type" % loss_type)
 
-     def compute_loss(self, logits: torch.Tensor,
+    def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task: Task):
         """ Compute loss & eval metrics.
         Expect logits and labels to be already "selected" for good targets,
@@ -188,22 +188,24 @@ class SpanClassifierModule(nn.Module):
         """
         binary_preds = logits.ge(0).long()  # {0,1}
 
-         # Matthews coefficient and accuracy computed on {0,1} labels.
+        # Matthews coefficient and accuracy computed on {0,1} labels.
         task.mcc_scorer(binary_preds, labels.long())
         task.acc_scorer(binary_preds, labels.long())
 
-         # F1Measure() expects [total_num_targets, n_classes, 2]
+        # F1Measure() expects [total_num_targets, n_classes, 2]
         # to compute binarized F1.
         binary_scores = torch.stack([-1 * logits, logits], dim=2)
         task.f1_scorer(binary_scores, labels)
 
         if self.loss_type == 'sigmoid':
-            targets = (labels == 1).nonzero()[:,1]
-            return F.cross_entropy(torch.sigmoid(logits), targets.long())
-        elif self.loss_type == "softmax":
+            if self.num_spans == 2:
+                return F.binary_cross_entropy(torch.sigmoid(logits),
+                                          labels.float())
+            else:
                 targets = (labels == 1).nonzero()[:,1]
-                return F.cross_entropy(logits, targets.long())
+                return F.nll_loss(torch.sigmoid(logits), targets.long())
+        elif self.loss_type == "softmax":
+            targets = (labels == 1).nonzero()[:,1]
+            return F.cross_entropy(logits, targets.long())
         else:
             raise ValueError("Unsupported loss type ." % self.loss_type)
-
-
