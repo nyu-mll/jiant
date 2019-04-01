@@ -63,7 +63,7 @@ def load_tsv(
                        names=col_indices,
                        header=None,
                        skiprows=skip_rows,
-                       quoting=csv.QUOTE_NONE,
+                       quoting=csv.QUOTE_ALL, # expose this as an option
                        encoding='utf-8')
     if filter_idx:
         rows = rows[rows[filter_idx] == filter_value]
