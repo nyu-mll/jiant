@@ -6,12 +6,12 @@ import torch
 import torch.nn as nn
 
 from ..preprocess import parse_task_list_arg
-from ..tasks.tasks import BERT_INDEXER_NAME
 
 from allennlp.modules import scalar_mix
 
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
+
 
 def _get_seg_ids(ids, sep_id):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
@@ -94,9 +94,9 @@ class BertEmbedderModule(nn.Module):
         Returns:
             h: [batch_size, seq_len, d_emb]
         """
-        assert BERT_INDEXER_NAME in sent
+        assert "bert_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
-        ids = sent[BERT_INDEXER_NAME]
+        ids = sent["bert_wpm_pretokenized"]
         # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
         assert ids.size()[1] <= 512
 
