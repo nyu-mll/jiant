@@ -50,71 +50,10 @@ from typing import Tuple, List, Text
 MosesTokenizer = tokenizers.get_tokenizer("MosesTokenizer")
 assert MosesTokenizer is not None
 
-def space_tokenize_with_eow(sentence):
-    """Add </w> markers to ensure word-boundary alignment."""
-    return [t + "</w>" for t in sentence.split()]
-
-def process_bert_wordpiece_for_alignment(t):
-    """Add <w> markers to ensure word-boundary alignment."""
-    if t.startswith("##"):
-        return re.sub(r"^##", "", t)
-    else:
-        return "<w>" + t
-
-def space_tokenize_with_bow(sentence):
-    """Add <w> markers to ensure word-boundary alignment."""
-    return ["<w>" + t for t in sentence.split()]
-
-@functools.lru_cache(maxsize=8, typed=False)
-def _get_bert_tokenizer(model_name, do_lower_case):
-    log.info(f"Loading BertTokenizer({model_name}, do_lower_case={do_lower_case})")
-    return BertTokenizer.from_pretrained(model_name,
-                                         do_lower_case=do_lower_case)
-
-##
-# Aligner functions. These take a raw string and return a tuple
-# of a TokenAligner instance and a list of tokens.
-def align_moses(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
-    moses_tokens = MosesTokenizer.tokenize(text)
-    cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
-    ta = retokenize.TokenAligner(text, cleaned_moses_tokens)
-    return ta, moses_tokens
-
-def align_openai(text: Text) -> Tuple[retokenize.TokenAligner, List[Text]]:
-    eow_tokens = space_tokenize_with_eow(text)
-    bpe_tokens = openai_utils.tokenize(text)
-    ta = retokenize.TokenAligner(eow_tokens, bpe_tokens)
-    return ta, bpe_tokens
-
-def align_bert(text: Text, model_name: str) -> Tuple[retokenize.TokenAligner, List[Text]]:
-    # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = model_name.endswith('uncased')
-    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
-                                         text)
-
-    bert_tokenizer = _get_bert_tokenizer(model_name, do_lower_case)
-    wpm_tokens = bert_tokenizer.tokenize(text)
-
-    # Align using <w> markers for stability w.r.t. word boundaries.
-    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment,
-                                   wpm_tokens))
-    ta = retokenize.TokenAligner(bow_tokens, modified_wpm_tokens)
-    return ta, wpm_tokens
-
-def get_aligner_fn(tokenizer_name: Text):
-    if tokenizer_name == "MosesTokenizer":
-        return align_moses
-    elif tokenizer_name == "OpenAI.BPE":
-        return align_openai
-    elif tokenizer_name.startswith("bert-"):
-        return functools.partial(align_bert, model_name=tokenizer_name)
-    else:
-        raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
-
 def retokenize_record(record, tokenizer_name):
     """Retokenize an edge probing example. Modifies in-place."""
     text = record['text']
-    aligner_fn = get_aligner_fn(tokenizer_name)
+    aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
     ta, new_tokens = aligner_fn(text)
     record['text'] = " ".join(new_tokens)
     for target in record['targets']:
