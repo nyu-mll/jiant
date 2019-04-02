@@ -211,7 +211,7 @@ def _build_vocab(args, tasks, vocab_path: str):
         add_task_label_vocab(vocab, task)
     if args.wsj_parsing:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
-        add_wsj_vocab(vocab, args.data_dir)      
+        add_wsj_vocab(vocab, args.data_dir)
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, 'openai_bpe')
@@ -578,6 +578,7 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
     vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
 
+
 def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     '''Add WSJ vocabulary for PTB parsing models.'''
     wsj_vocab_path = os.path.join(data_dir, 'WSJ/tokens.txt')
@@ -586,6 +587,7 @@ def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     for line in wsj_tokens.readlines():
         vocab.add_token_to_namespace(line.strip(), namespace)
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
+
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.
