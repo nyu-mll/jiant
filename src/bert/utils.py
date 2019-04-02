@@ -12,7 +12,6 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
-
 def _get_seg_ids(ids, sep_id):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
     Searches for index SEP_ID in the tensor
@@ -110,7 +109,7 @@ class BertEmbedderModule(nn.Module):
         # Index 1 should never be used since the BERT WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
-        ids -= 2
+        ids -= 2 # shift indices to match BERT wordpiece embeddings
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
@@ -128,7 +127,7 @@ class BertEmbedderModule(nn.Module):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            token_types = _get_seg_ids(ids, self._sep_id + 2) if is_pair_task else torch.zeros_like(ids)
+            token_types = _get_seg_ids(ids, self._sep_id) if is_pair_task else torch.zeros_like(ids)
             encoded_layers, _ = self.model(ids, token_type_ids=token_types,
                                            attention_mask=mask,
                                            output_all_encoded_layers=True)
