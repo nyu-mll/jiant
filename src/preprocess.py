@@ -442,6 +442,8 @@ def _get_task(name, args, data_path, scratch_path):
     ''' Build or load a single task. '''
     assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
     task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
+    rel_path = config.get_task_attr(args, name, "rel_path", rel_path)
+
     pkl_path = os.path.join(scratch_path, "tasks",
                             f"{name:s}.{args.tokenizer:s}.pkl")
     # TODO: refactor to always read from disk, even if task is constructed
