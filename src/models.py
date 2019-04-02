@@ -43,7 +43,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer
+    NullPhraseLayer, ONLSTMSentEncoder
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
@@ -104,19 +104,11 @@ def build_model(args, vocab, pretrained_embs, tasks):
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
     if args.sent_enc == "onlstm":
-        phrase_layer = ONLSTMStack(
-            [args.d_word] + [args.d_hid] * (args.n_layers_enc - 1) + [args.d_word],
-            chunk_size=args.chunk_size,
-            dropconnect=args.onlstm_dropconnect,
-            dropouti=args.onlstm_dropouti,
-            dropout=args.dropout,
-            dropouth=args.onlstm_dropouth,
-            embedder=embedder,
-            phrase_layer=None,
-            batch_size=args.batch_size
-        )
+        onlayer = ONLSTMSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
+                                    args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
+                                    args.onlstm_dropouth, embedder, args.batch_size)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       phrase_layer, skip_embs=args.skip_embs,
+                                       onlayer.onlayer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
                                        cove_layer=cove_layer)
