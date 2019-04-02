@@ -440,8 +440,13 @@ def parse_task_list_arg(task_list):
 
 def _get_task(name, args, data_path, scratch_path):
     ''' Build or load a single task. '''
-    assert name in TASKS_REGISTRY, f"Task '{name:s}' not found!"
-    task_cls, rel_path, task_kw = TASKS_REGISTRY[name]
+    core_task_name = config.get_core_task_name(args, name)
+    assert core_task_name in TASKS_REGISTRY, f"Task '{core_task_name:s}' not found!"
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[core_task_name]
+
+    if config.is_subtask(args, name):
+        # Override rel_path for subtasks
+        rel_path = args["subtasks"][name]["rel_path"]
     pkl_path = os.path.join(scratch_path, "tasks",
                             f"{name:s}.{args.tokenizer:s}.pkl")
     # TODO: refactor to always read from disk, even if task is constructed
