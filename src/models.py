@@ -951,17 +951,14 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-    def _lm_only_lr_forward(self, batch, task, predict):
+    def _lm_only_lr_forward(self, batch, task):
         """Only left to right pass for LM model - non-bidirectional models.
         Args:
             batch: indexed input data
             task: (Task obejct)
-            predict: (boolean) predict mode (not supported)
         return:
             out: (dict)
-                - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
-                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
-                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
                 - 'loss': size average CE loss
         """
 
@@ -986,8 +983,6 @@ class MultiTaskModel(nn.Module):
         # cross entropy for loss
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
-        if predict:
-            pass
         return out
 
     def _grounded_forward(self, batch, task, predict):
