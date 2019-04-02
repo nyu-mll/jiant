@@ -101,7 +101,7 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def get_cover_layer_embeddings():
+    def get_cove_layer_embeddings():
         # Slightly wasteful as this repeats the GloVe lookup internally,
         # but this allows CoVe to be used alongside other embedding models
         # if we want to.
@@ -168,12 +168,12 @@ class SentenceEncoder(Model):
         assert (sent_embs is not None) or (task_sent_embs is not None)
 
         if self._cove_layer is not None:
-            task_sent_embs, sent_embs = get_cover_layer_embeddings(sent, sent_embs, task_sent_embs)
+            task_sent_embs, sent_embs = get_cove_layer_embeddings(sent, sent_embs, task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        if self.sent_enc_type != 'direct':
+        if self.sent_enc_type != 'null':
             sent_enc = self._dropout(self._phrase_layer(sent_embs, sent_lstm_mask))
         else:
             sent_enc = sent_embs
