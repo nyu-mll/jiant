@@ -86,7 +86,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        bilm, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_layer)
+                                       cove_layer=cove_layer, 
+                                       sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
@@ -106,7 +107,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             skip_embs=args.skip_embs,
             dropout=args.dropout,
             sep_embs_for_skip=args.sep_embs_for_skip,
-            cove_layer=cove_layer)
+            cove_layer=cove_layer,
+            sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
         log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
@@ -116,18 +118,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs,
                                        cove_layer=cove_layer,
-                                       sep_embs_for_skip=args.sep_embs_for_skip)
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       sent_enc_type=args.sent_enc)
         log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == 'null':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(args.skip_embs, f"skip_embs must be set for "
-                       "'{args.sent_enc}' encoder")
         phrase_layer = NullPhraseLayer(rnn_params['input_size'])
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
                                        sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_layer)
+                                       cove_layer=cove_layer, 
+                                       sent_enc_type=args.sent_enc)
         d_sent = 0  # skip connection added below
         log.info("No shared encoder (just using word embeddings)!")
     else:
@@ -226,6 +228,40 @@ def get_task_whitelist(args):
              str(train_task_names), str(eval_clf_names))
     return train_task_names, eval_clf_names
 
+def parepare_elmo_task_specifics_skip_embeddings(args, tasks):
+    # Determine a deterministic list of classifier names to use for each
+    # task.
+    classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
+    # Reload existing classifier map, if it exists.
+    classifier_save_path = args.run_dir + "/classifier_task_map.json"
+    if os.path.isfile(classifier_save_path):
+        loaded_classifiers = json.load(
+            open(args.run_dir + "/classifier_task_map.json", 'r'))
+    else:
+        # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
+        # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
+        # classiifer task map.
+        assert_for_log(args.do_pretrain or args.allow_missing_task_map,
+                       "Error: {} should already exist.".format(classifier_save_path))
+        if args.allow_missing_task_map:
+            log.warning("Warning: classifier task map not found in model"
+                        " directory. Creating a new one from scratch.")
+        # default is always @pretrain@
+        loaded_classifiers = {"@pretrain@": 0}
+    # Add the new tasks and update map, keeping the internal ELMo index
+    # consistent.
+    max_number_classifiers = max(loaded_classifiers.values())
+    offset = 1
+    for classifier in classifiers:
+        if classifier not in loaded_classifiers:
+            loaded_classifiers[classifier] = max_number_classifiers + offset
+            offset += 1
+    log.info("Classifiers:{}".format(loaded_classifiers))
+    open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+    # Every index in classifiers needs to correspond to a valid ELMo output
+    # representation.
+    num_reps = 1 + max(loaded_classifiers.values())
+    return loaded_classifiers, num_reps
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
@@ -298,48 +334,18 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     else:
         log.info("\tNot using character embeddings!")
 
-    # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
-    # then we need count and reliably map each classifier to an index used by
-    # allennlp internal ELMo.
-    if args.sep_embs_for_skip:
-        # Determine a deterministic list of classifier names to use for each
-        # task.
-        classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
-        # Reload existing classifier map, if it exists.
-        classifier_save_path = args.run_dir + "/classifier_task_map.json"
-        if os.path.isfile(classifier_save_path):
-            loaded_classifiers = json.load(
-                open(args.run_dir + "/classifier_task_map.json", 'r'))
-        else:
-            # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
-            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
-            # classiifer task map.
-            assert_for_log(args.do_pretrain or args.allow_missing_task_map,
-                           "Error: {} should already exist.".format(classifier_save_path))
-            if args.allow_missing_task_map:
-                log.warning("Warning: classifier task map not found in model"
-                            " directory. Creating a new one from scratch.")
-            # default is always @pretrain@
-            loaded_classifiers = {"@pretrain@": 0}
-        # Add the new tasks and update map, keeping the internal ELMo index
-        # consistent.
-        max_number_classifiers = max(loaded_classifiers.values())
-        offset = 1
-        for classifier in classifiers:
-            if classifier not in loaded_classifiers:
-                loaded_classifiers[classifier] = max_number_classifiers + offset
-                offset += 1
-        log.info("Classifiers:{}".format(loaded_classifiers))
-        open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
-        # Every index in classifiers needs to correspond to a valid ELMo output
-        # representation.
-        num_reps = 1 + max(loaded_classifiers.values())
-    else:
-        # All tasks share the same scalars.
-        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
-        loaded_classifiers = {"@pretrain@": 0}
-        num_reps = 1
     if args.elmo:
+        # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
+        # then we need count and reliably map each classifier to an index used by
+        # allennlp internal ELMo.
+        if args.sep_elmo_embs_for_skip:
+           loaded_classifiers, num_reps = prepare_elmo_task_specific_skip_embeddings()
+        else:
+            # All tasks share the same scalars.
+            # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
+            loaded_classifiers = {"@pretrain@": 0}
+            num_reps = 1
+
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
         if args.elmo_chars_only:

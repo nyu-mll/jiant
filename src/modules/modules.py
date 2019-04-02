@@ -71,7 +71,7 @@ class SentenceEncoder(Model):
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
-                 sep_embs_for_skip=False, initializer=InitializerApplicator()):
+                 sep_elmo_embs_for_skip=False, initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
@@ -84,11 +84,12 @@ class SentenceEncoder(Model):
             self._highway_layer = TimeDistributed(
                 Highway(d_emb, num_highway_layers))
 
+        self.sent_enc_type = sent_enc_type
         self._phrase_layer = phrase_layer
         self._cove_layer = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.sep_embs_for_skip = sep_embs_for_skip
+        self.sep_elmo_embs_for_skip = sep_elmo_embs_for_skip
         d_inp_phrase = self._phrase_layer.get_input_dim()
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
@@ -99,6 +100,34 @@ class SentenceEncoder(Model):
         self._mask_lstms = mask_lstms
 
         initializer(self)
+
+    def get_cover_layer_embeddings():
+        # Slightly wasteful as this repeats the GloVe lookup internally,
+        # but this allows CoVe to be used alongside other embedding models
+        # if we want to.
+        sent_lens = torch.ne(
+            sent['words'],
+            self.pad_idx).long().sum(
+            dim=-1).data
+        # CoVe doesn't use <SOS> or <EOS>, so strip these before running.
+        # Note that we need to also drop the last column so that CoVe returns
+        # the right shape. If all inputs have <EOS> then this will be the
+        # only thing clipped.
+        sent_cove_embs_raw = self._cove_layer(sent['words'][:, 1:-1],
+                                              sent_lens - 2)
+        pad_col = torch.zeros(sent_cove_embs_raw.size()[0], 1,
+                              sent_cove_embs_raw.size()[2],
+                              dtype=sent_cove_embs_raw.dtype,
+                              device=sent_cove_embs_raw.device)
+        sent_cove_embs = torch.cat(
+            [pad_col, sent_cove_embs_raw, pad_col], dim=1)
+        if sent_embs is not None:
+            sent_embs = self._dropout(torch.cat([sent_embs, sent_cove_embs], dim=-1))
+        if task_sent_embs is not None:
+            task_sent_embs = torch.cat(
+                [task_sent_embs, sent_cove_embs], dim=-1)
+            task_sent_embs = self._dropout(task_sent_embs)
+        return task_sent_embs, sent_embs
 
     def forward(self, sent, task, reset=True):
         # pylint: disable=arguments-differ
@@ -123,78 +152,44 @@ class SentenceEncoder(Model):
 
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
-        if not isinstance(self._phrase_layer, NullPhraseLayer):
-            sent_embs = self._highway_layer(self._text_field_embedder(sent))
-        else:
-            sent_embs = None
+        # HERE, make the sent_enc = None. 
+        sent_embs = self._highway_layer(self._text_field_embedder(sent))
+        sent_embs = self._dropout(sent_embs)
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
-        if self.sep_embs_for_skip:
+        if self.sep_elmo_embs_for_skip:
             task_sent_embs = self._highway_layer(
                 self._text_field_embedder(
                     sent, task._classifier_name))
-        else:
-            task_sent_embs = None
+            task_sent_embs = self._dropout(task_sent_embs)
 
         # Make sure we're embedding /something/
         assert (sent_embs is not None) or (task_sent_embs is not None)
 
         if self._cove_layer is not None:
-            # Slightly wasteful as this repeats the GloVe lookup internally,
-            # but this allows CoVe to be used alongside other embedding models
-            # if we want to.
-            sent_lens = torch.ne(
-                sent['words'],
-                self.pad_idx).long().sum(
-                dim=-1).data
-            # CoVe doesn't use <SOS> or <EOS>, so strip these before running.
-            # Note that we need to also drop the last column so that CoVe returns
-            # the right shape. If all inputs have <EOS> then this will be the
-            # only thing clipped.
-            sent_cove_embs_raw = self._cove_layer(sent['words'][:, 1:-1],
-                                                  sent_lens - 2)
-            pad_col = torch.zeros(sent_cove_embs_raw.size()[0], 1,
-                                  sent_cove_embs_raw.size()[2],
-                                  dtype=sent_cove_embs_raw.dtype,
-                                  device=sent_cove_embs_raw.device)
-            sent_cove_embs = torch.cat(
-                [pad_col, sent_cove_embs_raw, pad_col], dim=1)
-            if sent_embs is not None:
-                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            if task_sent_embs is not None:
-                task_sent_embs = torch.cat(
-                    [task_sent_embs, sent_cove_embs], dim=-1)
-
-        if sent_embs is not None:
-            sent_embs = self._dropout(sent_embs)
-        if task_sent_embs is not None:
-            task_sent_embs = self._dropout(task_sent_embs)
+            task_sent_embs, sent_embs = get_cover_layer_embeddings(sent, sent_embs, task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        if sent_embs is not None:
-            sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+        if self.sent_enc_type != 'direct':
+            sent_enc = self._dropout(self._phrase_layer(sent_embs, sent_lstm_mask))
         else:
-            sent_enc = None
+            sent_enc = sent_embs
 
         # ELMoLSTM returns all layers, we just want to use the top layer
         sent_enc = sent_enc[-1] if isinstance(
             self._phrase_layer, BiLMEncoder) else sent_enc
-        sent_enc = self._dropout(
-            sent_enc) if sent_enc is not None else sent_enc
+
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence
             # embs
-            skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            skip_vec = task_sent_embs if self.sep_elmo_embs_for_skip else sent_embs
             utils.assert_for_log(skip_vec is not None,
                                  "skip_vec is none - perhaps embeddings are not configured "
                                  "properly?")
-            if isinstance(self._phrase_layer, NullPhraseLayer):
-                sent_enc = skip_vec
-            else:
-                sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
+            sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0)
