@@ -228,7 +228,7 @@ def get_task_whitelist(args):
              str(train_task_names), str(eval_clf_names))
     return train_task_names, eval_clf_names
 
-def parepare_elmo_task_specifics_skip_embeddings(args, tasks):
+def prepare_elmo_task_specific_skip_embeddings(args, tasks):
     # Determine a deterministic list of classifier names to use for each
     # task.
     classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
@@ -339,7 +339,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         # then we need count and reliably map each classifier to an index used by
         # allennlp internal ELMo.
         if args.sep_elmo_embs_for_skip:
-           loaded_classifiers, num_reps = prepare_elmo_task_specific_skip_embeddings()
+           loaded_classifiers, num_reps = prepare_elmo_task_specific_skip_embeddings(args, tasks)
         else:
             # All tasks share the same scalars.
             # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
