@@ -108,6 +108,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
             for i in range(0, len(tokens), seq_len):
                 yield tokens[i:i+seq_len]
 
+
 @register_task('egw_lm', rel_path='egw_corpus/')
 class EnglishgigawordLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on the English Gigaword dataset
