@@ -1,4 +1,4 @@
-import torch.nn.functional as F
+import torch.nn.functional as f
 import torch.nn as nn
 import torch
 from ...utils.locked_dropout import LockedDropout
@@ -59,9 +59,9 @@ class LinearDropConnect(nn.Linear):
         if self.training:
             if sample_mask:
                 self.sample_mask()
-            return F.linear(input, self._weight, self.bias)
+            return f.linear(input, self._weight, self.bias)
         else:
-            return F.linear(input, self.weight * (1 - self.dropout),
+            return f.linear(input, self.weight * (1 - self.dropout),
                             self.bias)
 
 
@@ -69,7 +69,7 @@ def cumsoftmax(x, dim=-1):
     """
     Cummulative softmax
     """
-    return torch.cumsum(F.softmax(x, dim=dim), dim=dim)
+    return torch.cumsum(f.softmax(x, dim=dim), dim=dim)
 
 
 class ONLSTMCell(nn.Module):
@@ -101,15 +101,15 @@ class ONLSTMCell(nn.Module):
         distance_cin = cingate.sum(dim=-1) / self.n_chunk
         cingate = cingate[:, :, None]
         cforgetgate = cforgetgate[:, :, None]
-        ingate = F.sigmoid(ingate)
-        forgetgate = F.sigmoid(forgetgate)
-        cell = F.tanh(cell)
-        outgate = F.sigmoid(outgate)
+        ingate = f.sigmoid(ingate)
+        forgetgate = f.sigmoid(forgetgate)
+        cell = f.tanh(cell)
+        outgate = f.sigmoid(outgate)
         overlap = cforgetgate * cingate
         forgetgate = forgetgate * overlap + (cforgetgate - overlap)
         ingate = ingate * overlap + (cingate - overlap)
         cy = forgetgate * cx + ingate * cell
-        hy = outgate * F.tanh(cy)
+        hy = outgate * f.tanh(cy)
         return hy.view(-1, self.hidden_size), cy, (distance_cforget, distance_cin)
 
     def init_hidden(self, bsz):

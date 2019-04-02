@@ -621,7 +621,7 @@ class MultiTaskModel(nn.Module):
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
-                out = self._lm_only_lr_forward(batch, task, predict)
+                out = self._lm_only_lr_forward(batch, task)
             else:
                 out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
