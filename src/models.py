@@ -427,6 +427,13 @@ def build_task_specific_modules(
     ''' Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
      '''
+    assert not (args.skip_embs = 1 and sep_elmo_embs_for_skip = 0 and args.sent_enc = "null"), \
+        "Currently, skip_embs = 1, sep_elmo_embs_for_skip=1, and sent_enc = null, which means " \
+        "you're feeding in the contextual embeddings twice into your model. Please change settings"
+
+    if args.sep_elmo_embs_for_skip:
+        assert args.elmo = 1, "task specific embeddings are only supported for ELMo currently."
+    
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task=task, d_inp=d_sent,
