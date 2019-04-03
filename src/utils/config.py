@@ -98,8 +98,10 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
     if isinstance(task_names, str):
         task_names = [task_names]
     for task_name in task_names:
-        lookup_task_name = get_core_task_name(args, task_name)
+        if is_subtask(args, task_name) and attr_name in args["subtasks"][task_name]:
+            return args["subtasks"][task_name][attr_name]
 
+        lookup_task_name = get_core_task_name(args, task_name)
         if lookup_task_name in args and (attr_name in args[lookup_task_name]):
             return args[lookup_task_name][attr_name]
         compound_key = "%s_%s" % (lookup_task_name, attr_name)
