@@ -29,7 +29,6 @@ def _get_seg_ids(ids, sep_id):
     > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
     """
     sep_idxs = (ids == sep_id).nonzero()[:, 1]
-    assert sep_idxs.size(1) == 2
     seg_ids = torch.ones_like(ids)
     for row, idx in zip(seg_ids, sep_idxs[::2]):
         row[:idx + 1].fill_(0)

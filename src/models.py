@@ -555,6 +555,8 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
+    module = SingleClassifier(pooler, classifier)
+    return module
 
 
 def build_pair_sentence_module(task, d_inp, model, params):
