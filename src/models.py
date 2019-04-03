@@ -857,8 +857,6 @@ class MultiTaskModel(nn.Module):
                 logits = logits.squeeze(-1) if len(logits.size()
                                                    ) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
-                logits_np = logits.data.cpu().numpy()
-                labels_np = labels.data.cpu().numpy()
                 task.update_metrics(logits.data.cpu().numpy(), labels.data.cpu().numpy(), tagmask=tagmask)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
