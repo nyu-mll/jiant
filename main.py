@@ -23,7 +23,7 @@ from src.utils import config
 from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
-from src.trainer import build_trainer, build_trainer_params
+from src.trainer import build_trainer
 from src import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
@@ -248,10 +248,9 @@ def main(cl_arguments):
     if args.do_pretrain:
         # Train on train tasks #
         log.info("Training...")
-        params = build_trainer_params(args, task_names=[])
         stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
-        trainer, _, opt_params, schd_params = build_trainer(params, model,
+        trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
                                                             should_decrease)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
@@ -332,8 +331,7 @@ def main(cl_arguments):
 
 
             # Look for <task_name>_<param_name>, then eval_<param_name>
-            params = build_trainer_params(args, task_names=[task.name, 'eval'])
-            trainer, _, opt_params, schd_params = build_trainer(params, model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'eval'],  model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,

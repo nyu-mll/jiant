@@ -555,6 +555,8 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
+    module = SingleClassifier(pooler, classifier)
+    return module
 
 
 def build_pair_sentence_module(task, d_inp, model, params):
@@ -839,7 +841,7 @@ class MultiTaskModel(nn.Module):
             logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
-
+        tagmask = batch.get('tagmask', None)
         if 'labels' in batch:
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
@@ -855,12 +857,10 @@ class MultiTaskModel(nn.Module):
                 logits = logits.squeeze(-1) if len(logits.size()
                                                    ) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
-                logits = logits.data.cpu().numpy()
-                labels = labels.data.cpu().numpy()
+                task.update_metrics(logits.data.cpu().numpy(), labels.data.cpu().numpy(), tagmask=tagmask)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
-            tagmask = batch.get('tagmask', None)
-            task.update_metrics(logits, labels, tagmask=tagmask)
+                task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):

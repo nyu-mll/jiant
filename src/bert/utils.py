@@ -12,6 +12,28 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
+def _get_seg_ids(ids, sep_id):
+    """ Dynamically build the segment IDs for a concatenated pair of sentences
+    Searches for index SEP_ID in the tensor
+
+    args:
+        ids (torch.LongTensor): batch of token IDs
+
+    returns:
+        seg_ids (torch.LongTensor): batch of segment IDs
+
+    example:
+    > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"]
+    > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
+    > seg_ids = _get_seg_ids(token_tensor, sep_id=102) # BERT [SEP] ID
+    > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    """
+    sep_idxs = (ids == sep_id).nonzero()[:, 1]
+    seg_ids = torch.ones_like(ids)
+    for row, idx in zip(seg_ids, sep_idxs[::2]):
+        row[:idx + 1].fill_(0)
+    return seg_ids
+
 
 def _get_seg_ids(ids, sep_id):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
@@ -110,7 +132,7 @@ class BertEmbedderModule(nn.Module):
         # Index 1 should never be used since the BERT WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
-        ids -= 2
+        ids -= 2 # shift indices to match BERT wordpiece embeddings
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
@@ -128,7 +150,7 @@ class BertEmbedderModule(nn.Module):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            token_types = _get_seg_ids(ids, self._sep_id + 2) if is_pair_task else torch.zeros_like(ids)
+            token_types = _get_seg_ids(ids, self._sep_id) if is_pair_task else torch.zeros_like(ids)
             encoded_layers, _ = self.model(ids, token_type_ids=token_types,
                                            attention_mask=mask,
                                            output_all_encoded_layers=True)

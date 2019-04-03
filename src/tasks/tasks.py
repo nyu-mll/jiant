@@ -702,6 +702,7 @@ class STSBTask(PairRegressionTask):
         #self.scorer2 = Average()
         self.scorer1 = Correlation("pearson")
         self.scorer2 = Correlation("spearman")
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_corr" % self.name
         self.val_metric_decreases = False
 
