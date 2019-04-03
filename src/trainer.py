@@ -28,8 +28,7 @@ from .utils import config
 
 
 def build_trainer_params(args, task_names):
-    ''' In an act of not great code design, we wrote this helper function which
-    extracts trainer parameters from args. In particular, we want to search args
+    ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(
         args, task_names, attr_name)
@@ -53,7 +52,13 @@ def build_trainer_params(args, task_names):
     return Params(params)
 
 
-def build_trainer(params, model, run_dir, metric_should_decrease=True):
+def build_trainer(
+    args,
+    task_names,
+    model,
+    run_dir,
+    metric_should_decrease=True,
+    train_type="SamplingMultiTaskTrainer"):
     '''Build a trainer from params.
 
     Parameters
@@ -67,6 +72,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
+    params = build_trainer_params(args, task_names)
 
     opt_params = {'type': params['optimizer'], 'lr': params['lr']}
     if params['optimizer'] == 'adam':
@@ -96,22 +102,21 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                               'verbose': True})
         log.info('\tUsing ReduceLROnPlateau scheduler!')
 
-    train_params = Params(
-        {
-            'cuda_device': params['cuda'],
-            'patience': params['patience'],
-            'grad_norm': params['max_grad_norm'],
-            'val_interval': params['val_interval'],
-            'max_vals': params['max_vals'],
-            'lr_decay': .99,
-            'min_lr': params['min_lr'],
-            'keep_all_checkpoints': params['keep_all_checkpoints'],
-            'val_data_limit': params['val_data_limit'],
-            'max_epochs': params['max_epochs'],
-            'dec_val_scale': params['dec_val_scale'],
-            'training_data_fraction': params['training_data_fraction']})
-    trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
-                                                   copy.deepcopy(train_params))
+    train_params = Params({'cuda_device': params['cuda'],
+                           'patience': params['patience'],
+                           'grad_norm': params['max_grad_norm'],
+                           'val_interval': params['val_interval'],
+                           'max_vals': params['max_vals'],
+                           'lr_decay': .99, 'min_lr': params['min_lr'],
+                           'keep_all_checkpoints': params['keep_all_checkpoints'],
+                           'val_data_limit': params['val_data_limit'],
+                           'max_epochs': params['max_epochs'],
+                           'dec_val_scale': params['dec_val_scale'],
+                           'training_data_fraction': params['training_data_fraction']})
+    assert train_type == "SamplingMultiTaskTrainer", "We currently only support SamplingMultiTaskTrainer"
+    if train_type == "SamplingMultiTaskTrainer":
+        trainer = SamplingMultiTaskTrainer.from_params(model, run_dir,
+                                                       copy.deepcopy(train_params))
     return trainer, train_params, opt_params, schd_params
 
 
@@ -317,6 +322,91 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
+    def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_example):
+        """
+        Parameters
+        ----------------
+        scaling_method : str, scaling method
+        num_tasks: int
+        task_names: list of str
+        task_n_train_examples: list of ints of number of examples per task
+        Returns
+        ----------------
+        scaling weights: list of ints, to scale loss
+        """
+        if scaling_method == 'uniform':
+            scaling_weights = [1.0] * num_tasks
+        elif scaling_method == 'max_proportional':
+            scaling_weights = task_n_train_examples.astype(float)
+        elif scaling_method == 'max_proportional_log':
+            scaling_weights = np.log(task_n_train_examples)
+        elif 'max_power_' in scaling_method:
+            scaling_power = float(scaling_method.strip('max_power_'))
+            scaling_weights = task_n_train_examples ** scaling_power
+        elif scaling_method == 'max_inverse_log':
+            scaling_weights = 1 / np.log(task_n_train_examples)
+        elif scaling_method == 'max_inverse':
+            scaling_weights = 1 / task_n_train_examples
+        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
+        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
+        elif 'max_epoch_' in scaling_method:
+            epochs = scaling_method.strip('max_epoch_').split('_')
+            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            scaling_weights = np.array(list(map(int, epochs)))
+
+        # normalized by max weight
+        if 'max' in scaling_method:
+            scaling_weights = scaling_weights / np.max(scaling_weights)
+
+        scaling_weights = dict(zip(task_names, scaling_weights))
+        log.info(
+            "Using loss scaling method: %s, with weights %s",
+            scaling_method,
+            str(scaling_weights))
+        return scaling_weights
+
+    def get_sampling_weights(self, weighting_method, num_tasks, task_n_train_examples):
+        """
+        Parameters
+        ----------------
+        weighting_method: str, weighting method
+        num_tasks: int
+        task_n_train_examples: list of ints of number of examples per task
+        Returns
+        ----------------
+        sampling weights: list of ints, to sample tasks to train on
+        """
+        if weighting_method == 'uniform':
+            sample_weights = [1.0] * num_tasks
+            log.info("Sampling tasks uniformly.")
+        elif weighting_method == 'proportional':
+            sample_weights = task_n_train_examples.astype(float)
+            log.info("Sampling tasks proportional to number of training examples.")
+        elif weighting_method == 'proportional_log_batch':
+            sample_weights = np.log(task_n_train_batches)
+            log.info("Sampling tasks proportional to log number of training batches.")
+        elif weighting_method == 'proportional_log_example':
+            sample_weights = np.log(task_n_train_examples)
+            log.info("Sampling tasks proportional to log number of training examples.")
+        elif weighting_method == 'inverse':
+            sample_weights = 1 / task_n_train_examples
+            log.info("Sampling tasks inverse to number of training examples.")
+        elif weighting_method == 'inverse_log_example':
+            sample_weights = 1 / np.log(task_n_train_examples)
+            log.info("Sampling tasks inverse to log number of training examples.")
+        elif weighting_method == 'inverse_log_batch':
+            sample_weights = 1 / np.log(task_n_train_batches)
+            log.info("Sampling tasks inverse to log number of training batches.")
+        elif 'power_' in weighting_method:
+            weighting_power = float(weighting_method.strip('power_'))
+            sample_weights = task_n_train_examples ** weighting_power
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of '))
+        elif 'softmax_' in weighting_method:  # exp(x/temp)
+            weighting_temp = float(weighting_method.strip('softmax_'))
+            sample_weights = np.exp(task_n_train_examples / weighting_temp)
+            log.info("Sampling tasks with %s.", weighting_method.replace('_', ' of temperature '))
+        return sample_weights
+
     def train(self, tasks, stop_metric,
               batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
@@ -328,21 +418,21 @@ class SamplingMultiTaskTrainer:
 
         Parameters
         ----------
-        tasks: A list of task objects to train on.
-        stop_metric: The metric to use for early stopping.
-        batch_size: The batch size to use for the tasks
-        n_batches_per_pass: How many training steps per task per pass.
-        weighting_method: How to sample which task to use.
-        scaling_method: How to scale gradients.
-        train_params: Trainer config object.
-        optimizer_params: Optimizer config object.
-        scheduler_params: Scheduler config object.
-        shared_optimizer: Use a single optimizer object for all tasks in MTL. Recommended.
-        load_model: Whether to restore and continue training if a checkpoint is found.
-        phase: Usually 'main' or 'eval'.
+        tasks: a list of task objects to train on
+        stop_metric: str, metric to use for early stopping
+        batch_size: int, batch size to use for the tasks
+        n_batches_per_pass: int, how many training steps per task per pass
+        weighting_method: str, how to sample which task to use
+        scaling_method:  str, how to scale gradients
+        train_params: trainer config object
+        optimizer_params: optimizer config object
+        scheduler_params: scheduler config object
+        shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
+        load_model: bool, whether to restore and continue training if a checkpoint is found
+        phase: str, usually 'main' or 'eval'
 
         Returns
-        -------
+        ----------
         Validation results
         """
         validation_interval = self._val_interval
@@ -401,46 +491,7 @@ class SamplingMultiTaskTrainer:
             [task_infos[task.name]['n_tr_batches'] for task in tasks])
         log.info("Training examples per task: " +
                  str(dict(zip(task_names, task_n_train_examples))))
-
-        if weighting_method == 'uniform':
-            sample_weights = [1.0] * len(tasks)
-            log.info("Sampling tasks uniformly.")
-        elif weighting_method == 'proportional':
-            sample_weights = task_n_train_examples.astype(float)
-            log.info("Sampling tasks proportional to number of training examples.")
-        elif weighting_method == 'proportional_log_batch':
-            sample_weights = np.log(task_n_train_batches)
-            log.info(
-                "Sampling tasks proportional to log number of training batches.")
-        elif weighting_method == 'proportional_log_example':
-            sample_weights = np.log(task_n_train_examples)
-            log.info(
-                "Sampling tasks proportional to log number of training examples.")
-        elif weighting_method == 'inverse':
-            sample_weights = 1 / task_n_train_examples
-            log.info("Sampling tasks inverse to number of training examples.")
-        elif weighting_method == 'inverse_log_example':
-            sample_weights = 1 / np.log(task_n_train_examples)
-            log.info("Sampling tasks inverse to log number of training examples.")
-        elif weighting_method == 'inverse_log_batch':
-            sample_weights = 1 / np.log(task_n_train_batches)
-            log.info("Sampling tasks inverse to log number of training batches.")
-        elif 'power_' in weighting_method:
-            weighting_power = float(weighting_method.strip('power_'))
-            sample_weights = task_n_train_examples ** weighting_power
-            log.info(
-                "Sampling tasks with %s.",
-                weighting_method.replace(
-                    '_',
-                    ' of '))
-        elif 'softmax_' in weighting_method:  # exp(x/temp)
-            weighting_temp = float(weighting_method.strip('softmax_'))
-            sample_weights = np.exp(task_n_train_examples / weighting_temp)
-            log.info(
-                "Sampling tasks with %s.",
-                weighting_method.replace(
-                    '_',
-                    ' of temperature '))
+        sample_weights = self.get_sampling_weights(weighting_method, len(tasks), task_n_train_examples)
 
         normalized_sample_weights = np.array(
             sample_weights) / sum(sample_weights)
@@ -450,7 +501,7 @@ class SamplingMultiTaskTrainer:
             np.array_str(
                 normalized_sample_weights,
                 precision=4))
-
+        
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(
@@ -458,37 +509,7 @@ class SamplingMultiTaskTrainer:
             weights=sample_weights,
             k=validation_interval)
 
-        if scaling_method == 'uniform':
-            scaling_weights = [1.0] * len(tasks)
-        elif scaling_method == 'max_proportional':
-            scaling_weights = task_n_train_examples.astype(float)
-        elif scaling_method == 'max_proportional_log':
-            scaling_weights = np.log(task_n_train_examples)
-        elif 'max_power_' in scaling_method:
-            scaling_power = float(scaling_method.strip('max_power_'))
-            scaling_weights = task_n_train_examples ** scaling_power
-        elif scaling_method == 'max_inverse_log':
-            scaling_weights = 1 / np.log(task_n_train_examples)
-        elif scaling_method == 'max_inverse':
-            scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
-        # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
-        elif 'max_epoch_' in scaling_method:
-            epochs = scaling_method.strip('max_epoch_').split('_')
-            assert len(epochs) == len(
-                tasks), "Loss Scaling Error: epoch number not match."
-            scaling_weights = np.array(list(map(int, epochs)))
-
-        # normalized by max weight
-        if 'max' in scaling_method:
-            scaling_weights = scaling_weights / np.max(scaling_weights)
-
-        scaling_weights = dict(zip(task_names, scaling_weights))
-        log.info(
-            "Using loss scaling method: %s, with weights %s",
-            scaling_method,
-            str(scaling_weights))
-
+        scaling_weights = self.get_scaling_weights(scaling_method, len(tasks), task_names, task_n_train_examples)
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -511,7 +532,7 @@ class SamplingMultiTaskTrainer:
                 total_batches_trained += 1
                 optimizer.zero_grad()
                 output_dict = self._forward(
-                    batch, task=task, for_training=True)
+                    batch, task=task)
                 assert_for_log(
                     "loss" in output_dict,
                     "Model must return a dict containing a 'loss' key")
@@ -580,6 +601,7 @@ class SamplingMultiTaskTrainer:
                         task_metrics = task.get_metrics(reset=True)
                         for name, value in task_metrics.items():
                             all_tr_metrics["%s_%s" % (task.name, name)] = value
+                        # updating loss from trianing.
                         all_tr_metrics["%s_loss" % task.name] = \
                             float(task_info['loss'] / n_batches_since_val)
                     else:
@@ -671,8 +693,133 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
+    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, should_save, new_best_macro):
+        """
+        This function updates metric history with the best validation score so far.
+        Parameters
+        ---------
+        epoch: int
+        all_val_metrics: dict with current epoch's validation performance
+        metric: str, name of metric
+        task_name: str, name of task
+        metric_infos: dict storing information about the various metrics
+        metric_decreases: bool, marker to show if we should increase or
+        decrease validation metric.
+        should_save: bool, for checkpointing
+        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded 
+
+        Returns
+        ________
+        metric_infos: dict storing information about the various metrics
+        this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
+        should_save: bool
+        new_best_macro: bool 
+        """
+        this_epoch_metric = all_val_metrics[metric]
+        metric_history = metric_infos[metric]['hist']
+        metric_history.append(this_epoch_metric)
+        is_best_so_far, out_of_patience = \
+            self._check_history(metric_history, this_epoch_metric, metric_decreases)
+        if is_best_so_far:
+            log.info("Best model found for %s.", task_name)
+            metric_infos[metric]['best'] = (epoch, all_val_metrics)
+            should_save = True
+            if task_name == 'macro':
+                new_best_macro = True
+        if out_of_patience:
+            metric_infos[metric]['stopped'] = True
+            log.info("Out of patience. Stopped tracking %s", task_name)
+        return metric_infos, this_epoch_metric, should_save, new_best_macro
+
+    def _calculate_validation_performance(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+        """
+        This function builds validation generator, evaluates on each task and produces validation metrics.
+        Parameters
+        ----------
+        task: current task to get validation performance of
+        task_infos: Instance of information about the task (see _setup_training for definition)
+        tasks: list of task objects to train on
+        batch_size: int, batch size to use for the tasks
+        all_val_metrics: dictionary. storing the validation performance
+        n_examples_overall = int, current number of examples the model is validated on
+
+        Returns
+        -------
+        n_examples_overall: int, current number of examples
+        task_infos: updated Instance with reset training progress
+        all_val_metrics: dictinary updated with micro and macro average validation performance
+        """
+        n_examples, batch_num = 0, 0
+        task_info = task_infos[task.name]
+        # to speed up training, we evaluate on a subset of validation data
+        if self._val_data_limit >= 0:
+            max_data_points = min(task.n_val_examples, self._val_data_limit)
+        else:
+            max_data_points = task.n_val_examples
+        val_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
+            task.val_data, num_epochs=1, shuffle=False)
+        val_generator = move_to_device(val_generator, self._cuda_device)
+        n_val_batches = math.ceil(max_data_points / batch_size)
+        all_val_metrics["%s_loss" % task.name] = 0.0
+
+        for batch in val_generator:
+            batch_num += 1
+            out = self._forward(batch, task=task)
+            loss = out["loss"]
+            all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+            n_examples += out["n_exs"]
+
+            # log
+            if time.time() - task_info['last_log'] > self._log_interval:
+                task_metrics = task.get_metrics()
+                task_metrics["%s_loss" % task.name] = \
+                    all_val_metrics["%s_loss" % task.name] / batch_num
+                description = self._description_from_metrics(task_metrics)
+                log.info("Batch %d/%d: %s , for evaluation data", batch_num, n_val_batches, description)
+                task_info['last_log'] = time.time()
+        assert batch_num == n_val_batches
+
+        # Get task validation metrics and store in all_val_metrics
+        task_metrics = task.get_metrics(reset=True)
+        for name, value in task_metrics.items():
+            all_val_metrics["%s_%s" % (task.name, name)] = value
+        all_val_metrics["%s_loss" % task.name] /= batch_num  # n_val_batches
+        if task.val_metric_decreases and len(tasks) > 1:
+            all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] /
+                                             self._dec_val_scale) * n_examples
+            all_val_metrics["macro_avg"] += (1 -
+                                         all_val_metrics[task.val_metric] /
+                                             self._dec_val_scale)
+        else:
+            # triggers for single-task cases and during MTL when task val metric increases
+            all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
+            all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
+        n_examples_overall += n_examples
+
+        # Reset training progress
+        task_info['n_batches_since_val'] = 0
+        task_info['loss'] = 0
+        all_val_metrics['micro_avg'] /= n_examples_overall
+        all_val_metrics['macro_avg'] /= len(tasks)
+        return n_examples_overall, task_infos, all_val_metrics
+
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
-        ''' Validate on all tasks and return the results and whether to save this epoch or not '''
+        '''
+        Validate on all tasks and return the results and whether to save this epoch or not.
+
+        Parameters
+        ----------
+        epoch: int
+        tasks: list of task objects to train on
+        batch_size: int, the batch size to use for the tasks.periodic_save
+        periodic_save: bool, alue of whether or not to save model and progress periodically
+
+        Returns
+        __________
+        all_val_metrics: dictinary updated with micro and macro average validation performance
+        should_save: bool, determines whether to save a checkpoint
+        new_best_macro: bool, whether or not the macro performance increased
+        '''
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
         self._model.eval()
@@ -683,75 +830,20 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples, batch_num = 0, 0
-            task_info = task_infos[task.name]
-
-            # to speed up training, we evaluate on a subset of validation data
-            if self._val_data_limit >= 0:
-                max_data_points = min(
-                    task.n_val_examples, self._val_data_limit)
-            else:
-                max_data_points = task.n_val_examples
-            val_generator = BasicIterator(
-                batch_size, instances_per_epoch=max_data_points)(
-                task.val_data, num_epochs=1, shuffle=False)
-            val_generator = move_to_device(val_generator, self._cuda_device)
-            n_val_batches = math.ceil(max_data_points / batch_size)
-            all_val_metrics["%s_loss" % task.name] = 0.0
-
-            for batch in val_generator:
-                batch_num += 1
-                out = self._forward(batch, task=task, for_training=False)
-                loss = out["loss"]
-                all_val_metrics["%s_loss" %
-                                task.name] += loss.data.cpu().numpy()
-                n_examples += out["n_exs"]
-
-                # log
-                if time.time() - task_info['last_log'] > self._log_interval:
-                    task_metrics = task.get_metrics()
-                    task_metrics["%s_loss" % task.name] = \
-                        all_val_metrics["%s_loss" % task.name] / batch_num
-                    description = self._description_from_metrics(task_metrics)
-                    log.info(
-                        "Batch %d/%d: %s",
-                        batch_num,
-                        n_val_batches,
-                        description)
-                    task_info['last_log'] = time.time()
-            assert batch_num == n_val_batches
-
-            # Get task validation metrics and store in all_val_metrics
-            task_metrics = task.get_metrics(reset=True)
-            for name, value in task_metrics.items():
-                all_val_metrics["%s_%s" % (task.name, name)] = value
-            all_val_metrics["%s_loss" %
-                            task.name] /= batch_num  # n_val_batches
-            if task.val_metric_decreases and len(tasks) > 1:
-                all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] /
-                                                 self._dec_val_scale) * n_examples
-                all_val_metrics["macro_avg"] += (1 -
-                                                 all_val_metrics[task.val_metric] /
-                                                 self._dec_val_scale)
-            else:
-                # triggers for single-task cases and during MTL when task val
-                # metric increases
-                all_val_metrics["micro_avg"] += all_val_metrics[task.val_metric] * n_examples
-                all_val_metrics["macro_avg"] += all_val_metrics[task.val_metric]
-            n_examples_overall += n_examples
-
-            # Reset training progress
-            task_info['n_batches_since_val'] = 0
-            task_info['loss'] = 0
-
-        all_val_metrics['micro_avg'] /= n_examples_overall
-        all_val_metrics['macro_avg'] /= len(tasks)
+            n_examples_overall, task_infos, all_val_metrics = \
+                self._calculate_validation_performance(task,
+                                                 task_infos,
+                                                 tasks,
+                                                 batch_size,
+                                                 all_val_metrics,
+                                                 n_examples_overall)
 
         # Track per task patience
         should_save = periodic_save  # whether to save this epoch or not.
         # Currently we save every validation in the main training runs.
         new_best_macro = False  # whether this epoch is a new best
 
+        # update metric infos
         for task in tasks + ['micro', 'macro']:
             if task in ['micro', 'macro']:
                 metric = "%s_avg" % task
@@ -764,22 +856,10 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            this_epoch_metric = all_val_metrics[metric]
-            metric_history = metric_infos[metric]['hist']
-            metric_history.append(this_epoch_metric)
-            is_best_so_far, out_of_patience = self._check_history(
-                metric_history, this_epoch_metric, metric_decreases)
-            if is_best_so_far:
-                log.info("Best model found for %s.", task_name)
-                metric_infos[metric]['best'] = (epoch, all_val_metrics)
-                should_save = True
-                if task_name == 'macro':
-                    new_best_macro = True
-            if out_of_patience:
-                if periodic_save:
-                    should_save = True
-                metric_infos[metric]['stopped'] = True
-                log.info("Out of patience. Stopped tracking %s", task_name)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, \
+                                                                                                    all_val_metrics, 
+                                                                                                    metric, task_name, metric_infos, \
+                                                                                                    metric_decreases, should_save, new_best_macro)
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates
@@ -860,8 +940,7 @@ class SamplingMultiTaskTrainer:
 
         return should_stop
 
-    def _forward(self, batch, for_training, task=None):
-        ''' At one point this does something, now it doesn't really do anything '''
+    def _forward(self, batch, task=None):
         tensor_batch = move_to_device(batch, self._cuda_device)
         model_out = self._model.forward(task, tensor_batch)
         return model_out
