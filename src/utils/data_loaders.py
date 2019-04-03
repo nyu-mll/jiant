@@ -10,7 +10,7 @@ import csv
 import numpy as np
 from allennlp.data import vocabulary
 
-BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
+BERT_CLS_TOK, BERT_SEP_TOK, BERT_MASK_TOK = "[CLS]", "[SEP]", "[MASK]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 

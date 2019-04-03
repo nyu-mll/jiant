@@ -28,12 +28,12 @@ from allennlp.data import vocabulary
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
-    SpanField, ListField, MetadataField
+    SpanField, ListField, MetadataField, IndexField
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list, BERT_MASK_TOK
 from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
@@ -474,10 +474,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             d["input1"] = sentence_to_text_field(input1, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
-            d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
+            d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
 
@@ -513,6 +513,73 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 self.tag_list,
                 reset))
         return collected_metrics
+
+
+class CoLAMinimalPairBaseTask(Task):
+    ''' Task class for minimal pair acceptability judgement '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(CoLAMinimalPairBaseTask, self).__init__(name, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+    
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
+                           s1_idx=1, s2_idx=2, label_idx=3)
+        self.val_data_text = self.test_data_text = self.train_data_text
+        return
+
+    def process_split(self, split, indexers):
+        def _make_instance(input1, input2, labels):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["input2"] = sentence_to_text_field(input2, indexers)
+            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
+            input0 = [i for i in input1]
+            input0[mask_index] = BERT_MASK_TOK
+            d["input0"] = sentence_to_text_field(input0, indexers)
+            d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
+            d["index"] = IndexField(mask_index, d["input1"])
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances  # lazy iterator
+    
+    def update_metrics(self, logits, labels):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+    
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {
+            'mcc': self.scorer1.get_metric(reset),
+            'accuracy': self.scorer2.get_metric(reset)}
+        return collected_metrics
+
+
+@register_task('cola-pair-frozen', rel_path='CoLA')
+class CoLAMinimalPairFrozenTask(CoLAMinimalPairBaseTask):
+    ''' Task class for minimal pair acceptability judgement, untrained '''
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(path, max_seq_len, name, **kw)
+    
+@register_task('cola-pair-tuned', rel_path='CoLA')
+class CoLAMinimalPairTunedTask(CoLAMinimalPairBaseTask):
+    ''' Task class for minimal pair acceptability judgement, trained on cola '''
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(path, max_seq_len, name, **kw)
 
 
 @register_task('qqp', rel_path='QQP/')
