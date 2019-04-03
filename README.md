@@ -144,12 +144,20 @@ tensorboard --logdir <exp_dir>/<run_name>/tensorboard
 
 The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks. We also provide bag of words and RNN sentence encoder.
 
-The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in build_model()) in src/models.py.
-
-We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. Another alternative is to use the OpenAI transformer model, by setting `openai_transformer` and `openai_transformer_finetune` in your code.
+The base model class is a MultiTaskModel. To add another model, first add the class of the model to modules/modules.py, and then add the model construction in ``make_sent_encoder()`` (called in ``build_model()``) in src/models.py.
 
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
+
+### Transformers 
+
+We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. 
+
+We also support using pretrained Transformer language models. To use the OpenAI transformer model, set `openai_transformer = 1` and `openai_transformer_fine_tune = 1`.
+To use [BERT](https://arxiv.org/abs/1810.04805) architecture, set ``bert_model_name`` to one of the models listed [here](https://github.com/huggingface/pytorch-pretrained-BERT#loading-google-ai-or-openai-pre-trained-weigths-or-pytorch-dump), e.g. ``bert-base-cased``. You should also set ``tokenizer`` to be the BERT model used in order to ensure you are using the same tokenization and vocabulary.
+
+When using BERT, we follow the procedures set out in the original work as closely as possible: For pair sentence tasks, we concatenate the sentences with a sepcial `[SEP]` token. Rather than max-pooling, we take the first representation of the sequence (corresponding to the special `[CLS]` token) as the representation of the entire sequence. To fine-tune BERT, set `bert_fine_tune = 1`.
+We also have support for the version of Adam that was used in training BERT (``optimizer = bert_adam``).
 
 ## Trainer
 
@@ -162,7 +170,7 @@ If you're training only on one task, you don't need to worry about sampling sche
 
 For multi-task training, we use a shared global optimizer and LR scheduler for all tasks. In the global case, we use the macro average of each task's validation metrics to do LR scheduling and early stopping. When doing multi-task training and at least one task's validation metric should decrease (e.g. perplexity), we invert tasks whose metric should decrease by averaging ``1 - (val_metric / dec_val_scale)``, so that the macro-average will be well-behaved.
 
-We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate.
+We have partial support for per-task optimizers (``shared_optimizer = 0``), but checkpointing may not behave correctly in this configuration. In the per-task case, we stop training on a task when its patience has run out or its optimizer hits the minimum learning rate. 
 
 Within a run, tasks are distinguished between training tasks (pretrain_tasks) and evaluation tasks (target tasks). The logic of ``main.py`` is that the entire model is pretrained on all the `pre_training` tasks, then the best model is then loaded, and task-specific components are trained for each of the evaluation tasks with a frozen shared sentence encoder.
 You can control which steps are performed or skipped by setting the flags ``do_pretrain, do_target_task_training, do_full_eval``.
@@ -170,7 +178,12 @@ Specify training tasks with ``pretrain_tasks = $pretrain_tasks`` where ``$pretra
 For example, ``pretrain_tasks = \"sst,mnli,foo\", target_tasks = \"qnli,bar,sst,mnli,foo\"`` (HOCON notation requires escaped quotes in command line arguments).
 Note: if you want to train and evaluate on a task, that task must be in both ``pretrain_tasks`` and ``target_tasks``.
 
-
+We support two modes of adapting pretrained models to target tasks. 
+Setting `transfer_paradigm = finetune` will fine-tune the entire model while training for a target task.
+The mode will create a copy of the model _per target task_.
+If using a pretrained model such as BERT or GPT, be sure to also set the corresponding fine-tune flag, e.g. `bert_fine_tune = 1`.
+Setting `transfer_paradigm = frozen` will only train the target-task specific components while training for a target task.
+If using ELMo and `sep_embs_for_skip = 1`, we will also learn a task-specific set of layer-mixing weights.
 
 ## Adding New Tasks
 

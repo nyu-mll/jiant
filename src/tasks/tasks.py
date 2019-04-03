@@ -75,13 +75,21 @@ def process_single_pair_task_split(
     Returns:
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     '''
+    # check here if using bert to avoid passing model info to tasks
+    is_using_bert = "bert_wpm_pretokenized" in indexers
+
     def _make_instance(input1, input2, labels, idx):
         d = {}
-        d["input1"] = sentence_to_text_field(input1, indexers)
         d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-        if input2:
-            d["input2"] = sentence_to_text_field(input2, indexers)
+        if is_using_bert and is_pair:
+            inp = input1 + input2[1:] # throw away input2 leading [CLS]
+            d["inputs"] = sentence_to_text_field(inp, indexers)
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+        else:
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            if input2:
+                d["input2"] = sentence_to_text_field(input2, indexers)
+                d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
@@ -176,7 +184,6 @@ class Task(object):
 
     def __init__(self, name, tokenizer_name):
         self.name = name
-        assert self.tokenizer_is_supported(tokenizer_name)
         self._tokenizer_name = tokenizer_name
         self.scorers = []
 
@@ -911,6 +918,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def create_labels_from_tags(
                 fields_dict, ix_to_tag_dict, tag_arr, tag_group):
@@ -933,8 +941,12 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                            lex_sem, pr_ar_str, logic, knowledge):
             ''' from multiple types in one column create multiple fields '''
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["input2"] = sentence_to_text_field(input2, indexers)
+            if is_using_bert:
+                inp = input1 + input2[1:] # drop the leading [CLS] token
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
             d["labels"] = LabelField(label, label_namespace="labels",
                                      skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idx",
@@ -1254,10 +1266,16 @@ class DisSentTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
         def _make_instance(input1, input2, labels):
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["input2"] = sentence_to_text_field(input2, indexers)
+            if is_using_bert:
+                inp = input1 + input2[1:] # drop leading [CLS] token
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
             return Instance(d)
