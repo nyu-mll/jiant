@@ -41,6 +41,8 @@ from allennlp.nn.util import add_positional_features
 
 from ..utils.utils import MaskedMultiHeadSelfAttention, assert_for_log
 from ..utils import utils
+from ..bert.utils import BertEmbedderModule
+from ..tasks.tasks import PairClassificationTask, PairRegressionTask
 
 from .cnns.alexnet import alexnet
 from .cnns.resnet import resnet101
@@ -124,16 +126,27 @@ class SentenceEncoder(Model):
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
-            sent_embs = self._highway_layer(self._text_field_embedder(sent))
+            if isinstance(self._text_field_embedder, BertEmbedderModule):
+                is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask))
+                task_sent_embs = self._text_field_embedder(sent, is_pair_task=is_pair_task)
+
+            else:
+                task_sent_embs = self._text_field_embedder(sent)
+            task_sent_embs = self._highway_layer(task_sent_embs)
         else:
             sent_embs = None
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
         if self.sep_embs_for_skip:
-            task_sent_embs = self._highway_layer(
-                self._text_field_embedder(
-                    sent, task._classifier_name))
+            if isinstance(self._text_field_embedder, BertEmbedderModule):
+                is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask))
+                task_sent_embs = self._text_field_embedder(sent, task._classifier_name,
+                                                           is_pair_task=is_pair_task)
+
+            else:
+                task_sent_embs = self._text_field_embedder(sent, task._classifier_name)
+            task_sent_embs = self._highway_layer(task_sent_embs)
         else:
             task_sent_embs = None
 

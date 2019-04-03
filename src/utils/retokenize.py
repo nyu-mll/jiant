@@ -7,14 +7,19 @@
 # Current implementation is not fast; TODO to profile this and see why.
 
 from typing import Sequence, Iterable, Tuple, \
-    Union, Type, NewType
+    Union, Type, NewType, List, Text
 
 from io import StringIO
 
 import numpy as np
 from scipy import sparse
 
+import functools
+import re
+
 from nltk.tokenize.simple import SpaceTokenizer
+from .tokenizers import get_tokenizer
+
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
 # install with: pip install python-Levenshtein
@@ -96,7 +101,6 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
     data = np.ones(len(ridxs), dtype=_DTYPE)
     return sparse.csr_matrix((data, (ridxs, cidxs)),
                              shape=(len(spans), n_chars))
-
 
 class TokenAligner(object):
     """Align two similiar tokenizations.
@@ -207,3 +211,61 @@ class TokenAligner(object):
         """
         tgt_idxs = self.project_tokens([start, end - 1])
         return min(tgt_idxs), max(tgt_idxs) + 1
+
+##
+# Aligner functions. These take a raw string and return a tuple
+# of a TokenAligner instance and a list of tokens.
+## 
+
+def space_tokenize_with_eow(sentence):
+    """Add </w> markers to ensure word-boundary alignment."""
+    return [t + "</w>" for t in sentence.split()]
+
+def process_bert_wordpiece_for_alignment(t):
+    """Add <w> markers to ensure word-boundary alignment."""
+    if t.startswith("##"):
+        return re.sub(r"^##", "", t)
+    else:
+        return "<w>" + t
+
+def space_tokenize_with_bow(sentence):
+    """Add <w> markers to ensure word-boundary alignment."""
+    return ["<w>" + t for t in sentence.split()]
+
+def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
+    MosesTokenizer = get_tokenizer("MosesTokenizer")
+    moses_tokens = MosesTokenizer.tokenize(text)
+    cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
+    ta = TokenAligner(text, cleaned_moses_tokens)
+    return ta, moses_tokens
+
+def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
+    eow_tokens = space_tokenize_with_eow(text)
+    openai_utils = get_tokenizer("OpenAI.BPE")
+    bpe_tokens = openai_utils.tokenize(text)
+    ta = TokenAligner(eow_tokens, bpe_tokens)
+    return ta, bpe_tokens
+
+def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
+    # If using lowercase, do this for the source tokens for better matching.
+    do_lower_case = model_name.endswith('uncased')
+    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
+                                         text)
+    bert_tokenizer = get_tokenizer(model_name)
+    wpm_tokens = bert_tokenizer.tokenize(text)
+
+    # Align using <w> markers for stability w.r.t. word boundaries.
+    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment,
+                                   wpm_tokens))
+    ta = TokenAligner(bow_tokens, modified_wpm_tokens)
+    return ta, wpm_tokens
+
+def get_aligner_fn(tokenizer_name: Text):
+    if tokenizer_name == "MosesTokenizer":
+        return align_moses
+    elif tokenizer_name == "OpenAI.BPE":
+        return align_openai
+    elif tokenizer_name.startswith("bert-"):
+        return functools.partial(align_bert, model_name=tokenizer_name)
+    else:
+        raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")
