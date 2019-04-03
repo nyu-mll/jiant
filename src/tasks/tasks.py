@@ -15,6 +15,7 @@ import itertools
 import json
 import logging as log
 import os
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import torch
@@ -361,7 +362,7 @@ class PairOrdinalRegressionTask(RegressionTask):
                                               classification=False)
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 class SequenceGenerationTask(Task):
@@ -383,7 +384,7 @@ class SequenceGenerationTask(Task):
 
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 
@@ -1127,7 +1128,7 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-        
+
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
@@ -1598,3 +1599,49 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
+
+@register_task('copa', rel_path='COPA/')
+class COPATask(PairClassificationTask):
+    ''' Task class for Choice of Plausible Alternatives Task.  '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+        self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        def _load_split(data_file):
+            sents1, sents2, targs = [], [], []
+            data = ET.parse(datafile).getroot()
+            for question in data:
+                prompt = question.find("p").text
+                choice1 = question.find("a1").text
+                choice2 = question.find("a2").text
+                sent1 = " ".join([prompt, choice1])
+                sent2 = " ".join([prompt, choice2])
+                targ = 1 if question.attrib['most-plausible-alternative'] == "2" else 0
+                sents1.append(process_sentence(self._tokenizer_name, sent1, max_seq_len))
+                sents2.append(process_sentence(self._tokenizer_name, sent2, max_seq_len))
+                targs.append(targ)
+            return [sents1, sent2, targs]
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading MRPC data.")
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
+                'precision': pcs, 'recall': rcl}
+
