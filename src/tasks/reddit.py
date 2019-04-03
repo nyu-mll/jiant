@@ -30,7 +30,7 @@ class RedditTask(RankingTask):
         ''' '''
         super().__init__(name, **kw)
         self.scorer1 = Average()  # CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for
@@ -105,7 +105,6 @@ class RedditPairClassificationTask(PairClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
         super().__init__(name, n_classes=2, **kw)
-        self.scorer2 = None
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.files_by_split = {split: os.path.join(path, "%s.csv" % split) for

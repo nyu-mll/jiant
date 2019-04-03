@@ -34,6 +34,7 @@ class MTTask(SequenceGenerationTask):
         self.scorer1 = Average()
         self.scorer2 = Average()
         self.scorer3 = Average()
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
         self.val_metric = "%s_perplexity" % self.name
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
