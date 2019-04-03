@@ -58,7 +58,7 @@ def build_trainer(
     model,
     run_dir,
     metric_should_decrease=True,
-     train_type="SamplingMultiTaskTrainer"):
+    train_type="SamplingMultiTaskTrainer"):
     '''Build a trainer from params.
 
     Parameters
@@ -369,7 +369,7 @@ class SamplingMultiTaskTrainer:
         """
         Parameters
         ----------------
-        weighting_method : str, weighting method
+        weighting_method: str, weighting method
         num_tasks: int
         task_n_train_examples: list of ints of number of examples per task
         Returns
@@ -501,10 +501,6 @@ class SamplingMultiTaskTrainer:
             np.array_str(
                 normalized_sample_weights,
                 precision=4))
-
-        normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
-        log.info("Using weighting method: %s, with normalized sample weights %s ",
-                 weighting_method, np.array_str(normalized_sample_weights, precision=4))
         
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
