@@ -73,7 +73,7 @@ class SentenceEncoder(Model):
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
-                 sep_elmo_embs_for_skip=False, initializer=InitializerApplicator()):
+                 sep_elmo_embs_for_skip=False, sent_enc_type=None, initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
@@ -155,9 +155,10 @@ class SentenceEncoder(Model):
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         # HERE, make the sent_enc = None. 
-        is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask)) \
-                        and isinstance(self._text_field_embedder, BertEmbedderModule)
-        sent_embs = self._highway_layer(self._text_field_embedder(sent, is_pair_task=is_pair_task))
+        kw = {}
+        if isinstance(self._text_field_embedder, BertEmbedderModule):
+            kw =  dict(is_pair_task=isinstance(task, (PairClassificationTask, PairRegressionTask)))
+        sent_embs = self._highway_layer(self._text_field_embedder(sent, **kw))
         sent_embs = self._dropout(sent_embs) 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.

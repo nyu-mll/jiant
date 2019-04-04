@@ -149,6 +149,10 @@ The base model class is a MultiTaskModel. To add another model, first add the cl
 Task-specific components include logistic regression and multi-layer perceptron for classification and regression tasks, and an RNN decoder with attention for sequence transduction tasks.
 To see the full set of available params, see [config/defaults.conf](config/defaults.conf). For a list of options affecting the execution pipeline (which configuration file to use, whether to enable remote logging or tensorboard, etc.), see the arguments section in [main.py](main.py).
 
+### Supported Functionality
+
+We allow for training on a shared encoder from the word contextual embeddings, as well as forwarding from the embeddings to the task specific module (by setting sent_enc = null).  Additionally, if you would like to add a skip connection from the contextual embedding directly to the module, set skip_embs = 1. 
+
 ### Transformers 
 
 We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. 
@@ -182,7 +186,8 @@ We support two modes of adapting pretrained models to target tasks.
 Setting `transfer_paradigm = finetune` will fine-tune the entire model while training for a target task.
 The mode will create a copy of the model _per target task_.
 If using a pretrained model such as BERT or GPT, be sure to also set the corresponding fine-tune flag, e.g. `bert_fine_tune = 1`.
-Setting `transfer_paradigm = frozen` will only train the target-task specific components while training for a target task.
+Setting `transfer_paradigm = frozen` will only train the target-task specific components while training for a target task. We only support scalar mixing only for ELMo, thus setting transfer_paradigm="frozen" does not work for BERT or GPT. 
+
 If using ELMo and `sep_embs_for_skip = 1`, we will also learn a task-specific set of layer-mixing weights.
 
 ## Adding New Tasks
