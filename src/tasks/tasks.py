@@ -543,14 +543,16 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 reset))
         return collected_metrics
 
-
-class CoLAMinimalPairBaseTask(Task):
+@register_task('cola-pair-frozen', rel_path='CoLA')
+@register_task('cola-pair-tuned', rel_path='CoLA')
+class CoLAMinimalPairTask(Task):
     ''' Task class for minimal pair acceptability judgement '''
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(CoLAMinimalPairBaseTask, self).__init__(name, **kw)
+        super(CoLAMinimalPairTask, self).__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        self.n_classes = 2
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
@@ -596,20 +598,6 @@ class CoLAMinimalPairBaseTask(Task):
             'mcc': self.scorer1.get_metric(reset),
             'accuracy': self.scorer2.get_metric(reset)}
         return collected_metrics
-
-
-@register_task('cola-pair-frozen', rel_path='CoLA')
-class CoLAMinimalPairFrozenTask(CoLAMinimalPairBaseTask):
-    ''' Task class for minimal pair acceptability judgement, untrained '''
-    def __init__(self, path, max_seq_len, name, **kw):
-        super().__init__(path, max_seq_len, name, **kw)
-    
-@register_task('cola-pair-tuned', rel_path='CoLA')
-class CoLAMinimalPairTunedTask(CoLAMinimalPairBaseTask):
-    ''' Task class for minimal pair acceptability judgement, trained on cola '''
-    def __init__(self, path, max_seq_len, name, **kw):
-        super().__init__(path, max_seq_len, name, **kw)
-
 
 @register_task('qqp', rel_path='QQP/')
 @register_task('qqp-alt', rel_path='QQP/')  # second copy for different params

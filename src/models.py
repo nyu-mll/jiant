@@ -33,8 +33,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask, CoLAMinimalPairFrozenTask, \
-    CoLAMinimalPairTunedTask
+    TaggingTask, WeakGroundedTask, JOCITask, CoLAMinimalPairTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
@@ -408,8 +407,8 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     for task in tasks_to_build:
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
-        if task.name != model._get_task_params(
-                task.name).get('use_classifier', task.name):
+        if task.name != \
+            model._get_task_params(task.name).get('use_classifier', task.name):
             log.info(
                 "Name of the task is different than the classifier it should use")
             continue
@@ -423,7 +422,7 @@ def build_task_specific_modules(
         These include decoders, linear layers for linear models.
      '''
     task_params = model._get_task_params(task.name)
-    if isinstance(task, SingleClassificationTask):
+    if isinstance(task, SingleClassificationTask) or (isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-tuned'):
         module = build_single_sentence_module(task=task, d_inp=d_sent,
                                               use_bert=model.use_bert, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
@@ -434,7 +433,7 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-    elif isinstance(task, CoLAMinimalPairFrozenTask) and args.bert_model_name:
+    elif isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-forzen' and args.bert_model_name:
         mask_lm_head = model.sent_encoder._text_field_embedder.hatch_LM_head(args)
         setattr(model, '%s_mdl' % task.name, mask_lm_head)
     elif isinstance(task, TaggingTask):
@@ -702,10 +701,8 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
-        elif isinstance(task, CoLAMinimalPairFrozenTask):
-            out = self._pair_sentence_acceptability_frozen_forward(batch, task, predict)
-        elif isinstance(task, CoLAMinimalPairTunedTask):
-            out = self._pair_sentence_acceptability_tuned_forward(batch, task, predict)    
+        elif isinstance(task, CoLAMinimalPairTask):
+            out = self._pair_sentence_acceptability_forward(batch, task, predict) 
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -756,47 +753,31 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_acceptability_frozen_forward(self, batch, task, predict):
+    def _pair_sentence_acceptability_forward(self, batch, task, predict):
         out = {}
 
-        bs = get_batch_size(batch)
-        # embed the sentence
-        sent_embs, sent_mask = self.sent_encoder(batch['input0'], task)
-        # pass to a task specific classifier
-        classifier = self._get_classifier(task)
-        index = batch['index'].squeeze(dim=1)
-        logits_full = classifier(sent_embs)[range(bs), index]
-        sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index]
-        sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index]
-        logits = torch.stack([logits_full[range(bs), sent1_key], logits_full[range(bs), sent2_key]], dim=1)
+        if task.name == 'cola-pair-frozen':
+            bs = get_batch_size(batch)
+            # embed the sentence
+            sent_embs, _ = self.sent_encoder(batch['input0'], task)
+            # pass to a task specific classifier
+            classifier = self._get_classifier(task)
+            index = batch['index'].squeeze(dim=1)
+            logits_full = classifier(sent_embs)[range(bs), index]
+            sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index]
+            sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index]
+            logits = torch.stack([logits_full[range(bs), sent1_key], logits_full[range(bs), sent2_key]], dim=1)
+        elif task.name == 'cola-pair-tuned':
+            # embed the sentence
+            sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
+            # pass to a task specific classifier
+            classifier = self._get_classifier(task)
+            logits = classifier(sent_embs1, sent_mask1) - classifier(sent_embs2, sent_mask2)
+        
         # import IPython
         # IPython.embed()
         # exit()
-        out['logits'] = logits
-        out['n_exs'] = get_batch_size(batch)
-
-        if batch['labels'].dim() == 0:
-            labels = batch['labels'].unsqueeze(0)
-        elif batch['labels'].dim() == 1:
-            labels = batch['labels']
-        else:
-            labels = batch['labels'].squeeze(-1)
-        out['loss'] = F.cross_entropy(logits, labels)
-        task.update_metrics(logits, labels)
-
-        if predict:
-            _, out['preds'] = logits.max(dim=1)
-        return out
-
-    def _pair_sentence_acceptability_tuned_forward(self, batch, task, predict):
-        out = {}
-
-        # embed the sentence
-        sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
-        sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
-        # pass to a task specific classifier
-        classifier = self._get_classifier(task)
-        logits = classifier(sent_embs1, sent_mask1) - classifier(sent_embs2, sent_mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 
