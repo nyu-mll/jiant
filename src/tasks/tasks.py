@@ -1620,7 +1620,7 @@ class COPATask(PairClassificationTask):
 
         def _load_split(data_file):
             sents1, sents2, targs = [], [], []
-            data = ET.parse(datafile).getroot()
+            data = ET.parse(data_file).getroot()
             for question in data:
                 prompt = question.find("p").text
                 choice1 = question.find("a1").text
@@ -1631,11 +1631,11 @@ class COPATask(PairClassificationTask):
                 sents1.append(process_sentence(self._tokenizer_name, sent1, max_seq_len))
                 sents2.append(process_sentence(self._tokenizer_name, sent2, max_seq_len))
                 targs.append(targ)
-            return [sents1, sent2, targs]
+            return [sents1, sents2, targs]
 
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
+        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
+        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
+        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
         log.info("\tFinished loading MRPC data.")
 
     def get_metrics(self, reset=False):
