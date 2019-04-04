@@ -341,7 +341,8 @@ def main(cl_arguments):
                               shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
-            task_names_to_avoid_loading.remove(task.name)
+            if task.name in task_names_to_avoid_loading:
+                task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.

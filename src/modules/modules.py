@@ -151,6 +151,7 @@ class SentenceEncoder(Model):
         # Embeddings
         # Note: These highway modules are actually identity functions by
         # default.
+        is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask))
 
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
