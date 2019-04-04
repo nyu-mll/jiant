@@ -1,3 +1,4 @@
+from .registry import register_task, REGISTRY  # global task registry
 '''Define the tasks and code for loading their data.
 
 - As much as possible, following the existing task hierarchy structure.
@@ -40,7 +41,6 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
 UNK_TOK_ATOMIC = "UNKNOWN"  # an unk token that won't get split by tokenizers
 
-from .registry import register_task, REGISTRY  # global task registry
 
 def sentence_to_text_field(sent: Sequence[str], indexers: Any):
     ''' Helper function to map a sequence of tokens into a sequence of
@@ -59,7 +59,9 @@ def atomic_tokenize(sent: str, atomic_tok: str, nonatomic_toks: List[str], max_s
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
-def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
+
+def process_single_pair_task_split(
+        split, indexers, is_pair=True, classification=True):
     '''
     Convert a dataset of sentences into padded sequences of indices. Shared
     across several classes.
@@ -74,18 +76,17 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     '''
     # check here if using bert to avoid passing model info to tasks
-    bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+    is_using_bert = "bert_wpm_pretokenized" in indexers
 
     def _make_instance(input1, input2, labels, idx):
         d = {}
-        if bert_pair and is_pair:
+        d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+        if is_using_bert and is_pair:
             inp = input1 + input2[1:] # throw away input2 leading [CLS]
             d["inputs"] = sentence_to_text_field(inp, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         else:
             d["input1"] = sentence_to_text_field(input1, indexers)
-            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             if input2:
                 d["input2"] = sentence_to_text_field(input2, indexers)
                 d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
@@ -111,6 +112,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     instances = map(_make_instance, *split)
     return instances  # lazy iterator
 
+
 def create_subset_scorers(count, scorer_type, **args_to_scorer):
     '''
     Create a list scorers of designated type for each "coarse__fine" tag.
@@ -126,6 +128,7 @@ def create_subset_scorers(count, scorer_type, **args_to_scorer):
     '''
     scorer_list = [scorer_type(**args_to_scorer) for _ in range(count)]
     return scorer_list
+
 
 def update_subset_scorers(scorer_list, estimations, labels, tagmask):
     '''
@@ -147,6 +150,7 @@ def update_subset_scorers(scorer_list, estimations, labels, tagmask):
             scorer(subset_estimations, subset_labels)
     return
 
+
 def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     '''
     Get the scorer measures of each tag.
@@ -160,8 +164,10 @@ def collect_subset_scores(scorer_list, metric_name, tag_list, reset=False):
     Returns:
         subset_scores: a dictionary from subset tags to scores
     '''
-    subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(reset) for tag_str, scorer in zip(tag_list, scorer_list)}
+    subset_scores = {'%s_%s' % (metric_name, tag_str): scorer.get_metric(
+        reset) for tag_str, scorer in zip(tag_list, scorer_list)}
     return subset_scores
+
 
 class Task(object):
     '''Generic class for a task
@@ -175,9 +181,11 @@ class Task(object):
         - process: pad and indexify data given a mapping
         - optimizer
     '''
+
     def __init__(self, name, tokenizer_name):
         self.name = name
         self._tokenizer_name = tokenizer_name
+        self.scorers = []
 
     def load_data(self, path, max_seq_len):
         ''' Load data from path and create splits. '''
@@ -237,6 +245,13 @@ class Task(object):
         ''' Get metrics specific to the task. '''
         raise NotImplementedError
 
+    def get_scorers(self):
+        return self.scorers
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        assert len(self.get_scorers()) > 0, 'Please specify a score metric'
+        for scorer in self.get_scorers():
+            scorer(logits, labels)
 
 class ClassificationTask(Task):
     ''' General classification task '''
@@ -255,7 +270,7 @@ class SingleClassificationTask(ClassificationTask):
         super().__init__(name, **kw)
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
@@ -285,7 +300,7 @@ class PairClassificationTask(ClassificationTask):
         assert n_classes > 0
         self.n_classes = n_classes
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
 
@@ -306,7 +321,7 @@ class PairRegressionTask(RegressionTask):
         super().__init__(name, **kw)
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_mse" % self.name
         self.val_metric_decreases = True
 
@@ -319,8 +334,6 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
-
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -331,6 +344,7 @@ class PairOrdinalRegressionTask(RegressionTask):
         self.n_classes = 1
         self.scorer1 = Average()  # for average MSE
         self.scorer2 = Correlation('spearman')
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
 
@@ -345,7 +359,10 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
+    def update_metrics():
+        # currently don't support metrics for regression task
+        # TODO(Yada): support them!
+        return
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -353,7 +370,7 @@ class SequenceGenerationTask(Task):
     def __init__(self, name, **kw):
         super().__init__(name, **kw)
         self.scorer1 = Average()  # for average BLEU or something
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_bleu" % self.name
         self.val_metric_decreases = False
         log.warning("BLEU scoring is turned off (current code in progress)."
@@ -364,11 +381,15 @@ class SequenceGenerationTask(Task):
         bleu = self.scorer1.get_metric(reset)
         return {'bleu': bleu}
 
+    def update_metrics():
+        # currently don't support metrics for regression task
+        # TODO(Yada): support them!
+        return
+
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
-
 
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
@@ -408,6 +429,7 @@ class CoLATask(SingleClassificationTask):
         #self.scorer1 = Average()
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -426,6 +448,13 @@ class CoLATask(SingleClassificationTask):
         return {'mcc': self.scorer1.get_metric(reset),
                 'accuracy': self.scorer2.get_metric(reset)}
 
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        return
+
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
@@ -436,30 +465,36 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
 
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         # Load data from tsv
         tag_vocab = vocabulary.Vocabulary(counter=None)
         tr_data = load_tsv(tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len,
-            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
+                           data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
         val_data = load_tsv(tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
-            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
-                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
-                'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
-                'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
+                            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
+                                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
+                                'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
+                                'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
         te_data = load_tsv(tokenizer_name=self._tokenizer_name,
-            data_file=os.path.join(path, "test_analysis.tsv"), max_seq_len=max_seq_len,
-            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
+                           data_file=os.path.join(path, "test_analysis.tsv"), max_seq_len=max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
         self.train_data_text = tr_data[:1] + tr_data[2:]
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
-        self.tag_scorers1 = create_subset_scorers(count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews")
-        self.tag_scorers2 = create_subset_scorers(count=len(self.tag_list), scorer_type=CategoricalAccuracy)
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(
+                self.tag_list),
+            scorer_type=Correlation,
+            corr_type="matthews")
+        self.tag_scorers2 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy)
 
         log.info("\tFinished loading CoLA sperate domain.")
 
@@ -470,9 +505,9 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d["input1"] = sentence_to_text_field(input1, indexers)
             d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels",
-                                    skip_indexing=True)
+                                     skip_indexing=True)
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
-                                skip_indexing=True, num_labels=len(self.tag_list))
+                                           skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
 
         instances = map(_make_instance, *split)
@@ -491,10 +526,23 @@ class CoLAAnalysisTask(SingleClassificationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
 
-        collected_metrics = {'mcc': self.scorer1.get_metric(reset), 'accuracy': self.scorer2.get_metric(reset)}
-        collected_metrics.update(collect_subset_scores(self.tag_scorers1, 'mcc', self.tag_list, reset))
-        collected_metrics.update(collect_subset_scores(self.tag_scorers2, 'accuracy', self.tag_list, reset))
+        collected_metrics = {
+            'mcc': self.scorer1.get_metric(reset),
+            'accuracy': self.scorer2.get_metric(reset)}
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers1,
+                'mcc',
+                self.tag_list,
+                reset))
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers2,
+                'accuracy',
+                self.tag_list,
+                reset))
         return collected_metrics
+
 
 @register_task('qqp', rel_path='QQP/')
 @register_task('qqp-alt', rel_path='QQP/')  # second copy for different params
@@ -507,6 +555,7 @@ class QQPTask(PairClassificationTask):
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
@@ -544,7 +593,6 @@ class MultiNLISingleGenreTask(PairClassificationTask):
         super(MultiNLISingleGenreTask, self).__init__(name, n_classes=3,
                                                       **kw)
         self.load_data(path, max_seq_len, genre)
-        self.scorer2 = None
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
@@ -552,45 +600,45 @@ class MultiNLISingleGenreTask(PairClassificationTask):
         '''Process the dataset located at path. We only use the in-genre matche data.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(self._tokenizer_name,
-            os.path.join(
-                path,
-                'train.tsv'),
-            max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=genre)
+                           os.path.join(
+                               path,
+                               'train.tsv'),
+                           max_seq_len,
+                           s1_idx=8,
+                           s2_idx=9,
+                           label_idx=11,
+                           label_fn=targ_map.__getitem__,
+                           return_indices=True,
+                           skip_rows=1,
+                           filter_idx=3,
+                           filter_value=genre)
 
         val_matched_data = load_tsv(self._tokenizer_name,
-            os.path.join(
-                path,
-                'dev_matched.tsv'),
-            max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            label_idx=11,
-            label_fn=targ_map.__getitem__,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=genre)
+                                    os.path.join(
+                                        path,
+                                        'dev_matched.tsv'),
+                                    max_seq_len,
+                                    s1_idx=8,
+                                    s2_idx=9,
+                                    label_idx=11,
+                                    label_fn=targ_map.__getitem__,
+                                    return_indices=True,
+                                    skip_rows=1,
+                                    filter_idx=3,
+                                    filter_value=genre)
 
         te_matched_data = load_tsv(self._tokenizer_name,
-            os.path.join(
-                path,
-                'test_matched.tsv'),
-            max_seq_len,
-            s1_idx=8,
-            s2_idx=9,
-            has_labels=False,
-            return_indices=True,
-            skip_rows=1,
-            filter_idx=3,
-            filter_value=genre)
+                                   os.path.join(
+                                       path,
+                                       'test_matched.tsv'),
+                                   max_seq_len,
+                                   s1_idx=8,
+                                   s2_idx=9,
+                                   has_labels=False,
+                                   return_indices=True,
+                                   skip_rows=1,
+                                   filter_idx=3,
+                                   filter_value=genre)
 
         self.train_data_text = tr_data
         self.val_data_text = val_matched_data
@@ -613,6 +661,7 @@ class MRPCTask(PairClassificationTask):
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
         self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
@@ -638,7 +687,8 @@ class MRPCTask(PairClassificationTask):
 
 
 @register_task('sts-b', rel_path='STS-B/')
-@register_task('sts-b-alt', rel_path='STS-B/')  # second copy for different params
+# second copy for different params
+@register_task('sts-b-alt', rel_path='STS-B/')
 class STSBTask(PairRegressionTask):
     ''' Task class for Sentence Textual Similarity Benchmark.  '''
 
@@ -652,6 +702,7 @@ class STSBTask(PairRegressionTask):
         #self.scorer2 = Average()
         self.scorer1 = Correlation("pearson")
         self.scorer2 = Correlation("spearman")
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_corr" % self.name
         self.val_metric_decreases = False
 
@@ -678,6 +729,7 @@ class STSBTask(PairRegressionTask):
 @register_task('snli', rel_path='SNLI/')
 class SNLITask(PairClassificationTask):
     ''' Task class for Stanford Natural Language Inference '''
+
     def __init__(self, path, max_seq_len, name, **kw):
         ''' Do stuff '''
         super(SNLITask, self).__init__(name, n_classes=3, **kw)
@@ -691,7 +743,7 @@ class SNLITask(PairClassificationTask):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
                            s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
-                           s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
+                            s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
@@ -699,8 +751,10 @@ class SNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading SNLI data.")
 
+
 @register_task('mnli', rel_path='MNLI/')
-@register_task('mnli-alt', rel_path='MNLI/')  # second copy for different params
+# second copy for different params
+@register_task('mnli-alt', rel_path='MNLI/')
 class MultiNLITask(PairClassificationTask):
     ''' Task class for Multi-Genre Natural Language Inference '''
 
@@ -717,13 +771,18 @@ class MultiNLITask(PairClassificationTask):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
                            s1_idx=8, s2_idx=9, label_idx=11, label_fn=targ_map.__getitem__, skip_rows=1)
 
-        # Warning to anyone who edits this: The reference label is column *15*, not 11 as above.
+        # Warning to anyone who edits this: The reference label is column *15*,
+        # not 11 as above.
         val_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_matched.tsv'), max_seq_len,
                                     s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, skip_rows=1)
         val_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
                                        s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__,
                                        skip_rows=1)
-        val_data = [m + mm for m, mm in zip(val_matched_data, val_mismatched_data)]
+        val_data = [
+            m + mm for m,
+            mm in zip(
+                val_matched_data,
+                val_mismatched_data)]
         val_data = tuple(val_data)
 
         te_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_matched.tsv'), max_seq_len,
@@ -763,19 +822,21 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 # 0 is missing value
                 if index == 0:
                     continue
-                setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+                setattr(
+                    self, "scorer__%s__%s" %
+                    (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         diag_data_dic = load_diagnostic_tsv(self._tokenizer_name,
-            os.path.join(
-                path,
-                'diagnostic-full.tsv'),
-            max_seq_len,
-            s1_col="Premise",
-            s2_col="Hypothesis",
-            label_col="Label",
-            label_fn=targ_map.__getitem__,
-            skip_rows=1)
+                                            os.path.join(
+                                                path,
+                                                'diagnostic-full.tsv'),
+                                            max_seq_len,
+                                            s1_col="Premise",
+                                            s2_col="Hypothesis",
+                                            label_col="Label",
+                                            label_fn=targ_map.__getitem__,
+                                            skip_rows=1)
 
         self.ix_to_lex_sem_dic = diag_data_dic['ix_to_lex_sem_dic']
         self.ix_to_pr_ar_str_dic = diag_data_dic['ix_to_pr_ar_str_dic']
@@ -798,10 +859,26 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         log.info("\tFinished loading MNLI Diagnostics data.")
 
         # TODO: use FastMatthews instead to save memory.
-        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, 'lex_sem')
-        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, 'pr_ar_str')
-        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, 'logic')
-        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, 'knowledge')
+        create_score_function(
+            Correlation,
+            "matthews",
+            self.ix_to_lex_sem_dic,
+            'lex_sem')
+        create_score_function(
+            Correlation,
+            "matthews",
+            self.ix_to_pr_ar_str_dic,
+            'pr_ar_str')
+        create_score_function(
+            Correlation,
+            "matthews",
+            self.ix_to_logic_dic,
+            'logic')
+        create_score_function(
+            Correlation,
+            "matthews",
+            self.ix_to_knowledge_dic,
+            'knowledge')
         log.info("\tFinished creating Score functions for Diagnostics data.")
 
     def update_diagnostic_metrics(self, logits, labels, batch):
@@ -816,7 +893,8 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                     # column is present.
                     mask = batch[tag_group]
                     scorer_str = "scorer__%s" % tag_group
-                # This branch will update scorers of individual tags in the column
+                # This branch will update scorers of individual tags in the
+                # column
                 else:
                     # batch contains_field for every tag. It's either 0 or 1.
                     mask = batch["%s__%s" % (tag_group, tag)]
@@ -841,10 +919,12 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+        is_using_bert = "bert_wpm_pretokenized" in indexers
 
-        def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
-            # If there is something in this row then tag_group should be set to 1.
+        def create_labels_from_tags(
+                fields_dict, ix_to_tag_dict, tag_arr, tag_group):
+            # If there is something in this row then tag_group should be set to
+            # 1.
             is_tag_group = 1 if len(tag_arr) != 0 else 0
             fields_dict[tag_group] = LabelField(is_tag_group, label_namespace=tag_group,
                                                 skip_indexing=True)
@@ -858,11 +938,12 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                     is_present, label_namespace='%s__%s' % (tag_group, tag), skip_indexing=True)
             return
 
-        def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
+        def _make_instance(input1, input2, label, idx,
+                           lex_sem, pr_ar_str, logic, knowledge):
             ''' from multiple types in one column create multiple fields '''
             d = {}
-            if bert_pair:
-                inp = input1 + input2[1:]
+            if is_using_bert:
+                inp = input1 + input2[1:] # drop the leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -875,10 +956,13 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
 
             # adds keys to dict "d" for every possible type in the column
-            create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
-            create_labels_from_tags(d, self.ix_to_pr_ar_str_dic, pr_ar_str, 'pr_ar_str')
+            create_labels_from_tags(
+                d, self.ix_to_lex_sem_dic, lex_sem, 'lex_sem')
+            create_labels_from_tags(
+                d, self.ix_to_pr_ar_str_dic, pr_ar_str, 'pr_ar_str')
             create_labels_from_tags(d, self.ix_to_logic_dic, logic, 'logic')
-            create_labels_from_tags(d, self.ix_to_knowledge_dic, knowledge, 'knowledge')
+            create_labels_from_tags(
+                d, self.ix_to_knowledge_dic, knowledge, 'knowledge')
 
             return Instance(d)
 
@@ -889,7 +973,8 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         collected_metrics = {}
-        # We do not compute accuracy for this dataset but the eval function requires this key.
+        # We do not compute accuracy for this dataset but the eval function
+        # requires this key.
         collected_metrics["accuracy"] = 0
 
         def collect_metrics(ix_to_tag_dict, tag_group):
@@ -899,11 +984,13 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                 if index == 0:
                     scorer_str = 'scorer__%s' % tag_group
                     scorer = getattr(self, scorer_str)
-                    collected_metrics['%s' % (tag_group)] = scorer.get_metric(reset)
+                    collected_metrics['%s' %
+                                      (tag_group)] = scorer.get_metric(reset)
                 else:
                     scorer_str = 'scorer__%s__%s' % (tag_group, tag)
                     scorer = getattr(self, scorer_str)
-                    collected_metrics['%s__%s' % (tag_group, tag)] = scorer.get_metric(reset)
+                    collected_metrics['%s__%s' %
+                                      (tag_group, tag)] = scorer.get_metric(reset)
 
         collect_metrics(self.ix_to_lex_sem_dic, 'lex_sem')
         collect_metrics(self.ix_to_pr_ar_str_dic, 'pr_ar_str')
@@ -966,7 +1053,8 @@ class RTETask(PairClassificationTask):
 
 
 @register_task('qnli', rel_path='QNLI/')
-@register_task('qnli-alt', rel_path='QNLI/')  # second copy for different params
+# second copy for different params
+@register_task('qnli-alt', rel_path='QNLI/')
 class QNLITask(PairClassificationTask):
     '''Task class for SQuAD NLI'''
 
@@ -1152,8 +1240,10 @@ class DisSentTask(PairClassificationTask):
                 row = row.strip().split('\t')
                 if len(row) != 3 or not (row[0] and row[1] and row[2]):
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
+                sent1 = process_sentence(
+                    self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = process_sentence(
+                    self._tokenizer_name, row[1], self.max_seq_len)
                 targ = int(row[2])
                 yield (sent1, sent2, targ)
 
@@ -1177,12 +1267,12 @@ class DisSentTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        bert_pair = max([True if "bert" in idx_name else False for idx_name in indexers])
+        is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, labels):
             d = {}
-            if bert_pair:
-                inp = input1 + input2[1:]
+            if is_using_bert:
+                inp = input1 + input2[1:] # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1233,7 +1323,7 @@ class GroundedTask(Task):
         ''' Do stuff '''
         super(GroundedTask, self).__init__(name, **kw)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_metric" % self.name
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + \
@@ -1299,7 +1389,8 @@ class GroundedTask(Task):
             for img_idx in img_idxs:
                 newimg_id = 'mscoco/grounded/' + img_idx + '.json'
                 for caption_id in data_dict[img_idx]['captions']:
-                    data_list[0].append(data_dict[img_idx]['captions'][caption_id])
+                    data_list[0].append(
+                        data_dict[img_idx]['captions'][caption_id])
                     data_list[1].append(1)
                     data_list[2].append(int(keymap[newimg_id]))
             return data_list
@@ -1315,7 +1406,11 @@ class GroundedTask(Task):
         self.val_data_text = val
         self.test_data_text = test
 
-        log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info(
+            "\tTrain: %d, Val: %d, Test: %d", len(
+                train[0]), len(
+                val[0]), len(
+                test[0]))
         log.info("\tFinished loading MSCOCO data!")
 
 
@@ -1327,7 +1422,7 @@ class GroundedSWTask(Task):
     def __init__(self, path, max_seq_len, name, **kw):
         super(GroundedSWTask, self).__init__(name, **kw)
         self.scorer1 = Average()
-        self.scorer2 = None
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_metric" % self.name
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + \
@@ -1392,7 +1487,11 @@ class GroundedSWTask(Task):
         self.val_data_text = val
         self.test_data_text = test
 
-        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
+        log.info(
+            "Train: %d, Val: %d, Test: %d", len(
+                train[0]), len(
+                val[0]), len(
+                test[0]))
         log.info("\nFinished loading SW data!")
 
 
@@ -1440,7 +1539,9 @@ class TaggingTask(Task):
         self.val_metric_decreases = False
         self.all_labels = [str(i) for i in range(self.num_tags)]
         self._label_namespace = self.name + "_tags"
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace=self._label_namespace)}
+        self.target_indexer = {
+            "words": SingleIdTokenIndexer(
+                namespace=self._label_namespace)}
 
     def truncate(self, max_seq_len,
                  sos_tok=utils.SOS_TOK, eos_tok=utils.EOS_TOK):
@@ -1459,11 +1560,13 @@ class TaggingTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a tagging task '''
-        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        inputs = [TextField(list(map(Token, sent)),
+                            token_indexers=indexers) for sent in split[0]]
         targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
                  for sent in split[2]]
         # Might be better as LabelField? I don't know what these things mean
-        instances = [Instance({"inputs": x, "targs": t}) for (x, t) in zip(inputs, targs)]
+        instances = [Instance({"inputs": x, "targs": t})
+                     for (x, t) in zip(inputs, targs)]
         return instances
 
     def get_all_labels(self) -> List[str]:
