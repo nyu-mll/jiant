@@ -313,11 +313,13 @@ def main(cl_arguments):
                            "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
 
         for task in target_tasks:
-            # Skip mnli-diagnostic
+            # Skip mnli-diagnostic etc.
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            if task.name == 'mnli-diagnostic':
+            # TODO: this thing right now is very ugly!
+            # TODO: a better apporach would be to skip tuning on a target task, if it doesnot have a real training set
+            if task.name in ['mnli-diagnostic', 'cola-pair-tuned', 'cola-pair-frozen']:
                 continue
 
             if args.transfer_paradigm == "finetune":
@@ -368,20 +370,21 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == 'mnli-diagnostic': # we'll load mnli-diagnostic during mnli
-                    continue
+                # if a task borrow classifier from another task, we load parameter from that task instead
+                if task.name != \
+                    model._get_task_params(task.name).get('use_classifier', task.name):
+                    name_to_load = model._get_task_params(task.name).get('use_classifier', task.name)
+                else:
+                    name_to_load = task.name
 
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % name_to_load)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                tasks = [task]
-                if task.name == 'mnli':
-                    tasks += [t for t in target_tasks if t.name == 'mnli-diagnostic']
-                evaluate_and_write(args, model, tasks, splits_to_write)
+                evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             evaluate_and_write(args, model, target_tasks, splits_to_write)
