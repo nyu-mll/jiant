@@ -130,7 +130,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        sep_elmo_embs_for_skip=args.sep_elmo_embs_for_skip,
                                        cove_layer=cove_layer, 
                                        sent_enc_type=args.sent_enc)
-        d_sent = 0  # skip connection added below
+        d_sent = args.d_hid # passing output of pretrained encoder into task classifier
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
@@ -433,7 +433,6 @@ def build_task_specific_modules(
 
     if args.sep_elmo_embs_for_skip:
         assert args.elmo == 1, "task specific embeddings are only supported for ELMo currently."
-    
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task=task, d_inp=d_sent,
@@ -574,7 +573,6 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
 
 def build_pair_sentence_module(task, d_inp, model, params):
     ''' Build a pair classifier, shared if necessary '''
-
     def build_pair_attn(d_in, d_hid_attn):
         ''' Build the pair model '''
         d_inp_model = 2 * d_in
