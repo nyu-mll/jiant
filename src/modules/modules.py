@@ -103,10 +103,16 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def get_cove_layer_embeddings():
-        # Slightly wasteful as this repeats the GloVe lookup internally,
-        # but this allows CoVe to be used alongside other embedding models
-        # if we want to.
+    def get_cove_layer_embeddings(sent, sent_embs, task_sent_embs):
+        """
+        Args:
+            - sent str: indexed sentence to embed. 
+            - sent_embs (torch.FloatTensor): sentence embeddings 
+            - task_sent_embs (torch.FloatTensor) task sentence embeddings
+        Returns:
+            - sent_embs (torch.FloatTensor): sentence embeddings with cove embeddings
+            - task_sent_embs (torch.FloatTensor) task sentence embeddings with cove
+        """
         sent_lens = torch.ne(
             sent['words'],
             self.pad_idx).long().sum(
@@ -155,7 +161,6 @@ class SentenceEncoder(Model):
 
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
-        # HERE, make the sent_enc = None. 
         kw = {}
         if isinstance(self._text_field_embedder, BertEmbedderModule):
             kw =  dict(is_pair_task=isinstance(task, (PairClassificationTask, PairRegressionTask)))
