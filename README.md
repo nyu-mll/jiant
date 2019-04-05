@@ -186,7 +186,7 @@ We support two modes of adapting pretrained models to target tasks.
 Setting `transfer_paradigm = finetune` will fine-tune the entire model while training for a target task.
 The mode will create a copy of the model _per target task_.
 If using a pretrained model such as BERT or GPT, be sure to also set the corresponding fine-tune flag, e.g. `bert_fine_tune = 1`.
-Setting `transfer_paradigm = frozen` will only train the target-task specific components while training for a target task. We only support scalar mixing only for ELMo, thus setting transfer_paradigm="frozen" does not work for BERT or GPT. 
+Setting `transfer_paradigm = frozen` will only train the target-task specific components while training for a target task.
 
 If using ELMo and `sep_embs_for_skip = 1`, we will also learn a task-specific set of layer-mixing weights.
 
