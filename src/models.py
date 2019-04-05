@@ -29,12 +29,13 @@ from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
-    GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, GroundedSWTask, \
+    GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
+from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
@@ -42,10 +43,10 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer
+    NullPhraseLayer, ONLSTMSentEncoder
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-
+from .modules.onlstm.ON_LSTM import ONLSTMStack
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -57,11 +58,43 @@ ELMO_OPT_PATH = os.path.join(ELMO_SRC_DIR, ELMO_OPT_NAME)
 ELMO_WEIGHTS_PATH = os.path.join(ELMO_SRC_DIR, ELMO_WEIGHTS_NAME)
 
 
-def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
+def build_model(args, vocab, pretrained_embs, tasks):
+    '''Build model according to args '''
+
+    # Build embeddings.
+    if args.openai_transformer:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .openai_transformer_lm.utils import OpenAIEmbedderModule
+        log.info("Using OpenAI transformer model; skipping other embedders.")
+        cove_layer = None
+        embedder = OpenAIEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.bert_model_name:
+        # Note: incompatible with other embedders, but logic in preprocess.py
+        # should prevent these from being enabled anyway.
+        from .bert.utils import BertEmbedderModule
+        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
+        cove_layer = None
+        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
+        # cache; see
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
+                                   os.path.join(args.exp_dir, "bert_cache"))
+        maybe_make_dir(bert_cache_dir)
+        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
+        d_emb = embedder.get_output_dim()
+    else:
+        # Default case, used for ELMo, CoVe, word embeddings, etc.
+        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
+                                                       tasks, pretrained_embs)
+    d_sent = args.d_hid
+
     # Build single sentence encoder: the main component of interest
     # Need special handling for language modeling
-    # Note: sent_enc is expected to apply dropout to its input _and_ output if
-    # needed.
+
+    # Note: sent_enc is expected to apply dropout to its input _and_ output if needed.
+    # So, embedding modules and classifier modules should not apply dropout there.
     tfm_params = Params({'input_dim': d_emb, 'hidden_dim': args.d_hid,
                          'projection_dim': args.d_tproj,
                          'feedforward_hidden_dim': args.d_ff,
@@ -69,18 +102,23 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
-    # Make sentence encoder
-    if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
+
+    if args.sent_enc == "onlstm":
+        onlayer = ONLSTMSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
+                                    args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
+                                    args.onlstm_dropouth, embedder, args.batch_size)
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       onlayer.onlayer, skip_embs=args.skip_embs,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       cove_layer=cove_layer)
+        d_sent = args.d_word
+        log.info("Using ON-LSTM sentence encoder!")
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
-        assert_for_log(
-            args.sent_enc in [
-                'rnn',
-                'bilm'],
-            "Only RNNLM supported!")
+        assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
         if args.elmo:
-            assert_for_log(
-                args.elmo_chars_only,
-                "LM with full ELMo not supported")
+            assert_for_log(args.elmo_chars_only, "LM with full ELMo not supported")
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        bilm, skip_embs=args.skip_embs,
@@ -110,8 +148,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = 2 * args.d_hid
         log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
-        transformer = StackedSelfAttentionEncoder.from_params(
-            copy.deepcopy(tfm_params))
+        transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs,
@@ -132,66 +169,39 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
-    return sent_encoder, d_sent
 
-
-def build_model(args, vocab, pretrained_embs, tasks):
-    '''
-    Build model according to args
-    Returns: model which has attributes set in it with the attrbutes.
-    '''
-
-    # Build embeddings.
-    if args.openai_transformer:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .openai_transformer_lm.utils import OpenAIEmbedderModule
-        log.info("Using OpenAI transformer model; skipping other embedders.")
-        cove_layer = None
-        # Here, this uses openAIEmbedder.
-        embedder = OpenAIEmbedderModule(args)
-        d_emb = embedder.get_output_dim()
-    elif args.bert_model_name:
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .bert.utils import BertEmbedderModule
-        log.info(
-            f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
-        cove_layer = None
-        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
-        # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
-        bert_cache_dir = os.getenv("PYTORCH_PRETRAINED_BERT_CACHE",
-                                   os.path.join(args.exp_dir, "bert_cache"))
-        maybe_make_dir(bert_cache_dir)
-        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
-        d_emb = embedder.get_output_dim()
-    else:
-        # Default case, used for ELMo, CoVe, word embeddings, etc.
-        d_emb, embedder, cove_layer = build_embeddings(args, vocab,
-                                                       tasks, pretrained_embs)
-    d_sent_input = args.d_hid
-
-    sent_encoder = build_sent_encoder(
-        args, vocab, d_emb, tasks, embedder, cove_layer)
-
-    sent_encoder, d_sent_output = build_sent_encoder(
-        args, vocab, d_emb, tasks, embedder, cove_layer)
-    # d_task_input is the input dimension of the task-specific module
-    # set skip_emb = 1 if you want to concatenate the encoder input with encoder output to pass
-    # into task specific module.
-    d_task_input = d_sent_output + (args.skip_embs * d_emb)
+    d_sent += args.skip_embs * d_emb
 
     # Build model and classifiers
     model = MultiTaskModel(args, sent_encoder, vocab)
-    build_task_modules(
-        args,
-        tasks,
-        model,
-        d_task_input,
-        d_emb,
-        embedder,
-        vocab)
+
+    if args.is_probing_task:
+        # TODO: move this logic to preprocess.py;
+        # current implementation reloads MNLI data, which is slow.
+        train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
+        tasks_to_build, _, _ = get_tasks(train_task_whitelist,
+                                         eval_task_whitelist,
+                                         args.max_seq_len,
+                                         path=args.data_dir,
+                                         scratch_path=args.exp_dir)
+    else:
+        tasks_to_build = tasks
+
+    # Attach task-specific params.
+    for task in set(tasks + tasks_to_build):
+        task_params = get_task_specific_params(args, task.name)
+        log.info("\tTask '%s' params: %s", task.name,
+                 json.dumps(task_params.as_dict(), indent=2))
+        # Store task-specific params in case we want to access later
+        setattr(model, '%s_task_params' % task.name, task_params)
+
+    # Actually construct modules.
+    for task in tasks_to_build:
+        # If the name of the task is different than the classifier it should use
+        # then skip the module creation.
+        if task.name != model._get_task_params(task.name).get('use_classifier', task.name):
+            continue
+        build_module(task, model, d_sent, d_emb, vocab, embedder, args)
     model = model.cuda() if args.cuda >= 0 else model
     log.info(model)
     param_count = 0
@@ -202,9 +212,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
             trainable_param_count += np.prod(param.size())
             log.info(">> Trainable param %s: %s = %d", name,
                      str(param.size()), np.prod(param.size()))
-    log.info(
-        "Total number of parameters: {ct:d} ({ct:g})".format(
-            ct=param_count))
+    log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
         ct=trainable_param_count))
     return model
@@ -235,8 +243,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # Word embeddings
     n_token_vocab = vocab.get_vocab_size('tokens')
     if args.word_embs != 'none':
-        if args.word_embs in ['glove',
-                              'fastText'] and pretrained_embs is not None:
+        if args.word_embs in ['glove', 'fastText'] and pretrained_embs is not None:
             word_embs = pretrained_embs
             assert word_embs.size()[0] == n_token_vocab
             d_word = word_embs.size()[1]
@@ -247,12 +254,10 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             d_word = args.d_word
             word_embs = nn.Embedding(n_token_vocab, d_word).weight
         else:
-            raise Exception(
-                'Not a valid type of word emb. Set to none for elmo.')
+            raise Exception('Not a valid type of word emb. Set to none for elmo.')
 
         embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
-                               weight=word_embs, trainable=(
-                                   args.embeddings_train == 1),
+                               weight=word_embs, trainable=(args.embeddings_train == 1),
                                padding_index=vocab.get_token_index('@@PADDING@@'))
         token_embedders["words"] = embeddings
         d_emb += d_word
@@ -286,8 +291,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.char_embs:
         log.info("\tUsing character embeddings!")
         char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
-        filter_sizes = tuple([int(i)
-                              for i in args.char_filter_sizes.split(',')])
+        filter_sizes = tuple([int(i) for i in args.char_filter_sizes.split(',')])
         char_encoder = CnnEncoder(d_char, num_filters=args.n_char_filters,
                                   ngram_filter_sizes=filter_sizes,
                                   output_dim=d_char)
@@ -302,14 +306,12 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # then we need count and reliably map each classifier to an index used by
     # allennlp internal ELMo.
     if args.sep_embs_for_skip:
-        # Determine a deterministic list of classifier names to use for each
-        # task.
+        # Determine a deterministic list of classifier names to use for each task.
         classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
         # Reload existing classifier map, if it exists.
         classifier_save_path = args.run_dir + "/classifier_task_map.json"
         if os.path.isfile(classifier_save_path):
-            loaded_classifiers = json.load(
-                open(args.run_dir + "/classifier_task_map.json", 'r'))
+            loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", 'r'))
         else:
             # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
             # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
@@ -319,10 +321,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             if args.allow_missing_task_map:
                 log.warning("Warning: classifier task map not found in model"
                             " directory. Creating a new one from scratch.")
-            # default is always @pretrain@
-            loaded_classifiers = {"@pretrain@": 0}
-        # Add the new tasks and update map, keeping the internal ELMo index
-        # consistent.
+            loaded_classifiers = {"@pretrain@": 0}  # default is always @pretrain@
+        # Add the new tasks and update map, keeping the internal ELMo index consistent.
         max_number_classifiers = max(loaded_classifiers.values())
         offset = 1
         for classifier in classifiers:
@@ -331,8 +331,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
                 offset += 1
         log.info("Classifiers:{}".format(loaded_classifiers))
         open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
-        # Every index in classifiers needs to correspond to a valid ELMo output
-        # representation.
+        # Every index in classifiers needs to correspond to a valid ELMo output representation.
         num_reps = 1 + max(loaded_classifiers.values())
     else:
         # All tasks share the same scalars.
@@ -378,61 +377,26 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     return d_emb, embedder, cove_layer
 
 
-def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
-    """
-        This function gets the task-specific parameters and builds
-        the task-specific modules.
-    """
-    if args.is_probing_task:
-        # TODO: move this logic to preprocess.py;
-        # current implementation reloads MNLI data, which is slow.
-        train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-        tasks_to_build, _, _ = get_tasks(train_task_whitelist,
-                                         eval_task_whitelist,
-                                         args.max_seq_len,
-                                         path=args.data_dir,
-                                         scratch_path=args.exp_dir)
-    else:
-        tasks_to_build = tasks
-
-    # Attach task-specific params.
-    for task in set(tasks + tasks_to_build):
-        task_params = get_task_specific_params(args, task.name)
-        log.info("\tTask '%s' params: %s", task.name,
-                 json.dumps(task_params.as_dict(), indent=2))
-        # Store task-specific params in case we want to access later
-        setattr(model, '%s_task_params' % task.name, task_params)
-
-    # Actually construct modules.
-    for task in tasks_to_build:
-        # If the name of the task is different than the classifier it should use
-        # then skip the module creation.
-        if task.name != model._get_task_params(
-                task.name).get('use_classifier', task.name):
-            log.info(
-                "Name of the task is different than the classifier it should use")
-            continue
-        build_task_specific_modules(
-            task, model, d_sent, d_emb, vocab, embedder, args)
-
-
-def build_task_specific_modules(
-        task, model, d_sent, d_emb, vocab, embedder, args):
-    ''' Build task-specific components for a task and add them to model.
-        These include decoders, linear layers for linear models.
-     '''
+def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
+    ''' Build task-specific components for a task and add them to model. '''
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
-        module = build_single_sentence_module(task=task, d_inp=d_sent,
-                                              use_bert=model.use_bert, params=task_params)
+        module = build_single_sentence_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
-        module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
+    elif isinstance(task, (PairClassificationTask, PairRegressionTask,
+                           PairOrdinalRegressionTask)):
+        module = build_pair_sentence_module(task, d_sent, model, vocab,
+                                            task_params)
         setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, LanguageModelingParsingTask):
+        hid2voc = build_lm(task, d_sent, args)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
@@ -477,8 +441,7 @@ def build_task_specific_modules(
         pooler = build_image_sent_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
     elif isinstance(task, RankingTask):
-        pooler, dnn_ResponseModel = build_reddit_module(
-            task, d_sent, task_params)
+        pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
         setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
     else:
@@ -487,9 +450,11 @@ def build_task_specific_modules(
 
 def get_task_specific_params(args, task_name):
     ''' Search args for parameters specific to task.
+
     Args:
         args: main-program args, a config.Params object
         task_name: (string)
+
     Returns:
         AllenNLP Params object of task-specific params.
     '''
@@ -517,93 +482,68 @@ def get_task_specific_params(args, task_name):
     # For NLI probing tasks, might want to use a classifier trained on
     # something else (typically 'mnli').
     cls_task_name = _get_task_attr("use_classifier")
-    # default to this task
-    params['use_classifier'] = cls_task_name or task_name
+    params['use_classifier'] = cls_task_name or task_name  # default to this task
 
     return Params(params)
 
 
 def build_reddit_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
     dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
-                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']))
+                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']),
+                                      )
+    #classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return pooler, dnn_ResponseModel
 
 
 def build_image_sent_module(task, d_inp, params):
-    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
     return pooler
 
 
-def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Params):
-    ''' Build a single sentence classifier
-
-    args:
-        - task (Task): task object, used to get the number of output classes
-        - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_bert (bool): if using BERT, extract the first vector from the inputted
-            sequence, rather than max pooling. We do this for BERT specifically to follow
-            the convention set in the paper (Devlin et al., 2019).
-        - params (Params): Params object with task-specific parameters
-
-    returns:
-        - SingleClassifier (nn.Module): single-sentence classifier consisting of
-            (optional) a linear projection, pooling, and an MLP classifier
-    '''
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
-    d_out = d_inp if use_bert else params["d_proj"]
-    classifier = Classifier.from_params(d_out, task.n_classes, params)
-    module = SingleClassifier(pooler, classifier)
-    return module
+def build_single_sentence_module(task, d_inp, params):
+    ''' Build a single classifier '''
+    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
+    return SingleClassifier(pooler, classifier)
 
 
-def build_pair_sentence_module(task, d_inp, model, params):
+def build_pair_sentence_module(task, d_inp, model, vocab, params):
     ''' Build a pair classifier, shared if necessary '''
 
-    def build_pair_attn(d_in, d_hid_attn):
+    def build_pair_attn(d_in, use_attn, d_hid_attn):
         ''' Build the pair model '''
-        d_inp_model = 2 * d_in
-        modeling_layer = s2s_e.by_name('lstm').from_params(
-            Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
-                    'num_layers': 1, 'bidirectional': True}))
-        pair_attn = AttnPairEncoder(model.vocab, modeling_layer, dropout=params["dropout"])
+        if not use_attn:
+            pair_attn = None
+        else:
+            d_inp_model = 2 * d_in
+            modeling_layer = s2s_e.by_name('lstm').from_params(
+                Params({'input_size': d_inp_model, 'hidden_size': d_hid_attn,
+                        'num_layers': 1, 'bidirectional': True}))
+            pair_attn = AttnPairEncoder(vocab, modeling_layer,
+                                        dropout=params["dropout"])
         return pair_attn
 
-    # Build the "pooler", which does pools a variable length sequence
-    #   possibly with a projection layer beforehand
-    if params["attn"] and not model.use_bert:
-        pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
+    if params["attn"]:
+        pooler = Pooler.from_params(params["d_hid_attn"], params["d_hid_attn"], project=False)
         d_out = params["d_hid_attn"] * 2
     else:
-        pool_type = "first" if model.use_bert else "max"
-        pooler = Pooler(project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
-        d_out = d_inp if model.use_bert else params["d_proj"]
+        pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
+        d_out = params["d_proj"]
 
-
-    # Build an attention module if necessary
-    if params["shared_pair_attn"] and params["attn"] and not model.use_bert: # shared attn
+    if params["shared_pair_attn"]:
         if not hasattr(model, "pair_attn"):
-            pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
+            pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    elif params["attn"] and not model.use_bert: # non-shared attn
-        pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
-    else:  # no attn
-        pair_attn = None
-
-    # Build the classifier
-    n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    if model.use_bert:
-        # BERT handles pair tasks by concatenating the inputs and classifying the joined
-        # sequence, so we use a single sentence classifier
-        classifier = Classifier.from_params(d_out, n_classes, params)
-        module = SingleClassifier(pooler, classifier)
     else:
-        classifier = Classifier.from_params(4 * d_out, n_classes, params)
-        module = PairClassifier(pooler, classifier, pair_attn)
+        pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
+
+    n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
+    classifier = Classifier.from_params(4 * d_out, n_classes, params)
+    module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
 
@@ -633,8 +573,6 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 class MultiTaskModel(nn.Module):
     '''
     Giant model with task-specific components and a shared word and sentence encoder.
-    This class samples the tasks passed in pretrained_tasks, and adds task specific components
-    to the model.
     '''
 
     def __init__(self, args, sent_encoder, vocab):
@@ -644,18 +582,19 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
-        self.use_bert = bool(args.bert_model_name)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
+
         Args:
             - task (tasks.Task): task for which batch is drawn
             - batch (Dict[str:Dict[str:Tensor]]): dictionary of (field, indexing) pairs,
                 where indexing is a dict of the index namespace and the actual indices.
             - predict (Bool): passed to task specific forward(). If true, forward()
                 should return predictions.
+
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
         '''
@@ -667,8 +606,7 @@ class MultiTaskModel(nn.Module):
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, MultiNLIDiagnosticTask):
-            out = self._pair_sentence_MNLI_diagnostic_forward(
-                batch, task, predict)
+            out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
             if task.name in [
@@ -678,12 +616,14 @@ class MultiTaskModel(nn.Module):
                 'reddit_pair_classif_3.4G',
                 'mt_pair_classif',
                     'mt_pair_classif_mini']:
-                out = self._positive_pair_sentence_forward(
-                    batch, task, predict)
+                out = self._positive_pair_sentence_forward(batch, task, predict)
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            out = self._lm_forward(batch, task, predict)
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
+                out = self._lm_only_lr_forward(batch, task)
+            else:
+                out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
@@ -734,8 +674,14 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch['labels'].squeeze(-1)
             out['loss'] = F.cross_entropy(logits, labels)
-            tagmask = batch.get('tagmask', None)
-            task.update_metrics(logits, labels, tagmask=tagmask)
+            if isinstance(task, CoLATask):
+                task.scorer2(logits, labels)
+                _, preds = logits.max(dim=1)
+                task.scorer1(labels, preds)
+            else:
+                task.scorer1(logits, labels)
+                if task.scorer2 is not None:
+                    task.scorer2(logits, labels)
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -752,14 +698,10 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
+        sent1, mask1 = self.sent_encoder(batch['input1'], task)
+        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
-        if self.use_bert:
-            sent, mask = self.sent_encoder(batch['inputs'], task)
-            logits = classifier(sent, mask)
-        else:
-            sent1, mask1 = self.sent_encoder(batch['input1'], task)
-            sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            logits = classifier(sent1, sent2, mask1, mask2)
+        logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 
@@ -789,10 +731,6 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
 
-        assert_for_log(not self.use_bert, "BERT is currently not supported for negative sampling!")
-        # issue with using BERT here is that input1 and input2 are padded already
-        # so concatenating to get negative samples is fairly annoying
-
         # embed the sentence
         sent1, mask1 = self.sent_encoder(batch['input1'], task)
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
@@ -803,18 +741,17 @@ class MultiTaskModel(nn.Module):
         # positive and negative pairs
         sent1_new = torch.cat([sent1, sent1], 0)
         mask1_new = torch.cat([mask1, mask1], 0)
-        sent2_new = torch.cat(
-            [sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
-        mask2_new = torch.cat(
-            [mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
+        sent2_new = torch.cat([sent2, torch.cat([sent2[2:], sent2[0:2]], 0)], 0)
+        mask2_new = torch.cat([mask2, torch.cat([mask2[2:], mask2[0:2]], 0)], 0)
         logits = classifier(sent1_new, sent2_new, mask1_new, mask2_new)
         out['logits'] = logits
         out['n_exs'] = len(sent1_new)
         labels = torch.cat([torch.ones(len(sent1)), torch.zeros(len(sent1))])
         labels = torch.tensor(labels, dtype=torch.long).cuda()
         out['loss'] = F.cross_entropy(logits, labels)
-        tagmask = batch.get('tagmask', None)
-        task.update_metrics(logits, labels, tagmask=tagmask)
+        task.scorer1(logits, labels)
+        if task.scorer2 is not None:
+            task.scorer2(logits, labels)
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -831,36 +768,36 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
+        sent1, mask1 = self.sent_encoder(batch['input1'], task)
+        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
-        if self.use_bert:
-            sent, mask = self.sent_encoder(batch['inputs'], task)
-            logits = classifier(sent, mask)
-        else:
-            sent1, mask1 = self.sent_encoder(batch['input1'], task)
-            sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            logits = classifier(sent1, sent2, mask1, mask2)
+
+        logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
-        tagmask = batch.get('tagmask', None)
+
         if 'labels' in batch:
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1) if len(logits.size()
-                                                   ) > 1 else logits
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1) if len(logits.size()
-                                                   ) > 1 else logits
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
-                task.update_metrics(logits.data.cpu().numpy(), labels.data.cpu().numpy(), tagmask=tagmask)
+                logits_np = logits.data.cpu().numpy()
+                labels_np = labels.data.cpu().numpy()
+                task.scorer1(logits_np, labels_np)
+                task.scorer2(logits_np, labels_np)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
-                task.update_metrics(logits, labels, tagmask=tagmask)
+                task.scorer1(logits, labels)
+                if task.scorer2 is not None:
+                    task.scorer2(logits, labels)
 
         if predict:
             if isinstance(task, RegressionTask):
@@ -884,9 +821,7 @@ class MultiTaskModel(nn.Module):
         sent2, mask2 = self.sent_encoder(batch['input2'], task)
         # pooler for both Input and Response
         sent_pooler = getattr(self, "%s_mdl" % task.name)
-        sent_dnn = getattr(
-            self, "%s_Response_mdl" %
-            task.name)  # dnn for Response
+        sent_dnn = getattr(self, "%s_Response_mdl" % task.name)  # dnn for Response
         sent1_rep = sent_pooler(sent1, mask1)
         sent2_rep_pool = sent_pooler(sent2, mask2)
         sent2_rep = sent_dnn(sent2_rep_pool)
@@ -897,8 +832,7 @@ class MultiTaskModel(nn.Module):
             labels = torch.arange(len(cos_simi), dtype=torch.long).cuda()
 
             total_loss = torch.nn.CrossEntropyLoss()(cos_simi, labels)  # one-way loss
-            total_loss_rev = torch.nn.CrossEntropyLoss()(
-                cos_simi_backward, labels)  # reverse
+            total_loss_rev = torch.nn.CrossEntropyLoss()(cos_simi_backward, labels)  # reverse
             out['loss'] = total_loss + total_loss_rev
 
             pred = torch.nn.Softmax(dim=1)(cos_simi)
@@ -906,8 +840,7 @@ class MultiTaskModel(nn.Module):
         else:
             labels = torch.eye(len(cos_simi))
 
-            # balancing pairs: #positive_pairs = batch_size, #negative_pairs =
-            # batch_size-1
+            # balancing pairs: #positive_pairs = batch_size, #negative_pairs = batch_size-1
             cos_simi_pos = torch.diag(cos_simi)
             cos_simi_neg = torch.diag(cos_simi, diagonal=1)
             cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
@@ -986,8 +919,7 @@ class MultiTaskModel(nn.Module):
                        "Not using LM for language modeling task!")
         assert_for_log('targs' in batch and 'words' in batch['targs'],
                        "Batch missing target words!")
-        pad_idx = self.vocab.get_token_index(
-            self.vocab._padding_token, 'tokens')
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
         b_size, seq_len = batch['targs']['words'].size()
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
         out['n_exs'] = (b_size * seq_len - n_pad) * 2
@@ -1012,12 +944,45 @@ class MultiTaskModel(nn.Module):
         trg_fwd = batch['targs']['words'].view(-1)
         trg_bwd = batch['targs_b']['words'].view(-1)
         targs = torch.cat([trg_fwd, trg_bwd], dim=0)
-        assert logits.size(0) == targs.size(
-            0), "Number of logits and targets differ!"
+        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         if predict:
             pass
+        return out
+
+    def _lm_only_lr_forward(self, batch, task):
+        """Only left to right pass for LM model - non-bidirectional models.
+        Args:
+            batch: indexed input data
+            task: (Task obejct)
+        return:
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
+                - 'loss': size average CE loss
+        """
+
+        out = {}
+        sent_encoder = self.sent_encoder
+        assert_for_log('targs' in batch and 'words' in batch['targs'],
+                       "Batch missing target words!")
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
+        b_size, seq_len = batch['targs']['words'].size()
+        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
+        out['n_exs'] = (b_size * seq_len - n_pad) * 2
+        sent, mask = sent_encoder(batch['input'], task)
+        sent = sent.masked_fill(1 - mask.byte(), 0)
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        # left to right LM logits
+        logits = hid2voc(sent).view(b_size * seq_len, -1)
+        out['logits'] = logits
+        trg_fwd = batch['targs']['words'].view(-1)
+        # set targs to contain only left to right LM targets.
+        targs = trg_fwd
+        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
+        # cross entropy for loss
+        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
         return out
 
     def _grounded_forward(self, batch, task, predict):
@@ -1099,8 +1064,7 @@ class MultiTaskModel(nn.Module):
         labels = torch.eye(len(mat_mul))
 
         scale = 1 / (len(mat_mul) - 1) if len(mat_mul) > 1 else 1
-        weights = scale * torch.ones(mat_mul.shape) - \
-            (scale - 1) * torch.eye(len(mat_mul))
+        weights = scale * torch.ones(mat_mul.shape) - (scale - 1) * torch.eye(len(mat_mul))
         weights = weights.view(-1).cuda()
 
         mat_mul = mat_mul.view(-1)
@@ -1116,8 +1080,10 @@ class MultiTaskModel(nn.Module):
 
     def get_elmo_mixing_weights(self, tasks=[]):
         ''' Get elmo mixing weights from text_field_embedder. Gives warning when fails.
+
         args:
            - tasks (List[Task]): list of tasks that we want to get  ELMo scalars for.
+
         returns:
             - params Dict[str:float]: dictionary maybe layers to scalar params
         '''
