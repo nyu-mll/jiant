@@ -1600,16 +1600,24 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
 
+class MultipleChoiceTask(Task):
+    ''' Generic task class for a multiple choice
+    where each example consists of a question and
+    a (possibly variable) number of possible answers'''
+    pass
+
+
 @register_task('copa', rel_path='COPA/')
-class COPATask(PairClassificationTask):
+class COPATask(MultipleChoiceTask):
     ''' Task class for Choice of Plausible Alternatives Task.  '''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super().__init__(name, n_classes=2, **kw)
+        super().__init__(name, **kw)
         self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
             self.val_data_text[0] + self.val_data_text[1]
+        self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
         self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
@@ -1619,24 +1627,47 @@ class COPATask(PairClassificationTask):
         ''' Process the dataset located at path.  '''
 
         def _load_split(data_file):
-            sents1, sents2, targs = [], [], []
+            questions, choicess, targs = [], [], []
             data = ET.parse(data_file).getroot()
-            for question in data:
-                prompt = question.find("p").text
-                choice1 = question.find("a1").text
-                choice2 = question.find("a2").text
-                sent1 = " ".join([prompt, choice1])
-                sent2 = " ".join([prompt, choice2])
-                targ = 1 if question.attrib['most-plausible-alternative'] == "2" else 0
-                sents1.append(process_sentence(self._tokenizer_name, sent1, max_seq_len))
-                sents2.append(process_sentence(self._tokenizer_name, sent2, max_seq_len))
+            for example in data:
+                question = example.find("p").text
+                choice1 = example.find("a1").text
+                choice2 = example.find("a2").text
+                choices = [process_sentence(self._tokenizer_name, choice, max_seq_len) for choice in \
+                            [choice1, choice2]]
+                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
+                questions.append(process_sentence(self._tokenizer_name, question, max_seq_len))
+                choicess.append(choices)
                 targs.append(targ)
-            return [sents1, sents2, targs]
+            return [questions, choicess, targs]
 
         self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
         self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
         self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
         log.info("\tFinished loading MRPC data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AlleNNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(question, choices, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(question[1:-1]))
+            if not is_using_bert:
+                d["question"] = sentence_to_text_field(question, indexers)
+            for choice_idx, choice in enumerate(choices):
+                inp = question + choice[1:] if is_using_bert else choice
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        if len(split) < 4:
+            split.append(itertools.count())
+        instances = map(_make_instance, *split)
+        return instances
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
@@ -1644,4 +1675,3 @@ class COPATask(PairClassificationTask):
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
                 'precision': pcs, 'recall': rcl}
-
