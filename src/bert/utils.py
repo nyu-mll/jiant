@@ -57,11 +57,11 @@ class BertEmbedderModule(nn.Module):
 
         # Set trainability of this module.
         for param in self.model.parameters():
-            param.requires_grad = bool(args.bert_fine_tune)
+            param.requires_grad = bool(args.transfer_paradigm == 'finetune')
 
         # Configure scalar mixing, ELMo-style.
         if self.embeddings_mode == "mix":
-            if not args.bert_fine_tune:
+            if args.transfer_paradigm == 'frozen':
                 log.warning("NOTE: bert_embeddings_mode='mix', so scalar "
                             "mixing weights will be fine-tuned even if BERT "
                             "model is frozen.")
