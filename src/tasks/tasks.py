@@ -1600,12 +1600,17 @@ class CCGTaggingTask(TaggingTask):
         log.info('\tFinished loading CCGTagging data.')
 
 @register_task('commitbank', rel_path='CommitmentBank/')
+@register_task('commitbank-balanced', rel_path='CommitmentBank_balanced/')
 class CommitmentTask(PairClassificationTask):
     ''' NLI-formatted task detecting speaker commitment. '''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' There are 1363 supertags in CCGBank. '''
         super().__init__(name, n_classes=3, **kw)
+        #self.scorer2 = F1Measure(1)
+        #self.scorers = [self.scorer1, self.scorer2]
+        #self.val_metric = "%s_f1" % name
+
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
                          self.train_data_text[1] + self.val_data_text[1]
@@ -1616,10 +1621,10 @@ class CommitmentTask(PairClassificationTask):
            it is a sequence (one tag per input token). '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.csv"), max_seq_len,
-                           s1_idx=3, s2_idx=4, label_idx=2, label_fn=targ_map.__getitem__,
+                           s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
                            skip_rows=1, delimiter=',')
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "val.csv"), max_seq_len,
-                           s1_idx=3, s2_idx=4, label_idx=2, label_fn=targ_map.__getitem__,
+                           s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
                            skip_rows=1, delimiter=',')
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
