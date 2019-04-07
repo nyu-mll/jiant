@@ -7,6 +7,7 @@ from .tasks import PairClassificationTask
 from .registry import register_task
 from ..utils.data_loaders import load_tsv, process_sentence
 
+
 @register_task('nli-prob', rel_path='NLI-Prob/')
 class NLITypeProbingTask(PairClassificationTask):
     ''' Task class for Probing Task (NLI-type)'''
@@ -96,6 +97,7 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading preposition swap data.")
+
 
 @register_task('nli-alt', rel_path='NLI-Prob/')
 class NLITypeProbingAltTask(NLITypeProbingTask):

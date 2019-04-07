@@ -58,7 +58,7 @@ def get_notifier(to: str, args):
     """
     hostname = socket.gethostname()
 
-    def _handler(body: str, prefix: str=""):
+    def _handler(body: str, prefix: str = ""):
         """ Email notifier. Sends an email. """
         # Construct subject line from args:
         subj_tmpl = "{prefix:s} '{exp_name:s}/{run_name:s}' on host '{host:s}'"

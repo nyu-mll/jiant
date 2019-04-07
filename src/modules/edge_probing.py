@@ -86,10 +86,12 @@ class EdgeClassifierModule(nn.Module):
         # Span extractor, shared for both span1 and span2.
         self.span_extractor1 = self._make_span_extractor()
         if self.is_symmetric or self.single_sided:
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
+            self.span_extractors = [
+                None, self.span_extractor1, self.span_extractor1]
         else:
             self.span_extractor2 = self._make_span_extractor()
-            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
+            self.span_extractors = [
+                None, self.span_extractor1, self.span_extractor2]
 
         # Classifier gets concatenated projections of span1, span2
         clf_input_dim = self.span_extractors[1].get_output_dim()
@@ -137,7 +139,8 @@ class EdgeClassifierModule(nn.Module):
             se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
 
         # Span extraction.
-        span_mask = (batch['span1s'][:, :, 0] != -1)  # [batch_size, num_targets] bool
+        # [batch_size, num_targets] bool
+        span_mask = (batch['span1s'][:, :, 0] != -1)
         out['mask'] = span_mask
         total_num_targets = span_mask.sum()
         out['n_targets'] = total_num_targets
@@ -148,7 +151,8 @@ class EdgeClassifierModule(nn.Module):
         # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
         span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
         if not self.single_sided:
-            span2_emb = self.span_extractors[2](se_proj2, batch['span2s'], **_kw)
+            span2_emb = self.span_extractors[2](
+                se_proj2, batch['span2s'], **_kw)
             span_emb = torch.cat([span1_emb, span2_emb], dim=2)
         else:
             span_emb = span1_emb
