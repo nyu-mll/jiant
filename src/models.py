@@ -953,6 +953,7 @@ class MultiTaskModel(nn.Module):
 
     def _lm_only_lr_forward(self, batch, task):
         """Only left to right pass for LM model - non-bidirectional models.
+           Used for language modeling training only in one direction.
         Args:
             batch: indexed input data
             task: (Task obejct)
