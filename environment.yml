@@ -2,6 +2,7 @@ name: jiant
 channels:
     - pytorch
 dependencies:
+    - pip
     - python=3.6
     - pytorch=1.0.0
     - torchvision=0.2.1

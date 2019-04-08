@@ -6,3 +6,8 @@ glue_data/
 user_config.sh
 .idea
 .ipynb_checkpoints/
+*.tgz
+commoncrawl.*
+subword-nmt/
+mosesdecoder/
+test-full/*
