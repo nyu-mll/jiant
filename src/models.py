@@ -1039,7 +1039,7 @@ class MultiTaskModel(nn.Module):
         module = self._get_classifier(task)
         if self.use_bert:
             logits = []
-            for choice_idx in range(2): # TODO(Alex): hack
+            for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch['choice%d' % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)

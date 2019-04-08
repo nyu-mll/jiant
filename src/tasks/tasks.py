@@ -18,6 +18,7 @@ import os
 import xml.etree.ElementTree as ET
 
 import numpy as np
+import pandas as pd
 import torch
 
 from allennlp.training.metrics import CategoricalAccuracy, \
@@ -1616,12 +1617,14 @@ class COPATask(MultipleChoiceTask):
         super().__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
-            self.val_data_text[0] + self.val_data_text[1]
+                [choice for choices in self.train_data_text[1] for choice in choices] + \
+                [choice for choices in self.val_data_text[1] for choice in choices]
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
         self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
+        self.n_choices = 2
 
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
@@ -1675,3 +1678,73 @@ class COPATask(MultipleChoiceTask):
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
                 'precision': pcs, 'recall': rcl}
+
+@register_task('swag', rel_path='SWAG/')
+class SWAGTask(MultipleChoiceTask):
+    ''' Task class for Situations with Adversarial Generations.  '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(name, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                [choice for choices in self.train_data_text[1] for choice in choices] + \
+                [choice for choices in self.val_data_text[1] for choice in choices]
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 4
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        def _load_split(data_file):
+            questions, choicess, targs = [], [], []
+            data = pd.read_csv(data_file)
+            for ex_idx, ex in data.iterrows():
+                sent1 = process_sentence(self._tokenizer_name, ex["sent1"], max_seq_len)
+                questions.append(sent1)
+                sent2_prefix = ex["sent2"]
+                choices = []
+                for i in range(4):
+                    choice = sent2_prefix + " " + ex["ending%d" % i]
+                    choice = process_sentence(self._tokenizer_name, choice, max_seq_len)
+                    choices.append(choice)
+                choicess.append(choices)
+                targ = ex["label"] if "label" in ex else 0
+                targs.append(targ)
+            return [questions, choicess, targs]
+
+        self.train_data_text = _load_split(os.path.join(path, "train.csv"))
+        self.val_data_text = _load_split(os.path.join(path, "val.csv"))
+        self.test_data_text = _load_split(os.path.join(path, "test.csv"))
+        log.info("\tFinished loading SWAG data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AlleNNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(question, choices, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(question[1:-1]))
+            if not is_using_bert:
+                d["question"] = sentence_to_text_field(question, indexers)
+            for choice_idx, choice in enumerate(choices):
+                inp = question + choice[1:] if is_using_bert else choice
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        if len(split) < 4:
+            split.append(itertools.count())
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
