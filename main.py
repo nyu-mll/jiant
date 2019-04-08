@@ -126,6 +126,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
     if 'test' in splits_to_write:
+        log.info("Writing results for split 'test' to %s", results_tsv)
         evaluate.write_results(te_results, results_tsv, run_name=run_name)
 
 

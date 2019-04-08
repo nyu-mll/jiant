@@ -10,6 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
+from .tasks.tasks import CommitmentTask
 from .tasks.edge_probing import EdgeProbingTask
 from allennlp.nn.util import move_to_device
 
@@ -140,6 +141,8 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
+        elif isinstance(task, CommitmentTask):
+            _write_commitment_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -202,6 +205,15 @@ def _write_edge_preds(task: EdgeProbingTask,
         for record in records:
             fd.write(json.dumps(record))
             fd.write("\n")
+
+def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
+                            pred_dir: str, split_name: str):
+    ''' Write predictions for CommitmentBank task.  '''
+    preds_file = os.path.join(pred_dir, f"{task.name}_{split_name}.csv")
+    # Each row of 'preds' is a NumPy object, need to convert to list for
+    # serialization.
+    preds_df = preds_df.copy()
+    preds_df['preds'].to_csv(preds_file, header=False, index=True)
 
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,

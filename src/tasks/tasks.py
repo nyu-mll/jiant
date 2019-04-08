@@ -1601,15 +1601,19 @@ class CCGTaggingTask(TaggingTask):
 
 @register_task('commitbank', rel_path='CommitmentBank/')
 @register_task('commitbank-balanced', rel_path='CommitmentBank_balanced/')
+# all has all the data as the test set, meant for evaluating w/ MNLI
+@register_task('commitbank-balanced-all', rel_path='CommitmentBank_balanced_all/')
 class CommitmentTask(PairClassificationTask):
     ''' NLI-formatted task detecting speaker commitment. '''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' There are 1363 supertags in CCGBank. '''
         super().__init__(name, n_classes=3, **kw)
-        #self.scorer2 = F1Measure(1)
-        #self.scorers = [self.scorer1, self.scorer2]
-        #self.val_metric = "%s_f1" % name
+        self.scorer2 = F1Measure(0)
+        self.scorer3 = F1Measure(1)
+        self.scorer4 = F1Measure(2)
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3, self.scorer4]
+        self.val_metric = "%s_f1" % name
 
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
@@ -1633,3 +1637,14 @@ class CommitmentTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info('\tFinished loading CCGTagging data.')
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs1, rcl1, f11 = self.scorer2.get_metric(reset)
+        pcs2, rcl2, f12 = self.scorer3.get_metric(reset)
+        pcs3, rcl3, f13 = self.scorer4.get_metric(reset)
+        pcs = (pcs1 + pcs2 + pcs3) / 3
+        rcl = (rcl1 + rcl2 + rcl3) / 3
+        f1 = (f11 + f12 + f13) / 3
+        return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
