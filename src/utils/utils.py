@@ -388,3 +388,7 @@ def check_arg_name(args):
         assert_for_log(old_name not in args,
                        "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
                        (old_name, name_dict[old_name]))
+
+
+def xor(cond_a, cond_b):
+    return bool(cond_a) != bool(cond_b)

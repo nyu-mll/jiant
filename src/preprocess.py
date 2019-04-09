@@ -445,9 +445,6 @@ def _get_task(name, args, data_path, scratch_path):
     assert core_task_name in TASKS_REGISTRY, f"Task '{core_task_name:s}' not found!"
     task_cls, rel_path, task_kw = TASKS_REGISTRY[core_task_name]
 
-    if config.is_subtask(args, name):
-        # Override rel_path for subtasks
-        rel_path = args["subtasks"][name]["rel_path"]
     pkl_path = os.path.join(scratch_path, "tasks",
                             f"{name:s}.{args.tokenizer:s}.pkl")
     # TODO: refactor to always read from disk, even if task is constructed
@@ -464,13 +461,24 @@ def _get_task(name, args, data_path, scratch_path):
             task_kw['probe_path'] = args['nli-prob'].probe_path
         if name in ALL_TARG_VOC_TASKS:
             task_kw['max_targ_v_size'] = args.max_targ_word_v_size
-        task_src_path = os.path.join(data_path, rel_path)
+        task_src_path = _get_task_src_path(name, args, data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
                         tokenizer_name=args.tokenizer, **task_kw)
         utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, 'wb'))
     #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
     return task
+
+
+def _get_task_src_path(name, args, data_path, rel_path):
+    if not config.is_subtask(args, name):
+        return os.path.join(data_path, rel_path)
+    subtask_args = args["subtasks"][name]
+    assert utils.xor("rel_path" in subtask_args, "explicit_path" in subtask_args)
+    if "explicit_path" in subtask_args:
+        return subtask_args["explicit_path"]
+    else:
+        return os.path.join(data_path, subtask_args["rel_path"])
 
 
 def get_tasks(args):
