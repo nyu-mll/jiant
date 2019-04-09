@@ -17,4 +17,7 @@ python main.py --config_file "config/spring19_seminar/cola_gpt.conf" --overrides
 python main.py --config_file "config/spring19_seminar/cola_bert.conf" --overrides "exp_name = cola-bert-baseline, run_name = bert" 
 
 # bert frozen minimal pairs
-python main.py --config_file "config/spring19_seminar/cola_pair_frozen_bert.conf" --override "exp_name = cola-pair, run_name = bert_frozen"
+python main.py --config_file "config/spring19_seminar/colapair_bertF.conf" --override "exp_name = cola-pair, run_name = bert_frozen"
+
+# bert tune minimal pairs
+python main.py --config_file "config/spring19_seminar/colapair_bertT.conf" --override "exp_name = cola-pair, run_name = bert_tune"
