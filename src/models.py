@@ -433,7 +433,7 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-    elif isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-forzen' and args.bert_model_name:
+    elif isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-frozen' and args.bert_model_name:
         mask_lm_head = model.sent_encoder._text_field_embedder.hatch_LM_head(args)
         setattr(model, '%s_mdl' % task.name, mask_lm_head)
     elif isinstance(task, TaggingTask):
@@ -764,9 +764,9 @@ class MultiTaskModel(nn.Module):
             classifier = self._get_classifier(task)
             index = batch['index'].squeeze(dim=1)
             logits_full = classifier(sent_embs)[range(bs), index]
-            sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index]
-            sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index]
-            logits = torch.stack([logits_full[range(bs), sent1_key], logits_full[range(bs), sent2_key]], dim=1)
+            sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index] - 2
+            sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index] - 2
+            logits = torch.stack([logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1)
         elif task.name == 'cola-pair-tuned':
             # embed the sentence
             sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
@@ -780,7 +780,7 @@ class MultiTaskModel(nn.Module):
         # exit()
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
-
+        tagmask = batch.get('tagmask', None)
         if batch['labels'].dim() == 0:
             labels = batch['labels'].unsqueeze(0)
         elif batch['labels'].dim() == 1:
@@ -788,8 +788,8 @@ class MultiTaskModel(nn.Module):
         else:
             labels = batch['labels'].squeeze(-1)
         out['loss'] = F.cross_entropy(logits, labels)
-        task.update_metrics(logits, labels)
-
+        task.update_metrics(logits, labels, tagmask)
+        
         if predict:
             _, out['preds'] = logits.max(dim=1)
         return out

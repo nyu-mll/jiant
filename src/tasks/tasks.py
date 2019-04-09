@@ -557,17 +557,37 @@ class CoLAMinimalPairTask(Task):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
     
     def load_data(self, path, max_seq_len):
         '''Load the data'''
+        tag_vocab = vocabulary.Vocabulary(counter=None)
         self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
-                           s1_idx=1, s2_idx=2, label_idx=3)
+                           s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
+        # Create score for each tag from tag-index dict
+        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(
+                self.tag_list),
+            scorer_type=Correlation,
+            corr_type="matthews")
+        # self.tag_scorers2 = create_subset_scorers(
+        #     count=len(self.tag_list), scorer_type=CategoricalAccuracy)
+
+        log.info("\tFinished loading CoLA minimal pairs.")
         return
 
     def process_split(self, split, indexers):
-        def _make_instance(input1, input2, labels):
-            ''' from multiple types in one column create multiple fields '''
+        def _make_instance(input1, input2, labels, tagids):
+            ''' from multiple types in one column create multiple fields
+            input0: shared part (masked form) of both sentence (only used in BERT)
+            input1: sentence1
+            input2: sentence2
+            index: which token is different
+            labels: is 
+            tagmask: which tag the pair has, in this dataset, the source of data 
+            '''
             d = {}
             d["input1"] = sentence_to_text_field(input1, indexers)
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
@@ -581,22 +601,44 @@ class CoLAMinimalPairTask(Task):
             d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
+            d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
+                                           skip_indexing=True, num_labels=len(self.tag_list))
+            # import IPython
+            # IPython.embed()
+            # exit()
             return Instance(d)
 
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
     
-    def update_metrics(self, logits, labels):
+    def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
         _, preds = logits.max(dim=1)
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            # update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
+        return
     
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
+
         collected_metrics = {
             'mcc': self.scorer1.get_metric(reset),
             'accuracy': self.scorer2.get_metric(reset)}
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers1,
+                'mcc',
+                self.tag_list,
+                reset))
+        # collected_metrics.update(
+        #     collect_subset_scores(
+        #         self.tag_scorers2,
+        #         'accuracy',
+        #         self.tag_list,
+        #         reset))
         return collected_metrics
 
 @register_task('qqp', rel_path='QQP/')
