@@ -1603,6 +1603,7 @@ class CCGTaggingTask(TaggingTask):
 @register_task('commitbank-balanced', rel_path='CommitmentBank_balanced/')
 # all has all the data as the test set, meant for evaluating w/ MNLI
 @register_task('commitbank-balanced-all', rel_path='CommitmentBank_balanced_all/')
+@register_task('commitbank-nice', rel_path='CommitmentBank_nice/')
 class CommitmentTask(PairClassificationTask):
     ''' NLI-formatted task detecting speaker commitment. '''
 
