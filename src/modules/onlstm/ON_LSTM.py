@@ -65,7 +65,6 @@ class ONLSTMCell(nn.Module):
     ON-LSTM cell part of the ONLSTMStack.
     Code credits: https://github.com/yikangshen/Ordered-Neurons
     """
- 
     def __init__(self, input_size, hidden_size, chunk_size, dropconnect=0.):
         super(ONLSTMCell, self).__init__()
         self.input_size = input_size
