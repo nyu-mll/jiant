@@ -216,7 +216,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
         ct=trainable_param_count))
-return model
+    return model
 
 
 def get_task_whitelist(args):
