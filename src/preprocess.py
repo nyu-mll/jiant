@@ -582,7 +582,7 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
 def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     '''Add WSJ vocabulary for PTB parsing models.'''
     wsj_vocab_path = os.path.join(data_dir, 'WSJ/tokens.txt')
-    assert os.path.exists(wsj_vocab_path), "WSJ vocab doesn't exist."
+    assert os.path.exists(wsj_vocab_path), "WSJ vocab file doesn't exist."
     wsj_tokens = open(wsj_vocab_path)
     for line in wsj_tokens.readlines():
         vocab.add_token_to_namespace(line.strip(), namespace)

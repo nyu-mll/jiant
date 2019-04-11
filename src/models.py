@@ -107,6 +107,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         onlayer = ONLSTMSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
                                     args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
                                     args.onlstm_dropouth, embedder, args.batch_size)
+        # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        onlayer.onlayer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
@@ -215,7 +216,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(
         ct=trainable_param_count))
-    return model
+return model
 
 
 def get_task_whitelist(args):
@@ -396,7 +397,6 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
