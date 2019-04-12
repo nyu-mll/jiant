@@ -43,10 +43,11 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMSentEncoder
+    NullPhraseLayer, ONLSTMSentEncoder, PRPNSentEncoder
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
+from .modules.prpn.PRPN import PRPN
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -114,6 +115,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
+    elif args.sent_enc == "prpn":
+        prpnlayer = PRPNSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
+                         embedder,  args.batch_size)
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                    prpnlayer.prpnlayer, skip_embs=args.skip_embs,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       cove_layer=cove_layer)
+        d_sent = args.d_word
+        log.info("Using PRPN sentence encoder!")
+        
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(args.sent_enc in ['rnn', 'bilm'], "Only RNNLM supported!")
@@ -622,6 +634,8 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
                 out = self._lm_only_lr_forward(batch, task)
+            elif isinstance(self.sent_encoder._phrase_layer, PRPN):
+                out = self._lm_only_lr_forward(batch, task)
             else:
                 out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
@@ -970,8 +984,12 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = batch['targs']['words'].size()
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
         out['n_exs'] = (b_size * seq_len - n_pad) * 2
+
+
         sent, mask = sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
+
+
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         # left to right LM logits
         logits = hid2voc(sent).view(b_size * seq_len, -1)

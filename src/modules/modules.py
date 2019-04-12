@@ -19,6 +19,7 @@ import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from .onlstm.ON_LSTM import ONLSTMStack
+from .prpn.PRPN import PRPN
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
@@ -191,6 +192,9 @@ class SentenceEncoder(Model):
                 # The ONLSTMStack takes the raw words as input and computes embeddings separately.
                 sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
                 sent_enc = torch.transpose(sent_enc, 0, 1)
+            elif isinstance(self._phrase_layer, PRPN):
+                sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
+                sent_enc = torch.transpose(sent_enc, 0, 1)
             else:
                 sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
         else:
@@ -213,8 +217,10 @@ class SentenceEncoder(Model):
             else:
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
 
+
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0)
+
         assert sent_enc is not None
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
@@ -269,6 +275,26 @@ class BoWSentEncoder(Model):
         word_embs = self._text_field_embedder(sent)
         word_mask = util.get_text_field_mask(sent).float()
         return word_embs, word_mask  # need to get # nonzero elts
+
+class PRPNSentEncoder(Model):
+    ''' PRPN sentence encoder '''
+    def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
+                embedder, batch_size, initializer=InitializerApplicator()):
+        super(PRPNSentEncoder, self).__init__(vocab)
+
+        self.prpnlayer = PRPN(
+                         ninp=d_word, 
+                         nhid=d_hid, 
+                         nlayers=n_layers_enc, 
+                         embedder=embedder,
+                         phrase_layer=None)
+        initializer(self)
+
+    def get_input_dim(self):
+        return self.prpnlayer.ninp
+
+    def get_output_dim(self):
+        return self.prpnlayer.ninp
 
 
 class ONLSTMSentEncoder(Model):

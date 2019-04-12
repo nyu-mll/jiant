@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from LSTMCell import LSTMCell
-from blocks import softmax
+from .LSTMCell import LSTMCell
+from .blocks import softmax
 
 
 class ReadingNetwork(nn.Module):
@@ -16,7 +16,7 @@ class ReadingNetwork(nn.Module):
         self.nout = nout
         self.nslots = nslots
         self.drop = nn.Dropout(dropout)
-        self.memory_rnn = LSTMCell(ninp, nout)
+        self.memory_rnn = LSTMCell(ninp, nout, bias=True, dropout=0)
         self.projector_summ = nn.Sequential(nn.Dropout(idropout),
                                             nn.Linear(ninp + nout, nout),
                                             nn.Dropout(idropout))
