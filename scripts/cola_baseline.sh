@@ -13,9 +13,6 @@ python main.py --config_file "config/spring19_seminar/cola_elmo.conf" --override
 # gpt
 python main.py --config_file "config/spring19_seminar/cola_gpt.conf" --overrides "exp_name = cola-gpt-baseline, run_name = gpt" 
 
-# bert
-python main.py --config_file "config/spring19_seminar/cola_bert.conf" --overrides "exp_name = cola-bert-baseline, run_name = bert" 
-
 # bert frozen minimal pairs
 python main.py --config_file "config/spring19_seminar/colapair_bertF.conf" --override "exp_name = cola-pair, run_name = bert_frozen"
 
