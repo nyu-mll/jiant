@@ -457,6 +457,10 @@ class CoLATask(SingleClassificationTask):
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
+    """
+    cola-analysis dataset only tagged the dev set of cola
+    when using this dataset, the model need to have a cola classifier available
+    """
     def __init__(self, path, max_seq_len, name, **kw):
         super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
@@ -471,21 +475,15 @@ class CoLAAnalysisTask(SingleClassificationTask):
         '''Load the data'''
         # Load data from tsv
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        tr_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                           data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
         val_data = load_tsv(tokenizer_name=self._tokenizer_name,
                             data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
                             s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
                                 'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
                                 'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
                                 'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
-        te_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                           data_file=os.path.join(path, "test_analysis.tsv"), max_seq_len=max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
-        self.train_data_text = tr_data[:1] + tr_data[2:]
-        self.val_data_text = val_data[:1] + val_data[2:]
-        self.test_data_text = te_data[:1] + te_data[2:]
+        self.train_data_text = val_data
+        self.val_data_text = val_data
+        self.test_data_text = val_data
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(
@@ -499,7 +497,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         log.info("\tFinished loading CoLA sperate domain.")
 
     def process_split(self, split, indexers):
-        def _make_instance(input1, labels, tagids):
+        def _make_instance(input1, input2, labels, tagids):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             d["input1"] = sentence_to_text_field(input1, indexers)
