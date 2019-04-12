@@ -313,13 +313,12 @@ def main(cl_arguments):
                            "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
 
         for task in target_tasks:
-            # Skip mnli-diagnostic etc.
+            # Skip tuning on a target task, if it does not really have a training set (like mnli-diagnostic)
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            # TODO: this thing right now is very ugly!
-            # TODO: a better apporach would be to skip tuning on a target task, if it doesnot have a real training set
-            if task.name in ['mnli-diagnostic', 'cola-pair-tuned', 'cola-pair-frozen']:
+            if task.get_split_text('train') == task.get_split_text('val') or \
+                task.get_split_text('train') == task.get_split_text('test'):
                 continue
 
             if args.transfer_paradigm == "finetune":
