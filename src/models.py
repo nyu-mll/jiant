@@ -766,6 +766,8 @@ class MultiTaskModel(nn.Module):
             logits_full = classifier(sent_embs)[range(bs), index]
             sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index] - 2
             sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index] - 2
+            # calling self.sent_encoder reduce all token index in input0 by 2, 
+            # this -2 to input1 and input2 looks strange, but it correctly negate that effect
             logits = torch.stack([logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1)
         elif task.name == 'cola-pair-tuned':
             # embed the sentence
@@ -775,9 +777,6 @@ class MultiTaskModel(nn.Module):
             classifier = self._get_classifier(task)
             logits = classifier(sent_embs1, sent_mask1) - classifier(sent_embs2, sent_mask2)
         
-        # import IPython
-        # IPython.embed()
-        # exit()
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
         tagmask = batch.get('tagmask', None)

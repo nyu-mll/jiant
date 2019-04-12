@@ -603,9 +603,7 @@ class CoLAMinimalPairTask(Task):
                                      skip_indexing=True)
             d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
-            # import IPython
-            # IPython.embed()
-            # exit()
+                                           
             return Instance(d)
 
         instances = map(_make_instance, *split)
