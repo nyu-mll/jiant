@@ -969,12 +969,13 @@ class MultiTaskModel(nn.Module):
                        "Batch missing target words!")
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
         b_size, seq_len = batch['targs']['words'].size()
+        # pad_idx is the token used to pad till max_seq_len
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
-        out['n_exs'] = (b_size * seq_len - n_pad) * 2
+        # No of examples: only left to right, every unit in the sequence length is a training example only once.
+        out['n_exs'] = (b_size * seq_len - n_pad)
         sent, mask = self.sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        # left to right LM logits
         logits = hid2voc(sent).view(b_size * seq_len, -1)
         out['logits'] = logits
         trg_fwd = batch['targs']['words'].view(-1)
