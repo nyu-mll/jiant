@@ -43,7 +43,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMSentEncoder
+    NullPhraseLayer, ONLSTMPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
@@ -104,7 +104,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
 
     if args.sent_enc == "onlstm":
-        onlayer = ONLSTMSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
+        onlayer = ONLSTMPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
                                     args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
                                     args.onlstm_dropouth, embedder, args.batch_size)
         # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
@@ -390,6 +390,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingParsingTask):
+        # The LM Parsing task does not support embeddings that use skip_embs.
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
         setattr(model, '%s_mdl' % task.name, hid2voc)
@@ -964,25 +965,22 @@ class MultiTaskModel(nn.Module):
         """
 
         out = {}
-        sent_encoder = self.sent_encoder
         assert_for_log('targs' in batch and 'words' in batch['targs'],
                        "Batch missing target words!")
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
         b_size, seq_len = batch['targs']['words'].size()
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
         out['n_exs'] = (b_size * seq_len - n_pad) * 2
-        sent, mask = sent_encoder(batch['input'], task)
+        sent, mask = self.sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
         # left to right LM logits
         logits = hid2voc(sent).view(b_size * seq_len, -1)
         out['logits'] = logits
         trg_fwd = batch['targs']['words'].view(-1)
-        # set targs to contain only left to right LM targets.
-        targs = trg_fwd
-        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
+        assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
         # cross entropy for loss
-        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        out['loss'] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         return out
 

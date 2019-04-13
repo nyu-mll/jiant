@@ -110,7 +110,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
 
 
 @register_task('egw_lm', rel_path='egw_corpus/')
-class EnglishgigawordLanguageModelling(LanguageModelingParsingTask):
+class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
     """

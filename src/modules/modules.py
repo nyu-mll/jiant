@@ -247,13 +247,13 @@ class BoWSentEncoder(Model):
         return word_embs, word_mask  # need to get # nonzero elts
 
 
-class ONLSTMSentEncoder(Model):
+class ONLSTMPhraseLayer(Model):
     ''' ON-LSTM sentence encoder '''
     def __init__(self, vocab, d_word, d_hid, n_layers_enc,
                  chunk_size, onlstm_dropconnect, onlstm_dropouti,
                  dropout, onlstm_dropouth, embedder,
                  batch_size, initializer=InitializerApplicator()):
-        super(ONLSTMSentEncoder, self).__init__(vocab)
+        super(ONLSTMPhraseLayer, self).__init__(vocab)
         self.onlayer = ONLSTMStack(
             [d_word] + [d_hid] * (n_layers_enc - 1) + [d_word],
             chunk_size=chunk_size,
