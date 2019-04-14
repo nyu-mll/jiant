@@ -10,9 +10,6 @@ import random
 import logging
 import codecs
 import time
-
-from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
-
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -20,16 +17,15 @@ from torch.nn import Dropout, Linear
 from torch.nn import Parameter
 from torch.nn import init
 
+from nltk.tokenize.moses import MosesDetokenizer
+
 from allennlp.nn.util import masked_softmax, device_mapping
 from allennlp.common.checks import ConfigurationError
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
 from allennlp.common.params import Params
 
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-
-TOKENIZER = MosesTokenizer()
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 # Note: using the full 'detokenize()' method is not recommended, since it does
@@ -52,7 +48,8 @@ def wrap_singleton_string(item: Union[Sequence, str]):
     return item
 
 
-def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
+def load_model_state(model, state_path, gpu_id,
+                     skip_task_models=[], strict=True):
     ''' Helper function to load a model state
 
     Parameters
@@ -87,12 +84,18 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     if skip_task_models:
         keys_to_skip = []
         for task in skip_task_models:
-            new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
+            new_keys_to_skip = [
+                key for key in model_state if "%s_mdl" %
+                task in key]
             if new_keys_to_skip:
-                logging.info("Skipping task-specific parameters for task: %s" % task)
+                logging.info(
+                    "Skipping task-specific parameters for task: %s" %
+                    task)
                 keys_to_skip += new_keys_to_skip
             else:
-                logging.info("Found no task-specific parameters to skip for task: %s" % task)
+                logging.info(
+                    "Found no task-specific parameters to skip for task: %s" %
+                    task)
         for key in keys_to_skip:
             del model_state[key]
 
@@ -151,22 +154,10 @@ def maybe_make_dir(dirname):
 
 def unescape_moses(moses_tokens):
     '''Unescape Moses punctuation tokens.
-
     Replaces escape sequences like &#91; with the original characters
     (such as '['), so they better align to the original text.
     '''
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
-
-
-def process_sentence(sent, max_seq_len, sos_tok=SOS_TOK, eos_tok=EOS_TOK):
-    '''process a sentence '''
-    max_seq_len -= 2
-    assert max_seq_len > 0, "Max sequence length should be at least 2!"
-    if isinstance(sent, str):
-        return [sos_tok] + TOKENIZER.tokenize(sent)[:max_seq_len] + [eos_tok]
-    elif isinstance(sent, list):
-        assert isinstance(sent[0], str), "Invalid sentence found!"
-        return [sos_tok] + sent[:max_seq_len] + [eos_tok]
 
 
 def truncate(sents, max_seq_len, sos, eos):
@@ -187,177 +178,6 @@ def load_lines(filename: str) -> Iterable[str]:
             yield line.strip()
 
 
-def load_diagnostic_tsv(
-        data_file,
-        max_seq_len,
-        s1_idx=0,
-        s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
-        skip_rows=0,
-        delimiter='\t',
-        filter_idx=None,
-        filter_value=None):
-    '''Load a tsv
-
-    It loads the data with all it's attributes from diagnostic dataset for MNLI'''
-    sent1s, sent2s, targs, idxs, lex_sem, pr_ar_str, logic, knowledge = [], [], [], [], [], [], [], []
-
-    # There are 4 columns and every column could containd multiple values.
-    # For every column there is a dict which maps index to (string) value and
-    # different dict which maps value to index.
-    ix_to_lex_sem_dic = {}
-    ix_to_pr_ar_str_dic = {}
-    ix_to_logic_dic = {}
-    ix_to_knowledge_dic = {}
-
-    lex_sem_to_ix_dic = {}
-    pr_ar_str_to_ix_dic = {}
-    logic_to_ix_dic = {}
-    knowledge_to_ix_dic = {}
-
-    # This converts tags to indices and adds new indices to dictionaries above.
-    # In every row there could be multiple tags in one column
-    def tags_to_ixs(tags, tag_to_ix_dict, ix_to_tag_dic):
-        splitted_tags = tags.split(';')
-        indexes = []
-        for t in splitted_tags:
-            if t == '':
-                continue
-            if t in tag_to_ix_dict:
-                indexes.append(tag_to_ix_dict[t])
-            else:
-                # index 0 will be used for missing value
-                highest_ix = len(tag_to_ix_dict)
-                new_index = highest_ix + 1
-                tag_to_ix_dict[t] = new_index
-                ix_to_tag_dic[new_index] = t
-                indexes.append(new_index)
-        return indexes
-
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.rstrip().split(delimiter)
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if targ_map is not None:
-                    targ = targ_map[row[targ_idx]]
-                elif targ_fn is not None:
-                    targ = targ_fn(row[targ_idx])
-                else:
-                    targ = int(row[targ_idx])
-                sent2 = process_sentence(row[s2_idx], max_seq_len)
-                sent2s.append(sent2)
-
-                sent1s.append(sent1)
-                targs.append(targ)
-
-                lex_sem_sample = tags_to_ixs(row[0], lex_sem_to_ix_dic, ix_to_lex_sem_dic)
-                pr_ar_str_sample = tags_to_ixs(row[1], pr_ar_str_to_ix_dic, ix_to_pr_ar_str_dic)
-                logic_sample = tags_to_ixs(row[2], logic_to_ix_dic, ix_to_logic_dic)
-                knowledge_sample = tags_to_ixs(row[3], knowledge_to_ix_dic, ix_to_knowledge_dic)
-
-                idxs.append(row_idx)
-                lex_sem.append(lex_sem_sample)
-                pr_ar_str.append(pr_ar_str_sample)
-                logic.append(logic_sample)
-                knowledge.append(knowledge_sample)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
-                continue
-
-    ix_to_lex_sem_dic[0] = "missing"
-    ix_to_pr_ar_str_dic[0] = "missing"
-    ix_to_logic_dic[0] = "missing"
-    ix_to_knowledge_dic[0] = "missing"
-
-    lex_sem_to_ix_dic["missing"] = 0
-    pr_ar_str_to_ix_dic["missing"] = 0
-    logic_to_ix_dic["missing"] = 0
-    knowledge_to_ix_dic["missing"] = 0
-
-    return {'sents1': sent1s,
-            'sents2': sent2s,
-            'targs': targs,
-            'idxs': idxs,
-            'lex_sem': lex_sem,
-            'pr_ar_str': pr_ar_str,
-            'logic': logic,
-            'knowledge': knowledge,
-            'ix_to_lex_sem_dic': ix_to_lex_sem_dic,
-            'ix_to_pr_ar_str_dic': ix_to_pr_ar_str_dic,
-            'ix_to_logic_dic': ix_to_logic_dic,
-            'ix_to_knowledge_dic': ix_to_knowledge_dic
-            }
-
-
-def load_tsv(
-        data_file,
-        max_seq_len,
-        s1_idx=0,
-        s2_idx=1,
-        targ_idx=2,
-        idx_idx=None,
-        targ_map=None,
-        targ_fn=None,
-        skip_rows=0,
-        delimiter='\t',
-        filter_idx=None,
-        filter_value=None):
-    '''Load a tsv
-
-    To load only rows that have a certain value for a certain column, like genre in MNLI, set filter_idx and filter_value.'''
-    sent1s, sent2s, targs, idxs = [], [], [], []
-    with codecs.open(data_file, 'r', 'utf-8', errors='ignore') as data_fh:
-        for _ in range(skip_rows):
-            data_fh.readline()
-        for row_idx, row in enumerate(data_fh):
-            try:
-                row = row.strip().split(delimiter)
-                if filter_idx and row[filter_idx] != filter_value:
-                    continue
-                sent1 = process_sentence(row[s1_idx], max_seq_len)
-                if (targ_idx is not None and not row[targ_idx]) or not len(sent1):
-                    continue
-
-                if targ_idx is not None:
-                    if targ_map is not None:
-                        targ = targ_map[row[targ_idx]]
-                    elif targ_fn is not None:
-                        targ = targ_fn(row[targ_idx])
-                    else:
-                        targ = int(row[targ_idx])
-                else:
-                    targ = 0
-
-                if s2_idx is not None:
-                    sent2 = process_sentence(row[s2_idx], max_seq_len)
-                    if not len(sent2):
-                        continue
-                    sent2s.append(sent2)
-
-                if idx_idx is not None:
-                    idx = int(row[idx_idx])
-                    idxs.append(idx)
-
-                sent1s.append(sent1)
-                targs.append(targ)
-
-            except Exception as e:
-                print(e, " file: %s, row: %d" % (data_file, row_idx))
-                continue
-
-    if idx_idx is not None:
-        return sent1s, sent2s, targs, idxs
-    else:
-        return sent1s, sent2s, targs
-
-
 def split_data(data, ratio, shuffle=1):
     '''Split dataset according to ratio, larger split is first return'''
     n_exs = len(data[0])
@@ -367,6 +187,7 @@ def split_data(data, ratio, shuffle=1):
         splits[0].append(col[:split_pt])
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
+
 
 @Seq2SeqEncoder.register("masked_multi_head_self_attention")
 class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
@@ -415,9 +236,16 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         self._attention_dim = attention_dim
         self._values_dim = values_dim
 
-        self._query_projections = Parameter(torch.FloatTensor(num_heads, input_dim, attention_dim))
-        self._key_projections = Parameter(torch.FloatTensor(num_heads, input_dim, attention_dim))
-        self._value_projections = Parameter(torch.FloatTensor(num_heads, input_dim, values_dim))
+        self._query_projections = Parameter(
+            torch.FloatTensor(
+                num_heads, input_dim, attention_dim))
+        self._key_projections = Parameter(
+            torch.FloatTensor(
+                num_heads,
+                input_dim,
+                attention_dim))
+        self._value_projections = Parameter(
+            torch.FloatTensor(num_heads, input_dim, values_dim))
 
         self._scale = input_dim ** 0.5
         self._output_projection = Linear(num_heads * values_dim,
@@ -486,7 +314,8 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
         values_per_head = torch.bmm(inputs_per_head, self._value_projections)
         # shape (num_heads * batch_size, timesteps, attention_dim)
-        values_per_head = values_per_head.view(num_heads * batch_size, timesteps, self._values_dim)
+        values_per_head = values_per_head.view(
+            num_heads * batch_size, timesteps, self._values_dim)
 
         # shape (num_heads * batch_size, timesteps, timesteps)
         scaled_similarities = torch.bmm(
@@ -495,11 +324,14 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
         # Masking should go here
         causality_mask = subsequent_mask(timesteps).cuda()
-        masked_scaled_similarities = scaled_similarities.masked_fill(causality_mask == 0, -1e9)
+        masked_scaled_similarities = scaled_similarities.masked_fill(
+            causality_mask == 0, -1e9)
 
         # shape (num_heads * batch_size, timesteps, timesteps)
         # Normalise the distributions, using the same mask for all heads.
-        attention = masked_softmax(masked_scaled_similarities, mask.repeat(num_heads, 1))
+        attention = masked_softmax(
+            masked_scaled_similarities, mask.repeat(
+                num_heads, 1))
         attention = self._attention_dropout(attention)
         # This is doing the following batch-wise matrix multiplication:
         # (num_heads * batch_size, timesteps, timesteps) *
@@ -528,7 +360,8 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
         attention_dim = params.pop_int('attention_dim')
         values_dim = params.pop_int('values_dim')
         output_projection_dim = params.pop_int('output_projection_dim', None)
-        attention_dropout_prob = params.pop_float('attention_dropout_prob', 0.1)
+        attention_dropout_prob = params.pop_float(
+            'attention_dropout_prob', 0.1)
         params.assert_empty(cls.__name__)
         return cls(num_heads=num_heads,
                    input_dim=input_dim,
@@ -545,13 +378,13 @@ def assert_for_log(condition, error_message):
 def check_arg_name(args):
     ''' Raise error if obsolete arg names are present. '''
     # Mapping - key: old name, value: new name
-    name_dict = {'task_patience':'lr_patience',
+    name_dict = {'task_patience': 'lr_patience',
                  'do_train': 'do_pretrain',
-                 'train_for_eval':'do_target_task_training',
+                 'train_for_eval': 'do_target_task_training',
                  'do_eval': 'do_full_eval',
-                 'train_tasks':'pretrain_tasks',
-                 'eval_tasks':'target_tasks'}
+                 'train_tasks': 'pretrain_tasks',
+                 'eval_tasks': 'target_tasks'}
     for old_name, new_name in name_dict.items():
         assert_for_log(old_name not in args,
-                      "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
-                      (old_name,name_dict[old_name]))
+                       "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
+                       (old_name, name_dict[old_name]))

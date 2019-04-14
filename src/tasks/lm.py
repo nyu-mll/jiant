@@ -10,7 +10,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 # Fields for instance processing
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate
+from ..utils.utils import truncate
+from ..utils.data_loaders import process_sentence
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -44,7 +45,9 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.target_indexer = {
+            "words": SingleIdTokenIndexer(
+                namespace="tokens")}
         self.files_by_split = {'train': os.path.join(path, "train.txt"),
                                'val': os.path.join(path, "valid.txt"),
                                'test': os.path.join(path, "test.txt")}
@@ -76,7 +79,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield process_sentence(toks, self.max_seq_len)
+                yield process_sentence(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
@@ -91,8 +94,10 @@ class LanguageModelingTask(SequenceGenerationTask):
             in the input for each direction '''
             d = {}
             d["input"] = sentence_to_text_field(sent, indexers)
-            d["targs"] = sentence_to_text_field(sent[1:] + [sent[0]], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-1], self.target_indexer)
+            d["targs"] = sentence_to_text_field(
+                sent[1:] + [sent[0]], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field(
+                [sent[-1]] + sent[:-1], self.target_indexer)
             return Instance(d)
         for sent in split:
             yield _make_instance(sent)
@@ -122,6 +127,7 @@ class WikiTextLMTask(LanguageModelingTask):
     """ Language modeling on a Wikitext dataset
     See base class: LanguageModelingTask
     """
+
     def load_data(self, path):
         ''' Rather than return a whole list of examples, stream them '''
         nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
@@ -133,7 +139,8 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len)
+                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len,
+                                       tokenizer_name=self._tokenizer_name)
                 # we also filtering out headers (artifact of the data)
                 # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
