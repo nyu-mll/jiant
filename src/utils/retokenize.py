@@ -102,6 +102,7 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
     return sparse.csr_matrix((data, (ridxs, cidxs)),
                              shape=(len(spans), n_chars))
 
+
 class TokenAligner(object):
     """Align two similiar tokenizations.
 
@@ -215,11 +216,13 @@ class TokenAligner(object):
 ##
 # Aligner functions. These take a raw string and return a tuple
 # of a TokenAligner instance and a list of tokens.
-## 
+##
+
 
 def space_tokenize_with_eow(sentence):
     """Add </w> markers to ensure word-boundary alignment."""
     return [t + "</w>" for t in sentence.split()]
+
 
 def process_bert_wordpiece_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
@@ -228,9 +231,11 @@ def process_bert_wordpiece_for_alignment(t):
     else:
         return "<w>" + t
 
+
 def space_tokenize_with_bow(sentence):
     """Add <w> markers to ensure word-boundary alignment."""
     return ["<w>" + t for t in sentence.split()]
+
 
 def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     MosesTokenizer = get_tokenizer("MosesTokenizer")
@@ -239,12 +244,14 @@ def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     ta = TokenAligner(text, cleaned_moses_tokens)
     return ta, moses_tokens
 
+
 def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
     eow_tokens = space_tokenize_with_eow(text)
     openai_utils = get_tokenizer("OpenAI.BPE")
     bpe_tokens = openai_utils.tokenize(text)
     ta = TokenAligner(eow_tokens, bpe_tokens)
     return ta, bpe_tokens
+
 
 def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
     # If using lowercase, do this for the source tokens for better matching.
@@ -259,6 +266,7 @@ def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
                                    wpm_tokens))
     ta = TokenAligner(bow_tokens, modified_wpm_tokens)
     return ta, wpm_tokens
+
 
 def get_aligner_fn(tokenizer_name: Text):
     if tokenizer_name == "MosesTokenizer":
