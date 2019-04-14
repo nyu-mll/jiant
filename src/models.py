@@ -980,7 +980,6 @@ class MultiTaskModel(nn.Module):
         out['logits'] = logits
         trg_fwd = batch['targs']['words'].view(-1)
         assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
-        # cross entropy for loss
         out['loss'] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         return out
