@@ -59,7 +59,7 @@ class HOCONConverter(object):
                     '\n', '\\n').replace(
                     '"', '\\"'))
         elif config is None or isinstance(config, NoneValue):
-            lines = 'null'
+            lines = 'none'
         elif config is True:
             lines = 'true'
         elif config is False:
@@ -139,7 +139,7 @@ class HOCONConverter(object):
             # serialize POD types as in JSON
             lines = json.dumps(config)
         #  elif config is None or isinstance(config, NoneValue):
-        #      lines = 'null'
+        #      lines = 'none'
         #  elif config is True:
         #      lines = 'true'
         #  elif config is False:
@@ -190,7 +190,7 @@ class HOCONConverter(object):
                     '\n'.join([line.rjust(level * indent, ' ')
                                for line in lines])
         elif config is None or isinstance(config, NoneValue):
-            lines = 'null'
+            lines = 'none'
         elif config is True:
             lines = 'true'
         elif config is False:
