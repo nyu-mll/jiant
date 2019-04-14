@@ -83,7 +83,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
-    # Make sentence encoder
             args.sent_enc == 'bilm':
         assert_for_log(
             args.sent_enc in [
