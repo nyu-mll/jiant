@@ -13,7 +13,7 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 # Fields for instance processing
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate, load_tsv
+from ..utils.data_loaders import process_sentence, load_tsv
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
