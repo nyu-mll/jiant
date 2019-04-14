@@ -35,6 +35,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
+from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
@@ -42,10 +43,10 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer
+    NullPhraseLayer, ONLSTMPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-
+from .modules.onlstm.ON_LSTM import ONLSTMStack
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -69,8 +70,20 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
+    if args.sent_enc == "onlstm":
+        onlayer = ONLSTMPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
+                                    args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
+                                    args.onlstm_dropouth, embedder, args.batch_size)
+        # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                       onlayer.onlayer, skip_embs=args.skip_embs,
+                                       dropout=args.dropout,
+                                       sep_embs_for_skip=args.sep_embs_for_skip,
+                                       cove_layer=cove_layer)
+        d_sent = args.d_word
+        log.info("Using ON-LSTM sentence encoder!")
+    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
     # Make sentence encoder
-    if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(
             args.sent_enc in [
@@ -429,6 +442,11 @@ def build_task_specific_modules(
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, LanguageModelingParsingTask):
+        # The LM Parsing task does not support embeddings that use skip_embs.
+        hid2voc = build_lm(task, d_sent, args)
+        setattr(model, '%s_hid2voc' % task.name, hid2voc)
+        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
@@ -683,7 +701,10 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            out = self._lm_forward(batch, task, predict)
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
+                out = self._lm_only_lr_forward(batch, task)
+            else:
+                out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
@@ -1018,6 +1039,38 @@ class MultiTaskModel(nn.Module):
         task.scorer1(out['loss'].item())
         if predict:
             pass
+        return out
+
+    def _lm_only_lr_forward(self, batch, task):
+        """Only left to right pass for LM model - non-bidirectional models.
+           Used for language modeling training only in one direction.
+        Args:
+            batch: indexed input data
+            task: (Task obejct)
+        return:
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
+                - 'loss': size average CE loss
+        """
+
+        out = {}
+        assert_for_log('targs' in batch and 'words' in batch['targs'],
+                       "Batch missing target words!")
+        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
+        b_size, seq_len = batch['targs']['words'].size()
+        # pad_idx is the token used to pad till max_seq_len
+        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
+        # No of examples: only left to right, every unit in the sequence length is a training example only once.
+        out['n_exs'] = (b_size * seq_len - n_pad)
+        sent, mask = self.sent_encoder(batch['input'], task)
+        sent = sent.masked_fill(1 - mask.byte(), 0)
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        logits = hid2voc(sent).view(b_size * seq_len, -1)
+        out['logits'] = logits
+        trg_fwd = batch['targs']['words'].view(-1)
+        assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
+        out['loss'] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
+        task.scorer1(out['loss'].item())
         return out
 
     def _grounded_forward(self, batch, task, predict):
