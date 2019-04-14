@@ -1,3 +1,7 @@
+'''
+Code for Ordered-Neurons Sentence encoder
+Modules re-used from: https://github.com/yikangshen/Ordered-Neurons
+'''
 import torch.nn.functional as f
 import torch.nn as nn
 import torch
@@ -65,6 +69,7 @@ class ONLSTMCell(nn.Module):
     ON-LSTM cell part of the ONLSTMStack.
     Code credits: https://github.com/yikangshen/Ordered-Neurons
     """
+
     def __init__(self, input_size, hidden_size, chunk_size, dropconnect=0.):
         super(ONLSTMCell, self).__init__()
         self.input_size = input_size
@@ -89,8 +94,8 @@ class ONLSTMCell(nn.Module):
             transformed_input = self.ih(input)
         gates = transformed_input + self.hh(hx)
         cingate, cforgetgate = gates[:, :self.n_chunk * 2].chunk(2, 1)
-        outgate, cell, ingate, forgetgate = gates[:, self.n_chunk *
-                                                  2:].view(-1, self.n_chunk * 4, self.chunk_size).chunk(4, 1)
+        outgate, cell, ingate, forgetgate = gates[:, self.n_chunk * \
+            2:].view(-1, self.n_chunk * 4, self.chunk_size).chunk(4, 1)
         cingate = 1. - cumsoftmax(cingate)
         cforgetgate = cumsoftmax(cforgetgate)
         distance_cforget = 1. - cforgetgate.sum(dim=-1) / self.n_chunk

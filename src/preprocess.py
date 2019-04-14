@@ -582,7 +582,7 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
 def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     '''Add WSJ vocabulary for PTB parsing models.'''
     wsj_vocab_path = os.path.join(data_dir, 'WSJ/tokens.txt')
-    # To create the tokens.txt file: run only WSJ LM baseline on Jiant, and duplicate the vocab file generated.
+    # To create the tokens.txt file: Run only WSJ LM baseline on jiant, and duplicate the vocab file generated.
     assert os.path.exists(wsj_vocab_path), "WSJ vocab file doesn't exist."
     wsj_tokens = open(wsj_vocab_path)
     for line in wsj_tokens.readlines():
