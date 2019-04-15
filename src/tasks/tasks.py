@@ -455,9 +455,9 @@ class CoLATask(SingleClassificationTask):
         self.scorer2(logits, labels)
         return
 
-@register_task('cola_probing', rel_path='CoLA_probing_npi/')
-class CoLAPTask(SingleClassificationTask):
-    '''Class for Warstdadt acceptability task'''
+@register_task('npi', rel_path='CoLA_probing_npi/')
+class NPITask(SingleClassificationTask):
+    '''Class for Warstdadt acceptability task on NPI data'''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
@@ -495,9 +495,9 @@ class CoLAPTask(SingleClassificationTask):
         self.scorer2(logits, labels)
         return
 
-@register_task('cola_npi', rel_path='CoLA_npi/')
-class CoLANPITask(SingleClassificationTask):
-    '''Class for Warstdadt acceptability task'''
+@register_task('probing_metadata', rel_path='CoLA_npi/')
+class ProbingMetaTask(SingleClassificationTask):
+    '''Class for Warstdadt-style classification task; essentially the same as CoLA task'''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
