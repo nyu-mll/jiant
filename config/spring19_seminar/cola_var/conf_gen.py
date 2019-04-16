@@ -16,7 +16,7 @@ MODEL_DICT = {
 }
 PRETRAIN_DICT = {
     'none': dict(do_pretrain=0, allow_untrained=1, pretrain_tasks="none"),
-    'sst': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="sst"),
+    # 'sst': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="sst"),
     'mnli': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="mnli"),
     'ccg': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="ccg"),
     # 'qqp': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="qqp"),    
@@ -50,7 +50,7 @@ def genConfFiles(exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT):
 def genRunMainScript(output: str, exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT, pretrainDict=PRETRAIN_DICT):
     with open(output, 'w') as fout:
         for vModel, vPretrain in itertools.product(sorted(modelDict), sorted(pretrainDict)):
-            path_to_config_file = os.path.join(CONFIG_LOAD_PATH, getConfFilename(vModel, vPretrain))
+            path_to_config_file = os.path.join(CONFIG_LOAD_PATH, getConfFilename(evalName, vModel))
             print(scratch.RunModelScr.format(path_to_config_file=path_to_config_file,
                                                 overridden_exp_name=exp_name,
                                                 overridden_run_name=getRunname(vModel, vPretrain),

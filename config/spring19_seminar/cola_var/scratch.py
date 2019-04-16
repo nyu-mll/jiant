@@ -11,13 +11,12 @@ elmo_chars_only = 0
 
 
 Model_BERT = '''// Models, BERT
-batch_size = 16
 dropout = 0.1 // following BERT paper
-tokenizer = "bert-large-uncased"
+tokenizer = "bert-large-cased"
 sent_enc = "null" // "bow", "rnn" for LSTM, "null"
 transfer_paradigm = "finetune" // "frozen" or "finetune"
 bert_fine_tune = 1
-bert_model_name = "bert-large-uncased"  // If nonempty, use this BERT model for representations.
+bert_model_name = "bert-large-cased"  // If nonempty, use this BERT model for representations.
                                         // Available values: bert-base-uncased, bert-large-cased, ...
 bert_embeddings_mode = "none"  // How to handle the embedding layer of the BERT model:
                                // "none" for only top-layer activation,
@@ -48,6 +47,7 @@ project_dir = ${{JIANT_PROJECT_PREFIX}}
 
 
 // Optimization
+batch_size = 16
 lr = 3e-4  // following "cola_elmo.conf"
 
 
