@@ -23,7 +23,6 @@ bert_embeddings_mode = "none"  // How to handle the embedding layer of the BERT 
 sep_embs_for_skip = 1 // Skip embedding uses the same embedder object as the original embedding (before skip)                               
 elmo = 0
 elmo_chars_only = 0
-openai_transformer = 0
 '''
 
 
