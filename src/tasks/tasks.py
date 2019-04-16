@@ -415,6 +415,18 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+
+@register_task('superlative', rel_path='superlative/')
+@register_task('sentential_negation_monoclausal', rel_path='sentential_negation_monoclausal/')
+@register_task('sentential_negation_biclausal', rel_path='sentential_negation_biclausal/')
+@register_task('quantifier', rel_path='quantifier/')
+@register_task('questions', rel_path='questions/')
+@register_task('quantifiers', rel_path='quantifiers/')
+@register_task('only', rel_path='only/')
+@register_task('determiner_negation_monoclausal', rel_path='determiner_negation_monoclausal/')
+@register_task('determiner_negation_biclausal', rel_path='determiner_negation_biclausal/')
+@register_task('conditionals', rel_path='conditionals/')
+@register_task('adverbs', rel_path='adverbs/')
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
@@ -455,85 +467,10 @@ class CoLATask(SingleClassificationTask):
         self.scorer2(logits, labels)
         return
 
-@register_task('npi', rel_path='CoLA_probing_npi/')
-class NPITask(SingleClassificationTask):
-    '''Class for Warstdadt acceptability task on NPI data'''
 
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super(CoLAPTask, self).__init__(name, n_classes=2, **kw)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.val_metric = "%s_mcc" % self.name
-        self.val_metric_decreases = False
-        #self.scorer1 = Average()
-        self.scorer1 = Correlation("matthews")
-        self.scorer2 = CategoricalAccuracy()
-        self.scorers = [self.scorer1, self.scorer2]
 
-    def load_data(self, path, max_seq_len):
-        '''Load the data'''
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=None, label_idx=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading CoLA.")
 
-    def get_metrics(self, reset=False):
-        return {'mcc': self.scorer1.get_metric(reset),
-                'accuracy': self.scorer2.get_metric(reset)}
 
-    def update_metrics(self, logits, labels, tagmask=None):
-        logits, labels = logits.detach(), labels.detach()
-        _, preds = logits.max(dim=1)
-        self.scorer1(preds, labels)
-        self.scorer2(logits, labels)
-        return
-
-@register_task('probing_metadata', rel_path='CoLA_npi/')
-class ProbingMetaTask(SingleClassificationTask):
-    '''Class for Warstdadt-style classification task; essentially the same as CoLA task'''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.val_metric = "%s_mcc" % self.name
-        self.val_metric_decreases = False
-        #self.scorer1 = Average()
-        self.scorer1 = Correlation("matthews")
-        self.scorer2 = CategoricalAccuracy()
-        self.scorers = [self.scorer1, self.scorer2]
-
-    def load_data(self, path, max_seq_len):
-        '''Load the data'''
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
-                            s1_idx=3, s2_idx=None, label_idx=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading CoLA.")
-
-    def get_metrics(self, reset=False):
-        return {'mcc': self.scorer1.get_metric(reset),
-                'accuracy': self.scorer2.get_metric(reset)}
-
-    def update_metrics(self, logits, labels, tagmask=None):
-        logits, labels = logits.detach(), labels.detach()
-        _, preds = logits.max(dim=1)
-        self.scorer1(preds, labels)
-        self.scorer2(logits, labels)
-        return
 
 
 @register_task('cola-analysis', rel_path='CoLA/')
