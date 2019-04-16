@@ -317,8 +317,7 @@ def main(cl_arguments):
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            if task.get_split_text('train') == task.get_split_text('val') or \
-                task.get_split_text('train') == task.get_split_text('test'):
+            if task.no_train_data:
                 continue
 
             if args.transfer_paradigm == "finetune":

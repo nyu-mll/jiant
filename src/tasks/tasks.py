@@ -223,6 +223,11 @@ class Task(object):
     def n_val_examples(self):
         return self.example_counts['val']
 
+    @property
+    def no_train_data(self):
+        return self.get_split_text('train') == self.get_split_text('val') or \
+            self.get_split_text('train') == self.get_split_text('test')
+
     def get_split_text(self, split: str):
         ''' Get split text, typically as list of columns.
 
@@ -561,7 +566,7 @@ class CoLAMinimalPairTask(Task):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
         self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
-                           s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0}, tag_vocab=tag_vocab)
+                           s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'case': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
