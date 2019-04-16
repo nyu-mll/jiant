@@ -1,0 +1,24 @@
+python main.py --config_file cola_confs\bert_ccg.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bert_ccg, target_tasks = "cola", pretrain_tasks = "ccg", do_pretrain = 1" 
+
+python main.py --config_file cola_confs\bert_mnli.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bert_mnli, target_tasks = "cola", pretrain_tasks = "mnli", do_pretrain = 1" 
+
+python main.py --config_file cola_confs\bert_none.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bert_none, target_tasks = "cola", pretrain_tasks = "none", do_pretrain = 0, allow_untrained_encoder_parameters = 1" 
+
+python main.py --config_file cola_confs\bert_sst.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bert_sst, target_tasks = "cola", pretrain_tasks = "sst", do_pretrain = 1" 
+
+python main.py --config_file cola_confs\bilstm_ccg.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bilstm_ccg, target_tasks = "cola", pretrain_tasks = "ccg", do_pretrain = 1" 
+
+python main.py --config_file cola_confs\bilstm_mnli.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bilstm_mnli, target_tasks = "cola", pretrain_tasks = "mnli", do_pretrain = 1" 
+
+python main.py --config_file cola_confs\bilstm_none.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bilstm_none, target_tasks = "cola", pretrain_tasks = "none", do_pretrain = 0, allow_untrained_encoder_parameters = 1" 
+
+python main.py --config_file cola_confs\bilstm_sst.conf \
+    --overrides "exp_name = exp_pretrain, run_name = run_bilstm_sst, target_tasks = "cola", pretrain_tasks = "sst", do_pretrain = 1" 
+
