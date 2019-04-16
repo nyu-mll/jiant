@@ -2,6 +2,7 @@ import scratch
 import os
 import types
 import itertools
+import pathlib
 
 
 CONFIG_EXPORT_PATH = 'cola_confs'
@@ -50,7 +51,7 @@ def genConfFiles(exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT):
 def genRunMainScript(output: str, exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT, pretrainDict=PRETRAIN_DICT):
     with open(output, 'w') as fout:
         for vModel, vPretrain in itertools.product(sorted(modelDict), sorted(pretrainDict)):
-            path_to_config_file = os.path.join(CONFIG_LOAD_PATH, getConfFilename(evalName, vModel))
+            path_to_config_file = pathlib.Path(os.path.join(CONFIG_LOAD_PATH, getConfFilename(evalName, vModel))).as_posix()
             print(scratch.RunModelScr.format(path_to_config_file=path_to_config_file,
                                                 overridden_exp_name=exp_name,
                                                 overridden_run_name=getRunname(vModel, vPretrain),
@@ -64,11 +65,11 @@ def genRunREPLScript(output: str, exp_name=EXP_NAME, modelDict=MODEL_DICT, pretr
     with open(output, 'w') as fout:
         for vModel, vPretrain in itertools.product(sorted(modelDict), sorted(pretrainDict)):
             run_name = getRunname(vModel, vPretrain)
-            run_path = os.path.join(os.environ['JIANT_PROJECT_PREFIX'], exp_name, run_name)
+            run_path = pathlib.Path(os.path.join(os.environ['JIANT_PROJECT_PREFIX'], exp_name, run_name)).as_posix()
 
-            path_to_params_conf = os.path.join(run_path, PARAMS_CONF)
+            path_to_params_conf = pathlib.Path(os.path.join(run_path, PARAMS_CONF)).as_posix()
             model_file = getModelFile(os.listdir(run_path))
-            path_to_model_file = os.path.join(run_path, model_file)
+            path_to_model_file = pathlib.Path(os.path.join(run_path, model_file)).as_posix()
             print(scratch.RunREPLScr.format(path_to_params_conf=path_to_params_conf, 
                                             path_to_model_file=path_to_model_file), '\n', file=fout)
 
