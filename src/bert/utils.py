@@ -12,6 +12,7 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
+
 def _get_seg_ids(ids, sep_id):
     """ Dynamically build the segment IDs for a concatenated pair of sentences
     Searches for index SEP_ID in the tensor
@@ -53,7 +54,6 @@ class BertEmbedderModule(nn.Module):
                 cache_dir=cache_dir)
         self._sep_id = tokenizer.vocab["[SEP]"]
         self._pad_id = tokenizer.vocab["[PAD]"]
-
 
         # Set trainability of this module.
         for param in self.model.parameters():
@@ -104,11 +104,11 @@ class BertEmbedderModule(nn.Module):
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
         # reserved for padding).
-        ids[ids == 0] = self._pad_id + 2 # Shift the indices that were at 0 to become 2.
+        ids[ids == 0] = self._pad_id + 2  # Shift the indices that were at 0 to become 2.
         # Index 1 should never be used since the BERT WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
-        ids -= 2 # shift indices to match BERT wordpiece embeddings
+        ids -= 2  # shift indices to match BERT wordpiece embeddings
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside BertModel,
