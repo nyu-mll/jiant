@@ -7,18 +7,19 @@
 # Current implementation is not fast; TODO to profile this and see why.
 
 from typing import Sequence, Iterable, Tuple, \
-    Union, Type, NewType
+    Union, Type, NewType, List, Text
 
 from io import StringIO
 
 import numpy as np
 from scipy import sparse
 
+import functools
+import re
+
 from nltk.tokenize.simple import SpaceTokenizer
 from .tokenizers import get_tokenizer
-import functools
 
-from typing import Tuple, List, Text
 
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
@@ -236,7 +237,26 @@ class TokenAligner(object):
 ##
 # Aligner functions. These take a raw string and return a tuple
 # of a TokenAligner instance and a list of tokens.
-## 
+##
+
+
+def space_tokenize_with_eow(sentence):
+    """Add </w> markers to ensure word-boundary alignment."""
+    return [t + "</w>" for t in sentence.split()]
+
+
+def process_bert_wordpiece_for_alignment(t):
+    """Add <w> markers to ensure word-boundary alignment."""
+    if t.startswith("##"):
+        return re.sub(r"^##", "", t)
+    else:
+        return "<w>" + t
+
+
+def space_tokenize_with_bow(sentence):
+    """Add <w> markers to ensure word-boundary alignment."""
+    return ["<w>" + t for t in sentence.split()]
+
 
 def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     MosesTokenizer = get_tokenizer("MosesTokenizer")
@@ -257,7 +277,7 @@ def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
     do_lower_case = model_name.endswith('uncased')
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
                                          text)
-    bert_tokenizer = get_tokenizer(bow_tokens)
+    bert_tokenizer = get_tokenizer(model_name)
     wpm_tokens = bert_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
