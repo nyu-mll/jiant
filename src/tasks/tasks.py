@@ -29,7 +29,6 @@ from allennlp.data import vocabulary
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
     SpanField, ListField, MetadataField
-from allennlp.data.fields.array_field import ArrayField
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
@@ -1543,7 +1542,6 @@ class TaggingTask(Task):
         self.target_indexer = {
             "words": SingleIdTokenIndexer(
                 namespace=self._label_namespace)}
-        # is self.num_tags = 511? Becuase before it's 511. 
 
     def truncate(self, max_seq_len,
                  sos_tok=utils.SOS_TOK, eos_tok=utils.EOS_TOK):
