@@ -6,12 +6,10 @@ bidirectional = 1
 word_embs = "glove"
 sep_embs_for_skip = 0 // Skip embedding uses the same embedder object as the original embedding (before skip)
 elmo = 0
-elmo_chars_only = 0
-'''
+elmo_chars_only = 0'''
 
 
-Model_BERT = '''// Models, BERT
-dropout = 0.1 // following BERT paper
+Model_BERT = '''// Model, BERT
 tokenizer = "bert-large-cased"
 sent_enc = "null" // "bow", "rnn" for LSTM, "null"
 transfer_paradigm = "finetune" // "frozen" or "finetune"
@@ -22,19 +20,16 @@ bert_embeddings_mode = "none"  // How to handle the embedding layer of the BERT 
                                // "none" for only top-layer activation,
 sep_embs_for_skip = 1 // Skip embedding uses the same embedder object as the original embedding (before skip)                               
 elmo = 0
-elmo_chars_only = 0
-'''
+elmo_chars_only = 0'''
 
 
-Model_elmo = '''// Model, elmo
+Model_bow_glove = '''// Model, bow + GloVe
 tokenizer = "MosesTokenizer" // The default tokenizer
-sent_enc = "rnn" // "bow", "rnn" for LSTM, "null"
-bidirectional = 1
-transfer_paradigm = "frozen" // "frozen" or "finetune"
-elmo = 1  // If true, load and use ELMo.
-elmo_chars_only = 0  // If true, use only the char CNN layer of ELMo. If false but elmo is true, use the full ELMo.
-elmo_weight_file_path = none  // Path to ELMo RNN weights file.  Default ELMo weights will be used if "none".
-'''
+sent_enc = "bow" // "bow", "rnn" for LSTM, "null"
+word_embs = "glove"
+elmo = 0
+elmo_chars_only = 0'''
+
 
 # The main body of the config file
 Body = '''// Import the defaults using the relative path
@@ -47,7 +42,8 @@ project_dir = ${{JIANT_PROJECT_PREFIX}}
 
 // Optimization
 batch_size = 16
-lr = 3e-4  // following "cola_elmo.conf"
+dropout = 0.1 // following BERT paper
+lr = 2e-5  // following Jason, Alex
 
 
 // Target tasks
@@ -60,12 +56,19 @@ write_preds = "val,test"  // 0 for none, or comma-separated splits in {{"train",
 load_model = 0  // If true, restore from checkpoint when starting do_pretrain
 
 
-// Model
+// Models
 {overridden_model_settings}'''
 
 
-
 # Model Running Script Template
+RunModelHead = '''#!/bin/bash
+#SBATCH --time=12:00:00
+#SBATCH --mem=20000
+#SBATCH --gres=gpu:1
+#SBATCH --job-name=myrun
+#SBATCH --output=slurm_%j.out
+'''
+
 RunModelScr = '''python main.py --config_file {path_to_config_file} \\
     --overrides "exp_name = {overridden_exp_name}, run_name = {overridden_run_name}, target_tasks = "{overridden_target_tasks}", pretrain_tasks = "{overridden_pretrain_tasks}", do_pretrain = {overridden_do_pretrain}{overridden_allow_untrained}"'''
 

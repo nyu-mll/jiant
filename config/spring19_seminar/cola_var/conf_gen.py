@@ -10,16 +10,18 @@ CONFIG_LOAD_PATH = 'cola_confs'
 EXP_NAME = 'exp_pretrain'
 EVAL_NAME = 'cola'
 PARAMS_CONF = 'params.conf'
+
 MODEL_DICT = {
     'bert': scratch.Model_BERT,
-    'bilstm': scratch.Model_biLSTM,
-    # 'elmo': scratch.Model_elmo,
+    'bow_glove': scratch.Model_bow_glove,
+    'bilstm': scratch.Model_biLSTM
 }
+
 PRETRAIN_DICT = {
     'none': dict(do_pretrain=0, allow_untrained=1, pretrain_tasks="none"),
-    # 'sst': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="sst"),
     'mnli': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="mnli"),
     'ccg': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="ccg"),
+    # 'sst': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="sst"),
     # 'qqp': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="qqp"),    
     # 'glue': dict(do_pretrain=1, allow_untrained=0, pretrain_tasks="glue")
 }
@@ -50,6 +52,7 @@ def genConfFiles(exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT):
 
 def genRunMainScript(output: str, exp_name=EXP_NAME, evalName=EVAL_NAME, modelDict=MODEL_DICT, pretrainDict=PRETRAIN_DICT):
     with open(output, 'w') as fout:
+        fout.write(scratch.RunModelHead + '\n')
         for vModel, vPretrain in itertools.product(sorted(modelDict), sorted(pretrainDict)):
             path_to_config_file = pathlib.Path(os.path.join(CONFIG_LOAD_PATH, getConfFilename(evalName, vModel))).as_posix()
             print(scratch.RunModelScr.format(path_to_config_file=path_to_config_file,
@@ -76,4 +79,4 @@ def genRunREPLScript(output: str, exp_name=EXP_NAME, modelDict=MODEL_DICT, pretr
 
 if __name__ == '__main__':
     genConfFiles()
-    genRunMainScript('addToRunMain.txt')
+    genRunMainScript('sample.sh')
