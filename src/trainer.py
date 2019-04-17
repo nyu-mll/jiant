@@ -284,7 +284,7 @@ class SamplingMultiTaskTrainer:
             tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
-            if phase == "main":
+            if phase == "pretrain":
                 # Warning: This won't be precise when training_data_fraction is set, since each example is included
                 # or excluded independently using a hashing function. Fortunately, it
                 # doesn't need to be.
@@ -411,7 +411,7 @@ class SamplingMultiTaskTrainer:
               batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=1, load_model=1, phase="main"):
+              shared_optimizer=1, load_model=1, phase="pretrain"):
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
@@ -429,7 +429,7 @@ class SamplingMultiTaskTrainer:
         scheduler_params: scheduler config object
         shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
-        phase: str, usually 'main' or 'eval'
+        phase: str, usually 'pretrain' or 'finetune'
 
         Returns
         ----------
@@ -455,7 +455,7 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
+        if self._serialization_dir is not None and phase != "finetune":  # Resume from serialization path
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
@@ -619,7 +619,7 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
+                    epoch, tasks, batch_size, periodic_save=(phase != "finetune"))
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -975,14 +975,14 @@ class SamplingMultiTaskTrainer:
     def _save_checkpoint(
             self,
             training_state,
-            phase="main",
+            phase="pretrain",
             new_best_macro=False,
             keep_all=False):
         """
         Parameters
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
-        phase: Usually 'main' or 'eval'.
+        phase: Usually 'pretrain' or 'finetune'.
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from main to eval training.
         """
@@ -992,10 +992,10 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path.")
 
         epoch = training_state["epoch"]
-        if phase == "eval":
+        if phase == "finetune":
             model_path = os.path.join(
                 self._serialization_dir,
-                "model_state_eval_best.th")
+                "model_state_finetune_best.th")
         else:
             if new_best_macro:
                 best_str = ".best_macro"
@@ -1015,12 +1015,12 @@ class SamplingMultiTaskTrainer:
                 del model_state[name]
         torch.save(model_state, model_path)
 
-        if phase != "eval":
+        if phase != "finetune":
             torch.save(
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "training_state_{}_epoch_{}{}.th".format(
+                    "pretraining_state_{}_epoch_{}{}.th".format(
                         phase, epoch, best_str)))
 
             task_states = {}
@@ -1064,7 +1064,7 @@ class SamplingMultiTaskTrainer:
                         phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
-        if phase != "eval" and new_best_macro:
+        if phase != "finetune" and new_best_macro:
             self._unmark_previous_best(phase, epoch)
 
         if not self._keep_all_checkpoints:
@@ -1198,7 +1198,7 @@ class SamplingMultiTaskTrainer:
             self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
-    def from_params(cls, model, serialization_dir, params):
+    def from_params(cls, model, serialization_dir, params, phase):
         ''' Generate trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
@@ -1213,7 +1213,10 @@ class SamplingMultiTaskTrainer:
         val_data_limit = params.pop("val_data_limit", 5000)
         max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
-        training_data_fraction = params.pop("training_data_fraction", 1.0)
+        if phase == 'pretrain':
+            training_data_fraction = params.pop("pretrain_data_fraction", 1.0)
+        else:
+            training_data_fraction = params.pop("finetune_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(

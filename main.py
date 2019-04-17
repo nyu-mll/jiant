@@ -258,7 +258,7 @@ def main(cl_arguments):
                           args.batch_size, args.bpp_base,
                           args.weighting_method, args.scaling_method,
                           to_train, opt_params, schd_params,
-                          args.shared_optimizer, args.load_model, phase="main")
+                          args.shared_optimizer, args.load_model, phase="pretrain")
 
     # Select model checkpoint from main training run to load
     if not args.do_target_task_training:
@@ -331,14 +331,14 @@ def main(cl_arguments):
 
 
             # Look for <task_name>_<param_name>, then eval_<param_name>
-            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'eval'],  model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'finetune'],  model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
                               n_batches_per_pass=1, weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
                               optimizer_params=opt_params, scheduler_params=schd_params,
-                              shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
+                              shared_optimizer=args.shared_optimizer, load_model=False, phase="finetune")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             if task.name in task_names_to_avoid_loading:
