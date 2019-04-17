@@ -130,7 +130,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        cove_layer=cove_layer,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'null':
+    elif args.sent_enc == 'none':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(args.skip_embs, f"skip_embs must be set for "
                        "'{args.sent_enc}' encoder")
