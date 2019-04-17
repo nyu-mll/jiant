@@ -1543,6 +1543,7 @@ class TaggingTask(Task):
         self.target_indexer = {
             "words": SingleIdTokenIndexer(
                 namespace=self._label_namespace)}
+        # is self.num_tags = 511? Becuase before it's 511. 
 
     def truncate(self, max_seq_len,
                  sos_tok=utils.SOS_TOK, eos_tok=utils.EOS_TOK):
@@ -1559,14 +1560,6 @@ class TaggingTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a tagging task '''
-        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
-        mask =  [MultiLabelField(so, label_namespace="indices", skip_indexing=True, num_labels=511) for so in split[3]]
-        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
-        return instances
-
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
@@ -1578,12 +1571,22 @@ class CCGTaggingTask(TaggingTask):
         ''' There are 1363 supertags in CCGBank. '''
         super().__init__(name, 1363, **kw)
         self.introduced_token = '1362'
+        self.bert_model = 1 if kw['tokenizer_name'].startswith("bert") else 0
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenizatin added token
             self.num_tags = self.num_tags + 1 
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a tagging task '''
+        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
+        mask =  [MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511) for mask in split[3]]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
+        return instances
+
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train."+self._tokenizer_name), max_seq_len,
@@ -1596,18 +1599,20 @@ class CCGTaggingTask(TaggingTask):
 
         # Get the mask for each sentence, where the mask is whether or not 
         # the token was split off by tokenization. We want to only count the first
-        # sub-peice in the BERT tokenization in the loss and score following the BERT author's NER
-        # experiment.
-        from ast import literal_eval
-        import numpy.ma as ma
-        masks = []
-        for dataset in [tr_data, val_data]:
-            dataset_mask = []
-            for i in range(len(dataset[2])):
-                mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.introduced_token, np.array(dataset[2][i])))
-                mask_indices = np.where(mask == True)[0].tolist()
-                dataset_mask.append(mask_indices)
-            masks.append(dataset_mask)
+        # sub-piece in the BERT tokenization in the loss and score, following Devlins NER
+        # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
+        # (https://arxiv.org/abs/1810.04805)
+        if self.bert_model:
+            from ast import literal_eval
+            import numpy.ma as ma
+            masks = []
+            for dataset in [tr_data, val_data]:
+                dataset_mask = []
+                for i in range(len(dataset[2])):
+                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.introduced_token, np.array(dataset[2][i])))
+                    mask_indices = np.where(mask == True)[0].tolist()
+                    dataset_mask.append(mask_indices)
+                masks.append(dataset_mask)
 
         # mock labels for test data (tagging)
         te_targs = [['0'] * len(x) for x in te_data[0]]
