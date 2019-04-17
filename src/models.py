@@ -930,7 +930,7 @@ class MultiTaskModel(nn.Module):
         '''
         This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
-                batch: a dict of inputs and target tags
+                batch: a dict of inputs and target tags 
                 task: TaggingTask
                 predict: (boolean) predict mode (not supported)
         Returns
@@ -939,7 +939,8 @@ class MultiTaskModel(nn.Module):
                 - 'loss': size average CE loss
         '''
         out = {}
-        b_size, seq_len = list(batch['inputs'].values())[0].size()
+        # batch[inputs] only has one item
+        b_size, seq_len = list(next(iter(batch["inputs"].values()))).size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
