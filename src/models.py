@@ -979,7 +979,7 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
         # batch[inputs] only has one item
-        b_size, seq_len = list(next(iter(batch["inputs"].values()))).size()
+        b_size, seq_len = next(iter(batch["inputs"].values())).size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
@@ -997,7 +997,7 @@ class MultiTaskModel(nn.Module):
             # such as word boundaries
             mask = batch["mask"]
             batch_mask = [mask[i][:seq_len] for i in range(b_size)]
-            batch_mask = torch.stack(same_length_mask)
+            batch_mask = torch.stack(batch_mask)
             keep_idxs = torch.nonzero(batch_mask.view(-1).data).squeeze()
             logits = logits.index_select(0, keep_idxs)
             targs = targs.index_select(0, keep_idxs)
