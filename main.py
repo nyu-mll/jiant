@@ -88,16 +88,16 @@ def _run_background_tensorboard(logdir, port):
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from eval (target_task_training)
+        1) best checkpoint from finetune (target_task_training)
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    eval_best = glob.glob(os.path.join(run_dir, "model_state_eval_best.th"))
-    if len(eval_best) > 0:
+    finetune_best = glob.glob(os.path.join(run_dir, "model_state_finetune_best.th"))
+    if len(finetune_best) > 0:
         assert_for_log(len(eval_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
-        return eval_best[0]
-    macro_best = glob.glob(os.path.join(run_dir, "model_state_main_epoch_*.best_macro.th"))
+        return finetune_best[0]
+    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -252,7 +252,7 @@ def main(cl_arguments):
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
         trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
-                                                            should_decrease)
+                                                            should_decrease, phase="pretrain")
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
                           args.batch_size, args.bpp_base,
@@ -291,7 +291,7 @@ def main(cl_arguments):
             model_state = model.state_dict()
             model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
             torch.save(model_state, model_path)
-
+        import pdb; pdb.set_trace()
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
@@ -333,7 +333,7 @@ def main(cl_arguments):
             # Look for <task_name>_<param_name>, then eval_<param_name>
             trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'finetune'],  model,
                                                                 args.run_dir,
-                                                                task.val_metric_decreases)
+                                                                task.val_metric_decreases, phase="finetune")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
                               n_batches_per_pass=1, weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
@@ -346,7 +346,7 @@ def main(cl_arguments):
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
-            layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
+            layer_path = os.path.join(args.run_dir, "model_state_finetune_best.th")
             if args.transfer_paradigm == "finetune":
                 # If we finetune,
                 # Save this fine-tune model with a task specific name.

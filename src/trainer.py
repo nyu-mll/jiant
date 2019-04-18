@@ -27,7 +27,7 @@ from .evaluate import evaluate
 from .utils import config
 
 
-def build_trainer_params(args, task_names):
+def build_trainer_params(args, task_names, phase='pretrain'):
     ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(
@@ -44,7 +44,13 @@ def build_trainer_params(args, task_names):
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
-        params[attr] = getattr(args, attr)
+        if attr == 'training_data_fraction':
+            if phase == 'pretrain':
+                params[attr] = getattr(args, 'pretraining_data_fraction')
+            else:
+                params[attr] = getattr(args, 'finetune_data_fraction')
+        else:
+             params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
     params['dec_val_scale'] = _get_task_attr('dec_val_scale')
@@ -58,7 +64,8 @@ def build_trainer(
     model,
     run_dir,
     metric_should_decrease=True,
-    train_type="SamplingMultiTaskTrainer"):
+    train_type="SamplingMultiTaskTrainer",
+    phase="pretrain"):
     '''Build a trainer from params.
 
     Parameters
@@ -72,7 +79,7 @@ def build_trainer(
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
-    params = build_trainer_params(args, task_names)
+    params = build_trainer_params(args, task_names, phase)
 
     opt_params = {'type': params['optimizer'], 'lr': params['lr']}
     if params['optimizer'] == 'adam':
@@ -436,6 +443,7 @@ class SamplingMultiTaskTrainer:
         Validation results
         """
         validation_interval = self._val_interval
+        import pdb; pdb.set_trace()
         task_infos, metric_infos = self._setup_training(
             tasks, batch_size, train_params, optimizer_params, scheduler_params, phase)
 
@@ -1198,7 +1206,7 @@ class SamplingMultiTaskTrainer:
             self._TB_validation_log.add_scalar(name, val_metric, epoch)
 
     @classmethod
-    def from_params(cls, model, serialization_dir, params, phase):
+    def from_params(cls, model, serialization_dir, params):
         ''' Generate trainer from parameters.  '''
 
         patience = params.pop("patience", 2)
@@ -1213,10 +1221,7 @@ class SamplingMultiTaskTrainer:
         val_data_limit = params.pop("val_data_limit", 5000)
         max_epochs = params.pop("max_epochs", -1)
         dec_val_scale = params.pop("dec_val_scale", 100)
-        if phase == 'pretrain':
-            training_data_fraction = params.pop("pretrain_data_fraction", 1.0)
-        else:
-            training_data_fraction = params.pop("finetune_data_fraction", 1.0)
+        training_data_fraction = params.pop("training_data_fraction", 1.0)
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
