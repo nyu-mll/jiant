@@ -1131,20 +1131,33 @@ class MultiTaskModel(nn.Module):
     def _multiple_choice_reading_comprehension_forward(self, batch, task, predict):
         ''' Forward call for multiple choice (selecting from a fixed set of answers)
         reading comprehension (have a supporting paragraph).
-        Batch has keys `paragraph`, `question`, `answer`, `labels` '''
+
+        Batch has a tensor of shape (n_questions, n_answers, n_tokens)
+        '''
+        assert_for_log("bert_wpm_pretokenized" in batch["answers"], "Use BERT!")
+        all_questions = batch["answers"]["bert_wpm_pretokenized"]
+
         out = {}
-        ex_embs, ex_mask = self.sent_encoder(batch['paragraph_question_answer'], task)
-        classifier = self._get_classifier(task)
-        logits = classifier(ex_embs, ex_mask)
-        out['logits'] = logits
+        all_logits = []
+        # Could reshape this whole thing
+        # but would have a lot more examples, so maybe this is wise
+        for question in all_questions:
+            inp = {"bert_wpm_pretokenized": question}
+            ex_embs, ex_mask = self.sent_encoder(inp, task)
+            classifier = self._get_classifier(task)
+            logits = classifier(ex_embs, ex_mask)
+            all_logits.append(logits)
+        out['logits'] = torch.concat(all_logits, dim=0)
 
-        keys = [k for k in batch['paragraph_question_answer']]
-        out['n_exs'] = batch['paragraph_question_answer'][keys[0]].size(0)
+        out['n_exs'] = all_questions.size(0) * all_questions.size(1)
 
+        # will likely get memory errors...
         if 'labels' in batch:
             labels = batch['labels']
-            out['loss'] = F.cross_entropy(logits, labels)
-            task.scorer1(logits, labels)
+            out['loss'] = F.cross_entropy(logits, labels.view(-1))
+            for q_logits, q_labels in zip(all_logits, labels):
+                #task.scorer1(logits, labels)
+                task.update_metrics(q_logits, q_labels)
 
         return out
 

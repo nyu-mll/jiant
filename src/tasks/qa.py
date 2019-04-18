@@ -11,7 +11,7 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.data.fields import LabelField, MetadataField
+from allennlp.data.fields import LabelField, MetadataField, ListField, SequenceLabelField
 from allennlp.data import Instance, Token
 
 from ..utils.data_loaders import process_sentence
@@ -31,6 +31,7 @@ class MultiRCTask(Task):
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
         self.scorer2 = Average()
+        self.scorer2 = F1Measure(positive_label=1)
         self.val_metric = "%s_f1" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
@@ -81,25 +82,31 @@ class MultiRCTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(para, question, answer, label):
+        def _make_instance(para, question, answers, labels, question_n):
             d = {}
-            inp = para + question[1:-1] + answer[1:]
-            d["paragraph_question_answer"] = sentence_to_text_field(inp, indexers)
             d["paragraph_str"] = MetadataField(" ".join(para))
             d["question_str"] = MetadataField(" ".join(question))
-            d["answer_str"] = MetadataField(" ".join(answer))
-            d["labels"] = LabelField(label, skip_indexing=True)
+            d["question_idx"] = MetadataField(question_n)
+            answer_list = []
+            ans_str_list = []
+            for answer_n, (answer, label) in enumerate(zip(answers, labels)):
+                inp = para + question[1:-1] + answer[1:]
+                answer_list.append(sentence_to_text_field(inp, indexers))
+                ans_str_list.append(MetadataField(" ".join(answer)))
+            d["answers"] = ListField(answer_list)
+            d["answer_strs"] = ListField(ans_str_list)
+            d["labels"] = SequenceLabelField(labels, d["answers"])
             return Instance(d)
 
-        for example in split:
+        for par_n, example in enumerate(split):
             para = example["paragraph"]["text"]
-            for ex in example["paragraph"]["questions"]:
+            for quest_n, ex in enumerate(example["paragraph"]["questions"]):
                 question = ex["question"]
-                for answer in ex["answers"]:
-                    #answers = [a["text"] for a in question["answers"]]
-                    #labels = [int(a["isAnswer"]) for a in question["answers"]])
-                    label = int(answer["isAnswer"])
-                    yield _make_instance(para, question, answer["text"], label)
+                labels = [int(a["isAnswer"]) for a in ex["answers"]]
+                answers = [a["text"] for a in ex["answers"]]
+                par_quest_n = "p%d_q%d" % (par_n, quest_n)
+                yield _make_instance(para, question, answers, labels, par_quest_n)
+
 
     def count_examples(self):
         ''' Compute here b/c we're streaming the sentences. '''
@@ -112,6 +119,13 @@ class MultiRCTask(Task):
                                         ex["paragraph"]["questions"])
 
         self.example_counts = example_counts
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        """ Expects logits and labels for all answers for a single question """
+        self.scorer1(logits, labels)
+        self.scorer3(logits, labels)
+        _, _, f1 = self.scorer3.get_metric(reset=True)
+        self.scorer2(f1)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
