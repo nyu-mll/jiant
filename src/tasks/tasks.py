@@ -1568,13 +1568,13 @@ class CCGTaggingTask(TaggingTask):
     def __init__(self, path, max_seq_len, name="ccg", **kw):
         ''' There are 1363 supertags in CCGBank. '''
         super().__init__(name, 1363, **kw)
-        self.introduced_token = '1362'
-        self.bert_model = 1 if kw['tokenizer_name'].startswith("bert") else 0
+        self.INTRODUCED_TOKEN = '1362'
+        self.bert_tokenization = 1 if kw['tokenizer_name'].startswith("bert") else 0
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len
         if self._tokenizer_name.startswith("bert-"):
-            # the +1 is for the tokenizatin added token
+            # the +1 is for the tokenization added token
             self.num_tags = self.num_tags + 1 
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -1597,16 +1597,16 @@ class CCGTaggingTask(TaggingTask):
 
         # Get the mask for each sentence, where the mask is whether or not 
         # the token was split off by tokenization. We want to only count the first
-        # sub-piece in the BERT tokenization in the loss and score, following Devlins NER
+        # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
         # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
         # (https://arxiv.org/abs/1810.04805)
-        if self.bert_model:
+        if self.bert_tokenization:
             import numpy.ma as ma
             masks = []
             for dataset in [tr_data, val_data]:
                 dataset_mask = []
                 for i in range(len(dataset[2])):
-                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.introduced_token, np.array(dataset[2][i])))
+                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
                     mask_indices = np.where(mask == True)[0].tolist()
                     dataset_mask.append(mask_indices)
                 masks.append(dataset_mask)

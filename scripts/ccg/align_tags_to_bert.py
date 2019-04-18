@@ -22,7 +22,7 @@ Currently, this supports BERT tokenization.)
 For example, 
 [Mr., Porter] -> [Mr, .,, Por, ter]. Thus, if Mr. was given a tag of 5 and Porter 6
 in the original CCG, then the alligned tags will be [5, 1362, 6, 1362], where 1362 indicates
-a subpiece word that has been split due to tokenization.
+a subpiece of a word that has been split due to tokenization.
 """
 
 def get_tags(text, current_tags, tokenizer_name, tag_dict):
@@ -37,7 +37,7 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
         if len(new_toks) > 1:
             for tok in new_toks[1:]:
                 res_tags.append(introduced_tokenizer_tag)
-                # based on BERT-paper for wordpiece,, we only predict tag
+                # based on BERT-paper for wordpiece, we only keep the tag
                 # for the first part of the word.
     _, aligned_text = aligner_fn(" ".join(text))
     assert len(aligned_text) == len(res_tags)
@@ -50,8 +50,9 @@ def align_tags_BERT(split, tokenizer_name, data_dir):
         We align BERT tags such that any introduced tokens introudced
         by BERT will be assigned a special tag, which later on in
         preprocessing/task building will be converted into a tag mask (so that
-        we do not take into account the model predictin for tokens introduced by
+        we do not take into account the model prediction for tokens introduced by
         the tokenizer).
+
         Args
         --------------
         split: str,
