@@ -83,9 +83,10 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
+
 # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
 # from here to trainer.py.
-def get_best_checkpoint_path(run_dir):
+def _get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from eval (target_task_training)
@@ -109,7 +110,7 @@ def get_best_checkpoint_path(run_dir):
         return pre_finetune[0]
 
     return ""
-
+        
 def evaluate_and_write(args, model, tasks, splits_to_write):
     """ Evaluate a model on dev and/or test, then write predictions """
     val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
@@ -211,6 +212,12 @@ def main(cl_arguments):
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
 
+    # Start Tensorboard if requested
+    if cl_args.tensorboard:
+        tb_logdir = os.path.join(args.run_dir, "tensorboard")
+        _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
+
+    log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
@@ -219,33 +226,6 @@ def main(cl_arguments):
             args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.val_interval, args.bpp_base))
         steps_log.append("Training model on tasks: %s" % args.pretrain_tasks)
-
-    if args.do_target_task_training:
-        steps_log.append("Re-training model for individual eval tasks")
-        assert_for_log(
-            args.eval_val_interval %
-            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.eval_val_interval, args.bpp_base))
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
-                       or args.allow_reuse_of_pretraining_parameters
-                       or args.do_pretrain == 0,
-                       "If you're pretraining on a task you plan to reuse as a target task, set\n"
-                       "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
-                       "  train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
-                       "  do_pretrain = 0 and do_target_task_training = 1.")
-
-    if args.do_full_eval:
-        assert_for_log(args.target_tasks != "none",
-                       "Error: Must specify at least one eval task: [%s]" % args.target_tasks)
-        steps_log.append("Evaluating model on tasks: %s" % args.target_tasks)
-
-    # Start Tensorboard if requested
-    if cl_args.tensorboard:
-        tb_logdir = os.path.join(args.run_dir, "tensorboard")
-        _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
-
-    log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
-    if args.do_pretrain:
         # Train on train tasks #
         log.info("Training...")
         stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
@@ -303,6 +283,18 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
+        steps_log.append("Re-training model for individual eval tasks")
+        assert_for_log(
+            args.eval_val_interval %
+            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
+            (args.eval_val_interval, args.bpp_base))
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
+                       or args.allow_reuse_of_pretraining_parameters
+                       or args.do_pretrain == 0,
+                       "If you're pretraining on a task you plan to reuse as a target task, set\n"
+                       "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
+                       "  train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
+                       "  do_pretrain = 0 and do_target_task_training = 1.")
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
@@ -364,6 +356,9 @@ def main(cl_arguments):
                                  skip_task_models=task_names_to_avoid_loading)
 
     if args.do_full_eval:
+        assert_for_log(args.target_tasks != "none",
+                       "Error: Must specify at least one eval task: [%s]" % args.target_tasks)
+        steps_log.append("Evaluating model on tasks: %s" % args.target_tasks)
         # Evaluate #
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
