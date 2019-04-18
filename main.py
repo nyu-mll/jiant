@@ -83,7 +83,6 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
     atexit.register(_kill_tb_child)
 
-
 # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
 # from here to trainer.py.
 def get_best_checkpoint_path(run_dir):
