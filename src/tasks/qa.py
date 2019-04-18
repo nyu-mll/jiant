@@ -8,6 +8,7 @@ import os
 import re
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
+import torch
 import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.token_indexers import SingleIdTokenIndexer
@@ -30,9 +31,10 @@ class MultiRCTask(Task):
         ''' '''
         super().__init__(name, **kw)
         self.scorer1 = F1Measure(positive_label=1)
-        self.scorer2 = Average()
-        self.scorer2 = F1Measure(positive_label=1)
-        self.val_metric = "%s_f1" % self.name
+        self.scorer2 = Average() # to delete
+        self.scorer3 = F1Measure(positive_label=1)
+        self._score_tracker = collections.defaultdict(list)
+        self.val_metric = "%s_avg_f1" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self.files_by_split = {split: os.path.join(path, "%s.json" % split) for
@@ -82,30 +84,41 @@ class MultiRCTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
-        def _make_instance(para, question, answers, labels, question_n):
+        def _make_instance(para, question, answer, label, pq_id):
+            """ pq_id: paragraph-question ID """
             d = {}
             d["paragraph_str"] = MetadataField(" ".join(para))
             d["question_str"] = MetadataField(" ".join(question))
-            d["question_idx"] = MetadataField(question_n)
-            answer_list = []
-            ans_str_list = []
-            for answer_n, (answer, label) in enumerate(zip(answers, labels)):
-                inp = para + question[1:-1] + answer[1:]
-                answer_list.append(sentence_to_text_field(inp, indexers))
-                ans_str_list.append(MetadataField(" ".join(answer)))
-            d["answers"] = ListField(answer_list)
-            d["answer_strs"] = ListField(ans_str_list)
-            d["labels"] = SequenceLabelField(labels, d["answers"])
+            d["par_quest_idx"] = MetadataField(pq_id)
+            d["answer_str"] = MetadataField(" ".join(answer))
+            inp = para + question[1:-1] + answer[1:]
+            d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            d["label"] = LabelField(label, label_namespace="labels",
+                                    skip_indexing=True)
+
+            #answer_list = []
+            #ans_str_list = []
+            #for answer_n, (answer, label) in enumerate(zip(answers, labels)):
+            #    inp = para + question[1:-1] + answer[1:]
+            #    answer_list.append(sentence_to_text_field(inp, indexers))
+            #    ans_str_list.append(MetadataField(" ".join(answer)))
+            #d["answers"] = ListField(answer_list)
+            #d["answer_strs"] = ListField(ans_str_list)
+            #d["labels"] = SequenceLabelField(labels, d["answers"])
             return Instance(d)
 
         for par_n, example in enumerate(split):
             para = example["paragraph"]["text"]
             for quest_n, ex in enumerate(example["paragraph"]["questions"]):
-                question = ex["question"]
-                labels = [int(a["isAnswer"]) for a in ex["answers"]]
-                answers = [a["text"] for a in ex["answers"]]
                 par_quest_n = "p%d_q%d" % (par_n, quest_n)
-                yield _make_instance(para, question, answers, labels, par_quest_n)
+                question = ex["question"]
+                #labels = [int(a["isAnswer"]) for a in ex["answers"]]
+                #answers = [a["text"] for a in ex["answers"]]
+
+                for answer in ex["answers"]:
+                    label = int(answer["isAnswer"])
+                    ans = answer["text"]
+                    yield _make_instance(para, question, ans, label, par_quest_n)
 
 
     def count_examples(self):
@@ -120,16 +133,36 @@ class MultiRCTask(Task):
 
         self.example_counts = example_counts
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, logits, labels, idxs, tagmask=None):
         """ Expects logits and labels for all answers for a single question """
         self.scorer1(logits, labels)
-        self.scorer3(logits, labels)
-        _, _, f1 = self.scorer3.get_metric(reset=True)
-        self.scorer2(f1)
+        logits, labels = logits.detach().cpu(), labels.detach().cpu()
+        # track progress on each question
+        for ex, logit, label in zip(idxs, logits, labels):
+            self._score_tracker[ex].append((logits, labels))
+
+        #self.scorer3(logits, labels)
+        #_, _, f1 = self.scorer3.get_metric(reset=True)
+        #self.scorer2(f1)
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
-        pcs, rcl, f1 = self.scorer1.get_metric(reset)
-        question_acc = self.scorer2.get_metric(reset)
-        return {'f1': f1} #, 'em': question_acc}
+        _, _, ans_f1 = self.scorer1.get_metric(reset)
+
+        f1s = []
+        for logits_and_labels in self._score_tracker.values():
+            logits, labels = list(zip(*logits_and_labels))
+            logits = torch.stack(logits)
+            labels = torch.stack(labels)
+            self.scorer3(logits, labels)
+            _, _, ex_f1 = self.scorer3.get_metric(reset=True)
+            f1s.append(ex_f1)
+        question_f1 = sum(f1s) / len(f1s)
+        #question_f1 = self.scorer2.get_metric(reset)
+
+        if reset:
+            self._scorer_tracker = collections.defaultdict(list)
+
+        return {'ans_f1': ans_f1, 'quest_f1': question_f1,
+                "avg_f1": (ans_f1 + question_f1) / 2}
 

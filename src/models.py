@@ -1134,30 +1134,21 @@ class MultiTaskModel(nn.Module):
 
         Batch has a tensor of shape (n_questions, n_answers, n_tokens)
         '''
-        assert_for_log("bert_wpm_pretokenized" in batch["answers"], "Use BERT!")
-        all_questions = batch["answers"]["bert_wpm_pretokenized"]
-
+        assert_for_log("para_quest_ans" in batch and "bert_wpm_pretokenized" in batch["para_quest_ans"], "Use BERT!")
         out = {}
-        all_logits = []
-        # Could reshape this whole thing
-        # but would have a lot more examples, so maybe this is wise
-        for question in all_questions:
-            inp = {"bert_wpm_pretokenized": question}
-            ex_embs, ex_mask = self.sent_encoder(inp, task)
-            classifier = self._get_classifier(task)
-            logits = classifier(ex_embs, ex_mask)
-            all_logits.append(logits)
-        out['logits'] = torch.concat(all_logits, dim=0)
-
-        out['n_exs'] = all_questions.size(0) * all_questions.size(1)
+        inp = batch["para_quest_ans"]
+        ex_embs, ex_mask = self.sent_encoder(inp, task)
+        classifier = self._get_classifier(task)
+        logits = classifier(ex_embs, ex_mask)
+        out['logits'] = logits
+        out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
 
         # will likely get memory errors...
-        if 'labels' in batch:
-            labels = batch['labels']
-            out['loss'] = F.cross_entropy(logits, labels.view(-1))
-            for q_logits, q_labels in zip(all_logits, labels):
-                #task.scorer1(logits, labels)
-                task.update_metrics(q_logits, q_labels)
+        if 'label' in batch:
+            assert "par_quest_idx" in batch
+            labels = batch['label']
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.update_metrics(logits, labels, batch["par_quest_idx"])
 
         return out
 
