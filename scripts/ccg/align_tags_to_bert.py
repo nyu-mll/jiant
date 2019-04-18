@@ -70,7 +70,6 @@ def align_tags_BERT(split, tokenizer_name, data_dir):
         text = row['text'].split()
         current_tags = row["tags"].split()
         tags = get_tags(text, current_tags, tokenizer_name, tags_to_id)
-        # mapping between MNE and other.
         new_pandas.append([row["text"], tags])
     result = pd.DataFrame(new_pandas, columns=["text", "tags"])
     result.to_csv(data_dir + "ccg." + split + "." + tokenizer_name, sep="\t")
