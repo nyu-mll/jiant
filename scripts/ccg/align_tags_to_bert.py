@@ -1,21 +1,28 @@
-
-from src.utils import retokenize
-from src import utils
 import sys
 import argparse
 import pandas as pd
-import pickle
 import os
-sys.path.insert(1, os.path.join(sys.path[0], '../../'))
+import json
+from ..src import utils
+from src.utils import retokenize
 
 """
 Usage:
-    python ccg_allignment.py --data_dir {path/to/data/file} -t {tokenizer_name}
+    Run the below command from the root directory
+    python -m scripts.ccg.align_tags_to_bert --data_dir {path/to/ccg/files} -t {tokenizer_name}
+
+The input file should be in csv form.
+The output format is the same as the input format, with the only difference being in the
+tags.
 This preprocessing file will preprocess the CCG data using the tokenizer,
 saving it alongside the original files.
 
-This file introduces a new tag to sub-words (if the tokenizer splits a word
-into two. Currently, this supports BERT tokenization.)
+This file introduces a new tag to sub-words (if the tokenizer splits a word.
+Currently, this supports BERT tokenization.)
+For example, 
+[Mr., Porter] -> [Mr, .,, Por, ter]. Thus, if Mr. was given a tag of 5 and Porter 6
+in the original CCG, then the alligned tags will be [5, 1362, 6, 1362], where 1362 indicates
+a subpiece word that has been split due to tokenization.
 """
 
 def get_tags(text, current_tags, tokenizer_name, tag_dict):
@@ -44,8 +51,8 @@ def align_tags_BERT(split, tokenizer_name, data_dir):
         by BERT will be assigned a special tag, which later on in
         preprocessing/task building will be converted into a tag mask (so that
         we do not take into account the model predictin for tokens introduced by
-        the tokenizer)
-        Parameters
+        the tokenizer).
+        Args
         --------------
         split: str,
         tokenizer_name: str,
@@ -55,15 +62,8 @@ def align_tags_BERT(split, tokenizer_name, data_dir):
         --------------
         None, saves tag alligned files to same directory as the original file.
     """
-    tags_to_id = pickle.load(open("tags_to_id", "rb"))
-    ccg_text = pd.read_csv(
-        data_dir +
-        "ccg." +
-        split,
-        names=[
-            "text",
-            "tags"],
-        delimiter="\t")
+    tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
+    ccg_text = pd.read_csv(data_dir + "ccg." + split, names=[ "text", "tags"], delimiter="\t")
     new_pandas = []
     for i in range(len(ccg_text)):
         row = ccg_text.iloc[i]

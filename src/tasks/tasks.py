@@ -1601,7 +1601,6 @@ class CCGTaggingTask(TaggingTask):
         # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
         # (https://arxiv.org/abs/1810.04805)
         if self.bert_model:
-            from ast import literal_eval
             import numpy.ma as ma
             masks = []
             for dataset in [tr_data, val_data]:
@@ -1614,7 +1613,7 @@ class CCGTaggingTask(TaggingTask):
 
         # mock labels for test data (tagging)
         te_targs = [['0'] * len(x) for x in te_data[0]]
-        te_mask = [range(len(x)) for x in te_data[0]]
+        te_mask = [list(range(len(x))) for x in te_data[0]]
         self.train_data_text = list(tr_data) + [masks[0]]
         self.val_data_text = list(val_data) + [masks[1]]
         self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
