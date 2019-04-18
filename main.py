@@ -291,7 +291,6 @@ def main(cl_arguments):
             model_state = model.state_dict()
             model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
             torch.save(model_state, model_path)
-        import pdb; pdb.set_trace()
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,

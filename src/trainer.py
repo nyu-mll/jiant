@@ -443,7 +443,6 @@ class SamplingMultiTaskTrainer:
         Validation results
         """
         validation_interval = self._val_interval
-        import pdb; pdb.set_trace()
         task_infos, metric_infos = self._setup_training(
             tasks, batch_size, train_params, optimizer_params, scheduler_params, phase)
 
