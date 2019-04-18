@@ -86,7 +86,7 @@ def _run_background_tensorboard(logdir, port):
 
 # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
 # from here to trainer.py.
-def _get_best_checkpoint_path(run_dir):
+def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from eval (target_task_training)
@@ -110,7 +110,7 @@ def _get_best_checkpoint_path(run_dir):
         return pre_finetune[0]
 
     return ""
-        
+
 def evaluate_and_write(args, model, tasks, splits_to_write):
     """ Evaluate a model on dev and/or test, then write predictions """
     val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
