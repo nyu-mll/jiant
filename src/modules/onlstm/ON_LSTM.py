@@ -1,3 +1,7 @@
+'''
+Code for Ordered-Neurons Sentence encoder
+Modules re-used from: https://github.com/yikangshen/Ordered-Neurons
+'''
 import torch.nn.functional as f
 import torch.nn as nn
 import torch
@@ -5,22 +9,10 @@ from ...utils.locked_dropout import LockedDropout
 import numpy as np
 
 
-class LayerNorm(nn.Module):
-    def __init__(self, features, eps=1e-6):
-        super(LayerNorm, self).__init__()
-        self.gamma = nn.Parameter(torch.ones(features))
-        self.beta = nn.Parameter(torch.zeros(features))
-        self.eps = eps
-
-    def forward(self, x):
-        mean = x.mean(-1, keepdim=True)
-        std = x.std(-1, keepdim=True)
-        return self.gamma * (x - mean) / (std + self.eps) + self.beta
-
-
 def embedded_dropout(embed, words, dropout=0.1, scale=None):
     if dropout:
-        mask = embed.weight.data.new().resize_((embed.weight.size(0), 1)).bernoulli_(1 - dropout).expand_as(embed.weight) / (1 - dropout)
+        mask = embed.weight.data.new().resize_((embed.weight.size(0), 1)).bernoulli_(
+            1 - dropout).expand_as(embed.weight) / (1 - dropout)
         masked_embed_weight = mask * embed.weight
     else:
         masked_embed_weight = embed.weight
@@ -73,6 +65,10 @@ def cumsoftmax(x, dim=-1):
 
 
 class ONLSTMCell(nn.Module):
+    """
+    ON-LSTM cell part of the ONLSTMStack.
+    Code credits: https://github.com/yikangshen/Ordered-Neurons
+    """
 
     def __init__(self, input_size, hidden_size, chunk_size, dropconnect=0.):
         super(ONLSTMCell, self).__init__()
@@ -83,7 +79,13 @@ class ONLSTMCell(nn.Module):
         self.ih = nn.Sequential(
             nn.Linear(input_size, 4 * hidden_size + self.n_chunk * 2, bias=True),
         )
-        self.hh = LinearDropConnect(hidden_size, hidden_size*4+self.n_chunk*2, bias=True, dropout=dropconnect)
+
+        self.hh = LinearDropConnect(
+            hidden_size,
+            hidden_size * 4 + self.n_chunk * 2,
+            bias=True,
+            dropout=dropconnect)
+
         self.drop_weight_modules = [self.hh]
 
     def forward(self, input, hidden,
@@ -93,8 +95,9 @@ class ONLSTMCell(nn.Module):
         if transformed_input is None:
             transformed_input = self.ih(input)
         gates = transformed_input + self.hh(hx)
-        cingate, cforgetgate = gates[:, :self.n_chunk*2].chunk(2, 1)
-        outgate, cell, ingate, forgetgate = gates[:, self.n_chunk*2:].view(-1, self.n_chunk*4, self.chunk_size).chunk(4, 1)
+        cingate, cforgetgate = gates[:, :self.n_chunk * 2].chunk(2, 1)
+        outgate, cell, ingate, forgetgate = gates[:, self.n_chunk * \
+            2:].view(-1, self.n_chunk * 4, self.chunk_size).chunk(4, 1)
         cingate = 1. - cumsoftmax(cingate)
         cforgetgate = cumsoftmax(cforgetgate)
         distance_cforget = 1. - cforgetgate.sum(dim=-1) / self.n_chunk
@@ -128,11 +131,24 @@ class ONLSTMStack(nn.Module):
     through ONLSTMCell structures.
     Code credits: https://github.com/yikangshen/Ordered-Neurons
     """
-    def __init__(self, layer_sizes, chunk_size, dropout=0., dropconnect=0., embedder=None, phrase_layer=None, dropouti=0.5, dropoutw=0.1, dropouth=0.3, batch_size=20):
+
+
+    def __init__(
+            self,
+            layer_sizes,
+            chunk_size,
+            dropout=0.,
+            dropconnect=0.,
+            embedder=None,
+            phrase_layer=None,
+            dropouti=0.5,
+            dropoutw=0.1,
+            dropouth=0.3,
+            batch_size=20):
         super(ONLSTMStack, self).__init__()
         self.layer_sizes = layer_sizes
         self.cells = nn.ModuleList([ONLSTMCell(layer_sizes[i],
-                                               layer_sizes[i+1],
+                                               layer_sizes[i + 1],
                                                chunk_size,
                                                dropconnect=dropconnect)
                                     for i in range(len(layer_sizes) - 1)])

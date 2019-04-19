@@ -43,11 +43,12 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMSentEncoder, PRPNSentEncoder
+    NullPhraseLayer, ONLSTMPhraseLayer, PRPNSentEncoder
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
 from .modules.prpn.PRPN import PRPN
+
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -103,11 +104,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
-
     if args.sent_enc == "onlstm":
-        onlayer = ONLSTMSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
+        onlayer = ONLSTMPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
                                     args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
                                     args.onlstm_dropouth, embedder, args.batch_size)
+        # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
+
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        onlayer.onlayer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
@@ -167,7 +169,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
                                        cove_layer=cove_layer,
                                        sep_embs_for_skip=args.sep_embs_for_skip)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'null':
+    elif args.sent_enc == 'none':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(args.skip_embs, f"skip_embs must be set for "
                        "'{args.sent_enc}' encoder")
@@ -401,6 +403,7 @@ def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
                                             task_params)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, LanguageModelingParsingTask):
+        # The LM Parsing task does not support embeddings that use skip_embs.
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
         setattr(model, '%s_mdl' % task.name, hid2voc)
@@ -967,6 +970,7 @@ class MultiTaskModel(nn.Module):
 
     def _lm_only_lr_forward(self, batch, task):
         """Only left to right pass for LM model - non-bidirectional models.
+           Used for language modeling training only in one direction.
         Args:
             batch: indexed input data
             task: (Task obejct)
@@ -982,24 +986,18 @@ class MultiTaskModel(nn.Module):
                        "Batch missing target words!")
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
         b_size, seq_len = batch['targs']['words'].size()
+        # pad_idx is the token used to pad till max_seq_len
         n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
-        out['n_exs'] = (b_size * seq_len - n_pad) * 2
-
-
-        sent, mask = sent_encoder(batch['input'], task)
+        # No of examples: only left to right, every unit in the sequence length is a training example only once.
+        out['n_exs'] = (b_size * seq_len - n_pad)
+        sent, mask = self.sent_encoder(batch['input'], task)
         sent = sent.masked_fill(1 - mask.byte(), 0)
-
-
         hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        # left to right LM logits
         logits = hid2voc(sent).view(b_size * seq_len, -1)
         out['logits'] = logits
         trg_fwd = batch['targs']['words'].view(-1)
-        # set targs to contain only left to right LM targets.
-        targs = trg_fwd
-        assert logits.size(0) == targs.size(0), "Number of logits and targets differ!"
-        # cross entropy for loss
-        out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
+        assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
+        out['loss'] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
         task.scorer1(out['loss'].item())
         return out
 

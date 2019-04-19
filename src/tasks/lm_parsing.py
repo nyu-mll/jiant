@@ -13,7 +13,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 # Fields for instance processing
 from allennlp.data import Instance, Token
 
-from ..utils.utils import process_sentence, truncate, load_tsv
+
+from ..utils.data_loaders import process_sentence, load_tsv
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -31,7 +32,7 @@ class LanguageModelingParsingTask(LanguageModelingTask):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            arr = [line.strip().split()+["<EOS>"] for line in open(split_path)]
+            arr = [line.strip().split() + ["<EOS>"] for line in open(split_path)]
             allf = 0
             for x in arr:
                 allf += len(x)
@@ -78,10 +79,10 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
                 if not toks:
                     continue
                 toks_v = toks.split()
-                toks = toks.split()+["<EOS>"]
+                toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i+seq_len]
+                yield tokens[i:i + seq_len]
 
 
 @register_task('toronto_lm', rel_path='toronto/')
@@ -103,14 +104,14 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
                 if not toks:
                     continue
                 toks_v = toks.split()
-                toks = toks.split()+["<EOS>"]
+                toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i+seq_len]
+                yield tokens[i:i + seq_len]
 
 
 @register_task('egw_lm', rel_path='egw_corpus/')
-class EnglishgigawordLanguageModelling(LanguageModelingParsingTask):
+class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
     """
@@ -128,10 +129,11 @@ class EnglishgigawordLanguageModelling(LanguageModelingParsingTask):
                 if not toks:
                     continue
                 toks_v = toks.split()
-                toks = toks.split()+["<EOS>"]
+                toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i+seq_len]
+                yield tokens[i:i + seq_len]
+
 
 
 @register_task('mnli_lm', rel_path='MNLI/')
@@ -173,6 +175,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         rows = []
         tokens = []
         for x, y in zip(data[0], data[1]):
-            tokens += x[1:-1]+["<EOS>"]+y[1:-1]+["<EOS>"]
+
+            tokens += x[1:-1] + ["<EOS>"] + y[1:-1] + ["<EOS>"]
         for i in range(0, len(tokens), seq_len):
-            yield tokens[i:i+seq_len]
+            yield tokens[i:i + seq_len]

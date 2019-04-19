@@ -324,6 +324,33 @@ class ONLSTMSentEncoder(Model):
         return self.onlayer.layer_sizes[-1]
 
 
+class ONLSTMPhraseLayer(Model):
+    ''' ON-LSTM sentence encoder '''
+    def __init__(self, vocab, d_word, d_hid, n_layers_enc,
+                 chunk_size, onlstm_dropconnect, onlstm_dropouti,
+                 dropout, onlstm_dropouth, embedder,
+                 batch_size, initializer=InitializerApplicator()):
+        super(ONLSTMPhraseLayer, self).__init__(vocab)
+        self.onlayer = ONLSTMStack(
+            [d_word] + [d_hid] * (n_layers_enc - 1) + [d_word],
+            chunk_size=chunk_size,
+            dropconnect=onlstm_dropconnect,
+            dropouti=onlstm_dropouti,
+            dropout=dropout,
+            dropouth=onlstm_dropouth,
+            embedder=embedder,
+            phrase_layer=None,
+            batch_size=batch_size
+        )
+        initializer(self)
+
+    def get_input_dim(self):
+        return self.onlayer.layer_sizes[0]
+
+    def get_output_dim(self):
+        return self.onlayer.layer_sizes[-1]
+
+
 class Pooler(nn.Module):
     ''' Do pooling, possibly with a projection beforehand '''
 
