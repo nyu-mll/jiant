@@ -11,7 +11,8 @@ Usage:
     Run the below command from the root directory
     python -m scripts.ccg.align_tags_to_bert --data_dir {path/to/ccg/files} -t {tokenizer_name}
 
-The input file should be in csv form.
+The input file should be in csv form, with text and tags columns. 
+
 The output format is the same as the input format, with the only difference being in the
 tags.
 This preprocessing file will preprocess the CCG data using the tokenizer,
@@ -29,7 +30,7 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
     aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
     assert len(text) == len(current_tags)
     res_tags = []
-    introduced_tokenizer_tag = len(tag_dict) - 1
+    introduced_tokenizer_tag = len(tag_dict)
     for i in range(len(text)):
         token = text[i]
         _, new_toks = aligner_fn(token)
@@ -44,8 +45,18 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
     str_tags = [str(s) for s in res_tags]
     return " ".join(str_tags)
 
+def align_tags_BERT(dataset, tokenizer_name):
+    new_pandas = []
+    for i in range(len(dataset)):
+        row = dataset.iloc[i]
+        text = row['text'].split()
+        current_tags = row["tags"].split()
+        tags = get_tags(text, current_tags, tokenizer_name, tags_to_id)
+        new_pandas.append([row["text"], tags])
+    result = pd.DataFrame(new_pandas, columns=["text", "tags"])
+    return result
 
-def align_tags_BERT(split, tokenizer_name, data_dir):
+def align_ccg(split, tokenizer_name, data_dir):
     """
         We align BERT tags such that any introduced tokens introudced
         by BERT will be assigned a special tag, which later on in
@@ -65,17 +76,9 @@ def align_tags_BERT(split, tokenizer_name, data_dir):
     """
     tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
     ccg_text = pd.read_csv(data_dir + "ccg." + split, names=[ "text", "tags"], delimiter="\t")
-    new_pandas = []
-    for i in range(len(ccg_text)):
-        row = ccg_text.iloc[i]
-        text = row['text'].split()
-        current_tags = row["tags"].split()
-        tags = get_tags(text, current_tags, tokenizer_name, tags_to_id)
-        new_pandas.append([row["text"], tags])
-    result = pd.DataFrame(new_pandas, columns=["text", "tags"])
+    result = align_tags_BERT(ccg_text, tokenizer_name)
     result.to_csv(data_dir + "ccg." + split + "." + tokenizer_name, sep="\t")
-
-
+    
 def main(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument(

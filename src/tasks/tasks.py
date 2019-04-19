@@ -1566,13 +1566,13 @@ class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
     def __init__(self, path, max_seq_len, name="ccg", **kw):
-        ''' There are 1363 supertags in CCGBank. '''
+        ''' There are 1363 supertags in CCGBank without introduced token. '''
         super().__init__(name, 1363, **kw)
-        self.INTRODUCED_TOKEN = '1362'
-        self.bert_tokenization = 1 if kw['tokenizer_name'].startswith("bert") else 0
+        self.INTRODUCED_TOKEN = '1363'
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len
+        self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenization added token
             self.num_tags = self.num_tags + 1 
