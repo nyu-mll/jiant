@@ -13,16 +13,15 @@ Usage:
 
 The input file should be in csv form, with text and tags columns. 
 
-The output format is the same as the input format, with the only difference being in the
-tags.
+The output format has columns text and tag, which is a string of space delimited numbers.
 This preprocessing file will preprocess the CCG data using the tokenizer,
 saving it alongside the original files.
 
 This file introduces a new tag to sub-words (if the tokenizer splits a word.
 Currently, this supports BERT tokenization.)
 For example, 
-[Mr., Porter] -> [Mr, .,, Por, ter]. Thus, if Mr. was given a tag of 5 and Porter 6
-in the original CCG, then the alligned tags will be [5, 1362, 6, 1362], where 1362 indicates
+[Mr., Porter] -> [Mr, ., Por, ter]. Thus, if Mr. was given a tag of 5 and Porter 6
+in the original CCG, then the alligned tags will be [5, 1363, 6, 1363], where 1363 indicates
 a subpiece of a word that has been split due to tokenization.
 """
 
@@ -45,7 +44,7 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
     str_tags = [str(s) for s in res_tags]
     return " ".join(str_tags)
 
-def align_tags_BERT(dataset, tokenizer_name):
+def align_tags_BERT(dataset, tokenizer_name, tags_to_id):
     new_pandas = []
     for i in range(len(dataset)):
         row = dataset.iloc[i]
@@ -76,7 +75,7 @@ def align_ccg(split, tokenizer_name, data_dir):
     """
     tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
     ccg_text = pd.read_csv(data_dir + "ccg." + split, names=[ "text", "tags"], delimiter="\t")
-    result = align_tags_BERT(ccg_text, tokenizer_name)
+    result = align_tags_BERT(ccg_text, tokenizer_name, tags_to_id)
     result.to_csv(data_dir + "ccg." + split + "." + tokenizer_name, sep="\t")
     
 def main(arguments):
@@ -94,9 +93,9 @@ def main(arguments):
         type=str,
         default='MosesTokenizer')
     args = parser.parse_args(arguments)
-    align_tags_BERT("train", args.tokenizer, args.data_dir)
-    align_tags_BERT("dev", args.tokenizer, args.data_dir)
-    align_tags_BERT("test", args.tokenizer, args.data_dir)
+    align_ccg("train", args.tokenizer, args.data_dir)
+    align_ccg("dev", args.tokenizer, args.data_dir)
+    align_ccg("test", args.tokenizer, args.data_dir)
 
 
 if __name__ == '__main__':
