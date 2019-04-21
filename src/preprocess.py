@@ -219,6 +219,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
     for task in tasks:  # add custom label namespaces
         add_task_label_vocab(vocab, task)
+    if args.force_include_wsj_vocabulary:
+        # Add WSJ full vocabulary for PTB F1 parsing tasks.
+        add_wsj_vocab(vocab, args.data_dir)
     if args.openai_transformer:
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, 'openai_bpe')
@@ -614,6 +617,17 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     # OpenAI model expects special tokens.
     vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
     vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
+
+
+def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
+    '''Add WSJ vocabulary for PTB parsing models.'''
+    wsj_vocab_path = os.path.join(data_dir, 'WSJ/tokens.txt')
+    # To create the tokens.txt file: Run only WSJ LM baseline on jiant, and duplicate the vocab file generated.
+    assert os.path.exists(wsj_vocab_path), "WSJ vocab file doesn't exist."
+    wsj_tokens = open(wsj_vocab_path)
+    for line in wsj_tokens.readlines():
+        vocab.add_token_to_namespace(line.strip(), namespace)
+    log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
 
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:

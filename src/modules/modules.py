@@ -18,7 +18,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-
+from .onlstm.ON_LSTM import ONLSTMStack
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
@@ -183,7 +183,7 @@ class SentenceEncoder(Model):
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        if self.sent_enc_type != 'null':
+        if self.sent_enc_type != 'none':
             sent_enc = self._dropout(self._phrase_layer(sent_embs, sent_lstm_mask))
         else:
             sent_enc = sent_embs
@@ -257,6 +257,33 @@ class BoWSentEncoder(Model):
         word_embs = self._text_field_embedder(sent)
         word_mask = util.get_text_field_mask(sent).float()
         return word_embs, word_mask  # need to get # nonzero elts
+
+
+class ONLSTMPhraseLayer(Model):
+    ''' ON-LSTM sentence encoder '''
+    def __init__(self, vocab, d_word, d_hid, n_layers_enc,
+                 chunk_size, onlstm_dropconnect, onlstm_dropouti,
+                 dropout, onlstm_dropouth, embedder,
+                 batch_size, initializer=InitializerApplicator()):
+        super(ONLSTMPhraseLayer, self).__init__(vocab)
+        self.onlayer = ONLSTMStack(
+            [d_word] + [d_hid] * (n_layers_enc - 1) + [d_word],
+            chunk_size=chunk_size,
+            dropconnect=onlstm_dropconnect,
+            dropouti=onlstm_dropouti,
+            dropout=dropout,
+            dropouth=onlstm_dropouth,
+            embedder=embedder,
+            phrase_layer=None,
+            batch_size=batch_size
+        )
+        initializer(self)
+
+    def get_input_dim(self):
+        return self.onlayer.layer_sizes[0]
+
+    def get_output_dim(self):
+        return self.onlayer.layer_sizes[-1]
 
 
 class Pooler(nn.Module):
