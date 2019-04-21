@@ -423,7 +423,7 @@ def build_task_specific_modules(
         These include decoders, linear layers for linear models.
      '''
     task_params = model._get_task_params(task.name)
-    if isinstance(task, SingleClassificationTask) or (isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-tuned'):
+    if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task=task, d_inp=d_sent,
                                               use_bert=model.use_bert, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
@@ -434,9 +434,16 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-    elif isinstance(task, CoLAMinimalPairTask) and task.name == 'cola-pair-frozen' and args.bert_model_name:
-        mask_lm_head = model.sent_encoder._text_field_embedder.hatch_LM_head(args)
-        setattr(model, '%s_mdl' % task.name, mask_lm_head)
+    elif isinstance(task, CoLAMinimalPairTask):
+        if task.name == 'cola-pair-frozen' and args.bert_model_name:
+            mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
+            setattr(model, '%s_mdl' % task.name, mask_lm_head)
+        elif task.name == 'cola-pair-tuned':
+            module = build_single_sentence_module(task=task, d_inp=d_sent,
+                                            use_bert=model.use_bert, params=task_params)
+            setattr(model, '%s_mdl' % task.name, module)
+        else:
+            raise ValueError("Incorrect setting for minimal pair task")
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
