@@ -85,7 +85,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        bilm, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
-                                       sep_elmo_embs_for_skip=args.sep_elmo_embs_for_skip,
+                                       elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
                                        cove_layer=cove_layer, 
                                        sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
@@ -106,7 +106,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sent_rnn,
             skip_embs=args.skip_embs,
             dropout=args.dropout,
-            sep_elmo_embs_for_skip=args.sep_elmo_embs_for_skip,
+            elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
             cove_layer=cove_layer,
             sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
@@ -118,7 +118,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs,
                                        cove_layer=cove_layer,
-                                       sep_elmo_embs_for_skip=args.sep_elmo_embs_for_skip,
+                                       elmo_skip_connection_per_task=elmo_skip_connection_per_task
                                        sent_enc_type=args.sent_enc)
         log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == 'null':
@@ -127,7 +127,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
-                                       sep_elmo_embs_for_skip=args.sep_elmo_embs_for_skip,
+                                       elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
                                        cove_layer=cove_layer, 
                                        sent_enc_type=args.sent_enc)
         d_sent = args.d_hid # passing output of pretrained encoder into task classifier
@@ -338,7 +338,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
         # then we need count and reliably map each classifier to an index used by
         # allennlp internal ELMo.
-        if args.sep_elmo_embs_for_skip:
+        if args.elmo_skip_connection_per_task:
            loaded_classifiers, num_reps = prepare_elmo_task_specific_skip_embeddings(args, tasks)
         else:
             # All tasks share the same scalars.
@@ -378,7 +378,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # representations alone the last (vector) dimension.
     embedder = ElmoTextFieldEmbedder(token_embedders, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
-                                     sep_embs_for_skip=args.sep_elmo_embs_for_skip)
+                                     elmo_skip_connection_per_task=args.elmo_skip_connection_per_task)
 
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, cove_layer
@@ -427,11 +427,11 @@ def build_task_specific_modules(
     ''' Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
      '''
-    assert not (args.skip_embs == 1 and args.sep_elmo_embs_for_skip == 0 and args.sent_enc == "null"), \
-        "Currently, skip_embs = 1, sep_elmo_embs_for_skip=1, and sent_enc = null, which means " \
+    assert not (args.skip_embs == 1 and args.elmo_skip_connection_per_task == 0 and args.sent_enc == "null"), \
+        "Currently, skip_embs = 1, elmo_skip_connection_per_task=1, and sent_enc = null, which means " \
         "you're feeding in the contextual embeddings twice into your model. Please change settings"
 
-    if args.sep_elmo_embs_for_skip:
+    if args.elmo_skip_connection_per_task:
         assert args.elmo == 1, "task specific embeddings are only supported for ELMo currently."
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
@@ -656,7 +656,7 @@ class MultiTaskModel(nn.Module):
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
         self.use_bert = bool(args.bert_model_name)
-        self.sep_elmo_embs_for_skip = args.sep_elmo_embs_for_skip
+        self.elmo_skip_connection_per_task = args.elmo_skip_connection_per_task
 
     def forward(self, task, batch, predict=False):
         '''
@@ -1134,7 +1134,7 @@ class MultiTaskModel(nn.Module):
         '''
         params = {}
         if self.elmo:
-            if not self.sep_elmo_embs_for_skip:
+            if not self.elmo_skip_connection_per_task:
                 tasks = [None]
             else:
                 tasks = [None] + tasks
