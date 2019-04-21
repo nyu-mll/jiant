@@ -415,6 +415,15 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+@register_task('cola_npi_sup', rel_path='CoLA/npi_sup')
+@register_task('cola_npi_quessmp', rel_path='CoLA/npi_quessmp')
+@register_task('cola_npi_ques', rel_path='CoLA/npi_ques')
+@register_task('cola_npi_qnt', rel_path='CoLA/npi_qnt')
+@register_task('cola_npi_only', rel_path='CoLA/npi_only')
+@register_task('cola_npi_negsent', rel_path='CoLA/npi_negsent')
+@register_task('cola_npi_negdet', rel_path='CoLA/npi_negdet')
+@register_task('cola_npi_cond', rel_path='CoLA/npi_cond')
+@register_task('cola_npi_adv', rel_path='CoLA/npi_adv')
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
@@ -454,12 +463,6 @@ class CoLATask(SingleClassificationTask):
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
         return
-
-# register cola-like tasks with a non-decorator syntax
-# put data for cola_npi_x in a subfoler named cola_npi_x under CoLA 
-from .__init__ import ALL_COLA_NPI_TASKS
-for cola_npi_x in ALL_COLA_NPI_TASKS:
-    CoLATask = register_task(cola_npi_x, rel_path='CoLA/%s/' % cola_npi_x)(CoLATask)
 
 
 @register_task('cola-analysis', rel_path='CoLA/')

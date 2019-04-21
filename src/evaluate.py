@@ -128,7 +128,18 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
         glue_style_tasks = (tasks_module.ALL_NLI_PROBING_TASKS
-                            + tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS)
+                            + tasks_module.ALL_GLUE_TASKS + ['wmt'] 
+                            + [ 'cola_npi_sup',
+                                'cola_npi_quessmp',
+                                'cola_npi_ques',
+                                'cola_npi_qnt',
+                                'cola_npi_only',
+                                'cola_npi_negsent',
+                                'cola_npi_negdet',
+                                'cola_npi_cond',
+                                'cola_npi_adv'
+                              ]
+                            )
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (

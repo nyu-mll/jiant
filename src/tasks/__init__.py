@@ -13,10 +13,6 @@ from .registry import REGISTRY
 # Task class definition
 from .tasks import Task
 
-##
-# All cola-like tasks for which we need write_preds() and append to ALL_GLUE_TASKS below
-ALL_COLA_NPI_TASKS = ['cola_npi_x']
-
 
 # Task lists for handling as a group; these names correspond to the keys in
 # the task registry.
