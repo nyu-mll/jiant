@@ -898,6 +898,90 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
+@regiscter_task('mnli-diag', rel_path='MNLI/')
+class MultiNLIDiagnosticTask(PairClassificationTask):
+    ''' Task class for diagnostic on MNLI'''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=3, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''load MNLI diagnostics data and create scorers for each "coarse__fine" tag. '''
+        
+        tag_vocab = vocabulary.Vocabulary(counter=None)
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        diag_data = load_tsv(tokenizer_name=self._tokenizer_name,
+                            data_file=os.path.join(path, 'diagnostic-full.tsv'),
+                            max_seq_len=max_seq_len,
+                            s1_idx=6, s2_idx=7, label_idx=8, label_fn=targ_map.__getitem__,
+                            skip_rows=1, tag2idx_dict={
+                                'Lexical Semantics': 0,
+                                'Predicate-Argument Structure': 1,
+                                'Logic': 2,
+                                'Knowledge': 3,
+                                'Domain': 4
+                            }, tag_vocab=tag_vocab)
+        self.train_data_text = diag_data
+        self.val_data_text = diag_data
+        self.test_data_text = diag_data
+        # Create score for each tag from tag-index dict
+        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy)
+
+        log.info("\tFinished loading MNLI Diagnostics data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(input1, input2, label, tagids):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            if is_using_bert:
+                inp = input1 + input2[1:] # drop the leading [CLS] token
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(label, label_namespace="labels",
+                                     skip_indexing=True)
+            d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
+                                           skip_indexing=True, num_labels=len(self.tag_list))
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        self.scorer1(logits, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, logits, labels, tagmask)
+        return
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+
+        collected_metrics = {'accuracy': self.scorer1.get_metric(reset)}
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers1,
+                'accuracy',
+                self.tag_list,
+                reset))
+        return collected_metrics
+    
+    
+
 @register_task('mnli-diagnostic', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
