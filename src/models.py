@@ -702,7 +702,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         elif isinstance(task, CoLAMinimalPairTask):
-            out = self._pair_sentence_acceptability_forward(batch, task, predict) 
+            out = self._minimal_pair_acceptability_forward(batch, task, predict) 
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -753,7 +753,12 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_acceptability_forward(self, batch, task, predict):
+    def _minimal_pair_acceptability_forward(self, batch, task, predict):
+        """
+        run acceptablity judgement task on minimal pairs,
+        the frozen setting is only available to BERT with masked LM head,
+        the tuned setting can be used with any model
+        """
         out = {}
 
         if task.name == 'cola-pair-frozen':
