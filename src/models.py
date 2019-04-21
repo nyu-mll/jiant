@@ -979,7 +979,7 @@ class MultiTaskModel(nn.Module):
         '''
         out = {}
         # batch[inputs] only has one item
-        b_size, seq_len = list(batch["inputs"].values()[0]).size()
+        b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
