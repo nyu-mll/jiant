@@ -33,10 +33,11 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask, CoLAMinimalPairTask
+    TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
+from .tasks.minimal_pairs import CoLAMinimalPairTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
