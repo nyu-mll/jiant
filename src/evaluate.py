@@ -39,7 +39,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     '''Evaluate on a dataset'''
     FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
     # Enforce that these tasks have the 'idx' field set.
-    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt']
+    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS
     model.eval()
     iterator = BasicIterator(batch_size)
 

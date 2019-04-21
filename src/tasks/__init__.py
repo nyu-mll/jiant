@@ -21,7 +21,7 @@ ALL_COLA_NPI_TASKS = ['cola_npi_x']
 # Task lists for handling as a group; these names correspond to the keys in
 # the task registry.
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic'] + ALL_COLA_NPI_TASKS
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
 
 # people are mostly using nli-prob for now, but we will change to
