@@ -153,12 +153,15 @@ class BertEmbedderModule(nn.Module):
         else:
             return self.model.config.hidden_size
 
-    def hatch_LM_head(self, args):
+    def transplant_LM_head(self, args):
         """
-        extract a masked LM classifier from pretrained bert parameters
+        download the masked LM classifier from huggingface bert
+        and tying the word embbing layer weight and classifier word weight
+
+        Returns:
+            classifier: the classifier module for masked LM
         """
         bert = pytorch_pretrained_bert.BertForMaskedLM.from_pretrained(args.bert_model_name)
-        # self.model = bert.bert
         classifier = bert.cls
         classifier.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
         return classifier
