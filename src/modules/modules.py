@@ -73,7 +73,7 @@ class SentenceEncoder(Model):
 
     def __init__(self, vocab, text_field_embedder, num_highway_layers, phrase_layer,
                  skip_embs=True, cove_layer=None, dropout=0.2, mask_lstms=True,
-                 sep_elmo_embs_for_skip=False, sent_enc_type=None, initializer=InitializerApplicator()):
+                 elmo_skip_connection_per_task=False, sent_enc_type=None, initializer=InitializerApplicator()):
         super(SentenceEncoder, self).__init__(vocab)
 
         if text_field_embedder is None:
@@ -91,7 +91,7 @@ class SentenceEncoder(Model):
         self._cove_layer = cove_layer
         self.pad_idx = vocab.get_token_index(vocab._padding_token)
         self.skip_embs = skip_embs
-        self.sep_elmo_embs_for_skip = sep_elmo_embs_for_skip
+        self.elmo_skip_connection_per_task = elmo_skip_connection_per_task
         d_inp_phrase = self._phrase_layer.get_input_dim()
         self.output_dim = phrase_layer.get_output_dim() + (skip_embs * d_inp_phrase)
 
@@ -103,7 +103,7 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
-    def get_cove_layer_embeddings(sent, sent_embs, task_sent_embs):
+    def _get_cove_layer_embeddings(sent, sent_embs, task_sent_embs):
         """
         Args:
             - sent str: indexed sentence to embed. 
@@ -168,7 +168,7 @@ class SentenceEncoder(Model):
         sent_embs = self._dropout(sent_embs) 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
-        if self.sep_elmo_embs_for_skip:
+        if self.elmo_skip_connection_per_task:
             task_sent_embs = self._highway_layer(
                 self._text_field_embedder(
                     sent, task._classifier_name))
@@ -178,7 +178,7 @@ class SentenceEncoder(Model):
         assert (sent_embs is not None) or (task_sent_embs is not None)
 
         if self._cove_layer is not None:
-            task_sent_embs, sent_embs = get_cove_layer_embeddings(sent, sent_embs, task_sent_embs)
+            task_sent_embs, sent_embs = _get_cove_layer_embeddings(sent, sent_embs, task_sent_embs)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
@@ -195,7 +195,7 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence
             # embs
-            skip_vec = task_sent_embs if self.sep_elmo_embs_for_skip else sent_embs
+            skip_vec = task_sent_embs if self.elmo_skip_connection_per_task else sent_embs
             utils.assert_for_log(skip_vec is not None,
                                  "skip_vec is none - perhaps embeddings are not configured "
                                  "properly?")
