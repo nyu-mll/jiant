@@ -439,8 +439,8 @@ def build_task_specific_modules(
     ''' Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
      '''
-    assert not (args.skip_embs == 1 and args.elmo_skip_connection_per_task == 0 and args.sent_enc == "null"), \
-        "Currently, skip_embs = 1, elmo_skip_connection_per_task=1, and sent_enc = null, which means " \
+    assert not (args.skip_embs == 1 and args.elmo_skip_connection_per_task == 0 and args.sent_enc == "none"), \
+        "Currently, skip_embs = 1, elmo_skip_connection_per_task=1, and sent_enc = none, which means " \
         "you're feeding in the contextual embeddings twice into your model. Please change settings"
 
     if args.elmo_skip_connection_per_task:

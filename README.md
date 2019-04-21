@@ -153,7 +153,7 @@ To use the ON-LSTM sentence encoder from [Ordered Neurons: Integrating Tree Stru
 
 ### Supported Functionality
 
-We allow for training on a shared encoder from the word contextual embeddings, as well as forwarding from the embeddings to the task specific module (by setting sent_enc = null).  Additionally, if you would like to add a skip connection from the contextual embedding directly to the module, set skip_embs = 1. 
+We allow for training on a shared encoder from the word contextual embeddings, as well as forwarding from the embeddings to the task specific module (by setting sent_enc = none).  Additionally, if you would like to add a skip connection from the contextual embedding directly to the module, set skip_embs = 1. 
 
 ### Transformers 
 
