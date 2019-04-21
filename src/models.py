@@ -35,7 +35,6 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
-from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
@@ -43,10 +42,10 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer
+    NullPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-from .modules.onlstm.ON_LSTM import ONLSTMStack
+
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -70,19 +69,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                          'num_attention_heads': args.n_heads})
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
-    if args.sent_enc == "onlstm":
-        onlayer = ONLSTMPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
-                                    args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
-                                    args.onlstm_dropouth, embedder, args.batch_size)
-        # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
-        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                       onlayer.onlayer, skip_embs=args.skip_embs,
-                                       dropout=args.dropout,
-                                       sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_layer)
-        d_sent = args.d_word
-        log.info("Using ON-LSTM sentence encoder!")
-    elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
+    # Make sentence encoder
+    if any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(
             args.sent_enc in [
@@ -97,8 +85,9 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        bilm, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
-                                       sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_layer)
+                                       elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
+                                       cove_layer=cove_layer, 
+                                       sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
         log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == 'bow':
@@ -117,8 +106,9 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sent_rnn,
             skip_embs=args.skip_embs,
             dropout=args.dropout,
-            sep_embs_for_skip=args.sep_embs_for_skip,
-            cove_layer=cove_layer)
+            elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
+            cove_layer=cove_layer,
+            sent_enc_type=args.sent_enc)
         d_sent = 2 * args.d_hid
         log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == 'transformer':
@@ -128,19 +118,19 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        transformer, dropout=args.dropout,
                                        skip_embs=args.skip_embs,
                                        cove_layer=cove_layer,
-                                       sep_embs_for_skip=args.sep_embs_for_skip)
+                                       elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
+                                       sent_enc_type=args.sent_enc)
         log.info("Using Transformer architecture for shared encoder!")
-    elif args.sent_enc == 'none':
+    elif args.sent_enc == 'null':
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(args.skip_embs, f"skip_embs must be set for "
-                       "'{args.sent_enc}' encoder")
         phrase_layer = NullPhraseLayer(rnn_params['input_size'])
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        phrase_layer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
-                                       sep_embs_for_skip=args.sep_embs_for_skip,
-                                       cove_layer=cove_layer)
-        d_sent = 0  # skip connection added below
+                                       elmo_skip_connection_per_task=args.elmo_skip_connection_per_task,
+                                       cove_layer=cove_layer, 
+                                       sent_enc_type=args.sent_enc)
+        d_sent = args.d_hid # passing output of pretrained encoder into task classifier
         log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
@@ -238,6 +228,40 @@ def get_task_whitelist(args):
              str(train_task_names), str(eval_clf_names))
     return train_task_names, eval_clf_names
 
+def prepare_elmo_task_specific_skip_embeddings(args, tasks):
+    # Determine a deterministic list of classifier names to use for each
+    # task.
+    classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
+    # Reload existing classifier map, if it exists.
+    classifier_save_path = args.run_dir + "/classifier_task_map.json"
+    if os.path.isfile(classifier_save_path):
+        loaded_classifiers = json.load(
+            open(args.run_dir + "/classifier_task_map.json", 'r'))
+    else:
+        # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
+        # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
+        # classiifer task map.
+        assert_for_log(args.do_pretrain or args.allow_missing_task_map,
+                       "Error: {} should already exist.".format(classifier_save_path))
+        if args.allow_missing_task_map:
+            log.warning("Warning: classifier task map not found in model"
+                        " directory. Creating a new one from scratch.")
+        # default is always @pretrain@
+        loaded_classifiers = {"@pretrain@": 0}
+    # Add the new tasks and update map, keeping the internal ELMo index
+    # consistent.
+    max_number_classifiers = max(loaded_classifiers.values())
+    offset = 1
+    for classifier in classifiers:
+        if classifier not in loaded_classifiers:
+            loaded_classifiers[classifier] = max_number_classifiers + offset
+            offset += 1
+    log.info("Classifiers:{}".format(loaded_classifiers))
+    open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
+    # Every index in classifiers needs to correspond to a valid ELMo output
+    # representation.
+    num_reps = 1 + max(loaded_classifiers.values())
+    return loaded_classifiers, num_reps
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     ''' Build embeddings according to options in args '''
@@ -310,48 +334,18 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     else:
         log.info("\tNot using character embeddings!")
 
-    # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
-    # then we need count and reliably map each classifier to an index used by
-    # allennlp internal ELMo.
-    if args.sep_embs_for_skip:
-        # Determine a deterministic list of classifier names to use for each
-        # task.
-        classifiers = sorted(set(map(lambda x: x._classifier_name, tasks)))
-        # Reload existing classifier map, if it exists.
-        classifier_save_path = args.run_dir + "/classifier_task_map.json"
-        if os.path.isfile(classifier_save_path):
-            loaded_classifiers = json.load(
-                open(args.run_dir + "/classifier_task_map.json", 'r'))
-        else:
-            # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
-            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
-            # classiifer task map.
-            assert_for_log(args.do_pretrain or args.allow_missing_task_map,
-                           "Error: {} should already exist.".format(classifier_save_path))
-            if args.allow_missing_task_map:
-                log.warning("Warning: classifier task map not found in model"
-                            " directory. Creating a new one from scratch.")
-            # default is always @pretrain@
-            loaded_classifiers = {"@pretrain@": 0}
-        # Add the new tasks and update map, keeping the internal ELMo index
-        # consistent.
-        max_number_classifiers = max(loaded_classifiers.values())
-        offset = 1
-        for classifier in classifiers:
-            if classifier not in loaded_classifiers:
-                loaded_classifiers[classifier] = max_number_classifiers + offset
-                offset += 1
-        log.info("Classifiers:{}".format(loaded_classifiers))
-        open(classifier_save_path, 'w+').write(json.dumps(loaded_classifiers))
-        # Every index in classifiers needs to correspond to a valid ELMo output
-        # representation.
-        num_reps = 1 + max(loaded_classifiers.values())
-    else:
-        # All tasks share the same scalars.
-        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
-        loaded_classifiers = {"@pretrain@": 0}
-        num_reps = 1
     if args.elmo:
+        # If we want separate ELMo scalar weights (a different ELMo representation for each classifier,
+        # then we need count and reliably map each classifier to an index used by
+        # allennlp internal ELMo.
+        if args.elmo_skip_connection_per_taskp:
+           loaded_classifiers, num_reps = prepare_elmo_task_specific_skip_embeddings(args, tasks)
+        else:
+            # All tasks share the same scalars.
+            # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
+            loaded_classifiers = {"@pretrain@": 0}
+            num_reps = 1
+
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
         if args.elmo_chars_only:
@@ -384,7 +378,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # representations alone the last (vector) dimension.
     embedder = ElmoTextFieldEmbedder(token_embedders, loaded_classifiers,
                                      elmo_chars_only=args.elmo_chars_only,
-                                     sep_embs_for_skip=args.sep_embs_for_skip)
+                                     elmo_skip_connection_per_task=args.elmo_skip_connection_per_task)
 
     assert d_emb, "You turned off all the embeddings, ya goof!"
     return d_emb, embedder, cove_layer
@@ -433,6 +427,12 @@ def build_task_specific_modules(
     ''' Build task-specific components for a task and add them to model.
         These include decoders, linear layers for linear models.
      '''
+    assert not (args.skip_embs == 1 and args.elmo_skip_connection_per_task == 0 and args.sent_enc == "null"), \
+        "Currently, skip_embs = 1, elmo_skip_connection_per_task=1, and sent_enc = null, which means " \
+        "you're feeding in the contextual embeddings twice into your model. Please change settings"
+
+    if args.elmo_skip_connection_per_task:
+        assert args.elmo == 1, "task specific embeddings are only supported for ELMo currently."
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task=task, d_inp=d_sent,
@@ -441,11 +441,6 @@ def build_task_specific_modules(
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, LanguageModelingParsingTask):
-        # The LM Parsing task does not support embeddings that use skip_embs.
-        hid2voc = build_lm(task, d_sent, args)
-        setattr(model, '%s_hid2voc' % task.name, hid2voc)
-        setattr(model, '%s_mdl' % task.name, hid2voc)
     elif isinstance(task, LanguageModelingTask):
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
@@ -555,7 +550,6 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Params):
     ''' Build a single sentence classifier
-
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
@@ -563,7 +557,6 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
             sequence, rather than max pooling. We do this for BERT specifically to follow
             the convention set in the paper (Devlin et al., 2019).
         - params (Params): Params object with task-specific parameters
-
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
@@ -578,7 +571,6 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
 
 def build_pair_sentence_module(task, d_inp, model, params):
     ''' Build a pair classifier, shared if necessary '''
-
     def build_pair_attn(d_in, d_hid_attn):
         ''' Build the pair model '''
         d_inp_model = 2 * d_in
@@ -662,7 +654,7 @@ class MultiTaskModel(nn.Module):
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
         self.use_bert = bool(args.bert_model_name)
-        self.sep_embs_for_skip = args.sep_embs_for_skip
+        self.elmo_skip_connection_per_task = args.elmo_skip_connection_per_task
 
     def forward(self, task, batch, predict=False):
         '''
@@ -700,10 +692,7 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
-                out = self._lm_only_lr_forward(batch, task)
-            else:
-                out = self._lm_forward(batch, task, predict)
+            out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
@@ -1040,38 +1029,6 @@ class MultiTaskModel(nn.Module):
             pass
         return out
 
-    def _lm_only_lr_forward(self, batch, task):
-        """Only left to right pass for LM model - non-bidirectional models.
-           Used for language modeling training only in one direction.
-        Args:
-            batch: indexed input data
-            task: (Task obejct)
-        return:
-            out: (dict)
-                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
-                - 'loss': size average CE loss
-        """
-
-        out = {}
-        assert_for_log('targs' in batch and 'words' in batch['targs'],
-                       "Batch missing target words!")
-        pad_idx = self.vocab.get_token_index(self.vocab._padding_token, 'tokens')
-        b_size, seq_len = batch['targs']['words'].size()
-        # pad_idx is the token used to pad till max_seq_len
-        n_pad = batch['targs']['words'].eq(pad_idx).sum().item()
-        # No of examples: only left to right, every unit in the sequence length is a training example only once.
-        out['n_exs'] = (b_size * seq_len - n_pad)
-        sent, mask = self.sent_encoder(batch['input'], task)
-        sent = sent.masked_fill(1 - mask.byte(), 0)
-        hid2voc = getattr(self, "%s_hid2voc" % task.name)
-        logits = hid2voc(sent).view(b_size * seq_len, -1)
-        out['logits'] = logits
-        trg_fwd = batch['targs']['words'].view(-1)
-        assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
-        out['loss'] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
-        task.scorer1(out['loss'].item())
-        return out
-
     def _grounded_forward(self, batch, task, predict):
         out, img_seq = {}, []
         sent_emb, sent_mask = self.sent_encoder(batch['input1'], task)
@@ -1175,7 +1132,7 @@ class MultiTaskModel(nn.Module):
         '''
         params = {}
         if self.elmo:
-            if not self.sep_embs_for_skip:
+            if not self.elmo_skip_connection_per_task:
                 tasks = [None]
             else:
                 tasks = [None] + tasks
