@@ -14,10 +14,15 @@ from .registry import REGISTRY
 from .tasks import Task
 
 ##
+# All cola-like tasks for which we need write_preds() and append to ALL_GLUE_TASKS below
+ALL_COLA_NPI_TASKS = ['cola_npi_x']
+
+
 # Task lists for handling as a group; these names correspond to the keys in
 # the task registry.
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic'] + ALL_COLA_NPI_TASKS
+
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list

@@ -455,6 +455,13 @@ class CoLATask(SingleClassificationTask):
         self.scorer2(logits, labels)
         return
 
+# register cola-like tasks with a non-decorator syntax
+# put data for colax in a subfoler named colax under CoLA 
+from .__init__ import ALL_COLA_NPI_TASKS
+for cola_npi_x in ALL_COLA_NPI_TASKS:
+    CoLATask = register_task(cola_npi_x, rel_path='CoLA/%s/' % cola_npi_x)(CoLATask)
+
+
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
