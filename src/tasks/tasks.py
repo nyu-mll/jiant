@@ -414,19 +414,6 @@ class SSTTask(SingleClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
 
-
-
-@register_task('superlative', rel_path='superlative/')
-@register_task('sentential_negation_monoclausal', rel_path='sentential_negation_monoclausal/')
-@register_task('sentential_negation_biclausal', rel_path='sentential_negation_biclausal/')
-@register_task('quantifier', rel_path='quantifier/')
-@register_task('questions', rel_path='questions/')
-@register_task('quantifiers', rel_path='quantifiers/')
-@register_task('only', rel_path='only/')
-@register_task('determiner_negation_monoclausal', rel_path='determiner_negation_monoclausal/')
-@register_task('determiner_negation_biclausal', rel_path='determiner_negation_biclausal/')
-@register_task('conditionals', rel_path='conditionals/')
-@register_task('adverbs', rel_path='adverbs/')
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
