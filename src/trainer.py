@@ -29,8 +29,8 @@ from .utils import config
 
 def build_trainer_params(args, task_names, phase='pretrain'):
     ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
-    for task specific training parameters. '''
-    def _get_task_attr(attr_name): return config.get_task_attr(
+    for task spr(ecific training parameters. '''
+    def _get_task_attattr_name): return config.get_task_attr(
         args, task_names, attr_name)
 
     params = {}
@@ -46,9 +46,9 @@ def build_trainer_params(args, task_names, phase='pretrain'):
     for attr in extra_opts:
         if attr == 'training_data_fraction':
             if phase == 'pretrain':
-                params[attr] = getattr(args, 'pretraining_data_fraction')
+                params[attr] = getattr(args, 'pretrain_data_fraction')
             else:
-                params[attr] = getattr(args, 'finetune_data_fraction')
+                params[attr] = getattr(args, 'target_train_data_fraction')
         else:
              params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
@@ -358,7 +358,7 @@ class SamplingMultiTaskTrainer:
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif 'max_epoch_' in scaling_method:
             epochs = scaling_method.strip('max_epoch_').split('_')
-            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            assert len(epochs) == num_tasks, "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
 
         # normalized by max weight
@@ -436,7 +436,7 @@ class SamplingMultiTaskTrainer:
         scheduler_params: scheduler config object
         shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
-        phase: str, usually 'pretrain' or 'finetune'
+        phase: str, usually 'pretrain' or 'target_train'
 
         Returns
         ----------
@@ -462,7 +462,7 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None and phase != "finetune":  # Resume from serialization path
+        if self._serialization_dir is not None and phase != "target_train":  # Resume from serialization path
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
@@ -626,7 +626,7 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "finetune"))
+                    epoch, tasks, batch_size, periodic_save=(phase != "target_train"))
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -989,7 +989,7 @@ class SamplingMultiTaskTrainer:
         Parameters
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
-        phase: Usually 'pretrain' or 'finetune'.
+        phase: Usually 'pretrain' or 'target_train'.
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from main to eval training.
         """
@@ -999,10 +999,10 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path.")
 
         epoch = training_state["epoch"]
-        if phase == "finetune":
+        if phase == "target_train":
             model_path = os.path.join(
                 self._serialization_dir,
-                "model_state_finetune_best.th")
+                "model_state_target_train_best.th")
         else:
             if new_best_macro:
                 best_str = ".best_macro"
@@ -1022,7 +1022,7 @@ class SamplingMultiTaskTrainer:
                 del model_state[name]
         torch.save(model_state, model_path)
 
-        if phase != "finetune":
+        if phase != "target_train":
             torch.save(
                 training_state,
                 os.path.join(
@@ -1071,7 +1071,7 @@ class SamplingMultiTaskTrainer:
                         phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
-        if phase != "finetune" and new_best_macro:
+        if phase != "target_train" and new_best_macro:
             self._unmark_previous_best(phase, epoch)
 
         if not self._keep_all_checkpoints:

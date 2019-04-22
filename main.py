@@ -88,25 +88,25 @@ def _run_background_tensorboard(logdir, port):
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from finetune (target_task_training)
+        1) best checkpoint from target_task_training
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    finetune_best = glob.glob(os.path.join(run_dir, "model_state_finetune_best.th"))
-    if len(finetune_best) > 0:
-        assert_for_log(len(eval_best) == 1,
+    target_task_best = glob.glob(os.path.join(run_dir, "model_state_finetune_best.th"))
+    if len(target_task_best) > 0:
+        assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
-        return finetune_best[0]
+        return target_task_best[0]
     macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    pre_finetune = glob.glob(os.path.join(run_dir, "model_state_untrained_prefinetune.th"))
-    if len(pre_finetune) > 0:
-        assert_for_log(len(pre_finetune) == 1,
+    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pretarget_train.th"))
+    if len(pre_target_train) > 0:
+        assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
-        return pre_finetune[0]
+        return pre_target_train[0]
 
     return ""
 
@@ -330,14 +330,14 @@ def main(cl_arguments):
 
 
             # Look for <task_name>_<param_name>, then eval_<param_name>
-            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'finetune'],  model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'],  model,
                                                                 args.run_dir,
-                                                                task.val_metric_decreases, phase="finetune")
+                                                                task.val_metric_decreases, phase="target_train")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
                               n_batches_per_pass=1, weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
                               optimizer_params=opt_params, scheduler_params=schd_params,
-                              shared_optimizer=args.shared_optimizer, load_model=False, phase="finetune")
+                              shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             if task.name in task_names_to_avoid_loading:
@@ -345,7 +345,7 @@ def main(cl_arguments):
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
-            layer_path = os.path.join(args.run_dir, "model_state_finetune_best.th")
+            layer_path = os.path.join(args.run_dir, "model_state_target_train_best.th")
             if args.transfer_paradigm == "finetune":
                 # If we finetune,
                 # Save this fine-tune model with a task specific name.
