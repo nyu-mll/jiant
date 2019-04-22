@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import os
 import json
-from ..src import utils
+from src import utils
 from src.utils import retokenize
 
 """
