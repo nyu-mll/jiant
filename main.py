@@ -23,7 +23,7 @@ from src.utils import config
 from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
 from src.preprocess import build_tasks
 from src.models import build_model
-from src.trainer import build_trainer, build_trainer_params
+from src.trainer import build_trainer
 from src import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
@@ -177,7 +177,7 @@ def check_configeration(args, pretrain_tasks, target_tasks):
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
 
 
-def _try_logging_git_info(): 
+def _log_git_info(): 
     try:
         log.info("Waiting on git info....")
         c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -288,7 +288,7 @@ def setup(args, cl_args):
     if EMAIL_NOTIFIER:
         EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
-    _try_logging_git_info()
+    _log_git_info()
 
     log.info("Parsed args: \n%s", args)
 
@@ -400,7 +400,8 @@ def main(cl_arguments):
                               shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
-            task_names_to_avoid_loading.remove(task.name)
+            if task.name in task_names_to_avoid_loading:
+                task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
             # This logic looks strange. We think it works.
