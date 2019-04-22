@@ -92,7 +92,7 @@ def get_best_checkpoint_path(run_dir):
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    target_task_best = glob.glob(os.path.join(run_dir, "model_state_finetune_best.th"))
+    target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
     if len(target_task_best) > 0:
         assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -102,7 +102,7 @@ def get_best_checkpoint_path(run_dir):
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pretarget_train.th"))
+    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
     if len(pre_target_train) > 0:
         assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -289,7 +289,7 @@ def main(cl_arguments):
         if args.transfer_paradigm == "finetune":
             # Save model so we have a checkpoint to go back to after each task-specific finetune.
             model_state = model.state_dict()
-            model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
+            model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
             torch.save(model_state, model_path)
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
