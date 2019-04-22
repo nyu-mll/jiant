@@ -53,7 +53,11 @@ def handle_arguments(cl_arguments):
     return parser.parse_args(cl_arguments)
 
 
-def clean_up_after_pretrain(args):
+def clean_up_after_pretrain(args, target_tasks, model):
+    """
+    Parameters
+
+    """
     if not args.do_target_task_training:
         log.info("In strict mode because do_target_task_training is off. "
                  "Will crash if any tasks are missing from the checkpoint.")
@@ -140,7 +144,7 @@ def check_configeration(args, pretrain_tasks, target_tasks):
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
 
 
-def _try_logging_git_info():
+def _try_logging_git_info(): 
     try:
         log.info("Waiting on git info....")
         c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -213,16 +217,22 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
+def setup(args, cl_args):
+    """
+    Setup function
+    Sets up email hook, cuda settings, and various initial sanity checks such as 
+    not mixing tasks with minimizing and maximizing validation set objective functions.
+    
+    Parameters
+    ----------------
+    args: Params object 
+    cl_args: Params object 
 
-
-def main(cl_arguments):
-    ''' Train or load a model. Evaluate on some tasks. '''
-    cl_args = handle_arguments(cl_arguments)
-    args = config.params_from_file(cl_args.config_file, cl_args.overrides)
-
-    # Raise error if obsolete arg names are present
-    check_arg_name(args)
-
+    Returns
+    ----------------
+     Nnne
+    
+    """
     # Logistics #
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
@@ -283,7 +293,16 @@ def main(cl_arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info('\tFinished building model in %.3fs', time.time() - start_time)
-        # Start Tensorboard if requested
+    return tasks, pretrain_tasks, target_tasks, vocab, word_embs, model
+
+def main(cl_arguments):
+    ''' Train or load a model. Evaluate on some tasks. '''
+    cl_args = handle_arguments(cl_arguments)
+    args = config.params_from_file(cl_args.config_file, cl_args.overrides)
+    # Raise error if obsolete arg names are present
+    check_arg_name(args)
+    tasks, pretrain_tasks, target_tasks, vocab, word_embs, model = setup(args, cl_args)
+    # Start Tensorboard if requested
     if cl_args.tensorboard:
         tb_logdir = os.path.join(args.run_dir, "tensorboard")
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
@@ -293,10 +312,9 @@ def main(cl_arguments):
     if args.do_pretrain:
         # Train on train tasks #
         log.info("Training...")
-        params = build_trainer_params(args, task_names=[])
         stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
-        trainer, _, opt_params, schd_params = build_trainer(params, model,
+        trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
                                                             should_decrease)
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
@@ -306,12 +324,9 @@ def main(cl_arguments):
                           to_train, opt_params, schd_params,
                           args.shared_optimizer, args.load_model, phase="main")
 
-    if arsg.do_target_task_training:
-        clean_up_after_pretrain(args)
-    # Select model checkpoint from main training run to load
-
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
+        clean_up_after_pretrain(args, target_tasks, model)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
@@ -320,7 +335,6 @@ def main(cl_arguments):
             assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
                            "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
                            "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
-
         for task in target_tasks:
             # Skip mnli-diagnostic
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
@@ -340,8 +354,7 @@ def main(cl_arguments):
 
 
             # Look for <task_name>_<param_name>, then eval_<param_name>
-            params = build_trainer_params(args, task_names=[task.name, 'eval'])
-            trainer, _, opt_params, schd_params = build_trainer(params, model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'eval'],  model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
