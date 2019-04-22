@@ -53,9 +53,26 @@ def handle_arguments(cl_arguments):
     return parser.parse_args(cl_arguments)
 
 
-def clean_up_after_pretrain(args, target_tasks, model):
+def setup_target_task_training(args, target_tasks, model):
     """
+    Save model states from pretrianing if applicable, and 
+    loads the correct model state for the target task training 
+    stage.
+    
     Parameters
+    ----------------
+    args: Params object
+    target_tasks: list of target Task objects
+    mdoel: a MultTaskModel object
+
+    Returns
+    ----------------
+    task_names_to_avoid_loading: list of strings, if we don't allow for 
+    use of pretrained target specific module parameters, then this list will 
+    cosnist of all the task names so that we avoid loading the 
+    pretrained parameters. Else, it will be an empty list.
+    strict: bool, indicates whether to exit if the loaded model has some expected
+    parameters missing
 
     """
     if not args.do_target_task_training:
@@ -97,8 +114,24 @@ def clean_up_after_pretrain(args, target_tasks, model):
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
             log.warning("Evaluating untrained encoder parameters!")
+    return task_names_to_avoid_loading, strict
 
 def check_configeration(args, pretrain_tasks, target_tasks):
+    """
+    Checks configerations for any obvious logical flows
+    and that necessary parameters are set for each step - 
+    throws asserts and exits if found.
+
+    Parameters
+    ----------------
+    args: Params object
+    pretrain_tasks: list of pretraining Task objects
+    target_tasks: list of target task training Task objects
+
+    Returns
+    ----------------
+    None
+    """
     steps_log = []
 
     if not args.load_eval_checkpoint == 'none':
@@ -219,21 +252,24 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
 
 def setup(args, cl_args):
     """
-    Setup function
     Sets up email hook, cuda settings, and various initial sanity checks such as 
     not mixing tasks with minimizing and maximizing validation set objective functions.
     
     Parameters
     ----------------
-    args: Params object 
-    cl_args: Params object 
+    args: Params object
+    cl_args: list of arguments
 
     Returns
     ----------------
-     Nnne
-    
+    tasks: list of Task objects
+    pretrain_tasks: list of pretraining tasks
+    target_tasks: list of target tasks
+    vocab: list of vocab
+    word_embs: loaded word embeddings, may be None if args.word_embs = none
+    model: a MultiTaskModel object
+
     """
-    # Logistics #
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
@@ -306,7 +342,7 @@ def main(cl_arguments):
     if cl_args.tensorboard:
         tb_logdir = os.path.join(args.run_dir, "tensorboard")
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
-    # Check that necessary parameters are set for each step. Exit with error if not.
+
     check_configeration(args, pretrain_tasks, target_tasks)
 
     if args.do_pretrain:
@@ -326,7 +362,7 @@ def main(cl_arguments):
 
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
-        clean_up_after_pretrain(args, target_tasks, model)
+        task_names_to_avoid_loading, strict = setup_target_task_training(args, target_tasks, model)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
