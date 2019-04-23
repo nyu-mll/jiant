@@ -415,6 +415,15 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+@register_task('cola_npi_sup', rel_path='CoLA/npi_sup')
+@register_task('cola_npi_quessmp', rel_path='CoLA/npi_quessmp')
+@register_task('cola_npi_ques', rel_path='CoLA/npi_ques')
+@register_task('cola_npi_qnt', rel_path='CoLA/npi_qnt')
+@register_task('cola_npi_only', rel_path='CoLA/npi_only')
+@register_task('cola_npi_negsent', rel_path='CoLA/npi_negsent')
+@register_task('cola_npi_negdet', rel_path='CoLA/npi_negdet')
+@register_task('cola_npi_cond', rel_path='CoLA/npi_cond')
+@register_task('cola_npi_adv', rel_path='CoLA/npi_adv')
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''

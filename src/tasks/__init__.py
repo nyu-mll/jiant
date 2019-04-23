@@ -19,6 +19,17 @@ from .tasks import Task
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
+ALL_COLA_NPI_TASKS = [
+    'cola_npi_sup',
+    'cola_npi_quessmp',
+    'cola_npi_ques',
+    'cola_npi_qnt',
+    'cola_npi_only',
+    'cola_npi_negsent',
+    'cola_npi_negdet',
+    'cola_npi_cond',
+    'cola_npi_adv']
+
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
 ALL_NLI_PROBING_TASKS = [
