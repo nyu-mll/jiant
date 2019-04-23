@@ -33,7 +33,7 @@ from ..utils import utils
 from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list, BERT_MASK_TOK
 from ..utils.tokenizers import get_tokenizer
-from .tasks import Task
+from .tasks import Task, sentence_to_text_field
 from .tasks import create_subset_scorers, update_subset_scorers, collect_subset_scores
 
 from typing import Iterable, Sequence, List, Dict, Any, Type

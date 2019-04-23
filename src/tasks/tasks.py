@@ -803,7 +803,7 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-@regiscter_task('mnli-diag', rel_path='MNLI/')
+@register_task('mnli-diag', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 
