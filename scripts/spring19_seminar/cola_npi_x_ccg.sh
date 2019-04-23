@@ -6,7 +6,7 @@
 #SBATCH --output=slurm_%j.out
 
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertccg_model, target_tasks = \"none\", pretrain_tasks = \"ccg\", do_pretrain = 1" 
+    --overrides "exp_name = npi_bert, run_name = run_bertccg_model, target_tasks = \"ccg\", pretrain_tasks = \"ccg\", do_pretrain = 1" 
 
 cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertccg_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertccg_cola
 python main.py --config_file config/spring19_seminar/bert.conf \
@@ -89,7 +89,7 @@ python main.py --config_file config/spring19_seminar/bert.conf \
     --overrides "exp_name = npi_bert, run_name = run_bertccg_allnpi, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
 
 python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_gloveccg_model, target_tasks = \"none\", pretrain_tasks = \"ccg\", do_pretrain = 1" 
+    --overrides "exp_name = npi_bow_glove, run_name = run_bow_gloveccg_model, target_tasks = \"ccg\", pretrain_tasks = \"ccg\", do_pretrain = 1" 
 
 cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_gloveccg_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_gloveccg_cola
 python main.py --config_file config/spring19_seminar/bow_glove.conf \
