@@ -439,8 +439,7 @@ def build_task_specific_modules(
             mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
             setattr(model, '%s_mdl' % task.name, mask_lm_head)
         elif task.name == 'cola-pair-tuned':
-            module = build_single_sentence_module(task=task, d_inp=d_sent,
-                                            use_bert=model.use_bert, params=task_params)
+            module = build_single_sentence_module(task=task, d_inp=d_sent, use_bert=False, params=task_params)
             setattr(model, '%s_mdl' % task.name, module)
         else:
             raise ValueError("Incorrect setting for minimal pair task")
