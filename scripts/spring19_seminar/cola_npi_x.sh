@@ -5,6 +5,36 @@
 #SBATCH --job-name=myrun
 #SBATCH --output=slurm_%j.out
 
+# Naming Scheme
+# the experiment name is named after "npi_[MODEL NAME]", e.g., npi_bert
+# the run name falls into three kinds
+# (1) if the run goes through pretraining (e.g., ccg, mnli, or none) and some finetuning tasks and finally the target tasks,
+#     then the run name is "run_[MODEL NAME][PRETRAIN]_[FINETUNE NAME]";
+# (2) if the run merely does pretraining to generate a best model for loading in later runs,
+#     then the run name is "run_[MODEL NAME][PRETRAIN]_model";
+# (3) if the run loads a pretrained model and goes through finetuning tasks and then target tasks,
+#     then the run name is "run_[MODEL_NAME][PRETRAIN]_[FINTUNE NAME]", same as in (1).
+
+
+# Finetune-Target Tasks Combinations
+# All the finetune and target tasks are CoLA-like.
+# Finetuning on CoLA, we target CoLA and all nine NPI tasks listed below:
+
+#      - 'cola_npi_sup'            NPI licensed by superlatives
+#      - 'cola_npi_quessmp'        NPI licensed by simple questions  
+#      - 'cola_npi_ques'           NPI licensed by questions
+#      - 'cola_npi_qnt'            NPI licensed by quantifiers
+#      - 'cola_npi_only'           NPI licensed by "only"
+#      - 'cola_npi_negsent'        NPI licensed by sentential negation
+#      - 'cola_npi_negdet'         NPI licensed by determiner negation
+#      - 'cola_npi_cond'           NPI licensed by conditionals
+#      - 'cola_npi_adv'            NPI licensed by adverbials
+
+# These 9 different environments are to be found at https://github.com/alexwarstadt/data_generation/tree/master/outputs/npi/environments/splits
+# Finetuning on one of the NPI task, we target all NPI tasks;
+# Finetuning on eight of the NPI tasks, we target the remaining one.
+
+
 python main.py --config_file config/spring19_seminar/bert.conf \
     --overrides "exp_name = npi_bert, run_name = run_bertnone_cola, target_tasks = \"cola,cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola\", do_pretrain = 1" 
 
