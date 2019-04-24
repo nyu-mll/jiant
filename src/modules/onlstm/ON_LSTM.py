@@ -79,13 +79,11 @@ class ONLSTMCell(nn.Module):
         self.ih = nn.Sequential(
             nn.Linear(input_size, 4 * hidden_size + self.n_chunk * 2, bias=True),
         )
-
         self.hh = LinearDropConnect(
             hidden_size,
             hidden_size * 4 + self.n_chunk * 2,
             bias=True,
             dropout=dropconnect)
-
         self.drop_weight_modules = [self.hh]
 
     def forward(self, input, hidden,
@@ -131,7 +129,6 @@ class ONLSTMStack(nn.Module):
     through ONLSTMCell structures.
     Code credits: https://github.com/yikangshen/Ordered-Neurons
     """
-
 
     def __init__(
             self,
