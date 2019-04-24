@@ -19,7 +19,7 @@ import re
 
 from nltk.tokenize.simple import SpaceTokenizer
 from .tokenizers import get_tokenizer
-
+from .utils import unescape_moses
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
 # install with: pip install python-Levenshtein
@@ -240,7 +240,7 @@ def space_tokenize_with_bow(sentence):
 def align_moses(text: Text) -> Tuple[TokenAligner, List[Text]]:
     MosesTokenizer = get_tokenizer("MosesTokenizer")
     moses_tokens = MosesTokenizer.tokenize(text)
-    cleaned_moses_tokens = utils.unescape_moses(moses_tokens)
+    cleaned_moses_tokens = unescape_moses(moses_tokens)
     ta = TokenAligner(text, cleaned_moses_tokens)
     return ta, moses_tokens
 
