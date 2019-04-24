@@ -1558,43 +1558,63 @@ class TaggingTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a tagging task '''
-        inputs = [TextField(list(map(Token, sent)),
-                            token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
-                 for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
-        instances = [Instance({"inputs": x, "targs": t})
-                     for (x, t) in zip(inputs, targs)]
-        return instances
-
     def get_all_labels(self) -> List[str]:
         return self.all_labels
-
 
 @register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, num_tags=1363, **kw)
+    def __init__(self, path, max_seq_len, name="ccg", **kw):
+        ''' There are 1363 supertags in CCGBank without introduced token. '''
+        super().__init__(name, 1363, **kw)
+        self.INTRODUCED_TOKEN = '1363'
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.max_seq_len = max_seq_len
+        self.bert_tokenization = self._tokenizer_name.startswith("bert-")
+        if self._tokenizer_name.startswith("bert-"):
+            # the +1 is for the tokenization added token
+            self.num_tags = self.num_tags + 1 
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a tagging task '''
+        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
+        mask =  [MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511) for mask in split[3]]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
+        return instances
+
 
     def load_data(self, path, max_seq_len):
-        '''Process the dataset located at each data file.
-           The target needs to be split into tokens because
-           it is a sequence (one tag per input token). '''
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train."+self._tokenizer_name), max_seq_len,
+                          s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev."+self._tokenizer_name), max_seq_len,
+                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.'+self._tokenizer_name), max_seq_len,
+                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
+        self.max_seq_len = max_seq_len
+
+        # Get the mask for each sentence, where the mask is whether or not 
+        # the token was split off by tokenization. We want to only count the first
+        # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
+        # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
+        # (https://arxiv.org/abs/1810.04805)
+        if self.bert_tokenization:
+            import numpy.ma as ma
+            masks = []
+            for dataset in [tr_data, val_data]:
+                dataset_mask = []
+                for i in range(len(dataset[2])):
+                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
+                    mask_indices = np.where(mask == True)[0].tolist()
+                    dataset_mask.append(mask_indices)
+                masks.append(dataset_mask)
+
+        # mock labels for test data (tagging)
+        te_targs = [['0'] * len(x) for x in te_data[0]]
+        te_mask = [list(range(len(x))) for x in te_data[0]]
+        self.train_data_text = list(tr_data) + [masks[0]]
+        self.val_data_text = list(val_data) + [masks[1]]
+        self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
         log.info('\tFinished loading CCGTagging data.')
