@@ -1,5 +1,7 @@
 '''
 ResNet block and masked-softmax used in PRPN
+Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
+Modules re-used from: https://github.com/yikangshen/PRPN
 '''
 import torch
 import torch.nn as nn
@@ -15,6 +17,9 @@ def stick_breaking(logits):
 
 
 def softmax(x, mask=None):
+    '''
+     softmax function with masking for self-attention
+    '''
     max_x, _ = x.max(dim=-1, keepdim=True)
     e_x = torch.exp(x - max_x)
     if not (mask is None):

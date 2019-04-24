@@ -1,5 +1,7 @@
 '''
   Prediction Network of PRPN, that predicts the language model probabilities
+Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
+Modules re-used from: https://github.com/yikangshen/PRPN
 '''
 import math
 
