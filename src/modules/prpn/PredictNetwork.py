@@ -1,3 +1,6 @@
+'''
+  Prediction Network of PRPN, that predicts the language model probabilities
+'''
 import math
 
 import torch

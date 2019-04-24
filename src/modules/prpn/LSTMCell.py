@@ -1,3 +1,6 @@
+'''
+ LSTMCell used in the Reading Network of PRPN
+'''
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn.modules.rnn import *

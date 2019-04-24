@@ -1,3 +1,6 @@
+'''
+Convolutional parser (Parsing Network) of PRPN
+'''
 import numpy
 import torch
 import torch.nn as nn

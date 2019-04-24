@@ -1,3 +1,6 @@
+'''
+ Reading Network (LSTMN with self-attention) of PRPN
+'''
 import math
 
 import torch
