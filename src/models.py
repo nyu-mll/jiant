@@ -43,7 +43,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
+    NullPhraseLayer, ONLSTMPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
@@ -260,8 +260,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     # Word embeddings
     n_token_vocab = vocab.get_vocab_size('tokens')
     if args.word_embs != 'none':
-        if args.word_embs in ['glove', 
-                            'fastText'] and pretrained_embs is not None:
+        if args.word_embs in ['glove',
+                              'fastText'] and pretrained_embs is not None:
             word_embs = pretrained_embs
             assert word_embs.size()[0] == n_token_vocab
             d_word = word_embs.size()[1]
@@ -277,7 +277,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
         embeddings = Embedding(num_embeddings=n_token_vocab, embedding_dim=d_word,
                                weight=word_embs, trainable=(
-                                args.embeddings_train == 1),
+                                   args.embeddings_train == 1),
                                padding_index=vocab.get_token_index('@@PADDING@@'))
         token_embedders["words"] = embeddings
         d_emb += d_word
@@ -311,7 +311,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     if args.char_embs:
         log.info("\tUsing character embeddings!")
         char_embeddings = Embedding(vocab.get_vocab_size('chars'), d_char)
-        filter_sizes = tuple([int(i) 
+        filter_sizes = tuple([int(i)
                               for i in args.char_filter_sizes.split(',')])
         char_encoder = CnnEncoder(d_char, num_filters=args.n_char_filters,
                                   ngram_filter_sizes=filter_sizes,
@@ -866,36 +866,36 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
-
-        logits = classifier(sent1, sent2, mask1, mask2)
+        if self.use_bert:
+            sent, mask = self.sent_encoder(batch['inputs'], task)
+            logits = classifier(sent, mask)
+        else:
+            sent1, mask1 = self.sent_encoder(batch['input1'], task)
+            sent2, mask2 = self.sent_encoder(batch['input2'], task)
+            logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
-
+        tagmask = batch.get('tagmask', None)
         if 'labels' in batch:
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, JOCITask):
-                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                logits = logits.squeeze(-1) if len(logits.size()
+                                                   ) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
             elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
+                logits = logits.squeeze(-1) if len(logits.size()
+                                                   ) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
-                logits_np = logits.data.cpu().numpy()
-                labels_np = labels.data.cpu().numpy()
-                task.scorer1(logits_np, labels_np)
-                task.scorer2(logits_np, labels_np)
+                task.update_metrics(logits.data.cpu().numpy(), labels.data.cpu().numpy(), tagmask=tagmask)
             else:
                 out['loss'] = F.cross_entropy(logits, labels)
-                task.scorer1(logits, labels)
-                if task.scorer2 is not None:
-                    task.scorer2(logits, labels)
+                task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
             if isinstance(task, RegressionTask):
