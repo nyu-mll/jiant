@@ -279,13 +279,22 @@ class BoWSentEncoder(Model):
 class PRPNSentEncoder(Model):
     ''' PRPN sentence encoder '''
     def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
+                n_lookback, resolution, dropout, idropout, rdropout, res,
                 embedder, batch_size, initializer=InitializerApplicator()):
         super(PRPNSentEncoder, self).__init__(vocab)
 
         self.prpnlayer = PRPN(
                          ninp=d_word, 
                          nhid=d_hid, 
-                         nlayers=n_layers_enc, 
+                         nlayers=n_layers_enc,
+                         nslots=n_slots,
+                         nlookback=n_lookback, 
+                         resolution=resolution,
+                         dropout=dropout,
+                         idropout=idropout,
+                         rdropout=rdropout,
+                         res=res,
+                         batch_size=batch_size,
                          embedder=embedder,
                          phrase_layer=None)
         initializer(self)

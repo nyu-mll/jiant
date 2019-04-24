@@ -1,3 +1,7 @@
+'''
+Code for Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
+Modules re-used from: https://github.com/yikangshen/PRPN
+'''
 import torch
 import torch.nn as nn
 
@@ -10,8 +14,8 @@ class PRPN(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
     def __init__(self, ninp, nhid, nlayers, nslots=15, nlookback=5, resolution=0.1, embedder=None,
-                 dropout=0.2, idropout=0.2, rdropout=0., phrase_layer=None,
-                 tie_weights=True, hard=True, res=0):
+                 dropout=0.7, idropout=0.5, rdropout=0.5, phrase_layer=None,
+                 tie_weights=True, hard=True, res=0, batch_size=20):
         super(PRPN, self).__init__()
 
         self.nhid = nhid

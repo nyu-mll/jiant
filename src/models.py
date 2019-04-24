@@ -119,7 +119,8 @@ def build_model(args, vocab, pretrained_embs, tasks):
         log.info("Using ON-LSTM sentence encoder!")
     elif args.sent_enc == "prpn":
         prpnlayer = PRPNSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
-                         embedder,  args.batch_size)
+                         args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
+                         args.res, embedder,  args.batch_size)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                     prpnlayer.prpnlayer, skip_embs=args.skip_embs,
                                        dropout=args.dropout,
