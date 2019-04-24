@@ -55,7 +55,7 @@ def handle_arguments(cl_arguments):
 
 def setup_target_task_training(args, target_tasks, model):
     """
-    Save model states from pretrianing if applicable, and 
+    Saves model states from pretraining if applicable, and 
     loads the correct model state for the target task training 
     stage.
     
@@ -69,7 +69,7 @@ def setup_target_task_training(args, target_tasks, model):
     ----------------
     task_names_to_avoid_loading: list of strings, if we don't allow for 
     use of pretrained target specific module parameters, then this list will 
-    cosnist of all the task names so that we avoid loading the 
+    consist  of all the task names so that we avoid loading the 
     pretrained parameters. Else, it will be an empty list.
     strict: bool, indicates whether to exit if the loaded model has some expected
     parameters missing
