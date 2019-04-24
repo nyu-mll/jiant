@@ -43,7 +43,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer, PRPNSentEncoder
+    NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
@@ -118,7 +118,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
     elif args.sent_enc == "prpn":
-        prpnlayer = PRPNSentEncoder(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
+        prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
                          args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
                          args.res, embedder,  args.batch_size)
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,

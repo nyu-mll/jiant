@@ -276,12 +276,12 @@ class BoWSentEncoder(Model):
         word_mask = util.get_text_field_mask(sent).float()
         return word_embs, word_mask  # need to get # nonzero elts
 
-class PRPNSentEncoder(Model):
+class PRPNPhraseLayer(Model):
     ''' PRPN sentence encoder '''
     def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
                 n_lookback, resolution, dropout, idropout, rdropout, res,
                 embedder, batch_size, initializer=InitializerApplicator()):
-        super(PRPNSentEncoder, self).__init__(vocab)
+        super(PRPNPhraseLayer, self).__init__(vocab)
 
         self.prpnlayer = PRPN(
                          ninp=d_word, 
@@ -305,32 +305,6 @@ class PRPNSentEncoder(Model):
     def get_output_dim(self):
         return self.prpnlayer.ninp
 
-
-class ONLSTMSentEncoder(Model):
-    ''' ON-LSTM sentence encoder '''
-    def __init__(self, vocab, d_word, d_hid, n_layers_enc,
-                 chunk_size, onlstm_dropconnect, onlstm_dropouti,
-                 dropout, onlstm_dropouth, embedder,
-                 batch_size, initializer=InitializerApplicator()):
-        super(ONLSTMSentEncoder, self).__init__(vocab)
-        self.onlayer = ONLSTMStack(
-            [d_word] + [d_hid] * (n_layers_enc - 1) + [d_word],
-            chunk_size=chunk_size,
-            dropconnect=onlstm_dropconnect,
-            dropouti=onlstm_dropouti,
-            dropout=dropout,
-            dropouth=onlstm_dropouth,
-            embedder=embedder,
-            phrase_layer=None,
-            batch_size=batch_size
-        )
-        initializer(self)
-
-    def get_input_dim(self):
-        return self.onlayer.layer_sizes[0]
-
-    def get_output_dim(self):
-        return self.onlayer.layer_sizes[-1]
 
 
 class ONLSTMPhraseLayer(Model):
