@@ -66,6 +66,7 @@ def format_snli(data_dir):
             to_write = current_row[:10] # first 9 are valid information
             to_write.append(current_row[-1]) # last index is the gold label
             train_writer.write("\t".join(to_write))
+            train_writer.write("\n")
     os.remove(os.path.join(snli_dir, "train.tsv"))
     os.rename(os.path.join(snli_dir, "train_cleaned.tsv"), os.path.join(snli_dir, "train.tsv"))
     print("\tCompleted!")
