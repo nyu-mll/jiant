@@ -91,7 +91,7 @@ def setup_target_task_training(args, target_tasks, model):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_eval_checkpoint == "none":
+    if args.load_eval_checkpoint != "none":
         # This is to load a particular eval checkpoint.
         log.info("Loading existing model from %s...", args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint,
@@ -116,9 +116,9 @@ def setup_target_task_training(args, target_tasks, model):
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading, strict
 
-def check_configeration(args, pretrain_tasks, target_tasks):
+def check_configurations(args, pretrain_tasks, target_tasks):
     """
-    Checks configerations for any obvious logical flows
+    Checks configurations for any obvious logical flaws
     and that necessary parameters are set for each step - 
     throws asserts and exits if found.
 
@@ -132,16 +132,19 @@ def check_configeration(args, pretrain_tasks, target_tasks):
     ----------------
     None
     """
-    steps_log = []
+    log.info("Will run the following steps:")
+    if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
+            [not t.val_metric_decreases for t in pretrain_tasks]):
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
-    if not args.load_eval_checkpoint == 'none':
+    if args.load_eval_checkpoint != 'none':
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
                        args.load_eval_checkpoint)
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
+        log.info("Loading model from path: %s" % args.load_eval_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -153,10 +156,12 @@ def check_configeration(args, pretrain_tasks, target_tasks):
             args.val_interval %
             args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.val_interval, args.bpp_base))
-        steps_log.append("Training model on tasks: %s" % args.pretrain_tasks)
+        log.info("Training model on tasks: %s" % args.pretrain_tasks)
 
     if args.do_target_task_training:
-        steps_log.append("Re-training model for individual eval tasks")
+         assert_for_log(args.pretrain_tasks != "none",
+                       "Error: Must specify at least on training task: [%s]" % args.target_tasks)
+        log.info("Re-training model for individual eval tasks")
         assert_for_log(
             args.eval_val_interval %
             args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
@@ -172,7 +177,7 @@ def check_configeration(args, pretrain_tasks, target_tasks):
     if args.do_full_eval:
         assert_for_log(args.target_tasks != "none",
                        "Error: Must specify at least one eval task: [%s]" % args.target_tasks)
-        steps_log.append("Evaluating model on tasks: %s" % args.target_tasks)
+        log.info("Evaluating model on tasks: %s" % args.target_tasks)
 
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
 
@@ -250,11 +255,9 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
-def setup(args, cl_args):
+def initial_setup(args, cl_args):
     """
-    Sets up email hook, cuda settings, and various initial sanity checks such as 
-    not mixing tasks with minimizing and maximizing validation set objective functions.
-    
+    Sets up email hook, setting up seed, and cuda settings.
     Parameters
     ----------------
     args: Params object
@@ -296,9 +299,6 @@ def setup(args, cl_args):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
-    random.seed(seed)
-    torch.manual_seed(seed)
     log.info("Using random seed %d", seed)
     if args.cuda >= 0:
         try:
@@ -313,23 +313,7 @@ def setup(args, cl_args):
                 "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
             args.cuda = -1
 
-    # Prepare data #
-    log.info("Loading tasks...")
-    start_time = time.time()
-    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
-    if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
-            [not t.val_metric_decreases for t in pretrain_tasks]):
-        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
-    tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
-    log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
-
-    # Build model #
-    log.info('Building model...')
-    start_time = time.time()
-    model = build_model(args, vocab, word_embs, tasks)
-    log.info('\tFinished building model in %.3fs', time.time() - start_time)
-    return tasks, pretrain_tasks, target_tasks, vocab, word_embs, model
+    return args, seed
 
 def main(cl_arguments):
     ''' Train or load a model. Evaluate on some tasks. '''
@@ -337,13 +321,33 @@ def main(cl_arguments):
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
     # Raise error if obsolete arg names are present
     check_arg_name(args)
-    tasks, pretrain_tasks, target_tasks, vocab, word_embs, model = setup(args, cl_args)
+    args = initial_setup(args, cl_args)
+
+    # create seed
+    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
+    random.seed(seed)
+    torch.manual_seed(seed)
+
+    # load tasks
+    log.info("Loading tasks...")
+    start_time = time.time()
+    pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
+    tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
+    log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
+    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
+
+    # Build model
+    log.info('Building model...')
+    start_time = time.time()
+    model = build_model(args, vocab, word_embs, tasks)
+    log.info('\tFinished building model in %.3fs', time.time() - start_time)
+
     # Start Tensorboard if requested
     if cl_args.tensorboard:
         tb_logdir = os.path.join(args.run_dir, "tensorboard")
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
-    check_configeration(args, pretrain_tasks, target_tasks)
+    check_configurations(args, pretrain_tasks, target_tasks)
 
     if args.do_pretrain:
         # Train on train tasks #
