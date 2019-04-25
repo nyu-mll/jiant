@@ -188,11 +188,9 @@ class SentenceEncoder(Model):
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         if sent_embs is not None:
-            if isinstance(self._phrase_layer, ONLSTMStack):
-                # The ONLSTMStack takes the raw words as input and computes embeddings separately.
-                sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
-                sent_enc = torch.transpose(sent_enc, 0, 1)
-            elif isinstance(self._phrase_layer, PRPN):
+            if isinstance(self._phrase_layer, ONLSTMStack) or \
+                isinstance(self._phrase_layer, PRPN):
+                # The ONLSTMStack or PRPN takes the raw words as input and computes embeddings separately.
                 sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
                 sent_enc = torch.transpose(sent_enc, 0, 1)
             else:
@@ -216,7 +214,6 @@ class SentenceEncoder(Model):
                 sent_enc = skip_vec
             else:
                 sent_enc = torch.cat([sent_enc, skip_vec], dim=-1)
-
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0)
@@ -277,7 +274,7 @@ class BoWSentEncoder(Model):
         return word_embs, word_mask  # need to get # nonzero elts
 
 class PRPNPhraseLayer(Model):
-    ''' PRPN sentence encoder '''
+    ''' PRPN phrase layer '''
     def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
                 n_lookback, resolution, dropout, idropout, rdropout, res,
                 embedder, batch_size, initializer=InitializerApplicator()):
@@ -308,7 +305,7 @@ class PRPNPhraseLayer(Model):
 
 
 class ONLSTMPhraseLayer(Model):
-    ''' ON-LSTM sentence encoder '''
+    ''' ON-LSTM phrase layer '''
     def __init__(self, vocab, d_word, d_hid, n_layers_enc,
                  chunk_size, onlstm_dropconnect, onlstm_dropouti,
                  dropout, onlstm_dropouth, embedder,

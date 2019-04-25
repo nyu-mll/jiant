@@ -1,7 +1,7 @@
 '''
 ResNet block and masked-softmax used in PRPN
 Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
-Modules re-used from: https://github.com/yikangshen/PRPN
+All the modules in this file are taken without change from: https://github.com/yikangshen/PRPN
 '''
 import torch
 import torch.nn as nn
@@ -30,6 +30,9 @@ def softmax(x, mask=None):
 
 
 class ResBlock(nn.Module):
+    '''
+     Resnet block used in parsing network of PRPN
+    '''
     def __init__(self, ninp, nout, dropout, nlayers=1):
         super(ResBlock, self).__init__()
 

@@ -1,7 +1,7 @@
 '''
- Reading Network (LSTMN with self-attention) of PRPN
+Reading Network (LSTMN with self-attention) of PRPN
 Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
-Modules re-used from: https://github.com/yikangshen/PRPN
+All the modules in this file are taken without change from: https://github.com/yikangshen/PRPN
 '''
 import math
 
