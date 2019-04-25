@@ -411,7 +411,7 @@ def build_tasks(args):
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
                 pretrain_tasks.append(task)
-        # When neither target_train_data_fraction nor training_data_fraction is specified
+        # When neither pretrain_data_fraction nor target_train_data_fraction is specified
         # we use unmodified iterators.
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,

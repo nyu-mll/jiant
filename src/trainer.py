@@ -231,7 +231,7 @@ class SamplingMultiTaskTrainer:
             index_of_last_improvement = metric_history.index(
                 min(metric_history))
             out_of_patience = index_of_last_improvement <= len(
-                metric_history) - (patience + 1)
+                metric_history) - (patfience + 1)
         else:
             index_of_last_improvement = metric_history.index(
                 max(metric_history))
