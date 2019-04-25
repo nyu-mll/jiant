@@ -19,6 +19,7 @@ from .tasks import Task
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
+# Tasks for the spring19_seminar; similar to cola but writes predictions differently
 ALL_NPI_TASKS = ["npi_adv", "npi_cond", "npi_negdet", "npi_negsent", "npi_only", "npi_ques", "npi_quessmp", "npi_qnt", "npi_sup", 
                 "npi_adv_li", "npi_adv_sc", "npi_adv_pr", 
                 "npi_cond_li", "npi_cond_sc", "npi_cond_pr", 
