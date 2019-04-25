@@ -12,7 +12,7 @@ import subprocess
 import random
 import sys
 import time
-
+import io
 import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
@@ -53,7 +53,7 @@ def handle_arguments(cl_arguments):
     return parser.parse_args(cl_arguments)
 
 
-def setup_target_task_training(args, target_tasks, model):
+def setup_target_task_training(args, target_tasks, model, strict):
     """
     Saves model states from pretraining if applicable, and 
     loads the correct model state for the target task training 
@@ -123,10 +123,10 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     ----------------
     None
     """
-    log.info("Will run the following steps:")
+    steps_log = io.StringIO()
     if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
             [not t.val_metric_decreases for t in pretrain_tasks]):
-        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
+        log.warn("\tMixing training tasks with i=ncreasing and decreasing val metrics!")
 
     if args.load_eval_checkpoint != 'none':
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
@@ -135,7 +135,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        log.info("Loading model from path: %s" % args.load_eval_checkpoint)
+        steps_log.write("Loading model from path: %s \n" % args.load_eval_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -147,12 +147,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             args.val_interval %
             args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.val_interval, args.bpp_base))
-        log.info("Training model on tasks: %s" % args.pretrain_tasks)
-
+        steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
+    import pdb; pdb.set_trace()
     if args.do_target_task_training:
-         assert_for_log(args.pretrain_tasks != "none",
+        assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.target_tasks)
-        log.info("Re-training model for individual eval tasks")
+        steps_log.write("Re-training model for individual eval tasks \n")
         assert_for_log(
             args.eval_val_interval %
             args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
@@ -164,13 +164,13 @@ def check_configurations(args, pretrain_tasks, target_tasks):
                        "allow_reuse_of_pretraining_parameters = 1 (risky), or train in two steps:\n"
                        "train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
                        "do_pretrain = 0 and do_target_task_training = 1.")
-
     if args.do_full_eval:
         assert_for_log(args.target_tasks != "none",
                        "Error: Must specify at least one target task: [%s]" % args.target_tasks)
-        log.info("Evaluating model on tasks: %s" % args.target_tasks)
+        steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
-    log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
+    log.info("Will run the following steps:\n%s", steps_log.getvalue())
+    steps_log.close()
 
 
 def _log_git_info(): 
@@ -248,7 +248,8 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
 
 def initial_setup(args, cl_args):
     """
-    Sets up email hook, setting up seed, and cuda settings.
+    Sets up email hook, creating seed, and cuda settings.
+
     Parameters
     ----------------
     args: Params object
@@ -264,6 +265,7 @@ def initial_setup(args, cl_args):
     model: a MultiTaskModel object
 
     """
+    output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
@@ -290,6 +292,9 @@ def initial_setup(args, cl_args):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
+    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
+    random.seed(seed)
+    torch.manual_seed(seed)
     log.info("Using random seed %d", seed)
     if args.cuda >= 0:
         try:
@@ -307,19 +312,13 @@ def initial_setup(args, cl_args):
     return args, seed
 
 def main(cl_arguments):
-    ''' Train or load a model. Evaluate on some tasks. '''
+    ''' Train a model for multitask-training.'''
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
-    # Raise error if obsolete arg names are present
+    # Check for depricated arg names
     check_arg_name(args)
-    args = initial_setup(args, cl_args)
-
-    # create seed
-    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
-    random.seed(seed)
-    torch.manual_seed(seed)
-
-    # load tasks
+    args, seed = initial_setup(args, cl_args)
+    # Load tasks.
     log.info("Loading tasks...")
     start_time = time.time()
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
@@ -327,7 +326,7 @@ def main(cl_arguments):
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
 
-    # Build model
+    # Build model.
     log.info('Building model...')
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
@@ -341,7 +340,7 @@ def main(cl_arguments):
     check_configurations(args, pretrain_tasks, target_tasks)
 
     if args.do_pretrain:
-        # Train on train tasks #
+        # Train on train tasks
         log.info("Training...")
         stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
@@ -355,7 +354,7 @@ def main(cl_arguments):
                           to_train, opt_params, schd_params,
                           args.shared_optimizer, args.load_model, phase="main")
 
-    # For checkpointing logic 
+    # For checkpointing logic
     if not args.do_target_task_training:
         log.info("In strict mode because do_target_task_training is off. "
                  "Will crash if any tasks are missing from the checkpoint.")
@@ -363,9 +362,9 @@ def main(cl_arguments):
     else:
         strict = False
 
-    # Train just the task-specific components for eval tasks.
+    # Train just the task-specific components for eval tasks
     if args.do_target_task_training:
-        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model)
+        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model, strict)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
@@ -386,13 +385,11 @@ def main(cl_arguments):
                 # Train both the task specific models as well as sentence encoder.
                 to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
             else: # args.transfer_paradigm == "frozen":
-                # Only train task-specific module.
+                # Only train task-specific module. 
                 pred_module = getattr(model, "%s_mdl" % task.name)
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
 
-
-            # Look for <task_name>_<param_name>, then eval_<param_name>
             trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'eval'],  model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases)
@@ -407,10 +404,8 @@ def main(cl_arguments):
                 task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
-            # This logic looks strange. We think it works.
             layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
             if args.transfer_paradigm == "finetune":
-                # If we finetune,
                 # Save this fine-tune model with a task specific name.
                 finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 os.rename(layer_path, finetune_path)
@@ -426,14 +421,16 @@ def main(cl_arguments):
                                  skip_task_models=task_names_to_avoid_loading)
 
     if args.do_full_eval:
-        # Evaluate #
+        # Evaluate
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == 'mnli-diagnostic': # we'll load mnli-diagnostic during mnli
+                if task.name == 'mnli-diagnostic': 
+                    # we'll load mnli-diagnostic during mnli
                     continue
-
+                # Special checkpointing logic here since we train the sentence encoder
+                # and have a best set of sent encoder model weights per task.
                 finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
@@ -447,6 +444,8 @@ def main(cl_arguments):
                 evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
+            # Don't do any special checkpointing logic here 
+            # since model already has all the trained task specific modules.
             evaluate_and_write(args, model, target_tasks, splits_to_write)
 
     log.info("Done!")
