@@ -29,14 +29,13 @@ from .utils import config
 
 def build_trainer_params(args, task_names, phase='pretrain'):
     ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
-    for task spr(ecific training parameters. '''
+    for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(
         args, task_names, attr_name)
 
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'lr_patience', 'patience', 'scheduler_threshold']
-    # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'cuda', 'keep_all_checkpoints',
@@ -46,9 +45,9 @@ def build_trainer_params(args, task_names, phase='pretrain'):
     for attr in extra_opts:
         if attr == 'training_data_fraction':
             if phase == 'pretrain':
-                params[attr] = getattr(args, 'pretrain_data_fraction')
+                params[attr] = args.pretrain_data_fraction
             else:
-                params[attr] = getattr(args, 'target_train_data_fraction')
+                params[attr] = args.target_train_data_fraction
         else:
              params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')

@@ -331,8 +331,6 @@ def main(cl_arguments):
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
 
-
-            # Look for <task_name>_<param_name>, then eval_<param_name>
             trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'],  model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases, phase="target_train")
