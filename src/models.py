@@ -676,9 +676,9 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch['input']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, MultiNLIDiagnosticTask):
-            out = self._pair_sentence_MNLI_diagnostic_forward(
-                batch, task, predict)
+        # elif isinstance(task, MultiNLIDiagnosticTask):
+        #     out = self._pair_sentence_MNLI_diagnostic_forward(
+        #         batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
             if task.name in [

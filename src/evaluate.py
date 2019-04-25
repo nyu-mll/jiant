@@ -111,7 +111,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         all_preds[task.name] = task_preds
         log.info("Finished evaluating on: %s", task.name)
 
-    all_metrics["micro_avg"] /= n_examples_overall
+    all_metrics["micro_avg"] /= max(n_examples_overall, 1)
     all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds

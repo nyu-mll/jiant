@@ -870,7 +870,6 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-        self.scorer1(logits, labels)
         if tagmask is not None:
             update_subset_scorers(self.tag_scorers1, logits, labels, tagmask)
         return
@@ -878,7 +877,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
 
-        collected_metrics = {'accuracy': self.scorer1.get_metric(reset)}
+        collected_metrics = {'accuracy': 0.}
         collected_metrics.update(
             collect_subset_scores(
                 self.tag_scorers1,
