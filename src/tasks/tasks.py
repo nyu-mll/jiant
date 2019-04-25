@@ -803,7 +803,7 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-@register_task('mnli-diag', rel_path='MNLI/')
+@register_task('mnli-diagnostic', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 
@@ -818,7 +818,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         
         tag_vocab = vocabulary.Vocabulary(counter=None)
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        diag_data = load_tsv(tokenizer_name=self._tokenizer_name,
+        diagnostic_data = load_tsv(tokenizer_name=self._tokenizer_name,
                             data_file=os.path.join(path, 'diagnostic-full.tsv'),
                             max_seq_len=max_seq_len,
                             s1_idx=6, s2_idx=7, label_idx=8, label_fn=targ_map.__getitem__,
@@ -829,9 +829,9 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                                 'Knowledge': 3,
                                 'Domain': 4
                             }, tag_vocab=tag_vocab)
-        self.train_data_text = diag_data
-        self.val_data_text = diag_data
-        self.test_data_text = diag_data
+        self.train_data_text = diagnostic_data
+        self.val_data_text = diagnostic_data
+        self.test_data_text = diagnostic_data
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(
@@ -843,7 +843,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         is_using_bert = "bert_wpm_pretokenized" in indexers
 
-        def _make_instance(input1, input2, label, tagids):
+        def _make_instance(input1, input2, label, idx, tagids):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             if is_using_bert:
@@ -852,6 +852,8 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
+            d["idx"] = LabelField(idx, label_namespace="idx",
+                                  skip_indexing=True)
             d["labels"] = LabelField(label, label_namespace="labels",
                                      skip_indexing=True)
             d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
@@ -887,7 +889,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
     
     
 
-@register_task('mnli-diagnostic', rel_path='MNLI/')
+@register_task('mnli-diag', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 

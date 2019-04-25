@@ -106,14 +106,21 @@ def load_tsv(
             idx in tag2idx_dict.items()]
         tagids = [[tid for column in tid_temp for tid in column[idx]]
                   for idx in range(len(rows))]
+    # TODO: This return is very ugly, we might want to use dictionary
+    # The form of two sents is only true for popular NLP tasks in current situation
+    # Delivering the data as fixed tuple is not very extensible in the long run (Haokun)
     if return_indices:
         idxs = rows.index.tolist()
         # Get indices of the remaining rows after filtering
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
-    elif tag2idx_dict is not None:
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist(), tagids
+        if tag2idx_dict is not None:
+            return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs, tagids
+        else:
+            return sent1s.tolist(), sent2s.tolist(), labels.tolist(), idxs
     else:
-        return sent1s.tolist(), sent2s.tolist(), labels.tolist()
+        if tag2idx_dict is not None:
+            return sent1s.tolist(), sent2s.tolist(), labels.tolist(), tagids
+        else:        
+            return sent1s.tolist(), sent2s.tolist(), labels.tolist()
 
 
 def load_diagnostic_tsv(
