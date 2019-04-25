@@ -1,7 +1,7 @@
 '''
 Code for Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
-Modules re-used from: https://github.com/yikangshen/PRPN
-We modified the forward pass of original PRPN code to integrate with jiant
+This file is a version of a class from https://github.com/yikangshen/PRPN.
+We modified the forward function of original PRPN code to integrate with jiant.
 '''
 import torch
 import torch.nn as nn

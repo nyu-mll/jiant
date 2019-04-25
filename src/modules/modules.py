@@ -274,7 +274,11 @@ class BoWSentEncoder(Model):
         return word_embs, word_mask  # need to get # nonzero elts
 
 class PRPNPhraseLayer(Model):
-    ''' PRPN phrase layer '''
+    """
+    PRPN phrase layer 
+    This uses PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
+    PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
+    """
     def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
                 n_lookback, resolution, dropout, idropout, rdropout, res,
                 embedder, batch_size, initializer=InitializerApplicator()):
@@ -305,7 +309,12 @@ class PRPNPhraseLayer(Model):
 
 
 class ONLSTMPhraseLayer(Model):
-    ''' ON-LSTM phrase layer '''
+    """
+    ON-LSTM phrase layer 
+    This uses ON-LSTM (Shen et al., 2019) as a phrase layer for sentence encoder.
+    ON-LSTM is designed to add syntactic inductive bias to LSTM,
+    and learns the latent constituency trees jointly with a downstream task.
+    """
     def __init__(self, vocab, d_word, d_hid, n_layers_enc,
                  chunk_size, onlstm_dropconnect, onlstm_dropouti,
                  dropout, onlstm_dropouth, embedder,
