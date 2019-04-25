@@ -821,8 +821,8 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         diagnostic_data = load_tsv(tokenizer_name=self._tokenizer_name,
                             data_file=os.path.join(path, 'diagnostic-full.tsv'),
                             max_seq_len=max_seq_len,
-                            s1_idx=6, s2_idx=7, label_idx=8, label_fn=targ_map.__getitem__,
-                            skip_rows=1, tag2idx_dict={
+                            s1_idx=5, s2_idx=6, label_idx=7, label_fn=targ_map.__getitem__,
+                            return_indices=True, skip_rows=1, tag2idx_dict={
                                 'Lexical Semantics': 0,
                                 'Predicate-Argument Structure': 1,
                                 'Logic': 2,
@@ -890,7 +890,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
     
 
 @register_task('mnli-diag', rel_path='MNLI/')
-class MultiNLIDiagnosticTask(PairClassificationTask):
+class MultiNLIDiagTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
 
     def __init__(self, path, max_seq_len, name, **kw):
