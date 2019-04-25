@@ -315,7 +315,7 @@ def main(cl_arguments):
     ''' Train a model for multitask-training.'''
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
-    # Check for depricated arg names
+    # Check for deprecated arg names
     check_arg_name(args)
     args, seed = initial_setup(args, cl_args)
     # Load tasks
@@ -340,7 +340,7 @@ def main(cl_arguments):
     check_configurations(args, pretrain_tasks, target_tasks)
 
     if args.do_pretrain:
-        # Train on train tasks
+        # Train on pretrain tasks
         log.info("Training...")
         stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
@@ -362,8 +362,8 @@ def main(cl_arguments):
     else:
         strict = False
 
-    # Train just the task-specific components for eval tasks
     if args.do_target_task_training:
+        # Train on target tasks
         task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model, strict)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
@@ -385,7 +385,7 @@ def main(cl_arguments):
                 # Train both the task specific models as well as sentence encoder.
                 to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
             else: # args.transfer_paradigm == "frozen":
-                # Only train task-specific module. 
+                # Only train task-specific module
                 pred_module = getattr(model, "%s_mdl" % task.name)
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
