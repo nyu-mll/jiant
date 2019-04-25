@@ -414,6 +414,82 @@ class SSTTask(SingleClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
 
+@register_task('npi_adv_li', rel_path='NPI/probing/adverbs/licensor')
+@register_task('npi_adv_sc', rel_path='NPI/probing/adverbs/scope_with_licensor')
+@register_task('npi_adv_pr', rel_path='NPI/probing/adverbs/npi_present')
+@register_task('npi_cond_li', rel_path='NPI/probing/conditionals/licensor')
+@register_task('npi_cond_sc', rel_path='NPI/probing/conditionals/scope_with_licensor')
+@register_task('npi_cond_pr', rel_path='NPI/probing/conditionals/npi_present')
+@register_task('npi_negdet_li', rel_path='NPI/probing/determiner_negation_biclausal/licensor')
+@register_task('npi_negdet_sc', rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
+@register_task('npi_negdet_pr', rel_path='NPI/probing/determiner_negation_biclausal/npi_present')
+@register_task('npi_negsent_li', rel_path='NPI/probing/sentential_negation_biclausal/licensor')
+@register_task('npi_negsent_sc', rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
+@register_task('npi_negsent_pr', rel_path='NPI/probing/sentential_negation_biclausal/npi_present')
+@register_task('npi_only_li', rel_path='NPI/probing/only/licensor')
+@register_task('npi_only_sc', rel_path='NPI/probing/only/scope_with_licensor')
+@register_task('npi_only_pr', rel_path='NPI/probing/only/npi_present')
+@register_task('npi_qnt_li', rel_path='NPI/probing/quantifiers/licensor')
+@register_task('npi_qnt_sc', rel_path='NPI/probing/quantifiers/scope_with_licensor')
+@register_task('npi_qnt_pr', rel_path='NPI/probing/quantifiers/npi_present')
+@register_task('npi_ques_li', rel_path='NPI/probing/questions/licensor')
+@register_task('npi_ques_sc', rel_path='NPI/probing/questions/scope_with_licensor')
+@register_task('npi_ques_pr', rel_path='NPI/probing/questions/npi_present')
+@register_task('npi_quessmp_li', rel_path='NPI/probing/simplequestions/licensor')
+@register_task('npi_quessmp_sc', rel_path='NPI/probing/simplequestions/scope_with_licensor')
+@register_task('npi_quessmp_pr', rel_path='NPI/probing/simplequestions/npi_present')
+@register_task('npi_sup_li', rel_path='NPI/probing/superlative/licensor')
+@register_task('npi_sup_sc', rel_path='NPI/probing/superlative/scope_with_licensor')
+@register_task('npi_sup_pr', rel_path='NPI/probing/superlative/npi_present')
+@register_task('npi_adv', rel_path='NPI/splits/adverbs')
+@register_task('npi_cond', rel_path='NPI/splits/conditionals')
+@register_task('npi_negdet', rel_path='NPI/splits/determiner_negation_biclausal')
+@register_task('npi_negsent', rel_path='NPI/splits/sentential_negation_biclausal')
+@register_task('npi_only', rel_path='NPI/splits/only')
+@register_task('npi_ques', rel_path='NPI/splits/questions')
+@register_task('npi_quessmp', rel_path='NPI/splits/simplequestions')
+@register_task('npi_qnt', rel_path='NPI/splits/quantifiers')
+@register_task('npi_sup', rel_path='NPI/splits/npi_superlatives')
+class NPITask(SingleClassificationTask):
+    '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set'''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super(NPITask, self).__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        #self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=1)
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_full.tsv'), max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NPI Data.")
+
+    def get_metrics(self, reset=False):
+        return {'mcc': self.scorer1.get_metric(reset),
+                'accuracy': self.scorer2.get_metric(reset)}
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        return
+
+
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
@@ -453,12 +529,6 @@ class CoLATask(SingleClassificationTask):
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
         return
-
-
-
-
-
-
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
