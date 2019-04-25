@@ -148,7 +148,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
             (args.val_interval, args.bpp_base))
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
-    import pdb; pdb.set_trace()
+
     if args.do_target_task_training:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.target_tasks)
