@@ -30,7 +30,7 @@ from .utils import config
 def build_trainer_params(args, task_names, phase='pretrain'):
     ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
     for task spr(ecific training parameters. '''
-    def _get_task_attattr_name): return config.get_task_attr(
+    def _get_task_attr(attr_name): return config.get_task_attr(
         args, task_names, attr_name)
 
     params = {}

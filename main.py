@@ -231,8 +231,11 @@ def main(cl_arguments):
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
                        "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
-                       "  train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
-                       "  do_pretrain = 0 and do_target_task_training = 1.")
+                       "train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
+                       "do_pretrain = 0 and do_target_task_training = 1. It can be risky to do "
+                       "allow_reuse_of_pretraining_parameters = 1 in the case of a killed run during"
+                       "target task training, which may result in setting optimizers for the same "
+                       "task-specific module multiple times.")
 
     if args.do_full_eval:
         assert_for_log(args.target_tasks != "none",
