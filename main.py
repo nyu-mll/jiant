@@ -161,13 +161,13 @@ def check_configurations(args, pretrain_tasks, target_tasks):
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
-                       "allow_reuse_of_pretraining_parameters = 1(risky), or train in two steps:\n"
-                       "  train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
-                       "  do_pretrain = 0 and do_target_task_training = 1.")
+                       "allow_reuse_of_pretraining_parameters = 1 (risky), or train in two steps:\n"
+                       "train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
+                       "do_pretrain = 0 and do_target_task_training = 1.")
 
     if args.do_full_eval:
         assert_for_log(args.target_tasks != "none",
-                       "Error: Must specify at least one eval task: [%s]" % args.target_tasks)
+                       "Error: Must specify at least one target task: [%s]" % args.target_tasks)
         log.info("Evaluating model on tasks: %s" % args.target_tasks)
 
     log.info("Will run the following steps:\n%s", '\n'.join(steps_log))
