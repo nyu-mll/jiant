@@ -63,26 +63,17 @@ def setup_target_task_training(args, target_tasks, model):
     ----------------
     args: Params object
     target_tasks: list of target Task objects
-    mdoel: a MultTaskModel object
+    mdoel: a MultiTaskModel object
 
     Returns
     ----------------
     task_names_to_avoid_loading: list of strings, if we don't allow for 
     use of pretrained target specific module parameters, then this list will 
-    consist  of all the task names so that we avoid loading the 
+    consist of all the task names so that we avoid loading the 
     pretrained parameters. Else, it will be an empty list.
-    strict: bool, indicates whether to exit if the loaded model has some expected
-    parameters missing
 
     """
-    if not args.do_target_task_training:
-        log.info("In strict mode because do_target_task_training is off. "
-                 "Will crash if any tasks are missing from the checkpoint.")
-        strict = True
-    else:
-        strict = False
-
-    if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
+    if not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models.
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
@@ -114,7 +105,7 @@ def setup_target_task_training(args, target_tasks, model):
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
             log.warning("Evaluating untrained encoder parameters!")
-    return task_names_to_avoid_loading, strict
+    return task_names_to_avoid_loading
 
 def check_configurations(args, pretrain_tasks, target_tasks):
     """
@@ -364,9 +355,17 @@ def main(cl_arguments):
                           to_train, opt_params, schd_params,
                           args.shared_optimizer, args.load_model, phase="main")
 
+    # For checkpointing logic 
+    if not args.do_target_task_training:
+        log.info("In strict mode because do_target_task_training is off. "
+                 "Will crash if any tasks are missing from the checkpoint.")
+        strict = True
+    else:
+        strict = False
+
     # Train just the task-specific components for eval tasks.
     if args.do_target_task_training:
-        task_names_to_avoid_loading, strict = setup_target_task_training(args, target_tasks, model)
+        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
