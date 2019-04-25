@@ -84,15 +84,22 @@ class MultiRCTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
         def _make_instance(para, question, answer, label, pq_id):
             """ pq_id: paragraph-question ID """
             d = {}
             d["paragraph_str"] = MetadataField(" ".join(para))
             d["question_str"] = MetadataField(" ".join(question))
-            d["par_quest_idx"] = MetadataField(pq_id)
             d["answer_str"] = MetadataField(" ".join(answer))
-            inp = para + question[1:-1] + answer[1:]
-            d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            d["par_quest_idx"] = MetadataField(pq_id)
+            if is_using_bert:
+                inp = para + question[1:-1] + answer[1:]
+                d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["paragraph"] = sentence_to_text_field(para, indexers)
+                d["question"] = sentence_to_text_field(question, indexers)
+                d["answer"] = sentence_to_text_field(answer, indexers)
             d["label"] = LabelField(label, label_namespace="labels",
                                     skip_indexing=True)
 
@@ -152,8 +159,8 @@ class MultiRCTask(Task):
         f1s = []
         for logits_and_labels in self._score_tracker.values():
             logits, labels = list(zip(*logits_and_labels))
-            logits = torch.stack(logits)
-            labels = torch.stack(labels)
+            logits = torch.cat(logits)
+            labels = torch.cat(labels)
             self.scorer3(logits, labels)
             _, _, ex_f1 = self.scorer3.get_metric(reset=True)
             f1s.append(ex_f1)

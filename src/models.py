@@ -634,8 +634,9 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 
 def build_qa_module(task, d_inp, use_bert, params):
     ''' '''
-    assert_for_log(use_bert, "Must use BERT for MultiRC!")
-    pool_type = "first"
+    #assert_for_log(use_bert, "Must use BERT for MultiRC!")
+    pool_type = "first" if use_bert else "max"
+    #d_inp = d_inp if not use_bert else d_inp
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
@@ -1134,14 +1135,23 @@ class MultiTaskModel(nn.Module):
 
         Batch has a tensor of shape (n_questions, n_answers, n_tokens)
         '''
-        assert_for_log("para_quest_ans" in batch and "bert_wpm_pretokenized" in batch["para_quest_ans"], "Use BERT!")
+        #assert_for_log("para_quest_ans" in batch and "bert_wpm_pretokenized" in batch["para_quest_ans"], "Use BERT!")
         out = {}
-        inp = batch["para_quest_ans"]
-        ex_embs, ex_mask = self.sent_encoder(inp, task)
         classifier = self._get_classifier(task)
-        logits = classifier(ex_embs, ex_mask)
+        if self.use_bert:
+            inp = batch["para_quest_ans"]
+            ex_embs, ex_mask = self.sent_encoder(inp, task)
+            logits = classifier(ex_embs, ex_mask)
+            out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
+        else:
+            par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
+            qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
+            ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)
+            inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
+            inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
+            logits = classifier(inp, inp_mask)
+            out['n_exs'] = batch["answer"]["words"].size(0)
         out['logits'] = logits
-        out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
 
         # will likely get memory errors...
         if 'label' in batch:
