@@ -318,7 +318,7 @@ def main(cl_arguments):
     # Check for depricated arg names
     check_arg_name(args)
     args, seed = initial_setup(args, cl_args)
-    # Load tasks.
+    # Load tasks
     log.info("Loading tasks...")
     start_time = time.time()
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
@@ -326,7 +326,7 @@ def main(cl_arguments):
     log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
     log.info('\t Tasks: {}'.format([task.name for task in tasks]))
 
-    # Build model.
+    # Build model
     log.info('Building model...')
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
