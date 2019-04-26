@@ -199,14 +199,14 @@ def main(cl_arguments):
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
 
-    if not args.load_eval_checkpoint == 'none':
-        assert_for_log(os.path.exists(args.load_eval_checkpoint),
+    if not args.load_target_train_checkpoint == 'none':
+        assert_for_log(os.path.exists(args.load_target_train_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
-                       args.load_eval_checkpoint)
+                       args.load_target_train_checkpoint)
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
+        steps_log.append("Loading model from path: %s" % args.load_target_train_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -216,7 +216,7 @@ def main(cl_arguments):
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
        
     if args.do_target_task_training:
-        steps_log.append("Re-training model for individual eval tasks")
+        steps_log.append("Re-training model for individual target tasks")
      
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
                        or args.allow_reuse_of_pretraining_parameters
@@ -272,13 +272,13 @@ def main(cl_arguments):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_eval_checkpoint == "none":
-        # This is to load a particular eval checkpoint.
-        log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint,
+    if not args.load_target_train_checkpoint == "none":
+        # This is to load a particular target train checkpoint.
+        log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
+        load_model_state(model, args.load_target_train_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        # Look for eval checkpoints (available only if we're restoring from a run that already
+        # Look for target train checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
 
         if args.transfer_paradigm == "finetune":
