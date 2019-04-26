@@ -31,12 +31,12 @@ from .preprocess import parse_task_list_arg, get_tasks
 
 from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
-    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
+from .tasks.mt import MTTask,  Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
@@ -469,7 +469,7 @@ def build_task_specific_modules(
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
-    elif isinstance(task, (RedditSeq2SeqTask, Wiki103Seq2SeqTask)):
+    elif isinstance(task, (Wiki103Seq2SeqTask)):
         log.info("using {} attention".format(args.s2s['attention']))
         decoder_params = Params({'input_dim': d_sent,
                                  'target_embedding_dim': 300,
@@ -506,11 +506,6 @@ def build_task_specific_modules(
         task.img_encoder = CNNEncoder(model_name='resnet', path=task.path)
         pooler = build_image_sent_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, pooler)
-    elif isinstance(task, RankingTask):
-        pooler, dnn_ResponseModel = build_reddit_module(
-            task, d_sent, task_params)
-        setattr(model, '%s_mdl' % task.name, pooler)
-        setattr(model, '%s_Response_mdl' % task.name, dnn_ResponseModel)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -551,14 +546,6 @@ def get_task_specific_params(args, task_name):
     params['use_classifier'] = cls_task_name or task_name
 
     return Params(params)
-
-
-def build_reddit_module(task, d_inp, params):
-    ''' Build a single classifier '''
-    pooler = Pooler(project=True, d_inp=d_inp, d_proj=params['d_proj'])
-    dnn_ResponseModel = nn.Sequential(nn.Linear(params['d_proj'], params['d_proj']),
-                                      nn.Tanh(), nn.Linear(params['d_proj'], params['d_proj']))
-    return pooler, dnn_ResponseModel
 
 
 def build_image_sent_module(task, d_inp, params):
@@ -701,17 +688,7 @@ class MultiTaskModel(nn.Module):
                 batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,
                                PairOrdinalRegressionTask)):
-            if task.name in [
-                'wiki103_classif',
-                'reddit_pair_classif',
-                'reddit_pair_classif_mini',
-                'reddit_pair_classif_3.4G',
-                'mt_pair_classif',
-                    'mt_pair_classif_mini']:
-                out = self._positive_pair_sentence_forward(
-                    batch, task, predict)
-            else:
-                out = self._pair_sentence_forward(batch, task, predict)
+            out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
             if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or \
                 isinstance(self.sent_encoder._phrase_layer, PRPN):
@@ -730,8 +707,6 @@ class MultiTaskModel(nn.Module):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, (GroundedTask, GroundedSWTask)):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
-        elif isinstance(task, RankingTask):
-            out = self._ranking_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -907,66 +882,13 @@ class MultiTaskModel(nn.Module):
                 _, out['preds'] = logits.max(dim=1)
         return out
 
-    def _ranking_forward(self, batch, task, predict):
-        ''' For caption and image ranking. This implementation is intended for Reddit
-            This implementation assumes only positive pairs exist in input data.
-            Negative pairs are created within batch.
-        '''
-        out = {}
-        # feed forwarding inputs through sentence encoders
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
-        # pooler for both Input and Response
-        sent_pooler = getattr(self, "%s_mdl" % task.name)
-        sent_dnn = getattr(
-            self, "%s_Response_mdl" %
-            task.name)  # dnn for Response
-        sent1_rep = sent_pooler(sent1, mask1)
-        sent2_rep_pool = sent_pooler(sent2, mask2)
-        sent2_rep = sent_dnn(sent2_rep_pool)
-
-        cos_simi = torch.mm(sent1_rep, sent2_rep.transpose(0, 1))
-        if task.name == 'reddit_softmax':
-            cos_simi_backward = cos_simi.transpose(0, 1)
-            labels = torch.arange(len(cos_simi), dtype=torch.long).cuda()
-
-            total_loss = torch.nn.CrossEntropyLoss()(cos_simi, labels)  # one-way loss
-            total_loss_rev = torch.nn.CrossEntropyLoss()(
-                cos_simi_backward, labels)  # reverse
-            out['loss'] = total_loss + total_loss_rev
-
-            pred = torch.nn.Softmax(dim=1)(cos_simi)
-            pred = torch.argmax(pred, dim=1)
-        else:
-            labels = torch.eye(len(cos_simi))
-
-            # balancing pairs: #positive_pairs = batch_size, #negative_pairs =
-            # batch_size-1
-            cos_simi_pos = torch.diag(cos_simi)
-            cos_simi_neg = torch.diag(cos_simi, diagonal=1)
-            cos_simi = torch.cat([cos_simi_pos, cos_simi_neg], dim=0)
-            labels_pos = torch.diag(labels)
-            labels_neg = torch.diag(labels, diagonal=1)
-            labels = torch.cat([labels_pos, labels_neg], dim=0)
-            labels = labels.cuda()
-            total_loss = torch.nn.BCEWithLogitsLoss()(cos_simi, labels)
-            out['loss'] = total_loss
-
-            pred = torch.sigmoid(cos_simi).round()
-
-        total_correct = torch.sum(pred == labels)
-        batch_acc = total_correct.item() / len(labels)
-        out["n_exs"] = len(labels)
-        task.scorer1(batch_acc)
-        return out
-
     def _seq_gen_forward(self, batch, task, predict):
         ''' For variational autoencoder '''
         out = {}
         sent, sent_mask = self.sent_encoder(batch['inputs'], task)
         out['n_exs'] = get_batch_size(batch)
 
-        if isinstance(task, (MTTask, RedditSeq2SeqTask)):
+        if isinstance(task, (MTTask)):
             decoder = getattr(self, "%s_decoder" % task.name)
             out.update(decoder.forward(sent, sent_mask, batch['targs']))
             task.scorer1(out['loss'].item())
