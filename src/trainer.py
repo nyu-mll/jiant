@@ -532,8 +532,10 @@ class SamplingMultiTaskTrainer:
             scheduler = g_scheduler if shared_optimizer else task_info['scheduler']
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
-            tr_loss = task_info['loss']
-            for batch in tr_generator:
+            tr_loss = task_info['loss'];
+		
+
+            for batch in itertools.islice(tr_generator, 1):
                 n_batches_since_val += 1
                 total_batches_trained += 1
                 optimizer.zero_grad()
