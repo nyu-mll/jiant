@@ -465,10 +465,23 @@ def _get_task(name, args, data_path, scratch_path):
         task_src_path = os.path.join(data_path, rel_path)
         task = task_cls(task_src_path, max_seq_len=args.max_seq_len, name=name,
                         tokenizer_name=args.tokenizer, **task_kw)
+        task.load_data()
         utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, 'wb'))
-    #task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+
     return task
+
+
+def get_skeletal_task(task_name_list, args):
+    task_list = []
+    for task_name in task_name_list:
+        task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
+        task = task_cls(
+            path=None, max_seq_len=args.max_seq_len, name=task_name,
+            tokenizer_name=args.tokenizer, **task_kw
+        )
+        task_list.append(task)
+    return task_list
 
 
 def get_tasks(args):
