@@ -114,7 +114,7 @@ class SpanClassifierModule(nn.Module):
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
         # Apply projection CNN layer for each span of the input sentence 
-        sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
+        sent_embs_t = sent_embs.transpose(1, 2)
         sent_embs_t = move_to_device(sent_embs_t, cuda_device)
         se_projs = []
         for i in range(self.num_spans):
