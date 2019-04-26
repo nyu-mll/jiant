@@ -995,7 +995,7 @@ class SamplingMultiTaskTrainer:
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'pretrain' or 'target_train'.
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
-            potentially used later when switching from main to eval training.
+            potentially used later when switching from pretraining to target task training.
         """
         if not self._serialization_dir:
             raise ConfigurationError(
