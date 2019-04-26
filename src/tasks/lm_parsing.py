@@ -45,10 +45,10 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             indexers: (Indexer object) indexer to index input words
         """
         def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
+            """ Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
+            in the input for each direction """
             d = {}
             d["input"] = sentence_to_text_field(sent[:-1], indexers)
             d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
@@ -65,7 +65,7 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -90,7 +90,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -115,7 +115,7 @@ class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -160,7 +160,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
                                'val': os.path.join(path, "dev_matched.tsv"),
                                'test': os.path.join(path, "test_matched.tsv")}
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file (combine the entailment and contradiction sentence), tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path

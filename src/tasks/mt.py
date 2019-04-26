@@ -26,10 +26,10 @@ from .registry import register_task
 @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
 @register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
 class MTTask(SequenceGenerationTask):
-    '''Machine Translation Task'''
+    """Machine Translation Task"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        ''' '''
+        """ """
         super().__init__(name, **kw)
         self.scorer1 = Average()
         self.scorer2 = Average()
@@ -46,24 +46,28 @@ class MTTask(SequenceGenerationTask):
         self.files_by_split = {split: os.path.join(path, "%s.txt" % split) for
                                split in ["train", "val", "test"]}
 
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
+        """ Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self.load_data(self.files_by_split[split])
+        """
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_all_labels(self) -> List[str]:
-        ''' Build vocabulary and return it as a list '''
+        """ Build vocabulary and return it as a list """
         word2freq = collections.Counter()
         for split in ["train", "val"]:
-            for _, sent in self.load_data(self.files_by_split[split]):
+            for _, sent in self.get_data_iter(self.files_by_split[split]):
                 for word in sent:
                     word2freq[word] += 1
         return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
 
-    def load_data(self, path):
-        ''' Load data '''
+    def get_data_iter(self, path):
+        """ Load data """
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 row = row.strip().split('\t')
@@ -77,16 +81,16 @@ class MTTask(SequenceGenerationTask):
                 yield (src_sent, tgt_sent)
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
+        """ Yield sentences, used to compute vocabulary. """
         for split in self.files_by_split:
             # Don't use test set for vocab building.
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            yield from self.load_data(path)
+            yield from self.get_data_iter(path)
 
     def count_examples(self):
-        ''' Compute here b/c we're streaming the sentences. '''
+        """ Compute here b/c we're streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(
@@ -95,7 +99,7 @@ class MTTask(SequenceGenerationTask):
         self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
+        """ Process split text into a list of AllenNLP Instances. """
         def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
@@ -106,7 +110,7 @@ class MTTask(SequenceGenerationTask):
             yield _make_instance(sent1, sent2)
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        """Get metrics specific to the task"""
         avg_nll = self.scorer1.get_metric(reset)
         unk_ratio_macroavg = self.scorer3.get_metric(reset)
         return {
@@ -118,10 +122,10 @@ class MTTask(SequenceGenerationTask):
 @register_task('reddit_s2s', rel_path='Reddit/', max_targ_v_size=0)
 @register_task('reddit_s2s_3.4G', rel_path='Reddit_3.4G/', max_targ_v_size=0)
 class RedditSeq2SeqTask(MTTask):
-    ''' Task for seq2seq using reddit data
+    """ Task for seq2seq using reddit data
 
     Note: max_targ_v_size doesn't do anything here b/c the
-    target is in English'''
+    target is in English"""
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
         super().__init__(path=path, max_seq_len=max_seq_len,
@@ -133,8 +137,8 @@ class RedditSeq2SeqTask(MTTask):
                                "val": os.path.join(path, "val.csv"),
                                "test": os.path.join(path, "test.csv")}
 
-    def load_data(self, path):
-        ''' Load data '''
+    def get_data_iter(self, path):
+        """ Load data """
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
                 row = row.strip().split('\t')
@@ -147,7 +151,7 @@ class RedditSeq2SeqTask(MTTask):
                 yield (src_sent, tgt_sent)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
+        """ Process split text into a list of AllenNLP Instances. """
         def _make_instance(input, target):
             d = {}
             d["inputs"] = sentence_to_text_field(input, indexers)
@@ -161,10 +165,10 @@ class RedditSeq2SeqTask(MTTask):
 @register_task('wiki2_s2s', rel_path='WikiText2/', max_targ_v_size=0)
 @register_task('wiki103_s2s', rel_path='WikiText103/', max_targ_v_size=0)
 class Wiki103Seq2SeqTask(MTTask):
-    ''' Skipthought objective on Wiki103 '''
+    """ Skipthought objective on Wiki103 """
 
     def __init__(self, path, max_seq_len, max_targ_v_size, name, **kw):
-        ''' Note: max_targ_v_size does nothing here '''
+        """ Note: max_targ_v_size does nothing here """
         super().__init__(path, max_seq_len, max_targ_v_size, name, **kw)
         # for skip-thoughts setting, all source sentences are sentences that
         # followed by another sentence (which are all but the last one).
@@ -176,8 +180,8 @@ class Wiki103Seq2SeqTask(MTTask):
                                "val": os.path.join(path, "valid.sentences.txt"),
                                "test": os.path.join(path, "test.sentences.txt")}
 
-    def load_data(self, path):
-        ''' Load data '''
+    def get_data_iter(self, path):
+        """ Load data """
         nonatomic_toks = self._nonatomic_toks
         with codecs.open(path, 'r', 'utf-8', errors='ignore') as txt_fh:
             for row in txt_fh:
@@ -189,18 +193,18 @@ class Wiki103Seq2SeqTask(MTTask):
                 yield sent, []
 
     def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text.
+        """ Return number of examples in the result of get_split_text.
 
         Subclass can override this if data is not stored in column format.
-        '''
+        """
         # pair setences# = sent# - 1
         return len(split_text) - 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a language modeling split.
+        """ Process a language modeling split.
 
         Split is a single list of sentences here.
-        '''
+        """
         def _make_instance(prev_sent, sent):
             d = {}
             d["inputs"] = sentence_to_text_field(prev_sent, indexers)

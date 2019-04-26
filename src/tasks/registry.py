@@ -9,7 +9,7 @@ REGISTRY = {}  # Do not edit manually!
 
 
 def register_task(name, rel_path, **kw):
-    '''Decorator to register a task.
+    """Decorator to register a task.
 
     Use this instead of adding to NAME2INFO in preprocess.py
 
@@ -20,7 +20,7 @@ def register_task(name, rel_path, **kw):
     @register_task('mytask', 'my-task/data', **extra_kw)
     class MyTask(SingleClassificationTask):
         ...
-    '''
+    """
     def _wrap(cls):
         REGISTRY[name] = (cls, rel_path, kw)
         return cls

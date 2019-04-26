@@ -69,7 +69,11 @@ class LanguageModelingTask(SequenceGenerationTask):
         nll = self.scorer1.get_metric(reset)
         return {'perplexity': math.exp(nll)}
 
-    def load_data(self, path):
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
+    def get_data_iter(self, path):
         """Loading data file and tokenizing the text
         Args:
             path: (str) data file path
@@ -88,10 +92,10 @@ class LanguageModelingTask(SequenceGenerationTask):
             indexers: (Indexer object) indexer to index input words
         """
         def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
+            """ Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
+            in the input for each direction """
             d = {}
             d["input"] = sentence_to_text_field(sent, indexers)
             d["targs"] = sentence_to_text_field(
@@ -107,7 +111,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.load_data(self.files_by_split[split])
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -117,7 +121,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent in self.load_data(path):
+            for sent in self.get_data_iter(path):
                 yield sent
 
 
@@ -128,8 +132,8 @@ class WikiTextLMTask(LanguageModelingTask):
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
-        ''' Rather than return a whole list of examples, stream them '''
+    def get_data_iter(self, path):
+        """ Rather than return a whole list of examples, stream them """
         nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
         with open(path) as txt_fh:
             for row in txt_fh:

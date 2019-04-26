@@ -30,7 +30,7 @@ from .registry import register_task, REGISTRY  # global task registry
 
 
 class EdgeProbingTask(Task):
-    ''' Generic class for fine-grained edge probing.
+    """ Generic class for fine-grained edge probing.
 
     Acts as a classifier, but with multiple targets for each input text.
 
@@ -39,19 +39,19 @@ class EdgeProbingTask(Task):
 
     Subclass this for each dataset, or use register_task with appropriate kw
     args.
-    '''
+    """
     @property
     def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files,
+        """ Suffix to make sure we use the correct source files,
         based on the given tokenizer.
-        '''
+        """
         if self.tokenizer_name:
             return ".retokenized." + self.tokenizer_name
         else:
             return ""
 
     def tokenizer_is_supported(self, tokenizer_name):
-        ''' Check if the tokenizer is supported for this task. '''
+        """ Check if the tokenizer is supported for this task. """
         # Assume all tokenizers supported; if retokenized data not found
         # for this particular task, we'll just crash on file loading.
         return True
@@ -88,10 +88,11 @@ class EdgeProbingTask(Task):
             split: os.path.join(path, fname) + self._tokenizer_suffix
             for split, fname in files_by_split.items()
         }
-        self._iters_by_split = self.load_data()
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
+
+        self._iters_by_split = None
 
         label_file = os.path.join(path, label_file)
         self.all_labels = list(utils.load_lines(label_file))
@@ -153,20 +154,20 @@ class EdgeProbingTask(Task):
             #  iter = serialize.RepeatableIterator(loader)
             iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
-        return iters_by_split
+        self._iters_by_split = iters_by_split
 
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
+        """ Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
-        '''
+        """
         return self._iters_by_split[split]
 
     def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text.
+        """ Return number of examples in the result of get_split_text.
 
         Subclass can override this if data is not stored in column format.
-        '''
+        """
         return len(split_text)
 
     def _make_span_field(self, s, text_field, offset=1):
@@ -208,7 +209,7 @@ class EdgeProbingTask(Task):
         return Instance(d)
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
+        """ Process split text into a list of AllenNLP Instances. """
         def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
         return map(_map_fn, records, itertools.count())
 
@@ -216,7 +217,7 @@ class EdgeProbingTask(Task):
         return self.all_labels
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
+        """ Yield sentences, used to compute vocabulary. """
         for split, iter in self._iters_by_split.items():
             # Don't use test set for vocab building.
             if split.startswith("test"):
@@ -225,7 +226,7 @@ class EdgeProbingTask(Task):
                 yield record["text"].split()
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        """Get metrics specific to the task"""
         metrics = {}
         metrics['mcc'] = self.mcc_scorer.get_metric(reset)
         metrics['acc'] = self.acc_scorer.get_metric(reset)
