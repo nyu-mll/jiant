@@ -32,7 +32,6 @@ from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
 from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
-from ..utils.utils import truncate
 from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
 from ..utils.tokenizers import get_tokenizer
 
@@ -174,7 +173,6 @@ class Task(object):
 
     Methods and attributes:
         - load_data: load dataset from a path and create splits
-        - truncate: truncate data to be at most some length
         - get_metrics:
 
     Outside the task:
@@ -1490,16 +1488,6 @@ class TaggingTask(Task):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
-
-    def truncate(self, max_seq_len,
-                 sos_tok=utils.SOS_TOK, eos_tok=utils.EOS_TOK):
-        """ Truncate the data if any sentences are longer than max_seq_len. """
-        self.train_data_text = [truncate(self.train_data_text[0], max_seq_len,
-                                         sos_tok, eos_tok), self.train_data_text[1]]
-        self.val_data_text = [truncate(self.val_data_text[0], max_seq_len,
-                                       sos_tok, eos_tok), self.val_data_text[1]]
-        self.test_data_text = [truncate(self.test_data_text[0], max_seq_len,
-                                        sos_tok, eos_tok), self.test_data_text[1]]
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
