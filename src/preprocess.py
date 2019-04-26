@@ -472,16 +472,14 @@ def _get_task(name, args, data_path, scratch_path):
     return task
 
 
-def get_skeletal_task(task_name_list, args):
-    task_list = []
-    for task_name in task_name_list:
-        task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
-        task = task_cls(
-            path=None, max_seq_len=args.max_seq_len, name=task_name,
-            tokenizer_name=args.tokenizer, **task_kw
-        )
-        task_list.append(task)
-    return task_list
+def get_skeletal_task(task_name, args):
+    ''' Build a task without loading data '''
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
+    task = task_cls(
+        path=None, max_seq_len=args.max_seq_len, name=task_name,
+        tokenizer_name=args.tokenizer, **task_kw
+    )
+    return task
 
 
 def get_tasks(args):
