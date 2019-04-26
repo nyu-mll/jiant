@@ -202,14 +202,14 @@ def main(cl_arguments):
     # Check that necessary parameters are set for each step. Exit with error if not.
     steps_log = []
 
-    if not args.load_eval_checkpoint == 'none':
-        assert_for_log(os.path.exists(args.load_eval_checkpoint),
+    if not args.load_target_train_checkpoint == 'none':
+        assert_for_log(os.path.exists(args.load_target_train_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
-                       args.load_eval_checkpoint)
+                       args.load_target_train_checkpoint)
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        steps_log.append("Loading model from path: %s" % args.load_eval_checkpoint)
+        steps_log.append("Loading model from path: %s" % args.load_target_train_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -217,19 +217,11 @@ def main(cl_arguments):
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
-        assert_for_log(
-            args.val_interval %
-            args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.val_interval, args.bpp_base))
-        steps_log.append("Training model on tasks: %s" % args.pretrain_tasks)
-
+       
     if args.do_target_task_training:
-        steps_log.append("Re-training model for individual eval tasks")
-        assert_for_log(
-            args.eval_val_interval %
-            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.eval_val_interval, args.bpp_base))
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
+        steps_log.append("Re-training model for individual target tasks")
+     
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
@@ -261,7 +253,7 @@ def main(cl_arguments):
                                                             should_decrease, phase="pretrain")
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
-                          args.batch_size, args.bpp_base,
+                          args.batch_size,
                           args.weighting_method, args.scaling_method,
                           to_train, opt_params, schd_params,
                           args.shared_optimizer, args.load_model, phase="pretrain")
@@ -283,20 +275,15 @@ def main(cl_arguments):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_eval_checkpoint == "none":
-        # This is to load a particular eval checkpoint.
-        log.info("Loading existing model from %s...", args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint,
+    if not args.load_target_train_checkpoint == "none":
+        # This is to load a particular target train checkpoint.
+        log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
+        load_model_state(model, args.load_target_train_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        # Look for eval checkpoints (available only if we're restoring from a run that already
+        # Look for target train checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
 
-        if args.transfer_paradigm == "finetune":
-            # Save model so we have a checkpoint to go back to after each task-specific finetune.
-            model_state = model.state_dict()
-            model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
-            torch.save(model_state, model_path)
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
@@ -304,6 +291,13 @@ def main(cl_arguments):
         else:
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
+
+            if args.transfer_paradigm == "finetune":
+                # Save model so we have a checkpoint to go back to after each task-specific finetune.
+                model_state = model.state_dict()
+                model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
+                torch.save(model_state, model_path)
+
             log.warning("Evaluating untrained encoder parameters!")
 
     # Train just the task-specific components for eval tasks.
@@ -338,7 +332,7 @@ def main(cl_arguments):
                                                                 args.run_dir,
                                                                 task.val_metric_decreases, phase="target_train")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
-                              n_batches_per_pass=1, weighting_method=args.weighting_method,
+                              weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
                               optimizer_params=opt_params, scheduler_params=schd_params,
                               shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")

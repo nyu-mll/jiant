@@ -722,9 +722,9 @@ class MultiTaskModel(nn.Module):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
             # Just get embeddings and invoke task module.
-            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+            word_embs_in_context, sent_mask = self.sent_encoder(batch['input1'], task)
             module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, sent_embs, sent_mask,
+            out = module.forward(batch, word_embs_in_context, sent_mask,
                                  task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
@@ -753,10 +753,10 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+        word_embs_in_context, sent_mask = self.sent_encoder(batch['input1'], task)
         # pass to a task specific classifier
         classifier = self._get_classifier(task)
-        logits = classifier(sent_embs, sent_mask)
+        logits = classifier(word_embs_in_context, sent_mask)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 
