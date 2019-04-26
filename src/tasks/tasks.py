@@ -1575,7 +1575,7 @@ class CCGTaggingTask(TaggingTask):
         self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenization added token
-            self.num_tags = self.num_tags + 1 
+            self.num_tags = self.num_tags + 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a tagging task '''
@@ -1595,7 +1595,7 @@ class CCGTaggingTask(TaggingTask):
                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
         self.max_seq_len = max_seq_len
 
-        # Get the mask for each sentence, where the mask is whether or not 
+        # Get the mask for each sentence, where the mask is whether or not
         # the token was split off by tokenization. We want to only count the first
         # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
         # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
@@ -1647,13 +1647,13 @@ class CommitmentTask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.csv"), max_seq_len,
                            s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',')
+                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "val.csv"), max_seq_len,
                            s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',')
+                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.csv'), max_seq_len,
                            s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',')
+                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data

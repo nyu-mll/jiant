@@ -117,7 +117,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
         evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
                              strict_glue_format=args.write_strict_glue_format)
     if 'test' in splits_to_write:
-        te_results, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
         evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                              strict_glue_format=args.write_strict_glue_format)
     run_name = args.get("run_name", os.path.basename(args.run_dir))
@@ -125,9 +125,6 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
-    if 'test' in splits_to_write:
-        log.info("Writing results for split 'test' to %s", results_tsv)
-        evaluate.write_results(te_results, results_tsv, run_name=run_name)
 
 
 def main(cl_arguments):
@@ -217,11 +214,11 @@ def main(cl_arguments):
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
-       
+
     if args.do_target_task_training:
         steps_log.append("Re-training model for individual target tasks")
-     
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
+
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
