@@ -27,7 +27,7 @@ from .evaluate import evaluate
 from .utils import config
 
 
-def build_trainer_params(args, task_names):
+def build_trainer_params(args, task_names, phase='pretrain'):
     ''' Helper function which extracts trainer parameters from args. In particular, we want to search args
     for task specific training parameters. '''
     def _get_task_attr(attr_name): return config.get_task_attr(
@@ -36,7 +36,6 @@ def build_trainer_params(args, task_names):
     params = {}
     train_opts = ['optimizer', 'lr', 'batch_size', 'lr_decay_factor',
                   'lr_patience', 'patience', 'scheduler_threshold']
-    # we want to pass to the build_train()
     extra_opts = ['sent_enc', 'd_hid', 'warmup',
                   'max_grad_norm', 'min_lr', 'batch_size',
                   'cuda', 'keep_all_checkpoints',
@@ -44,7 +43,13 @@ def build_trainer_params(args, task_names):
     for attr in train_opts:
         params[attr] = _get_task_attr(attr)
     for attr in extra_opts:
-        params[attr] = getattr(args, attr)
+        if attr == 'training_data_fraction':
+            if phase == 'pretrain':
+                params[attr] = args.pretrain_data_fraction
+            else:
+                params[attr] = args.target_train_data_fraction
+        else:
+             params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
     params['dec_val_scale'] = _get_task_attr('dec_val_scale')
@@ -58,7 +63,8 @@ def build_trainer(
     model,
     run_dir,
     metric_should_decrease=True,
-    train_type="SamplingMultiTaskTrainer"):
+    train_type="SamplingMultiTaskTrainer",
+    phase="pretrain"):
     '''Build a trainer from params.
 
     Parameters
@@ -72,7 +78,7 @@ def build_trainer(
     A trainer object, a trainer config object, an optimizer config object,
         and a scheduler config object.
     '''
-    params = build_trainer_params(args, task_names)
+    params = build_trainer_params(args, task_names, phase)
 
     opt_params = {'type': params['optimizer'], 'lr': params['lr']}
     if params['optimizer'] == 'adam':
@@ -284,7 +290,7 @@ class SamplingMultiTaskTrainer:
             tr_generator = move_to_device(tr_generator, self._cuda_device)
             task_info['iterator'] = iterator
 
-            if phase == "main":
+            if phase == "pretrain":
                 # Warning: This won't be precise when training_data_fraction is set, since each example is included
                 # or excluded independently using a hashing function. Fortunately, it
                 # doesn't need to be.
@@ -351,7 +357,7 @@ class SamplingMultiTaskTrainer:
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif 'max_epoch_' in scaling_method:
             epochs = scaling_method.strip('max_epoch_').split('_')
-            assert len(epochs) == len(tasks), "Loss Scaling Error: epoch number not match."
+            assert len(epochs) == num_tasks, "Loss Scaling Error: epoch number not match."
             scaling_weights = np.array(list(map(int, epochs)))
 
         # normalized by max weight
@@ -411,7 +417,7 @@ class SamplingMultiTaskTrainer:
               batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=1, load_model=1, phase="main"):
+              shared_optimizer=1, load_model=1, phase="pretrain"):
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
@@ -429,7 +435,7 @@ class SamplingMultiTaskTrainer:
         scheduler_params: scheduler config object
         shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
-        phase: str, usually 'main' or 'eval'
+        phase: str, usually 'pretrain' or 'target_train'
 
         Returns
         ----------
@@ -455,7 +461,7 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None and phase != "eval":  # Resume from serialization path
+        if self._serialization_dir is not None and phase != "target_train":  # Resume from serialization path
             if load_model and any(
                     ["model_state_" in x for x in os.listdir(self._serialization_dir)]):
                 n_pass, should_stop = self._restore_checkpoint()
@@ -619,7 +625,7 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "eval"))
+                    epoch, tasks, batch_size, periodic_save=(phase != "target_train"))
 
                 # Check stopping conditions
                 should_stop = self._check_stop(epoch, stop_metric, tasks)
@@ -975,14 +981,14 @@ class SamplingMultiTaskTrainer:
     def _save_checkpoint(
             self,
             training_state,
-            phase="main",
+            phase="pretrain",
             new_best_macro=False,
             keep_all=False):
         """
         Parameters
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
-        phase: Usually 'main' or 'eval'.
+        phase: Usually 'pretrain' or 'target_train'.
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from main to eval training.
         """
@@ -992,10 +998,10 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path.")
 
         epoch = training_state["epoch"]
-        if phase == "eval":
+        if phase == "target_train":
             model_path = os.path.join(
                 self._serialization_dir,
-                "model_state_eval_best.th")
+                "model_state_target_train_best.th")
         else:
             if new_best_macro:
                 best_str = ".best_macro"
@@ -1015,12 +1021,12 @@ class SamplingMultiTaskTrainer:
                 del model_state[name]
         torch.save(model_state, model_path)
 
-        if phase != "eval":
+        if phase != "target_train":
             torch.save(
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "training_state_{}_epoch_{}{}.th".format(
+                    "pretraining_state_{}_epoch_{}{}.th".format(
                         phase, epoch, best_str)))
 
             task_states = {}
@@ -1064,7 +1070,7 @@ class SamplingMultiTaskTrainer:
                         phase, epoch, best_str)))
         log.info("Saved files to %s", self._serialization_dir)
 
-        if phase != "eval" and new_best_macro:
+        if phase != "target_train" and new_best_macro:
             self._unmark_previous_best(phase, epoch)
 
         if not self._keep_all_checkpoints:
