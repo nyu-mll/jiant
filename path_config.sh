@@ -22,10 +22,27 @@
 # export FASTTEXT_MODEL_FILE=None
 # export FASTTEXT_EMBS_FILE=None
 
-export JIANT_PROJECT_PREFIX=exp
-export JIANT_DATA_DIR=/nfs/jsalt/home/
+export JIANT_PROJECT_PREFIX=$HOME/jiant_exp
+export JIANT_DATA_DIR=$HOME/data
 export NFS_PROJECT_PREFIX=/nfs/jsalt/exp/nkim
 export NFS_DATA_DIR=/nfs/jsalt/home/
+
+function changebashpaths() {
+	output="export JIANT_PROJECT_PREFIX="$JIANT_PROJECT_PREFIX
+	echo $output >> ~/.bashrc
+	output="export JIANT_DATA_DIR="$JIANT_DATA_DIR
+	echo $output >> ~/.bashrc
+	output="export NFS_PROJECT_PREFIX="$NFS_PROJECT_PREFIX
+	echo $output >> ~/.bashrc
+	output="export NFS_DATA_DIR="$NFS_DATA_DIR
+	echo $output >> ~/.bashrc
+  source ~/.bashrc
+}
+read -r -p "Do you want to add alter to .bashrc to add these paths? (Y/N)" response
+if [[ $response =~ ^[Yy]$ ]]
+	then
+		changebashpaths
+fi
 
 # echo "Loaded Sam's config."
 
