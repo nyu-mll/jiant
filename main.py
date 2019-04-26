@@ -93,14 +93,6 @@ def setup_target_task_training(args, target_tasks, model, strict):
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
 
-        if args.transfer_paradigm == "finetune":
-            # Save model so we have a checkpoint to go back to after each
-            # task-specific finetune.
-            model_state = model.state_dict()
-            model_path = os.path.join(
-                args.run_dir, "model_state_untrained_prefinetune.th")
-            torch.save(model_state, model_path)
-
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
@@ -108,6 +100,13 @@ def setup_target_task_training(args, target_tasks, model, strict):
         else:
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
+            if args.transfer_paradigm == "finetune":
+                # Save model so we have a checkpoint to go back to after each
+                # task-specific finetune.
+                model_state = model.state_dict()
+                model_path = os.path.join(
+                    args.run_dir, "model_state_untrained_prefinetune.th")
+                torch.save(model_state, model_path)
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
 
