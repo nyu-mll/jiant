@@ -4,7 +4,6 @@ from . import edge_probing
 from . import lm
 from . import mt
 from . import nli_probing
-from . import reddit
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
