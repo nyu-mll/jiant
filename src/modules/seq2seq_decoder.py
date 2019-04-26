@@ -42,7 +42,6 @@ class Seq2SeqDecoder(Model):
                  dropout: float = 0.0,
                  scheduled_sampling_ratio: float = 0.0,
                  ) -> None:
- 
         super(Seq2SeqDecoder, self).__init__(vocab)
 
         # deprecated module
