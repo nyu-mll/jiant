@@ -157,12 +157,11 @@ To use the PRPN sentence encoder from [***Neural language modeling by jointly le
 We currently support the following:
 	* Single sentence classification tasks
 	* Pair sentence classification tasks
-	* All GLUE tasks
 	* Regression tasks
 	* Tagging tasks
 	* Span Classification Tasks - to run these, we currently require an extra preprocessing 
-		step, which consists of preprocessing the data to get BERT tokenized span indice. 
-		SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}
+	  step, which consists of preprocessing the data to get BERT tokenized span indice. 
+	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}
 	* seq2seq tasks are partially supported.
 
 ### Transformers 
