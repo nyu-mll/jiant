@@ -19,6 +19,7 @@ import os
 import numpy as np
 import torch
 
+from sklearn.metrics import mean_squared_error
 from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure, Average
 from ..allennlp_mods.correlation import Correlation, FastMatthews
@@ -359,9 +360,9 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-    def update_metrics():
-        # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+    def update_metrics(self, logits, labels, tagmask=None):
+        self.scorer1(mean_squared_error(logits, labels))
+        self.scorer2(logits, labels)
         return
 
 class SequenceGenerationTask(Task):
