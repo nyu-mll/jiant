@@ -1,10 +1,3 @@
-from src import evaluate
-from src.trainer import build_trainer
-from src.models import build_model
-from src.preprocess import build_tasks
-from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
-from src.utils import config
-import torch
 '''Train a multi-task model using AllenNLP
 
 To debug this, run with -m ipdb:
@@ -24,6 +17,14 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
+import torch
+
+from src.utils import config
+from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
+from src.preprocess import build_tasks
+from src.models import build_model
+from src.trainer import build_trainer
+from src import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
 # handling.
