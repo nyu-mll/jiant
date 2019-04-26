@@ -24,6 +24,11 @@ from allennlp.data.token_indexers import \
     SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
 
+try:
+    import fastText
+except BaseException:
+    log.info("fastText library not found!")
+
 import _pickle as pkl  # :(
 
 from .utils import config
@@ -186,27 +191,18 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
 
 def _build_embeddings(args, vocab, emb_file: str):
     ''' Build word embeddings from scratch (as opposed to loading them from a pickle),
-    using precomputed fastText / GloVe embeddings. '''
-
-    # Load all the word embeddings based on vocabulary
+    possibly using a fastText model or precomputed fastText / GloVe embeddings. '''
     log.info("\tBuilding embeddings from scratch")
-    word_v_size, unk_idx = vocab.get_vocab_size(
-        'tokens'), vocab.get_token_index(vocab._oov_token)
-    embeddings = np.random.randn(word_v_size, args.d_word)
-    with io.open(args.word_embs_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(' ', 1)
-            idx = vocab.get_token_index(word)
-            if idx != unk_idx:
-                embeddings[idx] = np.array(list(map(float, vec.split())))
-    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
-    embeddings = torch.FloatTensor(embeddings)
-    log.info("\tFinished loading embeddings")
+    if args.fastText:
+        word_embs, _ = get_fastText_model(vocab, args.d_word,
+                                          model_file=args.fastText_model_file)
+        log.info("\tUsing fastText; no pickling of embeddings.")
+        return word_embs
 
-    # Save/cache the word embeddings
-    pkl.dump(embeddings, open(emb_file, 'wb'))
+    word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
+    pkl.dump(word_embs, open(emb_file, 'wb'))
     log.info("\tSaved embeddings to %s", emb_file)
-    return embeddings
+    return word_embs
 
 
 def _build_vocab(args, tasks, vocab_path: str):
@@ -355,8 +351,6 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
-    assert not (args.pretrain_data_fraction < 1 and args.target_train_data_fraction < 1), \
-        "pretraining_data_fraction and target_train_data_fraction could not be used at a same time (could not be < 1 together)"
     pretrain_tasks = []
     target_tasks = []
     for task in tasks:
@@ -366,7 +360,7 @@ def build_tasks(args):
             task.name, "test", preproc_dir)
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
-        if args.pretrain_data_fraction < 1 and task.name in train_task_names:
+        if task.name in pretrain_task_names:
             log.info(
                 "Creating trimmed pretraining-only version of " +
                 task.name +
@@ -374,25 +368,9 @@ def build_tasks(args):
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.pretrain_data_fraction)
             pretrain_tasks.append(task)
-            if task.name in target_task_names:
-                # Rebuild the iterator so we see the full dataset in the target task training
-                # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name
-                # (task.name).
-                log.info(
-                    "Creating un-trimmed target training version of " +
-                    task.name +
-                    " train.")
-                log.warn("When using un-trimmed target training version of train split, "
-                         "it creates a deepcopy of task object which is inefficient.")
-                task = copy.deepcopy(task)
-                task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0)
-                target_tasks.append(task)
-
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
-        elif args.target_train_data_fraction < 1 and task.name in target_task_names:
+        if task.name in target_task_names:
             log.info(
                 "Creating trimmed train-for-target-only version of " +
                 task.name +
@@ -400,31 +378,7 @@ def build_tasks(args):
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.target_train_data_fraction)
             target_tasks.append(task)
-            if task.name in train_task_names:
-                # Rebuild the iterator so we see the full dataset in the pretraining
-                # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name
-                # (task.name).
-                log.info(
-                    "Creating un-trimmed pretraining version of " +
-                    task.name +
-                    " train.")
-                log.warn("When using un-trimmed pretraining version of train split, "
-                         "it creates a deepcopy of task object which is inefficient.")
-                task = copy.deepcopy(task)
-                task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0)
-                pretrain_tasks.append(task)
-        # When neither pretrain_data_fraction nor target_train_data_fraction is specified
-        # we use unmodified iterators.
-        else:
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)
-            if task.name in pretrain_task_names:
-                pretrain_tasks.append(task)
-            if task.name in target_task_names:
-                target_tasks.append(task)
-
+            
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
@@ -634,4 +588,43 @@ def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
 
 
+def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
+    '''Get embeddings for the words in vocab from a file of precomputed vectors.
+    Works for fastText and GloVe embedding files. '''
+    word_v_size, unk_idx = vocab.get_vocab_size(
+        'tokens'), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, d_word)
+    with io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
+        for line in vec_fh:
+            word, vec = line.split(' ', 1)
+            idx = vocab.get_token_index(word)
+            if idx != unk_idx:
+                embeddings[idx] = np.array(list(map(float, vec.split())))
+    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+    log.info("\tFinished loading embeddings")
+    return embeddings
 
+
+def get_fastText_model(vocab, d_word, model_file=None):
+    '''
+    Same interface as get_embeddings except for fastText. Note that if the path to the model
+    is provided, the embeddings will rely on that model instead.
+    **Crucially, the embeddings from the pretrained model DO NOT match those from the released
+    vector file**
+    '''
+    word_v_size, unk_idx = vocab.get_vocab_size(
+        'tokens'), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, d_word)
+    model = fastText.FastText.load_model(model_file)
+    special_tokens = [vocab._padding_token, vocab._oov_token]
+    # We can also just check if idx >= 2
+    for idx in range(word_v_size):
+        word = vocab.get_token_from_index(idx)
+        if word in special_tokens:
+            continue
+        embeddings[idx] = model.get_word_vector(word)
+    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+    log.info("\tFinished loading pretrained fastText model and embeddings")
+    return embeddings, model
