@@ -576,7 +576,7 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
             sequence, rather than max pooling. We do this for BERT specifically to follow
             the convention set in the paper (Devlin et al., 2019).
         - params (Params): Params object with task-specific parameters
-        
+
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
