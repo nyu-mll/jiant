@@ -6,5 +6,5 @@
 	path = src/openai_transformer_lm/tf_original
 	url = https://github.com/openai/finetune-transformer-lm.git
 [submodule "src/openai_transformer_lm/pytorch_huggingface"]
-	path = src/openai_transformer_lm/pytorch_huggingface
+	path = jiant/openai_transformer_lm/pytorch_huggingface
 	url = https://github.com/huggingface/pytorch-openai-transformer-lm.git
