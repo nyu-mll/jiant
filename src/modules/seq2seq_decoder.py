@@ -23,7 +23,8 @@ from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_lo
 
 from .modules import Pooler
 
-import warnings
+import logging as log
+
 
 class Seq2SeqDecoder(Model):
     """
@@ -45,9 +46,7 @@ class Seq2SeqDecoder(Model):
         super(Seq2SeqDecoder, self).__init__(vocab)
 
         # deprecated module
-        warnings.simplefilter('always', DeprecationWarning)
-        warnings.warn("modules.Seq2SeqDecoder is deprecated and is no longer maintained",
-                        DeprecationWarning, stacklevel=2)
+        log.warning("DeprecationWarning: modules.Seq2SeqDecoder is deprecated and is no longer maintained")
 
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
