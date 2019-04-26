@@ -214,26 +214,19 @@ def get_best_checkpoint_path(run_dir):
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    target_task_best = glob.glob(
-        os.path.join(
-            run_dir,
-            "model_state_target_train_best.th"))
+    target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
+
     if len(target_task_best) > 0:
         assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return target_task_best[0]
-    macro_best = glob.glob(
-        os.path.join(
-            run_dir,
-            "model_state_pretrain_epoch_*.best_macro.th"))
+    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    pre_target_train = glob.glob(
-        os.path.join(
-            run_dir,
-            "model_state_untrained_pre_target_train.th"))
+
+    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
     if len(pre_target_train) > 0:
         assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -366,8 +359,7 @@ def main(cl_arguments):
         trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
                                                             should_decrease, phase="pretrain")
-        to_train = [(n, p)
-                    for n, p in model.named_parameters() if p.requires_grad]
+        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
                           args.batch_size,
                           args.weighting_method, args.scaling_method,
@@ -434,6 +426,7 @@ def main(cl_arguments):
             # task.
             layer_path = os.path.join(
                 args.run_dir, "model_state_target_train_best.th")
+
             if args.transfer_paradigm == "finetune":
                 # Save this fine-tune model with a task specific name.
                 finetune_path = os.path.join(

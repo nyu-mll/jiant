@@ -102,7 +102,7 @@ class EdgeClassifierModule(nn.Module):
                                                          task_params)
 
     def forward(self, batch: Dict,
-                sent_embs: torch.Tensor,
+                word_embs_in_context: torch.Tensor,
                 sent_mask: torch.Tensor,
                 task: EdgeProbingTask,
                 predict: bool) -> Dict:
@@ -119,7 +119,7 @@ class EdgeClassifierModule(nn.Module):
 
         Args:
             batch: dict(str -> Tensor) with entries described above.
-            sent_embs: [batch_size, max_len, repr_dim] Tensor
+            word_embs_in_context: [batch_size, max_len, repr_dim] Tensor
             sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
             task: EdgeProbingTask
             predict: whether or not to generate predictions
@@ -129,14 +129,14 @@ class EdgeClassifierModule(nn.Module):
         """
         out = {}
 
-        batch_size = sent_embs.shape[0]
+        batch_size = word_embs_in_context.shape[0]
         out['n_inputs'] = batch_size
 
         # Apply projection CNN layer for each span.
-        sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
-        se_proj1 = self.projs[1](sent_embs_t).transpose(2, 1).contiguous()
+        word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
+        se_proj1 = self.projs[1](word_embs_in_context_t).transpose(2, 1).contiguous()
         if not self.single_sided:
-            se_proj2 = self.projs[2](sent_embs_t).transpose(2, 1).contiguous()
+            se_proj2 = self.projs[2](word_embs_in_context_t).transpose(2, 1).contiguous()
 
         # Span extraction.
         # [batch_size, num_targets] bool
