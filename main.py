@@ -126,7 +126,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     steps_log = io.StringIO()
     if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
             [not t.val_metric_decreases for t in pretrain_tasks]):
-        log.warn("\tMixing training tasks with i=ncreasing and decreasing val metrics!")
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
     if args.load_eval_checkpoint != 'none':
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
