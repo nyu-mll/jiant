@@ -160,7 +160,7 @@ We currently support the following:
 	* Regression tasks
 	* Tagging tasks
 	* Span Classification Tasks - to run these, we currently require an extra preprocessing 
-	  step, which consists of preprocessing the data to get BERT tokenized span indice. 
+	  step, which consists of preprocessing the data to get BERT tokenized span indices. 
 	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}
 	* seq2seq tasks are partially supported.
 
