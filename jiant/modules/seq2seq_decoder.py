@@ -196,26 +196,6 @@ class Seq2SeqDecoder(Model):
 
         return output_dict
 
-    def _decoder_step(self,
-                      decoder_input,
-                      decoder_hidden,
-                      decoder_context):
-        """
-        Applies one step of the decoder. This is used by beam search.
-
-        Parameters
-        ----------
-        decoder_input: torch.FloatTensor
-        decoder_hidden: torch.FloatTensor
-        decoder_context: torch.FloatTensor
-        """
-        decoder_hidden, decoder_context = self._decoder_cell(
-            decoder_input, (decoder_hidden, decoder_context))
-
-        logits = self._output_projection_layer(decoder_hidden)
-
-        return logits, (decoder_hidden, decoder_context)
-
     def _prepare_decode_step_input(
             self,
             input_indices: torch.LongTensor,
