@@ -879,8 +879,7 @@ class MultiTaskModel(nn.Module):
             labels = batch['labels']
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, RegressionTask):
-                logits = logits.squeeze(-1) if len(logits.size()
-                                                   ) > 1 else logits
+                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
