@@ -1620,8 +1620,7 @@ class COPATask(MultipleChoiceTask):
                 [choice for choices in self.train_data_text[1] for choice in choices] + \
                 [choice for choices in self.val_data_text[1] for choice in choices]
         self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = F1Measure(1)
-        self.scorers = [self.scorer1, self.scorer2]
+        self.scorers = [self.scorer1]
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
         self.n_choices = 2
@@ -1675,9 +1674,153 @@ class COPATask(MultipleChoiceTask):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         acc = self.scorer1.get_metric(reset)
-        pcs, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
-                'precision': pcs, 'recall': rcl}
+        return {"accuracy": acc}
+
+@register_task('copa-effect', rel_path='COPA/')
+class COPAEffectTask(COPATask):
+    ''' Task class for Choice of Plausible Alternatives Task.  '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(path, max_seq_len, name, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                [choice for choices in self.train_data_text[1] for choice in choices] + \
+                [choice for choices in self.val_data_text[1] for choice in choices]
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 2
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        def _load_split(data_file):
+            contexts, questions, choicess, targs = [], [], [], []
+            data = ET.parse(data_file).getroot()
+            for example in data:
+                context = example.find("p").text
+                choice1 = example.find("a1").text
+                choice2 = example.find("a2").text
+                question = example.attrib['asks-for']
+                choices = [process_sentence(self._tokenizer_name, choice, max_seq_len) for choice in \
+                            [choice1, choice2]]
+                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
+                contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
+                choicess.append(choices)
+                questions.append(question)
+                targs.append(targ)
+            return [contexts, choicess, questions, targs]
+
+        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
+        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
+        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
+        log.info("\tFinished loading MRPC data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AlleNNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(context, choices, question, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(context[1:-1]))
+            if not is_using_bert:
+                d["question"] = sentence_to_text_field(context, indexers)
+            for choice_idx, choice in enumerate(choices):
+                #choice[1] = choice[1].lower()
+                inp = context + choice[1:] if is_using_bert else choice
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        if len(split) < 5:
+            split.append(itertools.count())
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
+
+@register_task('copa-question', rel_path='COPA/')
+class COPAQuestionTask(COPATask):
+    ''' Task class for Choice of Plausible Alternatives Task.  '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(path, max_seq_len, name, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                [choice for choices in self.train_data_text[1] for choice in choices] + \
+                [choice for choices in self.val_data_text[1] for choice in choices]
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+        self.n_choices = 2
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the dataset located at path.  '''
+
+        def _load_split(data_file):
+            contexts, questions, choicess, targs = [], [], [], []
+            data = ET.parse(data_file).getroot()
+            for example in data:
+                context = example.find("p").text
+                choice1 = example.find("a1").text
+                choice2 = example.find("a2").text
+                question = example.attrib['asks-for']
+                question = "What is the cause ?" if question == "cause" else "What is the effect ?"
+                choices = [process_sentence(self._tokenizer_name, question + choice, max_seq_len) for choice in \
+                            [choice1, choice2]]
+                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
+                contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
+                choicess.append(choices)
+                questions.append(process_sentence(self._tokenizer_name, question, max_seq_len))
+                targs.append(targ)
+            return [contexts, choicess, questions, targs]
+
+        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
+        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
+        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
+        log.info("\tFinished loading MRPC data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AlleNNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(context, choices, question, label, idx):
+            d = {}
+            d["question_str"] = MetadataField(" ".join(context[1:-1]))
+            if not is_using_bert:
+                d["question"] = sentence_to_text_field(context, indexers)
+            if question == "effect":
+                conj = "so"
+            else: # question == "cause"
+                conj = "because"
+            for choice_idx, choice in enumerate(choices):
+                inp = context[:-1] + [conj] + choice[1:] if is_using_bert else choice
+                d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(d)
+
+        split = list(split)
+        if len(split) < 5:
+            split.append(itertools.count())
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        return {'accuracy': acc}
 
 @register_task('swag', rel_path='SWAG/')
 class SWAGTask(MultipleChoiceTask):

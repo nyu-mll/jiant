@@ -625,7 +625,7 @@ def build_multiple_choice_module(task, d_sent, use_bert, params):
     ''' Basic parts for MC task: reduce a vector representation for each model into a scalar. '''
     pool_type = "first" if use_bert else "max"
     pooler = Pooler(project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type)
-    d_out = 2 * d_sent if use_bert else params["d_proj"]
+    d_out = d_sent if use_bert else params["d_proj"]
     choice2scalar = Classifier(d_out, n_classes=1, cls_type="log_reg")
     return SingleClassifier(pooler, choice2scalar)
 
@@ -1054,8 +1054,8 @@ class MultiTaskModel(nn.Module):
         logits = torch.cat(logits, dim=1)
 
         out['logits'] = logits
-        #out['n_exs'] = batch['choice0']["bert_wpm_pretokenized"].size(0) # TODO(Alex): hack
-        out['n_exs'] = batch['choice0']["words"].size(0) # TODO(Alex): hack
+        out['n_exs'] = batch['choice0']["bert_wpm_pretokenized"].size(0) # TODO(Alex): hack
+        #out['n_exs'] = batch['choice0']["words"].size(0) # TODO(Alex): hack
         if 'label' in batch:
             labels = batch['label']
             out['loss'] = F.cross_entropy(logits, labels)
