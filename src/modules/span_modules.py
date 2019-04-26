@@ -1,4 +1,4 @@
-# Implementation of span classification modules
+# Implementation ofspan classification modules
 
 import torch
 import torch.nn as nn
@@ -6,23 +6,25 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-import logging as log
-
-from ..tasks.edge_probing import EdgeProbingTask, Task
+from ..tasks.tasks import Task
 from .import modules
 
 from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor
-from allennlp.nn.util import move_to_device
+from allennlp.nn.util import move_to_device, device_mapping
+
 from typing import Dict, Iterable, List
 
+import logging as log
 
 class SpanClassifierModule(nn.Module):
-    '''
-    Classifier that allows for spans and text as input.
-    Use same classifier code as build_single_sentence_module,
-    except instead of whole-sentence pooling we'll use span indices
-    to extract span representations, and use these as input to the classifier.
+    ''' 
+        Build span classifier components as a sub-module.
+        from typing import Dict, Iterable, List
+        Classifier that allows for spans and text as input.
+        Use same classifier code as build_single_sentence_module,
+        except we'll use span indices to extract span representations, 
+        and use these as input to the classifier.
     '''
 
     def _make_span_extractor(self):
@@ -33,7 +35,8 @@ class SpanClassifierModule(nn.Module):
                                          combination=self.span_pooling)
 
     def _make_cnn_layer(self, d_inp):
-        """Make a CNN layer as a projection of local context.
+        """
+        Make a CNN layer as a projection of local context.
         CNN maps [batch_size, max_len, d_inp]
         to [batch_size, max_len, proj_dim] with no change in length.
         """
@@ -49,23 +52,26 @@ class SpanClassifierModule(nn.Module):
         # Set config options needed for forward pass.
         self.loss_type = task_params['cls_loss_fn']
         self.span_pooling = task_params['cls_span_pooling']
-        self.cnn_context = task_params.get('cnn_context', 0)
-        self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
+        self.cnn_context = task_params.get('cnn_context', 0)
         self.num_spans = num_spans
         self.proj_dim = task_params['d_hid']
         self.projs = []
+
         for i in range(num_spans):
+            # create a word-level pooling layer operator 
             proj = self._make_cnn_layer(d_inp).cuda() \
                 if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
             self.projs.append(proj)
         self.span_extractors = []
-        # Span extractor, shared for all spans.
+
+        # Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
         for i in range(num_spans):
             span_extractor = self._make_span_extractor().cuda() \
                  if torch.cuda.is_available() else self._make_span_extractor()
             self.span_extractors.append(span_extractor)
-         # Classifier gets concatenated projections of spans.
+
+        # Classifier gets concatenated projections of spans.
         clf_input_dim = self.span_extractors[1].get_output_dim() * num_spans
         self.classifier = modules.Classifier.from_params(clf_input_dim,
                                                          task.n_classes,
@@ -76,25 +82,29 @@ class SpanClassifierModule(nn.Module):
                 sent_mask: torch.Tensor,
                 task: Task,
                 predict: bool) -> Dict:
-        """ Run forward pass for task that takes in an input and k spans. 
+        """ 
+        Run forward pass.
         Expects batch to have the following entries:
-            'batch1' : [batch_size, max_len, ??]
+            'input' : [batch_size, max_len, emb_size]
             'labels' : [batch_size, num_targets] of label indices
-            'span1s' : [batch_size, num_targets, 2] of spans
-            'span2s' : [batch_size, num_targets, 2] of spans
-              .
-              .
-              .
-            'spanks' : [batch_size, num_targets, 2] of spans
-        'labels', 'span1s', and 'span2s' are padded with -1 along second
-        (num_targets) dimension.
-        Args:
+            'span1s' : [batch_size, 1, 2], span indices
+            'span2s' : [batch_size, 1, 2], span indices 
+                . 
+                . 
+                . 
+            'span_ts': [batch_size, 1, 2], span indices
+
+        Parameters
+        -------------------------------
             batch: dict(str -> Tensor) with entries described above.
             sent_embs: [batch_size, max_len, repr_dim] Tensor
             sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
             task: Task
             predict: whether or not to generate predictions
-        Returns:
+        This learns different span pooling operators for each span.
+        
+        Returns
+        -------------------------------
             out: dict(str -> Tensor)
         """
         out = {}
@@ -103,7 +113,7 @@ class SpanClassifierModule(nn.Module):
             cuda_device = torch.cuda.current_device()
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
-        # Apply projection CNN layer for each span.
+        # Apply projection CNN layer for each span of the input sentence 
         sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
         sent_embs_t = move_to_device(sent_embs_t, cuda_device)
         se_projs = []
@@ -111,101 +121,90 @@ class SpanClassifierModule(nn.Module):
             se_proj = self.projs[i](sent_embs_t).transpose(2, 1).contiguous()
             se_projs.append(se_proj)
 
-        # [batch_size, num_targets] bool
         span_embs = torch.Tensor([]).cuda() \
             if torch.cuda.is_available() else torch.Tensor([])
-        span_mask = (batch['span1s'][:, :, 0] != -1)
-        out['mask'] = span_mask
-        total_num_targets = span_mask.sum()
-        out['n_targets'] = total_num_targets
-        out['n_exs'] = total_num_targets  # used by trainer.py
-        _kw = dict(sequence_mask=sent_mask.long(),
-                   span_indices_mask=span_mask.long())
+        out['n_exs'] = batch_size
+        _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
-            # spans are  [batch_size, num_targets, span_repr_dim]
-            span_emb = self.span_extractors[i](
-                se_projs[0], batch['span' + str(i + 1) + 's'], **_kw)
+            # spans are [batch_size, num_targets, span_modules]
+            span_emb = self.span_extractors[i](se_projs[i], batch['span' + str(i + 1) + 's'], **_kw)
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
-         # [batch_size, num_targets, n_classes]
+        # [batch_size, num_targets, n_classes]
+        # and then with winograd-coreference. 
         logits = self.classifier(span_embs)
         out['logits'] = logits
 
         # Compute loss if requested.
         if 'labels' in batch:
-            # Labels is [batch_size, num_targets, n_classes],
-            # with k-hot encoding provided by AllenNLP's MultiLabelField.
-            # Flatten to [total_num_targets, ...] first.
-            out['loss'] = self.compute_loss(logits[span_mask],
-                                            batch['labels'][span_mask],
+            logits = logits.squeeze(dim=1)
+            out['loss'] = self.compute_loss(logits,
+                                            batch['labels'].squeeze(dim=1),
                                             task)
+            predictions = self.get_predictions(logits)
+            tagmask = batch.get("tagmask", None)
+            task.update_metrics(predictions,  batch["labels"].squeeze(dim=1), tagmask=tagmask)
 
         if predict:
             # Return preds as a list.
             preds = self.get_predictions(logits)
-            out['preds'] = list(self.unbind_predictions(preds, span_mask))
+            out['preds'] = list(self.unbind_predictions(preds))
         return out
 
-    def unbind_predictions(self, preds: torch.Tensor,
-                           masks: torch.Tensor) -> Iterable[np.ndarray]:
-        """ Unpack preds to varying-length numpy arrays.
+    def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
+        """ 
+        Unpack preds to varying-length numpy arrays.
         Args:
             preds: [batch_size, num_targets, ...]
-            masks: [batch_size, num_targets] boolean mask
         Yields:
-            np.ndarray for each row of preds, selected by the corresponding row
-            of span_mask.
+            np.ndarray for each row of preds
         """
         preds = preds.detach().cpu()
-        masks = masks.detach().cpu()
-        for pred, mask in zip(torch.unbind(preds, dim=0),
-                              torch.unbind(masks, dim=0)):
-            yield pred[mask].numpy()  # only non-masked predictions
+        for pred in torch.unbind(preds, dim=0):
+            yield pred.numpy()
+
 
     def get_predictions(self, logits: torch.Tensor):
-        """Return class probabilities, same shape as logits.
-        Args:
+        """
+        Return class probabilities, same shape as logits.
+
+        Parameters 
+        -------------------------------
             logits: [batch_size, num_targets, n_classes]
-        Returns:
+
+        Returns
+        -------------------------------
             probs: [batch_size, num_targets, n_classes]
         """
         if self.loss_type == 'sigmoid':
             return torch.sigmoid(logits)
         elif self.loss_type == "softmax":
-            return F.softmax(logits)
+            logits = logits.squeeze(dim=1)
+            pred = torch.nn.Softmax(dim=1)(logits)
+            pred = torch.argmax(pred, dim=1)
+            return pred
         else:
-            raise ValueError("Unsupported loss type" % loss_type)
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % self.loss_type)
 
     def compute_loss(self, logits: torch.Tensor,
-                     labels: torch.Tensor, task: Task):
-        """ Compute loss & eval metrics.
-        Expect logits and labels to be already "selected" for good targets,
-        i.e. this function does not do any masking internally.
-        Args:
+                     labels: torch.Tensor, task):
+        """ 
+        Paramters 
+        -------------------------------
             logits: [total_num_targets, n_classes] Tensor of float scores
             labels: [total_num_targets, n_classes] Tensor of sparse binary targets
-        Returns:
+
+        Returns
+         -------------------------------
             loss: scalar Tensor
         """
-        binary_preds = logits.ge(0).long()  # {0,1}
-
-        # Matthews coefficient and accuracy computed on {0,1} labels.
-        task.mcc_scorer(binary_preds, labels.long())
-        task.acc_scorer(binary_preds, labels.long())
-
-        # F1Measure() expects [total_num_targets, n_classes, 2]
-        # to compute binarized F1.
-        binary_scores = torch.stack([-1 * logits, logits], dim=2)
-        task.f1_scorer(binary_scores, labels)
-
         if self.loss_type == 'sigmoid':
-            if self.num_spans == 2:
-                return F.binary_cross_entropy(torch.sigmoid(logits),
-                                              labels.float())
-            else:
-                raise ValueError("Sigmoid only supported for binary output currently")
-        elif self.loss_type == "softmax":
-            targets = (labels == 1).nonzero()[:, 1]
+            return F.binary_cross_entropy(torch.sigmoid(logits),
+                                          labels.float())
+        elif self.loss_type == 'softmax':
+            targets = (labels == 1).nonzero()[:,1]
             return F.cross_entropy(logits, targets.long())
         else:
-            raise ValueError("Unsupported loss type ." % self.loss_type)
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % self.loss_type)

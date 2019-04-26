@@ -1616,11 +1616,12 @@ class SpanTask(Task):
                  files_by_split: Dict[str, str] = None,
                  num_spans: int = 2,
                  **kw):
-        """Construct a span task.
-        path, max_seq_len, and name are passed by the code in preprocess.py;
-        remaining arguments should be provided by a subclass constructor or via
+        """
+        Construct a span task.
         @register_task.
-        Args:
+
+        Parameters
+        ---------------------
             path: data directory
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
@@ -1647,10 +1648,10 @@ class SpanTask(Task):
         self.n_classes = len(self.all_labels)
         self._label_namespace = self.name + "_labels"
 
-        self.mcc_scorer = FastMatthews()
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
-        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
+        self.scorers = [self.acc_scorer, self.f1_scorer]
+        self.val_metric = "%s_f1" % self.name
         self.val_metric_decreases = False
 
     def _stream_records(self, filename):
@@ -1658,8 +1659,6 @@ class SpanTask(Task):
         total_ctr = 0
         for record in utils.load_json_data(filename):
             total_ctr += 1
-            # Skip records with empty targets.
-            # TODO(ian): don't do this if generating negatives!
             if not record.get('targets', None):
                 skip_ctr += 1
                 continue
@@ -1670,7 +1669,8 @@ class SpanTask(Task):
 
     @staticmethod
     def merge_preds(record: Dict, preds: Dict) -> Dict:
-        """ Merge predictions into record, in-place.
+        """ 
+        Merge predictions into record, in-place.
         List-valued predictions should align to targets,
         and are attached to the corresponding target entry.
         Non-list predictions are attached to the top-level record.
@@ -1696,13 +1696,15 @@ class SpanTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
+        ''' 
+        Get split text as iterable of records.
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self._iters_by_split[split]
 
     def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text.
+        ''' 
+        Return number of examples in the result of get_split_text.
         Subclass can override this if data is not stored in column format.
         '''
         return len(split_text)
@@ -1734,7 +1736,6 @@ class SpanTask(Task):
             d["span" + str(i) + "s"] = ListField([self._make_span_field(t['span' + str(i)], text_field, 1)
                                                   for t in record['targets']])
 
-        # Always use multilabel targets, so be sure each label is a list.
         labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
         d['labels'] = ListField([MultiLabelField(label_set,
@@ -1763,7 +1764,6 @@ class SpanTask(Task):
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         metrics = {}
-        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
         metrics['acc'] = self.acc_scorer.get_metric(reset)
         precision, recall, f1 = self.f1_scorer.get_metric(reset)
         metrics['precision'] = precision
