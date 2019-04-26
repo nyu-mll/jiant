@@ -38,7 +38,7 @@ function changebashpaths() {
 	echo $output >> ~/.bashrc
   source ~/.bashrc
 }
-read -r -p "Do you want to add alter to .bashrc to add these paths? (Y/N)" response
+read -r -p "Do you want to alter .bashrc to add these paths? (Y/N)" response
 if [[ $response =~ ^[Yy]$ ]]
 	then
 		changebashpaths
