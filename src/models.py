@@ -43,11 +43,10 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
+    NullPhraseLayer, ONLSTMPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
-from .modules.prpn.PRPN import PRPN
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -83,18 +82,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
-    elif args.sent_enc == "prpn":
-        prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
-                         args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
-                         args.res, embedder,  args.batch_size)
-        # The 'prpn' acts as a phrase layer module for the larger SentenceEncoder module.
-        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
-                                    prpnlayer.prpnlayer, skip_embs=args.skip_embs,
-                                    dropout=args.dropout,
-                                    sep_embs_for_skip=args.sep_embs_for_skip,
-                                    cove_layer=cove_layer)
-        d_sent = args.d_word
-        log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(
@@ -238,18 +225,18 @@ def build_model(args, vocab, pretrained_embs, tasks):
 def get_task_whitelist(args):
     """Filters tasks so that we only build models that we will use, meaning we only
     build models for train tasks and for classifiers of eval tasks"""
-    target_train_task_names = parse_task_list_arg(args.target_tasks)
-    target_train_clf_names = []
-    for task_name in target_train_task_names:
+    eval_task_names = parse_task_list_arg(args.target_tasks)
+    eval_clf_names = []
+    for task_name in eval_task_names:
         override_clf = config.get_task_attr(args, task_name, 'use_classifier')
         if override_clf == 'none' or override_clf is None:
-            target_train_clf_names.append(task_name)
+            eval_clf_names.append(task_name)
         else:
-            target_train_clf_names.append(override_clf)
+            eval_clf_names.append(override_clf)
     train_task_names = parse_task_list_arg(args.pretrain_tasks)
-    log.info("Whitelisting train tasks=%s, target_train_clf_tasks=%s",
-             str(train_task_names), str(target_train_clf_names))
-    return train_task_names, target_train_clf_names
+    log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s",
+             str(train_task_names), str(eval_clf_names))
+    return train_task_names, eval_clf_names
 
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
@@ -713,8 +700,7 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or \
-                isinstance(self.sent_encoder._phrase_layer, PRPN):
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
                 out = self._lm_only_lr_forward(batch, task)
             else:
                 out = self._lm_forward(batch, task, predict)
