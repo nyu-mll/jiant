@@ -3,7 +3,7 @@
   url = https://github.com/salesforce/cove.git
   ignore = untracked
 [submodule "src/openai_transformer_lm/tf_original"]
-	path = src/openai_transformer_lm/tf_original
+	path = jiant/openai_transformer_lm/tf_original
 	url = https://github.com/openai/finetune-transformer-lm.git
 [submodule "src/openai_transformer_lm/pytorch_huggingface"]
 	path = jiant/openai_transformer_lm/pytorch_huggingface
