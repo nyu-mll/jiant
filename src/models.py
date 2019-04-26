@@ -464,7 +464,7 @@ def build_task_specific_modules(
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, SpanTask):
-        module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
+        module = build_span_classifier(task, d_sent, task_params, task.num_spans)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
@@ -645,6 +645,9 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+def build_span_classifier(self, task, d_sent, task_params, task.num_spans):
+    module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
+    return module
 
 def build_tagger(task, d_inp, out_dim):
     ''' Build tagger components. '''
@@ -735,10 +738,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         elif isinstance(task, SpanTask):
-            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
-            module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, sent_embs, sent_mask,
-                                 task, predict)
+            out = self._span_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -820,6 +820,13 @@ class MultiTaskModel(nn.Module):
         if predict:
             out['preds'] = predicted
         return out
+
+    def _span_forward(self, batch, task, predict):
+        sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        out = module.forward(batch, sent_embs, sent_mask,
+                             task, predict)
+        reutrn out 
 
     def _positive_pair_sentence_forward(self, batch, task, predict):
         ''' forward function written specially for cases where we have only +ve pairs in input data

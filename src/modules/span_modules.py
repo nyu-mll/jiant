@@ -27,6 +27,12 @@ class SpanClassifierModule(nn.Module):
     '''
 
     def _make_span_extractor(self):
+        """
+        Creates span extractors. 
+        Currently supports Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
+        or Endpoint Extractor.
+        """
+
         if self.span_pooling == "attn":
             return SelfAttentiveSpanExtractor(self.proj_dim)
         else:
@@ -64,8 +70,6 @@ class SpanClassifierModule(nn.Module):
             self.projs.append(proj)
         self.span_extractors = []
 
-        # This can be Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
-        # or any of the other types of span pooling operators
         for i in range(num_spans):
             span_extractor = self._make_span_extractor().cuda() \
                  if torch.cuda.is_available() else self._make_span_extractor()
@@ -178,14 +182,14 @@ class SpanClassifierModule(nn.Module):
         """
         if self.loss_type == 'sigmoid':
             return torch.sigmoid(logits)
-        elif self.loss_type == "softmax":
+        elif self.loss_type == 'softmax':
             logits = logits.squeeze(dim=1)
             pred = torch.nn.Softmax(dim=1)(logits)
             pred = torch.argmax(pred, dim=1)
             return pred
         else:
             raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % self.loss_type)
+                             "for span classification." % self.loss_type)
 
     def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task):
@@ -207,4 +211,4 @@ class SpanClassifierModule(nn.Module):
             return F.cross_entropy(logits, targets.long())
         else:
             raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % self.loss_type)
+                             "for span classification." % self.loss_type)
