@@ -93,6 +93,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
         # Look for eval checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
 
+
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
@@ -107,6 +108,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 model_path = os.path.join(
                     args.run_dir, "model_state_untrained_prefinetune.th")
                 torch.save(model_state, model_path)
+
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
 
@@ -219,13 +221,17 @@ def get_best_checkpoint_path(run_dir):
         assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return target_task_best[0]
-    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
+    macro_best = glob.glob(
+        os.path.join(
+            run_dir,
+            "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
 
     pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+
     if len(pre_target_train) > 0:
         assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -358,7 +364,8 @@ def main(cl_arguments):
         trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
                                                             should_decrease, phase="pretrain")
-        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        to_train = [(n, p)
+                    for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
                           args.batch_size,
                           args.weighting_method, args.scaling_method,
