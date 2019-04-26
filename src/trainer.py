@@ -781,7 +781,12 @@ class SamplingMultiTaskTrainer:
                 task_metrics["%s_loss" % task.name] = \
                     all_val_metrics["%s_loss" % task.name] / batch_num
                 description = self._description_from_metrics(task_metrics)
-                log.info("Batch %d/%d: %s , for evaluation data", batch_num, n_val_batches, description)
+                log.info(
+                    "Evaluate: task %s, batch %d (%d): %s",
+                    task.name,
+                    batch_num,
+                    n_val_batches,
+                    description)
                 task_info['last_log'] = time.time()
         assert batch_num == n_val_batches
 
@@ -955,7 +960,7 @@ class SamplingMultiTaskTrainer:
         # pylint: disable=no-self-use
         ''' format some metrics as a string '''
         return ', '.join(["%s: %.4f" % (name, value)
-                          for name, value in metrics.items()]) + " ||"
+                          for name, value in metrics.items()])
 
     def _unmark_previous_best(self, phase, epoch):
         marked_best = glob.glob(
