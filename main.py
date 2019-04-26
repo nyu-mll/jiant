@@ -19,12 +19,12 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 import torch
 
-from src.utils import config
-from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
-from src.preprocess import build_tasks
-from src.models import build_model
-from src.trainer import build_trainer
-from src import evaluate
+from jiant.utils import config
+from jiant.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
+from jiant.preprocess import build_tasks
+from jiant.models import build_model
+from jiant.trainer import build_trainer
+from jiant import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
 # handling.
@@ -214,11 +214,11 @@ def main(cl_arguments):
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
-       
+
     if args.do_target_task_training:
         steps_log.append("Re-training model for individual target tasks")
-     
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
+
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
