@@ -135,7 +135,6 @@ class SpanClassifierModule(nn.Module):
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
         # [batch_size, num_targets, n_classes]
-        # and then with winograd-coreference. 
         logits = self.classifier(span_embs)
         out["logits"] = logits
 
