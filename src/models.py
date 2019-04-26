@@ -667,7 +667,7 @@ class MultiTaskModel(nn.Module):
             out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
-        elif isinstance(task, EdgeProbingTask) or isinstance(task, SpanTask):
+        elif isinstance(task, EdgeProbingTask):
             sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
             module = getattr(self, "%s_mdl" % task.name)
             out = module.forward(batch, sent_embs, sent_mask,
@@ -678,6 +678,11 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
+        elif isinstance(task, SpanTask):
+            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+            module = getattr(self, "%s_mdl" % task.name)
+            out = module.forward(batch, sent_embs, sent_mask,
+                                 task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
