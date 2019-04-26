@@ -1,3 +1,10 @@
+from src import evaluate
+from src.trainer import build_trainer
+from src.models import build_model
+from src.preprocess import build_tasks
+from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
+from src.utils import config
+import torch
 '''Train a multi-task model using AllenNLP
 
 To debug this, run with -m ipdb:
@@ -17,18 +24,11 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
-import torch
-
-from src.utils import config
-from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
-from src.preprocess import build_tasks
-from src.models import build_model
-from src.trainer import build_trainer
-from src import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
 # handling.
 EMAIL_NOTIFIER = None
+
 
 def handle_arguments(cl_arguments):
     parser = argparse.ArgumentParser(description='')
@@ -55,10 +55,10 @@ def handle_arguments(cl_arguments):
 
 def setup_target_task_training(args, target_tasks, model, strict):
     """
-    Saves model states from pretraining if applicable, and 
-    loads the correct model state for the target task training 
+    Saves model states from pretraining if applicable, and
+    loads the correct model state for the target task training
     stage.
-    
+
     Parameters
     ----------------
     args: Params object
@@ -67,9 +67,9 @@ def setup_target_task_training(args, target_tasks, model, strict):
 
     Returns
     ----------------
-    task_names_to_avoid_loading: list of strings, if we don't allow for 
-    use of pretrained target specific module parameters, then this list will 
-    consist of all the task names so that we avoid loading the 
+    task_names_to_avoid_loading: list of strings, if we don't allow for
+    use of pretrained target specific module parameters, then this list will
+    consist of all the task names so that we avoid loading the
     pretrained parameters. Else, it will be an empty list.
 
     """
@@ -84,7 +84,9 @@ def setup_target_task_training(args, target_tasks, model, strict):
 
     if args.load_eval_checkpoint != "none":
         # This is to load a particular eval checkpoint.
-        log.info("Loading existing model from %s...", args.load_eval_checkpoint)
+        log.info(
+            "Loading existing model from %s...",
+            args.load_eval_checkpoint)
         load_model_state(model, args.load_eval_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
@@ -92,9 +94,11 @@ def setup_target_task_training(args, target_tasks, model, strict):
         # finished), then look for training checkpoints.
 
         if args.transfer_paradigm == "finetune":
-            # Save model so we have a checkpoint to go back to after each task-specific finetune.
+            # Save model so we have a checkpoint to go back to after each
+            # task-specific finetune.
             model_state = model.state_dict()
-            model_path = os.path.join(args.run_dir, "model_state_untrained_prefinetune.th")
+            model_path = os.path.join(
+                args.run_dir, "model_state_untrained_prefinetune.th")
             torch.save(model_state, model_path)
 
         best_path = get_best_checkpoint_path(args.run_dir)
@@ -107,10 +111,11 @@ def setup_target_task_training(args, target_tasks, model, strict):
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
 
+
 def check_configurations(args, pretrain_tasks, target_tasks):
     """
     Checks configurations for any obvious logical flaws
-    and that necessary parameters are set for each step - 
+    and that necessary parameters are set for each step -
     throws asserts and exits if found.
 
     Parameters
@@ -126,7 +131,8 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     steps_log = io.StringIO()
     if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
             [not t.val_metric_decreases for t in pretrain_tasks]):
-        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
+        log.warn(
+            "\tMixing training tasks with increasing and decreasing val metrics!")
 
     if args.load_eval_checkpoint != 'none':
         assert_for_log(os.path.exists(args.load_eval_checkpoint),
@@ -135,7 +141,9 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        steps_log.write("Loading model from path: %s \n" % args.load_eval_checkpoint)
+        steps_log.write(
+            "Loading model from path: %s \n" %
+            args.load_eval_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -143,20 +151,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
-        assert_for_log(
-            args.val_interval %
-            args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.val_interval, args.bpp_base))
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
 
     if args.do_target_task_training:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.target_tasks)
         steps_log.write("Re-training model for individual eval tasks \n")
-        assert_for_log(
-            args.eval_val_interval %
-            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.eval_val_interval, args.bpp_base))
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
@@ -173,7 +173,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     steps_log.close()
 
 
-def _log_git_info(): 
+def _log_git_info():
     try:
         log.info("Waiting on git info....")
         c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -205,6 +205,8 @@ def _run_background_tensorboard(logdir, port):
 
 # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
 # from here to trainer.py.
+
+
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
@@ -212,17 +214,26 @@ def get_best_checkpoint_path(run_dir):
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
+    target_task_best = glob.glob(
+        os.path.join(
+            run_dir,
+            "model_state_target_train_best.th"))
     if len(target_task_best) > 0:
         assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return target_task_best[0]
-    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
+    macro_best = glob.glob(
+        os.path.join(
+            run_dir,
+            "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+    pre_target_train = glob.glob(
+        os.path.join(
+            run_dir,
+            "model_state_untrained_pre_target_train.th"))
     if len(pre_target_train) > 0:
         assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
@@ -230,14 +241,17 @@ def get_best_checkpoint_path(run_dir):
 
     return ""
 
+
 def evaluate_and_write(args, model, tasks, splits_to_write):
     """ Evaluate a model on dev and/or test, then write predictions """
-    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    val_results, val_preds = evaluate.evaluate(
+        model, tasks, args.batch_size, args.cuda, "val")
     if 'val' in splits_to_write:
         evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
                              strict_glue_format=args.write_strict_glue_format)
     if 'test' in splits_to_write:
-        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        _, te_preds = evaluate.evaluate(
+            model, tasks, args.batch_size, args.cuda, "test")
         evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
                              strict_glue_format=args.write_strict_glue_format)
     run_name = args.get("run_name", os.path.basename(args.run_dir))
@@ -245,6 +259,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
+
 
 def initial_setup(args, cl_args):
     """
@@ -292,7 +307,8 @@ def initial_setup(args, cl_args):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
+    seed = random.randint(
+        1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
     log.info("Using random seed %d", seed)
@@ -310,6 +326,7 @@ def initial_setup(args, cl_args):
             args.cuda = -1
 
     return args, seed
+
 
 def main(cl_arguments):
     ''' Train a model for multitask-training.'''
@@ -342,12 +359,15 @@ def main(cl_arguments):
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")
-        stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else 'macro_avg'
-        should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
+        stop_metric = pretrain_tasks[0].val_metric if len(
+            pretrain_tasks) == 1 else 'macro_avg'
+        should_decrease = pretrain_tasks[0].val_metric_decreases if len(
+            pretrain_tasks) == 1 else False
         trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
                                                             should_decrease, phase="pretrain")
-        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        to_train = [(n, p)
+                    for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
                           args.batch_size,
                           args.weighting_method, args.scaling_method,
@@ -364,12 +384,15 @@ def main(cl_arguments):
 
     if args.do_target_task_training:
         # Train on target tasks
-        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model, strict)
+        task_names_to_avoid_loading = setup_target_task_training(
+            args, target_tasks, model, strict)
         if args.transfer_paradigm == "frozen":
-            # might be empty if elmo = 0. scalar_mix_0 should always be pretrain scalars
+            # might be empty if elmo = 0. scalar_mix_0 should always be
+            # pretrain scalars
             elmo_scalars = [(n, p) for n, p in model.named_parameters() if
                             "scalar_mix" in n and "scalar_mix_0" not in n]
-            # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero length.
+            # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero
+            # length.
             assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
                            "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
                            "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
@@ -382,15 +405,18 @@ def main(cl_arguments):
                 continue
 
             if args.transfer_paradigm == "finetune":
-                # Train both the task specific models as well as sentence encoder.
-                to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-            else: # args.transfer_paradigm == "frozen":
+                # Train both the task specific models as well as sentence
+                # encoder.
+                to_train = [
+                    (n, p) for n, p in model.named_parameters() if p.requires_grad]
+            else:  # args.transfer_paradigm == "frozen":
                 # Only train task-specific module
                 pred_module = getattr(model, "%s_mdl" % task.name)
-                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+                to_train = [
+                    (n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
 
-            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'],  model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'], model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases, phase="target_train")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
@@ -399,21 +425,33 @@ def main(cl_arguments):
                               optimizer_params=opt_params, scheduler_params=schd_params,
                               shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")
 
-            # Now that we've trained a model, revert to the normal checkpoint logic for this task.
+            # Now that we've trained a model, revert to the normal checkpoint
+            # logic for this task.
             if task.name in task_names_to_avoid_loading:
                 task_names_to_avoid_loading.remove(task.name)
 
-            # The best checkpoint will accumulate the best parameters for each task.
-            layer_path = os.path.join(args.run_dir, "model_state_target_train_best.th")
+            # The best checkpoint will accumulate the best parameters for each
+            # task.
+            layer_path = os.path.join(
+                args.run_dir, "model_state_target_train_best.th")
             if args.transfer_paradigm == "finetune":
                 # Save this fine-tune model with a task specific name.
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                finetune_path = os.path.join(
+                    args.run_dir,
+                    "model_state_%s_best.th" %
+                    task.name)
                 os.rename(layer_path, finetune_path)
 
-                # Reload the original best model from before target-task training.
+                # Reload the original best model from before target-task
+                # training.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
-                load_model_state(model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict)
-            else: # args.transfer_paradigm == "frozen":
+                load_model_state(
+                    model,
+                    pre_finetune_path,
+                    args.cuda,
+                    skip_task_models=[],
+                    strict=strict)
+            else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 # Save the best checkpoint from that target task training to be
                 # specific to that target task.
@@ -426,25 +464,34 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == 'mnli-diagnostic': 
+                if task.name == 'mnli-diagnostic':
                     # we'll load mnli-diagnostic during mnli
                     continue
                 # Special checkpointing logic here since we train the sentence encoder
                 # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                finetune_path = os.path.join(
+                    args.run_dir,
+                    "model_state_%s_best.th" %
+                    task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                load_model_state(
+                    model,
+                    ckpt_path,
+                    args.cuda,
+                    skip_task_models=[],
+                    strict=strict)
 
                 tasks = [task]
                 if task.name == 'mnli':
-                    tasks += [t for t in target_tasks if t.name == 'mnli-diagnostic']
+                    tasks += [t for t in target_tasks if t.name ==
+                              'mnli-diagnostic']
                 evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
-            # Don't do any special checkpointing logic here 
+            # Don't do any special checkpointing logic here
             # since model already has all the trained task specific modules.
             evaluate_and_write(args, model, target_tasks, splits_to_write)
 
