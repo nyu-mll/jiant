@@ -74,7 +74,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     pretrained parameters. Else, it will be an empty list.
 
     """
-    if not args.allow_reuse_of_pretraining_parameters:
+    if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models.
         # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
@@ -83,17 +83,14 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         task_names_to_avoid_loading = []
 
-    if args.load_eval_checkpoint != "none":
-        # This is to load a particular eval checkpoint.
-        log.info(
-            "Loading existing model from %s...",
-            args.load_eval_checkpoint)
-        load_model_state(model, args.load_eval_checkpoint,
+    if not args.load_target_train_checkpoint == "none":
+        # This is to load a particular target train checkpoint.
+        log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
+        load_model_state(model, args.load_target_train_checkpoint,
                          args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        # Look for eval checkpoints (available only if we're restoring from a run that already
+        # Look for target train checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
-
 
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
@@ -102,12 +99,11 @@ def setup_target_task_training(args, target_tasks, model, strict):
         else:
             assert_for_log(args.allow_untrained_encoder_parameters,
                            "No best checkpoint found to evaluate.")
+
             if args.transfer_paradigm == "finetune":
-                # Save model so we have a checkpoint to go back to after each
-                # task-specific finetune.
+                # Save model so we have a checkpoint to go back to after each task-specific finetune.
                 model_state = model.state_dict()
-                model_path = os.path.join(
-                    args.run_dir, "model_state_untrained_prefinetune.th")
+                model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)
 
             log.warning("Evaluating untrained encoder parameters!")
@@ -136,16 +132,16 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         log.warn(
             "\tMixing training tasks with increasing and decreasing val metrics!")
 
-    if args.load_eval_checkpoint != 'none':
-        assert_for_log(os.path.exists(args.load_eval_checkpoint),
+    if args.load_target_train_checkpoint != 'none':
+        assert_for_log(os.path.exists(args.load_target_train_checkpoint),
                        "Error: Attempting to load model from non-existent path: [%s]" %
-                       args.load_eval_checkpoint)
+                       args.load_target_train_checkpoint)
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
         steps_log.write(
             "Loading model from path: %s \n" %
-            args.load_eval_checkpoint)
+            args.load_target_train_checkpoint)
 
     assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
                    "Transfer paradigm %s not supported!" % args.transfer_paradigm)
@@ -158,7 +154,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     if args.do_target_task_training:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.target_tasks)
-        steps_log.write("Re-training model for individual eval tasks \n")
+        steps_log.write("Re-training model for individual target tasks \n")
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
