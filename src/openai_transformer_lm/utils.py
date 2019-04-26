@@ -208,7 +208,7 @@ class OpenAIEmbedderModule(nn.Module):
 
         # Set trainability of this module.
         for param in self.model.parameters():
-            param.requires_grad = bool(args.openai_transformer_fine_tune)
+            param.requires_grad = bool(args.transfer_paradigm == 'finetune')
 
         # Configure scalar mixing, ELMo-style.
         if args.openai_embeddings_mode == "mix":
@@ -219,7 +219,7 @@ class OpenAIEmbedderModule(nn.Module):
                 ("openai_embeddings_mode='mix' only supports a single set of "
                  "scalars (but if you need this feature, see the TODO in "
                  "the code!)")
-            if not args.openai_transformer_fine_tune:
+            if args.transfer_paradigm == 'frozen':
                 log.warning("NOTE: openai_embeddings_mode='mix', so scalar "
                             "mixing weights will be fine-tuned even if "
                             "transformer weights are frozen.")
