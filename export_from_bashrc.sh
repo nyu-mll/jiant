@@ -1,4 +1,4 @@
-# Running 'source export_from_bashrc.sh' will add running path_config.sh directly to bashrc
+# Running 'source export_from_bashrc.sh' will add the job of running path_config.sh directly to bashrc
 # for automatic updates on booting up the linux terminal.
 
 function changebashpaths() {

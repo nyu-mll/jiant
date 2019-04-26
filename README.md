@@ -86,7 +86,7 @@ To run the demo config, you will have to set environment variables. The best way
 *  $WORD_EMBED: location of the word embeddings you want to use. For GloVe:  [840B300d Glove](http://nlp.stanford.edu/data/glove.840B.300d.zip). For FastText: [300d-2M](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip). For ELMo, AllenNLP will download it for you. For OpenAI, the model weights will be downloaded when installing the git submodules.
 *  $FASTTEXT_MODEL_FILE: location of the FastText model: can be set to '.'
 
-To add a path_config export directly to $HOME/.bashrc, follow instructions to in [export_from_bashrc.sh](export_from_bashrc.sh). 
+To add a path_config export directly to $HOME/.bashrc, follow instructions in [export_from_bashrc.sh](export_from_bashrc.sh). 
 
 
 
