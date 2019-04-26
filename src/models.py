@@ -43,10 +43,11 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer
+    NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
+from .modules.prpn.PRPN import PRPN
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -82,6 +83,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
+    elif args.sent_enc == "prpn":
+        prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
+                         args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
+                         args.res, embedder,  args.batch_size)
+        # The 'prpn' acts as a phrase layer module for the larger SentenceEncoder module.
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                    prpnlayer.prpnlayer, skip_embs=args.skip_embs,
+                                    dropout=args.dropout,
+                                    sep_embs_for_skip=args.sep_embs_for_skip,
+                                    cove_layer=cove_layer)
+        d_sent = args.d_word
+        log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(
@@ -700,7 +713,8 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or \
+                isinstance(self.sent_encoder._phrase_layer, PRPN):
                 out = self._lm_only_lr_forward(batch, task)
             else:
                 out = self._lm_forward(batch, task, predict)
@@ -965,10 +979,21 @@ class MultiTaskModel(nn.Module):
 
         return out
 
-    def _tagger_forward(self, batch, task, predict):
-        ''' For sequence tagging '''
+    def _tagger_forward(self, batch: dict, task: TaggingTask, predict: bool) -> dict:
+        '''
+        This function is for sequence tagging (one-to-one mapping between words and tags).
+        Args:
+                batch: a dict of inputs and target tags 
+                task: TaggingTask
+                predict: (boolean) predict mode (not supported)
+        Returns
+            out: (dict)
+                - 'logits': output layer, dimension: [batchSize * task.max_seq_len, task.num_tags]
+                - 'loss': size average CE loss
+        '''
         out = {}
-        b_size, seq_len, _ = batch['inputs']['elmo'].size()
+        # batch[inputs] only has one item
+        b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out['n_exs'] = get_batch_size(batch)
@@ -981,7 +1006,15 @@ class MultiTaskModel(nn.Module):
             logits = logits.view(b_size * seq_len, -1)
             out['logits'] = logits
             targs = batch['targs']['words'][:, :seq_len].contiguous().view(-1)
-
+        if "mask" in batch:
+            # prevent backprop for tags generated for tokenization-introduced tokens
+            # such as word boundaries
+            mask = batch["mask"]
+            batch_mask = [mask[i][:seq_len] for i in range(b_size)]
+            batch_mask = torch.stack(batch_mask)
+            keep_idxs = torch.nonzero(batch_mask.view(-1).data).squeeze()
+            logits = logits.index_select(0, keep_idxs)
+            targs = targs.index_select(0, keep_idxs)
         pad_idx = self.vocab.get_token_index(self.vocab._padding_token)
         out['loss'] = F.cross_entropy(logits, targs, ignore_index=pad_idx)
         task.scorer1(logits, targs)
