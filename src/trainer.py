@@ -427,7 +427,6 @@ class SamplingMultiTaskTrainer:
         tasks: a list of task objects to train on
         stop_metric: str, metric to use for early stopping
         batch_size: int, batch size to use for the tasks
-        
         weighting_method: str, how to sample which task to use
         scaling_method:  str, how to scale gradients
         train_params: trainer config object
@@ -532,8 +531,7 @@ class SamplingMultiTaskTrainer:
             scheduler = g_scheduler if shared_optimizer else task_info['scheduler']
             total_batches_trained = task_info['total_batches_trained']
             n_batches_since_val = task_info['n_batches_since_val']
-            tr_loss = task_info['loss'];
-		
+            tr_loss = task_info['loss']
 
             for batch in itertools.islice(tr_generator, 1):
                 n_batches_since_val += 1
