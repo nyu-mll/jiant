@@ -383,7 +383,13 @@ def check_arg_name(args):
                  'train_for_eval': 'do_target_task_training',
                  'do_eval': 'do_full_eval',
                  'train_tasks': 'pretrain_tasks',
-                 'eval_tasks': 'target_tasks'}
+                 'eval_tasks': 'target_tasks', 
+                 'eval_data_fraction': 'target_train_data_fraction', 
+                 'eval_val_interval': 'target_train_val_interval',
+                 "eval_max_vals": 'target_train_max_vals',
+                 'load_eval_checkpoint': 'load_target_train_checkpoint', 
+                 'eval_data_fraction': 'target_train_data_fraction'
+                 }
     for old_name, new_name in name_dict.items():
         assert_for_log(old_name not in args,
                        "Error: Attempting to load old arg name [%s], please update to new name [%s]" %

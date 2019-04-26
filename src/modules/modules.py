@@ -19,6 +19,7 @@ import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from .onlstm.ON_LSTM import ONLSTMStack
+from .prpn.PRPN import PRPN
 from allennlp.common import Params
 from allennlp.common.file_utils import cached_path
 from allennlp.common.checks import ConfigurationError
@@ -128,29 +129,29 @@ class SentenceEncoder(Model):
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
             if isinstance(self._text_field_embedder, BertEmbedderModule):
-                sent_embs = self._text_field_embedder(sent, is_pair_task=is_pair_task)
+                word_embs_in_context = self._text_field_embedder(sent, is_pair_task=is_pair_task)
 
             else:
-                sent_embs = self._text_field_embedder(sent)
-            sent_embs = self._highway_layer(sent_embs)
+                word_embs_in_context = self._text_field_embedder(sent)
+            word_embs_in_context = self._highway_layer(word_embs_in_context)
         else:
-            sent_embs = None
+            word_embs_in_context = None
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
         if self.sep_embs_for_skip:
             if isinstance(self._text_field_embedder, BertEmbedderModule):
-                task_sent_embs = self._text_field_embedder(sent, task._classifier_name,
+                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name,
                                                            is_pair_task=is_pair_task)
 
             else:
-                task_sent_embs = self._text_field_embedder(sent, task._classifier_name)
-            task_sent_embs = self._highway_layer(task_sent_embs)
+                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
+            task_word_embs_in_context = self._highway_layer(task_word_embs_in_context)
         else:
-            task_sent_embs = None
+            task_word_embs_in_context = None
 
         # Make sure we're embedding /something/
-        assert (sent_embs is not None) or (task_sent_embs is not None)
+        assert (word_embs_in_context is not None) or (task_word_embs_in_context is not None)
 
         if self._cove_layer is not None:
             # Slightly wasteful as this repeats the GloVe lookup internally,
@@ -172,27 +173,28 @@ class SentenceEncoder(Model):
                                   device=sent_cove_embs_raw.device)
             sent_cove_embs = torch.cat(
                 [pad_col, sent_cove_embs_raw, pad_col], dim=1)
-            if sent_embs is not None:
-                sent_embs = torch.cat([sent_embs, sent_cove_embs], dim=-1)
-            if task_sent_embs is not None:
-                task_sent_embs = torch.cat(
-                    [task_sent_embs, sent_cove_embs], dim=-1)
+            if word_embs_in_context is not None:
+                word_embs_in_context = torch.cat([word_embs_in_context, sent_cove_embs], dim=-1)
+            if task_word_embs_in_context is not None:
+                task_word_embs_in_context = torch.cat(
+                    [task_word_embs_in_context, sent_cove_embs], dim=-1)
 
-        if sent_embs is not None:
-            sent_embs = self._dropout(sent_embs)
-        if task_sent_embs is not None:
-            task_sent_embs = self._dropout(task_sent_embs)
+        if word_embs_in_context is not None:
+            word_embs_in_context = self._dropout(word_embs_in_context)
+        if task_word_embs_in_context is not None:
+            task_word_embs_in_context = self._dropout(task_word_embs_in_context)
 
         # The rest of the model
         sent_mask = util.get_text_field_mask(sent).float()
         sent_lstm_mask = sent_mask if self._mask_lstms else None
-        if sent_embs is not None:
-            if isinstance(self._phrase_layer, ONLSTMStack):
-                # The ONLSTMStack takes the raw words as input and computes embeddings separately.
+        if word_embs_in_context is not None:
+            if isinstance(self._phrase_layer, ONLSTMStack) or \
+                isinstance(self._phrase_layer, PRPN):
+                # The ONLSTMStack or PRPN takes the raw words as input and computes embeddings separately.
                 sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
                 sent_enc = torch.transpose(sent_enc, 0, 1)
             else:
-                sent_enc = self._phrase_layer(sent_embs, sent_lstm_mask)
+                sent_enc = self._phrase_layer(word_embs_in_context, sent_lstm_mask)
         else:
             sent_enc = None
 
@@ -204,7 +206,7 @@ class SentenceEncoder(Model):
         if self.skip_embs:
             # Use skip connection with original sentence embs or task sentence
             # embs
-            skip_vec = task_sent_embs if self.sep_embs_for_skip else sent_embs
+            skip_vec = task_word_embs_in_context if self.sep_embs_for_skip else word_embs_in_context
             utils.assert_for_log(skip_vec is not None,
                                  "skip_vec is none - perhaps embeddings are not configured "
                                  "properly?")
@@ -215,6 +217,7 @@ class SentenceEncoder(Model):
 
         sent_mask = sent_mask.unsqueeze(dim=-1)
         pad_mask = (sent_mask == 0)
+
         assert sent_enc is not None
         sent_enc = sent_enc.masked_fill(pad_mask, 0)
         return sent_enc, sent_mask
@@ -270,9 +273,46 @@ class BoWSentEncoder(Model):
         word_mask = util.get_text_field_mask(sent).float()
         return word_embs, word_mask  # need to get # nonzero elts
 
+class PRPNPhraseLayer(Model):
+    """ 
+    Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
+    PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
+    """
+    def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
+                n_lookback, resolution, dropout, idropout, rdropout, res,
+                embedder, batch_size, initializer=InitializerApplicator()):
+        super(PRPNPhraseLayer, self).__init__(vocab)
+
+        self.prpnlayer = PRPN(
+                         ninp=d_word, 
+                         nhid=d_hid, 
+                         nlayers=n_layers_enc,
+                         nslots=n_slots,
+                         nlookback=n_lookback, 
+                         resolution=resolution,
+                         dropout=dropout,
+                         idropout=idropout,
+                         rdropout=rdropout,
+                         res=res,
+                         batch_size=batch_size,
+                         embedder=embedder,
+                         phrase_layer=None)
+        initializer(self)
+
+    def get_input_dim(self):
+        return self.prpnlayer.ninp
+
+    def get_output_dim(self):
+        return self.prpnlayer.ninp
+
+
 
 class ONLSTMPhraseLayer(Model):
-    ''' ON-LSTM sentence encoder '''
+    """
+    Implementation of ON-LSTM (Shen et al., 2019) as a phrase layer for sentence encoder.
+    ON-LSTM is designed to add syntactic inductive bias to LSTM,
+    and learns the latent constituency trees jointly with a downstream task.
+    """
     def __init__(self, vocab, d_word, d_hid, n_layers_enc,
                  chunk_size, onlstm_dropconnect, onlstm_dropouti,
                  dropout, onlstm_dropouth, embedder,

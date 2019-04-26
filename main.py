@@ -208,25 +208,25 @@ def _run_background_tensorboard(logdir, port):
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from eval (target_task_training)
+        1) best checkpoint from target_task_training
         2) best checkpoint from pretraining
         3) checkpoint created from before any target task training
         4) nothing found (empty string) """
-    eval_best = glob.glob(os.path.join(run_dir, "model_state_eval_best.th"))
-    if len(eval_best) > 0:
-        assert_for_log(len(eval_best) == 1,
+    target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
+    if len(target_task_best) > 0:
+        assert_for_log(len(target_task_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
-        return eval_best[0]
-    macro_best = glob.glob(os.path.join(run_dir, "model_state_main_epoch_*.best_macro.th"))
+        return target_task_best[0]
+    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1,
                        "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    pre_finetune = glob.glob(os.path.join(run_dir, "model_state_untrained_prefinetune.th"))
-    if len(pre_finetune) > 0:
-        assert_for_log(len(pre_finetune) == 1,
+    pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+    if len(pre_target_train) > 0:
+        assert_for_log(len(pre_target_train) == 1,
                        "Too many best checkpoints. Something is wrong.")
-        return pre_finetune[0]
+        return pre_target_train[0]
 
     return ""
 
@@ -346,13 +346,13 @@ def main(cl_arguments):
         should_decrease = pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
         trainer, _, opt_params, schd_params = build_trainer(args, [], model,
                                                             args.run_dir,
-                                                            should_decrease)
+                                                            should_decrease, phase="pretrain")
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
-                          args.batch_size, args.bpp_base,
+                          args.batch_size,
                           args.weighting_method, args.scaling_method,
                           to_train, opt_params, schd_params,
-                          args.shared_optimizer, args.load_model, phase="main")
+                          args.shared_optimizer, args.load_model, phase="pretrain")
 
     # For checkpointing logic
     if not args.do_target_task_training:
@@ -390,21 +390,21 @@ def main(cl_arguments):
                 to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
 
-            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'eval'],  model,
+            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'],  model,
                                                                 args.run_dir,
-                                                                task.val_metric_decreases)
+                                                                task.val_metric_decreases, phase="target_train")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
-                              n_batches_per_pass=1, weighting_method=args.weighting_method,
+                              weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
                               optimizer_params=opt_params, scheduler_params=schd_params,
-                              shared_optimizer=args.shared_optimizer, load_model=False, phase="eval")
+                              shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")
 
             # Now that we've trained a model, revert to the normal checkpoint logic for this task.
             if task.name in task_names_to_avoid_loading:
                 task_names_to_avoid_loading.remove(task.name)
 
             # The best checkpoint will accumulate the best parameters for each task.
-            layer_path = os.path.join(args.run_dir, "model_state_eval_best.th")
+            layer_path = os.path.join(args.run_dir, "model_state_target_train_best.th")
             if args.transfer_paradigm == "finetune":
                 # Save this fine-tune model with a task specific name.
                 finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
