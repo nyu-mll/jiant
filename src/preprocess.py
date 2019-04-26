@@ -24,11 +24,6 @@ from allennlp.data.token_indexers import \
     SingleIdTokenIndexer, ELMoTokenCharactersIndexer, \
     TokenCharactersIndexer
 
-try:
-    import fastText
-except BaseException:
-    log.info("fastText library not found!")
-
 import _pickle as pkl  # :(
 
 from .utils import config
@@ -191,18 +186,27 @@ def _find_cached_file(exp_dir: str, global_exp_cache_dir: str,
 
 def _build_embeddings(args, vocab, emb_file: str):
     ''' Build word embeddings from scratch (as opposed to loading them from a pickle),
-    possibly using a fastText model or precomputed fastText / GloVe embeddings. '''
-    log.info("\tBuilding embeddings from scratch")
-    if args.fastText:
-        word_embs, _ = get_fastText_model(vocab, args.d_word,
-                                          model_file=args.fastText_model_file)
-        log.info("\tUsing fastText; no pickling of embeddings.")
-        return word_embs
+    using precomputed fastText / GloVe embeddings. '''
 
-    word_embs = get_embeddings(vocab, args.word_embs_file, args.d_word)
-    pkl.dump(word_embs, open(emb_file, 'wb'))
+    # Load all the word embeddings based on vocabulary
+    log.info("\tBuilding embeddings from scratch")
+    word_v_size, unk_idx = vocab.get_vocab_size(
+        'tokens'), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, args.d_word)
+    with io.open(args.word_embs_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
+        for line in vec_fh:
+            word, vec = line.split(' ', 1)
+            idx = vocab.get_token_index(word)
+            if idx != unk_idx:
+                embeddings[idx] = np.array(list(map(float, vec.split())))
+    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+    log.info("\tFinished loading embeddings")
+
+    # Save/cache the word embeddings
+    pkl.dump(embeddings, open(emb_file, 'wb'))
     log.info("\tSaved embeddings to %s", emb_file)
-    return word_embs
+    return embeddings
 
 
 def _build_vocab(args, tasks, vocab_path: str):
@@ -630,43 +634,4 @@ def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
 
 
-def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
-    '''Get embeddings for the words in vocab from a file of precomputed vectors.
-    Works for fastText and GloVe embedding files. '''
-    word_v_size, unk_idx = vocab.get_vocab_size(
-        'tokens'), vocab.get_token_index(vocab._oov_token)
-    embeddings = np.random.randn(word_v_size, d_word)
-    with io.open(vec_file, 'r', encoding='utf-8', newline='\n', errors='ignore') as vec_fh:
-        for line in vec_fh:
-            word, vec = line.split(' ', 1)
-            idx = vocab.get_token_index(word)
-            if idx != unk_idx:
-                embeddings[idx] = np.array(list(map(float, vec.split())))
-    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
-    embeddings = torch.FloatTensor(embeddings)
-    log.info("\tFinished loading embeddings")
-    return embeddings
 
-
-def get_fastText_model(vocab, d_word, model_file=None):
-    '''
-    Same interface as get_embeddings except for fastText. Note that if the path to the model
-    is provided, the embeddings will rely on that model instead.
-    **Crucially, the embeddings from the pretrained model DO NOT match those from the released
-    vector file**
-    '''
-    word_v_size, unk_idx = vocab.get_vocab_size(
-        'tokens'), vocab.get_token_index(vocab._oov_token)
-    embeddings = np.random.randn(word_v_size, d_word)
-    model = fastText.FastText.load_model(model_file)
-    special_tokens = [vocab._padding_token, vocab._oov_token]
-    # We can also just check if idx >= 2
-    for idx in range(word_v_size):
-        word = vocab.get_token_from_index(idx)
-        if word in special_tokens:
-            continue
-        embeddings[idx] = model.get_word_vector(word)
-    embeddings[vocab.get_token_index(vocab._padding_token)] = 0.
-    embeddings = torch.FloatTensor(embeddings)
-    log.info("\tFinished loading pretrained fastText model and embeddings")
-    return embeddings, model
