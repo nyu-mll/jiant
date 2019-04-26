@@ -214,19 +214,11 @@ def main(cl_arguments):
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
-        assert_for_log(
-            args.val_interval %
-            args.bpp_base == 0, "Error: val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.val_interval, args.bpp_base))
-        steps_log.append("Training model on tasks: %s" % args.pretrain_tasks)
-
+       
     if args.do_target_task_training:
         steps_log.append("Re-training model for individual eval tasks")
-        assert_for_log(
-            args.eval_val_interval %
-            args.bpp_base == 0, "Error: eval_val_interval [%d] must be divisible by bpp_base [%d]" %
-            (args.eval_val_interval, args.bpp_base))
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
+     
+        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
                        or args.allow_reuse_of_pretraining_parameters
                        or args.do_pretrain == 0,
                        "If you're pretraining on a task you plan to reuse as a target task, set\n"
@@ -258,7 +250,7 @@ def main(cl_arguments):
                                                             should_decrease, phase="pretrain")
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
         _ = trainer.train(pretrain_tasks, stop_metric,
-                          args.batch_size, args.bpp_base,
+                          args.batch_size,
                           args.weighting_method, args.scaling_method,
                           to_train, opt_params, schd_params,
                           args.shared_optimizer, args.load_model, phase="pretrain")
@@ -335,7 +327,7 @@ def main(cl_arguments):
                                                                 args.run_dir,
                                                                 task.val_metric_decreases, phase="target_train")
             _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
-                              n_batches_per_pass=1, weighting_method=args.weighting_method,
+                              weighting_method=args.weighting_method,
                               scaling_method=args.scaling_method, train_params=to_train,
                               optimizer_params=opt_params, scheduler_params=schd_params,
                               shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")
