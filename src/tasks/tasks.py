@@ -246,7 +246,6 @@ class Task(object):
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
-
 class ClassificationTask(Task):
     ''' General classification task '''
     pass
@@ -1596,7 +1595,8 @@ class SpanTask(Task):
     '''
     @property
     def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files,
+        ''' 
+        Suffix to make sure we use the correct source files,
         based on the given tokenizer.
         '''
         if self.tokenizer_name:
@@ -1626,7 +1626,7 @@ class SpanTask(Task):
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
             label_file: relative path to labels file
-                labels file should be a line-delimited file where each line is a value the 
+                - should be a line-delimited file where each line is a value the 
                 label can take.
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
@@ -1655,6 +1655,10 @@ class SpanTask(Task):
         self.val_metric_decreases = False
 
     def _stream_records(self, filename):
+        """
+        Helper function for loading the data, which is in json format and 
+        checks if it has targets.
+        """
         skip_ctr = 0
         total_ctr = 0
         for record in utils.load_json_data(filename):
@@ -1666,27 +1670,6 @@ class SpanTask(Task):
         log.info("Read=%d, Skip=%d, Total=%d from %s",
                  total_ctr - skip_ctr, skip_ctr, total_ctr,
                  filename)
-
-    @staticmethod
-    def merge_preds(record: Dict, preds: Dict) -> Dict:
-        """ 
-        Merge predictions into record, in-place.
-        List-valued predictions should align to targets,
-        and are attached to the corresponding target entry.
-        Non-list predictions are attached to the top-level record.
-        """
-        record['preds'] = {}
-        for target in record['targets']:
-            target['preds'] = {}
-        for key, val in preds.items():
-            if isinstance(val, list):
-                assert len(val) == len(record['targets'])
-                for i, target in enumerate(record['targets']):
-                    target['preds'][key] = val[i]
-            else:
-                # non-list predictions, attach to top-level preds
-                record['preds'][key] = val
-        return record
 
     def load_data(self):
         iters_by_split = collections.OrderedDict()
@@ -1710,6 +1693,8 @@ class SpanTask(Task):
         return len(split_text)
 
     def _make_span_field(self, s, text_field, offset=1):
+        # AllenNLP span extractor expects inclusive span indices
+        # so minus 1 at the end index.
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
     def _pad_tokens(self, tokens):
@@ -1727,22 +1712,22 @@ class SpanTask(Task):
         tokens = self._pad_tokens(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
-        d = {}
-        d["idx"] = MetadataField(idx)
+        example = {}
+        example["idx"] = MetadataField(idx)
 
-        d['input1'] = text_field
+        example['input1'] = text_field
 
         for i in range(self.num_spans):
-            d["span" + str(i) + "s"] = ListField([self._make_span_field(t['span' + str(i)], text_field, 1)
+            example["span" + str(i) + "s"] = ListField([self._make_span_field(t['span' + str(i)], text_field, 1)
                                                   for t in record['targets']])
 
         labels = [utils.wrap_singleton_string(t['label'])
                   for t in record['targets']]
-        d['labels'] = ListField([MultiLabelField(label_set,
+        example['labels'] = ListField([MultiLabelField(label_set,
                                                  label_namespace=self._label_namespace,
                                                  skip_indexing=False)
                                  for label_set in labels])
-        return Instance(d)
+        return Instance(example)
 
     def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''

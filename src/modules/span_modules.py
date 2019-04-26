@@ -1,4 +1,4 @@
-# Implementation ofspan classification modules
+# Implementation of span classification modules
 
 import torch
 import torch.nn as nn
@@ -20,7 +20,6 @@ import logging as log
 class SpanClassifierModule(nn.Module):
     ''' 
         Build span classifier components as a sub-module.
-        from typing import Dict, Iterable, List
         Classifier that allows for spans and text as input.
         Use same classifier code as build_single_sentence_module,
         except we'll use span indices to extract span representations, 
@@ -59,13 +58,14 @@ class SpanClassifierModule(nn.Module):
         self.projs = []
 
         for i in range(num_spans):
-            # create a word-level pooling layer operator 
+            # this effectively acts as a linear layer (if cnn_context = 0)
             proj = self._make_cnn_layer(d_inp).cuda() \
                 if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
             self.projs.append(proj)
         self.span_extractors = []
 
-        # Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
+        # This can be Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
+        # or any of the other types of span pooling operators
         for i in range(num_spans):
             span_extractor = self._make_span_extractor().cuda() \
                  if torch.cuda.is_available() else self._make_span_extractor()
