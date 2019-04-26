@@ -216,7 +216,7 @@ def main(cl_arguments):
                        "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
        
     if args.do_target_task_training:
-        steps_log.append("Re-training model for individual eval tasks")
+        steps_log.append("Re-training model for individual target tasks")
      
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0	
                        or args.allow_reuse_of_pretraining_parameters
