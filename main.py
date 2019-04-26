@@ -139,7 +139,11 @@ def main(cl_arguments):
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
     maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
     maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
-    log.getLogger().addHandler(log.FileHandler(args.local_log_path))
+    log_fh = log.FileHandler(args.local_log_path)
+    log_fmt = log.Formatter('%(asctime)s: %(message)s',
+                            datefmt='%m/%d %I:%M:%S %p')
+    log_fh.setFormatter(log_fmt)
+    log.getLogger().addHandler(log_fh)
 
     if cl_args.remote_log:
         from src.utils import gcp
