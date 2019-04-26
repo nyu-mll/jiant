@@ -45,7 +45,7 @@ class Seq2SeqDecoder(Model):
         super(Seq2SeqDecoder, self).__init__(vocab)
 
         # deprecated module
-        warnings.simplefilter('default', DeprecationWarning)
+        warnings.simplefilter('always', DeprecationWarning)
         warnings.warn("modules.Seq2SeqDecoder is deprecated and is no longer maintained",
                         DeprecationWarning, stacklevel=2)
 
