@@ -238,18 +238,18 @@ def build_model(args, vocab, pretrained_embs, tasks):
 def get_task_whitelist(args):
     """Filters tasks so that we only build models that we will use, meaning we only
     build models for train tasks and for classifiers of eval tasks"""
-    eval_task_names = parse_task_list_arg(args.target_tasks)
-    eval_clf_names = []
-    for task_name in eval_task_names:
+    target_train_task_names = parse_task_list_arg(args.target_tasks)
+    target_train_clf_names = []
+    for task_name in target_train_task_names:
         override_clf = config.get_task_attr(args, task_name, 'use_classifier')
         if override_clf == 'none' or override_clf is None:
-            eval_clf_names.append(task_name)
+            target_train_clf_names.append(task_name)
         else:
-            eval_clf_names.append(override_clf)
+            target_train_clf_names.append(override_clf)
     train_task_names = parse_task_list_arg(args.pretrain_tasks)
-    log.info("Whitelisting train tasks=%s, eval_clf_tasks=%s",
-             str(train_task_names), str(eval_clf_names))
-    return train_task_names, eval_clf_names
+    log.info("Whitelisting train tasks=%s, target_train_clf_tasks=%s",
+             str(train_task_names), str(target_train_clf_names))
+    return train_task_names, target_train_clf_names
 
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
