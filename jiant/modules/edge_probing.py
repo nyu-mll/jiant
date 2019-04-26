@@ -6,8 +6,8 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from ..tasks.edge_probing import EdgeProbingTask
-from .import modules
+from jiant.tasks.edge_probing import EdgeProbingTask
+from jiant.modules import modules
 
 from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor

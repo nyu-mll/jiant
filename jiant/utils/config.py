@@ -1,17 +1,18 @@
-from typing import Type, Union, Sequence, Iterable
-from . import hocon_writer
-import json
-import pyhocon
-import argparse
 '''Train a multi-task model using AllenNLP '''
+from typing import Type, Union, Sequence, Iterable
 import os
 import sys
 import time
-import random
+import json
 import types
+import random
+import pyhocon
+import argparse
 import logging as log
+
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+from . import hocon_writer
 
 
 class Params(object):

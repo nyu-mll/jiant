@@ -5,7 +5,7 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 
 from .tasks import PairClassificationTask
 from .registry import register_task
-from ..utils.data_loaders import load_tsv, process_sentence
+from jiant.utils.data_loaders import load_tsv, process_sentence
 
 
 @register_task('nli-prob', rel_path='NLI-Prob/')

@@ -5,7 +5,7 @@ Modules re-used from: https://github.com/yikangshen/Ordered-Neurons
 import torch.nn.functional as f
 import torch.nn as nn
 import torch
-from ...utils.locked_dropout import LockedDropout
+from jiant.utils.locked_dropout import LockedDropout
 import numpy as np
 
 

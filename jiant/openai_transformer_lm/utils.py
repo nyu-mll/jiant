@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 
 from allennlp.modules import scalar_mix
-from ..preprocess import parse_task_list_arg
+from jiant.preprocess import parse_task_list_arg
 
 from .tf_original import utils as openai_utils
 from .tf_original.text_utils import TextEncoder

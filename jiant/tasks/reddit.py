@@ -8,8 +8,8 @@ from allennlp.training.metrics import Average
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
-from ..utils.utils import truncate
-from ..utils.data_loaders import process_sentence
+from jiant.utils.utils import truncate
+from jiant.utils.data_loaders import process_sentence
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 

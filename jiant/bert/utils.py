@@ -5,7 +5,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from ..preprocess import parse_task_list_arg
+from jiant.preprocess import parse_task_list_arg
 
 from allennlp.modules import scalar_mix
 

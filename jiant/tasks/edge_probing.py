@@ -9,16 +9,16 @@ import numpy as np
 
 from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure
-from ..allennlp_mods.correlation import FastMatthews
+from jiant.allennlp_mods.correlation import FastMatthews
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, \
     SpanField, ListField, MetadataField
-from ..allennlp_mods.multilabel_field import MultiLabelField
+from jiant.allennlp_mods.multilabel_field import MultiLabelField
 
-from ..utils import serialize
-from ..utils import utils
+from jiant.utils import serialize
+from jiant.utils import utils
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 

@@ -21,7 +21,7 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.models.model import Model
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 
-from .modules import Pooler
+from jiant.modules.modules import Pooler
 
 import logging as log
 

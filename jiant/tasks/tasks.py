@@ -21,7 +21,7 @@ import torch
 
 from allennlp.training.metrics import CategoricalAccuracy, \
     BooleanAccuracy, F1Measure, Average
-from ..allennlp_mods.correlation import Correlation, FastMatthews
+from jiant.allennlp_mods.correlation import Correlation, FastMatthews
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import vocabulary
 
@@ -29,12 +29,12 @@ from allennlp.data import vocabulary
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
     SpanField, ListField, MetadataField
-from ..allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.numeric_field import NumericField
 
-from ..utils import utils
-from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
-from ..utils.tokenizers import get_tokenizer
+from jiant.utils import utils
+from jiant.utils.utils import truncate
+from jiant.utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
+from jiant.utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -361,7 +361,7 @@ class PairOrdinalRegressionTask(RegressionTask):
                                               classification=False)
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 class SequenceGenerationTask(Task):
@@ -383,7 +383,7 @@ class SequenceGenerationTask(Task):
 
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 
@@ -1127,7 +1127,7 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-        
+
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
@@ -1575,7 +1575,7 @@ class CCGTaggingTask(TaggingTask):
         self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenization added token
-            self.num_tags = self.num_tags + 1 
+            self.num_tags = self.num_tags + 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a tagging task '''
@@ -1595,7 +1595,7 @@ class CCGTaggingTask(TaggingTask):
                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
         self.max_seq_len = max_seq_len
 
-        # Get the mask for each sentence, where the mask is whether or not 
+        # Get the mask for each sentence, where the mask is whether or not
         # the token was split off by tokenization. We want to only count the first
         # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
         # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]

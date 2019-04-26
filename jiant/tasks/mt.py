@@ -11,8 +11,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 from allennlp.data import Instance, Token
 
-from ..utils.data_loaders import process_sentence
-from ..utils.utils import truncate
+from jiant.utils.data_loaders import process_sentence
+from jiant.utils.utils import truncate
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
