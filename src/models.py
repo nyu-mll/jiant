@@ -44,9 +44,9 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
-from .modules.span_modules import ThreeSpanClassifierModule
+from .modules.span_modules import SpanClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
-
+import logging as log
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -436,9 +436,8 @@ def build_task_specific_modules(
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
-    elif task.name == "gap-coreference":
-        # TODO(Yada): Generalize this.
-        module = ThreeSpanClassifierModule(task, d_sent, task_params)
+    elif isinstance(task, SpanTask):
+        module = SpanClassifierModule(task, d_sent, task_params, task.num_spans)
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
@@ -726,6 +725,7 @@ class MultiTaskModel(nn.Module):
             task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
+            log.info(logits)
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:
                     assert logits.ndimension() == 2 and logits[-1] == 1, \

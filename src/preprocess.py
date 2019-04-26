@@ -606,7 +606,7 @@ def add_task_domain_vocab(vocab, task):
 def add_bert_wpm_vocab(vocab, bert_model_name):
     '''Add BERT WPM vocabulary for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method,    but this doesn't do
+    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
     anything special so we can just use the standard indexers.
     '''
     from pytorch_pretrained_bert import BertTokenizer

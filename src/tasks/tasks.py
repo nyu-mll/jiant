@@ -1829,17 +1829,16 @@ class GapCoreferenceTask(SpanTask):
                  is_symmetric: bool = False,
                  domains=["FEMININE", "MASCULINE"],
                  single_sided: bool = False, **kw):
-        self._files_by_split = {'train': "gap-development.json", 'val': "gap-validation.json",'test': "gap-test.json"}
+        self._files_by_split = {'train': "gap-development.json", 'val': "gap-test.json",'test': "blind_test_gap.json"}
         self.num_domains = len(domains)
         self.domains = domains
         self._domain_namespace = name + "_tags"
         label_file = "labels.txt"
-        num_spans = 3
-        super().__init__(path, max_seq_len, name, label_file, self._files_by_split, num_spans, is_symmetric, single_sided, **kw)
-
+        self.num_spans = 3
+        super().__init__(path, max_seq_len, name, label_file, self._files_by_split, self.num_spans, is_symmetric, single_sided, **kw)
         # Scorers
         self.f1_scorer = gap_scorer.GAPScorer()
-        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
+        self.val_metric = "%s_f1" % self.name
         self.val_metric_decreases = False
 
     def load_data(self):
@@ -1861,7 +1860,6 @@ class GapCoreferenceTask(SpanTask):
         d["idx"] = MetadataField(idx)
 
         d['input1'] = text_field
-
         d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
                                  for t in record['targets']])
         d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
@@ -1874,7 +1872,6 @@ class GapCoreferenceTask(SpanTask):
                                                  label_namespace=self._label_namespace,
                                                  skip_indexing=False)
                                  for label_set in labels])
-
         return Instance(d)
 
     def process_split(self, split, indexers):
@@ -1887,9 +1884,16 @@ class GapCoreferenceTask(SpanTask):
         instances = map(_map_fn, split, itertools.count())
         return instances
 
-    def update_subset_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-        targets = (labels == 1).nonzero()[:,1]
+        def one_hot_v(batch, depth=2):
+            ones = torch.sparse.torch.eye(depth).cuda()
+            return ones.index_select(0, batch)
+        binary_preds = one_hot_v(logits, depth=3)
+        self.f1_scorer(binary_preds.long(), labels.long())
+        self.update_subset_metrics(binary_preds.long(), labels, tagmask)
+
+    def update_subset_metrics(self, logits, labels, tagmask=None):
         if tagmask is not None:
             update_subset_scorers(self.subset_scorers["f1"], logits, labels, tagmask)
 
@@ -1897,8 +1901,7 @@ class GapCoreferenceTask(SpanTask):
         '''Get metrics specific to the task'''
         collected_metrics = {"f1": self.f1_scorer.get_metric(reset)}
         for score_name, scorer in list(self.subset_scorers.items()):
-          collected_metrics.update(collect_subset_scores(scorer, score_name, self.tag_list, reset))
+          collected_metrics.update(collect_subset_scores(scorer, score_name, self.domains, reset))
         if collected_metrics["f1_FEMININE"] != 0.0:
             collected_metrics.update({"bias": collected_metrics["f1_MASCULINE"] / collected_metrics["f1_FEMININE"]})
         return collected_metrics
-
