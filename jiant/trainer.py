@@ -22,9 +22,9 @@ from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # 
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 from allennlp.nn.util import move_to_device, device_mapping
 
-from .utils.utils import assert_for_log  # pylint: disable=import-error
-from .evaluate import evaluate
-from .utils import config
+from jiant.utils.utils import assert_for_log  # pylint: disable=import-error
+from jiant.evaluate import evaluate
+from jiant.utils import config
 
 
 def build_trainer_params(args, task_names, phase='pretrain'):
@@ -506,7 +506,7 @@ class SamplingMultiTaskTrainer:
             np.array_str(
                 normalized_sample_weights,
                 precision=4))
-        
+
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(
@@ -712,14 +712,14 @@ class SamplingMultiTaskTrainer:
         metric_decreases: bool, marker to show if we should increase or
         decrease validation metric.
         should_save: bool, for checkpointing
-        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded 
+        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded
 
         Returns
         ________
         metric_infos: dict storing information about the various metrics
         this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
         should_save: bool
-        new_best_macro: bool 
+        new_best_macro: bool
         """
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]['hist']
@@ -868,7 +868,7 @@ class SamplingMultiTaskTrainer:
             if metric_infos[metric]['stopped']:
                 continue
             metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, \
-                                                                                                    all_val_metrics, 
+                                                                                                    all_val_metrics,
                                                                                                     metric, task_name, metric_infos, \
                                                                                                     metric_decreases, should_save, new_best_macro)
 

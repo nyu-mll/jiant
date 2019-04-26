@@ -31,13 +31,13 @@ except BaseException:
 
 import _pickle as pkl  # :(
 
-from .utils import config
-from .utils import serialize
-from .utils import utils
+from jiant.utils import config
+from jiant.utils import serialize
+from jiant.utils import utils
 
-from .tasks import REGISTRY as TASKS_REGISTRY
-from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
-from .tasks.mt import MTTask
+from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
+from jiant.tasks.mt import MTTask
 
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens

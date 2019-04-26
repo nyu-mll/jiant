@@ -22,32 +22,32 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.training.metrics import Average
 
-from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils.utils import assert_for_log, get_batch_utilization, \
+from jiant.allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
+from jiant.utils.utils import assert_for_log, get_batch_utilization, \
     get_batch_size, get_elmo_mixing_weights, maybe_make_dir
-from .utils import config
+from jiant.utils import config
 
-from .preprocess import parse_task_list_arg, get_tasks
+from jiant.preprocess import parse_task_list_arg, get_tasks
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
+from jiant.tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask
-from .tasks.lm import LanguageModelingTask
-from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
-from .tasks.edge_probing import EdgeProbingTask
+from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm_parsing import LanguageModelingParsingTask
+from jiant.tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
+from jiant.tasks.edge_probing import EdgeProbingTask
 
-from .modules.modules import SentenceEncoder, BoWSentEncoder, \
+from jiant.modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
-from .modules.edge_probing import EdgeClassifierModule
-from .modules.seq2seq_decoder import Seq2SeqDecoder
-from .modules.onlstm.ON_LSTM import ONLSTMStack
-from .modules.prpn.PRPN import PRPN
+from jiant.modules.edge_probing import EdgeClassifierModule
+from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
+from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
+from jiant.modules.prpn.PRPN import PRPN
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -983,7 +983,7 @@ class MultiTaskModel(nn.Module):
         '''
         This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
-                batch: a dict of inputs and target tags 
+                batch: a dict of inputs and target tags
                 task: TaggingTask
                 predict: (boolean) predict mode (not supported)
         Returns

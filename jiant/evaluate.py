@@ -9,8 +9,8 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 
 import torch
 from allennlp.data.iterators import BasicIterator
-from . import tasks as tasks_module
-from .tasks.edge_probing import EdgeProbingTask
+from jiant import tasks as tasks_module
+from jiant.tasks.edge_probing import EdgeProbingTask
 from allennlp.nn.util import move_to_device
 
 from typing import List, Sequence, Iterable, Tuple, Dict
