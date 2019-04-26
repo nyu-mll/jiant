@@ -43,10 +43,11 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, ONLSTMPhraseLayer
+    NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
+from .modules.prpn.PRPN import PRPN
 
 # Elmo stuff
 # Look in $ELMO_SRC_DIR (e.g. /usr/share/jsalt/elmo) or download from web
@@ -82,6 +83,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                                        cove_layer=cove_layer)
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
+    elif args.sent_enc == "prpn":
+        prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
+                         args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
+                         args.res, embedder,  args.batch_size)
+        # The 'prpn' acts as a phrase layer module for the larger SentenceEncoder module.
+        sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
+                                    prpnlayer.prpnlayer, skip_embs=args.skip_embs,
+                                    dropout=args.dropout,
+                                    sep_embs_for_skip=args.sep_embs_for_skip,
+                                    cove_layer=cove_layer)
+        d_sent = args.d_word
+        log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or \
             args.sent_enc == 'bilm':
         assert_for_log(
@@ -563,7 +576,7 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
             sequence, rather than max pooling. We do this for BERT specifically to follow
             the convention set in the paper (Devlin et al., 2019).
         - params (Params): Params object with task-specific parameters
-
+        
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
@@ -700,7 +713,8 @@ class MultiTaskModel(nn.Module):
             else:
                 out = self._pair_sentence_forward(batch, task, predict)
         elif isinstance(task, LanguageModelingTask):
-            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack):
+            if isinstance(self.sent_encoder._phrase_layer, ONLSTMStack) or \
+                isinstance(self.sent_encoder._phrase_layer, PRPN):
                 out = self._lm_only_lr_forward(batch, task)
             else:
                 out = self._lm_forward(batch, task, predict)
@@ -708,9 +722,9 @@ class MultiTaskModel(nn.Module):
             out = self._tagger_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
             # Just get embeddings and invoke task module.
-            sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+            word_embs_in_context, sent_mask = self.sent_encoder(batch['input1'], task)
             module = getattr(self, "%s_mdl" % task.name)
-            out = module.forward(batch, sent_embs, sent_mask,
+            out = module.forward(batch, word_embs_in_context, sent_mask,
                                  task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
@@ -739,10 +753,10 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+        word_embs_in_context, sent_mask = self.sent_encoder(batch['input1'], task)
         # pass to a task specific classifier
         classifier = self._get_classifier(task)
-        logits = classifier(sent_embs, sent_mask)
+        logits = classifier(word_embs_in_context, sent_mask)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
 
