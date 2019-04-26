@@ -277,7 +277,7 @@ def build_tasks(args):
     '''
 
     # 1) create / load tasks
-    tasks, train_task_names, eval_task_names = get_tasks(args)
+    tasks, pretrain_task_names, target_task_names = get_tasks(args)
     for task in tasks:
         task_classifier = config.get_task_attr(
             args, task.name, "use_classifier")
@@ -351,8 +351,8 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
-    assert not (args.training_data_fraction < 1 and args.eval_data_fraction < 1), \
-        "training_data_fraction and eval_data_fraction could not be used at a same time (could not be < 1 together)"
+    assert not (args.pretrain_data_fraction < 1 and args.target_train_data_fraction < 1), \
+        "pretraining_data_fraction and target_train_data_fraction could not be used at a same time (could not be < 1 together)"
     pretrain_tasks = []
     target_tasks = []
     for task in tasks:
@@ -360,41 +360,41 @@ def build_tasks(args):
         task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
         task.test_data = _get_instance_generator(
             task.name, "test", preproc_dir)
-        # When using training_data_fraction, we need modified iterators for use
+        # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
-        if args.training_data_fraction < 1 and task.name in train_task_names:
+        if args.pretrain_data_fraction < 1 and task.name in train_task_names:
             log.info(
                 "Creating trimmed pretraining-only version of " +
                 task.name +
                 " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=args.training_data_fraction)
+                                                      fraction=args.pretrain_data_fraction)
             pretrain_tasks.append(task)
-            if task.name in eval_task_names:
-                # Rebuild the iterator so we see the full dataset in the eval training
+            if task.name in target_task_names:
+                # Rebuild the iterator so we see the full dataset in the target task training
                 # phase. It will create a deepcopy of the task object
                 # and therefore there could be two tasks with the same name
                 # (task.name).
                 log.info(
-                    "Creating un-trimmed eval training version of " +
+                    "Creating un-trimmed target training version of " +
                     task.name +
                     " train.")
-                log.warn("When using un-trimmed eval training version of train split, "
+                log.warn("When using un-trimmed target training version of train split, "
                          "it creates a deepcopy of task object which is inefficient.")
                 task = copy.deepcopy(task)
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
                 target_tasks.append(task)
 
-        # When using eval_data_fraction, we need modified iterators
+        # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
-        elif args.eval_data_fraction < 1 and task.name in eval_task_names:
+        elif args.target_train_data_fraction < 1 and task.name in target_task_names:
             log.info(
-                "Creating trimmed train-for-eval-only version of " +
+                "Creating trimmed train-for-target-only version of " +
                 task.name +
                 " train.")
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=args.eval_data_fraction)
+                                                      fraction=args.target_train_data_fraction)
             target_tasks.append(task)
             if task.name in train_task_names:
                 # Rebuild the iterator so we see the full dataset in the pretraining
@@ -411,21 +411,21 @@ def build_tasks(args):
                 task.train_data = _get_instance_generator(
                     task.name, "train", preproc_dir, fraction=1.0)
                 pretrain_tasks.append(task)
-        # When neither eval_data_fraction nor training_data_fraction is specified
+        # When neither pretrain_data_fraction nor target_train_data_fraction is specified
         # we use unmodified iterators.
         else:
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=1.0)
-            if task.name in train_task_names:
+            if task.name in pretrain_task_names:
                 pretrain_tasks.append(task)
-            if task.name in eval_task_names:
+            if task.name in target_task_names:
                 target_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
     log.info("All tasks initialized with data iterators.")
-    log.info('\t  Training on %s', ', '.join(train_task_names))
-    log.info('\t  Evaluating on %s', ', '.join(eval_task_names))
+    log.info('\t  Training on %s', ', '.join(pretrain_task_names))
+    log.info('\t  Evaluating on %s', ', '.join(target_task_names))
     return pretrain_tasks, target_tasks, vocab, word_embs
 
 
@@ -476,13 +476,13 @@ def get_tasks(args):
     data_path = args.data_dir
     scratch_path = args.exp_dir
 
-    train_task_names = parse_task_list_arg(args.pretrain_tasks)
-    eval_task_names = parse_task_list_arg(args.target_tasks)
+    pretrain_task_names = parse_task_list_arg(args.pretrain_tasks)
+    target_task_names = parse_task_list_arg(args.target_tasks)
     # We don't want mnli-diagnostic in train_task_names
-    train_task_names = [name for name in train_task_names
+    pretrain_task_names = [name for name in pretrain_task_names
                         if name not in {'mnli-diagnostic'}]
 
-    task_names = sorted(set(train_task_names + eval_task_names))
+    task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None
     scratch_path = (scratch_path or data_path)
     log.info("Writing pre-preprocessed tasks to %s", scratch_path)
@@ -502,7 +502,7 @@ def get_tasks(args):
 
     log.info("\tFinished loading tasks: %s.",
              ' '.join([task.name for task in tasks]))
-    return tasks, train_task_names, eval_task_names
+    return tasks, pretrain_task_names, target_task_names
 
 
 def get_words(tasks):
