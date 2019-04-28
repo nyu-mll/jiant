@@ -441,21 +441,31 @@ class SSTTask(SingleClassificationTask):
 @register_task('npi_sup_li', rel_path='NPI/probing/superlative/licensor')
 @register_task('npi_sup_sc', rel_path='NPI/probing/superlative/scope_with_licensor')
 @register_task('npi_sup_pr', rel_path='NPI/probing/superlative/npi_present')
-@register_task('npi_adv', rel_path='NPI/splits/adverbs')
-@register_task('npi_cond', rel_path='NPI/splits/conditionals')
-@register_task('npi_negdet', rel_path='NPI/splits/determiner_negation_biclausal')
-@register_task('npi_negsent', rel_path='NPI/splits/sentential_negation_biclausal')
-@register_task('npi_only', rel_path='NPI/splits/only')
-@register_task('npi_ques', rel_path='NPI/splits/questions')
-@register_task('npi_quessmp', rel_path='NPI/splits/simplequestions')
-@register_task('npi_qnt', rel_path='NPI/splits/quantifiers')
-@register_task('npi_sup', rel_path='NPI/splits/npi_superlatives')
-class NPITask(SingleClassificationTask):
+@register_task('cola_npi_adv', rel_path='NPI/splits/adverbs')
+@register_task('cola_npi_cond', rel_path='NPI/splits/conditionals')
+@register_task('cola_npi_negdet', rel_path='NPI/splits/determiner_negation_biclausal')
+@register_task('cola_npi_negsent', rel_path='NPI/splits/sentential_negation_biclausal')
+@register_task('cola_npi_only', rel_path='NPI/splits/only')
+@register_task('cola_npi_ques', rel_path='NPI/splits/questions')
+@register_task('cola_npi_quessmp', rel_path='NPI/splits/simplequestions')
+@register_task('cola_npi_qnt', rel_path='NPI/splits/quantifiers')
+@register_task('cola_npi_sup', rel_path='NPI/splits/npi_superlatives')
+@register_task('all_cola_npi', rel_path='NPI/combs/all_env')
+@register_task('hd_cola_npi_adv', rel_path='NPI/combs/minus_adverbs')
+@register_task('hd_cola_npi_cond', rel_path='NPI/combs/minus_conditionals')
+@register_task('hd_cola_npi_negdet', rel_path='NPI/combs/minus_determiner_negation_biclausal')
+@register_task('hd_cola_npi_negsent', rel_path='NPI/combs/minus_sentential_negation_biclausal')
+@register_task('hd_cola_npi_only', rel_path='NPI/combs/minus_only')
+@register_task('hd_cola_npi_ques', rel_path='NPI/combs/minus_questions')
+@register_task('hd_cola_npi_quessmp', rel_path='NPI/combs/minus_simplequestions')
+@register_task('hd_cola_npi_qnt', rel_path='NPI/combs/minus_quantifiers')
+@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_npi_superlatives')
+class CoLANPITask(SingleClassificationTask):
     '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set'''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(NPITask, self).__init__(name, n_classes=2, **kw)
+        super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
