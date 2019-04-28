@@ -361,7 +361,7 @@ class PairOrdinalRegressionTask(RegressionTask):
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
     def update_metrics(self, logits, labels, tagmask=None):
-        self.scorer1(mean_squared_error(logits, labels))
+        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
         self.scorer2(logits, labels)
         return
 
