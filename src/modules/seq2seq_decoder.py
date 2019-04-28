@@ -23,6 +23,8 @@ from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_lo
 
 from .modules import Pooler
 
+import logging as log
+
 
 class Seq2SeqDecoder(Model):
     """
@@ -42,6 +44,10 @@ class Seq2SeqDecoder(Model):
                  scheduled_sampling_ratio: float = 0.0,
                  ) -> None:
         super(Seq2SeqDecoder, self).__init__(vocab)
+
+        # deprecated module
+        log.warning("DeprecationWarning: modules.Seq2SeqDecoder is deprecated and is no longer maintained")
+
         self._max_decoding_steps = max_decoding_steps
         self._target_namespace = target_namespace
 
@@ -189,26 +195,6 @@ class Seq2SeqDecoder(Model):
             output_dict["loss"] = loss
 
         return output_dict
-
-    def _decoder_step(self,
-                      decoder_input,
-                      decoder_hidden,
-                      decoder_context):
-        """
-        Applies one step of the decoder. This is used by beam search.
-
-        Parameters
-        ----------
-        decoder_input: torch.FloatTensor
-        decoder_hidden: torch.FloatTensor
-        decoder_context: torch.FloatTensor
-        """
-        decoder_hidden, decoder_context = self._decoder_cell(
-            decoder_input, (decoder_hidden, decoder_context))
-
-        logits = self._output_projection_layer(decoder_hidden)
-
-        return logits, (decoder_hidden, decoder_context)
 
     def _prepare_decode_step_input(
             self,
