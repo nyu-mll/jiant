@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=12:00:00
+#SBATCH --time=48:00:00
 #SBATCH --mem=20000
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=myrun
@@ -32,172 +32,170 @@
 
 # These 9 different environments are to be found at https://github.com/alexwarstadt/data_generation/tree/master/outputs/npi/environments/splits
 # Finetuning on one of the NPI task, we target all NPI tasks;
-# Finetuning on eight of the NPI tasks, we target the remaining one.
+# Finetuning on eight of the NPI tasks, we target the remaining one;
+# Finetuning on all the NPI tasks, we target all NPI tasks.
 
-
+#### GET MODEL bertmnli ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_model, target_tasks = \"\", pretrain_tasks = \"mnli\", do_pretrain = 1, do_full_eval = 0" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"\", pretrain_tasks = \"mnli\", do_pretrain = 1, do_full_eval = 0, do_target_task_training = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola
+#### FINETUNE cola ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola, target_tasks = \"cola,cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_adv
+#### EVAL cola,cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_adv, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola, target_tasks = \"cola,cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_best.th\", use_classifier=\"cola\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_cond
+#### FINETUNE cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_cond, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_cond\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_negdet
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_negdet, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_negdet\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_adv, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_adv_best.th\", use_classifier=\"cola_npi_adv\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_negsent
+#### FINETUNE cola_npi_cond ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_negsent, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_negsent\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_cond\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_only
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_only, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_only\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_cond, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_cond_best.th\", use_classifier=\"cola_npi_cond\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_qnt
+#### FINETUNE cola_npi_negdet ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_qnt, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_qnt\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_negdet\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_ques
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_ques, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_ques\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_negdet, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_negdet_best.th\", use_classifier=\"cola_npi_negdet\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_quessmp
+#### FINETUNE cola_npi_negsent ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_quessmp, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_quessmp\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_negsent\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_sup
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_sup, target_tasks = \"cola_npi_sup\", pretrain_tasks = \"cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_negsent, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_negsent_best.th\", use_classifier=\"cola_npi_negsent\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_cola_npi_sup
+#### FINETUNE cola_npi_only ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_cola_npi_sup, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_sup\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_only\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_quessmp
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_quessmp, target_tasks = \"cola_npi_quessmp\", pretrain_tasks = \"cola_npi_sup,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_only, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_only_best.th\", use_classifier=\"cola_npi_only\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_ques
+#### FINETUNE cola_npi_qnt ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_ques, target_tasks = \"cola_npi_ques\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_qnt\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_qnt
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_qnt, target_tasks = \"cola_npi_qnt\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_qnt, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_qnt_best.th\", use_classifier=\"cola_npi_qnt\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_only
+#### FINETUNE cola_npi_ques ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_only, target_tasks = \"cola_npi_only\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_ques\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_negsent
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_negsent, target_tasks = \"cola_npi_negsent\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_ques, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_ques_best.th\", use_classifier=\"cola_npi_ques\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_negdet
+#### FINETUNE cola_npi_quessmp ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_negdet, target_tasks = \"cola_npi_negdet\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_quessmp\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_cond
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_cond, target_tasks = \"cola_npi_cond\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_quessmp, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_quessmp_best.th\", use_classifier=\"cola_npi_quessmp\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_hd_cola_npi_adv
+#### FINETUNE hd_cola_npi_sup ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_hd_cola_npi_adv, target_tasks = \"cola_npi_adv\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_sup\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_model $JIANT_PROJECT_PREFIX/npi_bert/run_bertmnli_allnpi
+#### EVAL cola_npi_sup ####
 python main.py --config_file config/spring19_seminar/bert.conf \
-    --overrides "exp_name = npi_bert, run_name = run_bertmnli_allnpi, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_sup, target_tasks = \"cola_npi_sup\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_sup_best.th\", use_classifier=\"hd_cola_npi_sup\"" 
 
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_model, target_tasks = \"\", pretrain_tasks = \"mnli\", do_pretrain = 1, do_full_eval = 0" 
+#### FINETUNE cola_npi_sup ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"cola_npi_sup\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola, target_tasks = \"cola,cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_cola_npi_sup, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_npi_sup_best.th\", use_classifier=\"cola_npi_sup\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_adv
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_adv, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_quessmp ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_quessmp\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_cond
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_cond, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_cond\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_quessmp ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_quessmp, target_tasks = \"cola_npi_quessmp\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_quessmp_best.th\", use_classifier=\"hd_cola_npi_quessmp\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_negdet
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_negdet, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_negdet\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_ques ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_ques\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_negsent
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_negsent, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_negsent\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_ques ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_ques, target_tasks = \"cola_npi_ques\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_ques_best.th\", use_classifier=\"hd_cola_npi_ques\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_only
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_only, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_only\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_qnt ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_qnt\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_qnt
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_qnt, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_qnt\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_qnt ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_qnt, target_tasks = \"cola_npi_qnt\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_qnt_best.th\", use_classifier=\"hd_cola_npi_qnt\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_ques
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_ques, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_ques\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_only ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_only\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_quessmp
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_quessmp, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_quessmp\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_only ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_only, target_tasks = \"cola_npi_only\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_only_best.th\", use_classifier=\"hd_cola_npi_only\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_sup
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_sup, target_tasks = \"cola_npi_sup\", pretrain_tasks = \"cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_negsent ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_negsent\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_cola_npi_sup
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_cola_npi_sup, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_sup\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_negsent ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_negsent, target_tasks = \"cola_npi_negsent\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_negsent_best.th\", use_classifier=\"hd_cola_npi_negsent\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_quessmp
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_quessmp, target_tasks = \"cola_npi_quessmp\", pretrain_tasks = \"cola_npi_sup,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_negdet ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_negdet\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_ques
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_ques, target_tasks = \"cola_npi_ques\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_negdet ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_negdet, target_tasks = \"cola_npi_negdet\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_negdet_best.th\", use_classifier=\"hd_cola_npi_negdet\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_qnt
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_qnt, target_tasks = \"cola_npi_qnt\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_cond ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_cond\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_only
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_only, target_tasks = \"cola_npi_only\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_cond ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_cond, target_tasks = \"cola_npi_cond\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_cond_best.th\", use_classifier=\"hd_cola_npi_cond\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_negsent
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_negsent, target_tasks = \"cola_npi_negsent\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE hd_cola_npi_adv ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"hd_cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_negdet
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_negdet, target_tasks = \"cola_npi_negdet\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_adv ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_hd_cola_npi_adv, target_tasks = \"cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_hd_cola_npi_adv_best.th\", use_classifier=\"hd_cola_npi_adv\"" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_cond
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_cond, target_tasks = \"cola_npi_cond\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### FINETUNE all_cola_npi ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_model, target_tasks = \"all_cola_npi\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = finetune, do_full_eval = 0" 
 
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_hd_cola_npi_adv
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_hd_cola_npi_adv, target_tasks = \"cola_npi_adv\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond\", do_pretrain = 1, load_model = 1" 
-
-cp -r $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_model $JIANT_PROJECT_PREFIX/npi_bow_glove/run_bow_glovemnli_allnpi
-python main.py --config_file config/spring19_seminar/bow_glove.conf \
-    --overrides "exp_name = npi_bow_glove, run_name = run_bow_glovemnli_allnpi, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", do_pretrain = 1, load_model = 1" 
+#### EVAL cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv ####
+python main.py --config_file config/spring19_seminar/bert.conf \
+    --overrides "exp_name = npi_bertmnli, run_name = run_bertmnli_all_cola_npi, target_tasks = \"cola_npi_sup,cola_npi_quessmp,cola_npi_ques,cola_npi_qnt,cola_npi_only,cola_npi_negsent,cola_npi_negdet,cola_npi_cond,cola_npi_adv\", pretrain_tasks = \"none\", do_pretrain = 0, transfer_paradigm = frozen, do_target_task_training = 0, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_all_cola_npi_best.th\", use_classifier=\"all_cola_npi\"" 
 
