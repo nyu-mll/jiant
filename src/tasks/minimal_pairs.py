@@ -16,23 +16,17 @@ import os
 import numpy as np
 import torch
 
-from allennlp.training.metrics import CategoricalAccuracy, \
-    BooleanAccuracy, F1Measure, Average
-from ..allennlp_mods.correlation import Correlation, FastMatthews
-from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.training.metrics import CategoricalAccuracy
+from ..allennlp_mods.correlation import Correlation
 from allennlp.data import vocabulary
 from .registry import register_task
 
 # Fields for instance processing
 from allennlp.data import Instance, Token
 from allennlp.data.fields import TextField, LabelField, MultiLabelField, \
-    SpanField, ListField, MetadataField, IndexField
-from ..allennlp_mods.numeric_field import NumericField
+    MetadataField, IndexField
 
-from ..utils import utils
-from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list, BERT_MASK_TOK
-from ..utils.tokenizers import get_tokenizer
+from ..utils.data_loaders import load_tsv, get_tag_list, BERT_MASK_TOK
 from .tasks import Task, sentence_to_text_field
 from .tasks import create_subset_scorers, update_subset_scorers, collect_subset_scores
 

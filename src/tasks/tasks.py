@@ -33,7 +33,7 @@ from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list, BERT_MASK_TOK
+from ..utils.data_loaders import load_tsv, process_sentence, get_tag_list, BERT_MASK_TOK
 from ..utils.tokenizers import get_tokenizer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
