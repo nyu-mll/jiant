@@ -1569,10 +1569,10 @@ class CCGTaggingTask(TaggingTask):
         ''' There are 1363 supertags in CCGBank without introduced token. '''
         super().__init__(name, 1363, **kw)
         self.INTRODUCED_TOKEN = '1363'
+        self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.max_seq_len = max_seq_len
-        self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenization added token
             self.num_tags = self.num_tags + 1 
