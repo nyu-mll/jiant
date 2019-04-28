@@ -12,9 +12,8 @@ import torch.nn as nn
 from allennlp.modules import scalar_mix
 from ..preprocess import parse_task_list_arg
 
-from .tf_original import utils as openai_utils
-from .tf_original.text_utils import TextEncoder
-
+from .pytorch_huggingface import utils as openai_utils
+from .pytorch_huggingface.text_utils import TextEncoder
 from .pytorch_huggingface import model_pytorch
 
 OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__),
