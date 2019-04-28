@@ -1757,7 +1757,7 @@ class SpanTask(Task):
         example['input1'] = text_field
 
         for i in range(self.num_spans):
-            example["span" + str(i) + "s"] = ListField([self._make_span_field(t['span' + str(i)], text_field, 1)
+            example["span" + str(i + 1) + "s"] = ListField([self._make_span_field(t['span' + str(i + 1)], text_field, 1)
                                                   for t in record['targets']])
 
         labels = [utils.wrap_singleton_string(t['label'])
