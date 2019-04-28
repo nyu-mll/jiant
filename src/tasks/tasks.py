@@ -434,12 +434,12 @@ class SSTTask(SingleClassificationTask):
 @register_task('cola_npi_negdet', rel_path='CoLA/npi_negdet')
 @register_task('cola_npi_cond', rel_path='CoLA/npi_cond')
 @register_task('cola_npi_adv', rel_path='CoLA/npi_adv')
-class NPITask(SingleClassificationTask):
+class CoLANPITask(SingleClassificationTask):
     '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set'''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(NPITask, self).__init__(name, n_classes=2, **kw)
+        super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_mcc" % self.name
@@ -460,7 +460,7 @@ class NPITask(SingleClassificationTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading CoLA.")
+        log.info("\tFinished loading NPI task.")
 
     def get_metrics(self, reset=False):
         return {'mcc': self.scorer1.get_metric(reset),
