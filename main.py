@@ -101,7 +101,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
                            "No best checkpoint found to evaluate.")
 
             if args.transfer_paradigm == "finetune":
-                # Save model so we have a checkpoint to go back to after each task-specific finetune.
+                # Save model so we have a checkpoint to go back to after each
+                # task-specific finetune.
                 model_state = model.state_dict()
                 model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)

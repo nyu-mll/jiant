@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Helper script to convert edge probing JSON data to TensorFlow Examples in 
+# Helper script to convert edge probing JSON data to TensorFlow Examples in
 # TFRecord format.
 #
 # Usage:
@@ -23,15 +23,18 @@ import tensorflow as tf
 
 from typing import List, Dict
 
+
 def add_string_feature(ex: tf.train.Example, name: str, text: str):
     """Append a single string to the named feature."""
     if isinstance(text, str):
         text = text.encode('utf-8')
     ex.features.feature[name].bytes_list.value.append(text)
 
+
 def add_ints_feature(ex: tf.train.Example, name: str, ints: List[int]):
     """Append ints from a list to the named feature."""
     ex.features.feature[name].int64_list.value.extend(ints)
+
 
 def convert_to_example(record: Dict):
     """Convert an edge probing record to a TensorFlow example.
@@ -78,6 +81,7 @@ def convert_to_example(record: Dict):
     assert(num_span2s == num_span1s or num_span2s == 0)
     return ex
 
+
 def convert_file(fname):
     new_name = os.path.splitext(fname)[0] + ".tfrecord"
     log.info("Processing file: %s", fname)
@@ -87,6 +91,7 @@ def convert_file(fname):
         for record in tqdm(record_iter):
             example = convert_to_example(record)
             writer.write(example.SerializeToString())
+
 
 def main(args):
     for fname in args:

@@ -484,7 +484,7 @@ def get_tasks(args):
     target_task_names = parse_task_list_arg(args.target_tasks)
     # We don't want mnli-diagnostic in train_task_names
     pretrain_task_names = [name for name in pretrain_task_names
-                        if name not in {'mnli-diagnostic'}]
+                           if name not in {'mnli-diagnostic'}]
 
     task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None
@@ -626,12 +626,10 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
 def add_wsj_vocab(vocab, data_dir, namespace='tokens'):
     '''Add WSJ vocabulary for PTB parsing models.'''
     wsj_vocab_path = os.path.join(data_dir, 'WSJ/tokens.txt')
-    # To create the tokens.txt file: Run only WSJ LM baseline on jiant, and duplicate the vocab file generated.
+    # To create the tokens.txt file: Run only WSJ LM baseline on jiant, and
+    # duplicate the vocab file generated.
     assert os.path.exists(wsj_vocab_path), "WSJ vocab file doesn't exist."
     wsj_tokens = open(wsj_vocab_path)
     for line in wsj_tokens.readlines():
         vocab.add_token_to_namespace(line.strip(), namespace)
     log.info("\tAdded WSJ vocabulary from %s", wsj_tokens)
-
-
-

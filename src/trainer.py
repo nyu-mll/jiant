@@ -49,7 +49,7 @@ def build_trainer_params(args, task_names, phase='pretrain'):
             else:
                 params[attr] = args.target_train_data_fraction
         else:
-             params[attr] = getattr(args, attr)
+            params[attr] = getattr(args, attr)
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
     params['dec_val_scale'] = _get_task_attr('dec_val_scale')
@@ -58,13 +58,13 @@ def build_trainer_params(args, task_names, phase='pretrain'):
 
 
 def build_trainer(
-    args,
-    task_names,
-    model,
-    run_dir,
-    metric_should_decrease=True,
-    train_type="SamplingMultiTaskTrainer",
-    phase="pretrain"):
+        args,
+        task_names,
+        model,
+        run_dir,
+        metric_should_decrease=True,
+        train_type="SamplingMultiTaskTrainer",
+        phase="pretrain"):
     '''Build a trainer from params.
 
     Parameters
@@ -496,7 +496,8 @@ class SamplingMultiTaskTrainer:
             [task_infos[task.name]['n_tr_batches'] for task in tasks])
         log.info("Training examples per task: " +
                  str(dict(zip(task_names, task_n_train_examples))))
-        sample_weights = self.get_sampling_weights(weighting_method, len(tasks), task_n_train_examples)
+        sample_weights = self.get_sampling_weights(
+            weighting_method, len(tasks), task_n_train_examples)
 
         normalized_sample_weights = np.array(
             sample_weights) / sum(sample_weights)
@@ -506,7 +507,7 @@ class SamplingMultiTaskTrainer:
             np.array_str(
                 normalized_sample_weights,
                 precision=4))
-        
+
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(
@@ -514,7 +515,8 @@ class SamplingMultiTaskTrainer:
             weights=sample_weights,
             k=validation_interval)
 
-        scaling_weights = self.get_scaling_weights(scaling_method, len(tasks), task_names, task_n_train_examples)
+        scaling_weights = self.get_scaling_weights(
+            scaling_method, len(tasks), task_names, task_n_train_examples)
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training. Stopping metric: %s", stop_metric)
@@ -799,7 +801,7 @@ class SamplingMultiTaskTrainer:
             all_val_metrics["micro_avg"] += (1 - all_val_metrics[task.val_metric] /
                                              self._dec_val_scale) * n_examples
             all_val_metrics["macro_avg"] += (1 -
-                                         all_val_metrics[task.val_metric] /
+                                             all_val_metrics[task.val_metric] /
                                              self._dec_val_scale)
         else:
             # triggers for single-task cases and during MTL when task val metric increases
@@ -843,11 +845,11 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             n_examples_overall, task_infos, all_val_metrics = \
                 self._calculate_validation_performance(task,
-                                                 task_infos,
-                                                 tasks,
-                                                 batch_size,
-                                                 all_val_metrics,
-                                                 n_examples_overall)
+                                                       task_infos,
+                                                       tasks,
+                                                       batch_size,
+                                                       all_val_metrics,
+                                                       n_examples_overall)
 
         # Track per task patience
         should_save = periodic_save  # whether to save this epoch or not.
@@ -867,10 +869,10 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch, \
-                                                                                                    all_val_metrics, 
-                                                                                                    metric, task_name, metric_infos, \
-                                                                                                    metric_decreases, should_save, new_best_macro)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch,
+                                                                                                       all_val_metrics,
+                                                                                                       metric, task_name, metric_infos,
+                                                                                                       metric_decreases, should_save, new_best_macro)
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates

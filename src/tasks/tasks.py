@@ -82,7 +82,7 @@ def process_single_pair_task_split(
         d = {}
         d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if is_using_bert and is_pair:
-            inp = input1 + input2[1:] # throw away input2 leading [CLS]
+            inp = input1 + input2[1:]  # throw away input2 leading [CLS]
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         else:
@@ -253,6 +253,7 @@ class Task(object):
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
+
 class ClassificationTask(Task):
     ''' General classification task '''
     pass
@@ -334,6 +335,8 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+
+
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -359,10 +362,12 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
+
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -383,13 +388,14 @@ class SequenceGenerationTask(Task):
 
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them! 
+        # TODO(Yada): support them!
         return
 
 
 class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
+
 
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
@@ -541,6 +547,7 @@ class CoLATask(SingleClassificationTask):
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
         return
+
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
@@ -1030,7 +1037,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             if is_using_bert:
-                inp = input1 + input2[1:] # drop the leading [CLS] token
+                inp = input1 + input2[1:]  # drop the leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1214,7 +1221,7 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-        
+
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
@@ -1359,7 +1366,7 @@ class DisSentTask(PairClassificationTask):
         def _make_instance(input1, input2, labels):
             d = {}
             if is_using_bert:
-                inp = input1 + input2[1:] # drop leading [CLS] token
+                inp = input1 + input2[1:]  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1648,10 +1655,12 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
+
 @register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
+
     def __init__(self, path, max_seq_len, name="ccg", **kw):
         ''' There are 1363 supertags in CCGBank without introduced token. '''
         super().__init__(name, 1363, **kw)
@@ -1662,27 +1671,29 @@ class CCGTaggingTask(TaggingTask):
         self.max_seq_len = max_seq_len
         if self._tokenizer_name.startswith("bert-"):
             # the +1 is for the tokenization added token
-            self.num_tags = self.num_tags + 1 
+            self.num_tags = self.num_tags + 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a tagging task '''
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
-        mask =  [MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511) for mask in split[3]]
-        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
+                 for sent in split[2]]
+        mask = [MultiLabelField(mask, label_namespace="indices",
+                                skip_indexing=True, num_labels=511) for mask in split[3]]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m})
+                     for (x, t, m) in zip(inputs, targs, mask)]
         return instances
 
-
     def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train."+self._tokenizer_name), max_seq_len,
-                          s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev."+self._tokenizer_name), max_seq_len,
-                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.'+self._tokenizer_name), max_seq_len,
-                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train." + self._tokenizer_name), max_seq_len,
+                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev." + self._tokenizer_name), max_seq_len,
+                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.' + self._tokenizer_name), max_seq_len,
+                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
         self.max_seq_len = max_seq_len
 
-        # Get the mask for each sentence, where the mask is whether or not 
+        # Get the mask for each sentence, where the mask is whether or not
         # the token was split off by tokenization. We want to only count the first
         # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
         # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
@@ -1693,7 +1704,8 @@ class CCGTaggingTask(TaggingTask):
             for dataset in [tr_data, val_data]:
                 dataset_mask = []
                 for i in range(len(dataset[2])):
-                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
+                    mask = ma.getmask(ma.masked_where(
+                        np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
                     mask_indices = np.where(mask == True)[0].tolist()
                     dataset_mask.append(mask_indices)
                 masks.append(dataset_mask)

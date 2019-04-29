@@ -25,6 +25,7 @@ in the original CCG, then the alligned tags will be [5, 1363, 6, 1363], where 13
 a subpiece of a word that has been split due to tokenization.
 """
 
+
 def get_tags(text, current_tags, tokenizer_name, tag_dict):
     aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
     assert len(text) == len(current_tags)
@@ -44,6 +45,7 @@ def get_tags(text, current_tags, tokenizer_name, tag_dict):
     str_tags = [str(s) for s in res_tags]
     return " ".join(str_tags)
 
+
 def align_tags_BERT(dataset, tokenizer_name, tags_to_id):
     new_pandas = []
     for i in range(len(dataset)):
@@ -54,6 +56,7 @@ def align_tags_BERT(dataset, tokenizer_name, tags_to_id):
         new_pandas.append([row["text"], tags])
     result = pd.DataFrame(new_pandas, columns=["text", "tags"])
     return result
+
 
 def align_ccg(split, tokenizer_name, data_dir):
     """
@@ -74,10 +77,11 @@ def align_ccg(split, tokenizer_name, data_dir):
         None, saves tag alligned files to same directory as the original file.
     """
     tags_to_id = json.load(open(data_dir + "tags_to_id.json", "r"))
-    ccg_text = pd.read_csv(data_dir + "ccg." + split, names=[ "text", "tags"], delimiter="\t")
+    ccg_text = pd.read_csv(data_dir + "ccg." + split, names=["text", "tags"], delimiter="\t")
     result = align_tags_BERT(ccg_text, tokenizer_name, tags_to_id)
     result.to_csv(data_dir + "ccg." + split + "." + tokenizer_name, sep="\t")
-    
+
+
 def main(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument(
