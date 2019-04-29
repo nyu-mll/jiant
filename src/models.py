@@ -691,7 +691,7 @@ class MultiTaskModel(nn.Module):
             - task (tasks.Task): task for which batch is drawn
             - batch (Dict[str:Dict[str:Tensor]]): dictionary of (field, indexing) pairs,
                 where indexing is a dict of the index namespace and the actual indices.
-            - predict (Botol): passed to task specific forward(). If true, forward()
+            - predict (Bool): passed to task specific forward(). If true, forward()
                 should return predictions.
         Returns:
             - out: dictionary containing task outputs and loss if label was in batch
