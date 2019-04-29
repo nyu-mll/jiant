@@ -17,13 +17,9 @@
 # Example of custom paths for a local installation:
 # export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT
 # export JIANT_DATA_DIR=/Users/Bowman/Drive/JSALT/jiant/glue_data
-# export JIANT_DATA_DIR=/home/raghu1991_p_gmail_com/
-# export WORD_EMBS_FILE=~/glove.840B.300d.txt
 
-export JIANT_PROJECT_PREFIX=exp
-export JIANT_DATA_DIR=/nfs/jsalt/home/
-export NFS_PROJECT_PREFIX=/nfs/jsalt/exp/nkim
-export NFS_DATA_DIR=/nfs/jsalt/home/
+export JIANT_PROJECT_PREFIX=/nfs/jsalt/exp
+export JIANT_DATA_DIR=/nfs/jsalt/home
+export WORD_EMBS_FILE=/nfs/jsalt/glove.840B.300d.txt
 
-# echo "Loaded Sam's config."
-
+# echo "Loaded custom config."
