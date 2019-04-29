@@ -11,7 +11,7 @@ Usage:
     Run the below command from the root directory
     python -m scripts.ccg.align_tags_to_bert --data_dir {path/to/ccg/files} -t {tokenizer_name}
 
-The input file should be in csv form, with text and tags columns. 
+The input file should be in csv form, with text and tags columns.
 
 The output format has columns text and tag, which is a string of space delimited numbers.
 This preprocessing file will preprocess the CCG data using the tokenizer,
@@ -19,7 +19,7 @@ saving it alongside the original files.
 
 This file introduces a new tag to sub-words (if the tokenizer splits a word.
 Currently, this supports BERT tokenization.)
-For example, 
+For example,
 [Mr., Porter] -> [Mr, ., Por, ter]. Thus, if Mr. was given a tag of 5 and Porter 6
 in the original CCG, then the alligned tags will be [5, 1363, 6, 1363], where 1363 indicates
 a subpiece of a word that has been split due to tokenization.

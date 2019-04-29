@@ -277,7 +277,7 @@ class BoWSentEncoder(Model):
 
 
 class PRPNPhraseLayer(Model):
-    """ 
+    """
     Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
     PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
     """

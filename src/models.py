@@ -86,7 +86,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     elif args.sent_enc == "prpn":
         prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
                                     args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
-                                    args.res, embedder,  args.batch_size)
+                                    args.res, embedder, args.batch_size)
         # The 'prpn' acts as a phrase layer module for the larger SentenceEncoder module.
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        prpnlayer.prpnlayer, skip_embs=args.skip_embs,
@@ -984,7 +984,7 @@ class MultiTaskModel(nn.Module):
         '''
         This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
-                batch: a dict of inputs and target tags 
+                batch: a dict of inputs and target tags
                 task: TaggingTask
                 predict: (boolean) predict mode (not supported)
         Returns

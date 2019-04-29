@@ -701,7 +701,8 @@ class SamplingMultiTaskTrainer:
             log.info('%s, %d, %s', metric, best_epoch, all_metrics_str)
         return results
 
-    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, should_save, new_best_macro):
+    def _update_metric_history(self, epoch, all_val_metrics, metric, task_name,
+                               metric_infos, metric_decreases, should_save, new_best_macro):
         """
         This function updates metric history with the best validation score so far.
         Parameters
@@ -714,14 +715,14 @@ class SamplingMultiTaskTrainer:
         metric_decreases: bool, marker to show if we should increase or
         decrease validation metric.
         should_save: bool, for checkpointing
-        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded 
+        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded
 
         Returns
         ________
         metric_infos: dict storing information about the various metrics
         this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
         should_save: bool
-        new_best_macro: bool 
+        new_best_macro: bool
         """
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]['hist']
@@ -739,7 +740,8 @@ class SamplingMultiTaskTrainer:
             log.info("Out of patience. Stopped tracking %s", task_name)
         return metric_infos, this_epoch_metric, should_save, new_best_macro
 
-    def _calculate_validation_performance(self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
+    def _calculate_validation_performance(
+            self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall):
         """
         This function builds validation generator, evaluates on each task and produces validation metrics.
         Parameters

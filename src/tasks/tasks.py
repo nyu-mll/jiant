@@ -428,10 +428,12 @@ class SSTTask(SingleClassificationTask):
 @register_task('npi_cond_sc', rel_path='NPI/probing/conditionals/scope_with_licensor')
 @register_task('npi_cond_pr', rel_path='NPI/probing/conditionals/npi_present')
 @register_task('npi_negdet_li', rel_path='NPI/probing/determiner_negation_biclausal/licensor')
-@register_task('npi_negdet_sc', rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
+@register_task('npi_negdet_sc',
+               rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
 @register_task('npi_negdet_pr', rel_path='NPI/probing/determiner_negation_biclausal/npi_present')
 @register_task('npi_negsent_li', rel_path='NPI/probing/sentential_negation_biclausal/licensor')
-@register_task('npi_negsent_sc', rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
+@register_task('npi_negsent_sc',
+               rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
 @register_task('npi_negsent_pr', rel_path='NPI/probing/sentential_negation_biclausal/npi_present')
 @register_task('npi_only_li', rel_path='NPI/probing/only/licensor')
 @register_task('npi_only_sc', rel_path='NPI/probing/only/scope_with_licensor')
@@ -1686,7 +1688,7 @@ class CCGTaggingTask(TaggingTask):
 
     def load_data(self, path, max_seq_len):
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train." + self._tokenizer_name), max_seq_len,
-                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
+                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev." + self._tokenizer_name), max_seq_len,
                             s1_idx=1, s2_idx=None, label_idx=2, skip_rows=1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.' + self._tokenizer_name), max_seq_len,
