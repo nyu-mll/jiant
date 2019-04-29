@@ -16,5 +16,5 @@ message:  # Customize the comment made by the bot
                 # The messages can be written as they would over GitHub
     updated:  # Messages when new commits are added to the PR
         header: "Hello @{name}! Thanks for updating this PR. "
-        footer: "You can automatically repair most issues by running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
-    no_errors: "There are currently no PEP 8 issues detected in this Pull Request. Cheers! :beers: "
+        footer: "You can automatically repair most issues by commenting `@pep8speaks pep8ify` on GitHub or by locally running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
+    no_errors: "There are currently no PEP 8 issues detected in this Pull Request."
