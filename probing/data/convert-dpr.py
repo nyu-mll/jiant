@@ -105,8 +105,11 @@ def convert_dpr(text2examples, output_dir: str):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--src_dir', type=str, required=True,
-                        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh")
+    parser.add_argument(
+        '--src_dir',
+        type=str,
+        required=True,
+        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh")
     parser.add_argument('-o', dest='output_dir', type=str, required=True,
                         help="Output directory, e.g. /path/to/edges/data/dpr")
     args = parser.parse_args(args)

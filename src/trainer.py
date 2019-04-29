@@ -871,10 +871,8 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]['stopped']:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(epoch,
-                                                                                                       all_val_metrics,
-                                                                                                       metric, task_name, metric_infos,
-                                                                                                       metric_decreases, should_save, new_best_macro)
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
+                epoch, all_val_metrics, metric, task_name, metric_infos, metric_decreases, should_save, new_best_macro)
 
             # Get scheduler, using global scheduler if exists and task is macro
             # micro has no scheduler updates

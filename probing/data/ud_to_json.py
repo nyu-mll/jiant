@@ -55,12 +55,27 @@ def convert_ud_file(fd):
                 if this_head == 0:
                     this_head = this_id
                 deprel = parts[7]
-                spans.append('{"span1": [' + str(this_id - 1) + ', ' + str(this_id) + '], "span2": [' + str(
-                    this_head - 1) + ', ' + str(this_head) + '], "label": "' + deprel + '"}')
+                spans.append('{"span1": [' +
+                             str(this_id -
+                                 1) +
+                             ', ' +
+                             str(this_id) +
+                             '], "span2": [' +
+                             str(this_head -
+                                 1) +
+                             ', ' +
+                             str(this_head) +
+                             '], "label": "' +
+                             deprel +
+                             '"}')
 
             if example_good:
-                examples.append('{"text": "' + " ".join(words) +
-                                '", "targets": [' + ", ".join(spans) + '], "info": {"source": "UD_English-EWT"}}')
+                examples.append(
+                    '{"text": "' +
+                    " ".join(words) +
+                    '", "targets": [' +
+                    ", ".join(spans) +
+                    '], "info": {"source": "UD_English-EWT"}}')
 
             word_lines = []
 

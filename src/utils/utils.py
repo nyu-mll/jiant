@@ -391,6 +391,8 @@ def check_arg_name(args):
                  'eval_data_fraction': 'target_train_data_fraction'
                  }
     for old_name, new_name in name_dict.items():
-        assert_for_log(old_name not in args,
-                       "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
-                       (old_name, name_dict[old_name]))
+        assert_for_log(
+            old_name not in args,
+            "Error: Attempting to load old arg name [%s], please update to new name [%s]" %
+            (old_name,
+             name_dict[old_name]))

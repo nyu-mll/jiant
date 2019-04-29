@@ -128,8 +128,11 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        glue_style_tasks = (tasks_module.ALL_NLI_PROBING_TASKS
-                            + tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS)
+        glue_style_tasks = (
+            tasks_module.ALL_NLI_PROBING_TASKS +
+            tasks_module.ALL_GLUE_TASKS +
+            ['wmt'] +
+            tasks_module.ALL_COLA_NPI_TASKS)
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (

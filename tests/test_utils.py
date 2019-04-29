@@ -68,7 +68,13 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
         def label_fn(x):
             return label_map[x]
         output_dictionary = data_loaders.load_diagnostic_tsv(
-            "MosesTokenizer", 'temp_dataset_diagnostic.tsv', max_seq_len, s1_col="Premise", s2_col="Hypothesis", label_col="Label", label_fn=label_fn)
+            "MosesTokenizer",
+            'temp_dataset_diagnostic.tsv',
+            max_seq_len,
+            s1_col="Premise",
+            s2_col="Hypothesis",
+            label_col="Label",
+            label_fn=label_fn)
         assert len(
             output_dictionary["sents1"]) == 1, "The length of the set of first sentences != total rows in data file"
         assert len(output_dictionary["sents2"]

@@ -72,9 +72,18 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     rnn_params = Params({'input_size': d_emb, 'bidirectional': True,
                          'hidden_size': args.d_hid, 'num_layers': args.n_layers_enc})
     if args.sent_enc == "onlstm":
-        onlayer = ONLSTMPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.chunk_size,
-                                    args.onlstm_dropconnect, args.onlstm_dropouti, args.dropout,
-                                    args.onlstm_dropouth, embedder, args.batch_size)
+        onlayer = ONLSTMPhraseLayer(
+            vocab,
+            args.d_word,
+            args.d_hid,
+            args.n_layers_enc,
+            args.chunk_size,
+            args.onlstm_dropconnect,
+            args.onlstm_dropouti,
+            args.dropout,
+            args.onlstm_dropouth,
+            embedder,
+            args.batch_size)
         # The 'onlayer' acts as a phrase layer module for the larger SentenceEncoder module.
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        onlayer.onlayer, skip_embs=args.skip_embs,
@@ -84,9 +93,20 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = args.d_word
         log.info("Using ON-LSTM sentence encoder!")
     elif args.sent_enc == "prpn":
-        prpnlayer = PRPNPhraseLayer(vocab, args.d_word, args.d_hid, args.n_layers_enc, args.n_slots,
-                                    args.n_lookback, args.resolution, args.dropout, args.idropout, args.rdropout,
-                                    args.res, embedder, args.batch_size)
+        prpnlayer = PRPNPhraseLayer(
+            vocab,
+            args.d_word,
+            args.d_hid,
+            args.n_layers_enc,
+            args.n_slots,
+            args.n_lookback,
+            args.resolution,
+            args.dropout,
+            args.idropout,
+            args.rdropout,
+            args.res,
+            embedder,
+            args.batch_size)
         # The 'prpn' acts as a phrase layer module for the larger SentenceEncoder module.
         sent_encoder = SentenceEncoder(vocab, embedder, args.n_layers_highway,
                                        prpnlayer.prpnlayer, skip_embs=args.skip_embs,
