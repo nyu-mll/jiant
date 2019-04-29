@@ -1616,7 +1616,7 @@ class WiCTask(PairClassificationTask):
         '''Process the dataset located at data_file.'''
 
         def _load_inputs(data_file):
-            sents1, sents2 = [], []
+            sents1, sents2, idxs1, idxs2 = [], [], [], []
             with open(data_file, 'r') as data_fh:
                 for row in data_fh:
                     raw = row.split('\t')
@@ -1624,7 +1624,10 @@ class WiCTask(PairClassificationTask):
                     sent2 = process_sentence(self._tokenizer_name, raw[4], max_seq_len)
                     sents1.append(sent1)
                     sents2.append(sent2)
-                return [sents1, sents2]
+                    idx1, idx2 = [1 + int(i) for i in raw[2].split('-')]
+                    idxs1.append(idx1)
+                    idxs2.append(idx2)
+                return [sents1, sents2, idxs1, idxs2]
 
         targ_map = {'T': 1, 'F': 0}
         def _load_targets(targ_file):
@@ -1642,6 +1645,44 @@ class WiCTask(PairClassificationTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading WiC data.")
+
+    def process_split(self, split, indexers):
+        '''
+        Convert a dataset of sentences into padded sequences of indices. Shared
+        across several classes.
+
+        '''
+        # check here if using bert to avoid passing model info to tasks
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
+            d = {}
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            if is_using_bert:
+                inp = input1 + input2[1:] # throw away input2 leading [CLS]
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+                d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                if input2:
+                    d["input2"] = sentence_to_text_field(input2, indexers)
+                    d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+
+            d["idx1"] = NumericField(idxs1)
+            d["idx2"] = NumericField(idxs1)
+            d["idx"] = LabelField(idx, label_namespace="idxs",
+                                  skip_indexing=True)
+
+            return Instance(d)
+
+        if len(split) < 6:  # counting iterator for idx
+            assert len(split) == 5
+            split.append(itertools.count())
+
+        # Map over columns: input1, (input2), labels, idx
+        instances = map(_make_instance, *split)
+        return instances  # lazy iterator
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
