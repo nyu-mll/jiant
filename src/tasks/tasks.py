@@ -414,6 +414,7 @@ class SSTTask(SingleClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading SST data.")
 
+
 @register_task('npi_adv_li', rel_path='NPI/probing/adverbs/licensor')
 @register_task('npi_adv_sc', rel_path='NPI/probing/adverbs/scope_with_licensor')
 @register_task('npi_adv_pr', rel_path='NPI/probing/adverbs/npi_present')
@@ -461,7 +462,8 @@ class SSTTask(SingleClassificationTask):
 @register_task('hd_cola_npi_qnt', rel_path='NPI/combs/minus_quantifiers')
 @register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_npi_superlatives')
 class CoLANPITask(SingleClassificationTask):
-    '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set'''
+    '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set
+       Note: Used for an NYU seminar, data not yet public'''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
