@@ -93,8 +93,6 @@ spec:
     - mountPath: /nfs/jsalt
       name: nfs-jsalt
     env:
-    - name: NFS_PROJECT_PREFIX
-      value: ${PROJECT_DIR}
     - name: JIANT_PROJECT_PREFIX
       value: ${PROJECT_DIR}
     - name: NOTIFY_EMAIL
