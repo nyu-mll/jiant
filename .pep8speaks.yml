@@ -12,7 +12,7 @@ message:  # Customize the comment made by the bot
     opened:  # Messages when a new PR is submitted
         header: "Hello @{name}! Thanks for opening this PR. "
                 # The keyword {name} is converted into the author's username
-        footer: "You can automatically repair most issues by running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
+        footer: "You can automatically repair most issues by commenting `@pep8speaks pep8ify` on GitHub or by locally running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
                 # The messages can be written as they would over GitHub
     updated:  # Messages when new commits are added to the PR
         header: "Hello @{name}! Thanks for updating this PR. "
