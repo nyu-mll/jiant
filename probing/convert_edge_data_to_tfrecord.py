@@ -47,15 +47,15 @@ def convert_to_example(record: Dict):
         - info: single string, serialized info JSON
         - targets.info: list of strings, serialized info JSON for each target
 
-    Due to the limitations of tf.Example, spans are packed into a single flat 
-    list of length 2*num_targets containing alternating endpoints: [s0, e0, s1, 
-    e1, ..., sn, en]. You can get individual spans back with tf.reshape(spans, 
+    Due to the limitations of tf.Example, spans are packed into a single flat
+    list of length 2*num_targets containing alternating endpoints: [s0, e0, s1,
+    e1, ..., sn, en]. You can get individual spans back with tf.reshape(spans,
     [-1, 2]).
 
     If examples have multiple labels per target (such as for SPR2), these are
     joined into a single string on spaces:
         label: ["foo", "bar", "baz"] -> "foo bar baz"
-    You can use tf.string_split and tf.sparse.to_dense to convert these into an 
+    You can use tf.string_split and tf.sparse.to_dense to convert these into an
     array of targets.
 
     Args:
