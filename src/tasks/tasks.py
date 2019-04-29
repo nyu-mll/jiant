@@ -1609,6 +1609,7 @@ class MultipleChoiceTask(Task):
 
 
 @register_task('copa', rel_path='COPA/')
+@register_task('copa-full', rel_path='COPA_full/')
 class COPATask(MultipleChoiceTask):
     ''' Task class for Choice of Plausible Alternatives Task.  '''
 
@@ -1629,24 +1630,26 @@ class COPATask(MultipleChoiceTask):
         ''' Process the dataset located at path.  '''
 
         def _load_split(data_file):
-            questions, choicess, targs = [], [], []
-            data = ET.parse(data_file).getroot()
+            contexts, questions, choicess, targs = [], [], [], []
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
-                question = example.find("p").text
-                choice1 = example.find("a1").text
-                choice2 = example.find("a2").text
+                context = example["premise"]
+                choice1 = example["choice1"]
+                choice2 = example["choice2"]
+                question = example["question"]
                 choices = [process_sentence(self._tokenizer_name, choice, max_seq_len) for choice in \
                             [choice1, choice2]]
-                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
-                questions.append(process_sentence(self._tokenizer_name, question, max_seq_len))
+                targ = example["label"] if "label" in example else 0
+                contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
                 choicess.append(choices)
+                questions.append(question)
                 targs.append(targ)
-            return [questions, choicess, targs]
+            return [contexts, choicess, questions, targs]
 
-        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
-        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
-        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
-        log.info("\tFinished loading MRPC data.")
+        self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        log.info("\tFinished loading COPA data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AlleNNLP Instances. '''
@@ -1677,6 +1680,7 @@ class COPATask(MultipleChoiceTask):
         return {"accuracy": acc}
 
 @register_task('copa-effect', rel_path='COPA/')
+@register_task('copa-effect-full', rel_path='COPA_full/')
 class COPAEffectTask(COPATask):
     ''' Task class for Choice of Plausible Alternatives Task.  '''
 
@@ -1698,25 +1702,25 @@ class COPAEffectTask(COPATask):
 
         def _load_split(data_file):
             contexts, questions, choicess, targs = [], [], [], []
-            data = ET.parse(data_file).getroot()
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
-                context = example.find("p").text
-                choice1 = example.find("a1").text
-                choice2 = example.find("a2").text
-                question = example.attrib['asks-for']
+                context = example["premise"]
+                choice1 = example["choice1"]
+                choice2 = example["choice2"]
+                question = example["question"]
                 choices = [process_sentence(self._tokenizer_name, choice, max_seq_len) for choice in \
                             [choice1, choice2]]
-                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
+                targ = example["label"] if "label" in example else 0
                 contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
                 choicess.append(choices)
                 questions.append(question)
                 targs.append(targ)
             return [contexts, choicess, questions, targs]
 
-        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
-        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
-        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
-        log.info("\tFinished loading MRPC data.")
+        self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        log.info("\tFinished loading COPA (with effect info) data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AlleNNLP Instances. '''
@@ -1727,11 +1731,15 @@ class COPAEffectTask(COPATask):
             d["question_str"] = MetadataField(" ".join(context[1:-1]))
             if not is_using_bert:
                 d["question"] = sentence_to_text_field(context, indexers)
+            if question == "effect":
+                conj = "so"
+            else: # question == "cause"
+                conj = "because"
             for choice_idx, choice in enumerate(choices):
-                #choice[1] = choice[1].lower()
-                inp = context + choice[1:] if is_using_bert else choice
+                inp = context[:-1] + [conj] + choice[1:] if is_using_bert else choice
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
             return Instance(d)
@@ -1748,6 +1756,7 @@ class COPAEffectTask(COPATask):
         return {'accuracy': acc}
 
 @register_task('copa-question', rel_path='COPA/')
+@register_task('copa-question-full', rel_path='COPA_full/')
 class COPAQuestionTask(COPATask):
     ''' Task class for Choice of Plausible Alternatives Task.  '''
 
@@ -1769,26 +1778,26 @@ class COPAQuestionTask(COPATask):
 
         def _load_split(data_file):
             contexts, questions, choicess, targs = [], [], [], []
-            data = ET.parse(data_file).getroot()
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8")]
             for example in data:
-                context = example.find("p").text
-                choice1 = example.find("a1").text
-                choice2 = example.find("a2").text
-                question = example.attrib['asks-for']
+                context = example["premise"]
+                choice1 = example["choice1"]
+                choice2 = example["choice2"]
+                question = example["question"]
                 question = "What is the cause ?" if question == "cause" else "What is the effect ?"
                 choices = [process_sentence(self._tokenizer_name, question + choice, max_seq_len) for choice in \
                             [choice1, choice2]]
-                targ = 1 if example.attrib['most-plausible-alternative'] == "2" else 0
+                targ = example["label"] if "label" in example else 0
                 contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
                 choicess.append(choices)
                 questions.append(process_sentence(self._tokenizer_name, question, max_seq_len))
                 targs.append(targ)
             return [contexts, choicess, questions, targs]
 
-        self.train_data_text = _load_split(os.path.join(path, "copa-train.xml"))
-        self.val_data_text = _load_split(os.path.join(path, "copa-dev.xml"))
-        self.test_data_text = _load_split(os.path.join(path, "copa-test.xml"))
-        log.info("\tFinished loading MRPC data.")
+        self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        log.info("\tFinished loading COPA (as QA) data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AlleNNLP Instances. '''
@@ -1799,12 +1808,9 @@ class COPAQuestionTask(COPATask):
             d["question_str"] = MetadataField(" ".join(context[1:-1]))
             if not is_using_bert:
                 d["question"] = sentence_to_text_field(context, indexers)
-            if question == "effect":
-                conj = "so"
-            else: # question == "cause"
-                conj = "because"
             for choice_idx, choice in enumerate(choices):
-                inp = context[:-1] + [conj] + choice[1:] if is_using_bert else choice
+                #choice[1] = choice[1].lower()
+                inp = context + choice[1:] if is_using_bert else choice
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
