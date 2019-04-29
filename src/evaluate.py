@@ -135,15 +135,16 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
                 strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS)
             _write_glue_preds(task.name, preds_df, pred_dir, split_name,
                               strict_glue_format=strict)
-            log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
-            log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
+        elif task.name == "copa":
+            _write_copa_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
             continue
+        log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
     log.info("Wrote all preds for split '%s' to %s", split_name, pred_dir)
     return
 
@@ -331,6 +332,13 @@ def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
             write_type=int)
 
     log.info("Wrote predictions for task: %s", task_name)
+
+
+def _write_copa_preds(task_name: str, preds_df: pd.DataFrame,
+                      pred_dir: str, split_name: str,
+                      strict_glue_format: bool = False):
+    """ Write COPA predictions to JSONL """
+    raise NotImplementedError
 
 
 def write_results(results, results_file, run_name):

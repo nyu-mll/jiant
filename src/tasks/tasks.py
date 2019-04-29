@@ -1648,7 +1648,7 @@ class COPATask(MultipleChoiceTask):
 
         self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test_ANS.jsonl"))
         log.info("\tFinished loading COPA data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -1719,7 +1719,7 @@ class COPAEffectTask(COPATask):
 
         self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test_ANS.jsonl"))
         log.info("\tFinished loading COPA (with effect info) data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -1757,6 +1757,7 @@ class COPAEffectTask(COPATask):
 
 @register_task('copa-question', rel_path='COPA/')
 @register_task('copa-question-full', rel_path='COPA_full/')
+@register_task('copa-question-even', rel_path='COPA_even/')
 class COPAQuestionTask(COPATask):
     ''' Task class for Choice of Plausible Alternatives Task.  '''
 
@@ -1784,8 +1785,8 @@ class COPAQuestionTask(COPATask):
                 choice1 = example["choice1"]
                 choice2 = example["choice2"]
                 question = example["question"]
-                question = "What is the cause ?" if question == "cause" else "What is the effect ?"
-                choices = [process_sentence(self._tokenizer_name, question + choice, max_seq_len) for choice in \
+                question = "What was the cause of this ?" if question == "cause" else "What happened as a result ?"
+                choices = [process_sentence(self._tokenizer_name, choice, max_seq_len) for choice in \
                             [choice1, choice2]]
                 targ = example["label"] if "label" in example else 0
                 contexts.append(process_sentence(self._tokenizer_name, context, max_seq_len))
@@ -1796,7 +1797,7 @@ class COPAQuestionTask(COPATask):
 
         self.train_data_text = _load_split(os.path.join(path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(path, "test.jsonl"))
+        self.test_data_text = _load_split(os.path.join(path, "test_ANS.jsonl"))
         log.info("\tFinished loading COPA (as QA) data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -1809,8 +1810,7 @@ class COPAQuestionTask(COPATask):
             if not is_using_bert:
                 d["question"] = sentence_to_text_field(context, indexers)
             for choice_idx, choice in enumerate(choices):
-                #choice[1] = choice[1].lower()
-                inp = context + choice[1:] if is_using_bert else choice
+                inp = context + question[1:] + choice[1:] if is_using_bert else choice
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)

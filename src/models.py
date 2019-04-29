@@ -626,7 +626,7 @@ def build_multiple_choice_module(task, d_sent, use_bert, params):
     pool_type = "first" if use_bert else "max"
     pooler = Pooler(project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type)
     d_out = d_sent if use_bert else params["d_proj"]
-    choice2scalar = Classifier(d_out, n_classes=1, cls_type="log_reg")
+    choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
     return SingleClassifier(pooler, choice2scalar)
 
 def build_decoder(task, d_inp, vocab, embedder, args):
