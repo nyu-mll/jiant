@@ -29,7 +29,7 @@ from .utils import config
 
 from .preprocess import parse_task_list_arg, get_tasks
 
-from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
+from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, \
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
@@ -38,7 +38,7 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
-from .tasks.minimal_pairs import CoLAMinimalPairTask
+from .tasks.acceptability import CoLAMinimalPairTask, CoLAAnalysisTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \

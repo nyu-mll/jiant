@@ -118,3 +118,90 @@ class CoLAMinimalPairTask(Task):
                 self.tag_list,
                 reset))
         return collected_metrics
+
+
+@register_task('cola-analysis', rel_path='CoLA/')
+class CoLAAnalysisTask(SingleClassificationTask):
+    """
+    cola-analysis dataset only tagged the dev set of cola
+    when using this dataset, the model need to have a cola classifier available
+    """
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        # Load data from tsv
+        tag_vocab = vocabulary.Vocabulary(counter=None)
+        val_data = load_tsv(tokenizer_name=self._tokenizer_name,
+                            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
+                                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
+                                'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
+                                'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
+        self.train_data_text = val_data
+        self.val_data_text = val_data
+        self.test_data_text = val_data
+        # Create score for each tag from tag-index dict
+        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(
+                self.tag_list),
+            scorer_type=Correlation,
+            corr_type="matthews")
+        self.tag_scorers2 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy)
+
+        log.info("\tFinished loading CoLA sperate domain.")
+
+    def process_split(self, split, indexers):
+        def _make_instance(input1, input2, labels, tagids):
+            ''' from multiple types in one column create multiple fields '''
+            d = {}
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["labels"] = LabelField(labels, label_namespace="labels",
+                                     skip_indexing=True)
+            d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
+                                           skip_indexing=True, num_labels=len(self.tag_list))
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances  # lazy iterator
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
+        return
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+
+        collected_metrics = {
+            'mcc': self.scorer1.get_metric(reset),
+            'accuracy': self.scorer2.get_metric(reset)}
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers1,
+                'mcc',
+                self.tag_list,
+                reset))
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers2,
+                'accuracy',
+                self.tag_list,
+                reset))
+        return collected_metrics
