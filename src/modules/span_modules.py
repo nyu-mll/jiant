@@ -65,14 +65,12 @@ class SpanClassifierModule(nn.Module):
 
         for i in range(num_spans):
             # this effectively acts as a linear layer (if cnn_context = 0)
-            proj = self._make_cnn_layer(d_inp).cuda() \
-                if torch.cuda.is_available() else self._make_cnn_layer(d_inp)
+            proj = self._make_cnn_layer(d_inp).cuda()
             self.projs.append(proj)
         self.span_extractors = []
 
         for i in range(num_spans):
-            span_extractor = self._make_span_extractor().cuda() \
-                 if torch.cuda.is_available() else self._make_span_extractor()
+            span_extractor = self._make_span_extractor().cuda()
             self.span_extractors.append(span_extractor)
 
         # Classifier gets concatenated projections of spans.
@@ -123,8 +121,7 @@ class SpanClassifierModule(nn.Module):
             se_proj = self.projs[i](sent_embs_t).transpose(2, 1).contiguous()
             se_projs.append(se_proj)
 
-        span_embs = torch.Tensor([]).cuda() \
-            if torch.cuda.is_available() else torch.Tensor([])
+        span_embs = torch.Tensor([]).cuda()
         out["n_exs"] = batch_size
         _kw = dict(sequence_mask=sent_mask.long())
         for i in range(self.num_spans):
