@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Run jiant with demo.conf in a docker container. 
-# Run this from the base jiant/ directory.
+# Run jiant with demo.conf in a docker container.
 #
 # The container expects a number of paths relative to /nfs/jsalt;
 # for now, we'll fake these by setting up a temp directory.
@@ -41,7 +40,6 @@ COMMAND+=( -o "exp_name=jiant-demo" )
 # Run demo.conf in the docker container.
 sudo docker run --runtime=nvidia --rm -v "$TEMP_DIR:/nfs/jsalt" \
   -v "$JIANT_PATH:/share/jiant" \
-  -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp" \
   -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp" \
   -e "PYTORCH_PRETRAINED_BERT_CACHE=/nfs/jsalt/share/bert_cache" \
   -e "ELMO_SRC_DIR=" \
