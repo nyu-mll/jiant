@@ -416,6 +416,93 @@ class SSTTask(SingleClassificationTask):
         log.info("\tFinished loading SST data.")
 
 
+@register_task('npi_adv_li', rel_path='NPI/probing/adverbs/licensor')
+@register_task('npi_adv_sc', rel_path='NPI/probing/adverbs/scope_with_licensor')
+@register_task('npi_adv_pr', rel_path='NPI/probing/adverbs/npi_present')
+@register_task('npi_cond_li', rel_path='NPI/probing/conditionals/licensor')
+@register_task('npi_cond_sc', rel_path='NPI/probing/conditionals/scope_with_licensor')
+@register_task('npi_cond_pr', rel_path='NPI/probing/conditionals/npi_present')
+@register_task('npi_negdet_li', rel_path='NPI/probing/determiner_negation_biclausal/licensor')
+@register_task('npi_negdet_sc', rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
+@register_task('npi_negdet_pr', rel_path='NPI/probing/determiner_negation_biclausal/npi_present')
+@register_task('npi_negsent_li', rel_path='NPI/probing/sentential_negation_biclausal/licensor')
+@register_task('npi_negsent_sc', rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
+@register_task('npi_negsent_pr', rel_path='NPI/probing/sentential_negation_biclausal/npi_present')
+@register_task('npi_only_li', rel_path='NPI/probing/only/licensor')
+@register_task('npi_only_sc', rel_path='NPI/probing/only/scope_with_licensor')
+@register_task('npi_only_pr', rel_path='NPI/probing/only/npi_present')
+@register_task('npi_qnt_li', rel_path='NPI/probing/quantifiers/licensor')
+@register_task('npi_qnt_sc', rel_path='NPI/probing/quantifiers/scope_with_licensor')
+@register_task('npi_qnt_pr', rel_path='NPI/probing/quantifiers/npi_present')
+@register_task('npi_ques_li', rel_path='NPI/probing/questions/licensor')
+@register_task('npi_ques_sc', rel_path='NPI/probing/questions/scope_with_licensor')
+@register_task('npi_ques_pr', rel_path='NPI/probing/questions/npi_present')
+@register_task('npi_quessmp_li', rel_path='NPI/probing/simplequestions/licensor')
+@register_task('npi_quessmp_sc', rel_path='NPI/probing/simplequestions/scope_with_licensor')
+@register_task('npi_quessmp_pr', rel_path='NPI/probing/simplequestions/npi_present')
+@register_task('npi_sup_li', rel_path='NPI/probing/superlative/licensor')
+@register_task('npi_sup_sc', rel_path='NPI/probing/superlative/scope_with_licensor')
+@register_task('npi_sup_pr', rel_path='NPI/probing/superlative/npi_present')
+@register_task('cola_npi_adv', rel_path='NPI/splits/adverbs')
+@register_task('cola_npi_cond', rel_path='NPI/splits/conditionals')
+@register_task('cola_npi_negdet', rel_path='NPI/splits/determiner_negation_biclausal')
+@register_task('cola_npi_negsent', rel_path='NPI/splits/sentential_negation_biclausal')
+@register_task('cola_npi_only', rel_path='NPI/splits/only')
+@register_task('cola_npi_ques', rel_path='NPI/splits/questions')
+@register_task('cola_npi_quessmp', rel_path='NPI/splits/simplequestions')
+@register_task('cola_npi_qnt', rel_path='NPI/splits/quantifiers')
+@register_task('cola_npi_sup', rel_path='NPI/splits/npi_superlatives')
+@register_task('all_cola_npi', rel_path='NPI/combs/all_env')
+@register_task('hd_cola_npi_adv', rel_path='NPI/combs/minus_adverbs')
+@register_task('hd_cola_npi_cond', rel_path='NPI/combs/minus_conditionals')
+@register_task('hd_cola_npi_negdet', rel_path='NPI/combs/minus_determiner_negation_biclausal')
+@register_task('hd_cola_npi_negsent', rel_path='NPI/combs/minus_sentential_negation_biclausal')
+@register_task('hd_cola_npi_only', rel_path='NPI/combs/minus_only')
+@register_task('hd_cola_npi_ques', rel_path='NPI/combs/minus_questions')
+@register_task('hd_cola_npi_quessmp', rel_path='NPI/combs/minus_simplequestions')
+@register_task('hd_cola_npi_qnt', rel_path='NPI/combs/minus_quantifiers')
+@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_npi_superlatives')
+class CoLANPITask(SingleClassificationTask):
+    '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set
+       Note: Used for an NYU seminar, data not yet public'''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        #self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
+
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
+                            s1_idx=3, s2_idx=None, label_idx=1)
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_full.tsv'), max_seq_len,
+                           s1_idx=3, s2_idx=None, label_idx=1)
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading NPI Data.")
+
+    def get_metrics(self, reset=False):
+        return {'mcc': self.scorer1.get_metric(reset),
+                'accuracy': self.scorer2.get_metric(reset)}
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        return
+
+
 @register_task('cola', rel_path='CoLA/')
 class CoLATask(SingleClassificationTask):
     '''Class for Warstdadt acceptability task'''
@@ -1559,45 +1646,126 @@ class TaggingTask(Task):
         acc = self.scorer1.get_metric(reset)
         return {'accuracy': acc}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process a tagging task '''
-        inputs = [TextField(list(map(Token, sent)),
-                            token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
-                 for sent in split[2]]
-        # Might be better as LabelField? I don't know what these things mean
-        instances = [Instance({"inputs": x, "targs": t})
-                     for (x, t) in zip(inputs, targs)]
-        return instances
-
     def get_all_labels(self) -> List[str]:
         return self.all_labels
-
 
 @register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' There are 1363 supertags in CCGBank. '''
-        super().__init__(name, num_tags=1363, **kw)
+    def __init__(self, path, max_seq_len, name="ccg", **kw):
+        ''' There are 1363 supertags in CCGBank without introduced token. '''
+        super().__init__(name, 1363, **kw)
+        self.INTRODUCED_TOKEN = '1363'
+        self.bert_tokenization = self._tokenizer_name.startswith("bert-")
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.max_seq_len = max_seq_len
+        if self._tokenizer_name.startswith("bert-"):
+            # the +1 is for the tokenization added token
+            self.num_tags = self.num_tags + 1
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        ''' Process a tagging task '''
+        inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
+        mask =  [MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511) for mask in split[3]]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
+        return instances
+
+
+    def load_data(self, path, max_seq_len):
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train."+self._tokenizer_name), max_seq_len,
+                          s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev."+self._tokenizer_name), max_seq_len,
+                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.'+self._tokenizer_name), max_seq_len,
+                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
+        self.max_seq_len = max_seq_len
+
+        # Get the mask for each sentence, where the mask is whether or not
+        # the token was split off by tokenization. We want to only count the first
+        # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
+        # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
+        # (https://arxiv.org/abs/1810.04805)
+        if self.bert_tokenization:
+            import numpy.ma as ma
+            masks = []
+            for dataset in [tr_data, val_data]:
+                dataset_mask = []
+                for i in range(len(dataset[2])):
+                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
+                    mask_indices = np.where(mask == True)[0].tolist()
+                    dataset_mask.append(mask_indices)
+                masks.append(dataset_mask)
+
+        # mock labels for test data (tagging)
+        te_targs = [['0'] * len(x) for x in te_data[0]]
+        te_mask = [list(range(len(x))) for x in te_data[0]]
+        self.train_data_text = list(tr_data) + [masks[0]]
+        self.val_data_text = list(val_data) + [masks[1]]
+        self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
+        log.info('\tFinished loading CCGTagging data.')
+
+@register_task('commitbank', rel_path='CommitmentBank/')
+class CommitmentTask(PairClassificationTask):
+    ''' NLI-formatted task detecting speaker commitment.
+    Data and more info at github.com/mcdm/CommitmentBank/
+    Paper forthcoming. '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' We use three F1 trackers, one for each class to compute multi-class F1 '''
+        super().__init__(name, n_classes=3, **kw)
+        self.scorer2 = F1Measure(0)
+        self.scorer3 = F1Measure(1)
+        self.scorer4 = F1Measure(2)
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3, self.scorer4]
+        self.val_metric = "%s_f1" % name
+
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                         self.train_data_text[1] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at each data file.
            The target needs to be split into tokens because
            it is a sequence (one tag per input token). '''
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.train"), max_seq_len,
-                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg_1363.dev"), max_seq_len,
-                            s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg_1363.test'), max_seq_len,
-                           s1_idx=0, s2_idx=None, label_idx=1, label_fn=lambda t: t.split(' '))
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            sent1s, sent2s, targs, idxs = [], [], [], []
+            for example in data:
+                sent1s.append(process_sentence(self._tokenizer_name, example["premise"], max_seq_len))
+                sent2s.append(process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len))
+                trg = targ_map[example["label"]] if "label" in example else 0
+                targs.append(trg)
+                targs.append(trg)
+                idxs.append(example["idx"])
+            return [sent1s, sent2s, targs, idxs]
+
+        tr_data = _load_data(os.path.join(path, "train.jsonl"))
+        val_data = _load_data(os.path.join(path, "val.jsonl"))
+        te_data = _load_data(os.path.join(path, "test_ANS.jsonl"))
+
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
+        log.info('\tFinished loading CommitmentBank data.')
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task.
+            - scorer1 tracks accuracy
+            - scorers{2,3,4} compute class-specific F1,
+                and we macro-average to get multi-class F1'''
+        acc = self.scorer1.get_metric(reset)
+        pcs1, rcl1, f11 = self.scorer2.get_metric(reset)
+        pcs2, rcl2, f12 = self.scorer3.get_metric(reset)
+        pcs3, rcl3, f13 = self.scorer4.get_metric(reset)
+        pcs = (pcs1 + pcs2 + pcs3) / 3
+        rcl = (rcl1 + rcl2 + rcl3) / 3
+        f1 = (f11 + f12 + f13) / 3
+        return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
+
         log.info('\tFinished loading CCGTagging data.')
 
 @register_task('wic', rel_path='WiC/')
@@ -1688,5 +1856,4 @@ class WiCTask(PairClassificationTask):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
-
 
