@@ -1621,10 +1621,12 @@ class CCGTaggingTask(TaggingTask):
 
 @register_task('commitbank', rel_path='CommitmentBank/')
 class CommitmentTask(PairClassificationTask):
-    ''' NLI-formatted task detecting speaker commitment. '''
+    ''' NLI-formatted task detecting speaker commitment.
+    Data and more info at github.com/mcdm/CommitmentBank/
+    Paper forthcoming. '''
 
     def __init__(self, path, max_seq_len, name, **kw):
-        ''' There are 1363 supertags in CCGBank. '''
+        ''' We use three F1 trackers, one for each class to compute multi-class F1 '''
         super().__init__(name, n_classes=3, **kw)
         self.scorer2 = F1Measure(0)
         self.scorer3 = F1Measure(1)
@@ -1663,7 +1665,10 @@ class CommitmentTask(PairClassificationTask):
         log.info('\tFinished loading CommitmentBank data.')
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        '''Get metrics specific to the task.
+            - scorer1 tracks accuracy
+            - scorers{2,3,4} compute class-specific F1,
+                and we macro-average to get multi-class F1'''
         acc = self.scorer1.get_metric(reset)
         pcs1, rcl1, f11 = self.scorer2.get_metric(reset)
         pcs2, rcl2, f12 = self.scorer3.get_metric(reset)

@@ -142,7 +142,8 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             _write_edge_preds(task, preds_df, pred_dir, split_name)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
         elif isinstance(task, CommitmentTask):
-            _write_commitment_preds(task, preds_df, pred_dir, split_name)
+            _write_commitment_preds(task, preds_df, pred_dir, split_name,
+                                    strict_glue_format=strict_glue_format)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -163,10 +164,14 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
+SUPERGLUE_NAME_MAP = {"commitbank": 'CB'
+                     }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
         file = GLUE_NAME_MAP[task_name] + ".tsv"
+    elif strict_glue_format and task_name in SUPERGLUE_NAME_MAP:
+        file = SUPERGLUE_NAME_MAP[task_name] + ".jsonl"
     else:
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
@@ -207,13 +212,18 @@ def _write_edge_preds(task: EdgeProbingTask,
             fd.write("\n")
 
 def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
-                            pred_dir: str, split_name: str):
+                            pred_dir: str, split_name: str,
+                            strict_glue_format: bool = False):
     ''' Write predictions for CommitmentBank task.  '''
-    preds_file = os.path.join(pred_dir, f"{task.name}_{split_name}.csv")
-    # Each row of 'preds' is a NumPy object, need to convert to list for
-    # serialization.
-    preds_df = preds_df.copy()
-    preds_df['preds'].to_csv(preds_file, header=False, index=True)
+    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
