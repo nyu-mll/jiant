@@ -152,8 +152,8 @@ class MultiRCTask(Task):
         f1s = []
         for logits_and_labels in self._score_tracker.values():
             logits, labels = list(zip(*logits_and_labels))
-            logits = torch.stack(logits)
-            labels = torch.stack(labels)
+            logits = torch.cat(logits, dim=0)
+            labels = torch.cat(labels, dim=0)
             self.scorer3(logits, labels)
             _, _, ex_f1 = self.scorer3.get_metric(reset=True)
             f1s.append(ex_f1)
