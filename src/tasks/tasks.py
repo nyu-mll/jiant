@@ -1620,10 +1620,6 @@ class CCGTaggingTask(TaggingTask):
         log.info('\tFinished loading CCGTagging data.')
 
 @register_task('commitbank', rel_path='CommitmentBank/')
-@register_task('commitbank-balanced', rel_path='CommitmentBank_balanced/')
-# all has all the data as the test set, meant for evaluating w/ MNLI
-@register_task('commitbank-balanced-all', rel_path='CommitmentBank_balanced_all/')
-@register_task('commitbank-nice', rel_path='CommitmentBank_nice/')
 class CommitmentTask(PairClassificationTask):
     ''' NLI-formatted task detecting speaker commitment. '''
 
@@ -1645,19 +1641,26 @@ class CommitmentTask(PairClassificationTask):
            The target needs to be split into tokens because
            it is a sequence (one tag per input token). '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.csv"), max_seq_len,
-                           s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "val.csv"), max_seq_len,
-                           s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.csv'), max_seq_len,
-                           s1_idx=2, s2_idx=3, label_idx=1, label_fn=targ_map.__getitem__,
-                           skip_rows=1, delimiter=',', quote_level=csv.QUOTE_ALL)
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            sent1s, sent2s, targs, idxs = [], [], [], []
+            for example in data:
+                sent1s.append(process_sentence(self._tokenizer_name, example["premise"], max_seq_len))
+                sent2s.append(process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len))
+                trg = targ_map[example["label"]] if "label" in example else 0
+                targs.append(trg)
+                targs.append(trg)
+                idxs.append(example["idx"])
+            return [sent1s, sent2s, targs, idxs]
+
+        tr_data = _load_data(os.path.join(path, "train.jsonl"))
+        val_data = _load_data(os.path.join(path, "val.jsonl"))
+        te_data = _load_data(os.path.join(path, "test_ANS.jsonl"))
+
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info('\tFinished loading CCGTagging data.')
+        log.info('\tFinished loading CommitmentBank data.')
 
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
