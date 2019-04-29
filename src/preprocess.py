@@ -31,7 +31,7 @@ from .utils import serialize
 from .utils import utils
 
 from .tasks import REGISTRY as TASKS_REGISTRY
-from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
+from .tasks import ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS, ALL_COLA_NPI_TASKS
 from .tasks.mt import MTTask
 
 

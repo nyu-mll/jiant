@@ -39,7 +39,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     '''Evaluate on a dataset'''
     FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
     # Enforce that these tasks have the 'idx' field set.
-    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt']
+    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS
     model.eval()
     iterator = BasicIterator(batch_size)
 
@@ -128,7 +128,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
         glue_style_tasks = (tasks_module.ALL_NLI_PROBING_TASKS
-                            + tasks_module.ALL_GLUE_TASKS + ['wmt'])
+                            + tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS)
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (
