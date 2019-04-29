@@ -33,7 +33,7 @@ from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
 from ..utils.tokenizers import get_tokenizer
 from ..scorers import gap_scorer
 
