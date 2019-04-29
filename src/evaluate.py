@@ -11,6 +11,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.edge_probing import EdgeProbingTask
+from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
 
 from typing import List, Sequence, Iterable, Tuple, Dict
@@ -138,8 +139,8 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
-        elif task.name == "copa":
-            _write_copa_preds(task, preds_df, pred_dir, split_name)
+        #elif isinstance(task, COPATask):
+        #    _write_copa_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -339,7 +340,6 @@ def _write_copa_preds(task_name: str, preds_df: pd.DataFrame,
                       strict_glue_format: bool = False):
     """ Write COPA predictions to JSONL """
     raise NotImplementedError
-
 
 def write_results(results, results_file, run_name):
     ''' Aggregate results by appending results to results_file '''
