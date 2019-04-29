@@ -33,7 +33,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask
+    TaggingTask, WeakGroundedTask, JOCITask, WiCTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
@@ -599,13 +599,15 @@ def build_pair_sentence_module(task, d_inp, model, params):
     if model.use_bert:
         # BERT handles pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
+        if isinstance(task, WiCTask):
+            d_out *= 3 # also pass the two contextual word representations
         classifier = Classifier.from_params(d_out, n_classes, params)
         module = SingleClassifier(pooler, classifier)
     else:
+        # TODO(Alex): something for WiC
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
     return module
-
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
@@ -834,7 +836,10 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if self.use_bert:
             sent, mask = self.sent_encoder(batch['inputs'], task)
-            logits = classifier(sent, mask)
+            if isinstance(task, WiCTask):
+                logits = classifier(sent, mask, [batch['idx1'], batch['idx2']])
+            else:
+                logits = classifier(sent, mask)
         else:
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)

@@ -250,6 +250,7 @@ class Task(object):
 
     def update_metrics(self, logits, labels, tagmask=None):
         assert len(self.get_scorers()) > 0, 'Please specify a score metric'
+        logits, labels = logits.detach(), labels.detach()
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
@@ -1608,39 +1609,36 @@ class WiCTask(PairClassificationTask):
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
+        self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
 
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at data_file.'''
 
-        def _load_inputs(data_file):
-            sents1, sents2, idxs1, idxs2 = [], [], [], []
+        trg_map = {"true": 1, "false": 0, True: 1, False: 0}
+        def _load_split(data_file):
+            sents1, sents2, idxs1, idxs2, trgs = [], [], [], [], []
             with open(data_file, 'r') as data_fh:
                 for row in data_fh:
-                    raw = row.split('\t')
-                    sent1 = process_sentence(self._tokenizer_name, raw[3], max_seq_len)
-                    sent2 = process_sentence(self._tokenizer_name, raw[4], max_seq_len)
+                    row = json.loads(row)
+                    sent1 = process_sentence(self._tokenizer_name, row["sentence1"], max_seq_len)
+                    sent2 = process_sentence(self._tokenizer_name, row["sentence2"], max_seq_len)
                     sents1.append(sent1)
                     sents2.append(sent2)
-                    idx1, idx2 = [1 + int(i) for i in raw[2].split('-')]
-                    idxs1.append(idx1)
-                    idxs2.append(idx2)
-                return [sents1, sents2, idxs1, idxs2]
+                    idx1 = row["sentence1_idx"]
+                    idx2 = row["sentence2_idx"]
+                    idxs1.append(int(idx1))
+                    idxs2.append(int(idx2))
+                    trg = trg_map[row["label"]] if "label" in row else 0
+                    trgs.append(trg)
+                return [sents1, sents2, idxs1, idxs2, trgs]
 
-        targ_map = {'T': 1, 'F': 0}
-        def _load_targets(targ_file):
-            with open(targ_file, 'r') as targ_fh:
-                targets = [targ_map[t.strip()] for t in targ_fh.readlines()]
-            return [targets]
-
-        tr_data = _load_inputs(os.path.join(path, "train/train.data.txt")) + \
-                    _load_targets(os.path.join(path, "train/train.gold.txt"))
-        val_data = _load_inputs(os.path.join(path, "dev/dev.data.txt")) + \
-                    _load_targets(os.path.join(path, "dev/dev.gold.txt"))
-        te_data = _load_inputs(os.path.join(path, "test/test.data.txt"))
-        te_data += [[0 for _ in range(len(te_data[0]))]]
+        tr_data = _load_split(os.path.join(path, "train.jsonl"))
+        val_data = _load_split(os.path.join(path, "val.jsonl"))
+        te_data = _load_split(os.path.join(path, "test_ANS.jsonl"))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -1658,10 +1656,13 @@ class WiCTask(PairClassificationTask):
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
             d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d["idx1"] = NumericField(idxs1)
             if is_using_bert:
                 inp = input1 + input2[1:] # throw away input2 leading [CLS]
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+                idxs2 += len(input1)
+                d["idx2"] = NumericField(idxs2) # modify if using BERT
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 if input2:
@@ -1669,8 +1670,6 @@ class WiCTask(PairClassificationTask):
                     d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
 
-            d["idx1"] = NumericField(idxs1)
-            d["idx2"] = NumericField(idxs1)
             d["idx"] = LabelField(idx, label_namespace="idxs",
                                   skip_indexing=True)
 

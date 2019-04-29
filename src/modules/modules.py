@@ -335,14 +335,31 @@ class SingleClassifier(nn.Module):
         self.pooler = pooler
         self.classifier = classifier
 
-    def forward(self, sent, mask):
+    def forward(self, sent, mask, idxs=[]):
+        """ Assumes batch_size x seq_len x d_emb """
         emb = self.pooler(sent, mask)
-        logits = self.classifier(emb)
+
+        # append any additional representations we want
+        ctx_embs = []
+        for idx in [i.long() for i in idxs]:
+
+            if len(idx.shape) == 1:
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 2:
+                idx = idx.unsqueeze(-1).expand([-1, -1, sent.size(-1)])
+            ctx_emb = sent.gather(dim=1, index=idx)
+            ctx_embs.append(ctx_emb.squeeze(dim=1))
+        final_emb = torch.cat([emb] + ctx_embs, dim=-1)
+
+        logits = self.classifier(final_emb)
         return logits
 
 
 class PairClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules. For sentence pair classification. '''
+    ''' Thin wrapper around a set of modules.
+    For sentence pair classification.
+    Pooler specifies how to aggregate inputted sequence of vectors.
+    Also allows for additional token representations to be used via idx{1,2}'''
 
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
@@ -350,7 +367,7 @@ class PairClassifier(nn.Module):
         self.classifier = classifier
         self.attn = attn
 
-    def forward(self, s1, s2, mask1, mask2):
+    def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
         mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
         if self.attn is not None:
