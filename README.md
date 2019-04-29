@@ -159,9 +159,9 @@ We currently support the following:
 	* Pair sentence classification tasks
 	* Regression tasks
 	* Tagging tasks
-	* Span Classification Tasks - to run these, we currently require an extra preprocessing 
+	* Span classification Tasks - to run these, we currently require an extra preprocessing 
 	  step, which consists of preprocessing the data to get BERT tokenized span indices. 
-	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}
+	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}.
 	* seq2seq tasks are partially supported.
 
 ### Transformers 

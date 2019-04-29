@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from ..tasks.tasks import Task
+from ..utils.utils import unbind_predictions
 from .import modules
 
 from allennlp.modules.span_extractors import \
@@ -57,7 +58,6 @@ class SpanClassifierModule(nn.Module):
         # Set config options needed for forward pass.
         self.loss_type = task_params["cls_loss_fn"]
         self.span_pooling = task_params["cls_span_pooling"]
-        self.single_sided = task.single_sided
         self.cnn_context = task_params.get("cnn_context", 0)
         self.num_spans = num_spans
         self.proj_dim = task_params["d_hid"]
@@ -85,6 +85,7 @@ class SpanClassifierModule(nn.Module):
                 sent_embs: torch.Tensor,
                 sent_mask: torch.Tensor,
                 task: Task,
+                cuda_device: int,
                 predict: bool) -> Dict:
         """ 
         Run forward pass.
@@ -112,9 +113,6 @@ class SpanClassifierModule(nn.Module):
             out: dict(str -> Tensor)
         """
         out = {}
-        cuda_device = -1
-        if torch.cuda.is_available():
-            cuda_device = torch.cuda.current_device()
         batch_size = sent_embs.shape[0]
         out["n_inputs"] = batch_size
         # Apply projection CNN layer for each span of the input sentence 
@@ -151,20 +149,8 @@ class SpanClassifierModule(nn.Module):
         if predict:
             # Return preds as a list.
             preds = self.get_predictions(logits)
-            out["preds"] = list(self.unbind_predictions(preds))
+            out["preds"] = list(unbind_predictions(preds))
         return out
-
-    def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
-        """ 
-        Unpack preds to varying-length numpy arrays.
-        Args:
-            preds: [batch_size, num_targets, ...]
-        Yields:
-            np.ndarray for each row of preds
-        """
-        preds = preds.detach().cpu()
-        for pred in torch.unbind(preds, dim=0):
-            yield pred.numpy()
 
 
     def get_predictions(self, logits: torch.Tensor):

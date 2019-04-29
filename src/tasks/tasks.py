@@ -33,8 +33,9 @@ from ..allennlp_mods.numeric_field import NumericField
 
 from ..utils import utils
 from ..utils.utils import truncate
-from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv, get_tag_list
+from ..utils.data_loaders import load_tsv, process_sentence, load_diagnostic_tsv
 from ..utils.tokenizers import get_tokenizer
+from ..scorers import gap_scorer
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
@@ -334,8 +335,6 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
-
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -361,12 +360,10 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
-
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them!
+        # TODO(Yada): support them! 
         return
-
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -387,7 +384,7 @@ class SequenceGenerationTask(Task):
 
     def update_metrics():
         # currently don't support metrics for regression task
-        # TODO(Yada): support them!
+        # TODO(Yada): support them! 
         return
 
 
@@ -460,7 +457,6 @@ class CoLATask(SingleClassificationTask):
         self.scorer2(logits, labels)
         return
 
-
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
     def __init__(self, path, max_seq_len, name, **kw):
@@ -515,7 +511,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-
+            
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
@@ -1133,7 +1129,7 @@ class JOCITask(PairOrdinalRegressionTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading JOCI data.")
-
+        
 
 @register_task('wiki103_classif', rel_path='WikiText103/')
 class Wiki103Classification(PairClassificationTask):
@@ -1625,12 +1621,17 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
         log.info('\tFinished loading CCGTagging data.')
 
+########
+# Span-related tasks
+########
 
-class SpanTask(Task):
-    ''' Generic class for span tasks.
+class SpanClassificationTask(Task):
+    '''
+     Generic class for span tasks.
     Acts as a classifier, but with multiple targets for each input text.
     Targets are of the form (span1, span2,..., span_n, label), where the spans are
     half-open token intervals [i, j).
+    The number of spans is constant across examples.
     '''
     @property
     def _tokenizer_suffix(self):
@@ -1794,3 +1795,126 @@ class SpanTask(Task):
         metrics['recall'] = recall
         metrics['f1'] = f1
         return metrics
+
+@register_task('winograd-coreference', rel_path = 'winograd-coref')
+class WinogradCoreferenceTask(SpanClassificationTask):
+    def __init__(self, path, single_sided=False, **kw):
+        self._files_by_split = {'train': "train_after_redistribution.tsv.json", 'val': "val_same_distribution_test.tsv.json",'test': "test_final_new.tsv.json"}
+        self.num_spans = 2
+        super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, single_sided=single_sided, **kw)
+        self.val_metric = "%s_acc" % self.name 
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        def one_hot_v(batch, depth=2):
+            ones = torch.sparse.torch.eye(depth).cuda()
+            return ones.index_select(0, batch)
+        binary_preds = one_hot_v(logits, depth=2)
+        label_ints = torch.argmax(labels, dim=1)
+        self.f1_scorer(binary_preds, label_ints)
+        self.acc_scorer(binary_preds.long(), labels.long())
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {"f1": self.f1_scorer.get_metric(reset)[2], "acc": self.acc_scorer.get_metric(reset)}
+        return collected_metrics
+
+    def _stream_records(self, filename):
+        skip_ctr = 0
+        total_ctr = 0
+        for records in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
+            if not records.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield records
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+@register_task('gap-coreference', rel_path = 'gap-coreference')
+class GapCoreferenceTask(SpanClassificationTask):
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 domains=["FEMININE", "MASCULINE"],
+                 **kw):
+        self._files_by_split = {'train': "gap-development.json", 'val': "gap-test.json",'test': "blind_test_gap.json"}
+        self.num_domains = len(domains)
+        self.domains = domains
+        self._domain_namespace = name + "_tags"
+        label_file = "labels.txt"
+        self.num_spans = 3
+        super().__init__(path, max_seq_len, name, label_file, self._files_by_split, self.num_spans, **kw)
+        # Scorers
+        self.f1_scorer = gap_scorer.GAPScorer()
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        subset_f1_scorers = create_subset_scorers(count=self.num_domains, scorer_type=gap_scorer.GAPScorer)# binary F1 overall
+        self.subset_scorers = {"f1": subset_f1_scorers}
+        return iters_by_split
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()  # already space-tokenized by Moses
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        d = {}
+        d["idx"] = MetadataField(idx)
+
+        d['input1'] = text_field
+        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
+                                 for t in record['targets']])
+        d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
+                                 for t in record['targets']])
+        d['span3s'] = ListField([self._make_span_field(t['span3'], text_field, 1)
+                         for t in record['targets']])
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        d['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+        return Instance(d)
+
+    def process_split(self, split, indexers):
+        ''' Process split text into a list of AllenNLP Instances with tag masking'''
+        def _map_fn(r, idx):
+            instance = self.make_instance(r, idx, indexers)
+            tag_field = MultiLabelField([r["targets"][0]["gender"]], label_namespace=self._domain_namespace)
+            instance.add_field("tagmask", field=tag_field)
+            return instance
+        instances = map(_map_fn, split, itertools.count())
+        return instances
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        def one_hot_v(batch, depth=2):
+            ones = torch.sparse.torch.eye(depth).cuda()
+            return ones.index_select(0, batch)
+        binary_preds = one_hot_v(logits, depth=3)
+        self.f1_scorer(binary_preds.long(), labels.long())
+        self.update_subset_metrics(binary_preds.long(), labels, tagmask)
+
+    def update_subset_metrics(self, logits, labels, tagmask=None):
+        if tagmask is not None:
+            update_subset_scorers(self.subset_scorers["f1"], logits, labels, tagmask)
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {"f1": self.f1_scorer.get_metric(reset)}
+        for score_name, scorer in list(self.subset_scorers.items()):
+          collected_metrics.update(collect_subset_scores(scorer, score_name, self.domains, reset))
+        if collected_metrics["f1_FEMININE"] != 0.0:
+            collected_metrics.update({"bias": collected_metrics["f1_MASCULINE"] / collected_metrics["f1_FEMININE"]})
+        return collected_metrics
