@@ -84,10 +84,10 @@ python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.
 #load bow_glove+all npi with sup being held out, train and eval on sup probing tasks
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bow_glove, run_name = bow_glove_hd_cola_npi_sup, load_eval_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bow_glovenone/run_bow_glovenone_hd_cola_npi_sup/model_state_hd_cola_npi_sup_best.th\", target_tasks = \"npi_sup_li,npi_sup_sc,npi_sup_pr\", sent_enc = \"bow\", allow_missing_task_map = 1, bert_model_name = \"\", word_embs = \"glove\", skip_embs = 0"
 
-#load bertcgg plain, train and eval on all probing tasks
-python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_plain, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/ \""
+#load bertcgg plain, train and eval on all probing tasks (MAY HAVE TO SUPPLY MODEL NAME MANUALLY)
+python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_plain, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/model_state_main_epoch_??.best_macro.th\""
 
-#load bertcgg+cola, train and eval on all probing tasks
+#load bertcgg+cola, train and eval on all probing tasks 
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_cola, load_eval_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/model_state_cola_best.th\""
 
 #load bertcgg+all npi, train and eval on all probing tasks
@@ -121,8 +121,8 @@ python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_hd_cola_npi_sup, load_eval_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/model_state_hd_cola_npi_sup_best.th\", target_tasks = \"npi_sup_li,npi_sup_sc,npi_sup_pr\""
 
 
-#load bertmnli plain, train and eval on all probing tasks
-python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_plain, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_main_epoch_[0-9].best_macro.th\""
+#load bertmnli plain, train and eval on all probing tasks (MAY HAVE TO SUPPLY MODEL NAME MANUALLY)
+python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_plain, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_main_epoch_??.best_macro.th\""
 
 #load bertmnli+cola, train and eval on all probing tasks
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertmnli, run_name = bertmnli_cola, load_eval_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertmnli/run_bertmnli_model/model_state_cola_best.th\""
