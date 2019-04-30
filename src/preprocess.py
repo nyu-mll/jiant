@@ -355,8 +355,6 @@ def build_tasks(args):
     log.info("\tFinished indexing tasks")
 
     # 5) Initialize tasks with data iterators.
-    assert not (args.pretrain_data_fraction < 1 and args.target_train_data_fraction < 1), \
-        "pretraining_data_fraction and target_train_data_fraction could not be used at a same time (could not be < 1 together)"
     pretrain_tasks = []
     target_tasks = []
     for task in tasks:
@@ -366,7 +364,7 @@ def build_tasks(args):
             task.name, "test", preproc_dir)
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
-        if args.pretrain_data_fraction < 1 and task.name in train_task_names:
+        if task.name in pretrain_task_names:
             log.info(
                 "Creating trimmed pretraining-only version of " +
                 task.name +
@@ -374,25 +372,9 @@ def build_tasks(args):
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.pretrain_data_fraction)
             pretrain_tasks.append(task)
-            if task.name in target_task_names:
-                # Rebuild the iterator so we see the full dataset in the target task training
-                # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name
-                # (task.name).
-                log.info(
-                    "Creating un-trimmed target training version of " +
-                    task.name +
-                    " train.")
-                log.warn("When using un-trimmed target training version of train split, "
-                         "it creates a deepcopy of task object which is inefficient.")
-                task = copy.deepcopy(task)
-                task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0)
-                target_tasks.append(task)
-
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
-        elif args.target_train_data_fraction < 1 and task.name in target_task_names:
+        if task.name in target_task_names:
             log.info(
                 "Creating trimmed train-for-target-only version of " +
                 task.name +
@@ -400,30 +382,6 @@ def build_tasks(args):
             task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
                                                       fraction=args.target_train_data_fraction)
             target_tasks.append(task)
-            if task.name in train_task_names:
-                # Rebuild the iterator so we see the full dataset in the pretraining
-                # phase. It will create a deepcopy of the task object
-                # and therefore there could be two tasks with the same name
-                # (task.name).
-                log.info(
-                    "Creating un-trimmed pretraining version of " +
-                    task.name +
-                    " train.")
-                log.warn("When using un-trimmed pretraining version of train split, "
-                         "it creates a deepcopy of task object which is inefficient.")
-                task = copy.deepcopy(task)
-                task.train_data = _get_instance_generator(
-                    task.name, "train", preproc_dir, fraction=1.0)
-                pretrain_tasks.append(task)
-        # When neither pretrain_data_fraction nor target_train_data_fraction is specified
-        # we use unmodified iterators.
-        else:
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=1.0)
-            if task.name in pretrain_task_names:
-                pretrain_tasks.append(task)
-            if task.name in target_task_names:
-                target_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s",
                  task.name, preproc_dir)
