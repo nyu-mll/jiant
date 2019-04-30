@@ -30,6 +30,7 @@ from tqdm import tqdm
 
 from typing import Dict, Tuple, Iterable
 
+
 def parse_lines(lines: Iterable[str]) -> Iterable[Tuple[str, str, str]]:
     """Parse the SemEval 2010 data format.
 
@@ -53,9 +54,11 @@ def parse_lines(lines: Iterable[str]) -> Iterable[Tuple[str, str, str]]:
         assert len(current) == 3
         yield tuple(current)
 
+
 TAG_MATCHER = r"</?e(\d+)>"
 TAG_MATCHER_START = r".*<e(\d+)>.*"
 TAG_MATCHER_END = r".*</e(\d+)>.*"
+
 
 def get_entity_spans(tagged_tokens):
     spans = collections.defaultdict(lambda: [None, None])
@@ -68,12 +71,13 @@ def get_entity_spans(tagged_tokens):
             spans[int(m.group(1))][1] = i + 1  # exclusive
     spans.default_factory = None
     # Validate spans to make sure both are complete.
-    assert set(spans.keys()) == {1,2}
+    assert set(spans.keys()) == {1, 2}
     for span in spans.values():
         assert len(span) == 2
         assert span[0] is not None
         assert span[1] is not None
     return spans
+
 
 def record_from_triple(sentence_line, label, comment_line):
     record = {}
@@ -94,10 +98,12 @@ def record_from_triple(sentence_line, label, comment_line):
     record['targets'] = [target]
     return record
 
+
 def convert_file(fname: str, target_fname: str):
     triples = parse_lines(utils.load_lines(fname))
     records = (record_from_triple(*t) for t in triples)
     utils.write_file_and_print_stats(records, target_fname)
+
 
 def main(args):
     parser = argparse.ArgumentParser()
@@ -115,5 +121,3 @@ def main(args):
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
-

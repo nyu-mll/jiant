@@ -20,6 +20,7 @@ log.basicConfig(format='%(asctime)s: %(message)s',
 
 from src.utils import utils
 
+
 def split_record(record):
     pos_record = copy.deepcopy(record)
     non_record = copy.deepcopy(record)
@@ -30,17 +31,18 @@ def split_record(record):
                              if t['info']['height'] > 1]
     return (pos_record, non_record)
 
+
 def split_file(fname):
     dirname, base = os.path.split(fname)
-    
+
     pos_dir = os.path.join(dirname, "pos")
     os.makedirs(pos_dir, exist_ok=True)
     new_pos_name = os.path.join(pos_dir, base)
-    
+
     non_dir = os.path.join(dirname, "nonterminal")
     os.makedirs(non_dir, exist_ok=True)
     new_non_name = os.path.join(non_dir, base)
-    
+
     log.info("Processing file: %s", fname)
     record_iter = list(utils.load_json_data(fname))
     log.info("  saving to %s and %s", new_pos_name, new_non_name)
