@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from ..tasks.tasks import Task
+from ..utils.utils import unbind_predictions
+
 from .import modules
 
 from allennlp.modules.span_extractors import \
@@ -139,21 +141,8 @@ class SpanClassifierModule(nn.Module):
         if predict:
             # Return preds as a list.
             preds = self.get_predictions(logits)
-            out['preds'] = list(self.unbind_predictions(preds))
+            out['preds'] = list(unbind_predictions(preds))
         return out
-
-    def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
-        """ 
-        Unpack preds to varying-length numpy arrays.
-        Args:
-            preds: [batch_size, num_targets, ...]
-        Yields:
-            np.ndarray for each row of preds
-        """
-        preds = preds.detach().cpu()
-        for pred in torch.unbind(preds, dim=0):
-            yield pred.numpy()
-
 
     def get_predictions(self, logits: torch.Tensor):
         """
