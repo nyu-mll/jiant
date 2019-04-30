@@ -1219,7 +1219,6 @@ class MultiTaskModel(nn.Module):
 
         Batch has a tensor of shape (n_questions, n_answers, n_tokens)
         '''
-        #assert_for_log("para_quest_ans" in batch and "bert_wpm_pretokenized" in batch["para_quest_ans"], "Use BERT!")
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
@@ -1237,7 +1236,6 @@ class MultiTaskModel(nn.Module):
             out['n_exs'] = batch["answer"]["words"].size(0)
         out['logits'] = logits
 
-        # will likely get memory errors...
         if 'label' in batch:
             idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
             labels = batch['label']

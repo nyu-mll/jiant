@@ -168,8 +168,7 @@ class MultiRCTask(Task):
         qst_f1 = sum(f1s) / len(f1s)
 
         if reset:
-            import ipdb; ipdb.set_trace()
-            self._scorer_tracker = collections.defaultdict(list)
+            self._score_tracker = collections.defaultdict(list)
 
         return {'ans_f1': ans_f1, 'qst_f1': qst_f1, 'em': em,
                 "avg": (ans_f1 + em) / 2}

@@ -164,7 +164,8 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
-SUPERGLUE_NAME_MAP = {"commitbank": 'CB'
+SUPERGLUE_NAME_MAP = {"commitbank": "CB",
+                      "multirc": "MultiRC"
                      }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
