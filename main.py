@@ -148,12 +148,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
-                       "Error: Must specify at least on training task: [%s]" % args.pretrain_tasks)
+                       "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks)
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
 
     if args.do_target_task_training:
-        assert_for_log(args.pretrain_tasks != "none",
-                       "Error: Must specify at least on training task: [%s]" % args.target_tasks)
+        assert_for_log(args.target_tasks != "none",
+                       "Error: Must specify at least one target task: [%s]" % args.target_tasks)
         steps_log.write("Re-training model for individual target tasks \n")
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
