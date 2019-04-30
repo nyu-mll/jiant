@@ -2,6 +2,9 @@
 version: 2.1
 jobs:
   build:
+    branches:
+      only:
+        - circleci
     docker:
       - image: continuumio/miniconda3
 
