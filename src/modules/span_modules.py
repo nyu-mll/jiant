@@ -1,4 +1,4 @@
-# Implementation ofspan classification modules
+# Implementation of span classification modules
 
 import torch
 import torch.nn as nn
@@ -59,13 +59,13 @@ class SpanClassifierModule(nn.Module):
 
         for i in range(num_spans):
             # create a word-level pooling layer operator 
-            proj = self._make_cnn_layer(d_inp).cuda()
+            proj = self._make_cnn_layer(d_inp)
             self.projs.extend(proj)
         self.span_extractors = torch.nn.ModuleList()
 
         # Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
         for i in range(num_spans):
-            span_extractor = self._make_span_extractor().cuda()
+            span_extractor = self._make_span_extractor()
             self.span_extractors.extend(span_extractor)
 
         # Classifier gets concatenated projections of spans.
@@ -124,7 +124,6 @@ class SpanClassifierModule(nn.Module):
             span_embs = torch.cat([span_embs, span_emb], dim=2)
 
         # [batch_size, num_targets, n_classes]
-        # and then with winograd-coreference. 
         logits = self.classifier(span_embs)
         out['logits'] = logits
 
