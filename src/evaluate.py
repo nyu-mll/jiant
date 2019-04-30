@@ -2,6 +2,7 @@
 import os
 import time
 import logging as log
+from collections import defaultdict
 
 import json
 import pandas as pd
@@ -233,12 +234,19 @@ def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
     trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
-        for row_idx, row in preds_df.iterrows():
-            if strict_glue_format:
-                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
-            else:
+        if strict_glue_format:
+            qst_ans_d = defaultdict(int)
+            for row_idx, row in preds_df.iterrows():
+                qst_ans_d[row["qst_idx"]].append({"idx": row["ans_idx"], "label": row["labels"]})
+
+            for qst_idx, answers in qst_ans_d.items():
+                out_d = {"idx": qst_idx, "answers": answers}
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+        else:
+            for row_idx, row in preds_df.iterrows():
                 out_d = row.to_dict()
-            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
