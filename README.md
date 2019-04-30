@@ -153,7 +153,9 @@ To use the ON-LSTM sentence encoder from [Ordered Neurons: Integrating Tree Stru
 To use the PRPN sentence encoder from [***Neural language modeling by jointly learning syntax and lexicon***](https://arxiv.org/abs/1711.02013), set ``sent_enc=prpn``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/prpn.conf](config/prpn.conf). Specific PRPN modules use code from the [Github](https://github.com/yikangshen/PRPN) implementation of the paper.
 
 ## Currently Supported Task Types
+
 We currently support the following:
+
 	* Single sentence classification tasks
 	* Pair sentence classification tasks
 	* Regression tasks
