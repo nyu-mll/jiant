@@ -2,7 +2,7 @@
 
 `jiant` is a work-in-progress software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
 
-A few things you might want to know about jiant:
+A few things you might want to know about `jiant`:
 
 - `jiant` is configuration-driven. You can run an enormous variety of experiments by simply writing configuration files. Of course, if you need to add any major new features, you can also easily edit or extend the code.
 - `jiant` contains implementations of strong baselines for the [GLUE](https://gluebenchmark.com) and [SuperGLUE](https://gluebenchmark.com/super) benchmarks, and it's the recommended starting point for work on these benchmarks.
@@ -193,7 +193,7 @@ To add new tasks, you should:
 
 1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data.
 
-2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. Indeed, jiant loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
+2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. Indeed, `jiant` loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
 
 3. Create a class in ``src/tasks.py``, and make sure that...
 
@@ -255,7 +255,7 @@ python scripts/update_config.py <path_to_file>
 
 ## Papers
 
-jiant has been used in these three papers so far:
+`jiant` has been used in these three papers so far:
 
 - [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("Edge Probing")
