@@ -17,13 +17,14 @@ from typing import Dict, Iterable, List
 
 import logging as log
 
+
 class SpanClassifierModule(nn.Module):
-    ''' 
+    '''
         Build span classifier components as a sub-module.
         from typing import Dict, Iterable, List
         Classifier that allows for spans and text as input.
         Use same classifier code as build_single_sentence_module,
-        except we'll use span indices to extract span representations, 
+        except we'll use span indices to extract span representations,
         and use these as input to the classifier.
     '''
 
@@ -58,7 +59,7 @@ class SpanClassifierModule(nn.Module):
         self.projs = torch.nn.ModuleList()
 
         for i in range(num_spans):
-            # create a word-level pooling layer operator 
+            # create a word-level pooling layer operator
             proj = self._make_cnn_layer(d_inp)
             self.projs.extend(proj)
         self.span_extractors = torch.nn.ModuleList()
@@ -79,16 +80,16 @@ class SpanClassifierModule(nn.Module):
                 sent_mask: torch.Tensor,
                 task: Task,
                 predict: bool) -> Dict:
-        """ 
+        """
         Run forward pass.
         Expects batch to have the following entries:
             'input' : [batch_size, max_len, emb_size]
             'labels' : [batch_size, num_targets] of label indices
             'span1s' : [batch_size, 1, 2], span indices
-            'span2s' : [batch_size, 1, 2], span indices 
-                . 
-                . 
-                . 
+            'span2s' : [batch_size, 1, 2], span indices
+                .
+                .
+                .
             'span_ts': [batch_size, 1, 2], span indices
 
         Parameters
@@ -99,7 +100,7 @@ class SpanClassifierModule(nn.Module):
             task: Task
             predict: whether or not to generate predictions
         This learns different span pooling operators for each span.
-        
+
         Returns
         -------------------------------
             out: dict(str -> Tensor)
@@ -108,8 +109,8 @@ class SpanClassifierModule(nn.Module):
         batch_size = sent_embs.shape[0]
         out['n_inputs'] = batch_size
 
-        # Apply projection CNN layer for each span of the input sentence 
-        sent_embs_t = sent_embs.transpose(1, 2) # needed for CNN layer
+        # Apply projection CNN layer for each span of the input sentence
+        sent_embs_t = sent_embs.transpose(1, 2)  # needed for CNN layer
         se_projs = []
         for i in range(self.num_spans):
             se_proj = self.projs[i](sent_embs_t).transpose(2, 1).contiguous()
@@ -135,7 +136,7 @@ class SpanClassifierModule(nn.Module):
                                             task)
             predictions = self.get_predictions(logits)
             tagmask = batch.get("tagmask", None)
-            task.update_metrics(predictions,  batch["labels"].squeeze(dim=1), tagmask=tagmask)
+            task.update_metrics(predictions, batch["labels"].squeeze(dim=1), tagmask=tagmask)
 
         if predict:
             # Return preds as a list.
@@ -147,7 +148,7 @@ class SpanClassifierModule(nn.Module):
         """
         Return class probabilities, same shape as logits.
 
-        Parameters 
+        Parameters
         -------------------------------
             logits: [batch_size, num_targets, n_classes]
 
@@ -168,8 +169,8 @@ class SpanClassifierModule(nn.Module):
 
     def compute_loss(self, logits: torch.Tensor,
                      labels: torch.Tensor, task):
-        """ 
-        Paramters 
+        """
+        Paramters
         -------------------------------
             logits: [total_num_targets, n_classes] Tensor of float scores
             labels: [total_num_targets, n_classes] Tensor of sparse binary targets
@@ -182,7 +183,7 @@ class SpanClassifierModule(nn.Module):
             return F.binary_cross_entropy(torch.sigmoid(logits),
                                           labels.float())
         elif self.loss_type == 'softmax':
-            targets = (labels == 1).nonzero()[:,1]
+            targets = (labels == 1).nonzero()[:, 1]
             return F.cross_entropy(logits, targets.long())
         else:
             raise ValueError("Unsupported loss type '%s' "
