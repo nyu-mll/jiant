@@ -225,6 +225,20 @@ def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
+def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
+                         pred_dir: str, split_name: str,
+                         strict_glue_format: bool = False):
+    ''' Write predictions for MultiRC task. '''
+    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
                       strict_glue_format: bool = False):

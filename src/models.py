@@ -1239,7 +1239,7 @@ class MultiTaskModel(nn.Module):
 
         # will likely get memory errors...
         if 'label' in batch:
-            idxs = [(p, q, a) for p, q, a in zip(batch["par_idx"], batch["qst_idx"], batch["ans_idx"])]
+            idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
             labels = batch['label']
             out['loss'] = F.cross_entropy(logits, labels)
             task.update_metrics(logits, labels, idxs)
