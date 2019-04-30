@@ -51,7 +51,8 @@ class CoLAMinimalPairTask(Task):
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
+        file_name = {"cola-pair-frozen": "acceptability_minimal_pairs.tsv", "cola-pair-tuned": "acceptability_pairs.tsv"}
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, file_name), max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
