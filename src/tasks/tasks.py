@@ -1311,6 +1311,41 @@ class RTETask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Process the datasets located at path. '''
         targ_map = {"not_entailment": 0, "entailment": 1}
+        def _load_jsonl(data_file):
+            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
+            sent1s, sent2s, trgs, idxs = [], [], [], []
+            for example in data:
+                sent1s.append()
+                sent2s.append()
+                trg = targ_map[example["label"]] if "label" in example else 0
+                idxs.append(example["idx"])
+            return [sent1s, sent2s, trgs, idxs]
+
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
+                           label_fn=targ_map.__getitem__,
+                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
+                            label_fn=targ_map.__getitem__,
+                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
+
+        self.train_data_text = _load_jsonl(os.path.join(path, "train.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(path, "val.jsonl"))
+        self.test_data_text = _load_jsonl(os.path.join(path, "test.jsonl"))
+        log.info("\tFinished loading RTE (from SuperGLUE formatted data.")
+
+@register_task('rte-glue', rel_path='RTE/')
+class RTEGLUETask(RTETask):
+    ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(name, path, max_seq_len, name, **kw)
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the datasets located at path. '''
+        targ_map = {"not_entailment": 0, "entailment": 1}
         tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
                            label_fn=targ_map.__getitem__,
                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
@@ -1323,8 +1358,7 @@ class RTETask(PairClassificationTask):
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading RTE.")
-
+        log.info("\tFinished loading RTE (from GLUE formatted data).")
 
 @register_task('qnli', rel_path='QNLI/')
 # second copy for different params
