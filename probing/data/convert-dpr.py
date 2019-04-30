@@ -21,6 +21,7 @@ from nltk.tokenize.moses import MosesTokenizer
 
 TOKENIZER = MosesTokenizer()
 
+
 def get_dpr_text(filename):
     text2examples = {}
     curr = {}
@@ -43,16 +44,17 @@ def get_dpr_text(filename):
                 curr[key] = val
     return text2examples
 
+
 def convert_text_examples_to_json(text, example):
     #dict_keys(['provenance', 'index', 'text', 'hypothesis', 'entailed', 'partof'])
-    #This assert makes sure that no text appears in train and test
+    # This assert makes sure that no text appears in train and test
     tokens = TOKENIZER.tokenize(text)
     split = set([ex['partof'] for ex in example])
     assert len(split) == 1
-    obj =  {"text": " ".join(tokens),
-            "info": {'split': list(split)[0],
-                     'source': 'recast-dpr'},
-            "targets": []
+    obj = {"text": " ".join(tokens),
+           "info": {'split': list(split)[0],
+                    'source': 'recast-dpr'},
+           "targets": []
            }
     for ex in example:
         hyp = TOKENIZER.tokenize(ex['hypothesis'])
@@ -65,26 +67,27 @@ def convert_text_examples_to_json(text, example):
                 distance = len(hyp) - len(tokens) + 1
                 pro_noun = tokens[idx]
                 found_referent = False
-                for word_idx in range(idx+1):
-                    referent = hyp[idx:idx+distance]
+                for word_idx in range(idx + 1):
+                    referent = hyp[idx:idx + distance]
                     if word_idx == 0:
                         referent[0] = referent[0][0].upper() + referent[0][1:]
                     if referent == tokens[word_idx:word_idx + distance]:
                         found_referent = True
-                        target = {'span1': [idx,idx+1],
-                                  'span2': [word_idx,word_idx + distance],
+                        target = {'span1': [idx, idx + 1],
+                                  'span2': [word_idx, word_idx + distance],
                                   'label': ex['entailed'],
                                   'span1_text': pro_noun,
                                   'span2_text': " ".join(tokens[word_idx:word_idx + distance])
-                                 }
+                                  }
                         obj['targets'].append(target)
-                        break;
-                break;
+                        break
+                break
 
     return obj
 
+
 def convert_dpr(text2examples, output_dir: str):
-    split_files = {k:open(os.path.join(output_dir, f"{k}.json"), 'w')
+    split_files = {k: open(os.path.join(output_dir, f"{k}.json"), 'w')
                    for k in ["train", "dev", "test"]}
     skip_counter = 0
 
@@ -102,8 +105,11 @@ def convert_dpr(text2examples, output_dir: str):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--src_dir', type=str, required=True,
-                        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh")
+    parser.add_argument(
+        '--src_dir',
+        type=str,
+        required=True,
+        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh")
     parser.add_argument('-o', dest='output_dir', type=str, required=True,
                         help="Output directory, e.g. /path/to/edges/data/dpr")
     args = parser.parse_args(args)
@@ -117,7 +123,7 @@ def main(args):
     convert_dpr(text2examples, output_dir=args.output_dir)
     log.info("Done!")
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
