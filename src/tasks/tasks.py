@@ -1315,25 +1315,20 @@ class RTETask(PairClassificationTask):
             data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             sent1s, sent2s, trgs, idxs = [], [], [], []
             for example in data:
-                sent1s.append()
-                sent2s.append()
+                sent1s.append(process_sentence(self._tokenizer_name, example["premise"], max_seq_len))
+                sent2s.append(process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len))
                 trg = targ_map[example["label"]] if "label" in example else 0
+                trgs.append(trg)
                 idxs.append(example["idx"])
             return [sent1s, sent2s, trgs, idxs]
 
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                           label_fn=targ_map.__getitem__,
-                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            label_fn=targ_map.__getitem__,
-                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
-
-        self.train_data_text = _load_jsonl(os.path.join(path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(path, "val.jsonl"))
-        self.test_data_text = _load_jsonl(os.path.join(path, "test.jsonl"))
-        log.info("\tFinished loading RTE (from SuperGLUE formatted data.")
+        tr_data = _load_jsonl(os.path.join(path, "train.jsonl"))
+        val_data = _load_jsonl(os.path.join(path, "val.jsonl"))
+        te_data = _load_jsonl(os.path.join(path, "test.jsonl"))
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
 
 @register_task('rte-glue', rel_path='RTE/')
 class RTEGLUETask(RTETask):
