@@ -34,7 +34,7 @@ class MultiRCTask(Task):
         self.scorer2 = Average() # to delete
         self.scorer3 = F1Measure(positive_label=1)
         self._score_tracker = collections.defaultdict(list)
-        self.val_metric = "%s_avg_f1" % self.name
+        self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self.files_by_split = {split: os.path.join(path, "%s.json" % split) for
@@ -84,15 +84,22 @@ class MultiRCTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
         def _make_instance(para, question, answer, label, pq_id):
             """ pq_id: paragraph-question ID """
             d = {}
             d["paragraph_str"] = MetadataField(" ".join(para))
             d["question_str"] = MetadataField(" ".join(question))
-            d["par_quest_idx"] = MetadataField(pq_id)
             d["answer_str"] = MetadataField(" ".join(answer))
-            inp = para + question[1:-1] + answer[1:]
-            d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            d["par_quest_idx"] = MetadataField(pq_id)
+            if is_using_bert:
+                inp = para + question[1:-1] + answer[1:]
+                d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["paragraph"] = sentence_to_text_field(para, indexers)
+                d["question"] = sentence_to_text_field(question, indexers)
+                d["answer"] = sentence_to_text_field(answer, indexers)
             d["label"] = LabelField(label, label_namespace="labels",
                                     skip_indexing=True)
 
@@ -141,28 +148,28 @@ class MultiRCTask(Task):
         for ex, logit, label in zip(idxs, logits, labels):
             self._score_tracker[ex].append((logits, labels))
 
-        #self.scorer3(logits, labels)
-        #_, _, f1 = self.scorer3.get_metric(reset=True)
-        #self.scorer2(f1)
-
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
         _, _, ans_f1 = self.scorer1.get_metric(reset)
 
-        f1s = []
+        ems = []
         for logits_and_labels in self._score_tracker.values():
             logits, labels = list(zip(*logits_and_labels))
-            logits = torch.cat(logits, dim=0)
-            labels = torch.cat(labels, dim=0)
-            self.scorer3(logits, labels)
-            _, _, ex_f1 = self.scorer3.get_metric(reset=True)
-            f1s.append(ex_f1)
-        question_f1 = sum(f1s) / len(f1s)
-        #question_f1 = self.scorer2.get_metric(reset)
+            logits = torch.cat(logits)
+            labels = torch.cat(labels)
+            preds = logits.argmax(dim=-1)
+            if torch.eq(preds, label) == preds.size(0):
+                ex_em = 1
+            else:
+                ex_em = 0
+            #self.scorer3(logits, labels)
+            #_, _, ex_f1 = self.scorer3.get_metric(reset=True)
+            ems.append(ex_em)
+        em = sum(em) / len(em)
 
         if reset:
             self._scorer_tracker = collections.defaultdict(list)
 
-        return {'ans_f1': ans_f1, 'quest_f1': question_f1,
-                "avg_f1": (ans_f1 + question_f1) / 2}
+        return {'ans_f1': ans_f1, 'em': em,
+                "avg": (ans_f1 + em) / 2}
 
