@@ -71,8 +71,10 @@ def analyze_run(run_path: str, task: str, split: str) -> pd.DataFrame:
     scores.insert(2, "split", value=split)
     return scores
 
+
 def _analyze_run(item):
     return analyze_run(*item)
+
 
 def main(args):
     parser = argparse.ArgumentParser()
