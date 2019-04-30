@@ -53,23 +53,25 @@ def download_and_extract(task, data_dir):
         format_snli(data_dir)
     print("\tCompleted!")
 
+
 def format_snli(data_dir):
     # Clean up SNLI training data labels.
     print("Cleaning up SNLI...")
     snli_dir = os.path.join(data_dir, "SNLI")
     with open(os.path.join(snli_dir, "train.tsv")) as train_reader, \
-        open(os.path.join(snli_dir, "train_cleaned.tsv"), 'w', encoding='utf-8') as train_writer:
+            open(os.path.join(snli_dir, "train_cleaned.tsv"), 'w', encoding='utf-8') as train_writer:
         header = train_reader.readline()
         train_writer.write(header)
         for row in train_reader:
             current_row = row.strip().split('\t')
-            to_write = current_row[:10] # first 9 are valid information
-            to_write.append(current_row[-1]) # last index is the gold label
+            to_write = current_row[:10]  # first 9 are valid information
+            to_write.append(current_row[-1])  # last index is the gold label
             train_writer.write("\t".join(to_write))
             train_writer.write("\n")
     os.remove(os.path.join(snli_dir, "train.tsv"))
     os.rename(os.path.join(snli_dir, "train_cleaned.tsv"), os.path.join(snli_dir, "train.tsv"))
     print("\tCompleted!")
+
 
 def format_mrpc(data_dir, path_to_data):
     print("Processing MRPC...")
