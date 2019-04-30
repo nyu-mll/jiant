@@ -53,18 +53,18 @@ class SpanClassifierModule(nn.Module):
         self.cnn_context = task_params.get('cnn_context', 0)
         self.num_spans = num_spans
         self.proj_dim = task_params['d_hid']
-        self.projs = []
+        self.projs = torch.nn.ModuleList()
 
         for i in range(num_spans):
             # create a word-level pooling layer operator 
             proj = self._make_cnn_layer(d_inp).cuda()
-            self.projs.append(proj)
-        self.span_extractors = []
+            self.projs.extend(proj)
+        self.span_extractors = torch.nn.ModuleList()
 
         # Lee's self-pooling operator (https://arxiv.org/abs/1812.10860)
         for i in range(num_spans):
             span_extractor = self._make_span_extractor().cuda()
-            self.span_extractors.append(span_extractor)
+            self.span_extractors.extend(span_extractor)
 
         # Classifier gets concatenated projections of spans.
         clf_input_dim = self.span_extractors[1].get_output_dim() * num_spans
@@ -107,7 +107,7 @@ class SpanClassifierModule(nn.Module):
         out['n_inputs'] = batch_size
 
         # Apply projection CNN layer for each span of the input sentence 
-        sent_embs_t = sent_embs.transpose(1, 2).cuda() # needed for CNN layer
+        sent_embs_t = sent_embs.transpose(1, 2) # needed for CNN layer
         se_projs = []
         for i in range(self.num_spans):
             se_proj = self.projs[i](sent_embs_t).transpose(2, 1).contiguous()
