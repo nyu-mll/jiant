@@ -684,7 +684,7 @@ class MultiTaskModel(nn.Module):
         self.use_bert = bool(args.bert_model_name)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
-    def forward(self, task, batch, cuda_device, predict=False):
+    def forward(self, task, batch, predict=False):
         '''
         Pass inputs to correct forward pass
         Args:
@@ -740,7 +740,7 @@ class MultiTaskModel(nn.Module):
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
-            out = self._span_forward(batch, task, cuda_device, predict)
+            out = self._span_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -823,11 +823,11 @@ class MultiTaskModel(nn.Module):
             out['preds'] = predicted
         return out
 
-    def _span_forward(self, batch, task, cuda_device, predict):
+    def _span_forward(self, batch, task, predict):
         sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
         module = getattr(self, "%s_mdl" % task.name)
         out = module.forward(batch, sent_embs, sent_mask, 
-                             task, cuda_device, predict)
+                             task, predict)
         return out 
 
     def _positive_pair_sentence_forward(self, batch, task, predict):

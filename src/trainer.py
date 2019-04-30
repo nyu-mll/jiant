@@ -538,7 +538,7 @@ class SamplingMultiTaskTrainer:
                 total_batches_trained += 1
                 optimizer.zero_grad()
                 output_dict = self._forward(
-                    batch, task=task, cuda_device=self._cuda_device)
+                    batch, task=task)
                 assert_for_log(
                     "loss" in output_dict,
                     "Model must return a dict containing a 'loss' key")
@@ -770,7 +770,7 @@ class SamplingMultiTaskTrainer:
 
         for batch in val_generator:
             batch_num += 1
-            out = self._forward(batch, task=task, cuda_device=self._cuda_device)
+            out = self._forward(batch, task=task)
             loss = out["loss"]
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
@@ -951,9 +951,9 @@ class SamplingMultiTaskTrainer:
 
         return should_stop
 
-    def _forward(self, batch, cuda_device, task=None):
+    def _forward(self, batch, task=None):
         tensor_batch = move_to_device(batch, self._cuda_device)
-        model_out = self._model.forward(task, tensor_batch, cuda_device)
+        model_out = self._model.forward(task, tensor_batch)
         return model_out
 
     def _description_from_metrics(self, metrics):
