@@ -142,7 +142,7 @@ class SentenceEncoder(Model):
         if self.sep_embs_for_skip:
             if isinstance(self._text_field_embedder, BertEmbedderModule):
                 task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name,
-                                                           is_pair_task=is_pair_task)
+                                                                      is_pair_task=is_pair_task)
 
             else:
                 task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
@@ -189,9 +189,11 @@ class SentenceEncoder(Model):
         sent_lstm_mask = sent_mask if self._mask_lstms else None
         if word_embs_in_context is not None:
             if isinstance(self._phrase_layer, ONLSTMStack) or \
-                isinstance(self._phrase_layer, PRPN):
-                # The ONLSTMStack or PRPN takes the raw words as input and computes embeddings separately.
-                sent_enc, _ = self._phrase_layer(torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
+                    isinstance(self._phrase_layer, PRPN):
+                # The ONLSTMStack or PRPN takes the raw words as input and computes
+                # embeddings separately.
+                sent_enc, _ = self._phrase_layer(
+                    torch.transpose(sent["words"], 0, 1), sent_lstm_mask)
                 sent_enc = torch.transpose(sent_enc, 0, 1)
             else:
                 sent_enc = self._phrase_layer(word_embs_in_context, sent_lstm_mask)
@@ -273,30 +275,32 @@ class BoWSentEncoder(Model):
         word_mask = util.get_text_field_mask(sent).float()
         return word_embs, word_mask  # need to get # nonzero elts
 
+
 class PRPNPhraseLayer(Model):
-    """ 
+    """
     Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
     PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
     """
+
     def __init__(self, vocab, d_word, d_hid, n_layers_enc, n_slots,
-                n_lookback, resolution, dropout, idropout, rdropout, res,
-                embedder, batch_size, initializer=InitializerApplicator()):
+                 n_lookback, resolution, dropout, idropout, rdropout, res,
+                 embedder, batch_size, initializer=InitializerApplicator()):
         super(PRPNPhraseLayer, self).__init__(vocab)
 
         self.prpnlayer = PRPN(
-                         ninp=d_word, 
-                         nhid=d_hid, 
-                         nlayers=n_layers_enc,
-                         nslots=n_slots,
-                         nlookback=n_lookback, 
-                         resolution=resolution,
-                         dropout=dropout,
-                         idropout=idropout,
-                         rdropout=rdropout,
-                         res=res,
-                         batch_size=batch_size,
-                         embedder=embedder,
-                         phrase_layer=None)
+            ninp=d_word,
+            nhid=d_hid,
+            nlayers=n_layers_enc,
+            nslots=n_slots,
+            nlookback=n_lookback,
+            resolution=resolution,
+            dropout=dropout,
+            idropout=idropout,
+            rdropout=rdropout,
+            res=res,
+            batch_size=batch_size,
+            embedder=embedder,
+            phrase_layer=None)
         initializer(self)
 
     def get_input_dim(self):
@@ -306,13 +310,13 @@ class PRPNPhraseLayer(Model):
         return self.prpnlayer.ninp
 
 
-
 class ONLSTMPhraseLayer(Model):
     """
     Implementation of ON-LSTM (Shen et al., 2019) as a phrase layer for sentence encoder.
     ON-LSTM is designed to add syntactic inductive bias to LSTM,
     and learns the latent constituency trees jointly with a downstream task.
     """
+
     def __init__(self, vocab, d_word, d_hid, n_layers_enc,
                  chunk_size, onlstm_dropconnect, onlstm_dropouti,
                  dropout, onlstm_dropouth, embedder,
