@@ -4,6 +4,7 @@ This repo contains the `jiant` sentence representation learning toolkit created 
 The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
 
 jiant has been used in these two papers so far:
+- `jiant` is configuration driven. You can run an enormous variety of experiments by simply writing configuration files. Of course, if you need to add any major new features, you can also easily edit or extend the code.
 
 - [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("Edge Probing")
