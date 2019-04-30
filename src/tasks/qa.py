@@ -37,8 +37,9 @@ class MultiRCTask(Task):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
-        self.files_by_split = {split: os.path.join(path, "%s.json" % split) for
-                               split in ["train", "val", "test"]}
+        self.files_by_split = {"train": os.path.join(path, "train.jsonl"),
+                               "val": os.path.join(path, "val.jsonl"),
+                               "test": os.path.join(path, "test_ANS.jsonl")}
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' For now, only support BERT '''
@@ -53,21 +54,25 @@ class MultiRCTask(Task):
 
     def load_data(self, path):
         ''' Load data '''
-        data = json.load(open(path, "r"))["data"] # list of examples
-        # each example has a paragraph field -> (text, questions)
-        # text is the paragraph, which requires some preprocessing
-        # questions is a list of questions, has fields (question, sentences_used, answers)
-        for example in data:
-            para = re.sub("<b>Sent .{1,2}: </b>", "", example["paragraph"]["text"].replace("<br>", " "))
-            example["paragraph"]["text"] = process_sentence(self.tokenizer_name, para,
+
+        with open(path, encoding="utf-8") as data_fh:
+            examples = []
+            for example in data_fh:
+                ex = json.loads(example)
+                # each example has a paragraph field -> (text, questions)
+                # text is the paragraph, which requires some preprocessing
+                # questions is a list of questions, has fields (question, sentences_used, answers)
+                para = re.sub("<b>Sent .{1,2}: </b>", "", ex["paragraph"]["text"].replace("<br>", " "))
+                ex["paragraph"]["text"] = process_sentence(self.tokenizer_name, para,
+                                                           self.max_seq_len)
+                for question in ex["paragraph"]["questions"]:
+                    question["question"] = process_sentence(self.tokenizer_name, question["question"],
                                                             self.max_seq_len)
-            for question in example["paragraph"]["questions"]:
-                question["question"] = process_sentence(self.tokenizer_name, question["question"],
-                                                        self.max_seq_len)
-                for answer in question["answers"]:
-                    answer["text"] = process_sentence(self.tokenizer_name, answer["text"],
-                                                      self.max_seq_len)
-        return data
+                    for answer in question["answers"]:
+                        answer["text"] = process_sentence(self.tokenizer_name, answer["text"],
+                                                          self.max_seq_len)
+                examples.append(ex)
+        return examples
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         ''' Yield sentences, used to compute vocabulary. '''
@@ -86,13 +91,15 @@ class MultiRCTask(Task):
         ''' Process split text into a list of AllenNLP Instances. '''
         is_using_bert = "bert_wpm_pretokenized" in indexers
 
-        def _make_instance(para, question, answer, label, pq_id):
+        def _make_instance(para, question, answer, label, par_idx, qst_idx, ans_idx):
             """ pq_id: paragraph-question ID """
             d = {}
             d["paragraph_str"] = MetadataField(" ".join(para))
             d["question_str"] = MetadataField(" ".join(question))
             d["answer_str"] = MetadataField(" ".join(answer))
-            d["par_quest_idx"] = MetadataField(pq_id)
+            d["par_idx"] = MetadataField(par_idx)
+            d["qst_idx"] = MetadataField(qst_idx)
+            d["ans_idx"] = MetadataField(ans_idx)
             if is_using_bert:
                 inp = para + question[1:-1] + answer[1:]
                 d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
@@ -103,29 +110,19 @@ class MultiRCTask(Task):
             d["label"] = LabelField(label, label_namespace="labels",
                                     skip_indexing=True)
 
-            #answer_list = []
-            #ans_str_list = []
-            #for answer_n, (answer, label) in enumerate(zip(answers, labels)):
-            #    inp = para + question[1:-1] + answer[1:]
-            #    answer_list.append(sentence_to_text_field(inp, indexers))
-            #    ans_str_list.append(MetadataField(" ".join(answer)))
-            #d["answers"] = ListField(answer_list)
-            #d["answer_strs"] = ListField(ans_str_list)
-            #d["labels"] = SequenceLabelField(labels, d["answers"])
             return Instance(d)
 
-        for par_n, example in enumerate(split):
+        for example in split:
+            par_idx = example["idx"]
             para = example["paragraph"]["text"]
-            for quest_n, ex in enumerate(example["paragraph"]["questions"]):
-                par_quest_n = "p%d_q%d" % (par_n, quest_n)
+            for ex in example["paragraph"]["questions"]:
+                qst_idx = ex["idx"]
                 question = ex["question"]
-                #labels = [int(a["isAnswer"]) for a in ex["answers"]]
-                #answers = [a["text"] for a in ex["answers"]]
-
                 for answer in ex["answers"]:
-                    label = int(answer["isAnswer"])
+                    ans_idx = answer["idx"]
                     ans = answer["text"]
-                    yield _make_instance(para, question, ans, label, par_quest_n)
+                    label = int(answer["isAnswer"]) if "isAnswer" in answer else 0
+                    yield _make_instance(para, question, ans, label, par_idx, qst_idx, ans_idx)
 
 
     def count_examples(self):
@@ -134,9 +131,9 @@ class MultiRCTask(Task):
         for split, split_path in self.files_by_split.items():
             #example_counts[split] = sum(len(ex["paragraph"]["questions"]) for ex in \
             #                            json.load(open(split_path, 'r'))["data"])
-            example_counts[split] = sum(len(q["answers"]) for ex in \
-                                        json.load(open(split_path, 'r'))["data"] for q in \
-                                        ex["paragraph"]["questions"])
+            example_counts[split] = sum(len(q["answers"])
+                                        for r in open(split_path, 'r', encoding="utf-8") \
+                                        for q in json.loads(r)["paragraph"]["questions"])
 
         self.example_counts = example_counts
 
@@ -152,24 +149,28 @@ class MultiRCTask(Task):
         '''Get metrics specific to the task'''
         _, _, ans_f1 = self.scorer1.get_metric(reset)
 
-        ems = []
+        ems, f1s = [], []
         for logits_and_labels in self._score_tracker.values():
             logits, labels = list(zip(*logits_and_labels))
             logits = torch.cat(logits)
             labels = torch.cat(labels)
+
+            # question F1
+            self.scorer3(logits, labels)
+            __, _, ex_f1 = self.scorer3.get_metric(reset=True)
+            f1s.append(ex_f1)
+
+            # EM
             preds = logits.argmax(dim=-1)
-            if torch.eq(preds, label) == preds.size(0):
-                ex_em = 1
-            else:
-                ex_em = 0
-            #self.scorer3(logits, labels)
-            #_, _, ex_f1 = self.scorer3.get_metric(reset=True)
+            ex_em = (torch.eq(preds, labels).sum() == preds.nelement()).item()
             ems.append(ex_em)
-        em = sum(em) / len(em)
+        em = sum(ems) / len(ems)
+        qst_f1 = sum(f1s) / len(f1s)
 
         if reset:
+            import ipdb; ipdb.set_trace()
             self._scorer_tracker = collections.defaultdict(list)
 
-        return {'ans_f1': ans_f1, 'em': em,
+        return {'ans_f1': ans_f1, 'qst_f1': qst_f1, 'em': em,
                 "avg": (ans_f1 + em) / 2}
 

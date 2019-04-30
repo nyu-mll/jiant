@@ -664,7 +664,6 @@ def build_decoder(task, d_inp, vocab, embedder, args):
 
 def build_qa_module(task, d_inp, use_bert, params):
     ''' '''
-    #assert_for_log(use_bert, "Must use BERT for MultiRC!")
     pool_type = "first" if use_bert else "max"
     #d_inp = d_inp if not use_bert else d_inp
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
@@ -998,7 +997,7 @@ class MultiTaskModel(nn.Module):
         '''
         This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
-                batch: a dict of inputs and target tags 
+                batch: a dict of inputs and target tags
                 task: TaggingTask
                 predict: (boolean) predict mode (not supported)
         Returns
@@ -1240,10 +1239,10 @@ class MultiTaskModel(nn.Module):
 
         # will likely get memory errors...
         if 'label' in batch:
-            assert "par_quest_idx" in batch
+            idxs = [(p, q, a) for p, q, a in zip(batch["par_idx"], batch["qst_idx"], batch["ans_idx"])]
             labels = batch['label']
             out['loss'] = F.cross_entropy(logits, labels)
-            task.update_metrics(logits, labels, batch["par_quest_idx"])
+            task.update_metrics(logits, labels, idxs)
 
         return out
 

@@ -225,7 +225,6 @@ def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,
                       pred_dir: str, split_name: str,
                       strict_glue_format: bool = False):
