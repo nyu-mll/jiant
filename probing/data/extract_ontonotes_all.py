@@ -17,16 +17,19 @@ from tqdm import tqdm
 
 from typing import Tuple, List, Dict
 
-def _incl_to_excl(span: Tuple[int,int]):
-    return (span[0], span[1]+1)
 
-def _make_target(label: List[str], span1: Tuple[int,int],
-                 span2: Tuple[int,int]=None):
+def _incl_to_excl(span: Tuple[int, int]):
+    return (span[0], span[1] + 1)
+
+
+def _make_target(label: List[str], span1: Tuple[int, int],
+                 span2: Tuple[int, int]=None):
     t = {"span1": _incl_to_excl(span1),
          "label": label}
     if span2 is not None:
         t["span2"] = _incl_to_excl(span2)
     return t
+
 
 def make_record(spans, sentence):
     record = {}
@@ -36,6 +39,7 @@ def make_record(spans, sentence):
     record["text"] = " ".join(sentence.words)
     record["targets"] = [_make_target(*s) for s in spans]
     return record
+
 
 def constituents_to_record(parse_tree):
     '''Function converting Tree object to dictionary compatible with common JSON format
@@ -53,7 +57,7 @@ def constituents_to_record(parse_tree):
 
     max_height = parse_tree.height()
     for i, leaf in enumerate(parse_tree.subtrees(lambda t: t.height() == 2)):
-        #modify the leafs by adding their index in the parse_tree
+        # modify the leafs by adding their index in the parse_tree
         leaf[0] = (leaf[0], str(i))
 
     for index, subtree in enumerate(parse_tree.subtrees()):
@@ -62,15 +66,15 @@ def constituents_to_record(parse_tree):
         assoc_words.sort(key=lambda elem: elem[1])
         tmp_tag_list = subtree.label().replace('=', '-').replace('|', '-').split('-')
         label = tmp_tag_list[0]
-        if tmp_tag_list[-1].isdigit(): #Getting rid of numbers at the end of each tag
+        if tmp_tag_list[-1].isdigit():  # Getting rid of numbers at the end of each tag
             fxn_tgs = tmp_tag_list[1:-1]
         else:
             fxn_tgs = tmp_tag_list[1:]
-        #Special cases:
-        if len(tmp_tag_list) > 1 and tmp_tag_list[1] == 'S': #Case when we have 'PRP-S' or 'WP-S'
+        # Special cases:
+        if len(tmp_tag_list) > 1 and tmp_tag_list[1] == 'S':  # Case when we have 'PRP-S' or 'WP-S'
             label = tmp_tag_list[0] + '-' + tmp_tag_list[1]
             fxn_tgs = tmp_tag_list[2:-1] if tmp_tag_list[-1].isdigit() else tmp_tag_list[2:]
-        if subtree.label() in punctuations: #Case when we have one of the strange punctions, such as round brackets
+        if subtree.label() in punctuations:  # Case when we have one of the strange punctions, such as round brackets
             label, fxn_tgs = subtree.label(), []
         target = {"span1": [int(assoc_words[0][1]), int(assoc_words[-1][1]) + 1],
                   "label": label}
@@ -92,7 +96,7 @@ def constituents_to_record(parse_tree):
 def find_links(span_list):
     pairs = []
     for i, span1 in enumerate(span_list):
-        for span2 in span_list[i+1:]:
+        for span2 in span_list[i + 1:]:
             pairs.append((str(int(span1[0] == span2[0])),
                           span1[1],
                           span2[1]))
@@ -116,6 +120,7 @@ def get_frames(sentence):
             frame_targets.append((span2_tag, head_span, span2))
         yield frame_targets
 
+
 def process_task_split(ontonotes_reader, task: str, stats: collections.Counter):
     for sentence in ontonotes_reader:
         if task == "ner":
@@ -125,7 +130,7 @@ def process_task_split(ontonotes_reader, task: str, stats: collections.Counter):
             if sentence.parse_tree is not None:
                 record = constituents_to_record(sentence.parse_tree)
                 record["info"] = {"document_id": sentence.document_id,
-                                     "sentence_id": sentence.sentence_id}
+                                  "sentence_id": sentence.sentence_id}
                 yield record
             else:
                 stats['missing_tree'] += 1
@@ -148,12 +153,12 @@ def main(args):
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--ontonotes', type=str, required=True,
-            help="Path to OntoNotes, e.g. /path/to/conll-formatted-ontonotes-5.0")
+                        help="Path to OntoNotes, e.g. /path/to/conll-formatted-ontonotes-5.0")
     parser.add_argument('--tasks', type=str, nargs="+",
                         help="Tasks, one or more of {const, coref, ner, srl}.")
     parser.add_argument('--splits', type=str, nargs="+",
-            default=["train", "development", "test", "conll-2012-test"],
-            help="Splits, one or more of {train, development, test, conll-2012-test}.")
+                        default=["train", "development", "test", "conll-2012-test"],
+                        help="Splits, one or more of {train, development, test, conll-2012-test}.")
     parser.add_argument('-o', dest="output_dir", type=str, default=".",
                         help="Output directory for JSON files.")
     args = parser.parse_args(args)
