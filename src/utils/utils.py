@@ -190,7 +190,8 @@ def split_data(data, ratio, shuffle=1):
     
 def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
     """ 
-    Unpack preds to varying-length numpy arrays.
+    Unpack preds to varying-length numpy arrays by removing 
+    extra first dimension.
     Args:
         preds: [batch_size, num_targets, ...]
     Yields:
