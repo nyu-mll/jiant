@@ -1993,3 +1993,62 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = list(val_data) + [masks[1]]
         self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
         log.info('\tFinished loading CCGTagging data.')
+
+@register_task('commitbank', rel_path='CommitmentBank/')
+class CommitmentTask(PairClassificationTask):
+    ''' NLI-formatted task detecting speaker commitment.
+    Data and more info at github.com/mcdm/CommitmentBank/
+    Paper forthcoming. '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' We use three F1 trackers, one for each class to compute multi-class F1 '''
+        super().__init__(name, n_classes=3, **kw)
+        self.scorer2 = F1Measure(0)
+        self.scorer3 = F1Measure(1)
+        self.scorer4 = F1Measure(2)
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3, self.scorer4]
+        self.val_metric = "%s_f1" % name
+
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + \
+                         self.train_data_text[1] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at each data file.
+           The target needs to be split into tokens because
+           it is a sequence (one tag per input token). '''
+        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        def _load_data(data_file):
+            data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+            sent1s, sent2s, targs, idxs = [], [], [], []
+            for example in data:
+                sent1s.append(process_sentence(self._tokenizer_name, example["premise"], max_seq_len))
+                sent2s.append(process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len))
+                trg = targ_map[example["label"]] if "label" in example else 0
+                targs.append(trg)
+                targs.append(trg)
+                idxs.append(example["idx"])
+            return [sent1s, sent2s, targs, idxs]
+
+        tr_data = _load_data(os.path.join(path, "train.jsonl"))
+        val_data = _load_data(os.path.join(path, "val.jsonl"))
+        te_data = _load_data(os.path.join(path, "test_ANS.jsonl"))
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info('\tFinished loading CommitmentBank data.')
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task.
+            - scorer1 tracks accuracy
+            - scorers{2,3,4} compute class-specific F1,
+                and we macro-average to get multi-class F1'''
+        acc = self.scorer1.get_metric(reset)
+        pcs1, rcl1, f11 = self.scorer2.get_metric(reset)
+        pcs2, rcl2, f12 = self.scorer3.get_metric(reset)
+        pcs3, rcl3, f13 = self.scorer4.get_metric(reset)
+        pcs = (pcs1 + pcs2 + pcs3) / 3
+        rcl = (rcl1 + rcl2 + rcl3) / 3
+        f1 = (f11 + f12 + f13) / 3
+        return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}

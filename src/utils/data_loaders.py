@@ -26,6 +26,7 @@ def load_tsv(
         skip_rows=0,
         return_indices=False,
         delimiter='\t',
+        quote_level=3, # csv.QUOTE_NONE
         filter_idx=None,
         has_labels=True,
         filter_value=None,
@@ -63,7 +64,7 @@ def load_tsv(
                        names=col_indices,
                        header=None,
                        skiprows=skip_rows,
-                       quoting=csv.QUOTE_NONE,
+                       quoting=quote_level,
                        encoding='utf-8')
     if filter_idx:
         rows = rows[rows[filter_idx] == filter_value]
