@@ -84,7 +84,6 @@ To run the demo config, you will have to set environment variables. The best way
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
 *  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the Glue data.
 *  $WORD_EMBED: location of the word embeddings you want to use. For GloVe:  [840B300d Glove](http://nlp.stanford.edu/data/glove.840B.300d.zip). For FastText: [300d-2M](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip). For ELMo, AllenNLP will download it for you. For OpenAI, the model weights will be downloaded when installing the git submodules.
-*  $FASTTEXT_MODEL_FILE: location of the FastText model: can be set to '.'
 
 
 
@@ -151,13 +150,26 @@ To see the full set of available params, see [config/defaults.conf](config/defau
 
 To use the ON-LSTM sentence encoder from [Ordered Neurons: Integrating Tree Structures into Recurrent Neural Networks](https://arxiv.org/abs/1810.09536), set ``sent_enc = onlstm``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/onlstm.conf](config/onlstm.conf). Specific ON-LSTM modules use code from the [Github](https://github.com/yikangshen/Ordered-Neurons) implementation of the paper.
 
-To use the PRPN sentence encoder from [***Neural language modeling by jointly learning syntax and lexicon***](https://arxiv.org/abs/1711.02013), set ``sent_enc=prpn``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/prpn.conf](config/prpn.conf). Specific PRPN modules use code from the [Github](https://github.com/yikangshen/PRPN) implementation of the paper. 
- 
+To use the PRPN sentence encoder from [***Neural language modeling by jointly learning syntax and lexicon***](https://arxiv.org/abs/1711.02013), set ``sent_enc=prpn``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/prpn.conf](config/prpn.conf). Specific PRPN modules use code from the [Github](https://github.com/yikangshen/PRPN) implementation of the paper.
+
+## Currently Supported Task Types
+
+We currently support the following:
+
+	* Single sentence classification tasks
+	* Pair sentence classification tasks
+	* Regression tasks
+	* Tagging tasks
+	* Span classification Tasks - to run these, we currently require an extra preprocessing 
+	  step, which consists of preprocessing the data to get BERT tokenized span indices. 
+	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}.
+	* seq2seq tasks are partially supported.
+
 ### Transformers 
 
 We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. 
 
-We also support using pretrained Transformer language models. To use the OpenAI transformer model, set `openai_transformer = 1`.
+We also support using pretrained Transformer language models. To use the OpenAI transformer model, set `openai_transformer = 1`, download the [model](https://github.com/openai/finetune-transformer-lm) folder that contains pre-trained models, and place it under `src/openai_transformer_lm/pytorch_huggingface/`.
 To use [BERT](https://arxiv.org/abs/1810.04805) architecture, set ``bert_model_name`` to one of the models listed [here](https://github.com/huggingface/pytorch-pretrained-BERT#loading-google-ai-or-openai-pre-trained-weigths-or-pytorch-dump), e.g. ``bert-base-cased``. You should also set ``tokenizer`` to be the BERT model used in order to ensure you are using the same tokenization and vocabulary.
 
 When using BERT, we follow the procedures set out in the original work as closely as possible: For pair sentence tasks, we concatenate the sentences with a sepcial `[SEP]` token. Rather than max-pooling, we take the first representation of the sequence (corresponding to the special `[CLS]` token) as the representation of the entire sequence.
@@ -237,11 +249,6 @@ To use CoVe, clone the repo and set the option ``path_to_cove = "/path/to/cove/r
 
 
 ### FastText
-
-To use fastText, we can either use the pretrained vectors or pretrained model. The former will have OOV terms while the latter will not, so using the latter is preferred.
-To use the pretrained model, follow the instructions [here](https://github.com/facebookresearch/fastText) (specifically "Building fastText for Python") to setup the fastText package, then download the trained English [model](https://fasttext.cc/docs/en/pretrained-vectors.html) (note: 9.6G).
-fastText will also need to be built in the jiant environment following [these instructions](https://github.com/facebookresearch/fastText#building-fasttext-for-python).
-To activate fastText model within our framework, set the flag ``fastText = 1``
 
 Download the pretrained vectors located [here](https://fasttext.cc/docs/en/english-vectors.html), preferrably the 300-dimensional Common Crawl vectors. Set the ``word_emb_file`` to point to the .vec file.
 
