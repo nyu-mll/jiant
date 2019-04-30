@@ -1,4 +1,7 @@
 # jiant
+
+[![CircleCI](https://circleci.com/gh/zphang/jiant/tree/circleci.svg?style=svg)](https://circleci.com/gh/zphang/jiant/tree/circleci)
+
 This repo contains the `jiant` sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
 The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
