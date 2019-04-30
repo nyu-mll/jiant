@@ -467,7 +467,7 @@ class SSTTask(SingleClassificationTask):
 @register_task('cola_npi_ques', rel_path='NPI/splits/questions')
 @register_task('cola_npi_quessmp', rel_path='NPI/splits/simplequestions')
 @register_task('cola_npi_qnt', rel_path='NPI/splits/quantifiers')
-@register_task('cola_npi_sup', rel_path='NPI/splits/npi_superlatives')
+@register_task('cola_npi_sup', rel_path='NPI/splits/superlative')
 @register_task('all_cola_npi', rel_path='NPI/combs/all_env')
 @register_task('hd_cola_npi_adv', rel_path='NPI/combs/minus_adverbs')
 @register_task('hd_cola_npi_cond', rel_path='NPI/combs/minus_conditionals')
@@ -477,7 +477,7 @@ class SSTTask(SingleClassificationTask):
 @register_task('hd_cola_npi_ques', rel_path='NPI/combs/minus_questions')
 @register_task('hd_cola_npi_quessmp', rel_path='NPI/combs/minus_simplequestions')
 @register_task('hd_cola_npi_qnt', rel_path='NPI/combs/minus_quantifiers')
-@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_npi_superlatives')
+@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_superlative')
 class CoLANPITask(SingleClassificationTask):
     '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set
        Note: Used for an NYU seminar, data not yet public'''
