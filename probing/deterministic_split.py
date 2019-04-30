@@ -25,6 +25,7 @@ import logging as log
 log.basicConfig(format='%(asctime)s: %(message)s',
                 datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
 
+
 def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--seed", dest='seed', type=int, default=42,
@@ -62,4 +63,3 @@ def main(args):
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-
