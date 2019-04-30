@@ -81,12 +81,13 @@ class CoLAMinimalPairTask(Task):
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["input2"] = sentence_to_text_field(input2, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
-            input0 = [i for i in input1]
-            input0[mask_index] = BERT_MASK_TOK
-            d["input0"] = sentence_to_text_field(input0, indexers)
-            d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
-            d["index"] = IndexField(mask_index, d["input1"])
+            if self.name == "cola-pair-frozen":
+                mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
+                input0 = [i for i in input1]
+                input0[mask_index] = BERT_MASK_TOK
+                d["input0"] = sentence_to_text_field(input0, indexers)
+                d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
+                d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels",
                                      skip_indexing=True)
             d["tagmask"] = MultiLabelField(tagids, label_namespace="tagids",
