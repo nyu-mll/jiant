@@ -665,7 +665,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-
+            
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
@@ -1994,6 +1994,177 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
         log.info('\tFinished loading CCGTagging data.')
 
+class SpanClassificationTask(Task):
+    '''
+     Generic class for span tasks.
+    Acts as a classifier, but with multiple targets for each input text.
+    Targets are of the form (span1, span2,..., span_n, label), where the spans are
+    half-open token intervals [i, j).
+    The number of spans is constant across examples.
+    '''
+    @property
+    def _tokenizer_suffix(self):
+        ''' 
+        Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
+
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
+
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 num_spans: int = 2,
+                 **kw):
+        """
+        Construct a span task.
+        @register_task.
+
+        Parameters
+        ---------------------
+            path: data directory
+            max_seq_len: maximum sequence length (currently ignored)
+            name: task name
+            label_file: relative path to labels file
+                - should be a line-delimited file where each line is a value the 
+                label can take.
+            files_by_split: split name ('train', 'val', 'test') mapped to
+                relative filenames (e.g. 'train': 'train.json')
+        """
+        super().__init__(name, **kw)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname) + self._tokenizer_suffix
+            for split, fname in files_by_split.items()
+        }
+        self.num_spans = num_spans
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        self._label_namespace = self.name + "_labels"
+
+        self.acc_scorer = BooleanAccuracy()  # binary accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        self.scorers = [self.acc_scorer, self.f1_scorer]
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        """
+        Helper function for loading the data, which is in json format and 
+        checks if it has targets.
+        """
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' 
+        Get split text as iterable of records.
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' 
+        Return number of examples in the result of get_split_text.
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def _make_span_field(self, s, text_field, offset=1):
+        # AllenNLP span extractor expects inclusive span indices
+        # so minus 1 at the end index.
+        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
+
+    def _pad_tokens(self, tokens):
+        """Pad tokens according to the current tokenization style."""
+        if self.tokenizer_name.startswith("bert-"):
+            # standard padding for BERT; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            return ["[CLS]"] + tokens + ["[SEP]"]
+        else:
+            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        example = {}
+        example["idx"] = MetadataField(idx)
+
+        example['input1'] = text_field
+
+        for i in range(self.num_spans):
+            example["span" + str(i + 1) + "s"] = ListField([self._make_span_field(t['span' + str(i + 1)], text_field, 1)
+                                                  for t in record['targets']])
+
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        example['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+        return Instance(example)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metrics = {}
+        metrics['acc'] = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        metrics['precision'] = precision
+        metrics['recall'] = recall
+        metrics['f1'] = f1
+        return metrics
+
 @register_task('commitbank', rel_path='CommitmentBank/')
 class CommitmentTask(PairClassificationTask):
     ''' NLI-formatted task detecting speaker commitment.
@@ -2052,3 +2223,4 @@ class CommitmentTask(PairClassificationTask):
         rcl = (rcl1 + rcl2 + rcl3) / 3
         f1 = (f11 + f12 + f13) / 3
         return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
+
