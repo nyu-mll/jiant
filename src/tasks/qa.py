@@ -39,7 +39,7 @@ class MultiRCTask(Task):
         self.max_seq_len = max_seq_len
         self.files_by_split = {"train": os.path.join(path, "train.jsonl"),
                                "val": os.path.join(path, "val.jsonl"),
-                               "test": os.path.join(path, "test_ANS.jsonl")}
+                               "test": os.path.join(path, "test.jsonl")}
 
     def tokenizer_is_supported(self, tokenizer_name):
         ''' For now, only support BERT '''
