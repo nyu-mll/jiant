@@ -1242,6 +1242,9 @@ class MultiTaskModel(nn.Module):
             out['loss'] = F.cross_entropy(logits, labels)
             task.update_metrics(logits, labels, idxs)
 
+        if predict:
+            out['preds'] = logits.argmax(dim=-1)
+
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):

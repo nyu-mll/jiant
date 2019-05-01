@@ -12,6 +12,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.tasks import CommitmentTask
+from .tasks.qa import MultiRCTask
 from .tasks.edge_probing import EdgeProbingTask
 from allennlp.nn.util import move_to_device
 
@@ -39,7 +40,7 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
              cuda_device: int, split="val") -> Tuple[Dict, pd.DataFrame]:
     '''Evaluate on a dataset'''
-    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
+    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels', 'qst_idx', 'ans_idx']
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS
     model.eval()
@@ -145,6 +146,9 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         elif isinstance(task, CommitmentTask):
             _write_commitment_preds(task, preds_df, pred_dir, split_name,
                                     strict_glue_format=strict_glue_format)
+        elif isinstance(task, MultiRCTask):
+            _write_multirc_preds(task, preds_df, pred_dir, split_name,
+                                 strict_glue_format=strict_glue_format)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -235,9 +239,10 @@ def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:
-            qst_ans_d = defaultdict(int)
+            qst_ans_d = defaultdict(list)
             for row_idx, row in preds_df.iterrows():
-                qst_ans_d[row["qst_idx"]].append({"idx": row["ans_idx"], "label": row["labels"]})
+                ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
+                qst_ans_d[int(row["qst_idx"])].append(ans_d)
 
             for qst_idx, answers in qst_ans_d.items():
                 out_d = {"idx": qst_idx, "answers": answers}
