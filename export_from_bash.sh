@@ -3,7 +3,7 @@
 # for automatic updates on booting up the terminals.
 
 function changebashpaths() {
-	output="source path_config.sh"
+	output="source $(pwd)/path_config.sh"
 	case "$(uname -s)" in
 		Darwin)
 			echo $output >> ~/.bash_profile
