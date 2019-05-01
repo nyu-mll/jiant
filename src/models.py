@@ -42,7 +42,7 @@ from .tasks.edge_probing import EdgeProbingTask
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
-    SingleClassifier, PairClassifier, CNNEncoder, \
+    SingleClassifier, PairClassifier, \
     NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.span_modules import SpanClassifierModule

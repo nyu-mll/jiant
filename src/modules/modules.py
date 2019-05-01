@@ -45,10 +45,6 @@ from ..utils import utils
 from ..bert.utils import BertEmbedderModule
 from ..tasks.tasks import PairClassificationTask, PairRegressionTask
 
-from .cnns.alexnet import alexnet
-from .cnns.resnet import resnet101
-from .cnns.inception import inception_v3
-
 
 class NullPhraseLayer(nn.Module):
     ''' Dummy phrase layer that does nothing. Exists solely for API compatibility. '''
@@ -926,64 +922,3 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
             self._projection.weight.requires_grad = self.requires_grad
             self._projection.bias.requires_grad = self.requires_grad
-
-
-class CNNEncoder(Model):
-    ''' Given an image, get image features from last layer of specified CNN
-        e.g., Resnet101, AlexNet, InceptionV3
-        New! Preprocessed and indexed image features, so just load from json!'''
-
-    def __init__(self, model_name, path, model=None):
-        super(CNNEncoder, self).__init__(model_name)
-        self.model_name = model_name
-        self.model = self._load_model(model_name)
-        self.feat_path = path + '/all_feats/'
-
-    def _load_model(self, model_name):
-        if model_name == 'alexnet':
-            model = alexnet(pretrained=True)
-        elif model_name == 'inception':
-            model = inception_v3(pretrained=True)
-        elif model_name == 'resnet':
-            model = resnet101(pretrained=True)
-        return model
-
-    def _load_features(self, path, dataset):
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                         std=[0.229, 0.224, 0.225])
-        train_dataset = datasets.ImageFolder(
-            path,
-            transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ]))
-
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset)
-
-        classes = [
-            d for d in os.listdir(
-                train_dataset.root) if os.path.isdir(
-                os.path.join(
-                    train_dataset.root,
-                    d))]
-
-        class_to_idx = {classes[i]: i for i in range(len(classes))}
-        rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
-
-        feat_dict = {}
-        for i, (input, target) in enumerate(train_loader):
-            x = self.model.forward(input)
-            feat_dict[rev_class[i]] = x.data
-        return feat_dict
-
-    def forward(self, img_id):
-        '''
-        Args: img_id that maps image -> sentence pairs in respective datasets.
-        '''
-
-        with open(self.feat_path + str(img_id) + '.json') as fd:
-            feat_dict = json.load(fd)
-        return feat_dict[list(feat_dict.keys())[0]]  # has one key
