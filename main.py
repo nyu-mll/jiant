@@ -21,7 +21,7 @@ from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
 from src.trainer import build_trainer
-from src.utils  import config
+from src.utils   import config
 from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
