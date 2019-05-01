@@ -164,7 +164,9 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         }
 
     def load_data(self, path):
-        """Load data file (combine the entailment and contradiction sentence), tokenize text and concat sentences to create long term dependencies.
+        """
+        Load data file (combine the entailment and contradiction sentence), tokenize text and
+        concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """

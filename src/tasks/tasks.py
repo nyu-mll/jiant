@@ -2202,7 +2202,7 @@ class SpanClassificationTask(Task):
 
     @property
     def _tokenizer_suffix(self):
-        """ 
+        """
         Suffix to make sure we use the correct source files,
         based on the given tokenizer.
         """
@@ -2237,7 +2237,7 @@ class SpanClassificationTask(Task):
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
             label_file: relative path to labels file
-                - should be a line-delimited file where each line is a value the 
+                - should be a line-delimited file where each line is a value the
                 label can take.
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
@@ -2267,7 +2267,7 @@ class SpanClassificationTask(Task):
 
     def _stream_records(self, filename):
         """
-        Helper function for loading the data, which is in json format and 
+        Helper function for loading the data, which is in json format and
         checks if it has targets.
         """
         skip_ctr = 0
@@ -2294,14 +2294,14 @@ class SpanClassificationTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        """ 
+        """
         Get split text as iterable of records.
         Split should be one of 'train', 'val', or 'test'.
         """
         return self._iters_by_split[split]
 
     def get_num_examples(self, split_text):
-        """ 
+        """
         Return number of examples in the result of get_split_text.
         Subclass can override this if data is not stored in column format.
         """

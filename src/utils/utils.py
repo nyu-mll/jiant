@@ -183,8 +183,8 @@ def split_data(data, ratio, shuffle=1):
 
 
 def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
-    """ 
-    Unpack preds to varying-length numpy arrays by removing 
+    """
+    Unpack preds to varying-length numpy arrays by removing
     extra first dimension.
     Args:
         preds: [batch_size, num_targets, ...]
@@ -257,7 +257,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
     def reset_parameters(self) -> None:
         # Because we are doing so many torch.bmm calls, which is fast but unstable,
-        # it is critically important to intitialise the parameters correctly such
+        # it is critically important to initialise the parameters correctly such
         # that these matrix multiplications are well conditioned initially.
         # Without this initialisation, this (non-deterministically) produces
         # NaNs and overflows.

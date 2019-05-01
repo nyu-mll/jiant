@@ -17,8 +17,8 @@ class MultiLabelField(Field[torch.Tensor]):
     """
     A ``MultiLabelField`` is an extension of the :class:`LabelField` that allows for multiple labels.
     It is particularly useful in multi-label classification where more than one label can be correct.
-    As with the :class:`LabelField`, labels are either strings of text or 0-indexed integers (if you wish
-    to skip indexing by passing skip_indexing=True).
+    As with the :class:`LabelField`, labels are either strings of text or 0-indexed integers
+    (if you wish to skip indexing by passing skip_indexing=True).
     If the labels need indexing, we will use a :class:`Vocabulary` to convert the string labels
     into integers.
 
@@ -37,12 +37,13 @@ class MultiLabelField(Field[torch.Tensor]):
         use different namespaces for each one, always using the suffix "labels" (e.g.,
         "passage_labels" and "question_labels").
     skip_indexing : ``bool``, optional (default=False)
-        If your labels are 0-indexed integers, you can pass in this flag, and we'll skip the indexing
-        step.  If this is ``False`` and your labels are not strings, this throws a ``ConfigurationError``.
+        If your labels are 0-indexed integers, you can pass in this flag, and we'll skip the
+        indexing step.  If this is ``False`` and your labels are not strings,
+        this throws a ``ConfigurationError``.
     num_labels : ``int``, optional (default=None)
-        If ``skip_indexing=True``, the total number of possible labels should be provided, which is required
-        to decide the size of the output tensor. `num_labels` should equal largest label id + 1.
-        If ``skip_indexing=False``, `num_labels` is not required.
+        If ``skip_indexing=True``, the total number of possible labels should be provided, which is
+        required to decide the size of the output tensor. `num_labels` should equal largest
+        label id + 1. If ``skip_indexing=False``, `num_labels` is not required.
 
     """
 
