@@ -10,6 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
+from .tasks.tasks import CommitmentTask
 from .tasks.edge_probing import EdgeProbingTask
 from allennlp.nn.util import move_to_device
 
@@ -39,7 +40,8 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
     '''Evaluate on a dataset'''
     FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels']
     # Enforce that these tasks have the 'idx' field set.
-    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + ['wmt']
+    IDX_REQUIRED_TASK_NAMES = tasks_module.ALL_GLUE_TASKS + \
+        ['wmt'] + tasks_module.ALL_COLA_NPI_TASKS
     model.eval()
     iterator = BasicIterator(batch_size)
 
@@ -127,8 +129,11 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        glue_style_tasks = (tasks_module.ALL_NLI_PROBING_TASKS
-                            + tasks_module.ALL_GLUE_TASKS + ['wmt'])
+        glue_style_tasks = (
+            tasks_module.ALL_NLI_PROBING_TASKS +
+            tasks_module.ALL_GLUE_TASKS +
+            ['wmt'] +
+            tasks_module.ALL_COLA_NPI_TASKS)
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = (
@@ -140,6 +145,9 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
             log.info("Task '%s': Wrote predictions to %s", task.name, pred_dir)
+        elif isinstance(task, CommitmentTask):
+            _write_commitment_preds(task, preds_df, pred_dir, split_name,
+                                    strict_glue_format=strict_glue_format)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -160,10 +168,14 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
+SUPERGLUE_NAME_MAP = {"commitbank": 'CB'
+                     }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
         file = GLUE_NAME_MAP[task_name] + ".tsv"
+    elif strict_glue_format and task_name in SUPERGLUE_NAME_MAP:
+        file = SUPERGLUE_NAME_MAP[task_name] + ".jsonl"
     else:
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
@@ -202,6 +214,20 @@ def _write_edge_preds(task: EdgeProbingTask,
         for record in records:
             fd.write(json.dumps(record))
             fd.write("\n")
+
+def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
+                            pred_dir: str, split_name: str,
+                            strict_glue_format: bool = False):
+    ''' Write predictions for CommitmentBank task.  '''
+    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 
 def _write_glue_preds(task_name: str, preds_df: pd.DataFrame,

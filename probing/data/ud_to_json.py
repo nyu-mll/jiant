@@ -21,6 +21,7 @@ import pandas as pd
 
 import conllu
 
+
 def convert_ud_file(fd):
     """Convert a UD file to a list of records in edge probing format.
 
@@ -30,7 +31,7 @@ def convert_ud_file(fd):
     Returns:
         list(dict) of edge probing records
     """
-    #TODO(Tom): refactor to use conllu to parse file
+    # TODO(Tom): refactor to use conllu to parse file
     prev_line = "FILLER"
     word_lines = []
     examples = []
@@ -54,13 +55,29 @@ def convert_ud_file(fd):
                 if this_head == 0:
                     this_head = this_id
                 deprel = parts[7]
-                spans.append('{"span1": [' + str(this_id - 1) + ', ' + str(this_id) + '], "span2": [' + str(this_head - 1) + ', ' + str(this_head) + '], "label": "' + deprel + '"}')
+                spans.append('{"span1": [' +
+                             str(this_id -
+                                 1) +
+                             ', ' +
+                             str(this_id) +
+                             '], "span2": [' +
+                             str(this_head -
+                                 1) +
+                             ', ' +
+                             str(this_head) +
+                             '], "label": "' +
+                             deprel +
+                             '"}')
 
             if example_good:
-                examples.append('{"text": "' + " ".join(words) + '", "targets": [' + ", ".join(spans) + '], "info": {"source": "UD_English-EWT"}}')
+                examples.append(
+                    '{"text": "' +
+                    " ".join(words) +
+                    '", "targets": [' +
+                    ", ".join(spans) +
+                    '], "info": {"source": "UD_English-EWT"}}')
 
             word_lines = []
-
 
         elif line[0] != "#" and len(line.strip()) > 1:
             word_lines.append(line)
@@ -95,7 +112,7 @@ def main(args):
 
     log.info("Done!")
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
     sys.exit(0)
-

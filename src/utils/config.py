@@ -59,7 +59,7 @@ class Params(object):
         self._known_keys.add(k)
 
     def __delitem__(self, k):
-        if not k in self:
+        if k not in self:
             raise ValueError("Parameter %s not found.", k)
         delattr(self, k)
         self._known_keys.remove(k)
