@@ -83,7 +83,7 @@ def process_single_pair_task_split(
         d = {}
         d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
         if is_using_bert and is_pair:
-            inp = input1 + input2[1:] # throw away input2 leading [CLS]
+            inp = input1 + input2[1:]  # throw away input2 leading [CLS]
             d["inputs"] = sentence_to_text_field(inp, indexers)
             d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
         else:
@@ -254,6 +254,7 @@ class Task(object):
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
+
 class ClassificationTask(Task):
     ''' General classification task '''
     pass
@@ -335,6 +336,8 @@ class PairRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+
+
 class PairOrdinalRegressionTask(RegressionTask):
     ''' Generic sentence pair ordinal regression.
         Currently just doing regression but added new class
@@ -360,10 +363,12 @@ class PairOrdinalRegressionTask(RegressionTask):
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True,
                                               classification=False)
+    
     def update_metrics(self, logits, labels, tagmask=None):
         self.scorer1(mean_squared_error(logits, labels))  # update average MSE
         self.scorer2(logits, labels)
         return
+
 
 class SequenceGenerationTask(Task):
     ''' Generic sentence generation task '''
@@ -392,6 +397,7 @@ class RankingTask(Task):
     ''' Generic sentence ranking task, given some input '''
     pass
 
+
 @register_task('sst', rel_path='SST-2/')
 class SSTTask(SingleClassificationTask):
     ''' Task class for Stanford Sentiment Treebank.  '''
@@ -408,8 +414,17 @@ class SSTTask(SingleClassificationTask):
                            s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
                             s1_idx=0, s2_idx=None, label_idx=1, skip_rows=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test.tsv'),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -423,10 +438,12 @@ class SSTTask(SingleClassificationTask):
 @register_task('npi_cond_sc', rel_path='NPI/probing/conditionals/scope_with_licensor')
 @register_task('npi_cond_pr', rel_path='NPI/probing/conditionals/npi_present')
 @register_task('npi_negdet_li', rel_path='NPI/probing/determiner_negation_biclausal/licensor')
-@register_task('npi_negdet_sc', rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
+@register_task('npi_negdet_sc',
+               rel_path='NPI/probing/determiner_negation_biclausal/scope_with_licensor')
 @register_task('npi_negdet_pr', rel_path='NPI/probing/determiner_negation_biclausal/npi_present')
 @register_task('npi_negsent_li', rel_path='NPI/probing/sentential_negation_biclausal/licensor')
-@register_task('npi_negsent_sc', rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
+@register_task('npi_negsent_sc',
+               rel_path='NPI/probing/sentential_negation_biclausal/scope_with_licensor')
 @register_task('npi_negsent_pr', rel_path='NPI/probing/sentential_negation_biclausal/npi_present')
 @register_task('npi_only_li', rel_path='NPI/probing/only/licensor')
 @register_task('npi_only_sc', rel_path='NPI/probing/only/scope_with_licensor')
@@ -451,7 +468,7 @@ class SSTTask(SingleClassificationTask):
 @register_task('cola_npi_ques', rel_path='NPI/splits/questions')
 @register_task('cola_npi_quessmp', rel_path='NPI/splits/simplequestions')
 @register_task('cola_npi_qnt', rel_path='NPI/splits/quantifiers')
-@register_task('cola_npi_sup', rel_path='NPI/splits/npi_superlatives')
+@register_task('cola_npi_sup', rel_path='NPI/splits/superlative')
 @register_task('all_cola_npi', rel_path='NPI/combs/all_env')
 @register_task('hd_cola_npi_adv', rel_path='NPI/combs/minus_adverbs')
 @register_task('hd_cola_npi_cond', rel_path='NPI/combs/minus_conditionals')
@@ -461,7 +478,7 @@ class SSTTask(SingleClassificationTask):
 @register_task('hd_cola_npi_ques', rel_path='NPI/combs/minus_questions')
 @register_task('hd_cola_npi_quessmp', rel_path='NPI/combs/minus_simplequestions')
 @register_task('hd_cola_npi_qnt', rel_path='NPI/combs/minus_quantifiers')
-@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_npi_superlatives')
+@register_task('hd_cola_npi_sup', rel_path='NPI/combs/minus_superlative')
 class CoLANPITask(SingleClassificationTask):
     '''Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set
        Note: Used for an NYU seminar, data not yet public'''
@@ -525,8 +542,17 @@ class CoLATask(SingleClassificationTask):
                            s1_idx=3, s2_idx=None, label_idx=1)
         val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len,
                             s1_idx=3, s2_idx=None, label_idx=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test.tsv'),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -542,6 +568,7 @@ class CoLATask(SingleClassificationTask):
         self.scorer1(preds, labels)
         self.scorer2(logits, labels)
         return
+
 
 @register_task('cola-analysis', rel_path='CoLA/')
 class CoLAAnalysisTask(SingleClassificationTask):
@@ -559,18 +586,60 @@ class CoLAAnalysisTask(SingleClassificationTask):
         '''Load the data'''
         # Load data from tsv
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        tr_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                           data_file=os.path.join(path, "train_analysis.tsv"), max_seq_len=max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
-        val_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
-                            s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
-                                'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
-                                'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
-                                'to-VP': 14, 'N, Adj': 15, 'S-Syntax': 16, 'Determiner': 17, 'Violations': 18}, tag_vocab=tag_vocab)
-        te_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                           data_file=os.path.join(path, "test_analysis.tsv"), max_seq_len=max_seq_len,
-                           s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={'Domain': 1}, tag_vocab=tag_vocab)
+        tr_data = load_tsv(
+            tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(
+                path,
+                "train_analysis.tsv"),
+            max_seq_len=max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            tag2idx_dict={
+                'Domain': 1},
+            tag_vocab=tag_vocab)
+        val_data = load_tsv(
+            tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(
+                path,
+                "dev_analysis.tsv"),
+            max_seq_len=max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            tag2idx_dict={
+                'Domain': 1,
+                'Simple': 4,
+                'Pred': 5,
+                'Adjunct': 6,
+                'Arg Types': 7,
+                'Arg Altern': 8,
+                'Imperative': 9,
+                'Binding': 10,
+                'Question': 11,
+                'Comp Clause': 12,
+                'Auxillary': 13,
+                'to-VP': 14,
+                'N, Adj': 15,
+                'S-Syntax': 16,
+                'Determiner': 17,
+                'Violations': 18},
+            tag_vocab=tag_vocab)
+        te_data = load_tsv(
+            tokenizer_name=self._tokenizer_name,
+            data_file=os.path.join(
+                path,
+                "test_analysis.tsv"),
+            max_seq_len=max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            tag2idx_dict={
+                'Domain': 1},
+            tag_vocab=tag_vocab)
         self.train_data_text = tr_data[:1] + tr_data[2:]
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
@@ -597,7 +666,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-
+            
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
@@ -796,10 +865,30 @@ class STSBTask(PairRegressionTask):
 
     def load_data(self, path, max_seq_len):
         ''' Load data '''
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=7, s2_idx=8, label_idx=9, label_fn=lambda x: float(x) / 5)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'train.tsv'),
+            max_seq_len,
+            skip_rows=1,
+            s1_idx=7,
+            s2_idx=8,
+            label_idx=9,
+            label_fn=lambda x: float(x) /
+            5)
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'dev.tsv'),
+            max_seq_len,
+            skip_rows=1,
+            s1_idx=7,
+            s2_idx=8,
+            label_idx=9,
+            label_fn=lambda x: float(x) /
+            5)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
@@ -828,10 +917,28 @@ class SNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         ''' Process the dataset located at path.  '''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
-                           s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "dev.tsv"), max_seq_len, label_fn=targ_map.__getitem__,
-                            s1_idx=7, s2_idx=8, label_idx=10, skip_rows=1)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "train.tsv"),
+            max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=7,
+            s2_idx=8,
+            label_idx=10,
+            skip_rows=1)
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "dev.tsv"),
+            max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=7,
+            s2_idx=8,
+            label_idx=10,
+            skip_rows=1)
         te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
                            s1_idx=7, s2_idx=8, has_labels=False, return_indices=True, skip_rows=1)
         self.train_data_text = tr_data
@@ -856,16 +963,42 @@ class MultiNLITask(PairClassificationTask):
     def load_data(self, path, max_seq_len):
         '''Process the dataset located at path.'''
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=8, s2_idx=9, label_idx=11, label_fn=targ_map.__getitem__, skip_rows=1)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'train.tsv'),
+            max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=11,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1)
 
         # Warning to anyone who edits this: The reference label is column *15*,
         # not 11 as above.
-        val_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_matched.tsv'), max_seq_len,
-                                    s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__, skip_rows=1)
-        val_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev_mismatched.tsv'), max_seq_len,
-                                       s1_idx=8, s2_idx=9, label_idx=15, label_fn=targ_map.__getitem__,
-                                       skip_rows=1)
+        val_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'dev_matched.tsv'),
+            max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1)
+        val_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'dev_mismatched.tsv'),
+            max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            label_idx=15,
+            label_fn=targ_map.__getitem__,
+            skip_rows=1)
         val_data = [
             m + mm for m,
             mm in zip(
@@ -873,12 +1006,39 @@ class MultiNLITask(PairClassificationTask):
                 val_mismatched_data)]
         val_data = tuple(val_data)
 
-        te_matched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_matched.tsv'), max_seq_len,
-                                   s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
-        te_mismatched_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_mismatched.tsv'), max_seq_len,
-                                      s1_idx=8, s2_idx=9, has_labels=False, return_indices=True, skip_rows=1)
-        te_diagnostic_data = load_tsv(self._tokenizer_name, os.path.join(path, 'diagnostic.tsv'), max_seq_len,
-                                      s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
+        te_matched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test_matched.tsv'),
+            max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1)
+        te_mismatched_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test_mismatched.tsv'),
+            max_seq_len,
+            s1_idx=8,
+            s2_idx=9,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1)
+        te_diagnostic_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'diagnostic.tsv'),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=2,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1)
         te_data = [m + mm + d for m, mm, d in
                    zip(te_matched_data, te_mismatched_data, te_diagnostic_data)]
 
@@ -1031,7 +1191,7 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             ''' from multiple types in one column create multiple fields '''
             d = {}
             if is_using_bert:
-                inp = input1 + input2[1:] # drop the leading [CLS] token
+                inp = input1 + input2[1:]  # drop the leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1099,12 +1259,39 @@ class NPSTask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len, probe_path):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, has_labels=False, label_fn=targ_map.__getitem__, skip_rows=0)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            s1_idx=0, s2_idx=1, label_idx=2, label_fn=targ_map.__getitem__, skip_rows=0)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test_dummy.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, has_labels=False, label_fn=targ_map.__getitem__, skip_rows=0)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'train_dummy.tsv'),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=2,
+            has_labels=False,
+            label_fn=targ_map.__getitem__,
+            skip_rows=0)
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'dev.tsv'),
+            max_seq_len,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2,
+            label_fn=targ_map.__getitem__,
+            skip_rows=0)
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test_dummy.tsv'),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=2,
+            has_labels=False,
+            label_fn=targ_map.__getitem__,
+            skip_rows=0)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -1205,12 +1392,36 @@ class JOCITask(PairOrdinalRegressionTask):
             self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=0, s2_idx=1, label_idx=2)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len, skip_rows=1,
-                            s1_idx=0, s2_idx=1, label_idx=2)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len, skip_rows=1,
-                           s1_idx=0, s2_idx=1, label_idx=2)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'train.tsv'),
+            max_seq_len,
+            skip_rows=1,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2)
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'dev.tsv'),
+            max_seq_len,
+            skip_rows=1,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2)
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'test.tsv'),
+            max_seq_len,
+            skip_rows=1,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2)
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
@@ -1360,7 +1571,7 @@ class DisSentTask(PairClassificationTask):
         def _make_instance(input1, input2, labels):
             d = {}
             if is_using_bert:
-                inp = input1 + input2[1:] # drop leading [CLS] token
+                inp = input1 + input2[1:]  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
@@ -1387,12 +1598,39 @@ class WeakGroundedTask(PairClassificationTask):
         targ_map = {'negative': 0, 'positive': 1}
         targ_map = {'0': 0, '1': 1}
 
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "train_aug.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "val.tsv"), max_seq_len, targ_map=targ_map,
-                            s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, "test.tsv"), max_seq_len, targ_map=targ_map,
-                           s1_idx=0, s2_idx=1, label_idx=2, skip_rows=0)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "train_aug.tsv"),
+            max_seq_len,
+            targ_map=targ_map,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2,
+            skip_rows=0)
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "val.tsv"),
+            max_seq_len,
+            targ_map=targ_map,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2,
+            skip_rows=0)
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "test.tsv"),
+            max_seq_len,
+            targ_map=targ_map,
+            s1_idx=0,
+            s2_idx=1,
+            label_idx=2,
+            skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -1649,10 +1887,12 @@ class TaggingTask(Task):
     def get_all_labels(self) -> List[str]:
         return self.all_labels
 
+
 @register_task('ccg', rel_path='CCG/')
 class CCGTaggingTask(TaggingTask):
     ''' CCG supertagging as a task.
         Using the supertags from CCGbank. '''
+
     def __init__(self, path, max_seq_len, name="ccg", **kw):
         ''' There are 1363 supertags in CCGBank without introduced token. '''
         super().__init__(name, 1363, **kw)
@@ -1668,19 +1908,66 @@ class CCGTaggingTask(TaggingTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process a tagging task '''
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
-        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer) for sent in split[2]]
-        mask =  [MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511) for mask in split[3]]
-        instances = [Instance({"inputs": x, "targs": t, "mask": m}) for (x, t, m) in zip(inputs, targs, mask)]
+        targs = [TextField(list(map(Token, sent)), token_indexers=self.target_indexer)
+                 for sent in split[2]]
+        mask = [MultiLabelField(mask, label_namespace="indices",
+                                skip_indexing=True, num_labels=511) for mask in split[3]]
+        instances = [Instance({"inputs": x, "targs": t, "mask": m})
+                     for (x, t, m) in zip(inputs, targs, mask)]
         return instances
 
-
     def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.train."+self._tokenizer_name), max_seq_len,
-                          s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2],  delimiter="\t", label_fn=lambda t: t.split(' '))
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, "ccg.dev."+self._tokenizer_name), max_seq_len,
-                            s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", label_fn=lambda t: t.split(' '))
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'ccg.test.'+self._tokenizer_name), max_seq_len,
-                           s1_idx=1, s2_idx=None, label_idx=2, skip_rows = 1, col_indices=[0, 1, 2], delimiter="\t", has_labels=False)
+        tr_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "ccg.train." +
+                self._tokenizer_name),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            col_indices=[
+                0,
+                1,
+                2],
+            delimiter="\t",
+            label_fn=lambda t: t.split(' '))
+        val_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                "ccg.dev." +
+                self._tokenizer_name),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            col_indices=[
+                0,
+                1,
+                2],
+            delimiter="\t",
+            label_fn=lambda t: t.split(' '))
+        te_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(
+                path,
+                'ccg.test.' +
+                self._tokenizer_name),
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            label_idx=2,
+            skip_rows=1,
+            col_indices=[
+                0,
+                1,
+                2],
+            delimiter="\t",
+            has_labels=False)
         self.max_seq_len = max_seq_len
 
         # Get the mask for each sentence, where the mask is whether or not
@@ -1694,8 +1981,9 @@ class CCGTaggingTask(TaggingTask):
             for dataset in [tr_data, val_data]:
                 dataset_mask = []
                 for i in range(len(dataset[2])):
-                    mask = ma.getmask(ma.masked_where(np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
-                    mask_indices = np.where(mask == True)[0].tolist()
+                    mask = ma.getmask(ma.masked_where(
+                        np.array(dataset[2][i]) != self.INTRODUCED_TOKEN, np.array(dataset[2][i])))
+                    mask_indices = np.where(mask)[0].tolist()
                     dataset_mask.append(mask_indices)
                 masks.append(dataset_mask)
 
@@ -1706,6 +1994,177 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = list(val_data) + [masks[1]]
         self.test_data_text = list(te_data[:2]) + [te_targs] + [te_mask]
         log.info('\tFinished loading CCGTagging data.')
+
+class SpanClassificationTask(Task):
+    '''
+     Generic class for span tasks.
+    Acts as a classifier, but with multiple targets for each input text.
+    Targets are of the form (span1, span2,..., span_n, label), where the spans are
+    half-open token intervals [i, j).
+    The number of spans is constant across examples.
+    '''
+    @property
+    def _tokenizer_suffix(self):
+        ''' 
+        Suffix to make sure we use the correct source files,
+        based on the given tokenizer.
+        '''
+        if self.tokenizer_name:
+            return ".retokenized." + self.tokenizer_name
+        else:
+            return ""
+
+    def tokenizer_is_supported(self, tokenizer_name):
+        ''' Check if the tokenizer is supported for this task. '''
+        # Assume all tokenizers supported; if retokenized data not found
+        # for this particular task, we'll just crash on file loading.
+        return True
+
+    def __init__(self, path: str, max_seq_len: int,
+                 name: str,
+                 label_file: str = None,
+                 files_by_split: Dict[str, str] = None,
+                 num_spans: int = 2,
+                 **kw):
+        """
+        Construct a span task.
+        @register_task.
+
+        Parameters
+        ---------------------
+            path: data directory
+            max_seq_len: maximum sequence length (currently ignored)
+            name: task name
+            label_file: relative path to labels file
+                - should be a line-delimited file where each line is a value the 
+                label can take.
+            files_by_split: split name ('train', 'val', 'test') mapped to
+                relative filenames (e.g. 'train': 'train.json')
+        """
+        super().__init__(name, **kw)
+
+        assert label_file is not None
+        assert files_by_split is not None
+        self._files_by_split = {
+            split: os.path.join(path, fname) + self._tokenizer_suffix
+            for split, fname in files_by_split.items()
+        }
+        self.num_spans = num_spans
+        self._iters_by_split = self.load_data()
+        self.max_seq_len = max_seq_len
+
+        label_file = os.path.join(path, label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+        self._label_namespace = self.name + "_labels"
+
+        self.acc_scorer = BooleanAccuracy()  # binary accuracy
+        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
+        self.scorers = [self.acc_scorer, self.f1_scorer]
+        self.val_metric = "%s_f1" % self.name
+        self.val_metric_decreases = False
+
+    def _stream_records(self, filename):
+        """
+        Helper function for loading the data, which is in json format and 
+        checks if it has targets.
+        """
+        skip_ctr = 0
+        total_ctr = 0
+        for record in utils.load_json_data(filename):
+            total_ctr += 1
+            if not record.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield record
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            iter = list(self._stream_records(filename))
+            iters_by_split[split] = iter
+        return iters_by_split
+
+    def get_split_text(self, split: str):
+        ''' 
+        Get split text as iterable of records.
+        Split should be one of 'train', 'val', or 'test'.
+        '''
+        return self._iters_by_split[split]
+
+    def get_num_examples(self, split_text):
+        ''' 
+        Return number of examples in the result of get_split_text.
+        Subclass can override this if data is not stored in column format.
+        '''
+        return len(split_text)
+
+    def _make_span_field(self, s, text_field, offset=1):
+        # AllenNLP span extractor expects inclusive span indices
+        # so minus 1 at the end index.
+        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
+
+    def _pad_tokens(self, tokens):
+        """Pad tokens according to the current tokenization style."""
+        if self.tokenizer_name.startswith("bert-"):
+            # standard padding for BERT; see
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            return ["[CLS]"] + tokens + ["[SEP]"]
+        else:
+            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+
+    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+        """Convert a single record to an AllenNLP Instance."""
+        tokens = record['text'].split()
+        tokens = self._pad_tokens(tokens)
+        text_field = sentence_to_text_field(tokens, indexers)
+
+        example = {}
+        example["idx"] = MetadataField(idx)
+
+        example['input1'] = text_field
+
+        for i in range(self.num_spans):
+            example["span" + str(i + 1) + "s"] = ListField([self._make_span_field(t['span' + str(i + 1)], text_field, 1)
+                                                  for t in record['targets']])
+
+        labels = [utils.wrap_singleton_string(t['label'])
+                  for t in record['targets']]
+        example['labels'] = ListField([MultiLabelField(label_set,
+                                                 label_namespace=self._label_namespace,
+                                                 skip_indexing=False)
+                                 for label_set in labels])
+        return Instance(example)
+
+    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+        ''' Process split text into a list of AllenNLP Instances. '''
+        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
+        return map(_map_fn, records, itertools.count())
+
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        ''' Yield sentences, used to compute vocabulary. '''
+        for split, iter in self._iters_by_split.items():
+            # Don't use test set for vocab building.
+            if split.startswith("test"):
+                continue
+            for record in iter:
+                yield record["text"].split()
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        metrics = {}
+        metrics['acc'] = self.acc_scorer.get_metric(reset)
+        precision, recall, f1 = self.f1_scorer.get_metric(reset)
+        metrics['precision'] = precision
+        metrics['recall'] = recall
+        metrics['f1'] = f1
+        return metrics
 
 @register_task('commitbank', rel_path='CommitmentBank/')
 class CommitmentTask(PairClassificationTask):
@@ -1765,3 +2224,4 @@ class CommitmentTask(PairClassificationTask):
         rcl = (rcl1 + rcl2 + rcl3) / 3
         f1 = (f11 + f12 + f13) / 3
         return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
+

@@ -50,6 +50,7 @@ from typing import Tuple, List, Text
 MosesTokenizer = tokenizers.get_tokenizer("MosesTokenizer")
 assert MosesTokenizer is not None
 
+
 def retokenize_record(record, tokenizer_name):
     """Retokenize an edge probing example. Modifies in-place."""
     text = record['text']
@@ -65,10 +66,12 @@ def retokenize_record(record, tokenizer_name):
                                        ta.project_span(*target['span2'])))
     return record
 
+
 def _map_fn(line, tokenizer_name):
     record = json.loads(line)
     new_record = retokenize_record(record, tokenizer_name)
     return json.dumps(new_record)
+
 
 def retokenize_file(fname, tokenizer_name, worker_pool):
     new_name = fname + ".retokenized." + tokenizer_name
