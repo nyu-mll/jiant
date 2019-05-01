@@ -456,9 +456,9 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, emb1.size(-1)])
-            s1_ctx_emb = emb1.gather(dim=1, index=idx)
-            s1_ctx_embs.append(ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1).expand([-1, -1, s1.size(-1)])
+            s1_ctx_emb = s1.gather(dim=1, index=idx)
+            s1_ctx_embs.append(s1_ctx_emb.squeeze(dim=1))
         emb1 = torch.cat([emb1] + s1_ctx_embs, dim=-1)
 
         s2_ctx_embs = []
@@ -466,9 +466,9 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, emb2.size(-1)])
-            s2_ctx_emb = emb2.gather(dim=1, index=idx)
-            s2_ctx_embs.append(ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1).expand([-1, -1, s2.size(-1)])
+            s2_ctx_emb = s2.gather(dim=1, index=idx)
+            s2_ctx_embs.append(s2_ctx_emb.squeeze(dim=1))
         emb2 = torch.cat([emb2] + s2_ctx_embs, dim=-1)
 
         pair_emb = torch.cat(

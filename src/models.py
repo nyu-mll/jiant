@@ -635,8 +635,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         module = SingleClassifier(pooler, classifier)
     else:
         # TODO(Alex): something for WiC
-        feat_mult = 8 if isinstance(task, WiCTask) else 4
-        classifier = Classifier.from_params(feat_mult * d_out, n_classes, params)
+        d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
+        classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
@@ -879,7 +879,7 @@ class MultiTaskModel(nn.Module):
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)
             if isinstance(task, WiCTask):
-                logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1'], batch['idx2']])
+                logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1']], [batch['idx2']])
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
