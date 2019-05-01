@@ -27,8 +27,7 @@ from src.utils.utils import assert_for_log, check_arg_name, load_model_state, ma
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
-# Global notification handler, can be accessed outside main() during exception
-# handling.
+# Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
 
 
