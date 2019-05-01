@@ -658,7 +658,6 @@ def build_pair_sentence_module(task, d_inp, model, params):
         classifier = Classifier.from_params(d_out, n_classes, params)
         module = SingleClassifier(pooler, classifier)
     else:
-        # TODO(Alex): something for WiC
         d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
