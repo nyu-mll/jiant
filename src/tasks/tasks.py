@@ -2083,7 +2083,7 @@ class SpanClassificationTask(Task):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            iter = list(self._stream_records(filename, split))
+            iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
         return iters_by_split
 
@@ -2227,7 +2227,7 @@ class CommitmentTask(PairClassificationTask):
 @register_task('winograd-coreference', rel_path = 'winograd-coref')
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path,  **kw):
-        self._files_by_split = {'train': "train_after_redistribution.tsv.json", 'val': "val_same_distribution_test.tsv.json",'test': "test_final.tsv.json"}
+        self._files_by_split = {'train': "train.json", 'val': "val.json",'test': "test_final.json"}
         self.num_spans = 2
         super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw)
         self.val_metric = "%s_acc" % self.name 
@@ -2247,17 +2247,3 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         collected_metrics = {"f1": self.f1_scorer.get_metric(reset)[2], "acc": self.acc_scorer.get_metric(reset)}
         return collected_metrics
 
-    def _stream_records(self, filename, phase):
-        skip_ctr = 0
-        total_ctr = 0
-        for records in utils.load_json_data(filename):
-            total_ctr += 1
-            # Skip records with empty targets.
-            # TODO(ian): don't do this if generating negatives!
-            if not records.get('targets', None):
-                skip_ctr += 1
-                continue
-            yield records
-        log.info("Read=%d, Skip=%d, Total=%d from %s",
-                 total_ctr - skip_ctr, skip_ctr, total_ctr,
-                 filename)
