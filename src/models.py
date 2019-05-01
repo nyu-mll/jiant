@@ -878,7 +878,7 @@ class MultiTaskModel(nn.Module):
         else:
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            if instance(task, WiCTask):
+            if isinstance(task, WiCTask):
                 logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1'], batch['idx2']])
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
