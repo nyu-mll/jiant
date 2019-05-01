@@ -1,38 +1,39 @@
 ##
 # Helper libraries for #datascience on Edge-Probing data.
 
-import sys
-import os
-import io
-import re
-import json
 import collections
+import io
 import itertools
+import json
 import logging as log
+import os
+import re
+import sys
+from typing import Dict, Iterable, List, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from allennlp.data import Vocabulary
 from sklearn import metrics
 
 from src.utils import utils
-from allennlp.data import Vocabulary
-
-from typing import Iterable, Dict, List, Tuple
 
 ##
 # Task list for stable ordering, and human-friendly display names.
-TASK_TO_DISPLAY_NAME = collections.OrderedDict([
-    ("pos-ontonotes", "Part-of-Speech"),
-    ("nonterminal-ontonotes", "Constituents"),
-    ("dep-labeling-ewt", "Dependencies"),
-    ("ner-ontonotes", "Entities"),
-    ("srl-conll2012", "SRL"),
-    ("coref-ontonotes-conll", "OntoNotes Coref."),
-    ("spr1", "SPR1"),
-    ("spr2", "SPR2"),
-    ("dpr", "Winograd Coref."),
-    ("rel-semeval", "Relations (SemEval)"),
-])
+TASK_TO_DISPLAY_NAME = collections.OrderedDict(
+    [
+        ("pos-ontonotes", "Part-of-Speech"),
+        ("nonterminal-ontonotes", "Constituents"),
+        ("dep-labeling-ewt", "Dependencies"),
+        ("ner-ontonotes", "Entities"),
+        ("srl-conll2012", "SRL"),
+        ("coref-ontonotes-conll", "OntoNotes Coref."),
+        ("spr1", "SPR1"),
+        ("spr2", "SPR2"),
+        ("dpr", "Winograd Coref."),
+        ("rel-semeval", "Relations (SemEval)"),
+    ]
+)
 TASKS = list(TASK_TO_DISPLAY_NAME.keys())
 
 
@@ -82,8 +83,7 @@ EXP_TYPES = [
     "train-chars",
 ]
 # Add BERT experiments
-for bert_name in ['base-uncased', 'base-cased', 'large-uncased',
-                  'large-cased']:
+for bert_name in ["base-uncased", "base-cased", "large-uncased", "large-cased"]:
     EXP_TYPES.append(f"bert-{bert_name}-lex")
     EXP_TYPES.append(f"bert-{bert_name}-cat")
     EXP_TYPES.append(f"bert-{bert_name}-mix")
@@ -107,6 +107,7 @@ def _parse_exp_name(exp_name):
 
 def get_exp_type(exp_name):
     return _parse_exp_name(exp_name)[0]
+
 
 ##
 # Predicates for filtering and aggregation
@@ -139,6 +140,7 @@ def is_relation_task(task):
 def is_positive_relation(label):
     return (not label.startswith("_")) and (label != "no_relation") and (label != "Other")
 
+
 ##
 # Scoring helpers
 
@@ -149,31 +151,32 @@ def harmonic_mean(a, b):
 
 def score_from_confusion_matrix(df):
     """Score a DataFrame in-place, computing metrics for each row based on confusion matricies."""
-    assert 'tn_count' in df.columns  # true negatives
-    assert 'fp_count' in df.columns  # false positives
-    assert 'fn_count' in df.columns  # false negatives
-    assert 'tp_count' in df.columns  # true negatives
+    assert "tn_count" in df.columns  # true negatives
+    assert "fp_count" in df.columns  # false positives
+    assert "fn_count" in df.columns  # false negatives
+    assert "tp_count" in df.columns  # true negatives
 
-    df['pred_pos_count'] = df.tp_count + df.fp_count
-    df['true_pos_count'] = df.tp_count + df.fn_count
-    df['total_count'] = df.tp_count + df.tn_count + df.fp_count + df.fn_count
+    df["pred_pos_count"] = df.tp_count + df.fp_count
+    df["true_pos_count"] = df.tp_count + df.fn_count
+    df["total_count"] = df.tp_count + df.tn_count + df.fp_count + df.fn_count
 
     # NOTE: this overwrites any _macro_avg_ rows by recomputing the micro-average!
-    df['accuracy'] = (df.tp_count + df.tn_count) / df.total_count
-    df['precision'] = df.tp_count / df.pred_pos_count
-    df['recall'] = df.tp_count / df.true_pos_count
-    df['f1_score'] = harmonic_mean(df.precision, df.recall).fillna(0)
+    df["accuracy"] = (df.tp_count + df.tn_count) / df.total_count
+    df["precision"] = df.tp_count / df.pred_pos_count
+    df["recall"] = df.tp_count / df.true_pos_count
+    df["f1_score"] = harmonic_mean(df.precision, df.recall).fillna(0)
 
     # Approximate error intervals using normal approximation
     # https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval
     z = 1.96  # 95% confidence
-    df['accuracy_errn95'] = z * (df.accuracy * (1 - df.accuracy) / df.total_count).map(np.sqrt)
-    df['precision_errn95'] = z * (df.precision * (1 - df.precision) /
-                                  df.pred_pos_count).map(np.sqrt)
-    df['recall_errn95'] = z * (df.recall * (1 - df.recall) / df.true_pos_count).map(np.sqrt)
+    df["accuracy_errn95"] = z * (df.accuracy * (1 - df.accuracy) / df.total_count).map(np.sqrt)
+    df["precision_errn95"] = z * (df.precision * (1 - df.precision) / df.pred_pos_count).map(
+        np.sqrt
+    )
+    df["recall_errn95"] = z * (df.recall * (1 - df.recall) / df.true_pos_count).map(np.sqrt)
     # This probably isn't the right way to combine for F1 score, but should be
     # a reasonable estimate.
-    df['f1_errn95'] = harmonic_mean(df.precision_errn95, df.recall_errn95)
+    df["f1_errn95"] = harmonic_mean(df.precision_errn95, df.recall_errn95)
 
 
 ##
@@ -191,8 +194,7 @@ def get_f1(df):
 
 
 def _get_nested_vals(record, outer_key):
-    return {f"{outer_key}.{key}": value
-            for key, value in record.get(outer_key, {}).items()}
+    return {f"{outer_key}.{key}": value for key, value in record.get(outer_key, {}).items()}
 
 
 def _expand_runs(seq, nreps):
@@ -210,9 +212,7 @@ class EdgeProbingExample(object):
     into the data-handling code.
     """
 
-    def __init__(self, record: Dict,
-                 label_vocab: List[str]=None,
-                 pred_thresh: float=0.5):
+    def __init__(self, record: Dict, label_vocab: List[str] = None, pred_thresh: float = 0.5):
         """Construct an example from a record.
 
         Record should be derived from the standard JSON format.
@@ -227,7 +227,7 @@ class EdgeProbingExample(object):
 
     def _fmt_preds(self, preds):
         buf = io.StringIO()
-        for i, p in enumerate(preds['proba']):
+        for i, p in enumerate(preds["proba"]):
             if p < self._pred_thresh:
                 continue
             buf.write("  {:5s}  ".format("" if buf.getvalue() else "pred:"))
@@ -237,20 +237,20 @@ class EdgeProbingExample(object):
 
     def __str__(self):
         buf = io.StringIO()
-        text = self._data['text']
+        text = self._data["text"]
         tokens = text.split()
         buf.write("Text ({:d}): {:s}\n".format(len(tokens), text))
 
-        for t in self._data['targets']:
+        for t in self._data["targets"]:
             buf.write("\n")
-            buf.write("  span1: {}\n".format(self._fmt_span(tokens, *t['span1'])))
-            if 'span2' in t:
-                buf.write("  span2: {}\n".format(self._fmt_span(tokens, *t['span2'])))
-            labels = utils.wrap_singleton_string(t['label'])
+            buf.write("  span1: {}\n".format(self._fmt_span(tokens, *t["span1"])))
+            if "span2" in t:
+                buf.write("  span2: {}\n".format(self._fmt_span(tokens, *t["span2"])))
+            labels = utils.wrap_singleton_string(t["label"])
             buf.write("  label: ({:d})\t\t {}\n".format(len(labels), ", ".join(labels)))
             # Show predictions, if present.
-            if 'preds' in t:
-                buf.write(self._fmt_preds(t['preds']))
+            if "preds" in t:
+                buf.write(self._fmt_preds(t["preds"]))
 
         return buf.getvalue()
 
@@ -278,26 +278,24 @@ class Predictions(object):
         ex_records = []  # long-form example records, minus targets
         tr_records = []  # long-form target records with 'idx' column
         for idx, r in enumerate(records):
-            d = {'text': r['text'], 'idx': idx}
-            d.update(_get_nested_vals(r, 'info'))
-            d.update(_get_nested_vals(r, 'preds'))
+            d = {"text": r["text"], "idx": idx}
+            d.update(_get_nested_vals(r, "info"))
+            d.update(_get_nested_vals(r, "preds"))
             ex_records.append(d)
 
-            for t in r['targets']:
-                d = {'label': utils.wrap_singleton_string(t['label']),
-                     'idx': idx}
-                if 'span1' in t:
-                    d['span1'] = tuple(t['span1'])
-                if 'span2' in t:
-                    d['span2'] = tuple(t['span2'])
-                d.update(_get_nested_vals(t, 'info'))
-                d.update(_get_nested_vals(t, 'preds'))
+            for t in r["targets"]:
+                d = {"label": utils.wrap_singleton_string(t["label"]), "idx": idx}
+                if "span1" in t:
+                    d["span1"] = tuple(t["span1"])
+                if "span2" in t:
+                    d["span2"] = tuple(t["span2"])
+                d.update(_get_nested_vals(t, "info"))
+                d.update(_get_nested_vals(t, "preds"))
                 tr_records.append(d)
         return ex_records, tr_records
 
     def _labels_to_ids(self, labels: List[str]) -> List[int]:
-        return [self.vocab.get_token_index(l, namespace=self.label_namespace)
-                for l in labels]
+        return [self.vocab.get_token_index(l, namespace=self.label_namespace) for l in labels]
 
     def _get_num_labels(self) -> int:
         return self.vocab.get_vocab_size(namespace=self.label_namespace)
@@ -310,24 +308,20 @@ class Predictions(object):
     def _get_label(self, i: int) -> str:
         return self.vocab.get_token_from_index(i, namespace=self.label_namespace)
 
-    def __init__(self, vocab: Vocabulary, records: Iterable[Dict],
-                 label_namespace=None):
+    def __init__(self, vocab: Vocabulary, records: Iterable[Dict], label_namespace=None):
         self.vocab = vocab
         self.label_namespace = label_namespace
-        self.all_labels = [self._get_label(i)
-                           for i in range(self._get_num_labels())]
+        self.all_labels = [self._get_label(i) for i in range(self._get_num_labels())]
 
         ex_records, tr_records = self._split_and_flatten_records(records)
         self.example_df = pd.DataFrame.from_records(ex_records)
-        self.example_df.set_index('idx', inplace=True, drop=False)
+        self.example_df.set_index("idx", inplace=True, drop=False)
         self.target_df = pd.DataFrame.from_records(tr_records)
 
         # Apply indexing to labels
-        self.target_df['label.ids'] = self.target_df['label'].map(
-            self._labels_to_ids)
+        self.target_df["label.ids"] = self.target_df["label"].map(self._labels_to_ids)
         # Convert labels to k-hot to align to predictions
-        self.target_df['label.khot'] = self.target_df['label.ids'].map(
-            self._label_ids_to_khot)
+        self.target_df["label.khot"] = self.target_df["label.ids"].map(self._label_ids_to_khot)
 
         # Placeholders, will compute later if requested.
         # Use non-underscore versions to access via propert getters.
@@ -337,12 +331,11 @@ class Predictions(object):
     def _make_wide_target_df(self):
         log.info("Generating wide-form target DataFrame. May be slow... ")
         # Expand labels to columns
-        expanded_y_true = self.target_df['label.khot'].apply(pd.Series)
+        expanded_y_true = self.target_df["label.khot"].apply(pd.Series)
         expanded_y_true.columns = ["label.true." + l for l in self.all_labels]
-        expanded_y_pred = self.target_df['preds.proba'].apply(pd.Series)
+        expanded_y_pred = self.target_df["preds.proba"].apply(pd.Series)
         expanded_y_pred.columns = ["preds.proba." + l for l in self.all_labels]
-        wide_df = pd.concat([self.target_df, expanded_y_true, expanded_y_pred],
-                            axis='columns')
+        wide_df = pd.concat([self.target_df, expanded_y_true, expanded_y_pred], axis="columns")
         DROP_COLS = ["preds.proba", "label", "label.ids", "label.khot"]
         wide_df.drop(labels=DROP_COLS, axis=1, inplace=True)
         log.info("Done!")
@@ -360,46 +353,44 @@ class Predictions(object):
         log.info("Generating long-form target DataFrame. May be slow... ")
         num_targets = len(df)
         # Index into self.example_df for text.
-        ex_idxs = _expand_runs(df['idx'], len(self.all_labels))
+        ex_idxs = _expand_runs(df["idx"], len(self.all_labels))
         # Index into self.target_df for other metadata.
         idxs = _expand_runs(df.index, len(self.all_labels))
         # Repeat labels for each target.
         labels = np.tile(self.all_labels, num_targets)
         # Flatten lists using numpy - *much* faster than using Pandas.
-        label_true = np.array(df['label.khot'].tolist(),
-                              dtype=np.int32).flatten()
-        preds_proba = np.array(df['preds.proba'].tolist(),
-                               dtype=np.float32).flatten()
+        label_true = np.array(df["label.khot"].tolist(), dtype=np.int32).flatten()
+        preds_proba = np.array(df["preds.proba"].tolist(), dtype=np.float32).flatten()
         assert len(label_true) == len(preds_proba)
         assert len(label_true) == len(labels)
-        d = {"idx": idxs, "label": labels,
-             "label.true": label_true,
-             "preds.proba": preds_proba,
-             "ex_idx": ex_idxs}
+        d = {
+            "idx": idxs,
+            "label": labels,
+            "label.true": label_true,
+            "preds.proba": preds_proba,
+            "ex_idx": ex_idxs,
+        }
         # Repeat some metadata fields if available.
         # Use these for stratified scoring.
-        if 'info.height' in df.columns:
-            log.info("info.height field detected; copying to long-form "
-                     "DataFrame.")
-            d['info.height'] = _expand_runs(df['info.height'],
-                                            len(self.all_labels))
-        if 'span2' in df.columns:
-            log.info("span2 detected; adding span_distance to long-form "
-                     "DataFrame.")
+        if "info.height" in df.columns:
+            log.info("info.height field detected; copying to long-form " "DataFrame.")
+            d["info.height"] = _expand_runs(df["info.height"], len(self.all_labels))
+        if "span2" in df.columns:
+            log.info("span2 detected; adding span_distance to long-form " "DataFrame.")
 
-            def _get_midpoint(span): return (span[1] - 1 + span[0]) / 2.0
+            def _get_midpoint(span):
+                return (span[1] - 1 + span[0]) / 2.0
 
             def span_sep(a, b):
                 ma = _get_midpoint(a)
                 mb = _get_midpoint(b)
                 if mb >= ma:  # b starts later
                     return max(0, b[0] - a[1])
-                else:         # a starts later
+                else:  # a starts later
                     return max(0, a[0] - b[1])
-            span_distance = [span_sep(a, b) for a, b in zip(df['span1'],
-                                                            df['span2'])]
-            d['span_distance'] = _expand_runs(span_distance,
-                                              len(self.all_labels))
+
+            span_distance = [span_sep(a, b) for a, b in zip(df["span1"], df["span2"])]
+            d["span_distance"] = _expand_runs(span_distance, len(self.all_labels))
         # Reconstruct a DataFrame.
         long_df = pd.DataFrame(d)
         log.info("Done!")
@@ -418,15 +409,15 @@ class Predictions(object):
     def score_long_df(df: pd.DataFrame) -> Dict[str, float]:
         """Compute metrics for a single DataFrame of long-form predictions."""
         # Confusion matrix; can compute other metrics from this later.
-        y_true = df['label.true']
-        y_pred = df['preds.proba'] >= 0.5
+        y_true = df["label.true"]
+        y_pred = df["preds.proba"] >= 0.5
         C = metrics.confusion_matrix(y_true, y_pred, labels=[0, 1])
         tn, fp, fn, tp = C.ravel()
         record = dict()
-        record['tn_count'] = tn
-        record['fp_count'] = fp
-        record['fn_count'] = fn
-        record['tp_count'] = tp
+        record["tn_count"] = tn
+        record["fp_count"] = fp
+        record["fn_count"] = fn
+        record["tp_count"] = tp
         return record
 
     def score_by_label(self) -> pd.DataFrame:
@@ -437,7 +428,7 @@ class Predictions(object):
         for label, idxs in gb.groups.items():
             sub_df = long_df.loc[idxs]
             record = self.score_long_df(sub_df)
-            record['label'] = label
+            record["label"] = label
             records.append(record)
         score_df = pd.DataFrame.from_records(records)
         ##
@@ -447,41 +438,45 @@ class Predictions(object):
             # TODO(ian): ths _score_ entries don't actually do anything,
             # since when run the DataFrame only contains '_counts' columns.
             if col.endswith("_score"):
-                agg_map[col] = 'mean'
+                agg_map[col] = "mean"
             elif col.endswith("_count"):
-                agg_map[col] = 'sum'
+                agg_map[col] = "sum"
             elif col == "label":
                 pass
             else:
                 log.warning("Unsupported column '%s'", col)
         macro_avg = score_df.agg(agg_map)
-        macro_avg['label'] = "_macro_avg_"
+        macro_avg["label"] = "_macro_avg_"
         score_df = score_df.append(macro_avg, ignore_index=True)
 
         ##
         # Compute micro average
         micro_avg = pd.Series(self.score_long_df(long_df))
-        micro_avg['label'] = "_micro_avg_"
+        micro_avg["label"] = "_micro_avg_"
         score_df = score_df.append(micro_avg, ignore_index=True)
 
         ##
         # Compute stratified scores by special fields
-        for field in ['info.height', 'span_distance']:
+        for field in ["info.height", "span_distance"]:
             if field not in long_df.columns:
                 continue
-            log.info("Found special field '%s' with %d unique values.",
-                     field, len(long_df[field].unique()))
+            log.info(
+                "Found special field '%s' with %d unique values.",
+                field,
+                len(long_df[field].unique()),
+            )
             gb = long_df.groupby(by=[field])
             records = []
             for key, idxs in gb.groups.items():
                 sub_df = long_df.loc[idxs]
                 record = self.score_long_df(sub_df)
-                record['label'] = "_{:s}_{:s}_".format(field, str(key))
-                record['stratifier'] = field
-                record['stratum_key'] = key
+                record["label"] = "_{:s}_{:s}_".format(field, str(key))
+                record["stratifier"] = field
+                record["stratum_key"] = key
                 records.append(record)
-            score_df = score_df.append(pd.DataFrame.from_records(records),
-                                       ignore_index=True, sort=False)
+            score_df = score_df.append(
+                pd.DataFrame.from_records(records), ignore_index=True, sort=False
+            )
 
         ##
         # Move "label" column to the beginning.
@@ -502,15 +497,13 @@ class Predictions(object):
         # Load predictions
         preds_file = os.path.join(run_dir, f"{task_name}_{split_name}.json")
         log.info("Loading predictions from %s" % preds_file)
-        return cls(vocab, utils.load_json_data(preds_file),
-                   label_namespace=label_namespace)
+        return cls(vocab, utils.load_json_data(preds_file), label_namespace=label_namespace)
 
 
 class Comparison(object):
     """Container class to represent a pair of experiments."""
 
-    def __init__(self, base: Predictions, expt: Predictions,
-                 label_filter=lambda label: True):
+    def __init__(self, base: Predictions, expt: Predictions, label_filter=lambda label: True):
         assert len(base.all_labels) == len(expt.all_labels)
         assert len(base.example_df) == len(expt.example_df)
         assert len(base.target_df) == len(expt.target_df)
@@ -521,37 +514,45 @@ class Comparison(object):
         # Score & compare
         log.info("Scoring base run...")
         self.base_scores = base.score_by_label()
-        self.base_scores['run'] = "base"
+        self.base_scores["run"] = "base"
         log.info("Scoring expt run...")
         self.expt_scores = expt.score_by_label()
-        self.expt_scores['run'] = "expt"
+        self.expt_scores["run"] = "expt"
         log.info("Done scoring!")
 
-        _mask = self.base_scores['label'].map(label_filter)
+        _mask = self.base_scores["label"].map(label_filter)
         self.base_scores = self.base_scores[_mask]
-        _mask = self.expt_scores['label'].map(label_filter)
+        _mask = self.expt_scores["label"].map(label_filter)
         self.expt_scores = self.expt_scores[_mask]
 
-        self.long_scores = pd.concat([self.base_scores,
-                                      self.expt_scores])
+        self.long_scores = pd.concat([self.base_scores, self.expt_scores])
         # Wide-form scores for direct comparison
-        df = pd.merge(self.base_scores, self.expt_scores,
-                      on=["label", "true_count"],
-                      suffixes=("_base", "_expt"))
-        df['abs_diff_f1'] = (df["f1_score_expt"] - df["f1_score_base"])
+        df = pd.merge(
+            self.base_scores,
+            self.expt_scores,
+            on=["label", "true_count"],
+            suffixes=("_base", "_expt"),
+        )
+        df["abs_diff_f1"] = df["f1_score_expt"] - df["f1_score_base"]
         # Compute relative error reduction
-        df['rel_diff_f1'] = (df['abs_diff_f1'] / (1 - df["f1_score_base"]))
+        df["rel_diff_f1"] = df["abs_diff_f1"] / (1 - df["f1_score_base"])
         # Net diffs, computed from accuracy
-        df['net_diffs'] = (np.abs(df['acc_score_expt'] - df['acc_score_base'])
-                           * len(base.target_df)).astype(np.int32)
-        df['base_headroom'] = ((1 - df['acc_score_base'])
-                               * len(base.target_df)).astype(np.int32)
-        df['expt_headroom'] = ((1 - df['acc_score_expt'])
-                               * len(expt.target_df)).astype(np.int32)
+        df["net_diffs"] = (
+            np.abs(df["acc_score_expt"] - df["acc_score_base"]) * len(base.target_df)
+        ).astype(np.int32)
+        df["base_headroom"] = ((1 - df["acc_score_base"]) * len(base.target_df)).astype(np.int32)
+        df["expt_headroom"] = ((1 - df["acc_score_expt"]) * len(expt.target_df)).astype(np.int32)
         self.wide_scores = df
 
-    def plot_scores(self, task_name, metric="f1", sort_field="expt_headroom",
-                    sort_ascending=False, row_height=400, palette=None):
+    def plot_scores(
+        self,
+        task_name,
+        metric="f1",
+        sort_field="expt_headroom",
+        sort_ascending=False,
+        row_height=400,
+        palette=None,
+    ):
         import bokeh
         import bokeh.plotting as bp
 
@@ -562,30 +563,28 @@ class Comparison(object):
         # Long-form data, for paired bar chart.
         # TODO: switch to using wide-form for all?
         long_df = self.long_scores.copy()
-        long_df['row_key'] = list(zip(long_df['label'], long_df['run']))
-        long_df['fmt_score'] = long_df[_SCORE_COL].map(
-            lambda s: "{:.02f}".format(s)
-        )
+        long_df["row_key"] = list(zip(long_df["label"], long_df["run"]))
+        long_df["fmt_score"] = long_df[_SCORE_COL].map(lambda s: "{:.02f}".format(s))
         long_ds = bokeh.models.ColumnDataSource(data=long_df)
 
         # Wide-form data, for counts & comparison metrics.
         wide_df = self.wide_scores.copy()
-        wide_df['_diff_label_offset'] = 10 * np.sign(wide_df[_ABS_DIFF_COL])
-        wide_df['_count_diff_offset'] = -1.25 * wide_df['_diff_label_offset']
+        wide_df["_diff_label_offset"] = 10 * np.sign(wide_df[_ABS_DIFF_COL])
+        wide_df["_count_diff_offset"] = -1.25 * wide_df["_diff_label_offset"]
 
         # Formatting label text
-        wide_df['_net_diff_count_label_text'] = wide_df['net_diffs'].map(
-            lambda s: "~ {:d} ex".format(s) if s else "")
-        wide_df['_abs_diff_label_text'] = wide_df[_ABS_DIFF_COL].map(
-            lambda s: "{:.02f}".format(s))
-        wide_df['_rel_diff_label_text'] = wide_df[_REL_DIFF_COL].map(
-            lambda s: "({:.02f})".format(s) if s else "")
+        wide_df["_net_diff_count_label_text"] = wide_df["net_diffs"].map(
+            lambda s: "~ {:d} ex".format(s) if s else ""
+        )
+        wide_df["_abs_diff_label_text"] = wide_df[_ABS_DIFF_COL].map(lambda s: "{:.02f}".format(s))
+        wide_df["_rel_diff_label_text"] = wide_df[_REL_DIFF_COL].map(
+            lambda s: "({:.02f})".format(s) if s else ""
+        )
         wide_ds = bokeh.models.ColumnDataSource(data=wide_df)
 
         # Prepare shared categorical axis
-        runs = sorted(long_df['run'].unique())
-        labels = wide_df.sort_values(by=sort_field,
-                                     ascending=sort_ascending)['label']
+        runs = sorted(long_df["run"].unique())
+        labels = wide_df.sort_values(by=sort_field, ascending=sort_ascending)["label"]
         categories = list(itertools.product(labels, runs))
 
         if not palette:
@@ -593,57 +592,96 @@ class Comparison(object):
             #  palette = bokeh.palettes.Category10[len(runs)]
             palette = bokeh.palettes.Category20[len(runs)]
             #  palette = bokeh.palettes.Set2[len(runs)]
-        fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
+        fill_cmap = bokeh.transform.factor_cmap("run", palette, runs)
         width = 35 * len(categories)
-        tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
+        tools = "xwheel_zoom,xwheel_pan,xpan,save,reset"
 
         # Top plot: score bars
-        factor_range = bokeh.models.FactorRange(*categories,
-                                                range_padding=0.5,
-                                                range_padding_units='absolute')
-        p1 = bp.figure(title=f"Performance by label ({task_name})",
-                       x_range=factor_range, y_range=[0, 1],
-                       width=width, height=row_height, tools=tools)
-        p1.vbar(x='row_key', top=_SCORE_COL, width=0.95,
-                fill_color=fill_cmap, line_color=None,
-                source=long_ds)
-        label_kw = dict(text_align="right", text_baseline="middle", y_offset=-3,
-                        text_font_size="11pt", angle=90, angle_units='deg')
-        score_labels = bokeh.models.LabelSet(x='row_key', y=_SCORE_COL,
-                                             text="fmt_score",
-                                             source=long_ds, **label_kw)
+        factor_range = bokeh.models.FactorRange(
+            *categories, range_padding=0.5, range_padding_units="absolute"
+        )
+        p1 = bp.figure(
+            title=f"Performance by label ({task_name})",
+            x_range=factor_range,
+            y_range=[0, 1],
+            width=width,
+            height=row_height,
+            tools=tools,
+        )
+        p1.vbar(
+            x="row_key",
+            top=_SCORE_COL,
+            width=0.95,
+            fill_color=fill_cmap,
+            line_color=None,
+            source=long_ds,
+        )
+        label_kw = dict(
+            text_align="right",
+            text_baseline="middle",
+            y_offset=-3,
+            text_font_size="11pt",
+            angle=90,
+            angle_units="deg",
+        )
+        score_labels = bokeh.models.LabelSet(
+            x="row_key", y=_SCORE_COL, text="fmt_score", source=long_ds, **label_kw
+        )
         p1.add_layout(score_labels)
         p1.xaxis.major_label_orientation = 1
         p1.yaxis.bounds = (0, 1)
 
         # Second plot: absolute diffs
-        p2 = bp.figure(title=f"Absolute and (Relative) diffs by label ({task_name})",
-                       x_range=p1.x_range, width=width, height=row_height,
-                       tools=tools)
-        p2.vbar(x='label', top='rel_diff_f1', width=1.90,
-                fill_color='DarkRed', fill_alpha=0.20,
-                line_color=None,
-                source=wide_ds)
-        p2.vbar(x='label', top='abs_diff_f1', width=1.90,
-                fill_color='DarkRed', line_color=None,
-                source=wide_ds)
-        label_kw = dict(text_align="center", text_baseline="middle",
-                        y_offset="_diff_label_offset", source=wide_ds)
-        delta_labels = bokeh.models.LabelSet(x='label', y="abs_diff_f1",
-                                             text="_abs_diff_label_text",
-                                             **label_kw)
+        p2 = bp.figure(
+            title=f"Absolute and (Relative) diffs by label ({task_name})",
+            x_range=p1.x_range,
+            width=width,
+            height=row_height,
+            tools=tools,
+        )
+        p2.vbar(
+            x="label",
+            top="rel_diff_f1",
+            width=1.90,
+            fill_color="DarkRed",
+            fill_alpha=0.20,
+            line_color=None,
+            source=wide_ds,
+        )
+        p2.vbar(
+            x="label",
+            top="abs_diff_f1",
+            width=1.90,
+            fill_color="DarkRed",
+            line_color=None,
+            source=wide_ds,
+        )
+        label_kw = dict(
+            text_align="center",
+            text_baseline="middle",
+            y_offset="_diff_label_offset",
+            source=wide_ds,
+        )
+        delta_labels = bokeh.models.LabelSet(
+            x="label", y="abs_diff_f1", text="_abs_diff_label_text", **label_kw
+        )
         p2.add_layout(delta_labels)
-        rel_labels = bokeh.models.LabelSet(x='label', y="rel_diff_f1",
-                                             text="_rel_diff_label_text",
-                                             **label_kw)
+        rel_labels = bokeh.models.LabelSet(
+            x="label", y="rel_diff_f1", text="_rel_diff_label_text", **label_kw
+        )
         p2.add_layout(rel_labels)
-        count_labels = bokeh.models.LabelSet(x='label', y=0,
-                                             y_offset="_count_diff_offset",
-                                             text="_net_diff_count_label_text",
-                                             text_align="center", text_baseline="middle",
-                                             text_font_style="italic", text_color="gray",
-                                             text_font_size="10pt",
-                                             source=wide_ds)
+        count_labels = bokeh.models.LabelSet(
+            x="label",
+            y=0,
+            y_offset="_count_diff_offset",
+            text="_net_diff_count_label_text",
+            text_align="center",
+            text_baseline="middle",
+            text_font_style="italic",
+            text_color="gray",
+            text_font_size="10pt",
+            source=wide_ds,
+        )
         p2.add_layout(count_labels)
 
         p2.y_range.start = -1.10
@@ -655,16 +693,25 @@ class Comparison(object):
         p2.xaxis.major_tick_line_color = None
 
         # Bottom plot: count bars
-        p3 = bp.figure(title=f"Counts by label ({task_name})",
-                       x_range=p1.x_range, width=width, height=row_height,
-                       tools=tools)
-        p3.vbar(x='label', top='true_count', width=1.90,
-                fill_color='orange', line_color=None,
-                source=wide_ds)
+        p3 = bp.figure(
+            title=f"Counts by label ({task_name})",
+            x_range=p1.x_range,
+            width=width,
+            height=row_height,
+            tools=tools,
+        )
+        p3.vbar(
+            x="label",
+            top="true_count",
+            width=1.90,
+            fill_color="orange",
+            line_color=None,
+            source=wide_ds,
+        )
         label_kw = dict(text_align="center", text_baseline="top", y_offset=-5)
-        count_labels = bokeh.models.LabelSet(x='label', y="true_count",
-                                             text="true_count",
-                                             source=wide_ds, **label_kw)
+        count_labels = bokeh.models.LabelSet(
+            x="label", y="true_count", text="true_count", source=wide_ds, **label_kw
+        )
         p3.add_layout(count_labels)
         p3.y_range.flipped = True
         p3.y_range.end = 0
@@ -687,13 +734,10 @@ class Comparison(object):
             p3.plot_height += 75
 
         # Create plot layout.
-        plots = bokeh.layouts.gridplot([p1, p2, p3], ncols=1,
-                                       toolbar_location="left",
-                                       merge_tools=True,
-                                       sizing_mode="fixed")
-        header = bokeh.models.Div(
-            text=f"<h1>{task_name} sorted by '{sort_field}'</h1>",
-            width=600)
+        plots = bokeh.layouts.gridplot(
+            [p1, p2, p3], ncols=1, toolbar_location="left", merge_tools=True, sizing_mode="fixed"
+        )
+        header = bokeh.models.Div(text=f"<h1>{task_name} sorted by '{sort_field}'</h1>", width=600)
         return bokeh.layouts.column(header, plots)
 
 
@@ -703,8 +747,7 @@ class MultiComparison(object):
     Renders grouped bar plot and count bars, but not diff plot.
     """
 
-    def __init__(self, runs_by_name: collections.OrderedDict,
-                 label_filter=lambda label: True):
+    def __init__(self, runs_by_name: collections.OrderedDict, label_filter=lambda label: True):
         num_labels = {k: len(v.all_labels) for k, v in runs_by_name.items()}
         assert len(set(num_labels.values())) == 1
         num_examples = {k: len(v.example_df) for k, v in runs_by_name.items()}
@@ -718,8 +761,8 @@ class MultiComparison(object):
         for name, run in self.runs_by_name.items():
             log.info("Scoring run '%s'" % name)
             score_df = run.score_by_label()
-            score_df['run'] = name
-            _mask = score_df['label'].map(label_filter)
+            score_df["run"] = name
+            _mask = score_df["label"].map(label_filter)
             score_df = score_df[_mask]
             self.scores_by_name[name] = score_df
 
@@ -727,10 +770,16 @@ class MultiComparison(object):
 
         self.long_scores = pd.concat(self.scores_by_name.values())
 
-    def plot_scores(self, task_name, metric="f1",
-                    sort_field="expt_headroom", sort_run=None,
-                    sort_ascending=False, row_height=400,
-                    cmap=None):
+    def plot_scores(
+        self,
+        task_name,
+        metric="f1",
+        sort_field="expt_headroom",
+        sort_run=None,
+        sort_ascending=False,
+        row_height=400,
+        cmap=None,
+    ):
         import bokeh
         import bokeh.plotting as bp
 
@@ -738,10 +787,8 @@ class MultiComparison(object):
 
         # Long-form data, for grouped bar chart.
         long_df = self.long_scores.copy()
-        long_df['row_key'] = list(zip(long_df['label'], long_df['run']))
-        long_df['fmt_score'] = long_df[_SCORE_COL].map(
-            lambda s: "{:.02f}".format(s)
-        )
+        long_df["row_key"] = list(zip(long_df["label"], long_df["run"]))
+        long_df["fmt_score"] = long_df[_SCORE_COL].map(lambda s: "{:.02f}".format(s))
         long_ds = bokeh.models.ColumnDataSource(data=long_df)
 
         # Single scored run, for plotting counts.
@@ -752,8 +799,7 @@ class MultiComparison(object):
         # Prepare shared categorical axis
         #  runs = sorted(long_df['run'].unique())
         runs = list(self.scores_by_name.keys())
-        labels = wide_df.sort_values(by=sort_field,
-                                     ascending=sort_ascending)['label']
+        labels = wide_df.sort_values(by=sort_field, ascending=sort_ascending)["label"]
         #  labels = sorted(long_df['label'].unique())
         categories = list(itertools.product(labels, runs))
 
@@ -764,25 +810,41 @@ class MultiComparison(object):
             #  palette = bokeh.palettes.Category10[len(runs)]
             palette = bokeh.palettes.Category20[len(runs)]
             #  palette = bokeh.palettes.Set2[len(runs)]
-        fill_cmap = bokeh.transform.factor_cmap('run', palette, runs)
+        fill_cmap = bokeh.transform.factor_cmap("run", palette, runs)
         width = 30 * len(categories) + 10 * len(self.scores_by_name)
-        tools = 'xwheel_zoom,xwheel_pan,xpan,save,reset'
+        tools = "xwheel_zoom,xwheel_pan,xpan,save,reset"
 
         # Top plot: score bars
-        factor_range = bokeh.models.FactorRange(*categories,
-                                                range_padding=0.5,
-                                                range_padding_units='absolute')
-        p1 = bp.figure(title=f"Performance by label ({task_name})",
-                       x_range=factor_range, y_range=[0, 1],
-                       width=width, height=row_height, tools=tools)
-        p1.vbar(x='row_key', top=_SCORE_COL, width=0.95,
-                fill_color=fill_cmap, line_color=None,
-                source=long_ds)
-        label_kw = dict(text_align="right", text_baseline="middle", y_offset=-3,
-                        text_font_size="11pt", angle=90, angle_units='deg')
-        score_labels = bokeh.models.LabelSet(x='row_key', y=_SCORE_COL,
-                                             text="fmt_score",
-                                             source=long_ds, **label_kw)
+        factor_range = bokeh.models.FactorRange(
+            *categories, range_padding=0.5, range_padding_units="absolute"
+        )
+        p1 = bp.figure(
+            title=f"Performance by label ({task_name})",
+            x_range=factor_range,
+            y_range=[0, 1],
+            width=width,
+            height=row_height,
+            tools=tools,
+        )
+        p1.vbar(
+            x="row_key",
+            top=_SCORE_COL,
+            width=0.95,
+            fill_color=fill_cmap,
+            line_color=None,
+            source=long_ds,
+        )
+        label_kw = dict(
+            text_align="right",
+            text_baseline="middle",
+            y_offset=-3,
+            text_font_size="11pt",
+            angle=90,
+            angle_units="deg",
+        )
+        score_labels = bokeh.models.LabelSet(
+            x="row_key", y=_SCORE_COL, text="fmt_score", source=long_ds, **label_kw
+        )
         p1.add_layout(score_labels)
         p1.xaxis.major_label_orientation = 1
         p1.yaxis.bounds = (0, 1)
@@ -790,16 +852,25 @@ class MultiComparison(object):
         # Middle plot: doesn't make sense for n > 2 experiments.
 
         # Bottom plot: count bars
-        p3 = bp.figure(title=f"Counts by label ({task_name})",
-                       x_range=p1.x_range, width=width, height=row_height,
-                       tools=tools)
-        p3.vbar(x='label', top='true_count', width=1.90,
-                fill_color='orange', line_color=None,
-                source=wide_ds)
+        p3 = bp.figure(
+            title=f"Counts by label ({task_name})",
+            x_range=p1.x_range,
+            width=width,
+            height=row_height,
+            tools=tools,
+        )
+        p3.vbar(
+            x="label",
+            top="true_count",
+            width=1.90,
+            fill_color="orange",
+            line_color=None,
+            source=wide_ds,
+        )
         label_kw = dict(text_align="center", text_baseline="top", y_offset=-5)
-        count_labels = bokeh.models.LabelSet(x='label', y="true_count",
-                                             text="true_count",
-                                             source=wide_ds, **label_kw)
+        count_labels = bokeh.models.LabelSet(
+            x="label", y="true_count", text="true_count", source=wide_ds, **label_kw
+        )
         p3.add_layout(count_labels)
         p3.y_range.flipped = True
         p3.y_range.end = 0
@@ -819,12 +890,9 @@ class MultiComparison(object):
             p3.plot_height += 75
 
         # Create plot layout.
-        plots = bokeh.layouts.gridplot([p1, p3], ncols=1,
-                                       toolbar_location="left",
-                                       merge_tools=True,
-                                       sizing_mode="fixed")
+        plots = bokeh.layouts.gridplot(
+            [p1, p3], ncols=1, toolbar_location="left", merge_tools=True, sizing_mode="fixed"
+        )
         header_txt = f"{task_name}, sorted by '{sort_run}.{sort_field}'"
-        header = bokeh.models.Div(
-            text=f"<h1>{header_txt}</h1>",
-            width=600)
+        header = bokeh.models.Div(text=f"<h1>{header_txt}</h1>", width=600)
         return bokeh.layouts.column(header, plots)

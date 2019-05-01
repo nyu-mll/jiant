@@ -1,10 +1,3 @@
--   id: isort
-    name: isort
-    description: 'Import sorter'
-    entry: isort
-    require_serial: true
-    language: python
-    types: [python]
 -   id: black
     name: black
     description: 'Black: The uncompromising Python code formatter'

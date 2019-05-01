@@ -1,17 +1,20 @@
-from typing import Type, Union, Sequence, Iterable
-from . import hocon_writer
-import json
-import pyhocon
 import argparse
-'''Train a multi-task model using AllenNLP '''
+import json
+import logging as log
 import os
+import random
 import sys
 import time
-import random
 import types
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+from typing import Iterable, Sequence, Type, Union
+
+import pyhocon
+
+from . import hocon_writer
+
+"""Train a multi-task model using AllenNLP """
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 class Params(object):
@@ -47,9 +50,7 @@ class Params(object):
     def __setitem__(self, k, v):
         assert isinstance(k, str)
         if isinstance(self.get(k, None), types.FunctionType):
-            raise ValueError(
-                "Invalid parameter name (overrides reserved name '%s')." %
-                k)
+            raise ValueError("Invalid parameter name (overrides reserved name '%s')." % k)
 
         converted_val = Params.clone(v, strict=False)
         if converted_val is not None:
@@ -78,7 +79,10 @@ class Params(object):
 
     def as_dict(self):
         """Recursively convert to a plain dict."""
-        def convert(v): return v.as_dict() if isinstance(v, Params) else v
+
+        def convert(v):
+            return v.as_dict() if isinstance(v, Params) else v
+
         return {k: convert(self[k]) for k in self.keys()}
 
     def __repr__(self):
@@ -88,8 +92,9 @@ class Params(object):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
 
-def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
-                  attr_name: str, default=None):
+def get_task_attr(
+    args: Type[Params], task_names: Union[str, Sequence[str]], attr_name: str, default=None
+):
     """ Get a task-specific param.
 
     Look in args.task_name.attr_name, then args.task_name_attr_name,
@@ -113,16 +118,15 @@ def get_task_attr(args: Type[Params], task_names: Union[str, Sequence[str]],
 # 3) validate specific parameters with custom logic
 
 
-def params_from_file(config_files: Union[str, Iterable[str]],
-                     overrides: str = None):
-    config_string = ''
+def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None):
+    config_string = ""
     if isinstance(config_files, str):
         config_files = [config_files]
     for config_file in config_files:
         with open(config_file) as fd:
             log.info("Loading config from %s", config_file)
             config_string += fd.read()
-            config_string += '\n'
+            config_string += "\n"
     if overrides:
         log.info("Config overrides: %s", overrides)
         # Append overrides to file to allow for references and injection.
@@ -135,5 +139,5 @@ def params_from_file(config_files: Union[str, Iterable[str]],
 
 def write_params(params, config_file):
     config = pyhocon.ConfigFactory.from_dict(params.as_dict())
-    with open(config_file, 'w') as fd:
+    with open(config_file, "w") as fd:
         fd.write(hocon_writer.HOCONConverter.to_hocon(config, indent=2))

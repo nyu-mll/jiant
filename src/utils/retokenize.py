@@ -6,32 +6,28 @@
 #
 # Current implementation is not fast; TODO to profile this and see why.
 
-from typing import Sequence, Iterable, Tuple, \
-    Union, Type, NewType, List, Text
-
-from io import StringIO
-
-import numpy as np
-from scipy import sparse
-
 import functools
 import re
+from io import StringIO
+from typing import Iterable, List, NewType, Sequence, Text, Tuple, Type, Union
 
+import numpy as np
 from nltk.tokenize.simple import SpaceTokenizer
-from .tokenizers import get_tokenizer
-from .utils import unescape_moses
+from scipy import sparse
 
 # Use https://pypi.org/project/python-Levenshtein/ for fast alignment.
 # install with: pip install python-Levenshtein
 from Levenshtein.StringMatcher import StringMatcher
+
+from .tokenizers import get_tokenizer
+from .utils import unescape_moses
 
 # Tokenizer instance for internal use.
 _SIMPLE_TOKENIZER = SpaceTokenizer()
 _SEP = " "  # should match separator used by _SIMPLE_TOKENIZER
 
 # Type alias for internal matricies
-Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix],
-                                 Type[np.ndarray]])
+Matrix = NewType("Matrix", Union[Type[sparse.csr_matrix], Type[np.ndarray]])
 
 _DTYPE = np.int32
 
@@ -44,13 +40,12 @@ def _mat_from_blocks_dense(mb, n_chars_src, n_chars_tgt):
         if i > 0:
             lb = mb[i - 1]  # last block
             s0 = lb[0] + lb[2]  # top
-            e0 = b[0]         # bottom
+            e0 = b[0]  # bottom
             s1 = lb[1] + lb[2]  # left
-            e1 = b[1]         # right
+            e1 = b[1]  # right
             M[s0:e0, s1:e1] = 1
         # Fill matching region on diagonal
-        M[b[0]:b[0] + b[2], b[1]:b[1] + b[2]] = 2 * \
-            np.identity(b[2], dtype=_DTYPE)
+        M[b[0] : b[0] + b[2], b[1] : b[1] + b[2]] = 2 * np.identity(b[2], dtype=_DTYPE)
     return M
 
 
@@ -63,9 +58,9 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
         if i > 0:
             lb = mb[i - 1]  # last block
             s0 = lb[0] + lb[2]  # top
-            l0 = b[0] - s0    # num rows
+            l0 = b[0] - s0  # num rows
             s1 = lb[1] + lb[2]  # left
-            l1 = b[1] - s1    # num cols
+            l1 = b[1] - s1  # num cols
             idxs = np.indices((l0, l1))
             ridxs.extend((s0 + idxs[0]).flatten())  # row indices
             cidxs.extend((s1 + idxs[1]).flatten())  # col indices
@@ -75,32 +70,28 @@ def _mat_from_blocks_sparse(mb, n_chars_src, n_chars_tgt):
         ridxs.extend(range(b[0], b[0] + b[2]))
         cidxs.extend(range(b[1], b[1] + b[2]))
         data.extend(2 * np.ones(b[2], dtype=_DTYPE))
-    M = sparse.csr_matrix((data, (ridxs, cidxs)),
-                          shape=(n_chars_src, n_chars_tgt))
+    M = sparse.csr_matrix((data, (ridxs, cidxs)), shape=(n_chars_src, n_chars_tgt))
     return M
 
 
-def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]],
-                          n_chars: int) -> Matrix:
+def _mat_from_spans_dense(spans: Sequence[Tuple[int, int]], n_chars: int) -> Matrix:
     """Construct a token-to-char matrix from a list of char spans."""
     M = np.zeros((len(spans), n_chars), dtype=_DTYPE)
     for i, s in enumerate(spans):
-        M[i, s[0]:s[1]] = 1
+        M[i, s[0] : s[1]] = 1
     return M
 
 
-def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]],
-                           n_chars: int) -> Matrix:
+def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Matrix:
     """Construct a token-to-char matrix from a list of char spans."""
     ridxs = []
     cidxs = []
     for i, s in enumerate(spans):
         ridxs.extend([i] * (s[1] - s[0]))  # repeat token index
-        cidxs.extend(range(s[0], s[1]))    # char indices
+        cidxs.extend(range(s[0], s[1]))  # char indices
         #  assert len(ridxs) == len(cidxs)
     data = np.ones(len(ridxs), dtype=_DTYPE)
-    return sparse.csr_matrix((data, (ridxs, cidxs)),
-                             shape=(len(spans), n_chars))
+    return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
 
 
 class TokenAligner(object):
@@ -145,8 +136,9 @@ class TokenAligner(object):
         return _mat_from_spans_sparse(tuple(spans), len(text))
         #  return _mat_from_spans_dense(tuple(spans), len(text))
 
-    def _mat_from_blocks(self, mb: Sequence[Tuple[int, int, int]],
-                         n_chars_src: int, n_chars_tgt: int) -> Matrix:
+    def _mat_from_blocks(
+        self, mb: Sequence[Tuple[int, int, int]], n_chars_src: int, n_chars_tgt: int
+    ) -> Matrix:
         """Construct a char-to-char matrix from a list of matching blocks.
 
         mb is a sequence of (s1, s2, n_char) tuples, where s1 and s2 are the
@@ -163,9 +155,7 @@ class TokenAligner(object):
         mb = sm.get_matching_blocks()
         return self._mat_from_blocks(mb, len(source), len(target))
 
-    def __init__(self,
-                 source: Union[Iterable[str], str],
-                 target: Union[Iterable[str], str]):
+    def __init__(self, source: Union[Iterable[str], str], target: Union[Iterable[str], str]):
         # Coerce source and target to space-delimited string.
         if not isinstance(source, str):
             source = _SEP.join(source)
@@ -186,15 +176,13 @@ class TokenAligner(object):
     def pprint(self, src_tokens=None, tgt_tokens=None) -> str:
         """Render as alignment table: src -> [tgts]"""
         output = StringIO()
-        output.write("{:s}({:d}, {:d}):\n".format(self.__class__.__name__,
-                                                  *self.T.shape))
+        output.write("{:s}({:d}, {:d}):\n".format(self.__class__.__name__, *self.T.shape))
         for i in range(self.T.shape[0]):
             targs = sorted(list(self.project_tokens(i)))
             output.write("  {:d} -> {:s}".format(i, str(targs)))
             if src_tokens is not None and tgt_tokens is not None:
                 tgt_list = [tgt_tokens[j] for j in targs]
-                output.write("\t'{:s}' -> {:s}".format(src_tokens[i],
-                                                       str(tgt_list)))
+                output.write("\t'{:s}' -> {:s}".format(src_tokens[i], str(tgt_list)))
             output.write("\n")
         return output.getvalue()
 
@@ -212,6 +200,7 @@ class TokenAligner(object):
         """
         tgt_idxs = self.project_tokens([start, end - 1])
         return min(tgt_idxs), max(tgt_idxs) + 1
+
 
 ##
 # Aligner functions. These take a raw string and return a tuple
@@ -255,15 +244,13 @@ def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
 
 def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
     # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = model_name.endswith('uncased')
-    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else
-                                         text)
+    do_lower_case = model_name.endswith("uncased")
+    bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
     bert_tokenizer = get_tokenizer(model_name)
     wpm_tokens = bert_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
-    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment,
-                                   wpm_tokens))
+    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment, wpm_tokens))
     ta = TokenAligner(bow_tokens, modified_wpm_tokens)
     return ta, wpm_tokens
 
