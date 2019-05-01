@@ -1,4 +1,4 @@
-# Running 'source export_from_bashrc.sh' will add the job of running path_config.sh directly to bash
+# Running 'source export_from_bash.sh' will add the job of running path_config.sh directly to bash
 # (bashrc for Linux and bash_profile for Mac.)
 # for automatic updates on booting up the terminals.
 
