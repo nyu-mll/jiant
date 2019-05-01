@@ -635,7 +635,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         module = SingleClassifier(pooler, classifier)
     else:
         # TODO(Alex): something for WiC
-        classifier = Classifier.from_params(4 * d_out, n_classes, params)
+        feat_mult = 8 if isinstance(task, WiCTask) else 4
+        classifier = Classifier.from_params(feat_mult * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
     return module
 
@@ -877,7 +878,10 @@ class MultiTaskModel(nn.Module):
         else:
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            logits = classifier(sent1, sent2, mask1, mask2)
+            if instance(task, WiCTask):
+                logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1'], batch['idx2']])
+            else:
+                logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
         tagmask = batch.get('tagmask', None)
@@ -988,7 +992,7 @@ class MultiTaskModel(nn.Module):
         '''
         This function is for sequence tagging (one-to-one mapping between words and tags).
         Args:
-                batch: a dict of inputs and target tags 
+                batch: a dict of inputs and target tags
                 task: TaggingTask
                 predict: (boolean) predict mode (not supported)
         Returns

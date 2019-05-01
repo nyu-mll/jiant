@@ -274,7 +274,7 @@ class BoWSentEncoder(Model):
         return word_embs, word_mask  # need to get # nonzero elts
 
 class PRPNPhraseLayer(Model):
-    """ 
+    """
     Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
     PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
     """
@@ -284,11 +284,11 @@ class PRPNPhraseLayer(Model):
         super(PRPNPhraseLayer, self).__init__(vocab)
 
         self.prpnlayer = PRPN(
-                         ninp=d_word, 
-                         nhid=d_hid, 
+                         ninp=d_word,
+                         nhid=d_hid,
                          nlayers=n_layers_enc,
                          nslots=n_slots,
-                         nlookback=n_lookback, 
+                         nlookback=n_lookback,
                          resolution=resolution,
                          dropout=dropout,
                          idropout=idropout,
@@ -414,7 +414,6 @@ class SingleClassifier(nn.Module):
         # append any additional representations we want
         ctx_embs = []
         for idx in [i.long() for i in idxs]:
-
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
@@ -440,12 +439,38 @@ class PairClassifier(nn.Module):
         self.attn = attn
 
     def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
+        """ s1, s2: sequences of hidden states corresponding to sentence 1,2
+            mask1, mask2: binary mask corresponding to non-pad elements
+            idx{1,2}: special indexes to extract in sentence {1, 2}
+                        and append to the representation
+        """
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
         mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
         if self.attn is not None:
             s1, s2 = self.attn(s1, s2, mask1, mask2)
         emb1 = self.pooler(s1, mask1)
         emb2 = self.pooler(s2, mask2)
+
+        s1_ctx_embs = []
+        for idx in [i.long() for i in idx1]:
+            if len(idx.shape) == 1:
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 2:
+                idx = idx.unsqueeze(-1).expand([-1, -1, sent.size(-1)])
+            s1_ctx_emb = emb1.gather(dim=1, index=idx)
+            s1_ctx_embs.append(ctx_emb.squeeze(dim=1))
+        emb1 = torch.cat([emb1] + s1_ctx_embs, dim=-1)
+
+        s2_ctx_embs = []
+        for idx in [i.long() for i in idx2]:
+            if len(idx.shape) == 1:
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 2:
+                idx = idx.unsqueeze(-1).expand([-1, -1, sent.size(-1)])
+            s2_ctx_emb = emb2.gather(dim=1, index=idx)
+            s2_ctx_embs.append(ctx_emb.squeeze(dim=1))
+        emb2 = torch.cat([emb2] + s2_ctx_embs, dim=-1)
+
         pair_emb = torch.cat(
             [emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
