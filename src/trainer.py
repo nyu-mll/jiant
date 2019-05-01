@@ -1084,7 +1084,7 @@ class SamplingMultiTaskTrainer:
             self._delete_old_checkpoints(phase, epoch)
 
     def _find_last_checkpoint_suffix(
-            self, search_phases_in_priority_order=['main']):
+            self, search_phases_in_priority_order=['pretrain']):
         """
         Search for checkpoints to load, looking only for `main` training checkpoints.
 
@@ -1110,7 +1110,7 @@ class SamplingMultiTaskTrainer:
                     to_return = x
             return to_return.split("model_state_")[-1]
 
-    def _restore_checkpoint(self, search_phases_in_priority_order=['main']):
+    def _restore_checkpoint(self, search_phases_in_priority_order=['pretrain']):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -1134,7 +1134,7 @@ class SamplingMultiTaskTrainer:
                                   "model_state_{}".format(suffix_to_load))
         training_state_path = os.path.join(
             self._serialization_dir,
-            "training_state_{}".format(suffix_to_load))
+            "pretraining_state_{}".format(suffix_to_load))
         task_state_path = os.path.join(self._serialization_dir,
                                        "task_state_{}".format(suffix_to_load))
         metric_state_path = os.path.join(
