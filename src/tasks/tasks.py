@@ -2083,7 +2083,7 @@ class SpanClassificationTask(Task):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            iter = list(self._stream_records(filename))
+            iter = list(self._stream_records(filename, split))
             iters_by_split[split] = iter
         return iters_by_split
 
@@ -2224,3 +2224,40 @@ class CommitmentTask(PairClassificationTask):
         f1 = (f11 + f12 + f13) / 3
         return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
 
+@register_task('winograd-coreference', rel_path = 'winograd-coref')
+class WinogradCoreferenceTask(SpanClassificationTask):
+    def __init__(self, path,  **kw):
+        self._files_by_split = {'train': "train_after_redistribution.tsv.json", 'val': "val_same_distribution_test.tsv.json",'test': "test_final.tsv.json"}
+        self.num_spans = 2
+        super().__init__(files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw)
+        self.val_metric = "%s_acc" % self.name 
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        def one_hot_v(batch, depth=2):
+            ones = torch.sparse.torch.eye(depth).cuda()
+            return ones.index_select(0, batch)
+        binary_preds = one_hot_v(logits, depth=2)
+        label_ints = torch.argmax(labels, dim=1)
+        self.f1_scorer(binary_preds, label_ints)
+        self.acc_scorer(binary_preds.long(), labels.long())
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        collected_metrics = {"f1": self.f1_scorer.get_metric(reset)[2], "acc": self.acc_scorer.get_metric(reset)}
+        return collected_metrics
+
+    def _stream_records(self, filename, phase):
+        skip_ctr = 0
+        total_ctr = 0
+        for records in utils.load_json_data(filename):
+            total_ctr += 1
+            # Skip records with empty targets.
+            # TODO(ian): don't do this if generating negatives!
+            if not records.get('targets', None):
+                skip_ctr += 1
+                continue
+            yield records
+        log.info("Read=%d, Skip=%d, Total=%d from %s",
+                 total_ctr - skip_ctr, skip_ctr, total_ctr,
+                 filename)
