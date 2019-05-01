@@ -1324,7 +1324,7 @@ class RTETask(PairClassificationTask):
 
         tr_data = _load_jsonl(os.path.join(path, "train.jsonl"))
         val_data = _load_jsonl(os.path.join(path, "val.jsonl"))
-        te_data = _load_jsonl(os.path.join(path, "test.jsonl"))
+        te_data = _load_jsonl(os.path.join(path, "test_ANS.jsonl"))
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
