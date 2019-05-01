@@ -4,8 +4,8 @@ Example usage:
   python download_glue_data.py --data_dir data --tasks all
 
 Note: for legal reasons, we are unable to host MRPC ourselves.
-By default, we use the version hosted by the SentEval team, which is already tokenized. If that becomes unavailable,
-you can download the original data from (https://download.microsoft.com/download/D/4/6/D46FF87A-F6B9-4252-AA8B-3604ED519838/MSRParaphraseCorpus.msi) and extract the data from it manually.
+By default, we use the version hosted by the SentEval team, which is already tokenized.
+If that becomes unavailable, you can download the original data from (https://download.microsoft.com/download/D/4/6/D46FF87A-F6B9-4252-AA8B-3604ED519838/MSRParaphraseCorpus.msi) and extract the data from it manually.
 For Windows users, you can run the .msi file. For Mac and Linux users, you'll need an external library like 'cabextract' (see below for an example).
 
   mkdir MRPC
