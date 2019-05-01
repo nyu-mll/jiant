@@ -1133,19 +1133,19 @@ class MultiTaskModel(nn.Module):
                 sent, mask = self.sent_encoder(batch['choice%d' % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)
+            out['n_exs'] = batch['choice0']["bert_wpm_pretokenized"].size(0)
         else:
             ctx, ctx_mask = self.sent_encoder(batch["question"], task)
             for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch['choice%d' % choice_idx], task)
-                inp = torch.cat([ctx, sent], dim=1) # TODO(Alex): padding might be weird
+                inp = torch.cat([ctx, sent], dim=1)
                 inp_mask = torch.cat([ctx_mask, mask], dim=1)
                 logit = module(inp, inp_mask)
                 logits.append(logit)
+            out['n_exs'] = batch['choice0']["words"].size(0)
         logits = torch.cat(logits, dim=1)
-
         out['logits'] = logits
-        out['n_exs'] = batch['choice0']["bert_wpm_pretokenized"].size(0) # TODO(Alex): hack
-        #out['n_exs'] = batch['choice0']["words"].size(0) # TODO(Alex): hack
+
         if 'label' in batch:
             labels = batch['label']
             out['loss'] = F.cross_entropy(logits, labels)
