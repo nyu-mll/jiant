@@ -3,11 +3,22 @@
 
 function changebashpaths() {
 	output="source path_config.sh"
-	echo $output >> ~/.bashrc
-  source ~/.bashrc
+	case "$(uname -s)" in
+		Darwin)
+			echo $output >> ~/.bash_profile
+			source ~/.bash_profile
+		;;
+		Linux)
+			echo $output >> ~/.bashrc
+			source ~/.bashrc
+		;;
+		*)
+			echo 'not supported for non MAC/LINUX OS.'
+		;;
+	esac
 }
 
-read -r -p "Are you sure you want to edit bashrc to export paths? (Y/N)" response
+read -r -p "Are you sure you want to edit bash file to export paths? (Y/N)" response
 if [[ $response =~ ^[Yy]$ ]]
 	then
 		changebashpaths
