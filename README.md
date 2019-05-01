@@ -5,7 +5,7 @@
 A few things you might want to know about `jiant`:
 
 - `jiant` is configuration-driven. You can run an enormous variety of experiments by simply writing configuration files. Of course, if you need to add any major new features, you can also easily edit or extend the code.
-- `jiant` contains implementations of strong baselines for the [GLUE](https://gluebenchmark.com) and [SuperGLUE](https://gluebenchmark.com/super) benchmarks, and it's the recommended starting point for work on these benchmarks.
+- `jiant` contains implementations of strong baselines for the [GLUE](https://gluebenchmark.com) and [SuperGLUE](https://super.gluebenchmark.com/) benchmarks, and it's the recommended starting point for work on these benchmarks.
 - `jiant` was developed at [the 2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by [the General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team and is maintained by [the NYU Machine Learning for Language Lab](https://wp.nyu.edu/ml2/people/), with help from [many outside collaborators](https://github.com/nyu-mll/jiant/graphs/contributors) (especially Google AI Language's [Ian Tenney](https://ai.google/research/people/IanTenney)).
 - `jiant` is built on [PyTorch](https://pytorch.org). It also uses many components from [AllenNLP](https://github.com/allenai/allennlp) and HuggingFace PyTorch [implementations](https://github.com/huggingface/pytorch-pretrained-BERT) of BERT and GPT.
 - The name `jiant` doesn't mean much. The 'j' stands for JSALT. That's all the acronym we have.
@@ -205,7 +205,7 @@ To add new tasks, you should:
 
 1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data.
 
-2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. Indeed, `jiant` loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
+2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artifacts. Indeed, `jiant` loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
 
 3. Create a class in ``src/tasks.py``, and make sure that...
 
