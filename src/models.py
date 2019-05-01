@@ -33,7 +33,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask
+    TaggingTask, WeakGroundedTask, JOCITask, SpanClassificationTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
@@ -46,6 +46,7 @@ from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     SingleClassifier, PairClassifier, CNNEncoder, \
     NullPhraseLayer, ONLSTMPhraseLayer, PRPNPhraseLayer
 from .modules.edge_probing import EdgeClassifierModule
+from .modules.span_modules import SpanClassifierModule
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.onlstm.ON_LSTM import ONLSTMStack
 from .modules.prpn.PRPN import PRPN
@@ -484,6 +485,9 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
+    elif isinstance(task, SpanClassificationTask):
+        module = build_span_classifier(task, d_sent, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
@@ -666,6 +670,9 @@ def build_lm(task, d_inp, args):
     hid2voc = nn.Linear(d_inp, args.max_word_v_size)
     return hid2voc
 
+def build_span_classifier(task, d_sent, task_params):
+    module = SpanClassifierModule(task, d_sent, task_params, num_spans=task.num_spans)
+    return module
 
 def build_tagger(task, d_inp, out_dim):
     ''' Build tagger components. '''
@@ -767,6 +774,8 @@ class MultiTaskModel(nn.Module):
             out = self._ranking_forward(batch, task, predict)
         elif isinstance(task, MultiRCTask):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
+        elif isinstance(task, SpanClassificationTask):
+            out = self._span_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -847,6 +856,13 @@ class MultiTaskModel(nn.Module):
 
         if predict:
             out['preds'] = predicted
+        return out
+
+    def _span_forward(self, batch, task, predict):
+        sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        out = module.forward(batch, sent_embs, sent_mask,
+                             task, predict)
         return out
 
     def _positive_pair_sentence_forward(self, batch, task, predict):
