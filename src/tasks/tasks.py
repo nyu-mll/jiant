@@ -15,7 +15,6 @@ import itertools
 import json
 import logging as log
 import os
-import xml.etree.ElementTree as ET
 
 import numpy as np
 import pandas as pd
