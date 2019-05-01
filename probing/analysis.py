@@ -35,6 +35,7 @@ TASK_TO_DISPLAY_NAME = collections.OrderedDict([
 ])
 TASKS = list(TASK_TO_DISPLAY_NAME.keys())
 
+
 def task_sort_key(candidate):
     """Generate a stable sort key for a task, with optional suffixes."""
     for i, name in enumerate(TASKS):
@@ -42,11 +43,13 @@ def task_sort_key(candidate):
             return (i, candidate)
     return (len(TASKS), candidate)
 
+
 def clean_task_name(task_name):
     """Return a cleaned version of a jiant task name."""
     c1 = re.sub(r"^edges-", "", task_name)
     c2 = re.sub(r"-openai$", "", c1)  # legacy, for old -openai versions of tasks
     return c2
+
 
 def make_display_name(task, label=None):
     display_task = TASK_TO_DISPLAY_NAME[task]
@@ -61,6 +64,7 @@ def make_display_name(task, label=None):
     else:
         clean_label = label.strip("_")
         return f"{display_task} ({clean_label})"
+
 
 # Experiment type list for stable ordering
 # These correspond to the convention in scripts/edges/exp_fns.sh
@@ -84,6 +88,7 @@ for bert_name in ['base-uncased', 'base-cased', 'large-uncased',
     EXP_TYPES.append(f"bert-{bert_name}-cat")
     EXP_TYPES.append(f"bert-{bert_name}-mix")
 
+
 def exp_type_sort_key(candidate):
     """Generate a stable sort key for an experiment type, with optional suffixes."""
     exp_type = candidate.split(" ", 1)[0]
@@ -92,42 +97,55 @@ def exp_type_sort_key(candidate):
         exp_type = m.group(1)
     return (EXP_TYPES.index(exp_type), candidate)
 
+
 def _parse_exp_name(exp_name):
     m = re.match(r"([a-z-]+)(-(\d+))?-edges-([a-z-]+)", exp_name)
     assert m is not None, f"Unable to parse run name: {exp_name}"
     prefix, _, num, task = m.groups()
     return prefix, num, task
 
+
 def get_exp_type(exp_name):
     return _parse_exp_name(exp_name)[0]
 
 ##
 # Predicates for filtering and aggregation
+
+
 def is_core_role(label):
     return re.match(r"^ARG[0-5A]$", label) is not None
+
 
 def is_non_core_role(label):
     return re.match(r"^ARGM(-.+)?$", label) is not None
 
+
 def is_core_or_noncore(label):
     return is_core_role(label) or is_non_core_role(label)
+
 
 def is_srl_task(task):
     return task.startswith("srl-")
 
+
 def is_coref_task(task):
     return task.startswith("coref-")
 
+
 def is_relation_task(task):
     return task.startswith("rel-")
+
 
 def is_positive_relation(label):
     return (not label.startswith("_")) and (label != "no_relation") and (label != "Other")
 
 ##
 # Scoring helpers
+
+
 def harmonic_mean(a, b):
     return 2 * a * b / (a + b)
+
 
 def score_from_confusion_matrix(df):
     """Score a DataFrame in-place, computing metrics for each row based on confusion matricies."""
@@ -148,11 +166,13 @@ def score_from_confusion_matrix(df):
 
     # Approximate error intervals using normal approximation
     # https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval
-    z = 1.96 # 95% confidence
+    z = 1.96  # 95% confidence
     df['accuracy_errn95'] = z * (df.accuracy * (1 - df.accuracy) / df.total_count).map(np.sqrt)
-    df['precision_errn95'] = z * (df.precision * (1 - df.precision) / df.pred_pos_count).map(np.sqrt)
+    df['precision_errn95'] = z * (df.precision * (1 - df.precision) /
+                                  df.pred_pos_count).map(np.sqrt)
     df['recall_errn95'] = z * (df.recall * (1 - df.recall) / df.true_pos_count).map(np.sqrt)
-    # This probably isn't the right way to combine for F1 score, but should be a reasonable estimate.
+    # This probably isn't the right way to combine for F1 score, but should be
+    # a reasonable estimate.
     df['f1_errn95'] = harmonic_mean(df.precision_errn95, df.recall_errn95)
 
 
@@ -161,15 +181,19 @@ def score_from_confusion_matrix(df):
 def get_precision(df):
     return df.tp_count / (df.tp_count + df.fp_count)
 
+
 def get_recall(df):
     return df.tp_count / (df.tp_count + df.fn_count)
 
+
 def get_f1(df):
-    return 2*df.precision*df.recall / (df.precision + df.recall)
+    return 2 * df.precision * df.recall / (df.precision + df.recall)
+
 
 def _get_nested_vals(record, outer_key):
     return {f"{outer_key}.{key}": value
             for key, value in record.get(outer_key, {}).items()}
+
 
 def _expand_runs(seq, nreps):
     """Repeat each element N times, consecutively.
@@ -177,6 +201,7 @@ def _expand_runs(seq, nreps):
     i.e. _expand_runs([1,2,3], 4) -> [1,1,1,1,2,2,2,2,3,3,3,3]
     """
     return np.tile(seq, (nreps, 1)).T.flatten()
+
 
 class EdgeProbingExample(object):
     """Wrapper object to handle an edge probing example.
@@ -341,8 +366,8 @@ class Predictions(object):
         # Repeat labels for each target.
         labels = np.tile(self.all_labels, num_targets)
         # Flatten lists using numpy - *much* faster than using Pandas.
-        label_true  = np.array(df['label.khot'].tolist(),
-                               dtype=np.int32).flatten()
+        label_true = np.array(df['label.khot'].tolist(),
+                              dtype=np.int32).flatten()
         preds_proba = np.array(df['preds.proba'].tolist(),
                                dtype=np.float32).flatten()
         assert len(label_true) == len(preds_proba)
@@ -361,7 +386,9 @@ class Predictions(object):
         if 'span2' in df.columns:
             log.info("span2 detected; adding span_distance to long-form "
                      "DataFrame.")
-            _get_midpoint = lambda span: (span[1] - 1 + span[0])/2.0
+
+            def _get_midpoint(span): return (span[1] - 1 + span[0]) / 2.0
+
             def span_sep(a, b):
                 ma = _get_midpoint(a)
                 mb = _get_midpoint(b)
@@ -393,7 +420,7 @@ class Predictions(object):
         # Confusion matrix; can compute other metrics from this later.
         y_true = df['label.true']
         y_pred = df['preds.proba'] >= 0.5
-        C = metrics.confusion_matrix(y_true, y_pred, labels=[0,1])
+        C = metrics.confusion_matrix(y_true, y_pred, labels=[0, 1])
         tn, fp, fn, tp = C.ravel()
         record = dict()
         record['tn_count'] = tn
