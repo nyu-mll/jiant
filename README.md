@@ -1,28 +1,43 @@
 # jiant
-This repo contains the `jiant` sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
-The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
+`jiant` is a work-in-progress software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
 
-jiant has been used in these two papers so far:
+A few things you might want to know about `jiant`:
 
-- [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
-- [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("Edge Probing")
-
-To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
-
-For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX), see the [probing/](probing/) directory.
+- `jiant` is configuration-driven. You can run an enormous variety of experiments by simply writing configuration files. Of course, if you need to add any major new features, you can also easily edit or extend the code.
+- `jiant` contains implementations of strong baselines for the [GLUE](https://gluebenchmark.com) and [SuperGLUE](https://super.gluebenchmark.com/) benchmarks, and it's the recommended starting point for work on these benchmarks.
+- `jiant` was developed at [the 2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by [the General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team and is maintained by [the NYU Machine Learning for Language Lab](https://wp.nyu.edu/ml2/people/), with help from [many outside collaborators](https://github.com/nyu-mll/jiant/graphs/contributors) (especially Google AI Language's [Ian Tenney](https://ai.google/research/people/IanTenney)).
+- `jiant` is built on [PyTorch](https://pytorch.org). It also uses many components from [AllenNLP](https://github.com/allenai/allennlp) and HuggingFace PyTorch [implementations](https://github.com/huggingface/pytorch-pretrained-BERT) of BERT and GPT.
+- The name `jiant` doesn't mean much. The 'j' stands for JSALT. That's all the acronym we have.
 
 ## Getting Started
-1) Run the dependencies file.
-2) Download the submodules.
-3) Download the GLUE data.
-4) Run demo.sh to see an example of pretraining and fine-tuning on a task.
 
-## Dependencies
+To run a simple example demo experiment using data from GLUE:
+
+1. Clone `jiant` and its submodules.
+2. Run the dependencies file.
+3. Download the GLUE data.
+4. Set up environment variables to point to your directories for data and experiment output.
+5. Run demo.sh.
+
+### Submodules
+
+This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
+
+```sh
+git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
+```
+
+If you already cloned and just need to get the submodules, you can run:
+```sh
+git submodule update --init --recursive
+```
+
+### Dependencies
 
 Make sure you have installed the packages listed in `environment.yml`.
 When listed, specific particular package versions are required.
-If you use conda (recommended, [instructions for installing miniconda here](https://conda.io/miniconda.html)), you can create an environment from this package with the following command:
+If you use `conda` (recommended, [instructions for installing `miniconda` here](https://conda.io/miniconda.html)), you can create an environment from this package with the following command:
 
 ```
 conda env create -f environment.yml
@@ -37,22 +52,10 @@ You will also need to install dependencies for nltk if you do not already have t
 python -m nltk.downloader -d /usr/share/nltk_data perluniprops nonbreaking_prefixes punkt
 ```
 
-## Submodules
 
-This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
+### Downloading data
 
-```sh
-git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
-```
-
-If you already cloned and just need to get the submodules, you can do:
-```sh
-git submodule update --init --recursive
-```
-
-## Downloading data
-
-The repo contains a convenience python script for downloading all [GLUE](https://www.nyu.edu/projects/bowman/glue.pdf) data and standard splits.
+The repo contains a convenience python script for downloading all [GLUE](https://gluebenchmark.com/) data and standard splits.
 
 ```
 python scripts/download_glue_data.py --data_dir data --tasks all
@@ -71,7 +74,7 @@ We also make use of many other data sources, including:
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
-## Running
+### Running
 
 To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:
 ```sh
@@ -82,13 +85,25 @@ will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
 To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [path_config.sh](path_config.sh)
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
-*  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the Glue data.
-*  $WORD_EMBED: location of the word embeddings you want to use. For GloVe:  [840B300d Glove](http://nlp.stanford.edu/data/glove.840B.300d.zip). For FastText: [300d-2M](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip). For ELMo, AllenNLP will download it for you. For OpenAI, the model weights will be downloaded when installing the git submodules.
+*  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
+*  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
 
+## Command-Line Options
 
+All model configuration is handled through the config file system and the `--overrides` flag, but there are also a few command-line arguments that control the behavior of `main.py`. In particular:
 
+`--tensorboard` (or `-t`): use this to run a [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) server while the trainer is running, serving on the port specified by `--tensorboard_port` (default is `6006`).
 
-### Saving Preprocessed Data
+The trainer will write event data even if this flag is not used, and you can run Tensorboard separately as:
+```
+tensorboard --logdir <exp_dir>/<run_name>/tensorboard
+```
+
+`--notify <email_address>`: use this to enable notification emails via [SendGrid](https://sendgrid.com/). You'll need to make an account and set the `SENDGRID_API_KEY` environment variable to contain the (text of) the client secret key.
+
+`--remote_log` (or `-r`): use this to enable remote logging via Google Stackdriver. You can set up credentials and set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable; see [Stackdriver Logging Client Libraries](https://cloud.google.com/logging/docs/reference/libraries#client-libraries-usage-python).
+
+## Saving Preprocessed Data
 
 Because preprocessing is expensive (e.g. building vocab and indexing for very large tasks like WMT or BWB), we often want to run multiple experiments using the same preprocessing. So, we group runs using the same preprocessing in a single experiment directory (set using the ``exp_dir`` flag) in which we store all shared preprocessing objects. Later runs will load the stored preprocessing. We write run-specific information (logs, saved models, etc.) to a run-specific directory (set using flag ``run_dir``), usually nested in the experiment directory. Experiment directories are written in ``project_dir``. Overall the directory structure looks like:
 
@@ -124,21 +139,6 @@ To force rebuilding of the vocabulary, perhaps because you want to include vocab
 
 To force reindexing of a task's data, delete some or all of the objects in `preproc/` or use the option ``reload_index = 1`` and set ``reindex_tasks`` to the names of the tasks to be reindexed, e.g. ``reindex_tasks=\"sst,mnli\"``. You should do this whenever you rebuild the task objects or vocabularies.
 
-### Command-Line Options
-
-All model configuration is handled through the config file system and the `--overrides` flag, but there are also a few command-line arguments that control the behavior of `main.py`. In particular:
-
-`--tensorboard` (or `-t`): use this to run a [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) server while the trainer is running, serving on the port specified by `--tensorboard_port` (default is `6006`).
-
-The trainer will write event data even if this flag is not used, and you can run Tensorboard separately as:
-```
-tensorboard --logdir <exp_dir>/<run_name>/tensorboard
-```
-
-`--notify <email_address>`: use this to enable notification emails via [SendGrid](https://sendgrid.com/). You'll need to make an account and set the `SENDGRID_API_KEY` environment variable to contain the (text of) the client secret key.
-
-`--remote_log` (or `-r`): use this to enable remote logging via Google Stackdriver. You can set up credentials and set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable; see [Stackdriver Logging Client Libraries](https://cloud.google.com/logging/docs/reference/libraries#client-libraries-usage-python).
-
 ## Models (and how to add a Model)
 
 The core model is a shared BiLSTM with task-specific components. When a language modeling objective is included in the set of training tasks, we use a bidirectional language model for all tasks, which is constructed to avoid cheating on the language modeling tasks. We also provide bag of words and RNN sentence encoder.
@@ -150,7 +150,7 @@ To see the full set of available params, see [config/defaults.conf](config/defau
 
 To use the ON-LSTM sentence encoder from [Ordered Neurons: Integrating Tree Structures into Recurrent Neural Networks](https://arxiv.org/abs/1810.09536), set ``sent_enc = onlstm``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/onlstm.conf](config/onlstm.conf). Specific ON-LSTM modules use code from the [Github](https://github.com/yikangshen/Ordered-Neurons) implementation of the paper.
 
-To use the PRPN sentence encoder from [***Neural language modeling by jointly learning syntax and lexicon***](https://arxiv.org/abs/1711.02013), set ``sent_enc=prpn``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/prpn.conf](config/prpn.conf). Specific PRPN modules use code from the [Github](https://github.com/yikangshen/PRPN) implementation of the paper.
+To use the PRPN sentence encoder from [***Neural language modeling by jointly learning syntax and lexicon***](https://arxiv.org/abs/1711.02013), set ``sent_enc=prpn``. To re-run experiments from the paper on WSJ Language Modeling, use the configuration file [config/prpn.conf](config/prpn.conf). Specific PRPN modules use code from the [Github](https://github.com/yikangshen/PRPN) implementation of the paper. 
 
 ## Currently Supported Task Types
 
@@ -160,20 +160,19 @@ We currently support the following:
 	* Pair sentence classification tasks
 	* Regression tasks
 	* Tagging tasks
-	* Span classification Tasks - to run these, we currently require an extra preprocessing 
-	  step, which consists of preprocessing the data to get BERT tokenized span indices. 
-	  SpanTasks expects the files to be in json format and be named as {file_name}.retokenized.{tokenizer_name}.
-	* seq2seq tasks are partially supported.
+	* Span classification Tasks 
+		* To run these, we currently require an extra preprocessing step, which consists of preprocessing the data to get BERT tokenized span indices. SpanTasks expects the files to be in `json` format and be named as `{file_name}.retokenized.{tokenizer_name}`.
+	* seq2seq tasks (partial/tentative support only) partially supported.
 
-### Transformers 
+### GPT, BERT, and Transformers 
+
+We support using pretrained Transformer encoders. To use the OpenAI transformer model, set `openai_transformer = 1`, download the [model](https://github.com/openai/finetune-transformer-lm) folder that contains pre-trained models, and place it under `src/openai_transformer_lm/pytorch_huggingface/`.
+To use [BERT](https://arxiv.org/abs/1810.04805) architecture, set ``bert_model_name`` to one of the models listed [here](https://github.com/huggingface/pytorch-pretrained-BERT#loading-google-ai-or-openai-pre-trained-weigths-or-pytorch-dump), e.g. ``bert-base-cased``. You should also set ``tokenizer`` to the BERT model name used in order to ensure you are using the same tokenization and vocabulary.
+
+When using BERT, we follow the procedures set out in the original work as closely as possible: For pair sentence tasks, we concatenate the sentences with a special `[SEP]` token. Rather than max-pooling, we take the first representation of the sequence (corresponding to the special `[CLS]` token) as the representation of the entire sequence.
+We also have support for the version of Adam that was used in training BERT (``optimizer = bert_adam``).
 
 We also include an experimental option to use a shared [Transformer](https://arxiv.org/abs/1706.03762) in place of the shared BiLSTM by setting ``sent_enc = transformer``. When using a Transformer, we use the [Noam learning rate scheduler](https://github.com/allenai/allennlp/blob/master/allennlp/training/learning_rate_schedulers.py#L84), as that seems important to training the Transformer thoroughly. 
-
-We also support using pretrained Transformer language models. To use the OpenAI transformer model, set `openai_transformer = 1`, download the [model](https://github.com/openai/finetune-transformer-lm) folder that contains pre-trained models, and place it under `src/openai_transformer_lm/pytorch_huggingface/`.
-To use [BERT](https://arxiv.org/abs/1810.04805) architecture, set ``bert_model_name`` to one of the models listed [here](https://github.com/huggingface/pytorch-pretrained-BERT#loading-google-ai-or-openai-pre-trained-weigths-or-pytorch-dump), e.g. ``bert-base-cased``. You should also set ``tokenizer`` to be the BERT model used in order to ensure you are using the same tokenization and vocabulary.
-
-When using BERT, we follow the procedures set out in the original work as closely as possible: For pair sentence tasks, we concatenate the sentences with a sepcial `[SEP]` token. Rather than max-pooling, we take the first representation of the sequence (corresponding to the special `[CLS]` token) as the representation of the entire sequence.
-We also have support for the version of Adam that was used in training BERT (``optimizer = bert_adam``).
 
 ## Trainer
 
@@ -206,7 +205,7 @@ To add new tasks, you should:
 
 1. Add your data to the ``data_dir`` you intend to use. When constructing your task class (see next bullet), make sure you specify the correct subfolder containing your data.
 
-2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artefacts. Indeed, jiant loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
+2. Shuffle your training and validation data if there are many rows (>10k) to avoid training artifacts. Indeed, `jiant` loads 10k examples at a time in memory and then only it shuffles them. This could create issues if your data is sorted, e.g: If your data is sorted by label, the model would go through all the examples of a class before finding one of another, so it would learn to always predict the first class. If you reach 100% accuracy before one epoch, this is likely the case.
 
 3. Create a class in ``src/tasks.py``, and make sure that...
 
@@ -258,17 +257,6 @@ Download the pretrained vectors located [here](https://fasttext.cc/docs/en/engli
 To use [GloVe pretrained word embeddings](https://nlp.stanford.edu/projects/glove/), download and extract the relevant files and set ``word_embs_file`` to the GloVe file.
 
 
-## Quick-Start on GCP (for JSALT internal use only)
-
-For the JSALT workshop, we used Google Compute Engine as our main compute platform. If you're using Google Compute Engine, the private project instance images (`cpu-workstation-template*` and `gpu-worker-template-*`) already have all the required packages installed, plus the GLUE data and pre-trained embeddings downloaded to `/usr/share/jsalt`. Unfortunately, these images are not straightforward to share. To use, clone this repo to your home directory, then test with:
-
-```sh
-python main.py --config_file config/demo.conf
-```
-
-You should see the model start training, and achieve an accuracy of > 70% on SST in a few minutes. The default config will write the experiment directory to `$HOME/exp/<experiment_name>` and the run directory to `$HOME/exp/<experiment_name>/<run_name>`, so you can find the demo output in `~/exp/jiant-demo/sst`.
-
-
 ## Update config files
 
 As some config arguments are renamed, you may encounter an error when loading past config files (e.g. params.conf) created before Oct 24, 2018. To update a config file, run
@@ -276,6 +264,32 @@ As some config arguments are renamed, you may encounter an error when loading pa
 ```sh
 python scripts/update_config.py <path_to_file>
 ```
+
+## Suggested Citation
+
+If you use `jiant` in academic work, please cite it directly:
+
+```
+@misc{wang2019jiant,
+    author = {Alex Wang and Ian F. Tenney and Yada Pruksachatkun and Katherin Yu and Jan Hula and Patrick Xia and Raghu Pappagari and Shuning Jin and R. Thomas McCoy and Roma Patel and Yinghui Huang and Jason Phang and Edouard Grave and Najoung Kim and Phu Mon Htut and Thibault F'{e}vry and Berlin Chen and Nikita Nangia and Haokun Liu and and Anhad Mohananey and Shikha Bordia and Ellie Pavlick and Samuel R. Bowman},
+    title = {{jiant} 0.9: A software toolkit for research on general-purpose text understanding models},
+    howpublished = {\url{http://jiant.info/}},
+    year = {2019}
+}
+```
+
+## Papers
+
+`jiant` has been used in these three papers so far:
+
+- [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
+- [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX) ("Edge Probing")
+- [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544)
+
+To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
+
+For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX), see the [probing/](probing/) directory.
+
 
 ## License
 
@@ -287,6 +301,6 @@ Post an issue here on GitHub if you have any problems, and create a pull request
 
 ## FAQs
 
-It seems like my preproc/{task}__{split}.data has nothing in it!
+It seems like my preproc/{task}\_\_{split}.data has nothing in it!
 
 This probably means that you probably ran the script before downloading the data for that task. Thus, delete the file from preproc and then run main.py again to build the data splits from scratch.
