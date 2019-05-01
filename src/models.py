@@ -691,9 +691,13 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     return decoder, hid2voc
 
 def build_qa_module(task, d_inp, use_bert, params):
-    ''' '''
+    ''' Build a simple QA module that
+    1) pools representations (either of the joint (context, question, answer) or individually
+    2) projects down to two logits
+    3) classifier
+
+    This module models each question-answer pair _individually_ '''
     pool_type = "first" if use_bert else "max"
-    #d_inp = d_inp if not use_bert else d_inp
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
@@ -1261,11 +1265,13 @@ class MultiTaskModel(nn.Module):
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
+            # if using BERT, we concatenate the context, question, and answer
             inp = batch["para_quest_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
             out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
         else:
+            # else, we embed each independently and concat them
             par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
             qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
             ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)

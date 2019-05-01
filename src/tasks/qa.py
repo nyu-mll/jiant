@@ -25,7 +25,8 @@ from .registry import register_task
 
 @register_task('multirc', rel_path='MultiRC/')
 class MultiRCTask(Task):
-    '''Multiple sentence reading comprehension Task'''
+    '''Multi-sentence Reading Comprehension task
+    See paper at https://cogcomp.org/multirc/ '''
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
@@ -129,8 +130,6 @@ class MultiRCTask(Task):
         ''' Compute here b/c we're streaming the sentences. '''
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #example_counts[split] = sum(len(ex["paragraph"]["questions"]) for ex in \
-            #                            json.load(open(split_path, 'r'))["data"])
             example_counts[split] = sum(len(q["answers"])
                                         for r in open(split_path, 'r', encoding="utf-8") \
                                         for q in json.loads(r)["paragraph"]["questions"])

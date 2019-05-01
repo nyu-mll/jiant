@@ -161,6 +161,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
     return
 
 
+# Exact file names per task required by the GLUE evaluation server
 GLUE_NAME_MAP = {'cola': 'CoLA',
                  'diagnostic': 'AX',
                  'mnli-mm': 'MNLI-mm',
@@ -173,6 +174,7 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
+# Exact file names per task required by the SuperGLUE evaluation server
 SUPERGLUE_NAME_MAP = {"commitbank": "CB",
                       "multirc": "MultiRC"
                      }
