@@ -33,7 +33,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask, SpanClassificationTask
+    TaggingTask, WeakGroundedTask, JOCITask, WiCTask, SpanClassificationTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
@@ -653,13 +653,15 @@ def build_pair_sentence_module(task, d_inp, model, params):
     if model.use_bert:
         # BERT handles pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
+        if isinstance(task, WiCTask):
+            d_out *= 3 # also pass the two contextual word representations
         classifier = Classifier.from_params(d_out, n_classes, params)
         module = SingleClassifier(pooler, classifier)
     else:
+        d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
     return module
-
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''
@@ -846,9 +848,9 @@ class MultiTaskModel(nn.Module):
     def _span_forward(self, batch, task, predict):
         sent_embs, sent_mask = self.sent_encoder(batch['input1'], task)
         module = getattr(self, "%s_mdl" % task.name)
-        out = module.forward(batch, sent_embs, sent_mask, 
+        out = module.forward(batch, sent_embs, sent_mask,
                              task, predict)
-        return out 
+        return out
 
     def _positive_pair_sentence_forward(self, batch, task, predict):
         ''' forward function written specially for cases where we have only +ve pairs in input data
@@ -904,11 +906,18 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if self.use_bert:
             sent, mask = self.sent_encoder(batch['inputs'], task)
-            logits = classifier(sent, mask)
+            # special case for WiC b/c we want to add representations of particular tokens
+            if isinstance(task, WiCTask):
+                logits = classifier(sent, mask, [batch['idx1'], batch['idx2']])
+            else:
+                logits = classifier(sent, mask)
         else:
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            logits = classifier(sent1, sent2, mask1, mask2)
+            if isinstance(task, WiCTask):
+                logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1']], [batch['idx2']])
+            else:
+                logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
         tagmask = batch.get('tagmask', None)

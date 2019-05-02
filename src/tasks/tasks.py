@@ -250,6 +250,7 @@ class Task(object):
 
     def update_metrics(self, logits, labels, tagmask=None):
         assert len(self.get_scorers()) > 0, 'Please specify a score metric'
+        logits, labels = logits.detach(), labels.detach()
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
@@ -665,7 +666,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-            
+
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
@@ -1953,7 +1954,7 @@ class SpanClassificationTask(Task):
     '''
     @property
     def _tokenizer_suffix(self):
-        ''' 
+        '''
         Suffix to make sure we use the correct source files,
         based on the given tokenizer.
         '''
@@ -1984,7 +1985,7 @@ class SpanClassificationTask(Task):
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
             label_file: relative path to labels file
-                - should be a line-delimited file where each line is a value the 
+                - should be a line-delimited file where each line is a value the
                 label can take.
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
@@ -2014,7 +2015,7 @@ class SpanClassificationTask(Task):
 
     def _stream_records(self, filename):
         """
-        Helper function for loading the data, which is in json format and 
+        Helper function for loading the data, which is in json format and
         checks if it has targets.
         """
         skip_ctr = 0
@@ -2037,14 +2038,14 @@ class SpanClassificationTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        ''' 
+        '''
         Get split text as iterable of records.
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self._iters_by_split[split]
 
     def get_num_examples(self, split_text):
-        ''' 
+        '''
         Return number of examples in the result of get_split_text.
         Subclass can override this if data is not stored in column format.
         '''
@@ -2171,5 +2172,94 @@ class CommitmentTask(PairClassificationTask):
         pcs = (pcs1 + pcs2 + pcs3) / 3
         rcl = (rcl1 + rcl2 + rcl3) / 3
         f1 = (f11 + f12 + f13) / 3
+        return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
+
+        log.info('\tFinished loading CommitmentBank data.')
+
+@register_task('wic', rel_path='WiC/')
+class WiCTask(PairClassificationTask):
+    ''' Task class for Words in Context. '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
+        self.load_data(path, max_seq_len)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+        self.scorer1 = CategoricalAccuracy()
+        self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
+        self.val_metric = "%s_accuracy" % name
+        self.val_metric_decreases = False
+
+    def load_data(self, path, max_seq_len):
+        '''Process the dataset located at data_file.'''
+
+        trg_map = {"true": 1, "false": 0, True: 1, False: 0}
+        def _load_split(data_file):
+            sents1, sents2, idxs1, idxs2, trgs = [], [], [], [], []
+            with open(data_file, 'r') as data_fh:
+                for row in data_fh:
+                    row = json.loads(row)
+                    sent1 = process_sentence(self._tokenizer_name, row["sentence1"], max_seq_len)
+                    sent2 = process_sentence(self._tokenizer_name, row["sentence2"], max_seq_len)
+                    sents1.append(sent1)
+                    sents2.append(sent2)
+                    idx1 = row["sentence1_idx"]
+                    idx2 = row["sentence2_idx"]
+                    idxs1.append(int(idx1))
+                    idxs2.append(int(idx2))
+                    trg = trg_map[row["label"]] if "label" in row else 0
+                    trgs.append(trg)
+                return [sents1, sents2, idxs1, idxs2, trgs]
+
+        tr_data = _load_split(os.path.join(path, "train.jsonl"))
+        val_data = _load_split(os.path.join(path, "val.jsonl"))
+        te_data = _load_split(os.path.join(path, "test.jsonl"))
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading WiC data.")
+
+    def process_split(self, split, indexers):
+        '''
+        Convert a dataset of sentences into padded sequences of indices. Shared
+        across several classes.
+
+        '''
+        # check here if using bert to avoid passing model info to tasks
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
+            d = {}
+            d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
+            d["idx1"] = NumericField(idxs1)
+            d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
+            d["idx2"] = NumericField(idxs2) # modify if using BERT
+            if is_using_bert:
+                inp = input1 + input2[1:] # throw away input2 leading [CLS]
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+                idxs2 += len(input1)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+
+            d["idx"] = LabelField(idx, label_namespace="idxs",
+                                  skip_indexing=True)
+
+            return Instance(d)
+
+        if len(split) < 6:  # counting iterator for idx
+            assert len(split) == 5
+            split.append(itertools.count())
+
+        # Map over columns: input1, (input2), labels, idx
+        instances = map(_make_instance, *split)
+        return instances  # lazy iterator
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'accuracy': acc, 'f1': f1, 'precision': pcs, 'recall': rcl}
 
