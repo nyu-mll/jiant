@@ -101,7 +101,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
                            "No best checkpoint found to evaluate.")
 
             if args.transfer_paradigm == "finetune":
-                # Save model so we have a checkpoint to go back to after each task-specific finetune.
+                # Save model so we have a checkpoint to go back to after each
+                # task-specific finetune.
                 model_state = model.state_dict()
                 model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)
@@ -148,12 +149,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
     if args.do_pretrain:
         assert_for_log(args.pretrain_tasks != "none",
-                       "Error: Must specify at least one training task: [%s]" % args.pretrain_tasks)
+                       "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks)
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
 
     if args.do_target_task_training:
         assert_for_log(args.target_tasks != "none",
-                       "Error: Must specify at least on training task: [%s]" % args.target_tasks)
+                       "Error: Must specify at least one target task: [%s]" % args.target_tasks)
         steps_log.write("Re-training model for individual target tasks \n")
         assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
                        or args.allow_reuse_of_pretraining_parameters
@@ -390,9 +391,10 @@ def main(cl_arguments):
                             "scalar_mix" in n and "scalar_mix_0" not in n]
             # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero
             # length.
-            assert_for_log(not elmo_scalars or args.sep_embs_for_skip,
-                           "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
-                           "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
+            assert_for_log(
+                not elmo_scalars or args.sep_embs_for_skip,
+                "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
+                "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in target_tasks:
             # Skip mnli-diagnostic
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
@@ -416,11 +418,18 @@ def main(cl_arguments):
             trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'], model,
                                                                 args.run_dir,
                                                                 task.val_metric_decreases, phase="target_train")
-            _ = trainer.train(tasks=[task], stop_metric=task.val_metric, batch_size=args.batch_size,
-                              weighting_method=args.weighting_method,
-                              scaling_method=args.scaling_method, train_params=to_train,
-                              optimizer_params=opt_params, scheduler_params=schd_params,
-                              shared_optimizer=args.shared_optimizer, load_model=False, phase="target_train")
+            _ = trainer.train(
+                tasks=[task],
+                stop_metric=task.val_metric,
+                batch_size=args.batch_size,
+                weighting_method=args.weighting_method,
+                scaling_method=args.scaling_method,
+                train_params=to_train,
+                optimizer_params=opt_params,
+                scheduler_params=schd_params,
+                shared_optimizer=args.shared_optimizer,
+                load_model=False,
+                phase="target_train")
 
             # Now that we've trained a model, revert to the normal checkpoint
             # logic for this task.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Helper script to convert edge probing JSON data to TensorFlow Examples in 
+# Helper script to convert edge probing JSON data to TensorFlow Examples in
 # TFRecord format.
 #
 # Usage:
@@ -23,15 +23,18 @@ import tensorflow as tf
 
 from typing import List, Dict
 
+
 def add_string_feature(ex: tf.train.Example, name: str, text: str):
     """Append a single string to the named feature."""
     if isinstance(text, str):
         text = text.encode('utf-8')
     ex.features.feature[name].bytes_list.value.append(text)
 
+
 def add_ints_feature(ex: tf.train.Example, name: str, ints: List[int]):
     """Append ints from a list to the named feature."""
     ex.features.feature[name].int64_list.value.extend(ints)
+
 
 def convert_to_example(record: Dict):
     """Convert an edge probing record to a TensorFlow example.
@@ -44,15 +47,15 @@ def convert_to_example(record: Dict):
         - info: single string, serialized info JSON
         - targets.info: list of strings, serialized info JSON for each target
 
-    Due to the limitations of tf.Example, spans are packed into a single flat 
-    list of length 2*num_targets containing alternating endpoints: [s0, e0, s1, 
-    e1, ..., sn, en]. You can get individual spans back with tf.reshape(spans, 
+    Due to the limitations of tf.Example, spans are packed into a single flat
+    list of length 2*num_targets containing alternating endpoints: [s0, e0, s1,
+    e1, ..., sn, en]. You can get individual spans back with tf.reshape(spans,
     [-1, 2]).
 
     If examples have multiple labels per target (such as for SPR2), these are
     joined into a single string on spaces:
         label: ["foo", "bar", "baz"] -> "foo bar baz"
-    You can use tf.string_split and tf.sparse.to_dense to convert these into an 
+    You can use tf.string_split and tf.sparse.to_dense to convert these into an
     array of targets.
 
     Args:
@@ -78,6 +81,7 @@ def convert_to_example(record: Dict):
     assert(num_span2s == num_span1s or num_span2s == 0)
     return ex
 
+
 def convert_file(fname):
     new_name = os.path.splitext(fname)[0] + ".tfrecord"
     log.info("Processing file: %s", fname)
@@ -87,6 +91,7 @@ def convert_file(fname):
         for record in tqdm(record_iter):
             example = convert_to_example(record)
             writer.write(example.SerializeToString())
+
 
 def main(args):
     for fname in args:
