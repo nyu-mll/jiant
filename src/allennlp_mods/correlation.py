@@ -1,10 +1,10 @@
-''' Metric class for tracking correlations by saving predictions '''
+""" Metric class for tracking correlations by saving predictions """
 import numpy as np
-from overrides import overrides
-from allennlp.training.metrics.metric import Metric
-from sklearn.metrics import matthews_corrcoef, confusion_matrix
-from scipy.stats import pearsonr, spearmanr
 import torch
+from allennlp.training.metrics.metric import Metric
+from overrides import overrides
+from scipy.stats import pearsonr, spearmanr
+from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
 
 @Metric.register("fastMatthews")
@@ -31,8 +31,9 @@ class FastMatthews(Metric):
         assert predictions.dtype in [np.int32, np.int64, int]
         assert labels.dtype in [np.int32, np.int64, int]
 
-        C = confusion_matrix(labels.ravel(), predictions.ravel(),
-                             labels=np.arange(self.n_classes, dtype=np.int32))
+        C = confusion_matrix(
+            labels.ravel(), predictions.ravel(), labels=np.arange(self.n_classes, dtype=np.int32)
+        )
         assert C.shape == (self.n_classes, self.n_classes)
         self._C += C
 
@@ -49,7 +50,7 @@ class FastMatthews(Metric):
         mcc = cov_ytyp / np.sqrt(cov_ytyt * cov_ypyp)
 
         if np.isnan(mcc):
-            return 0.
+            return 0.0
         else:
             return mcc
 
@@ -63,8 +64,7 @@ class FastMatthews(Metric):
 
     @overrides
     def reset(self):
-        self._C = np.zeros((self.n_classes, self.n_classes),
-                           dtype=np.int64)
+        self._C = np.zeros((self.n_classes, self.n_classes), dtype=np.int64)
 
 
 @Metric.register("correlation")
@@ -74,11 +74,11 @@ class Correlation(Metric):
     def __init__(self, corr_type):
         self._predictions = []
         self._labels = []
-        if corr_type == 'pearson':
+        if corr_type == "pearson":
             corr_fn = pearsonr
-        elif corr_type == 'spearman':
+        elif corr_type == "spearman":
             corr_fn = spearmanr
-        elif corr_type == 'matthews':
+        elif corr_type == "matthews":
             corr_fn = matthews_corrcoef
         else:
             raise ValueError("Correlation type not supported")
@@ -87,7 +87,7 @@ class Correlation(Metric):
 
     def _correlation(self, labels, predictions):
         corr = self._corr_fn(labels, predictions)
-        if self.corr_type in ['pearson', 'spearman']:
+        if self.corr_type in ["pearson", "spearman"]:
             corr = corr[0]
         return corr
 
@@ -107,12 +107,12 @@ class Correlation(Metric):
             labels = labels.cpu().numpy()
 
         # Verify shape match
-        assert predictions.shape == labels.shape, ("Predictions and labels must"
-                                                   " have matching shape. Got:"
-                                                   " preds=%s, labels=%s" % (
-                                                       str(predictions.shape),
-                                                       str(labels.shape)))
-        if self.corr_type == 'matthews':
+        assert predictions.shape == labels.shape, (
+            "Predictions and labels must"
+            " have matching shape. Got:"
+            " preds=%s, labels=%s" % (str(predictions.shape), str(labels.shape))
+        )
+        if self.corr_type == "matthews":
             assert predictions.dtype in [np.int32, np.int64, int]
             assert labels.dtype in [np.int32, np.int64, int]
 

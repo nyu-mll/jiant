@@ -9,25 +9,24 @@
 # New files will have the same basename, with .tfrecord extension,
 #   e.g. foo_edges.json -> foo_edges.tfrecord
 
-import sys
-import os
 import json
+import logging as log
+import os
+import sys
+from typing import Dict, List
+
+import tensorflow as tf
 from tqdm import tqdm
 
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
-
 from src.utils import utils
-import tensorflow as tf
 
-from typing import List, Dict
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def add_string_feature(ex: tf.train.Example, name: str, text: str):
     """Append a single string to the named feature."""
     if isinstance(text, str):
-        text = text.encode('utf-8')
+        text = text.encode("utf-8")
     ex.features.feature[name].bytes_list.value.append(text)
 
 
@@ -65,20 +64,20 @@ def convert_to_example(record: Dict):
         tf.train.Example with features described above.
     """
     ex = tf.train.Example()
-    add_string_feature(ex, "text", record['text'])
-    add_string_feature(ex, "info", json.dumps(record.get('info', {})))
-    for target in record['targets']:
+    add_string_feature(ex, "text", record["text"])
+    add_string_feature(ex, "info", json.dumps(record.get("info", {})))
+    for target in record["targets"]:
         label_string = " ".join(utils.wrap_singleton_string(target["label"]))
         add_string_feature(ex, "targets.label", label_string)
         add_ints_feature(ex, "targets.span1", target["span1"])
         if "span2" in target:
             add_ints_feature(ex, "targets.span2", target["span2"])
-        add_string_feature(ex, "target.info", json.dumps(target.get('info', {})))
+        add_string_feature(ex, "target.info", json.dumps(target.get("info", {})))
 
     # Verify that span2 is either empty or aligned to span1.
-    num_span1s = len(ex.features.feature['targets.span1'].int64_list.value)
-    num_span2s = len(ex.features.feature['targets.span2'].int64_list.value)
-    assert(num_span2s == num_span1s or num_span2s == 0)
+    num_span1s = len(ex.features.feature["targets.span1"].int64_list.value)
+    num_span2s = len(ex.features.feature["targets.span2"].int64_list.value)
+    assert num_span2s == num_span1s or num_span2s == 0
     return ex
 
 
@@ -98,6 +97,6 @@ def main(args):
         convert_file(fname)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

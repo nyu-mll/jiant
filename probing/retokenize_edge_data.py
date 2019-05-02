@@ -26,24 +26,21 @@
 import argparse
 import functools
 import json
+import logging as log
+import multiprocessing
 import os
 import re
 import sys
-import multiprocessing
+from typing import List, Text, Tuple
+
 from tqdm import tqdm
 
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
-
-from src.utils import utils
-from src.utils import retokenize
-from src.utils import tokenizers
-
-from src.openai_transformer_lm import utils as openai_utils
 from pytorch_pretrained_bert import BertTokenizer
+from src.openai_transformer_lm import utils as openai_utils
+from src.utils import retokenize, tokenizers, utils
 
-from typing import Tuple, List, Text
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
+
 
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
@@ -53,17 +50,15 @@ assert MosesTokenizer is not None
 
 def retokenize_record(record, tokenizer_name):
     """Retokenize an edge probing example. Modifies in-place."""
-    text = record['text']
+    text = record["text"]
     aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
     ta, new_tokens = aligner_fn(text)
-    record['text'] = " ".join(new_tokens)
-    for target in record['targets']:
-        if 'span1' in target:
-            target['span1'] = list(map(int,
-                                       ta.project_span(*target['span1'])))
-        if 'span2' in target:
-            target['span2'] = list(map(int,
-                                       ta.project_span(*target['span2'])))
+    record["text"] = " ".join(new_tokens)
+    for target in record["targets"]:
+        if "span1" in target:
+            target["span1"] = list(map(int, ta.project_span(*target["span1"])))
+        if "span2" in target:
+            target["span2"] = list(map(int, ta.project_span(*target["span2"])))
     return record
 
 
@@ -78,23 +73,22 @@ def retokenize_file(fname, tokenizer_name, worker_pool):
     log.info("Processing file: %s", fname)
     inputs = list(utils.load_lines(fname))
     log.info("  saving to %s", new_name)
-    map_fn = functools.partial(_map_fn,
-                               tokenizer_name=tokenizer_name)
-    with open(new_name, 'w') as fd:
-        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500),
-                         total=len(inputs)):
+    map_fn = functools.partial(_map_fn, tokenizer_name=tokenizer_name)
+    with open(new_name, "w") as fd:
+        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500), total=len(inputs)):
             fd.write(line)
             fd.write("\n")
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", dest='tokenizer_name', type=str, required=True,
-                        help="Tokenizer name.")
-    parser.add_argument("--num_parallel", type=int, default=4,
-                        help="Number of parallel processes to use.")
-    parser.add_argument('inputs', type=str, nargs="+",
-                        help="Input JSON files.")
+    parser.add_argument(
+        "-t", dest="tokenizer_name", type=str, required=True, help="Tokenizer name."
+    )
+    parser.add_argument(
+        "--num_parallel", type=int, default=4, help="Number of parallel processes to use."
+    )
+    parser.add_argument("inputs", type=str, nargs="+", help="Input JSON files.")
     args = parser.parse_args(args)
 
     worker_pool = multiprocessing.Pool(args.num_parallel)
@@ -102,6 +96,6 @@ def main(args):
         retokenize_file(fname, args.tokenizer_name, worker_pool=worker_pool)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
