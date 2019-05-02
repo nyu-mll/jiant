@@ -10,7 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, RTETask
+from .tasks.tasks import CommitmentTask, RTESuperGLUETask
 from .tasks.edge_probing import EdgeProbingTask
 from allennlp.nn.util import move_to_device
 
@@ -148,7 +148,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         elif isinstance(task, CommitmentTask):
             _write_commitment_preds(task, preds_df, pred_dir, split_name,
                                     strict_glue_format=strict_glue_format)
-        elif isinstance(task, RTETask):
+        elif isinstance(task, RTESuperGLUETask):
             _write_rte_preds(task, preds_df, pred_dir, split_name,
                              strict_glue_format=strict_glue_format)
         else:
