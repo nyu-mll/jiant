@@ -39,6 +39,7 @@ def handle_arguments(cl_arguments):
         "-c",
         type=str,
         nargs="+",
+        default="config/defaults.conf",
         help="Config file(s) (.conf) for model parameters.",
     )
     parser.add_argument(
