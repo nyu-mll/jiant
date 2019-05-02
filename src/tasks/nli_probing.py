@@ -19,6 +19,7 @@ class NPSTask(PairClassificationTask):
         targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
         prob_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
                             s1_idx=0, s2_idx=1, label_idx=2, label_fn=targ_map.__getitem__, skip_rows=0)
+        
         self.train_data_text = self.val_data_text = self.test_data_text = prob_data
         log.info("\tFinished loading NP/S data.")
 
@@ -45,10 +46,8 @@ class NLITypeProbingTask(PairClassificationTask):
 @register_task('nli-prob-negation', rel_path='NLI-Prob/')
 class NLITypeProbingTaskNeg(PairClassificationTask):
 
-    def __init__(self, path, max_seq_len, name,
-                 **kw):
-        super(NLITypeProbingTaskNeg, self).__init__(name, n_classes=3,
-                                                    **kw)
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(NLITypeProbingTaskNeg, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.val_data_text[0] + self.val_data_text[1]
 
@@ -67,8 +66,7 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
 class NLITypeProbingTaskPrepswap(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NLITypeProbingTaskPrepswap, self).__init__(name, n_classes=3,
-                                                         **kw)
+        super(NLITypeProbingTaskPrepswap, self).__init__(name, n_classes=3, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
