@@ -906,6 +906,7 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if self.use_bert:
             sent, mask = self.sent_encoder(batch['inputs'], task)
+            # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):
                 logits = classifier(sent, mask, [batch['idx1'], batch['idx2']])
             else:

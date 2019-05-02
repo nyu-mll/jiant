@@ -415,7 +415,7 @@ class SingleClassifier(nn.Module):
         """ Assumes batch_size x seq_len x d_emb """
         emb = self.pooler(sent, mask)
 
-        # append any additional representations we want
+        # append any specific token representations, e.g. for WiC task
         ctx_embs = []
         for idx in [i.long() for i in idxs]:
             if len(idx.shape) == 1:
@@ -434,7 +434,8 @@ class PairClassifier(nn.Module):
     ''' Thin wrapper around a set of modules.
     For sentence pair classification.
     Pooler specifies how to aggregate inputted sequence of vectors.
-    Also allows for additional token representations to be used via idx{1,2}'''
+    Also allows for use of specific token representations to be addded to the overall representation
+    '''
 
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
@@ -445,8 +446,8 @@ class PairClassifier(nn.Module):
     def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
         """ s1, s2: sequences of hidden states corresponding to sentence 1,2
             mask1, mask2: binary mask corresponding to non-pad elements
-            idx{1,2}: special indexes to extract in sentence {1, 2}
-                        and append to the representation
+            idx{1,2}: indexes of particular tokens to extract in sentence {1, 2}
+                and append to the representation, e.g. for WiC
         """
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
         mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
