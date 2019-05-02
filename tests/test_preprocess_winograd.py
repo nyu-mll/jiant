@@ -48,7 +48,7 @@ class TestPreprocessWinograd(unittest.TestCase):
         print(records[0])
         print(orig_records[0])
         assert records[0]["text"] == orig_records[0]["text"]
-        # the two below should be changed by tokenization.
+        # the two below should be changed by tokenization
         assert records[1]["text"] != orig_records[1]["text"]
         assert records[2]["text"] != orig_records[2]["text"]
 
