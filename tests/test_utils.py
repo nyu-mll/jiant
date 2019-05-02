@@ -1,29 +1,33 @@
 import csv
+import os
+import shutil
+import tempfile
 import unittest
-from io import StringIO
-from pathlib import Path
 
 import src.utils.data_loaders as data_loaders
-
-TEMP_DATASET_ONE_SENTENCE_DIRLINK = "temp_dataset.tsv"
-TEMP_DATASET_TWO_SENTENCES_DIRLINK = "temp_dataset_two_sentences.tsv"
-TEMP_DATASET_DIAGNOSTIC_DIRLINK = "temp_dataset_diagnostic.tsv"
 
 
 class TestLoadTsvLabelsOneSentence(unittest.TestCase):
     def setUp(self):
-        if not (Path(TEMP_DATASET_ONE_SENTENCE_DIRLINK)).exists():
-            with open(TEMP_DATASET_ONE_SENTENCE_DIRLINK, "w") as tsvfile:
-                writer = csv.writer(tsvfile, delimiter="\t")
-                writer.writerow(["sentence", "label"])
-                writer.writerow(["it 's a charming and often affecting journey", 1])
-                writer.writerow(["unflinchingly bleak and desperate", 0])
+        self.temp_dir = tempfile.mkdtemp()
+        self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
+        with open(self.path, 'w') as tsvfile:
+            writer = csv.writer(tsvfile, delimiter='\t')
+            writer.writerow([
+                "sentence", "label",
+            ])
+            writer.writerow([
+                "it 's a charming and often affecting journey", 1,
+            ])
+            writer.writerow([
+                "unflinchingly bleak and desperate", 0,
+            ])
 
     def test(self):
         max_seq_len = 30
         sent1s, sent2s, labels = data_loaders.load_tsv(
             "MosesTokenizer",
-            TEMP_DATASET_ONE_SENTENCE_DIRLINK,
+            self.path,
             max_seq_len,
             s1_idx=0,
             s2_idx=None,
@@ -38,23 +42,28 @@ class TestLoadTsvLabelsOneSentence(unittest.TestCase):
         assert len(sent2s) == 0, "Second sentence does not exist yet len(sent2s) != 0"
         assert len(labels) == 2, "The length of labels should be equal to rows in data file"
 
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
 
-class TestLoadTsvLablesTwoSentencesReturnIndices(unittest.TestCase):
+
+class TestLoadTsvLabelsTwoSentencesReturnIndices(unittest.TestCase):
     def setUp(self):
-        if not (Path(TEMP_DATASET_TWO_SENTENCES_DIRLINK)).exists():
-            with open(TEMP_DATASET_TWO_SENTENCES_DIRLINK, "w") as tsvfile:
-                writer = csv.writer(tsvfile, delimiter="\t")
-                writer.writerow(["sentence", "label"])
-                writer.writerow(
-                    ["it 's a charming and often affecting journey", "I agree what's better?", 1]
-                )
-                writer.writerow(["unflinchingly bleak and desperate", "that's amazing", 0])
+        self.temp_dir = tempfile.mkdtemp()
+        self.path = os.path.join(
+            self.temp_dir, "temp_dataset_two_sentences.tsv")
+        with open(self.path, 'w') as tsvfile:
+            writer = csv.writer(tsvfile, delimiter='\t')
+            writer.writerow(["sentence", "label"])
+            writer.writerow([
+                "it 's a charming and often affecting journey", "I agree what's better?", 1]
+            )
+            writer.writerow(["unflinchingly bleak and desperate", "that's amazing", 0])
 
     def test(self):
         max_seq_len = 30
         sent1s, sent2s, labels, indices = data_loaders.load_tsv(
             "MosesTokenizer",
-            "temp_dataset_two_sentences.tsv",
+            "self.path",
             max_seq_len,
             s1_idx=0,
             s2_idx=1,
@@ -75,36 +84,37 @@ class TestLoadTsvLablesTwoSentencesReturnIndices(unittest.TestCase):
             len(indices) == 2
         ), "The length of returned indices should be equal to num rows in data file"
 
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
 
 class TestLoadDiagnosticDataset(unittest.TestCase):
     def setUp(self):
-        if not (Path(TEMP_DATASET_DIAGNOSTIC_DIRLINK)).exists():
-            with open("temp_dataset_diagnostic.tsv", "w") as tsvfile:
-                writer = csv.writer(tsvfile, delimiter="\t")
-                writer.writerow(
-                    [
-                        "Lexical Semantics",
-                        "Predicate-Argument Structure",
-                        "Logic",
-                        "Knowledge",
-                        "Domain",
-                        "Premise",
-                        "Hypothesis",
-                        "Label",
-                    ]
-                )
-                writer.writerow(
-                    [
-                        "",
-                        "",
-                        "Negation",
-                        "",
-                        "Artificial",
-                        "The cat sat on the mat",
-                        "The cat did not sit on the mat.",
-                        "contradiction",
-                    ]
-                )
+        self.temp_dir = tempfile.mkdtemp()
+        self.path = os.path.join(
+            self.temp_dir, "temp_dataset_diagnostic.tsv")
+        with open(self.path, 'w') as tsvfile:
+            writer = csv.writer(tsvfile, delimiter='\t')
+            writer.writerow([
+                "Lexical Semantics", 
+                "Predicate-Argument Structure",
+                "Logic",
+                "Knowledge",
+                "Domain",
+                "Premise",
+                "Hypothesis",
+                "Label",
+            ])
+            writer.writerow([
+                "", 
+                "",
+                "Negation",
+                "",
+                "Artificial",
+                "The cat sat on the mat",
+                "The cat did not sit on the mat.",
+                "contradiction",
+            ])
 
     def test(self):
         max_seq_len = 30
@@ -115,7 +125,7 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
 
         output_dictionary = data_loaders.load_diagnostic_tsv(
             "MosesTokenizer",
-            "temp_dataset_diagnostic.tsv",
+            self.path,
             max_seq_len,
             s1_col="Premise",
             s2_col="Hypothesis",
@@ -145,3 +155,6 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
         ], "If the field in row is not blank, we should return [2], where 2 is index"
         assert "cat" in output_dictionary["sents1"][0], "sent1s output is wrong"
         assert "not" in output_dictionary["sents2"][0]
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
