@@ -1,22 +1,20 @@
 # Implementation of edge probing module.
 
+from typing import Dict, Iterable, List
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 import torch.nn.functional as F
+from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
 from torch.autograd import Variable
 
 from ..tasks.edge_probing import EdgeProbingTask
-from .import modules
-
-from allennlp.modules.span_extractors import \
-    EndpointSpanExtractor, SelfAttentiveSpanExtractor
-
-from typing import Dict, Iterable, List
+from . import modules
 
 
 class EdgeClassifierModule(nn.Module):
-    ''' Build edge classifier components as a sub-module.
+    """ Build edge classifier components as a sub-module.
 
     Use same classifier code as build_single_sentence_module,
     except instead of whole-sentence pooling we'll use span1 and span2 indices
@@ -36,14 +34,13 @@ class EdgeClassifierModule(nn.Module):
         dependency parsing
         - batch-negative (pairwise among spans seen in batch, where not-seen
         are negative)
-    '''
+    """
 
     def _make_span_extractor(self):
         if self.span_pooling == "attn":
             return SelfAttentiveSpanExtractor(self.proj_dim)
         else:
-            return EndpointSpanExtractor(self.proj_dim,
-                                         combination=self.span_pooling)
+            return EndpointSpanExtractor(self.proj_dim, combination=self.span_pooling)
 
     def _make_cnn_layer(self, d_inp):
         """Make a CNN layer as a projection of local context.
@@ -53,20 +50,27 @@ class EdgeClassifierModule(nn.Module):
         """
         k = 1 + 2 * self.cnn_context
         padding = self.cnn_context
-        return nn.Conv1d(d_inp, self.proj_dim, kernel_size=k,
-                         stride=1, padding=padding, dilation=1,
-                         groups=1, bias=True)
+        return nn.Conv1d(
+            d_inp,
+            self.proj_dim,
+            kernel_size=k,
+            stride=1,
+            padding=padding,
+            dilation=1,
+            groups=1,
+            bias=True,
+        )
 
     def __init__(self, task, d_inp: int, task_params):
         super(EdgeClassifierModule, self).__init__()
         # Set config options needed for forward pass.
-        self.loss_type = task_params['cls_loss_fn']
-        self.span_pooling = task_params['cls_span_pooling']
-        self.cnn_context = task_params['edgeprobe_cnn_context']
+        self.loss_type = task_params["cls_loss_fn"]
+        self.span_pooling = task_params["cls_span_pooling"]
+        self.cnn_context = task_params["edgeprobe_cnn_context"]
         self.is_symmetric = task.is_symmetric
         self.single_sided = task.single_sided
 
-        self.proj_dim = task_params['d_hid']
+        self.proj_dim = task_params["d_hid"]
         # Separate projection for span1, span2.
         # Convolution allows using local context outside the span, with
         # cnn_context = 0 behaving as a per-word linear layer.
@@ -86,26 +90,25 @@ class EdgeClassifierModule(nn.Module):
         # Span extractor, shared for both span1 and span2.
         self.span_extractor1 = self._make_span_extractor()
         if self.is_symmetric or self.single_sided:
-            self.span_extractors = [
-                None, self.span_extractor1, self.span_extractor1]
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor1]
         else:
             self.span_extractor2 = self._make_span_extractor()
-            self.span_extractors = [
-                None, self.span_extractor1, self.span_extractor2]
+            self.span_extractors = [None, self.span_extractor1, self.span_extractor2]
 
         # Classifier gets concatenated projections of span1, span2
         clf_input_dim = self.span_extractors[1].get_output_dim()
         if not self.single_sided:
             clf_input_dim += self.span_extractors[2].get_output_dim()
-        self.classifier = modules.Classifier.from_params(clf_input_dim,
-                                                         task.n_classes,
-                                                         task_params)
+        self.classifier = modules.Classifier.from_params(clf_input_dim, task.n_classes, task_params)
 
-    def forward(self, batch: Dict,
-                word_embs_in_context: torch.Tensor,
-                sent_mask: torch.Tensor,
-                task: EdgeProbingTask,
-                predict: bool) -> Dict:
+    def forward(
+        self,
+        batch: Dict,
+        word_embs_in_context: torch.Tensor,
+        sent_mask: torch.Tensor,
+        task: EdgeProbingTask,
+        predict: bool,
+    ) -> Dict:
         """ Run forward pass.
 
         Expects batch to have the following entries:
@@ -130,7 +133,7 @@ class EdgeClassifierModule(nn.Module):
         out = {}
 
         batch_size = word_embs_in_context.shape[0]
-        out['n_inputs'] = batch_size
+        out["n_inputs"] = batch_size
 
         # Apply projection CNN layer for each span.
         word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
@@ -140,45 +143,40 @@ class EdgeClassifierModule(nn.Module):
 
         # Span extraction.
         # [batch_size, num_targets] bool
-        span_mask = (batch['span1s'][:, :, 0] != -1)
-        out['mask'] = span_mask
+        span_mask = batch["span1s"][:, :, 0] != -1
+        out["mask"] = span_mask
         total_num_targets = span_mask.sum()
-        out['n_targets'] = total_num_targets
-        out['n_exs'] = total_num_targets  # used by trainer.py
+        out["n_targets"] = total_num_targets
+        out["n_exs"] = total_num_targets  # used by trainer.py
 
-        _kw = dict(sequence_mask=sent_mask.long(),
-                   span_indices_mask=span_mask.long())
+        _kw = dict(sequence_mask=sent_mask.long(), span_indices_mask=span_mask.long())
         # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
-        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
+        span1_emb = self.span_extractors[1](se_proj1, batch["span1s"], **_kw)
         if not self.single_sided:
-            span2_emb = self.span_extractors[2](
-                se_proj2, batch['span2s'], **_kw)
+            span2_emb = self.span_extractors[2](se_proj2, batch["span2s"], **_kw)
             span_emb = torch.cat([span1_emb, span2_emb], dim=2)
         else:
             span_emb = span1_emb
 
         # [batch_size, num_targets, n_classes]
         logits = self.classifier(span_emb)
-        out['logits'] = logits
+        out["logits"] = logits
 
         # Compute loss if requested.
-        if 'labels' in batch:
+        if "labels" in batch:
             # Labels is [batch_size, num_targets, n_classes],
             # with k-hot encoding provided by AllenNLP's MultiLabelField.
             # Flatten to [total_num_targets, ...] first.
-            out['loss'] = self.compute_loss(logits[span_mask],
-                                            batch['labels'][span_mask],
-                                            task)
+            out["loss"] = self.compute_loss(logits[span_mask], batch["labels"][span_mask], task)
 
         if predict:
             # Return preds as a list.
             preds = self.get_predictions(logits)
-            out['preds'] = list(self.unbind_predictions(preds, span_mask))
+            out["preds"] = list(self.unbind_predictions(preds, span_mask))
 
         return out
 
-    def unbind_predictions(self, preds: torch.Tensor,
-                           masks: torch.Tensor) -> Iterable[np.ndarray]:
+    def unbind_predictions(self, preds: torch.Tensor, masks: torch.Tensor) -> Iterable[np.ndarray]:
         """ Unpack preds to varying-length numpy arrays.
 
         Args:
@@ -191,8 +189,7 @@ class EdgeClassifierModule(nn.Module):
         """
         preds = preds.detach().cpu()
         masks = masks.detach().cpu()
-        for pred, mask in zip(torch.unbind(preds, dim=0),
-                              torch.unbind(masks, dim=0)):
+        for pred, mask in zip(torch.unbind(preds, dim=0), torch.unbind(masks, dim=0)):
             yield pred[mask].numpy()  # only non-masked predictions
 
     def get_predictions(self, logits: torch.Tensor):
@@ -204,14 +201,12 @@ class EdgeClassifierModule(nn.Module):
         Returns:
             probs: [batch_size, num_targets, n_classes]
         """
-        if self.loss_type == 'sigmoid':
+        if self.loss_type == "sigmoid":
             return torch.sigmoid(logits)
         else:
-            raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % loss_type)
+            raise ValueError("Unsupported loss type '%s' " "for edge probing." % loss_type)
 
-    def compute_loss(self, logits: torch.Tensor,
-                     labels: torch.Tensor, task: EdgeProbingTask):
+    def compute_loss(self, logits: torch.Tensor, labels: torch.Tensor, task: EdgeProbingTask):
         """ Compute loss & eval metrics.
 
         Expect logits and labels to be already "selected" for good targets,
@@ -235,9 +230,7 @@ class EdgeClassifierModule(nn.Module):
         binary_scores = torch.stack([-1 * logits, logits], dim=2)
         task.f1_scorer(binary_scores, labels)
 
-        if self.loss_type == 'sigmoid':
-            return F.binary_cross_entropy(torch.sigmoid(logits),
-                                          labels.float())
+        if self.loss_type == "sigmoid":
+            return F.binary_cross_entropy(torch.sigmoid(logits), labels.float())
         else:
-            raise ValueError("Unsupported loss type '%s' "
-                             "for edge probing." % self.loss_type)
+            raise ValueError("Unsupported loss type '%s' " "for edge probing." % self.loss_type)

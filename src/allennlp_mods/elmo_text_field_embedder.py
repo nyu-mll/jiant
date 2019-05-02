@@ -8,15 +8,14 @@
 from typing import Dict
 
 import torch
-from overrides import overrides
-
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.data import Vocabulary
+from allennlp.modules import Elmo
 from allennlp.modules.text_field_embedders.text_field_embedder import TextFieldEmbedder
 from allennlp.modules.time_distributed import TimeDistributed
 from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
-from allennlp.modules import Elmo
+from overrides import overrides
 
 
 @TokenEmbedder.register("elmo_token_embedder_wrapper")
@@ -27,26 +26,32 @@ class ElmoTokenEmbedderWrapper(TokenEmbedder):
     Forwards all calls to Elmo
     """
 
-    def __init__(self,
-                 options_file: str,
-                 weight_file: str,
-                 do_layer_norm: bool = False,
-                 dropout: float = 0.5,
-                 requires_grad: bool = False,
-                 projection_dim: int = None,
-                 num_output_representations: int = 1) -> None:
+    def __init__(
+        self,
+        options_file: str,
+        weight_file: str,
+        do_layer_norm: bool = False,
+        dropout: float = 0.5,
+        requires_grad: bool = False,
+        projection_dim: int = None,
+        num_output_representations: int = 1,
+    ) -> None:
         super(ElmoTokenEmbedderWrapper, self).__init__()
 
         # other arguments can be passed in when needed
-        self._elmo = Elmo(options_file=options_file,
-                          weight_file=weight_file,
-                          num_output_representations=num_output_representations,
-                          dropout=dropout)
+        self._elmo = Elmo(
+            options_file=options_file,
+            weight_file=weight_file,
+            num_output_representations=num_output_representations,
+            dropout=dropout,
+        )
 
     def get_output_dim(self):
         return self._elmo.get_output_dim()
 
-    def forward(self, inputs: torch.Tensor) -> Dict[str, torch.Tensor]:  # pylint: disable=arguments-differ
+    def forward(
+        self, inputs: torch.Tensor
+    ) -> Dict[str, torch.Tensor]:  # pylint: disable=arguments-differ
         return self._elmo(inputs)
 
     # this is also deferred to elmo
@@ -72,16 +77,19 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
     embeds its input, and the result is concatenated in an arbitrary order.
     """
 
-    def __init__(self, token_embedders: Dict[str, TokenEmbedder],
-                 classifiers: Dict[str, int],
-                 elmo_chars_only=False,            # Flag ensuring we are using real ELMo
-                 sep_embs_for_skip=False) -> None:  # Flag indicating separate scalars per task
+    def __init__(
+        self,
+        token_embedders: Dict[str, TokenEmbedder],
+        classifiers: Dict[str, int],
+        elmo_chars_only=False,  # Flag ensuring we are using real ELMo
+        sep_embs_for_skip=False,
+    ) -> None:  # Flag indicating separate scalars per task
         super(ElmoTextFieldEmbedder, self).__init__()
         self._token_embedders = token_embedders
         for key, embedder in token_embedders.items():
-            name = 'token_embedder_%s' % key
+            name = "token_embedder_%s" % key
             self.add_module(name, embedder)
-        self.task_map = classifiers                # map handling classifier_name -> scalar idx
+        self.task_map = classifiers  # map handling classifier_name -> scalar idx
         self.elmo_chars_only = elmo_chars_only
         self.sep_embs_for_skip = sep_embs_for_skip
 
@@ -92,11 +100,17 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             output_dim += embedder.get_output_dim()
         return output_dim
 
-    def forward(self, text_field_input: Dict[str, torch.Tensor],
-                classifier_name: str = "@pretrain@", num_wrapping_dims: int = 0) -> torch.Tensor:
+    def forward(
+        self,
+        text_field_input: Dict[str, torch.Tensor],
+        classifier_name: str = "@pretrain@",
+        num_wrapping_dims: int = 0,
+    ) -> torch.Tensor:
         if self._token_embedders.keys() != text_field_input.keys():
-            message = "Mismatched token keys: %s and %s" % (str(self._token_embedders.keys()),
-                                                            str(text_field_input.keys()))
+            message = "Mismatched token keys: %s and %s" % (
+                str(self._token_embedders.keys()),
+                str(text_field_input.keys()),
+            )
             raise ConfigurationError(message)
         embedded_representations = []
         keys = sorted(text_field_input.keys())
@@ -104,7 +118,7 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             tensor = text_field_input[key]
             # Note: need to use getattr here so that the pytorch voodoo
             # with submodules works with multiple GPUs.
-            embedder = getattr(self, 'token_embedder_{}'.format(key))
+            embedder = getattr(self, "token_embedder_{}".format(key))
             for _ in range(num_wrapping_dims):
                 embedder = TimeDistributed(embedder)
             token_vectors = embedder(tensor)
@@ -118,16 +132,20 @@ class ElmoTextFieldEmbedder(TextFieldEmbedder):
             # self.task_map, otherwise indexing will fail.
             if key == "elmo" and not self.elmo_chars_only:
                 if self.sep_embs_for_skip:
-                    token_vectors = token_vectors['elmo_representations'][self.task_map[classifier_name]]
+                    token_vectors = token_vectors["elmo_representations"][
+                        self.task_map[classifier_name]
+                    ]
                 else:
-                    token_vectors = token_vectors['elmo_representations'][self.task_map["@pretrain@"]]
+                    token_vectors = token_vectors["elmo_representations"][
+                        self.task_map["@pretrain@"]
+                    ]
 
             # optional projection step that we are ignoring.
             embedded_representations.append(token_vectors)
         return torch.cat(embedded_representations, dim=-1)
 
     @classmethod
-    def from_params(cls, vocab: Vocabulary, params: Params) -> 'BasicTextFieldEmbedder':
+    def from_params(cls, vocab: Vocabulary, params: Params) -> "BasicTextFieldEmbedder":
         token_embedders = {}
         keys = list(params.keys())
         for key in keys:

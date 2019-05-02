@@ -18,3 +18,5 @@ dependencies:
         - sendgrid==5.4.1
         - nose2
         - python-Levenshtein
+        - pre-commit==1.15.2
+
