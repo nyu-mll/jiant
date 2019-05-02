@@ -11,7 +11,7 @@ with span indices [0, 3].
 Usage:
     Run the below command from the root directory
     python -m scripts.winograd.preprocess_winograd  
-    -t bert-base-cased --data_dir "/beegfs/yp913/jiant/data/winograd-coref/"
+    -t {tokenizer_name} --data_dir {path/to/directory}
 
 The input file should be in jsonl form, with text and tags columns.The output will be 
 in JSON form. See realign_Spans for more details.
