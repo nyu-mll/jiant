@@ -5,10 +5,12 @@ To debug this, run with -m ipdb:
     python -m ipdb main.py --config_file ...
 """
 # pylint: disable=no-member
+import logging as log
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)  # noqa # nopep8
+
 import argparse
 import glob
 import io
-import logging as log
 import os
 import random
 import subprocess
@@ -24,7 +26,6 @@ from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
 
-log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 # Global notification handler, can be accessed outside main() during exception handling.
