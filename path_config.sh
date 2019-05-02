@@ -17,7 +17,6 @@
 # Example of custom paths for a local installation:
 # export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT
 # export JIANT_DATA_DIR=/Users/Bowman/Drive/JSALT/jiant/glue_data
-# export WORD_EMBS_FILE=~/glove.840B.300d.txt  
 
 # The base directory for model output.
 export JIANT_PROJECT_PREFIX=~
@@ -29,7 +28,10 @@ export JIANT_DATA_DIR=~
 # A word embeddings file in GloVe/fastText format. Not used when using
 # ELMo, GPT, or BERT. To use more than one different set of embeddings
 # in your environment, create an additional environment variable (like)
-# FASTTEXT_WORD_EMBS_FILE, and reference it in each of your config files 
-# with a line like:
+# FASTTEXT_WORD_EMBS_FILE, and reference it in each of your .conf config 
+# files with a line like:
 #     word_embs_file = ${FASTTEXT_WORD_EMBS_FILE}
 export WORD_EMBS_FILE=None
+
+# Optional:
+# echo "Loaded custom config."
