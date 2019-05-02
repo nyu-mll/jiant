@@ -1246,57 +1246,6 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         return collected_metrics
 
 
-@register_task('nps', rel_path='nps/')
-class NPSTask(PairClassificationTask):
-
-    def __init__(self, path, max_seq_len, name, probe_path="probe_dummy.tsv",
-                 **kw):
-        super(NPSTask, self).__init__(name, n_classes=3, **kw)
-        self.load_data(path, max_seq_len, probe_path)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(
-                path,
-                'train_dummy.tsv'),
-            max_seq_len,
-            s1_idx=1,
-            s2_idx=2,
-            has_labels=False,
-            label_fn=targ_map.__getitem__,
-            skip_rows=0)
-        val_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(
-                path,
-                'dev.tsv'),
-            max_seq_len,
-            s1_idx=0,
-            s2_idx=1,
-            label_idx=2,
-            label_fn=targ_map.__getitem__,
-            skip_rows=0)
-        te_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(
-                path,
-                'test_dummy.tsv'),
-            max_seq_len,
-            s1_idx=1,
-            s2_idx=2,
-            has_labels=False,
-            label_fn=targ_map.__getitem__,
-            skip_rows=0)
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading NP/S data.")
-
-
 @register_task('rte', rel_path='RTE/')
 class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
