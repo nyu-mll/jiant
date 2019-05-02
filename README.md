@@ -72,7 +72,7 @@ We also make use of many other data sources, including:
 - DisSent: Details for preparing the corpora are in [`scripts/dissent/README`](scripts/dissent/README).
 - DNC (**D**iverse **N**atural Language Inference **C**ollection), i.e. recast data: The DNC is available [online](https://github.com/decompositional-semantics-initiative/DNC). Follow the instructions described there to download the DNC.
 - CCG: Details for preparing the corpora are in [`scripts/ccg/README`](scripts/ccg/README).
-- Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
+- Edge probing analysis tasks: see _Papers_ below or [`probing/data`](probing/data/README.md) for more information.
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
