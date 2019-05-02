@@ -42,10 +42,6 @@ class MultiRCTask(Task):
                                "val": os.path.join(path, "val.jsonl"),
                                "test": os.path.join(path, "test.jsonl")}
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        ''' For now, only support BERT '''
-        return "bert" in tokenizer_name
-
     def get_split_text(self, split: str):
         ''' Get split text as iterable of records.
 
