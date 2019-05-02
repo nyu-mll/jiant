@@ -288,7 +288,6 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
 
-
 def initial_setup(args, cl_args):
     """
     Sets up email hook, creating seed, and cuda settings.

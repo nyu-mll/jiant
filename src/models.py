@@ -17,6 +17,7 @@ from allennlp.training.metrics import Average
 from sklearn.metrics import mean_squared_error
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
+
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.modules import (
     AttnPairEncoder,
@@ -41,6 +42,7 @@ from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
+from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
     JOCITask,
     MultiNLIDiagnosticTask,
@@ -593,6 +595,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, pooler)
         setattr(model, "%s_Response_mdl" % task.name, dnn_ResponseModel)
+    elif isinstance(task, MultiRCTask):
+        module = build_qa_module(task, d_sent, model.use_bert, task_params)
+        setattr(model, '%s_mdl' % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -779,6 +784,19 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     hid2voc = nn.Linear(args.s2s["d_hid_dec"], args.max_word_v_size)
     return decoder, hid2voc
 
+def build_qa_module(task, d_inp, use_bert, params):
+    ''' Build a simple QA module that
+    1) pools representations (either of the joint (context, question, answer) or individually
+    2) projects down to two logits
+    3) classifier
+
+    This module models each question-answer pair _individually_ '''
+    pool_type = "first" if use_bert else "max"
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
+    d_out = d_inp if use_bert else params["d_proj"]
+    classifier = Classifier.from_params(d_out, 2, params)
+    return SingleClassifier(pooler, classifier)
+
 
 class MultiTaskModel(nn.Module):
     """
@@ -852,6 +870,8 @@ class MultiTaskModel(nn.Module):
             out = self._seq_gen_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
+        elif isinstance(task, MultiRCTask):
+            out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
         else:
@@ -1273,6 +1293,42 @@ class MultiTaskModel(nn.Module):
         assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
         out["loss"] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
         task.scorer1(out["loss"].item())
+        return out
+
+    def _multiple_choice_reading_comprehension_forward(self, batch, task, predict):
+        ''' Forward call for multiple choice (selecting from a fixed set of answers)
+        reading comprehension (have a supporting paragraph).
+
+        Batch has a tensor of shape (n_questions, n_answers, n_tokens)
+        '''
+        out = {}
+        classifier = self._get_classifier(task)
+        if self.use_bert:
+            # if using BERT, we concatenate the context, question, and answer
+            inp = batch["para_quest_ans"]
+            ex_embs, ex_mask = self.sent_encoder(inp, task)
+            logits = classifier(ex_embs, ex_mask)
+            out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
+        else:
+            # else, we embed each independently and concat them
+            par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
+            qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
+            ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)
+            inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
+            inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
+            logits = classifier(inp, inp_mask)
+            out['n_exs'] = batch["answer"]["words"].size(0)
+        out['logits'] = logits
+
+        if 'label' in batch:
+            idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
+            labels = batch['label']
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.update_metrics(logits, labels, idxs)
+
+        if predict:
+            out['preds'] = logits.argmax(dim=-1)
+
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
