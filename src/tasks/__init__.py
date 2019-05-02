@@ -19,6 +19,8 @@ from .tasks import Task
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
                   'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
+ALL_SUPERGLUE_TASKS = ['commitbank', 'wic']
+
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
     'cola_npi_sup',
