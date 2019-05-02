@@ -18,8 +18,10 @@
 # export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT
 # export JIANT_DATA_DIR=/Users/Bowman/Drive/JSALT/jiant/glue_data
 # export WORD_EMBS_FILE=~/glove.840B.300d.txt  
+
 # The base directory for model output.
 export JIANT_PROJECT_PREFIX=~
+
 # Base directory in which to look for raw data subdirectories. This
 # could be the glue_data directory created by download_glue_data.py.
 export JIANT_DATA_DIR=~
