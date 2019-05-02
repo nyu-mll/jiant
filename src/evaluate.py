@@ -43,8 +43,9 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(
     model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device: int, split="val"
 ) -> Tuple[Dict, pd.DataFrame]:
-    """Evaluate on a dataset"""
-    FIELDS_TO_EXPORT = ['idx', 'sent1_str', 'sent2_str', 'labels', 'qst_idx', 'ans_idx']
+    """Evaluate on a dataset
+    qst_idx and ans_idx are used for MultiRC and other question answering dataset"""
+    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "qst_idx", "ans_idx"]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS + ["wmt"] + tasks_module.ALL_COLA_NPI_TASKS
@@ -311,11 +312,9 @@ def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
             for row_idx, row in preds_df.iterrows():
                 ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
                 qst_ans_d[int(row["qst_idx"])].append(ans_d)
-
             for qst_idx, answers in qst_ans_d.items():
                 out_d = {"idx": qst_idx, "answers": answers}
                 preds_fh.write("{0}\n".format(json.dumps(out_d)))
-
         else:
             for row_idx, row in preds_df.iterrows():
                 out_d = row.to_dict()
