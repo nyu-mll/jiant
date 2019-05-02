@@ -2651,6 +2651,11 @@ class SWAGTask(MultipleChoiceTask):
         instances = map(_make_instance, *split)
         return instances
 
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        return {"accuracy": acc}
+        
 
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
