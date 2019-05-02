@@ -2,23 +2,17 @@
 
 The main component of interest is SentenceEncoder, which all the models use. """
 import json
-import logging as log
-import os
-import sys
 
 import h5py
 import numpy
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.utils.data
 import torch.utils.data.distributed
-from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
 from allennlp.data.token_indexers.elmo_indexer import (
     ELMoCharacterMapper,
-    ELMoTokenCharactersIndexer,
 )
 from allennlp.models.model import Model
 from allennlp.modules import Highway, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
@@ -28,25 +22,14 @@ from allennlp.modules.elmo_lstm import ElmoLstm
 from allennlp.modules.feedforward import FeedForward
 from allennlp.modules.layer_norm import LayerNorm
 from allennlp.modules.matrix_attention import DotProductMatrixAttention
-from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
-from allennlp.modules.seq2vec_encoders import CnnEncoder
-from allennlp.modules.token_embedders import Embedding
 from allennlp.nn import InitializerApplicator, util
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features, add_sentence_boundary_token_ids
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef
-
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 
 from ..bert.utils import BertEmbedderModule
 from ..tasks.tasks import PairClassificationTask, PairRegressionTask
 from ..utils import utils
-from ..utils.utils import MaskedMultiHeadSelfAttention, assert_for_log
-from .cnns.alexnet import alexnet
-from .cnns.inception import inception_v3
-from .cnns.resnet import resnet101
+from ..utils.utils import MaskedMultiHeadSelfAttention
 from .onlstm.ON_LSTM import ONLSTMStack
 from .prpn.PRPN import PRPN
 
@@ -999,64 +982,3 @@ class ElmoCharacterEncoder(torch.nn.Module):
 
             self._projection.weight.requires_grad = self.requires_grad
             self._projection.bias.requires_grad = self.requires_grad
-
-
-class CNNEncoder(Model):
-    """ Given an image, get image features from last layer of specified CNN
-        e.g., Resnet101, AlexNet, InceptionV3
-        New! Preprocessed and indexed image features, so just load from json!"""
-
-    def __init__(self, model_name, path, model=None):
-        super(CNNEncoder, self).__init__(model_name)
-        self.model_name = model_name
-        self.model = self._load_model(model_name)
-        self.feat_path = path + "/all_feats/"
-
-    def _load_model(self, model_name):
-        if model_name == "alexnet":
-            model = alexnet(pretrained=True)
-        elif model_name == "inception":
-            model = inception_v3(pretrained=True)
-        elif model_name == "resnet":
-            model = resnet101(pretrained=True)
-        return model
-
-    def _load_features(self, path, dataset):
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        train_dataset = datasets.ImageFolder(
-            path,
-            transforms.Compose(
-                [
-                    transforms.RandomResizedCrop(224),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    normalize,
-                ]
-            ),
-        )
-
-        train_loader = torch.utils.data.DataLoader(train_dataset)
-
-        classes = [
-            d
-            for d in os.listdir(train_dataset.root)
-            if os.path.isdir(os.path.join(train_dataset.root, d))
-        ]
-
-        class_to_idx = {classes[i]: i for i in range(len(classes))}
-        rev_class = {class_to_idx[key]: key for key in class_to_idx.keys()}
-
-        feat_dict = {}
-        for i, (input, target) in enumerate(train_loader):
-            x = self.model.forward(input)
-            feat_dict[rev_class[i]] = x.data
-        return feat_dict
-
-    def forward(self, img_id):
-        """
-        Args: img_id that maps image -> sentence pairs in respective datasets.
-        """
-
-        with open(self.feat_path + str(img_id) + ".json") as fd:
-            feat_dict = json.load(fd)
-        return feat_dict[list(feat_dict.keys())[0]]  # has one key

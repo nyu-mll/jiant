@@ -11,17 +11,11 @@ class TestLoadTsvLabelsOneSentence(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
-        with open(self.path, 'w') as tsvfile:
-            writer = csv.writer(tsvfile, delimiter='\t')
-            writer.writerow([
-                "sentence", "label",
-            ])
-            writer.writerow([
-                "it 's a charming and often affecting journey", 1,
-            ])
-            writer.writerow([
-                "unflinchingly bleak and desperate", 0,
-            ])
+        with open(self.path, "w") as tsvfile:
+            writer = csv.writer(tsvfile, delimiter="\t")
+            writer.writerow(["sentence", "label"])
+            writer.writerow(["it 's a charming and often affecting journey", 1])
+            writer.writerow(["unflinchingly bleak and desperate", 0])
 
     def test(self):
         max_seq_len = 30
@@ -49,13 +43,12 @@ class TestLoadTsvLabelsOneSentence(unittest.TestCase):
 class TestLoadTsvLabelsTwoSentencesReturnIndices(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
-        self.path = os.path.join(
-            self.temp_dir, "temp_dataset_two_sentences.tsv")
-        with open(self.path, 'w') as tsvfile:
-            writer = csv.writer(tsvfile, delimiter='\t')
+        self.path = os.path.join(self.temp_dir, "temp_dataset_two_sentences.tsv")
+        with open(self.path, "w") as tsvfile:
+            writer = csv.writer(tsvfile, delimiter="\t")
             writer.writerow(["sentence", "label"])
-            writer.writerow([
-                "it 's a charming and often affecting journey", "I agree what's better?", 1]
+            writer.writerow(
+                ["it 's a charming and often affecting journey", "I agree what's better?", 1]
             )
             writer.writerow(["unflinchingly bleak and desperate", "that's amazing", 0])
 
@@ -63,7 +56,7 @@ class TestLoadTsvLabelsTwoSentencesReturnIndices(unittest.TestCase):
         max_seq_len = 30
         sent1s, sent2s, labels, indices = data_loaders.load_tsv(
             "MosesTokenizer",
-            "self.path",
+            self.path,
             max_seq_len,
             s1_idx=0,
             s2_idx=1,
@@ -91,30 +84,33 @@ class TestLoadTsvLabelsTwoSentencesReturnIndices(unittest.TestCase):
 class TestLoadDiagnosticDataset(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
-        self.path = os.path.join(
-            self.temp_dir, "temp_dataset_diagnostic.tsv")
-        with open(self.path, 'w') as tsvfile:
-            writer = csv.writer(tsvfile, delimiter='\t')
-            writer.writerow([
-                "Lexical Semantics", 
-                "Predicate-Argument Structure",
-                "Logic",
-                "Knowledge",
-                "Domain",
-                "Premise",
-                "Hypothesis",
-                "Label",
-            ])
-            writer.writerow([
-                "", 
-                "",
-                "Negation",
-                "",
-                "Artificial",
-                "The cat sat on the mat",
-                "The cat did not sit on the mat.",
-                "contradiction",
-            ])
+        self.path = os.path.join(self.temp_dir, "temp_dataset_diagnostic.tsv")
+        with open(self.path, "w") as tsvfile:
+            writer = csv.writer(tsvfile, delimiter="\t")
+            writer.writerow(
+                [
+                    "Lexical Semantics",
+                    "Predicate-Argument Structure",
+                    "Logic",
+                    "Knowledge",
+                    "Domain",
+                    "Premise",
+                    "Hypothesis",
+                    "Label",
+                ]
+            )
+            writer.writerow(
+                [
+                    "",
+                    "",
+                    "Negation",
+                    "",
+                    "Artificial",
+                    "The cat sat on the mat",
+                    "The cat did not sit on the mat.",
+                    "contradiction",
+                ]
+            )
 
     def test(self):
         max_seq_len = 30
