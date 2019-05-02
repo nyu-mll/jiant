@@ -8,6 +8,9 @@ import scripts.winograd.preprocess_winograd as preprocess_winograd
 import json
 import copy
 
+"""
+Tests scripts/winograd/preprocess_winograd.py.
+"""
 
 class TestPreprocessWinograd(unittest.TestCase):
     def setUp(self):
