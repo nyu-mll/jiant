@@ -1,17 +1,20 @@
 #!/bin/bash
 
+# Default environment variables for JSALT code. May be overwritten by user.
+# See https://github.com/nyu-mll/jiant for more.
+
 # DO NOT COMMIT CHANGES TO THIS FILE! 
 # Make a local copy and follow the instructions below.
 
 # Copy this to /etc/profile.d/ to auto-set environment vars on login.
 # Or, make a copy of this, customize, and run immediately before the training
 # binary:
-# cp path_config.sh ~/my_path_config.sh
-# source ~/my_path_config.sh; python main.py --config ../config/demo.conf \
+# cp user_config_template.sh user_config.sh
+# source user_config.sh; python main.py --config ../config/demo.conf \
 #   --overrides "do_pretrain = 0"
+# ... or use scripts/export_from_bash.sh to set BASH up to run source automatically.
 
-# Default environment variables for JSALT code. May be overwritten by user.
-# See https://github.com/nyu-mll/jiant for more.
+# (You can use a custom filename too, but user_config.sh will automatically be ignored by git.)
 
 ##
 # Example of custom paths for a local installation:
