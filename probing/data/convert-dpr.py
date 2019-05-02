@@ -6,18 +6,17 @@
 #   ./convert-dpr.py --src_dir <dpr_temp_dir> \
 #       -o /path/to/probing/data/dpr
 
-import sys
-import os
-import json
 import argparse
-
+import json
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import os
+import sys
 
 import pandas as pd
-
 from nltk.tokenize.moses import MosesTokenizer
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
+
 
 TOKENIZER = MosesTokenizer()
 
@@ -46,40 +45,41 @@ def get_dpr_text(filename):
 
 
 def convert_text_examples_to_json(text, example):
-    #dict_keys(['provenance', 'index', 'text', 'hypothesis', 'entailed', 'partof'])
+    # dict_keys(['provenance', 'index', 'text', 'hypothesis', 'entailed', 'partof'])
     # This assert makes sure that no text appears in train and test
     tokens = TOKENIZER.tokenize(text)
-    split = set([ex['partof'] for ex in example])
+    split = set([ex["partof"] for ex in example])
     assert len(split) == 1
-    obj = {"text": " ".join(tokens),
-           "info": {'split': list(split)[0],
-                    'source': 'recast-dpr'},
-           "targets": []
-           }
+    obj = {
+        "text": " ".join(tokens),
+        "info": {"split": list(split)[0], "source": "recast-dpr"},
+        "targets": [],
+    }
     for ex in example:
-        hyp = TOKENIZER.tokenize(ex['hypothesis'])
+        hyp = TOKENIZER.tokenize(ex["hypothesis"])
         assert len(tokens) <= len(hyp)
         found_diff_word = False
         for idx, pair in enumerate(zip(tokens, hyp)):
             if pair[0] != pair[1]:
-                referent = ''
+                referent = ""
                 found_diff_word = True
                 distance = len(hyp) - len(tokens) + 1
                 pro_noun = tokens[idx]
                 found_referent = False
                 for word_idx in range(idx + 1):
-                    referent = hyp[idx:idx + distance]
+                    referent = hyp[idx : idx + distance]
                     if word_idx == 0:
                         referent[0] = referent[0][0].upper() + referent[0][1:]
-                    if referent == tokens[word_idx:word_idx + distance]:
+                    if referent == tokens[word_idx : word_idx + distance]:
                         found_referent = True
-                        target = {'span1': [idx, idx + 1],
-                                  'span2': [word_idx, word_idx + distance],
-                                  'label': ex['entailed'],
-                                  'span1_text': pro_noun,
-                                  'span2_text': " ".join(tokens[word_idx:word_idx + distance])
-                                  }
-                        obj['targets'].append(target)
+                        target = {
+                            "span1": [idx, idx + 1],
+                            "span2": [word_idx, word_idx + distance],
+                            "label": ex["entailed"],
+                            "span1_text": pro_noun,
+                            "span2_text": " ".join(tokens[word_idx : word_idx + distance]),
+                        }
+                        obj["targets"].append(target)
                         break
                 break
 
@@ -87,8 +87,9 @@ def convert_text_examples_to_json(text, example):
 
 
 def convert_dpr(text2examples, output_dir: str):
-    split_files = {k: open(os.path.join(output_dir, f"{k}.json"), 'w')
-                   for k in ["train", "dev", "test"]}
+    split_files = {
+        k: open(os.path.join(output_dir, f"{k}.json"), "w") for k in ["train", "dev", "test"]
+    }
     skip_counter = 0
 
     for text, example in text2examples.items():
@@ -106,12 +107,18 @@ def convert_dpr(text2examples, output_dir: str):
 def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--src_dir',
+        "--src_dir",
         type=str,
         required=True,
-        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh")
-    parser.add_argument('-o', dest='output_dir', type=str, required=True,
-                        help="Output directory, e.g. /path/to/edges/data/dpr")
+        help="Path to inference_is_everything source data, as passed to get_dpr_data.sh",
+    )
+    parser.add_argument(
+        "-o",
+        dest="output_dir",
+        type=str,
+        required=True,
+        help="Output directory, e.g. /path/to/edges/data/dpr",
+    )
     args = parser.parse_args(args)
 
     if not os.path.isdir(args.output_dir):
@@ -124,6 +131,6 @@ def main(args):
     log.info("Done!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

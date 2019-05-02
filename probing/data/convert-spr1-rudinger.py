@@ -48,27 +48,27 @@
 #    ]
 #  }
 
-import sys
-import os
-import json
-import collections
 import argparse
-from typing import Iterable, Dict
-
+import collections
+import json
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import os
+import sys
+from typing import Dict, Iterable
 
-import utils
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+
+import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def binarize_labels(responses):
     scores_by_property = collections.defaultdict(lambda: [])
     for response in responses:
-        scores_by_property[response['spr_property']] = response['response']
+        scores_by_property[response["spr_property"]] = response["response"]
     avg_scores = {k: np.mean(v) for k, v in scores_by_property.items()}
     bin_scores = {k: (v > 3.0) for k, v in avg_scores.items()}
     pos_labels = [k for k, v in bin_scores.items() if v]
@@ -77,32 +77,30 @@ def binarize_labels(responses):
 
 def convert_record(source_record):
     record = {}
-    record['text'] = " ".join(source_record['tokens'])
-    record['info'] = dict(split=source_record['split'],
-                          sent_id=source_record['sent_id'])
+    record["text"] = " ".join(source_record["tokens"])
+    record["info"] = dict(split=source_record["split"], sent_id=source_record["sent_id"])
     targets = []
-    for source_target in source_record['spr1']:
-        p = source_target['pred_idx']  # token index
-        a = source_target['arg_idx']   # token index
-        labels = binarize_labels(source_target['responses'])
-        targets.append(dict(span1=[p, p + 1], span2=[a, a + 1],
-                            label=labels))
-    record['targets'] = targets
+    for source_target in source_record["spr1"]:
+        p = source_target["pred_idx"]  # token index
+        a = source_target["arg_idx"]  # token index
+        labels = binarize_labels(source_target["responses"])
+        targets.append(dict(span1=[p, p + 1], span2=[a, a + 1], label=labels))
+    record["targets"] = targets
     return record
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', dest='inputs', type=str, nargs="+",
-                        help="Input files (JSON) for SPR1 splits.")
-    parser.add_argument('-o', dest='output_dir', type=str, required=True,
-                        help="Output directory.")
+    parser.add_argument(
+        "-i", dest="inputs", type=str, nargs="+", help="Input files (JSON) for SPR1 splits."
+    )
+    parser.add_argument("-o", dest="output_dir", type=str, required=True, help="Output directory.")
     args = parser.parse_args(args)
 
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
 
-    pd.options.display.float_format = '{:.2f}'.format
+    pd.options.display.float_format = "{:.2f}".format
     for fname in args.inputs:
         log.info("Converting %s", fname)
         source_records = list(utils.load_json_data(fname))
@@ -115,6 +113,6 @@ def main(args):
         log.info(stats.format())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

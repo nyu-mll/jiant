@@ -1,11 +1,13 @@
 import csv
 import os
-import pandas as pd
 import shutil
+from string import ascii_lowercase
 import tempfile
 import unittest
+
+import pandas as pd
+
 import scripts.ccg.align_tags_to_bert as ccg_aligner
-from string import ascii_lowercase
 
 
 class TestCCGAlignment(unittest.TestCase):
