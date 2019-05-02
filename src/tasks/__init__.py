@@ -26,7 +26,7 @@ ALL_GLUE_TASKS = [
 
 ALL_SUPERGLUE_TASKS = ["commitbank", "wic"]
 
-ALL_SUPERGLUE_TASKS = ['winograd-coreference']
+ALL_SUPERGLUE_TASKS = ["winograd-coreference"]
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
