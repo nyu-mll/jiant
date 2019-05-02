@@ -1,35 +1,41 @@
-import re
-import os
-import datetime
 import argparse
+import datetime
+import os
+import re
+
 from extract_diagnostic_set_results import get_strings
 
 # Pro tip: To copy the results of this script from the terminal in Mac OS,
 # use command-alt-shift-c. That'll copy the tabs as tabs, not spaces.
 
-parser = argparse.ArgumentParser(description='Extract GLUE results from log files.')
-parser.add_argument('log_files', type=str, nargs='+',
-                    help='One or more log files to parse. Files are seperated by white space')
+parser = argparse.ArgumentParser(description="Extract GLUE results from log files.")
+parser.add_argument(
+    "log_files",
+    type=str,
+    nargs="+",
+    help="One or more log files to parse. Files are seperated by white space",
+)
 args = parser.parse_args()
 
 col_order = [
-    'date',
-    'pretrain_tasks',
-    'dropout',
-    'elmo',
-    'cola_mcc',
-    'sst_accuracy',
-    'mrpc_accuracy',
-    'mrpc_f1',
-    'sts-b_pearsonr',
-    'sts-b_spearmanr',
-    'mnli_accuracy',
-    'qnli_accuracy',
-    'rte_accuracy',
-    'wnli_accuracy',
-    'qqp_accuracy',
-    'qqp_f1',
-    'path']
+    "date",
+    "pretrain_tasks",
+    "dropout",
+    "elmo",
+    "cola_mcc",
+    "sst_accuracy",
+    "mrpc_accuracy",
+    "mrpc_f1",
+    "sts-b_pearsonr",
+    "sts-b_spearmanr",
+    "mnli_accuracy",
+    "qnli_accuracy",
+    "rte_accuracy",
+    "wnli_accuracy",
+    "qqp_accuracy",
+    "qqp_f1",
+    "path",
+]
 
 
 today = datetime.datetime.now()
@@ -39,9 +45,9 @@ today = datetime.datetime.now()
 
 for path in args.log_files:
     try:
-        cols = {c: '' for c in col_order}
-        cols['date'] = today.strftime("%m/%d/%Y")
-        cols['path'] = path
+        cols = {c: "" for c in col_order}
+        cols["date"] = today.strftime("%m/%d/%Y")
+        cols["path"] = path
         results_line = None
         found_eval = False
         pretrain_tasks = ""
@@ -52,7 +58,7 @@ for path in args.log_files:
             for line in f:
                 line = line.strip()
 
-                if line == 'Evaluating...':
+                if line == "Evaluating...":
                     found_eval = True
                 else:
                     if found_eval:
@@ -63,13 +69,14 @@ for path in args.log_files:
                             results_line = line.strip()
                             found_eval = False
 
-                train_m = re.match('Training model on tasks: (.*)', line)
+                train_m = re.match("Training model on tasks: (.*)", line)
                 if train_m:
                     found_tasks = train_m.groups()[0]
                     if pretrain_tasks is not "" and found_tasks != pretrain_tasks:
                         print(
-                            "WARNING: Multiple sets of training tasks found. Skipping %s and reporting last." %
-                            (found_tasks))
+                            "WARNING: Multiple sets of training tasks found. Skipping %s and reporting last."
+                            % (found_tasks)
+                        )
                     pretrain_tasks = found_tasks
 
                 do_m = re.match('"dropout": (.*),', line)
@@ -84,28 +91,30 @@ for path in args.log_files:
                 if el_m:
                     el = el_m.groups()[0]
                     if elmo is not None:
-                        assert (elmo == el), "Multiple elmo flags set, but settings don't match: %s vs. %s." % (
-                            elmo, el)
+                        assert elmo == el, (
+                            "Multiple elmo flags set, but settings don't match: %s vs. %s."
+                            % (elmo, el)
+                        )
                     elmo = el
 
-        cols['pretrain_tasks'] = pretrain_tasks
-        cols['dropout'] = dropout
-        cols['elmo'] = 'Y' if elmo == '0' else 'N'
+        cols["pretrain_tasks"] = pretrain_tasks
+        cols["dropout"] = dropout
+        cols["elmo"] = "Y" if elmo == "0" else "N"
 
         assert results_line is not None, "No GLUE eval results line found. Still training?"
-        for mv in results_line.strip().split(','):
-            metric, value = mv.split(':')
-            cols[metric.strip()] = '%.02f' % (100 * float(value.strip()))
-        output = '\t'.join([cols[c] for c in col_order])
+        for mv in results_line.strip().split(","):
+            metric, value = mv.split(":")
+            cols[metric.strip()] = "%.02f" % (100 * float(value.strip()))
+        output = "\t".join([cols[c] for c in col_order])
 
         # Extract diagnostic set results, which are in results.tsv. Rediculous,
         # but this is probably the path of least resistance.
-        results_path = os.path.join(os.path.join(os.path.dirname(path), os.pardir), 'results.tsv')
+        results_path = os.path.join(os.path.join(os.path.dirname(path), os.pardir), "results.tsv")
         run_name = os.path.basename(os.path.dirname(path))
         diagnostic_results_formatted = get_strings(results_path, run_name)
         if len(diagnostic_results_formatted) > 0:
             # Use the most recent evaluation.
-            output += '\t\t\t%s' % diagnostic_results_formatted[-1]
+            output += "\t\t\t%s" % diagnostic_results_formatted[-1]
         print(output)
 
     except BaseException as e:
