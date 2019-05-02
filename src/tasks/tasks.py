@@ -255,7 +255,6 @@ class Task(object):
 
     def update_metrics(self, logits, labels, tagmask=None):
         assert len(self.get_scorers()) > 0, "Please specify a score metric"
-        logits, labels = logits.detach(), labels.detach()
         for scorer in self.get_scorers():
             scorer(logits, labels)
 
