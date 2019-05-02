@@ -22,6 +22,8 @@ from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
 from .registry import register_task
 
 # TODO: remove dummy / debug tasks
+
+
 @register_task('wmt_debug', rel_path='wmt_debug/', max_targ_v_size=5000)
 @register_task('wmt17_en_ru', rel_path='wmt17_en_ru/', max_targ_v_size=20000)
 @register_task('wmt14_en_de', rel_path='wmt14_en_de/', max_targ_v_size=20000)
