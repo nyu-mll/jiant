@@ -10,7 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, WiCTask
+from .tasks.tasks import CommitmentTask, WiCTask, GLUEDiagnosticTask, MultiNLIDiagnosticTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -66,7 +66,7 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
             out = model.forward(task, batch, predict=True)
             # We don't want mnli-diagnostic to affect the micro and macro average.
             # Accuracy of mnli-diagnostic is hardcoded to 0.
-            if task.name != "mnli-diagnostic":
+            if isinstance(task, (MultiNLIDiagnosticTask, GLUEDiagnosticTask)):
                 n_examples += out["n_exs"]
             # get predictions
             if 'preds' not in out:
@@ -176,7 +176,8 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
 
 SUPERGLUE_NAME_MAP = {"commitbank": 'CB',
                       "copa": "COPA",
-                      "wic": "WiC"
+                      "wic": "WiC",
+                      'diagnostic': 'AX',
                      }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):

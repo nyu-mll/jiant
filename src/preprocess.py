@@ -442,7 +442,7 @@ def get_tasks(args):
     target_task_names = parse_task_list_arg(args.target_tasks)
     # We don't want mnli-diagnostic in train_task_names
     pretrain_task_names = [name for name in pretrain_task_names
-                           if name not in {'mnli-diagnostic'}]
+                           if name not in {'mnli-diagnostic', 'rte-diagnostic'}]
 
     task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None

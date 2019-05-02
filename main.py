@@ -24,6 +24,7 @@ from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, ch
 from src.preprocess import build_tasks
 from src.models import build_model
 from src.trainer import build_trainer
+from src.tasks.tasks import GLUEDiagnosticTask
 from src import evaluate
 
 # Global notification handler, can be accessed outside main() during exception
@@ -394,11 +395,11 @@ def main(cl_arguments):
                 "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
                 "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
         for task in target_tasks:
-            # Skip mnli-diagnostic
+            # Skip diagnostic tasks b/c they should not be trained on
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            if task.name == 'mnli-diagnostic':
+            if isinstance(task, GLUEDiagnosticTask):
                 continue
 
             if args.transfer_paradigm == "finetune":
@@ -469,7 +470,7 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == 'mnli-diagnostic':
+                if isinstance(task, GLUEDiagnosticTask):
                     # we'll load mnli-diagnostic during mnli
                     continue
                 # Special checkpointing logic here since we train the sentence encoder
@@ -490,9 +491,14 @@ def main(cl_arguments):
                     strict=strict)
 
                 tasks = [task]
+                # TODO(Alex): make this less ugly
                 if task.name == 'mnli':
                     tasks += [t for t in target_tasks if t.name ==
                               'mnli-diagnostic']
+                if task.name == 'rte':
+                    tasks += [t for t in target_tasks if t.name ==
+                              'rte-diagnostic']
+
                 evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
