@@ -31,7 +31,7 @@ from .preprocess import parse_task_list_arg, get_tasks
 
 from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
-    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
+    PairOrdinalRegressionTask, PairRegressionTask, RankingTask, MultipleChoiceTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask, WiCTask, SpanClassificationTask
 from .tasks.lm import LanguageModelingTask
@@ -490,6 +490,9 @@ def build_task_specific_modules(
     elif isinstance(task, TaggingTask):
         hid2tag = build_tagger(task, d_sent, task.num_tags)
         setattr(model, '%s_mdl' % task.name, hid2tag)
+    elif isinstance(task, MultipleChoiceTask):
+        module = build_multiple_choice_module(task, d_sent, use_bert=model.use_bert, params=task_params)
+        setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
@@ -677,6 +680,13 @@ def build_tagger(task, d_inp, out_dim):
     hid2tag = nn.Linear(d_inp, out_dim)
     return hid2tag
 
+def build_multiple_choice_module(task, d_sent, use_bert, params):
+    ''' Basic parts for MC task: reduce a vector representation for each model into a scalar. '''
+    pool_type = "first" if use_bert else "max"
+    pooler = Pooler(project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type)
+    d_out = d_sent if use_bert else params["d_proj"]
+    choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
+    return SingleClassifier(pooler, choice2scalar)
 
 def build_decoder(task, d_inp, vocab, embedder, args):
     ''' Build a task specific decoder '''
@@ -749,6 +759,8 @@ class MultiTaskModel(nn.Module):
                 out = self._lm_forward(batch, task, predict)
         elif isinstance(task, TaggingTask):
             out = self._tagger_forward(batch, task, predict)
+        elif isinstance(task, MultipleChoiceTask):
+            out = self._mc_forward(batch, task, predict)
         elif isinstance(task, EdgeProbingTask):
             # Just get embeddings and invoke task module.
             word_embs_in_context, sent_mask = self.sent_encoder(batch['input1'], task)
@@ -1117,6 +1129,40 @@ class MultiTaskModel(nn.Module):
         task.scorer1(out['loss'].item())
         if predict:
             pass
+        return out
+
+    def _mc_forward(self, batch, task, predict):
+        ''' Forward for a multiple choice question answering task '''
+        out = {}
+
+        logits = []
+        module = self._get_classifier(task)
+        if self.use_bert:
+            for choice_idx in range(task.n_choices):
+                sent, mask = self.sent_encoder(batch['choice%d' % choice_idx], task)
+                logit = module(sent, mask)
+                logits.append(logit)
+            out['n_exs'] = batch['choice0']["bert_wpm_pretokenized"].size(0)
+        else:
+            ctx, ctx_mask = self.sent_encoder(batch["question"], task)
+            for choice_idx in range(task.n_choices):
+                sent, mask = self.sent_encoder(batch['choice%d' % choice_idx], task)
+                inp = torch.cat([ctx, sent], dim=1)
+                inp_mask = torch.cat([ctx_mask, mask], dim=1)
+                logit = module(inp, inp_mask)
+                logits.append(logit)
+            out['n_exs'] = batch['choice0']["words"].size(0)
+        logits = torch.cat(logits, dim=1)
+        out['logits'] = logits
+
+        if 'label' in batch:
+            labels = batch['label']
+            out['loss'] = F.cross_entropy(logits, labels)
+            task.update_metrics(logits, labels)
+
+        if predict:
+            out['preds'] = logits.argmax(dim=-1)
+
         return out
 
     def _lm_only_lr_forward(self, batch, task):
