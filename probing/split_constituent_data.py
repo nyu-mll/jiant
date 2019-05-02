@@ -8,27 +8,25 @@
 # Usage:
 #  python split_constituent_data.py /path/to/edge/probing/data/*.json
 
-import sys
-import os
 import copy
 import json
+import logging as log
+import os
+import sys
+
 from tqdm import tqdm
 
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
-
 from src.utils import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def split_record(record):
     pos_record = copy.deepcopy(record)
     non_record = copy.deepcopy(record)
 
-    pos_record['targets'] = [t for t in record['targets']
-                             if t['info']['height'] == 1]
-    non_record['targets'] = [t for t in record['targets']
-                             if t['info']['height'] > 1]
+    pos_record["targets"] = [t for t in record["targets"] if t["info"]["height"] == 1]
+    non_record["targets"] = [t for t in record["targets"] if t["info"]["height"] > 1]
     return (pos_record, non_record)
 
 
@@ -46,8 +44,8 @@ def split_file(fname):
     log.info("Processing file: %s", fname)
     record_iter = list(utils.load_json_data(fname))
     log.info("  saving to %s and %s", new_pos_name, new_non_name)
-    pos_fd = open(new_pos_name, 'w')
-    non_fd = open(new_non_name, 'w')
+    pos_fd = open(new_pos_name, "w")
+    non_fd = open(new_non_name, "w")
     for record in tqdm(record_iter):
         pos_record, non_record = split_record(record)
         pos_fd.write(json.dumps(pos_record))
@@ -61,6 +59,6 @@ def main(args):
         split_file(fname)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
