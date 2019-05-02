@@ -6,7 +6,7 @@
 # Copy this to /etc/profile.d/ to auto-set environment vars on login.
 # Or, make a copy of this, customize, and run immediately before the training
 # binary:
-# cp path_config.sh ~/my_path_config.sh
+# cp user_config_template.sh ~/my_path_config.sh
 # source ~/my_path_config.sh; python main.py --config ../config/demo.conf \
 #   --overrides "do_pretrain = 0"
 
