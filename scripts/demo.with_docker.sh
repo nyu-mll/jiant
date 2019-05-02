@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run jiant with demo.conf in a docker container.
+# Run jiant with demo.conf in a docker container. 
 #
 # The container expects a number of paths relative to /nfs/jsalt;
 # for now, we'll fake these by setting up a temp directory.
@@ -10,10 +10,14 @@
 #
 # TODO: turn this into a real integration test...
 
+# temporarily cd to jiant/
+pushd $(dirname $0)
+pushd $(git rev-parse --show-toplevel)
+
 set -eux
 
 # Get the path to this repo; we'll mount it from the container later.
-JIANT_PATH=$(readlink -f $(dirname $0))
+JIANT_PATH=$(readlink -f .)
 
 TEMP_DIR=${1:-"/tmp/jiant-demo"}
 
