@@ -236,7 +236,7 @@ def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
 def _write_rte_preds(task: str, preds_df: pd.DataFrame,
                      pred_dir: str, split_name: str,
                      strict_glue_format: bool = False):
-    ''' Write predictions for RTE task.  '''
+    ''' Write predictions for RTE task in SuperGLUE prediction format.  '''
     trg_map = {0: "not_entailment", 1: "entailment"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
