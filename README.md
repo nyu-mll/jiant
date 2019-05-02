@@ -308,3 +308,9 @@ Post an issue here on GitHub if you have any problems, and create a pull request
 It seems like my preproc/{task}\_\_{split}.data has nothing in it!
 
 This probably means that you probably ran the script before downloading the data for that task. Thus, delete the file from preproc and then run main.py again to build the data splits from scratch.
+
+## Contributing
+
+We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
+install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
+please also add the tests.

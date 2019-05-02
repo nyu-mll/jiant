@@ -1,10 +1,13 @@
-import sys
 import argparse
-import pandas as pd
-import os
 import json
+import os
+import sys
+
+import pandas as pd
+
 from src import utils
 from src.utils import retokenize
+
 
 """
 Usage:
@@ -50,7 +53,7 @@ def align_tags_BERT(dataset, tokenizer_name, tags_to_id):
     new_pandas = []
     for i in range(len(dataset)):
         row = dataset.iloc[i]
-        text = row['text'].split()
+        text = row["text"].split()
         current_tags = row["tags"].split()
         tags = get_tags(text, current_tags, tokenizer_name, tags_to_id)
         new_pandas.append([row["text"], tags])
@@ -85,22 +88,16 @@ def align_ccg(split, tokenizer_name, data_dir):
 def main(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-d',
-        '--data_dir',
-        help='directory to save data to',
-        type=str,
-        default='../data')
+        "-d", "--data_dir", help="directory to save data to", type=str, default="../data"
+    )
     parser.add_argument(
-        '-t',
-        '--tokenizer',
-        help='intended tokenization',
-        type=str,
-        default='MosesTokenizer')
+        "-t", "--tokenizer", help="intended tokenization", type=str, default="MosesTokenizer"
+    )
     args = parser.parse_args(arguments)
     align_ccg("train", args.tokenizer, args.data_dir)
     align_ccg("dev", args.tokenizer, args.data_dir)
     align_ccg("test", args.tokenizer, args.data_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

@@ -1,16 +1,16 @@
-'''
+"""
 Reading Network (LSTMN with self-attention) of PRPN
 Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
 All the modules in this file are taken without change from: https://github.com/yikangshen/PRPN
-'''
+"""
 import math
 
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from .LSTMCell import LSTMCell
 from .blocks import softmax
+from .LSTMCell import LSTMCell
 
 
 class ReadingNetwork(nn.Module):
@@ -22,16 +22,17 @@ class ReadingNetwork(nn.Module):
         self.nslots = nslots
         self.drop = nn.Dropout(dropout)
         self.memory_rnn = LSTMCell(ninp, nout, bias=True, dropout=0)
-        self.projector_summ = nn.Sequential(nn.Dropout(idropout),
-                                            nn.Linear(ninp + nout, nout),
-                                            nn.Dropout(idropout))
+        self.projector_summ = nn.Sequential(
+            nn.Dropout(idropout), nn.Linear(ninp + nout, nout), nn.Dropout(idropout)
+        )
 
     def forward(self, input, memory, gate_time, rmask):
         memory_h, memory_c = memory
 
         # attention
-        selected_memory_h, selected_memory_c, attention0 = self.attention(input, memory_h, memory_c,
-                                                                          gate=gate_time)
+        selected_memory_h, selected_memory_c, attention0 = self.attention(
+            input, memory_h, memory_c, gate=gate_time
+        )
 
         # recurrent
         input = self.drop(input)
@@ -55,5 +56,7 @@ class ReadingNetwork(nn.Module):
 
     def init_hidden(self, bsz):
         weight = next(self.parameters()).data
-        return Variable(weight.new(bsz, self.nslots, self.nout).zero_()), \
-               Variable(weight.new(bsz, self.nslots, self.nout).zero_())
+        return (
+            Variable(weight.new(bsz, self.nslots, self.nout).zero_()),
+            Variable(weight.new(bsz, self.nslots, self.nout).zero_()),
+        )

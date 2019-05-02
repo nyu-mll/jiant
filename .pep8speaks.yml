@@ -3,6 +3,8 @@ scanner:
 
 pycodestyle:  # Same as scanner.linter value. Other option is flake8
     max-line-length: 100  # Default is 79 in PEP 8
+    ignore:
+        - E203  # Whitespace before :, not a strict PEP8 requirement and sometimes incompatible with black.
 
 no_blank_comment: False  # If True, no comment is made on PR without any errors.
 

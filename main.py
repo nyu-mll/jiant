@@ -1,55 +1,71 @@
-'''Train a multi-task model using AllenNLP
+"""Train a multi-task model using AllenNLP
 
 To debug this, run with -m ipdb:
 
     python -m ipdb main.py --config_file ...
-'''
+"""
 # pylint: disable=no-member
 import argparse
 import glob
-import os
-import subprocess
-import random
-import sys
-import time
 import io
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import os
+import random
+import subprocess
+import sys
+import time
 
 import torch
 
-from src.utils import config
-from src.utils.utils import assert_for_log, maybe_make_dir, load_model_state, check_arg_name
-from src.preprocess import build_tasks
-from src.models import build_model
-from src.trainer import build_trainer
 from src import evaluate
+from src.models import build_model
+from src.preprocess import build_tasks
+from src.trainer import build_trainer
+from src.utils import config
+from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
 
-# Global notification handler, can be accessed outside main() during exception
-# handling.
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
+
+
+# Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
 
 
 def handle_arguments(cl_arguments):
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
     # Configuration files
-    parser.add_argument('--config_file', '-c', type=str, nargs="+",
-                        help="Config file(s) (.conf) for model parameters.")
-    parser.add_argument('--overrides', '-o', type=str, default=None,
-                        help="Parameter overrides, as valid HOCON string.")
+    parser.add_argument(
+        "--config_file",
+        "-c",
+        type=str,
+        nargs="+",
+        help="Config file(s) (.conf) for model parameters.",
+    )
+    parser.add_argument(
+        "--overrides",
+        "-o",
+        type=str,
+        default=None,
+        help="Parameter overrides, as valid HOCON string.",
+    )
 
-    parser.add_argument('--remote_log', '-r', action="store_true",
-                        help="If true, enable remote logging on GCP.")
+    parser.add_argument(
+        "--remote_log", "-r", action="store_true", help="If true, enable remote logging on GCP."
+    )
 
-    parser.add_argument('--notify', type=str, default="",
-                        help="Email address for job notifications.")
+    parser.add_argument(
+        "--notify", type=str, default="", help="Email address for job notifications."
+    )
 
-    parser.add_argument('--tensorboard', '-t', action="store_true",
-                        help="If true, will run Tensorboard server in a "
-                        "subprocess, serving on the port given by "
-                        "--tensorboard_port.")
-    parser.add_argument('--tensorboard_port', type=int, default=6006)
+    parser.add_argument(
+        "--tensorboard",
+        "-t",
+        action="store_true",
+        help="If true, will run Tensorboard server in a "
+        "subprocess, serving on the port given by "
+        "--tensorboard_port.",
+    )
+    parser.add_argument("--tensorboard_port", type=int, default=6006)
 
     return parser.parse_args(cl_arguments)
 
@@ -86,19 +102,26 @@ def setup_target_task_training(args, target_tasks, model, strict):
     if not args.load_target_train_checkpoint == "none":
         # This is to load a particular target train checkpoint.
         log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
-        load_model_state(model, args.load_target_train_checkpoint,
-                         args.cuda, task_names_to_avoid_loading, strict=strict)
+        load_model_state(
+            model,
+            args.load_target_train_checkpoint,
+            args.cuda,
+            task_names_to_avoid_loading,
+            strict=strict,
+        )
     else:
         # Look for target train checkpoints (available only if we're restoring from a run that already
         # finished), then look for training checkpoints.
 
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
-            load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading,
-                             strict=strict)
+            load_model_state(
+                model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict
+            )
         else:
-            assert_for_log(args.allow_untrained_encoder_parameters,
-                           "No best checkpoint found to evaluate.")
+            assert_for_log(
+                args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+            )
 
             if args.transfer_paradigm == "finetune":
                 # Save model so we have a checkpoint to go back to after each
@@ -129,43 +152,54 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     """
     steps_log = io.StringIO()
     if any([t.val_metric_decreases for t in pretrain_tasks]) and any(
-            [not t.val_metric_decreases for t in pretrain_tasks]):
-        log.warn(
-            "\tMixing training tasks with increasing and decreasing val metrics!")
+        [not t.val_metric_decreases for t in pretrain_tasks]
+    ):
+        log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
-    if args.load_target_train_checkpoint != 'none':
-        assert_for_log(os.path.exists(args.load_target_train_checkpoint),
-                       "Error: Attempting to load model from non-existent path: [%s]" %
-                       args.load_target_train_checkpoint)
+    if args.load_target_train_checkpoint != "none":
+        assert_for_log(
+            os.path.exists(args.load_target_train_checkpoint),
+            "Error: Attempting to load model from non-existent path: [%s]"
+            % args.load_target_train_checkpoint,
+        )
         assert_for_log(
             not args.do_pretrain,
-            "Error: Attempting to train a model and then replace that model with one from a checkpoint.")
-        steps_log.write(
-            "Loading model from path: %s \n" %
-            args.load_target_train_checkpoint)
+            "Error: Attempting to train a model and then replace that model with one from a checkpoint.",
+        )
+        steps_log.write("Loading model from path: %s \n" % args.load_target_train_checkpoint)
 
-    assert_for_log(args.transfer_paradigm in ["finetune", "frozen"],
-                   "Transfer paradigm %s not supported!" % args.transfer_paradigm)
+    assert_for_log(
+        args.transfer_paradigm in ["finetune", "frozen"],
+        "Transfer paradigm %s not supported!" % args.transfer_paradigm,
+    )
 
     if args.do_pretrain:
-        assert_for_log(args.pretrain_tasks != "none",
-                       "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks)
+        assert_for_log(
+            args.pretrain_tasks != "none",
+            "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks,
+        )
         steps_log.write("Training model on tasks: %s \n" % args.pretrain_tasks)
 
     if args.do_target_task_training:
-        assert_for_log(args.target_tasks != "none",
-                       "Error: Must specify at least one target task: [%s]" % args.target_tasks)
+        assert_for_log(
+            args.target_tasks != "none",
+            "Error: Must specify at least one target task: [%s]" % args.target_tasks,
+        )
         steps_log.write("Re-training model for individual target tasks \n")
-        assert_for_log(len(set(pretrain_tasks).intersection(target_tasks)) == 0
-                       or args.allow_reuse_of_pretraining_parameters
-                       or args.do_pretrain == 0,
-                       "If you're pretraining on a task you plan to reuse as a target task, set\n"
-                       "allow_reuse_of_pretraining_parameters = 1 (risky), or train in two steps:\n"
-                       "train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
-                       "do_pretrain = 0 and do_target_task_training = 1.")
+        assert_for_log(
+            len(set(pretrain_tasks).intersection(target_tasks)) == 0
+            or args.allow_reuse_of_pretraining_parameters
+            or args.do_pretrain == 0,
+            "If you're pretraining on a task you plan to reuse as a target task, set\n"
+            "allow_reuse_of_pretraining_parameters = 1 (risky), or train in two steps:\n"
+            "train with do_pretrain = 1, do_target_task_training = 0, stop, and restart with\n"
+            "do_pretrain = 0 and do_target_task_training = 1.",
+        )
     if args.do_full_eval:
-        assert_for_log(args.target_tasks != "none",
-                       "Error: Must specify at least one target task: [%s]" % args.target_tasks)
+        assert_for_log(
+            args.target_tasks != "none",
+            "Error: Must specify at least one target task: [%s]" % args.target_tasks,
+        )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
     log.info("Will run the following steps:\n%s", steps_log.getvalue())
@@ -175,12 +209,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 def _log_git_info():
     try:
         log.info("Waiting on git info....")
-        c = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                           timeout=10, stdout=subprocess.PIPE)
+        c = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout=10, stdout=subprocess.PIPE
+        )
         git_branch_name = c.stdout.decode().strip()
         log.info("Git branch: %s", git_branch_name)
-        c = subprocess.run(["git", "rev-parse", "HEAD"],
-                           timeout=10, stdout=subprocess.PIPE)
+        c = subprocess.run(["git", "rev-parse", "HEAD"], timeout=10, stdout=subprocess.PIPE)
         git_sha = c.stdout.decode().strip()
         log.info("Git SHA: %s", git_sha)
     except subprocess.TimeoutExpired as e:
@@ -191,8 +225,8 @@ def _log_git_info():
 def _run_background_tensorboard(logdir, port):
     """Run a TensorBoard server in the background."""
     import atexit
-    tb_args = ["tensorboard", "--logdir", logdir,
-               "--port", str(port)]
+
+    tb_args = ["tensorboard", "--logdir", logdir, "--port", str(port)]
     log.info("Starting TensorBoard server on port %d ...", port)
     tb_process = subprocess.Popen(tb_args)
     log.info("TensorBoard process: %d", tb_process.pid)
@@ -200,7 +234,9 @@ def _run_background_tensorboard(logdir, port):
     def _kill_tb_child():
         log.info("Shutting down TensorBoard server on port %d ...", port)
         tb_process.terminate()
+
     atexit.register(_kill_tb_child)
+
 
 # TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
 # from here to trainer.py.
@@ -216,23 +252,17 @@ def get_best_checkpoint_path(run_dir):
     target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
 
     if len(target_task_best) > 0:
-        assert_for_log(len(target_task_best) == 1,
-                       "Too many best checkpoints. Something is wrong.")
+        assert_for_log(len(target_task_best) == 1, "Too many best checkpoints. Something is wrong.")
         return target_task_best[0]
-    macro_best = glob.glob(
-        os.path.join(
-            run_dir,
-            "model_state_pretrain_epoch_*.best_macro.th"))
+    macro_best = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(macro_best) > 0:
-        assert_for_log(len(macro_best) == 1,
-                       "Too many best checkpoints. Something is wrong.")
+        assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
 
     pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
 
     if len(pre_target_train) > 0:
-        assert_for_log(len(pre_target_train) == 1,
-                       "Too many best checkpoints. Something is wrong.")
+        assert_for_log(len(pre_target_train) == 1, "Too many best checkpoints. Something is wrong.")
         return pre_target_train[0]
 
     return ""
@@ -278,16 +308,18 @@ def initial_setup(args, cl_args):
     """
     output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
-    maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
-    maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
+    maybe_make_dir(args.exp_dir)  # e.g. <project_dir>/jiant-demo
+    maybe_make_dir(args.run_dir)  # e.g. <project_dir>/jiant-demo/sst
     log.getLogger().addHandler(log.FileHandler(args.local_log_path))
 
     if cl_args.remote_log:
         from src.utils import gcp
+
         gcp.configure_remote_logging(args.remote_log_name)
 
     if cl_args.notify:
         from src.utils import emails
+
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
         EMAIL_NOTIFIER = emails.get_notifier(cl_args.notify, args)
@@ -303,29 +335,28 @@ def initial_setup(args, cl_args):
     config.write_params(args, config_file)
     log.info("Saved config to %s", config_file)
 
-    seed = random.randint(
-        1, 10000) if args.random_seed < 0 else args.random_seed
+    seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
     random.seed(seed)
     torch.manual_seed(seed)
     log.info("Using random seed %d", seed)
     if args.cuda >= 0:
         try:
             if not torch.cuda.is_available():
-                raise EnvironmentError("CUDA is not available, or not detected"
-                                       " by PyTorch.")
+                raise EnvironmentError("CUDA is not available, or not detected" " by PyTorch.")
             log.info("Using GPU %d", args.cuda)
             torch.cuda.set_device(args.cuda)
             torch.cuda.manual_seed_all(seed)
         except Exception:
             log.warning(
-                "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU.")
+                "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU."
+            )
             args.cuda = -1
 
     return args, seed
 
 
 def main(cl_arguments):
-    ''' Train a model for multitask-training.'''
+    """ Train a model for multitask-training."""
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
     # Check for deprecated arg names
@@ -336,14 +367,14 @@ def main(cl_arguments):
     start_time = time.time()
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
-    log.info('\tFinished loading tasks in %.3fs', time.time() - start_time)
-    log.info('\t Tasks: {}'.format([task.name for task in tasks]))
+    log.info("\tFinished loading tasks in %.3fs", time.time() - start_time)
+    log.info("\t Tasks: {}".format([task.name for task in tasks]))
 
     # Build model
-    log.info('Building model...')
+    log.info("Building model...")
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
-    log.info('\tFinished building model in %.3fs', time.time() - start_time)
+    log.info("\tFinished building model in %.3fs", time.time() - start_time)
 
     # Start Tensorboard if requested
     if cl_args.tensorboard:
@@ -355,67 +386,82 @@ def main(cl_arguments):
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")
-        stop_metric = pretrain_tasks[0].val_metric if len(
-            pretrain_tasks) == 1 else 'macro_avg'
-        should_decrease = pretrain_tasks[0].val_metric_decreases if len(
-            pretrain_tasks) == 1 else False
-        trainer, _, opt_params, schd_params = build_trainer(args, [], model,
-                                                            args.run_dir,
-                                                            should_decrease, phase="pretrain")
-        to_train = [(n, p)
-                    for n, p in model.named_parameters() if p.requires_grad]
-        _ = trainer.train(pretrain_tasks, stop_metric,
-                          args.batch_size,
-                          args.weighting_method, args.scaling_method,
-                          to_train, opt_params, schd_params,
-                          args.shared_optimizer, args.load_model, phase="pretrain")
+        stop_metric = pretrain_tasks[0].val_metric if len(pretrain_tasks) == 1 else "macro_avg"
+        should_decrease = (
+            pretrain_tasks[0].val_metric_decreases if len(pretrain_tasks) == 1 else False
+        )
+        trainer, _, opt_params, schd_params = build_trainer(
+            args, [], model, args.run_dir, should_decrease, phase="pretrain"
+        )
+        to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        _ = trainer.train(
+            pretrain_tasks,
+            stop_metric,
+            args.batch_size,
+            args.weighting_method,
+            args.scaling_method,
+            to_train,
+            opt_params,
+            schd_params,
+            args.shared_optimizer,
+            args.load_model,
+            phase="pretrain",
+        )
 
     # For checkpointing logic
     if not args.do_target_task_training:
-        log.info("In strict mode because do_target_task_training is off. "
-                 "Will crash if any tasks are missing from the checkpoint.")
+        log.info(
+            "In strict mode because do_target_task_training is off. "
+            "Will crash if any tasks are missing from the checkpoint."
+        )
         strict = True
     else:
         strict = False
 
     if args.do_target_task_training:
         # Train on target tasks
-        task_names_to_avoid_loading = setup_target_task_training(
-            args, target_tasks, model, strict)
+        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model, strict)
         if args.transfer_paradigm == "frozen":
             # might be empty if elmo = 0. scalar_mix_0 should always be
             # pretrain scalars
-            elmo_scalars = [(n, p) for n, p in model.named_parameters() if
-                            "scalar_mix" in n and "scalar_mix_0" not in n]
+            elmo_scalars = [
+                (n, p)
+                for n, p in model.named_parameters()
+                if "scalar_mix" in n and "scalar_mix_0" not in n
+            ]
             # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero
             # length.
             assert_for_log(
                 not elmo_scalars or args.sep_embs_for_skip,
                 "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
-                "they should not be updated! Check sep_embs_for_skip flag or make an issue.")
+                "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
+            )
         for task in target_tasks:
             # Skip mnli-diagnostic
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            if task.name == 'mnli-diagnostic':
+            if task.name == "mnli-diagnostic":
                 continue
 
             if args.transfer_paradigm == "finetune":
                 # Train both the task specific models as well as sentence
                 # encoder.
-                to_train = [
-                    (n, p) for n, p in model.named_parameters() if p.requires_grad]
+                to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
             else:  # args.transfer_paradigm == "frozen":
                 # Only train task-specific module
                 pred_module = getattr(model, "%s_mdl" % task.name)
-                to_train = [
-                    (n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
                 to_train += elmo_scalars
 
-            trainer, _, opt_params, schd_params = build_trainer(args, [task.name, 'target_train'], model,
-                                                                args.run_dir,
-                                                                task.val_metric_decreases, phase="target_train")
+            trainer, _, opt_params, schd_params = build_trainer(
+                args,
+                [task.name, "target_train"],
+                model,
+                args.run_dir,
+                task.val_metric_decreases,
+                phase="target_train",
+            )
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,
@@ -427,7 +473,8 @@ def main(cl_arguments):
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
                 load_model=False,
-                phase="target_train")
+                phase="target_train",
+            )
 
             # Now that we've trained a model, revert to the normal checkpoint
             # logic for this task.
@@ -436,32 +483,30 @@ def main(cl_arguments):
 
             # The best checkpoint will accumulate the best parameters for each
             # task.
-            layer_path = os.path.join(
-                args.run_dir, "model_state_target_train_best.th")
+            layer_path = os.path.join(args.run_dir, "model_state_target_train_best.th")
 
             if args.transfer_paradigm == "finetune":
                 # Save this fine-tune model with a task specific name.
-                finetune_path = os.path.join(
-                    args.run_dir,
-                    "model_state_%s_best.th" %
-                    task.name)
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 os.rename(layer_path, finetune_path)
 
                 # Reload the original best model from before target-task
                 # training.
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(
-                    model,
-                    pre_finetune_path,
-                    args.cuda,
-                    skip_task_models=[],
-                    strict=strict)
+                    model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
+                )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 # Save the best checkpoint from that target task training to be
                 # specific to that target task.
-                load_model_state(model, layer_path, args.cuda, strict=strict,
-                                 skip_task_models=task_names_to_avoid_loading)
+                load_model_state(
+                    model,
+                    layer_path,
+                    args.cuda,
+                    strict=strict,
+                    skip_task_models=task_names_to_avoid_loading,
+                )
 
     if args.do_full_eval:
         # Evaluate
@@ -469,30 +514,21 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == 'mnli-diagnostic':
+                if task.name == "mnli-diagnostic":
                     # we'll load mnli-diagnostic during mnli
                     continue
                 # Special checkpointing logic here since we train the sentence encoder
                 # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(
-                    args.run_dir,
-                    "model_state_%s_best.th" %
-                    task.name)
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
-                load_model_state(
-                    model,
-                    ckpt_path,
-                    args.cuda,
-                    skip_task_models=[],
-                    strict=strict)
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
                 tasks = [task]
-                if task.name == 'mnli':
-                    tasks += [t for t in target_tasks if t.name ==
-                              'mnli-diagnostic']
+                if task.name == "mnli":
+                    tasks += [t for t in target_tasks if t.name == "mnli-diagnostic"]
                 evaluate_and_write(args, model, tasks, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
@@ -503,7 +539,7 @@ def main(cl_arguments):
     log.info("Done!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main(sys.argv[1:])
         if EMAIL_NOTIFIER is not None:
@@ -513,6 +549,7 @@ if __name__ == '__main__':
         log.exception("Fatal error in main():")
         if EMAIL_NOTIFIER is not None:
             import traceback
+
             tb_lines = traceback.format_exception(*sys.exc_info())
             EMAIL_NOTIFIER(body="".join(tb_lines), prefix="FAILED")
         raise e  # re-raise exception, in case debugger is attached.

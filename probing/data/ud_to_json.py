@@ -7,19 +7,18 @@
 #   ./ud_to_json.py -i <ud_release_dir>/en_ewt-ud-*.conllu \
 #       -o /path/to/probing/data/ud_ewt
 
-import sys
-import os
-import json
 import argparse
-
+import json
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
-
-import utils
-import pandas as pd
+import os
+import sys
 
 import conllu
+import pandas as pd
+
+import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def convert_ud_file(fd):
@@ -43,7 +42,7 @@ def convert_ud_file(fd):
             words = []
 
             for word_line in word_lines:
-                parts = word_line.split('\t')
+                parts = word_line.split("\t")
                 words.append(parts[1].replace('"', '\\"'))
                 if "." not in parts[0]:
                     this_id = int(parts[0])
@@ -55,27 +54,28 @@ def convert_ud_file(fd):
                 if this_head == 0:
                     this_head = this_id
                 deprel = parts[7]
-                spans.append('{"span1": [' +
-                             str(this_id -
-                                 1) +
-                             ', ' +
-                             str(this_id) +
-                             '], "span2": [' +
-                             str(this_head -
-                                 1) +
-                             ', ' +
-                             str(this_head) +
-                             '], "label": "' +
-                             deprel +
-                             '"}')
+                spans.append(
+                    '{"span1": ['
+                    + str(this_id - 1)
+                    + ", "
+                    + str(this_id)
+                    + '], "span2": ['
+                    + str(this_head - 1)
+                    + ", "
+                    + str(this_head)
+                    + '], "label": "'
+                    + deprel
+                    + '"}'
+                )
 
             if example_good:
                 examples.append(
-                    '{"text": "' +
-                    " ".join(words) +
-                    '", "targets": [' +
-                    ", ".join(spans) +
-                    '], "info": {"source": "UD_English-EWT"}}')
+                    '{"text": "'
+                    + " ".join(words)
+                    + '", "targets": ['
+                    + ", ".join(spans)
+                    + '], "info": {"source": "UD_English-EWT"}}'
+                )
 
             word_lines = []
 
@@ -90,10 +90,16 @@ def convert_ud_file(fd):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', dest="input_files", type=str, nargs="+",
-                        help="Input file(s), e.g. en_ewt-ud-*.conllu")
-    parser.add_argument('-o', dest='output_dir', type=str, required=True,
-                        help="Output directory, e.g. /path/to/edges/data/ud_ewt")
+    parser.add_argument(
+        "-i", dest="input_files", type=str, nargs="+", help="Input file(s), e.g. en_ewt-ud-*.conllu"
+    )
+    parser.add_argument(
+        "-o",
+        dest="output_dir",
+        type=str,
+        required=True,
+        help="Output directory, e.g. /path/to/edges/data/ud_ewt",
+    )
     args = parser.parse_args(args)
 
     if not os.path.isdir(args.output_dir):
@@ -113,6 +119,6 @@ def main(args):
     log.info("Done!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
