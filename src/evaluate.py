@@ -166,13 +166,13 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
                  'mrpc': 'MRPC',
                  'qnli': 'QNLI',
                  'qqp': 'QQP',
-                 'rte-glue': 'RTE',
+                 'rte': 'RTE',
                  'sst': 'SST-2',
                  'sts-b': 'STS-B',
                  'wnli': 'WNLI'}
 
 SUPERGLUE_NAME_MAP = {"commitbank": 'CB',
-                      "rte": "RTE"
+                      "rte-superglue": "RTE"
                      }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
