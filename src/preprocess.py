@@ -353,22 +353,18 @@ def build_tasks(args):
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if task.name in pretrain_task_names:
-            log.info(
-                "Creating trimmed pretraining-only version of " +
-                task.name +
-                " train.")
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=args.pretrain_data_fraction)
+            log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(
+                task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+            )
             pretrain_tasks.append(task)
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
         if task.name in target_task_names:
-            log.info(
-                "Creating trimmed train-for-target-only version of " +
-                task.name +
-                " train.")
-            task.train_data = _get_instance_generator(task.name, "train", preproc_dir,
-                                                      fraction=args.target_train_data_fraction)
+            log.info("Creating trimmed train-for-target-only version of " + task.name + " train.")
+            task.train_data = _get_instance_generator(
+                task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+            )
             target_tasks.append(task)
 
         log.info("\tLazy-loading indexed data for task='%s' from %s", task.name, preproc_dir)

@@ -140,22 +140,23 @@ def write_preds(
         )
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
-            strict = (
-                strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS)
-            _write_glue_preds(task.name, preds_df, pred_dir, split_name,
-                              strict_glue_format=strict)
+            strict = strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS
+            _write_glue_preds(task.name, preds_df, pred_dir, split_name, strict_glue_format=strict)
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
         elif isinstance(task, CommitmentTask):
-            _write_commitment_preds(task, preds_df, pred_dir, split_name,
-                                    strict_glue_format=strict_glue_format)
+            _write_commitment_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, COPATask):
-            _write_copa_preds(task, preds_df, pred_dir, split_name,
-                              strict_glue_format=strict_glue_format)
+            _write_copa_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, WiCTask):
-            _write_wic_preds(task, preds_df, pred_dir, split_name,
-                             strict_glue_format=strict_glue_format)
+            _write_wic_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)
             continue
@@ -180,10 +181,8 @@ GLUE_NAME_MAP = {
 
 SUPERGLUE_NAME_MAP = {"commitbank": "CB"}
 
-SUPERGLUE_NAME_MAP = {"commitbank": 'CB',
-                      "copa": "COPA",
-                      "wic": "WiC"
-                     }
+SUPERGLUE_NAME_MAP = {"commitbank": "CB", "copa": "COPA", "wic": "WiC"}
+
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
@@ -232,10 +231,15 @@ def _write_edge_preds(
             fd.write(json.dumps(record))
             fd.write("\n")
 
-def _write_wic_preds(task: str, preds_df: pd.DataFrame,
-                     pred_dir: str, split_name: str,
-                     strict_glue_format: bool = False):
-    ''' Write predictions for WiC task.  '''
+
+def _write_wic_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for WiC task.  """
     pred_map = {0: "false", 1: "true"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
@@ -246,10 +250,15 @@ def _write_wic_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
-                            pred_dir: str, split_name: str,
-                            strict_glue_format: bool = False):
-    ''' Write predictions for CommitmentBank task.  '''
+
+def _write_commitment_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for CommitmentBank task.  """
     pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
@@ -260,9 +269,10 @@ def _write_commitment_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-def _write_copa_preds(task, preds_df: pd.DataFrame,
-                      pred_dir: str, split_name: str,
-                      strict_glue_format: bool = False):
+
+def _write_copa_preds(
+    task, preds_df: pd.DataFrame, pred_dir: str, split_name: str, strict_glue_format: bool = False
+):
     """ Write COPA predictions to JSONL """
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:

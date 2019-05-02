@@ -480,11 +480,11 @@ class SingleClassifier(nn.Module):
 
 
 class PairClassifier(nn.Module):
-    ''' Thin wrapper around a set of modules.
+    """ Thin wrapper around a set of modules.
     For sentence pair classification.
     Pooler specifies how to aggregate inputted sequence of vectors.
     Also allows for use of specific token representations to be addded to the overall representation
-    '''
+    """
 
     def __init__(self, pooler, classifier, attn=None):
         super(PairClassifier, self).__init__()
@@ -525,8 +525,7 @@ class PairClassifier(nn.Module):
             s2_ctx_embs.append(s2_ctx_emb.squeeze(dim=1))
         emb2 = torch.cat([emb2] + s2_ctx_embs, dim=-1)
 
-        pair_emb = torch.cat(
-            [emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
+        pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
 
