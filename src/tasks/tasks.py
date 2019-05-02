@@ -1,6 +1,4 @@
-import codecs
 import collections
-import copy
 import itertools
 import json
 import logging as log
@@ -24,13 +22,13 @@ from allennlp.data.fields import (
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy, CategoricalAccuracy, F1Measure
 
-from ..allennlp_mods.correlation import Correlation, FastMatthews
+from ..allennlp_mods.correlation import Correlation
 from ..allennlp_mods.numeric_field import NumericField
 from ..utils import utils
 from ..utils.data_loaders import get_tag_list, load_diagnostic_tsv, load_tsv, process_sentence
 from ..utils.tokenizers import get_tokenizer
 from ..utils.utils import truncate
-from .registry import REGISTRY, register_task  # global task registry
+from .registry import register_task  # global task registry
 
 """Define the tasks and code for loading their data.
 
@@ -372,7 +370,7 @@ class PairOrdinalRegressionTask(RegressionTask):
         """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
 
-    def update_metrics():
+    def update_metrics(self):
         # currently don't support metrics for regression task
         # TODO(Yada): support them!
         return
@@ -397,7 +395,7 @@ class SequenceGenerationTask(Task):
         bleu = self.scorer1.get_metric(reset)
         return {"bleu": bleu}
 
-    def update_metrics():
+    def update_metrics(self):
         # currently don't support metrics for regression task
         # TODO(Yada): support them!
         return
@@ -1750,240 +1748,15 @@ class DisSentTask(PairClassificationTask):
             yield _make_instance(sent1, sent2, trg)
 
 
-# TODO: does this even work? What is n_classes for this?
-@register_task("weakgrounded", rel_path="mscoco/weakgrounded/")
-class WeakGroundedTask(PairClassificationTask):
-    """ Task class for Weak Grounded Sentences i.e., training on pairs of captions for the same image """
-
-    def __init__(self, path, max_seq_len, n_classes, name, **kw):
-        """ Do stuff """
-        super(WeakGroundedTask, self).__init__(name, n_classes, **kw)
-
-        """ Process the dataset located at path.  """
-        """ positive = captions of the same image, negative = captions of different images """
-        targ_map = {"negative": 0, "positive": 1}
-        targ_map = {"0": 0, "1": 1}
-
-        tr_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(path, "train_aug.tsv"),
-            max_seq_len,
-            targ_map=targ_map,
-            s1_idx=0,
-            s2_idx=1,
-            label_idx=2,
-            skip_rows=0,
-        )
-        val_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(path, "val.tsv"),
-            max_seq_len,
-            targ_map=targ_map,
-            s1_idx=0,
-            s2_idx=1,
-            label_idx=2,
-            skip_rows=0,
-        )
-        te_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(path, "test.tsv"),
-            max_seq_len,
-            targ_map=targ_map,
-            s1_idx=0,
-            s2_idx=1,
-            label_idx=2,
-            skip_rows=0,
-        )
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.n_classes = 2
-        log.info("\tFinished loading MSCOCO data.")
-
-
-@register_task("grounded", rel_path="mscoco/grounded/")
-class GroundedTask(Task):
-    """ Task class for Grounded Sentences i.e., training on caption->image pair """
-
-    """ Defined new metric function from AllenNLP Average """
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        """ Do stuff """
-        super(GroundedTask, self).__init__(name, **kw)
-        self.scorer1 = Average()
-        self.scorers = [self.scorer1]
-        self.val_metric = "%s_metric" % self.name
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.ids = self.train_data_text[1] + self.val_data_text[1]
-        self.path = path
-        self.img_encoder = None
-        self.val_metric_decreases = False
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        metric = self.scorer1.get_metric(reset)
-
-        return {"metric": metric}
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """
-        Convert a dataset of sentences into padded sequences of indices.
-        Args:
-            - split (list[list[str]]): list of inputs (possibly pair) and outputs
-            - pair_input (int)
-            - tok2idx (dict)
-        Returns:
-        """
-
-        def _make_instance(sent, label, ids):
-            input1 = sentence_to_text_field(sent, indexers)
-            label = NumericField(label)
-            ids = NumericField(ids)
-            return Instance({"input1": input1, "labels": label, "ids": ids})
-
-        # Map over columns: input1, labels, ids
-        instances = map(_make_instance, *split)
-        #  return list(instances)
-        return instances  # lazy iterator
-
-    def load_data(self, path, max_seq_len):
-        """ Map sentences to image ids
-            Keep track of caption ids just in case """
-
-        train, val, test = ([], [], []), ([], [], []), ([], [], [])
-
-        with open(os.path.join(path, "train_idx.txt"), "r") as f:
-            train_ids = [item.strip() for item in f.readlines()]
-        with open(os.path.join(path, "val_idx.txt"), "r") as f:
-            val_ids = [item.strip() for item in f.readlines()]
-        with open(os.path.join(path, "test_idx.txt"), "r") as f:
-            test_ids = [item.strip() for item in f.readlines()]
-
-        f = open(os.path.join(path, "train.json"), "r")
-        for line in f:
-            tr_dict = json.loads(line)
-        f = open(os.path.join(path, "val.json"), "r")
-        for line in f:
-            val_dict = json.loads(line)
-        f = open(os.path.join(path, "test.json"), "r")
-        for line in f:
-            te_dict = json.loads(line)
-        with open(os.path.join(path, "feat_map.json")) as fd:
-            keymap = json.load(fd)
-
-        def load_mscoco(data_dict, data_list, img_idxs):
-            for img_idx in img_idxs:
-                newimg_id = "mscoco/grounded/" + img_idx + ".json"
-                for caption_id in data_dict[img_idx]["captions"]:
-                    data_list[0].append(data_dict[img_idx]["captions"][caption_id])
-                    data_list[1].append(1)
-                    data_list[2].append(int(keymap[newimg_id]))
-            return data_list
-
-        train = load_mscoco(tr_dict, train, train_ids)
-        val = load_mscoco(val_dict, val, val_ids)
-        test = load_mscoco(te_dict, test, test_ids)
-
-        self.tr_data = train
-        self.val_data = val
-        self.te_data = test
-        self.train_data_text = train
-        self.val_data_text = val
-        self.test_data_text = test
-
-        log.info("\tTrain: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
-        log.info("\tFinished loading MSCOCO data!")
-
-
-@register_task("groundedsw", rel_path="mscoco/grounded")
-class GroundedSWTask(Task):
-    """ Task class for Grounded Sentences i.e., training on caption->image pair """
-
-    """ Defined new metric function from AllenNLP Average """
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        super(GroundedSWTask, self).__init__(name, **kw)
-        self.scorer1 = Average()
-        self.scorers = [self.scorer1]
-        self.val_metric = "%s_metric" % self.name
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-        self.ids = self.train_data_text[1] + self.val_data_text[1]
-        self.path = path
-        self.img_encoder = None
-        self.val_metric_decreases = False
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-        metric = self.scorer1.get_metric(reset)
-
-        return {"metric": metric}
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """
-        Convert a dataset of sentences into padded sequences of indices.
-        Args:
-            - split (list[list[str]]): list of inputs (possibly pair) and outputs
-            - pair_input (int)
-            - tok2idx (dict)
-        Returns:
-        """
-
-        def _make_instance(sent, label, ids):
-            input1 = sentence_to_text_field(sent, indexers)
-            label = NumericField(label)
-            ids = NumericField(ids)
-            return Instance({"input1": input1, "labels": label, "ids": ids})
-
-        # Map over columns: input1, labels, ids
-        instances = map(_make_instance, *split)
-        #  return list(instances)
-        return instances  # lazy iterator
-
-    def load_data(self, path, max_seq_len):
-        """ Map sentences to image ids
-            Keep track of caption ids just in case """
-
-        train, val, test = ([], [], []), ([], [], []), ([], [], [])
-
-        def get_data(dataset, data):
-            f = open(path + dataset + ".tsv", "r")
-            for line in f:
-                items = line.strip().split("\t")
-                if len(items) < 3 or items[1] == "0":
-                    continue
-                data[0].append(items[0])
-                data[1].append(int(items[1]))
-                data[2].append(int(items[2]))
-            return data
-
-        train = get_data("shapeworld/train", train)
-        val = get_data("shapeworld/val", val)
-        test = get_data("shapeworld/test", test)
-
-        self.tr_data = train
-        self.val_data = val
-        self.te_data = test
-        self.train_data_text = train
-        self.val_data_text = val
-        self.test_data_text = test
-
-        log.info("Train: %d, Val: %d, Test: %d", len(train[0]), len(val[0]), len(test[0]))
-        log.info("\nFinished loading SW data!")
-
-
-@register_task("recast-puns", rel_path="DNC/recast_puns_data")
-@register_task("recast-ner", rel_path="DNC/recast_ner_data")
-@register_task("recast-verbnet", rel_path="DNC/recast_verbnet_data")
-@register_task("recast-verbcorner", rel_path="DNC/recast_verbcorner_data")
-@register_task("recast-sentiment", rel_path="DNC/recast_sentiment_data")
-@register_task("recast-factuality", rel_path="DNC/recast_factuality_data")
-@register_task("recast-winogender", rel_path="DNC/manually-recast-winogender")
-@register_task("recast-lexicosyntax", rel_path="DNC/lexicosyntactic_recasted")
-@register_task("recast-kg", rel_path="DNC/kg-relations")
+@register_task('recast-puns', rel_path='DNC/recast_puns_data')
+@register_task('recast-ner', rel_path='DNC/recast_ner_data')
+@register_task('recast-verbnet', rel_path='DNC/recast_verbnet_data')
+@register_task('recast-verbcorner', rel_path='DNC/recast_verbcorner_data')
+@register_task('recast-sentiment', rel_path='DNC/recast_sentiment_data')
+@register_task('recast-factuality', rel_path='DNC/recast_factuality_data')
+@register_task('recast-winogender', rel_path='DNC/manually-recast-winogender')
+@register_task('recast-lexicosyntax', rel_path='DNC/lexicosyntactic_recasted')
+@register_task('recast-kg', rel_path='DNC/kg-relations')
 class RecastNLITask(PairClassificationTask):
     """ Task class for NLI Recast Data"""
 

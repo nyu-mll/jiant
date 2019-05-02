@@ -2,91 +2,28 @@
 import copy
 import json
 import logging as log
-import math
 import os
-import sys
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from allennlp.common import Params
-from allennlp.modules import Elmo, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
-from allennlp.nn import util
 from allennlp.training.metrics import Average
 from sklearn.metrics import mean_squared_error
-from torch.autograd import Variable
 
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
-from .utils.utils import (
-    assert_for_log,
-    get_batch_utilization,
-    get_batch_size,
-    get_elmo_mixing_weights,
-    maybe_make_dir,
-)
-from .utils import config
-
-from .preprocess import parse_task_list_arg, get_tasks
-
-from .tasks.tasks import (
-    CCGTaggingTask,
-    ClassificationTask,
-    CoLATask,
-    CoLAAnalysisTask,
-    GroundedSWTask,
-    GroundedTask,
-    MultiNLIDiagnosticTask,
-    PairClassificationTask,
-    PairOrdinalRegressionTask,
-    PairRegressionTask,
-    RankingTask,
-    MultipleChoiceTask,
-    RegressionTask,
-    SequenceGenerationTask,
-    SingleClassificationTask,
-    SSTTask,
-    STSBTask,
-    TaggingTask,
-    WeakGroundedTask,
-    JOCITask,
-    WiCTask,
-    SpanClassificationTask,
-)
-from .tasks.lm import LanguageModelingTask
-from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
-from .tasks.edge_probing import EdgeProbingTask
-
-from .modules.modules import (
-    SentenceEncoder,
-    BoWSentEncoder,
-    AttnPairEncoder,
-    MaskedStackedSelfAttentionEncoder,
-    BiLMEncoder,
-    ElmoCharacterEncoder,
-    Classifier,
-    Pooler,
-    SingleClassifier,
-    PairClassifier,
-    CNNEncoder,
-    NullPhraseLayer,
-    ONLSTMPhraseLayer,
-    PRPNPhraseLayer,
-)
 from .modules.edge_probing import EdgeClassifierModule
 from .modules.modules import (
     AttnPairEncoder,
     BiLMEncoder,
     BoWSentEncoder,
     Classifier,
-    CNNEncoder,
     ElmoCharacterEncoder,
-    MaskedStackedSelfAttentionEncoder,
     NullPhraseLayer,
     ONLSTMPhraseLayer,
     PairClassifier,
@@ -105,14 +42,9 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.tasks import (
-    CCGTaggingTask,
-    ClassificationTask,
-    CoLAAnalysisTask,
-    CoLATask,
-    GroundedSWTask,
-    GroundedTask,
     JOCITask,
     MultiNLIDiagnosticTask,
+    MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
     PairRegressionTask,
@@ -121,10 +53,9 @@ from .tasks.tasks import (
     SequenceGenerationTask,
     SingleClassificationTask,
     SpanClassificationTask,
-    SSTTask,
     STSBTask,
     TaggingTask,
-    WeakGroundedTask,
+    WiCTask,
 )
 from .utils import config
 from .utils.utils import (
@@ -658,11 +589,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-
-    elif isinstance(task, (GroundedTask, GroundedSWTask)):
-        task.img_encoder = CNNEncoder(model_name="resnet", path=task.path)
-        pooler = build_image_sent_module(task, d_sent, task_params)
-        setattr(model, "%s_mdl" % task.name, pooler)
     elif isinstance(task, RankingTask):
         pooler, dnn_ResponseModel = build_reddit_module(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, pooler)
@@ -924,8 +850,6 @@ class MultiTaskModel(nn.Module):
             out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, (GroundedTask, GroundedSWTask)):
-            out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
@@ -1349,99 +1273,6 @@ class MultiTaskModel(nn.Module):
         assert logits.size(0) == trg_fwd.size(0), "Number of logits and targets differ!"
         out["loss"] = F.cross_entropy(logits, trg_fwd, ignore_index=pad_idx)
         task.scorer1(out["loss"].item())
-        return out
-
-    def _grounded_forward(self, batch, task, predict):
-        out, img_seq = {}, []
-        sent_emb, sent_mask = self.sent_encoder(batch["input1"], task)
-        batch_size = get_batch_size(batch)
-        out["n_exs"] = batch_size
-        sent_pooler = self._get_classifier(task)
-
-        sent_rep = sent_pooler(sent_emb, sent_mask)
-
-        ids = batch["ids"].cpu().squeeze(-1).data.numpy().tolist()
-
-        for img_idx in ids:
-            img_rep = task.img_encoder.forward(int(img_idx))[0]
-            img_seq.append(torch.tensor(img_rep, dtype=torch.float32).cuda())
-
-        loss = torch.autograd.Variable(torch.Tensor(1), requires_grad=True) + 0
-        softmax = nn.Softmax(dim=0)
-        cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-        acc = []
-
-        loss_fn = nn.L1Loss()
-        # contrastive against n samples (n = {2, 3}), temperature
-        samples, temp = batch_size - 1, 0.001
-        for sent_idx in range(batch_size):
-            sent = sent_rep[sent_idx].reshape(1, -1).cuda()
-            img = img_seq[sent_idx].reshape(1, -1).cuda()
-            labels = [1] + [0] * (samples - 1)
-            labels = torch.tensor(labels, dtype=torch.float32)
-            mat = [cos(sent, img).cpu().data.numpy()[0]]
-            for _ in range(len(mat), samples):
-                r = sent_idx
-                while r == sent_idx:
-                    r = np.random.randint(batch_size, size=(1, 1))[0][0]
-                img = img_seq[r].reshape(1, -1).cuda()
-                mat.append(cos(sent, img).cpu().data.numpy()[0])
-
-            mat = torch.tensor(mat, dtype=torch.float32)
-            dist = softmax(Variable(torch.tensor(mat, dtype=torch.float32)))
-
-            max_idx = np.argmax(dist.data.numpy())
-            loss.add(loss_fn(mat, labels))
-
-            preds = [0] * samples
-            preds[max_idx] = 1
-            acc.append(1 if max_idx == 0 else 0)
-
-        out["loss"] = loss
-        task.scorer1(np.mean(acc))
-        return out
-
-    def _grounded_ranking_bce_forward(self, batch, task, predict):
-        """ Binary Cross Entropy Loss
-            Create sentence, image representation.
-        """
-
-        out, neg = {}, []
-        sent_emb, sent_mask = self.sent_encoder(batch["input1"], task)
-        batch_size = get_batch_size(batch)
-        out["n_exs"] = batch_size
-        sent_pooler = self._get_classifier(task)
-        sent_rep = sent_pooler(sent_emb, sent_mask)
-        loss_fn = nn.L1Loss()
-        ids = batch["ids"].cpu().squeeze(-1).data.numpy().tolist()
-        img_seq = []
-
-        for img_idx in ids:
-            img_rep = task.img_encoder.forward(int(img_idx))[0]
-            img_seq.append(torch.tensor(img_rep, dtype=torch.float32).cuda())
-
-        img_emb = torch.stack(img_seq, dim=0)
-        sent1_rep = sent_rep
-        sent2_rep = img_emb
-
-        sent1_rep = F.normalize(sent1_rep, 2, 1)
-        sent2_rep = F.normalize(sent2_rep, 2, 1)
-        mat_mul = torch.mm(sent1_rep, torch.transpose(sent2_rep, 0, 1))
-        labels = torch.eye(len(mat_mul))
-
-        scale = 1 / (len(mat_mul) - 1) if len(mat_mul) > 1 else 1
-        weights = scale * torch.ones(mat_mul.shape) - (scale - 1) * torch.eye(len(mat_mul))
-        weights = weights.view(-1).cuda()
-
-        mat_mul = mat_mul.view(-1)
-        labels = labels.view(-1).cuda()
-        pred = torch.sigmoid(mat_mul).round()
-
-        out["loss"] = loss_fn(mat_mul, labels)
-        total_correct = torch.sum(pred == labels)
-        batch_acc = total_correct.item() / len(labels)
-        task.scorer1.__call__(batch_acc)
-
         return out
 
     def get_elmo_mixing_weights(self, tasks=[]):
