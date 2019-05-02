@@ -24,7 +24,12 @@ ALL_GLUE_TASKS = [
     "mnli-diagnostic",
 ]
 
-ALL_SUPERGLUE_TASKS = ["commitbank", "wic"]
+ALL_SUPERGLUE_TASKS = [
+    "commitbank",
+    "copa",
+    "multirc",
+    "rte-superglue",
+    "wic"]
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
