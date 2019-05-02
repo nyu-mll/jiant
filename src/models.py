@@ -33,7 +33,7 @@ from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnaly
     GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, JOCITask, SpanClassificationTask, WiCTask
+    TaggingTask, WeakGroundedTask, JOCITask, WiCTask, SpanClassificationTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
@@ -658,7 +658,7 @@ def build_pair_sentence_module(task, d_inp, model, params):
         classifier = Classifier.from_params(d_out, n_classes, params)
         module = SingleClassifier(pooler, classifier)
     else:
-        # TODO(Alex): something for WiC
+        d_out = d_out + d_inp if isinstance(task, WiCTask) else d_out
         classifier = Classifier.from_params(4 * d_out, n_classes, params)
         module = PairClassifier(pooler, classifier, pair_attn)
     return module
@@ -913,7 +913,10 @@ class MultiTaskModel(nn.Module):
         else:
             sent1, mask1 = self.sent_encoder(batch['input1'], task)
             sent2, mask2 = self.sent_encoder(batch['input2'], task)
-            logits = classifier(sent1, sent2, mask1, mask2)
+            if isinstance(task, WiCTask):
+                logits = classifier(sent1, sent2, mask1, mask2, [batch['idx1']], [batch['idx2']])
+            else:
+                logits = classifier(sent1, sent2, mask1, mask2)
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
         tagmask = batch.get('tagmask', None)
