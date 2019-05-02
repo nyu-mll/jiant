@@ -153,6 +153,9 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
         elif isinstance(task, WiCTask):
             _write_wic_preds(task, preds_df, pred_dir, split_name,
                              strict_glue_format=strict_glue_format)
+        elif isinstance(task, GLUEDiagnosticTask):
+            _write_diagnostics_preds(task, preds_df, pred_dir, split_name,
+                                     strict_glue_format=strict_glue_format)
         else:
             log.warning("Task '%s' not supported by write_preds().",
                         task.name)
@@ -177,7 +180,7 @@ GLUE_NAME_MAP = {'cola': 'CoLA',
 SUPERGLUE_NAME_MAP = {"commitbank": 'CB',
                       "copa": "COPA",
                       "wic": "WiC",
-                      'diagnostic': 'AX',
+                      'rte-diagnostic': 'AX',
                      }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
@@ -261,6 +264,27 @@ def _write_copa_preds(task, preds_df: pd.DataFrame,
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
                 out_d = {"idx": int(row["idx"]), "label": int(row["preds"])}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+def _write_diagnostics_preds(task: str, preds_df: pd.DataFrame,
+                            pred_dir: str, split_name: str,
+                            strict_glue_format: bool = False):
+    ''' Write predictions for GLUE/SuperGLUE diagnostics task.  '''
+
+    if task.n_classes == 2:
+        pred_map = {0: "not_entailment", 1: "entailment"}
+    elif task.n_classes == 3:
+        pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    else:
+        raise ValueError("Invalid number of output classes detected")
+
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": pred_map[row["labels"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
