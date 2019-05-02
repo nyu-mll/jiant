@@ -17,7 +17,7 @@ from .tasks import Task
 # Task lists for handling as a group; these names correspond to the keys in
 # the task registry.
 ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
-                  'mnli', 'qnli', 'rte-glue', 'wnli', 'mnli-diagnostic']
+                  'mnli', 'qnli', 'rte', 'wnli', 'mnli-diagnostic']
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [

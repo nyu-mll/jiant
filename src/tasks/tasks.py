@@ -665,7 +665,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d['tagmask'] = MultiLabelField(tagids, label_namespace="tagids",
                                            skip_indexing=True, num_labels=len(self.tag_list))
             return Instance(d)
-            
+
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
 
@@ -1252,10 +1252,36 @@ class RTETask(PairClassificationTask):
 
     def __init__(self, path, max_seq_len, name, **kw):
         ''' '''
-        super(RTETask, self).__init__(name, n_classes=2, **kw)
+        super().__init__(name, n_classes=2, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len):
+        ''' Process the datasets located at path. '''
+        targ_map = {"not_entailment": 0, "entailment": 1}
+        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
+                           label_fn=targ_map.__getitem__,
+                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
+        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
+                            label_fn=targ_map.__getitem__,
+                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
+        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
+
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading RTE (from GLUE formatted data).")
+
+
+@register_task('rte-superglue', rel_path='RTE/')
+class RTESuperGLUETask(RTETask):
+    ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        ''' '''
+        super().__init__(path, max_seq_len, name, **kw)
 
     def load_data(self, path, max_seq_len):
         ''' Process the datasets located at path. '''
@@ -1279,30 +1305,6 @@ class RTETask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
 
-@register_task('rte-glue', rel_path='RTE/')
-class RTEGLUETask(RTETask):
-    ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
-        super().__init__(name, path, max_seq_len, name, **kw)
-
-    def load_data(self, path, max_seq_len):
-        ''' Process the datasets located at path. '''
-        targ_map = {"not_entailment": 0, "entailment": 1}
-        tr_data = load_tsv(self._tokenizer_name, os.path.join(path, 'train.tsv'), max_seq_len,
-                           label_fn=targ_map.__getitem__,
-                           s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
-        val_data = load_tsv(self._tokenizer_name, os.path.join(path, 'dev.tsv'), max_seq_len,
-                            label_fn=targ_map.__getitem__,
-                            s1_idx=1, s2_idx=2, label_idx=3, skip_rows=1)
-        te_data = load_tsv(self._tokenizer_name, os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=1, s2_idx=2, has_labels=False, return_indices=True, skip_rows=1)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading RTE (from GLUE formatted data).")
 
 @register_task('qnli', rel_path='QNLI/')
 # second copy for different params
@@ -1982,7 +1984,7 @@ class SpanClassificationTask(Task):
     '''
     @property
     def _tokenizer_suffix(self):
-        ''' 
+        '''
         Suffix to make sure we use the correct source files,
         based on the given tokenizer.
         '''
@@ -2013,7 +2015,7 @@ class SpanClassificationTask(Task):
             max_seq_len: maximum sequence length (currently ignored)
             name: task name
             label_file: relative path to labels file
-                - should be a line-delimited file where each line is a value the 
+                - should be a line-delimited file where each line is a value the
                 label can take.
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
@@ -2043,7 +2045,7 @@ class SpanClassificationTask(Task):
 
     def _stream_records(self, filename):
         """
-        Helper function for loading the data, which is in json format and 
+        Helper function for loading the data, which is in json format and
         checks if it has targets.
         """
         skip_ctr = 0
@@ -2066,14 +2068,14 @@ class SpanClassificationTask(Task):
         return iters_by_split
 
     def get_split_text(self, split: str):
-        ''' 
+        '''
         Get split text as iterable of records.
         Split should be one of 'train', 'val', or 'test'.
         '''
         return self._iters_by_split[split]
 
     def get_num_examples(self, split_text):
-        ''' 
+        '''
         Return number of examples in the result of get_split_text.
         Subclass can override this if data is not stored in column format.
         '''
