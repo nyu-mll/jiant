@@ -87,7 +87,7 @@ python main.py --config_file config/demo.conf \
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [path_config.sh](path_config.sh)
+To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
 *  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
 *  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
@@ -98,7 +98,7 @@ All model configuration is handled through the config file system and the `--ove
 
 `--tensorboard` (or `-t`): use this to run a [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) server while the trainer is running, serving on the port specified by `--tensorboard_port` (default is `6006`).
 
-To add a path_config export directly to $HOME/.bashrc (Linux) or $HOME/.bash_profile (Mac), follow instructions in [export_from_bash.sh](export_from_bash.sh). 
+To add a user_config_template export directly to $HOME/.bashrc (Linux) or $HOME/.bash_profile (Mac), follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 
 The trainer will write event data even if this flag is not used, and you can run Tensorboard separately as:
 ```
 tensorboard --logdir <exp_dir>/<run_name>/tensorboard
