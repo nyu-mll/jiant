@@ -2651,19 +2651,15 @@ class SWAGTask(MultipleChoiceTask):
         instances = map(_make_instance, *split)
         return instances
 
-@register_task('winograd-coreference', rel_path='winograd-coref')
+
+@register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {
-            'train': "train.jsonl",
-            'val': "val.jsonl",
-            'test': "test.jsonl"}
+        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test.jsonl"}
         self.num_spans = 2
         super().__init__(
-            files_by_split=self._files_by_split,
-            label_file="labels.txt",
-            path=path,
-            **kw)
+            files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
+        )
         self.val_metric = "%s_acc" % self.name
 
     def update_metrics(self, logits, labels, tagmask=None):
@@ -2679,6 +2675,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             """
             ones = torch.sparse.torch.eye(depth).cuda()
             return ones.index_select(0, batch)
+
         binary_preds = make_one_hot(logits, depth=2)
         # Make label_ints a batch_size list of labels
         label_ints = torch.argmax(labels, dim=1)
@@ -2686,8 +2683,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         self.acc_scorer(binary_preds.long(), labels.long())
 
     def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
+        """Get metrics specific to the task"""
         collected_metrics = {
             "f1": self.f1_scorer.get_metric(reset)[2],
-            "acc": self.acc_scorer.get_metric(reset)}
+            "acc": self.acc_scorer.get_metric(reset),
+        }
         return collected_metrics

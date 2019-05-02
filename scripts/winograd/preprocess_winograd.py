@@ -32,8 +32,8 @@ import multiprocessing
 from tqdm import tqdm
 import pandas as pd
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def realign_spans(record, tokenizer_name):
@@ -83,22 +83,19 @@ def realign_spans(record, tokenizer_name):
 
     # align first span to tokenized text
     aligner_fn = retokenize.get_aligner_fn(tokenizer_name)
-    _, new_tokens = aligner_fn(" ".join(text[:sorted_indices[0][0]]))
+    _, new_tokens = aligner_fn(" ".join(text[: sorted_indices[0][0]]))
     current_tokenization.extend(new_tokens)
     new_span1start = len(current_tokenization)
-    _, span_tokens = aligner_fn(
-        " ".join(text[sorted_indices[0][0]:sorted_indices[0][1]]))
+    _, span_tokens = aligner_fn(" ".join(text[sorted_indices[0][0] : sorted_indices[0][1]]))
     current_tokenization.extend(span_tokens)
     new_span1end = len(current_tokenization)
     span_mapping[sorted_indices[0][0]] = [new_span1start, new_span1end]
 
     # re-indexing second span
-    _, new_tokens = aligner_fn(
-        " ".join(text[sorted_indices[0][1]:sorted_indices[1][0]]))
+    _, new_tokens = aligner_fn(" ".join(text[sorted_indices[0][1] : sorted_indices[1][0]]))
     current_tokenization.extend(new_tokens)
     new_span2start = len(current_tokenization)
-    _, span_tokens = aligner_fn(
-        " ".join(text[sorted_indices[1][0]:sorted_indices[1][1]]))
+    _, span_tokens = aligner_fn(" ".join(text[sorted_indices[1][0] : sorted_indices[1][1]]))
     current_tokenization.extend(span_tokens)
     new_span2end = len(current_tokenization)
     span_mapping[sorted_indices[1][0]] = [new_span2start, new_span2end]
@@ -122,31 +119,24 @@ def preprocess_winograd(fname, tokenizer_name, worker_pool):
     # decompress into list of dictionaries
     inputs = list(pd.read_json(fname, lines=True).T.to_dict().values())
     log.info("  saving to %s", new_name)
-    map_fn = functools.partial(_map_fn,
-                               tokenizer_name=tokenizer_name)
-    with open(new_name, 'w') as fd:
-        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500),
-                         total=len(inputs)):
+    map_fn = functools.partial(_map_fn, tokenizer_name=tokenizer_name)
+    with open(new_name, "w") as fd:
+        for line in tqdm(worker_pool.imap(map_fn, inputs, chunksize=500), total=len(inputs)):
             fd.write(line)
             fd.write("\n")
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", dest='tokenizer_name', type=str,
-                        help="Tokenizer name.")
-    parser.add_argument('--data_dir', type=str,
-                        help="Path to data directory.")
+    parser.add_argument("-t", dest="tokenizer_name", type=str, help="Tokenizer name.")
+    parser.add_argument("--data_dir", type=str, help="Path to data directory.")
     args = parser.parse_args(args)
     worker_pool = multiprocessing.Pool(2)
     for fname in ["train.jsonl", "val.jsonl", "test_with_labels.jsonl"]:
         fname = args.data_dir + fname
-        preprocess_winograd(
-            fname,
-            args.tokenizer_name,
-            worker_pool=worker_pool)
+        preprocess_winograd(fname, args.tokenizer_name, worker_pool=worker_pool)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
