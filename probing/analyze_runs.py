@@ -9,23 +9,22 @@
 # Output will be a long-form TSV file containing aggregated and per-class
 # predictions for each run.
 
-import sys
+import argparse
+import collections
+import json
+import logging as log
 import os
 import re
-import json
-import collections
-import argparse
-from tqdm import tqdm
-
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import sys
+from typing import Iterable, List, Tuple
 
 import pandas as pd
-from data import utils
-import analysis
+from tqdm import tqdm
 
-from typing import List, Tuple, Iterable
+import analysis
+from data import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def find_tasks_and_splits(run_path: str) -> List[Tuple[str, str]]:
@@ -55,8 +54,8 @@ def get_run_info(run_path: str, log_name="log.log") -> pd.DataFrame:
             if m is None:
                 continue
             r = dict(zip(["task", "num_steps", "num_epochs"], m.groups()))
-            r['run'] = run_path
-            r['label'] = "__run_info__"
+            r["run"] = run_path
+            r["label"] = "__run_info__"
             train_stats.append(r)
     return pd.DataFrame.from_records(train_stats)
 
@@ -78,12 +77,11 @@ def _analyze_run(item):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', dest='output', type=str, default="",
-                        help="Output file (TSV).")
-    parser.add_argument('-i', dest='inputs', type=str, nargs="+",
-                        help="Input files.")
-    parser.add_argument('--parallel', type=int, default=1,
-                        help="Number of runs to process in parallel.")
+    parser.add_argument("-o", dest="output", type=str, default="", help="Output file (TSV).")
+    parser.add_argument("-i", dest="inputs", type=str, nargs="+", help="Input files.")
+    parser.add_argument(
+        "--parallel", type=int, default=1, help="Number of runs to process in parallel."
+    )
     args = parser.parse_args(args)
 
     work_items = []
@@ -97,20 +95,18 @@ def main(args):
     all_scores = []
     if args.parallel > 1:
         from multiprocessing import Pool
+
         log.info("Processing runs in parallel with %d workers", args.parallel)
         log.getLogger().setLevel(log.WARNING)  # hide INFO spam
         pool = Pool(args.parallel)
-        for score in tqdm(pool.imap_unordered(_analyze_run, work_items),
-                          total=len(work_items)):
+        for score in tqdm(pool.imap_unordered(_analyze_run, work_items), total=len(work_items)):
             all_scores.append(score)
         log.getLogger().setLevel(log.INFO)  # re-enable
     else:
-        for score in tqdm(map(_analyze_run, work_items),
-                          total=len(work_items)):
+        for score in tqdm(map(_analyze_run, work_items), total=len(work_items)):
             all_scores.append(score)
 
-    long_scores = pd.concat(run_info + all_scores, axis=0,
-                            ignore_index=True, sort=False)
+    long_scores = pd.concat(run_info + all_scores, axis=0, ignore_index=True, sort=False)
 
     if args.output:
         log.info("Writing long-form stats table to %s", args.output)
@@ -119,6 +115,6 @@ def main(args):
         log.info("Stats:\n%s", str(long_scores))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

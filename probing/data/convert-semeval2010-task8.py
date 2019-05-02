@@ -12,23 +12,22 @@
 #       -o /path/to/probing/data/semeval-2010-task8/<filename>.json
 #
 
-import sys
-import os
-import json
-import re
-import collections
 import argparse
-
+import collections
+import json
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import os
+import re
+import sys
+from typing import Dict, Iterable, Tuple
 
-import utils
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from typing import Dict, Tuple, Iterable
+import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def parse_lines(lines: Iterable[str]) -> Iterable[Tuple[str, str, str]]:
@@ -65,7 +64,7 @@ def get_entity_spans(tagged_tokens):
     for i, token in enumerate(tagged_tokens):
         m = re.match(TAG_MATCHER_START, token)
         if m:
-            spans[int(m.group(1))][0] = i      # inclusive
+            spans[int(m.group(1))][0] = i  # inclusive
         m = re.match(TAG_MATCHER_END, token)
         if m:
             spans[int(m.group(1))][1] = i + 1  # exclusive
@@ -86,16 +85,16 @@ def record_from_triple(sentence_line, label, comment_line):
     id, tagged_sentence = m.groups()
     tagged_tokens = tagged_sentence.split()
     clean_tokens = [re.sub(TAG_MATCHER, "", t) for t in tagged_tokens]
-    record['text'] = " ".join(clean_tokens)
-    record['info'] = {'id': int(id)}
+    record["text"] = " ".join(clean_tokens)
+    record["info"] = {"id": int(id)}
 
     spans = get_entity_spans(tagged_tokens)
     target = {}
-    target['label'] = label
-    target['span1'] = spans[1]
-    target['span2'] = spans[2]
-    target['info'] = {'comment': re.sub(r"Comment:\s*", "", comment_line)}
-    record['targets'] = [target]
+    target["label"] = label
+    target["span1"] = spans[1]
+    target["span2"] = spans[2]
+    target["info"] = {"comment": re.sub(r"Comment:\s*", "", comment_line)}
+    record["targets"] = [target]
     return record
 
 
@@ -107,17 +106,17 @@ def convert_file(fname: str, target_fname: str):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', dest='input', type=str, required=True,
-                        help="Input .TXT file with SemEval examples.")
-    parser.add_argument('-o', dest='output', type=str, required=True,
-                        help="Output .json file.")
+    parser.add_argument(
+        "-i", dest="input", type=str, required=True, help="Input .TXT file with SemEval examples."
+    )
+    parser.add_argument("-o", dest="output", type=str, required=True, help="Output .json file.")
     args = parser.parse_args(args)
 
-    pd.options.display.float_format = '{:.2f}'.format
+    pd.options.display.float_format = "{:.2f}".format
     log.info("Converting %s", args.input)
     convert_file(args.input, args.output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

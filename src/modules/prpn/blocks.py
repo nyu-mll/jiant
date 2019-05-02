@@ -1,8 +1,8 @@
-'''
+"""
 ResNet block and masked-softmax used in PRPN
 Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
 All the modules in this file are taken without change from: https://github.com/yikangshen/PRPN
-'''
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,9 +17,9 @@ def stick_breaking(logits):
 
 
 def softmax(x, mask=None):
-    '''
+    """
      softmax function with masking for self-attention
-    '''
+    """
     max_x, _ = x.max(dim=-1, keepdim=True)
     e_x = torch.exp(x - max_x)
     if not (mask is None):
@@ -30,9 +30,10 @@ def softmax(x, mask=None):
 
 
 class ResBlock(nn.Module):
-    '''
+    """
      Resnet block used in parsing network of PRPN
-    '''
+    """
+
     def __init__(self, ninp, nout, dropout, nlayers=1):
         super(ResBlock, self).__init__()
 
@@ -41,15 +42,17 @@ class ResBlock(nn.Module):
         self.drop = nn.Dropout(dropout)
 
         self.res = nn.ModuleList(
-            [nn.Sequential(
-                nn.Linear(ninp, ninp),
-                nn.BatchNorm1d(ninp),
-                nn.ReLU(),
-                nn.Dropout(dropout),
-                nn.Linear(ninp, ninp),
-                nn.BatchNorm1d(ninp),
-            )
-                for _ in range(nlayers)]
+            [
+                nn.Sequential(
+                    nn.Linear(ninp, ninp),
+                    nn.BatchNorm1d(ninp),
+                    nn.ReLU(),
+                    nn.Dropout(dropout),
+                    nn.Linear(ninp, ninp),
+                    nn.BatchNorm1d(ninp),
+                )
+                for _ in range(nlayers)
+            ]
         )
 
     def forward(self, input):
