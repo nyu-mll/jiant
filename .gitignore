@@ -3,6 +3,6 @@
 *.log
 *.*~
 glue_data/
-user_config.sh
+user_config_template.sh
 .idea
 .ipynb_checkpoints/
