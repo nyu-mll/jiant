@@ -8,23 +8,23 @@
 # Will print dataset size, num targets, etc. to stdout, and optionally write
 # stats to a TSV file if -o <file> is given.
 
-import sys
-import os
-import json
-import collections
 import argparse
-from tqdm import tqdm
-
+import collections
+import json
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+import os
+import sys
 
 import pandas as pd
+from tqdm import tqdm
+
 from data import utils
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def analyze_file(fname: str):
-    pd.options.display.float_format = '{:.2f}'.format
+    pd.options.display.float_format = "{:.2f}".format
     log.info("Analyzing file: %s", fname)
     record_iter = utils.load_json_data(fname)
     stats = utils.EdgeProbingDatasetStats()
@@ -35,10 +35,8 @@ def analyze_file(fname: str):
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', dest='output', type=str, default="",
-                        help="Output file (TSV).")
-    parser.add_argument('-i', dest='inputs', type=str, nargs="+",
-                        help="Input files.")
+    parser.add_argument("-o", dest="output", type=str, default="", help="Output file (TSV).")
+    parser.add_argument("-i", dest="inputs", type=str, nargs="+", help="Input files.")
     args = parser.parse_args(args)
 
     all_stats = []
@@ -51,6 +49,6 @@ def main(args):
         df.to_csv(args.output, sep="\t")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
