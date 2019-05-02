@@ -1,5 +1,5 @@
-# Running 'source scripts/export_from_bash.sh' will add the job of running user_config.sh
-# directly to the bash startup script (bashrc for Linux and bash_profile for MacOS).
+# Running 'source scripts/export_from_bash.sh' from the base jiant/ dir will add the job of 
+# running user_config.sh directly to the bash startup script (bashrc for Linux and bash_profile for MacOS).
 
 function changebashpaths() {
 	output="source $(pwd)/user_config.sh"
@@ -18,7 +18,7 @@ function changebashpaths() {
 	esac
 }
 
-read -r -p "Are you sure you want to edit bash file to export paths? (Y/N) " response
+read -r -p "Are you sure you want to edit your bash configuration to set up jiant paths? (Y/N) " response
 if [[ $response =~ ^[Yy]$ ]]
 	then
 		changebashpaths
