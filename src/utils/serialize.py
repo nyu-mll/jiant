@@ -13,7 +13,7 @@ def _serialize(examples, fd, flush_every):
         encoded = base64.b64encode(blob)
         fd.write(encoded)
         fd.write(b"\n")
-        if (i + 1) % flush_every == 0 and hasattr(fd, 'flush'):
+        if (i + 1) % flush_every == 0 and hasattr(fd, "flush"):
             fd.flush()
 
 
@@ -25,7 +25,7 @@ def write_records(examples, filename, flush_every=10000):
       filename: path to file to write
       flush_every: (int), flush to disk after this many examples consumed
     """
-    with open(filename, 'wb') as fd:
+    with open(filename, "wb") as fd:
         _serialize(examples, fd, flush_every)
 
 
@@ -54,7 +54,7 @@ def bytes_to_float(b):
 
     Verified to be uniform, at least over text strings and zero byte strings of varying lengths.
     """
-    return float(crc32(b) & 0xffffffff) / 2**32
+    return float(crc32(b) & 0xFFFFFFFF) / 2 ** 32
 
 
 def read_records(filename, repeatable=False, fraction=None):
@@ -71,8 +71,9 @@ def read_records(filename, repeatable=False, fraction=None):
     Returns:
       iterable, possible repeatable, yielding deserialized Python objects
     """
+
     def _iter_fn():
-        with open(filename, 'rb') as fd:
+        with open(filename, "rb") as fd:
             for line in fd:
                 blob = base64.b64decode(line)
                 if fraction and fraction < 1:
@@ -81,4 +82,5 @@ def read_records(filename, repeatable=False, fraction=None):
                         continue
                 example = pkl.loads(blob)
                 yield example
+
     return RepeatableIterator(_iter_fn) if repeatable else _iter_fn()

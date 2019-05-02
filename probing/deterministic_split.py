@@ -16,36 +16,40 @@
 # For edge probing experiments, this is run using Python 3.6.8
 
 import argparse
+import logging as log
 import os
-import sys
 import random
+import sys
+
 from tqdm import tqdm
 
-import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--seed", dest='seed', type=int, default=42,
-                        help="Random seed.")
-    parser.add_argument('-f', "--fraction", dest="fraction", type=float,
-                        required=True,
-                        help="Fraction to send to first output file.")
-    parser.add_argument("-i", dest="input", type=str, required=True,
-                        help="Input file.")
-    parser.add_argument("-o", dest="outputs", type=str, required=True, nargs=2,
-                        help="Output files.")
+    parser.add_argument("-s", "--seed", dest="seed", type=int, default=42, help="Random seed.")
+    parser.add_argument(
+        "-f",
+        "--fraction",
+        dest="fraction",
+        type=float,
+        required=True,
+        help="Fraction to send to first output file.",
+    )
+    parser.add_argument("-i", dest="input", type=str, required=True, help="Input file.")
+    parser.add_argument(
+        "-o", dest="outputs", type=str, required=True, nargs=2, help="Output files."
+    )
     args = parser.parse_args(args)
     assert (args.fraction >= 0) and (args.fraction <= 1)
 
-    train_fd = open(args.outputs[0], 'w')
-    dev_fd = open(args.outputs[1], 'w')
+    train_fd = open(args.outputs[0], "w")
+    dev_fd = open(args.outputs[1], "w")
     train_ctr = 0
     dev_ctr = 0
     random.seed(args.seed)
-    for line in open(args.input, 'r'):
+    for line in open(args.input, "r"):
         if random.random() <= args.fraction:
             train_fd.write(line)
             train_ctr += 1
@@ -60,6 +64,6 @@ def main(args):
     log.info(f"Dev: {dev_ctr} examples ({dev_frac:.02%})")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)

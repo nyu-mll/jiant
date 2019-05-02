@@ -1,4 +1,5 @@
 import sys
+
 from nltk.tokenize.moses import MosesTokenizer
 
 TOK = MosesTokenizer()
@@ -25,8 +26,9 @@ for line in fi:
             tag_counter += 1
         else:
             for i in range(7):
-                if word + "".join(new_toks[index + 1:index + 1 + i + 1]
-                                  ) == old_toks[tag_counter].replace("&", "&amp;").replace("'", "&apos;"):
+                if word + "".join(new_toks[index + 1 : index + 1 + i + 1]) == old_toks[
+                    tag_counter
+                ].replace("&", "&amp;").replace("'", "&apos;"):
                     for k in range(i + 2):
                         new_tags.append(tags[tag_counter])
                     tag_counter += 1
@@ -42,11 +44,7 @@ for line in fi:
         print("MISMATCH!!!")
 
     fo.write(
-        (" ".join(new_toks) +
-         "\t" +
-         " ".join(new_tags) +
-         "\n").replace(
-            "&amp;",
-            "&").replace(
-            "&apos;",
-            "'"))
+        (" ".join(new_toks) + "\t" + " ".join(new_tags) + "\n")
+        .replace("&amp;", "&")
+        .replace("&apos;", "'")
+    )
