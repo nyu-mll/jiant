@@ -14,7 +14,7 @@ A few things you might want to know about `jiant`:
 
 ## Getting Started
 
-To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial]()! 
+To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)! 
 
 ## Official Documentation
 

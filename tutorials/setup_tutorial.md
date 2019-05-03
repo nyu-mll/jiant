@@ -91,7 +91,7 @@ Now that we've set up the environment, let's get started!
 ### 3.a) Configuring our experiment
 
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch. 
-This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy in config/tutorial.conf, and follow along - we'll explain everything that is in that file in a bit. 
+This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit. 
 
 
 Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file. 
@@ -244,12 +244,12 @@ After running this experiment, you should have in your run directory:
 * a checkpoint of the best model state (based on your scores)
 * a `log.log` file which contains all the logs
 * `params.conf` (a saved version of the parameters used)
-* written predictions for test for each of the target trained tasks (with file names {task_name}-test.tsv
+* written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
 
 Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to. 
 
 And there you have it! Your first experiment.
-If you are looking for where to go next, check out our documentation [here](https://jiant.info/documentation/#/?id=saving-preprocessed-data)!
+If you are looking for where to go next, check out our documentation [here](https://jiant.info/documentation/#/)!
 
 Happy `jiant`ing!
