@@ -18,22 +18,25 @@ To run a simple example demo experiment using data from GLUE:
 
 Follow this [getting started tutorial]()! 
 
-### Submodules
-
-This project uses [git submodules](https://blog.github.com/2016-02-01-working-with-submodules/) to manage some dependencies on other research code, in particular for loading CoVe and the OpenAI transformer model. In order to make sure you get these repos when you download `jiant/`, add `--recursive` to your clone command:
-
-```sh
-git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
-```
-
-If you already cloned and just need to get the submodules, you can run:
-```sh
-git submodule update --init --recursive
-```
 ## Official Documentation
 
 Our official documentation is here: https://jiant.info/documentation#/
  
+
+## Running
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:	
+```sh	
+python main.py --config_file config/demo.conf \
+    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"	
+```	
+will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.	
+ To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)	
+*  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.	
+*  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the GLUE data in a simple default setup.	
+*  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).	
+ To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 	
+
+
 ## Suggested Citation
 
 If you use `jiant` in academic work, please cite it directly:
@@ -86,8 +89,8 @@ Right now, we only support training in two stages. Training in more than two sta
 
 ***How can I pass BERT embeddings straight to the classifier without a sentence encoder? ***
 
-Right now, you need to set skip_embs=1 and sep_embs_for_skip=1 just because of the current way 
-our logic works. We're currently streamlining the logic around sep_embs_for_skip for the 1.0 release!
+Right now, you need to set `skip_embs=1` and `sep_embs_for_skip=1` just because of the current way 
+our logic works. We're currently streamlining the logic around `sep_embs_for_skip` for the 1.0 release!
 
 
 ## Contributing

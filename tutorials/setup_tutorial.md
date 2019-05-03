@@ -3,6 +3,7 @@
 
 Wecome to `jiant`! Let's help get you set up and running a demo experiment!
 
+##1. Install
 
 First off, let's make sure you've the full repository, including all the git submodules.
 
@@ -39,16 +40,27 @@ You will also need to install dependencies for `nltk` if you do not already have
 ```
 python -m nltk.downloader -d  perluniprops nonbreaking_prefixes punkt
 ``` 
-***SB: This still fills my jiant directory with junk... not ideal. Either look into the suggested nltk behavior (or as a very, very hacky marginal workaround, add this to the shared .gitignore).***
 
-This will download perluniprops in your jiant directory so don't forget to add it to your `.gitignore`!
+
+ ## 2. Getting data and setting up our environment 
+ 
+ In this tutorial, we will be working with GLUE data. 
+The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
+
+
+```
+python scripts/download_glue_data.py --data_dir data --tasks all
+```
+
+We also support quite a few other data sources (check [here](https://jiant.info/documentation#/?id=data-sources)  for a list).
+
 
 Finally, you'll need to set a few environment variables in [user_config_template.sh](https://github.com/nyu-mll/jiant/blob/master/user_config_template.sh), which include:
 
 
 * $JIANT_PROJECT_PREFIX: the directory where things like logs and model checkpoints will be saved.
-* $JIANT_DATA_DIR: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. ***SB: We haven't asked them to download any data yet. Move that earlier.***
-* $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) here or fastText (2M) here. ***SB: Link?***
+* $JIANT_DATA_DIR: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. 
+* $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here]() or fastText (2M) [here]().
 
 
 To avoid having your custom paths overwritten by future updates, you should save a copy of this file as `user_config.sh` (or something similar, but `user_config.sh` will be automatically ignored by git.
@@ -74,21 +86,15 @@ from the root of the `jiant` directory, which adds the source command directly t
 
 Now that we've set up the environment, let's get started!
 
+## 3. Running our first experiment 
+
+###3.a) Configuring our experiment
 
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch. 
 This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy in config/tutorial.conf, and follow along - we'll explain everything that is in that file in a bit. 
 
-First, we need to download the data. We already support quite a few data sources (check [here](https://jiant.info/documentation#/?id=data-sources)  for a list). For this instance, we will need to download the GLUE data. 
 
-
-The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/) data:
-
-```
-python scripts/download_glue_data.py --data_dir data --tasks all
-```
-
-
-Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has a lot of documentation on the various parameters. Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file. 
+Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file. 
 
 ```
 include "defaults.conf" 
@@ -97,13 +103,13 @@ include "defaults.conf"
 Some  important options include:
 
 * `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
-* `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage).
+* `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `word_embs`: This is a string specifying the type of word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. 
-* `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining.
+* `word_embs`: This is a string specifying the type of word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. *
+* `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name. 
 * `run_name`, which expects a string of your run name.
-The main differences between an experiment and a run is that all runs in an experiment will have the same preprocessing, while runs his a specific experiment (which may differ from other runs by learning rate or type of sentence encoder, for example, your run name could be `rnn_encoder` for a run with a biLSTM sentence encoder).
+The main differences between an experiment and a run is that all runs in an experiment will have the same preprocessing (which may include tokenization differences), while runs his a specific experiment (which may differ from other runs by learning rate or type of sentence encoder, for example, your run name could be `rnn_encoder` for a run with a biLSTM sentence encoder).
 
 Additionally, let's suppose we want to have parameters specific to the STS-B task. Then, we can simply specify them as here:
 
@@ -178,41 +184,38 @@ python main.py --config_file config/tutorial.conf \
 will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
 
-Now, something you might wonder about is what the many logs you get mean. The logs include:
+###3.b) Understanding the output logs
+
+We do support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly. 
+
+The logs include:
+
 * The process of setting up and loading tasks
 * Restoring checkpoints (if applicable)
 * Printing out the Model architecture
 * Indexing your data into AllenNLP instances for preparation for training.
 * When you get to training stage, updates of the current progress and validation. 
 
-One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks to sample on. 
+One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks based on a parameter you can set in your experiment `weighting_method`, which is automatically set to proportional (so the largerthetask, the larger the probablty it will get sampled for a batch). 
 
 After validating, you will see something like this:
 ```
-05/02 10:00:45 PM: 	Best macro_avg: 0.447
-05/02 10:00:45 PM: 	# bad epochs: 0
-05/02 10:00:45 PM: Statistic: mrpc_loss
-05/02 10:00:45 PM: 	training: 0.577184
-05/02 10:00:45 PM: 	validation: 1.190689
-05/02 10:00:45 PM: Statistic: sst_loss
-05/02 10:00:45 PM: 	training: 0.715676
-05/02 10:00:45 PM: 	validation: 0.695592
-05/02 10:00:45 PM: Statistic: macro_avg
-05/02 10:00:45 PM: 	validation: 0.447327
-05/02 10:00:45 PM: Statistic: micro_avg
-05/02 10:00:45 PM: 	validation: 0.355272
-05/02 10:00:45 PM: Statistic: mrpc_acc_f1
-05/02 10:00:45 PM: 	training: 0.704310
-05/02 10:00:45 PM: 	validation: 0.748025
-05/02 10:00:45 PM: Statistic: mrpc_accuracy
-05/02 10:00:45 PM: 	training: 0.650000
-05/02 10:00:45 PM: 	validation: 0.683824
-				.
+05/03 09:54:26 AM: Best result seen so far for sst.
+05/03 09:54:26 AM: Best result seen so far for micro.
+05/03 09:54:26 AM: Best result seen so far for macro.
+05/03 09:54:26 AM: Updating LR scheduler:
+05/03 09:54:26 AM:  Best result seen so far for macro_avg: 0.461
+05/03 09:54:26 AM:  # epochs without improvement: 0
+05/03 09:54:26 AM: mrpc_loss: training: 0.519646 validation: 1.319582
+05/03 09:54:26 AM: sst_loss: training: 0.716894 validation: 0.686724
+05/03 09:54:26 AM: macro_avg: validation: 0.460515
+05/03 09:54:26 AM: micro_avg: validation: 0.373241
+05/03 09:54:26 AM: mrpc_acc_f1: training: 0.704310 validation: 0.748025
+05/03 09:54:26 AM: mrpc_accuracy: training: 0.650000 validation: 0.683824
                 .
                 .
-05/02 10:00:45 PM: Statistic: sst_accuracy
-05/02 10:00:45 PM: 	training: 0.519444
-05/02 10:00:45 PM: 	validation: 0.520642
+                .
+05/03 09:54:26 AM: sst_accuracy: training: 0.494444 validation: 0.547018
 
 ```
 
@@ -224,17 +227,17 @@ Lastly, we will evaluate on the target tasks, and write the results for test in 
 You should see something like this:
 
 ```
-04/24 06:06:38 PM: Evaluating...
-04/24 06:06:38 PM: Evaluating on: sts-b, split: val
-04/24 06:07:08 PM: 	Task sts-b: batch 164
-04/24 06:07:12 PM: Task 'sts-b': sorting predictions by 'idx'
-04/24 06:07:12 PM: Finished evaluating on: sts-b
-04/24 06:07:12 PM: Evaluating on: wnli, split: val
-04/24 06:07:14 PM: Task 'wnli': sorting predictions by 'idx'
-04/24 06:07:14 PM: Finished evaluating on: wnli
-04/24 06:07:14 PM: Writing results for split 'val' to coreference_exp/jiant-demo/results.tsv
-04/24 06:07:14 PM: micro_avg: 0.680, macro_avg: 0.624, sts-b_corr: 0.685, sts-b_pearsonr: 0.683, sts-b_spearmanr: 0.688, wnli_accuracy: 0.563
-04/24 06:07:14 PM: Done!
+05/03 06:06:38 PM: Evaluating...
+05/03 06:06:38 PM: Evaluating on: sts-b, split: val
+05/03 06:07:08 PM:  Task sts-b: batch 164
+05/03 06:07:12 PM: Task 'sts-b': sorting predictions by 'idx'
+05/03 06:07:12 PM: Finished evaluating on: sts-b
+05/03 06:07:12 PM: Evaluating on: wnli, split: val
+05/03 06:07:14 PM: Task 'wnli': sorting predictions by 'idx'
+05/03 06:07:14 PM: Finished evaluating on: wnli
+05/03 06:07:14 PM: Writing results for split 'val' to coreference_exp/jiant-demo/results.tsv
+05/03 06:07:14 PM: micro_avg: 0.680, macro_avg: 0.624, sts-b_corr: 0.685, sts-b_pearsonr: 0.683, sts-b_spearmanr: 0.688, wnli_accuracy: 0.563
+05/03 06:07:14 PM: Done!
 ```
 
 After running this experiment, you should have in your run directory:
