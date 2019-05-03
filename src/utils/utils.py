@@ -83,7 +83,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
         for task in skip_task_models:
             new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
             if new_keys_to_skip:
-                logging.info("Skipping task-specific parameters for task: %s" % task)
+                logging.info("Not loading task-specific parameters for task: %s" % task)
                 keys_to_skip += new_keys_to_skip
             else:
                 logging.info("Found no task-specific parameters to skip for task: %s" % task)

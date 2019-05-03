@@ -283,15 +283,17 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
     model = model.cuda() if args.cuda >= 0 else model
+    log.info("Model specification:")
     log.info(model)
     param_count = 0
     trainable_param_count = 0
+    log.info("Trainable parameters:")
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
             log.info(
-                ">> Trainable param %s: %s = %d", name, str(param.size()), np.prod(param.size())
+                "%s: Trainable parameter count %d with %s", name, np.prod(param.size()), str(param.size())
             )
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(ct=trainable_param_count))

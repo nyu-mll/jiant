@@ -110,8 +110,8 @@ def _index_split(task, split, indexers, vocab, record_file):
         vocab: Vocabulary instance
         record_file: (string) file to write serialized Instances to
     """
-    log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-    log.info("%s: indexing from scratch", log_prefix)
+    log_prefix = "\tTask %s (%s)" % (task.name, split)
+    log.info("%s: Indexing from scratch.", log_prefix)
     split_text = task.get_split_text(split)
     instance_iter = task.process_split(split_text, indexers)
     if hasattr(instance_iter, "__len__"):  # if non-lazy
@@ -139,7 +139,7 @@ def _index_split(task, split, indexers, vocab, record_file):
 
     # Actually call generators and stream to disk.
     serialize.write_records(_indexed_instance_generator(instance_iter, vocab), record_file)
-    log.info("%s: saved %d instances to %s", log_prefix, _instance_counter, record_file)
+    log.info("%s: Saved %d instances to %s", log_prefix, _instance_counter, record_file)
 
 
 def _find_cached_file(
@@ -181,7 +181,7 @@ def _build_embeddings(args, vocab, emb_file: str):
     using precomputed fastText / GloVe embeddings. """
 
     # Load all the word embeddings based on vocabulary
-    log.info("\tBuilding embeddings from scratch")
+    log.info("\tBuilding embeddings from scratch.")
     word_v_size, unk_idx = vocab.get_vocab_size("tokens"), vocab.get_token_index(vocab._oov_token)
     embeddings = np.random.randn(word_v_size, args.d_word)
     with io.open(
@@ -207,7 +207,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     # NOTE: task-specific target vocabulary should be counted in the task object
     # and provided via `task.all_labels()`. The namespace should be task-specific,
     # i.e. not something generic like "targets".
-    log.info("\tBuilding vocab from scratch")
+    log.info("\tBuilding vocab from scratch.")
     max_v_sizes = {"word": args.max_word_v_size, "char": args.max_char_v_size}
     word2freq, char2freq = get_words(tasks)
     vocab = get_vocab(word2freq, char2freq, max_v_sizes)
@@ -339,7 +339,6 @@ def build_tasks(args):
         task.train_data = None
         task.val_data = None
         task.test_data = None
-        log.info("\tTask '%s': cleared in-memory data.", task.name)
 
     log.info("\tFinished indexing tasks")
 
@@ -353,7 +352,7 @@ def build_tasks(args):
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if task.name in pretrain_task_names:
-            log.info("Creating trimmed pretraining-only version of " + task.name + " train.")
+            log.info("\tCreating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(
                 task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
             )
@@ -361,14 +360,12 @@ def build_tasks(args):
         # When using target_train_data_fraction, we need modified iterators
         # only for training datasets at do_target_task_training time.
         if task.name in target_task_names:
-            log.info("Creating trimmed train-for-target-only version of " + task.name + " train.")
+            log.info("\tCreating trimmed target-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(
                 task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
             )
             target_tasks.append(task)
 
-        log.info("\tLazy-loading indexed data for task='%s' from %s", task.name, preproc_dir)
-    log.info("All tasks initialized with data iterators.")
     log.info("\t  Training on %s", ", ".join(pretrain_task_names))
     log.info("\t  Evaluating on %s", ", ".join(target_task_names))
     return pretrain_tasks, target_tasks, vocab, word_embs
@@ -398,7 +395,7 @@ def _get_task(name, args, data_path, scratch_path):
         task = pkl.load(open(pkl_path, "rb"))
         log.info("\tLoaded existing task %s", name)
     else:
-        log.info("\tCreating task %s from scratch", name)
+        log.info("\tCreating task %s from scratch.", name)
         # These tasks take an additional kwarg.
         if name == "nli-prob" or name == "nli-alt":
             # TODO: remove special case, replace with something general
@@ -446,7 +443,7 @@ def get_tasks(args):
         log.info(
             "\tTask '%s': %s",
             task.name,
-            " ".join(("%s=%d" % kv for kv in task.example_counts.items())),
+            " ".join(("|%s|=%d" % kv for kv in task.example_counts.items())),
         )
 
     log.info("\tFinished loading tasks: %s.", " ".join([task.name for task in tasks]))
@@ -469,7 +466,7 @@ def get_words(tasks):
         return
 
     for task in tasks:
-        log.info("\tCounting words for task: '%s'", task.name)
+        log.info("\tCounting words for task %s.", task.name)
         if isinstance(task, MTTask):
             for src_sent, tgt_sent in task.get_sentences():
                 update_vocab_freqs(src_sent)
@@ -486,7 +483,6 @@ def get_words(tasks):
             for sentence in task.target_sentences:
                 update_target_vocab_freqs(sentence)
 
-    log.info("\tFinished counting words")
     return word2freq, char2freq
 
 
