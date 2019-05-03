@@ -4,10 +4,10 @@ import os
 import sys
 
 
-def pad(s, l=30):
-    if len(s) > l:
-        return s[:l]
-    return s + " " * (l - len(s))
+def pad(s, le=30):
+    if len(s) > le:
+        return s[:le]
+    return s + " " * (le - len(s))
 
 
 def get_metadata(data_dir):
