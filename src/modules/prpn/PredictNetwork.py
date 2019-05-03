@@ -1,15 +1,15 @@
-'''
+"""
 Prediction Network of PRPN, that predicts the language model probabilities
 Reference: Parsing-Reading-Predict Networks (PRPN; Shen et al., 2018)
 All the modules in this file are taken without change from: https://github.com/yikangshen/PRPN
-'''
+"""
 import math
 
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from .blocks import softmax, ResBlock
+from .blocks import ResBlock, softmax
 
 
 class PredictNetwork(nn.Module):
@@ -23,20 +23,18 @@ class PredictNetwork(nn.Module):
 
         self.drop = nn.Dropout(dropout)
 
-        self.projector_pred = nn.Sequential(nn.Dropout(dropout),
-                                            nn.Linear(ninp, ninp),
-                                            nn.Dropout(dropout))
+        self.projector_pred = nn.Sequential(
+            nn.Dropout(dropout), nn.Linear(ninp, ninp), nn.Dropout(dropout)
+        )
 
         if nlayers > 0:
-            self.res = ResBlock(ninp*2, nout, dropout, nlayers)
+            self.res = ResBlock(ninp * 2, nout, dropout, nlayers)
         else:
             self.res = None
 
-        self.ffd = nn.Sequential(nn.Dropout(dropout),
-                                 nn.Linear(ninp * 2, nout),
-                                 nn.BatchNorm1d(nout),
-                                 nn.Tanh()
-                                 )
+        self.ffd = nn.Sequential(
+            nn.Dropout(dropout), nn.Linear(ninp * 2, nout), nn.BatchNorm1d(nout), nn.Tanh()
+        )
 
     def forward(self, input, input_memory):
         input = torch.cat([input, input_memory], dim=1)
@@ -57,5 +55,5 @@ class PredictNetwork(nn.Module):
 
     def init_hidden(self, bsz):
         weight = next(self.parameters()).data
-        self.ones = Variable(weight.new(bsz, 1).zero_() + 1.)
+        self.ones = Variable(weight.new(bsz, 1).zero_() + 1.0)
         return Variable(weight.new(bsz, self.nslots, self.ninp).zero_())

@@ -1,14 +1,13 @@
-from typing import Dict, Union
 import logging
+from typing import Dict, Union
 
-from overrides import overrides
 import numpy
 import torch
-from torch.autograd import Variable
-
+from allennlp.common.checks import ConfigurationError
 from allennlp.data.fields.field import Field
 from allennlp.data.vocabulary import Vocabulary
-from allennlp.common.checks import ConfigurationError
+from overrides import overrides
+from torch.autograd import Variable
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -38,9 +37,7 @@ class NumericField(Field[numpy.ndarray]):
         step.  If this is ``False`` and your labels are not strings, this throws a ``ConfigurationError``.
     """
 
-    def __init__(self,
-                 label: Union[float, int],
-                 label_namespace: str = 'labels') -> None:
+    def __init__(self, label: Union[float, int], label_namespace: str = "labels") -> None:
         self.label = label
         self._label_namespace = label_namespace
         self._label_id = numpy.array(label, dtype=numpy.float32)
@@ -49,7 +46,9 @@ class NumericField(Field[numpy.ndarray]):
                 "Your label namespace was '%s'. We recommend you use a namespace "
                 "ending with 'labels' or 'tags', so we don't add UNK and PAD tokens by "
                 "default to your vocabulary.  See documentation for "
-                "`non_padded_namespaces` parameter in Vocabulary.", self._label_namespace)
+                "`non_padded_namespaces` parameter in Vocabulary.",
+                self._label_namespace,
+            )
 
     # idk what this is for
     @overrides
@@ -61,13 +60,15 @@ class NumericField(Field[numpy.ndarray]):
     def get_padding_lengths(self) -> Dict[str, int]:  # pylint: disable=no-self-use
         return {}
 
-    def as_array(self, padding_lengths: Dict[str, int]) -> numpy.ndarray:  # pylint: disable=unused-argument
+    def as_array(
+        self, padding_lengths: Dict[str, int]
+    ) -> numpy.ndarray:  # pylint: disable=unused-argument
         return numpy.asarray([self._label_id])
 
     @overrides
-    def as_tensor(self, padding_lengths: Dict[str, int],
-                  cuda_device: int = -1,
-                  for_training: bool = True) -> torch.Tensor:  # pylint: disable=unused-argument
+    def as_tensor(
+        self, padding_lengths: Dict[str, int], cuda_device: int = -1, for_training: bool = True
+    ) -> torch.Tensor:  # pylint: disable=unused-argument
         label_id = self._label_id.tolist()
         tensor = Variable(torch.FloatTensor([label_id]), volatile=not for_training)
         return tensor if cuda_device == -1 else tensor.cuda(cuda_device)

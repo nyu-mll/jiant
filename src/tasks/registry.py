@@ -21,7 +21,9 @@ def register_task(name, rel_path, **kw):
     class MyTask(SingleClassificationTask):
         ...
     """
+
     def _wrap(cls):
         REGISTRY[name] = (cls, rel_path, kw)
         return cls
+
     return _wrap
