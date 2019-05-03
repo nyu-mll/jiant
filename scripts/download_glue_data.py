@@ -1,5 +1,8 @@
 ''' Script for downloading all GLUE data.
 
+Example usage:
+    python download_glue_data.py --data_dir data --tasks all
+
 Note: for legal reasons, we are unable to host MRPC.
 You can either use the version hosted by the SentEval team, which is already tokenized,
 or you can download the original data from (https://download.microsoft.com/download/D/4/6/D46FF87A-F6B9-4252-AA8B-3604ED519838/MSRParaphraseCorpus.msi) and extract the data from it manually.
@@ -13,8 +16,6 @@ cat MRPC/_D7B391F9EAFF4B1B8BCE8F21B20B1B61 | tr -d $'\r' > MRPC/msr_paraphrase_t
 rm MRPC/_*
 rm MSRParaphraseCorpus.msi
 
-1/30/19: It looks like SentEval is no longer hosting their extracted and tokenized MRPC data, so you'll need to download the data from the original source for now.
-2/11/19: It looks like SentEval actually *is* hosting the extracted data. Hooray!
 '''
 
 import os
