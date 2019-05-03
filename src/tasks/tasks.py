@@ -1168,13 +1168,14 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-@register_task("mnli-diagnostic", rel_path="MNLI/")
-class MultiNLIDiagnosticTask(PairClassificationTask):
-    """ Task class for diagnostic on MNLI"""
+@register_task('glue-diagnostic', rel_path='MNLI/', n_classes=3)
+@register_task('superglue-diagnostic', rel_path='RTE/', n_classes=2)
+class GLUEDiagnosticTask(PairClassificationTask):
+    ''' Task class for GLUE/SuperGLUE diagnostic data '''
 
-    def __init__(self, path, max_seq_len, name, **kw):
-        super().__init__(name, n_classes=3, **kw)
-        self.load_data_and_create_scorers(path, max_seq_len)
+    def __init__(self, path, max_seq_len, name, n_classes, **kw):
+        super().__init__(name, n_classes, **kw)
+        self.load_data_and_create_scorers(path, max_seq_len, n_classes)
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -1182,9 +1183,9 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
             + self.val_data_text[1]
         )
 
-    def load_data_and_create_scorers(self, path, max_seq_len):
-        """load MNLI diagnostics data. The tags for every column are loaded as indices.
-        They will be converted to bools in preprocess_split function"""
+    def load_data_and_create_scorers(self, path, max_seq_len, n_classes):
+        '''load diagnostics data. The tags for every column are loaded as indices.
+        They will be converted to bools in preprocess_split function'''
 
         # Will create separate scorer for every tag. tag_group is the name of the
         # column it will have its own scorer
@@ -1196,7 +1197,13 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
                     continue
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
-        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        if n_classes == 2:
+            targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 0}
+        elif n_classes == 3:
+            targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        else:
+            raise ValueError("Invalid number of classes for NLI task")
+
         diag_data_dic = load_diagnostic_tsv(
             self._tokenizer_name,
             os.path.join(path, "diagnostic-full.tsv"),
@@ -1227,14 +1234,14 @@ class MultiNLIDiagnosticTask(PairClassificationTask):
         )
         self.val_data_text = self.train_data_text
         self.test_data_text = self.train_data_text
-        log.info("\tFinished loading MNLI Diagnostics data.")
+        log.info("\tFinished loading diagnostic data.")
 
         # TODO: use FastMatthews instead to save memory.
         create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, "lex_sem")
         create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
-        log.info("\tFinished creating Score functions for Diagnostics data.")
+        log.info("\tFinished creating score functions for diagnostic data.")
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the

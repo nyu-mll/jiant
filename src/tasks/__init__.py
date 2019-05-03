@@ -21,7 +21,7 @@ ALL_GLUE_TASKS = [
     "qnli",
     "rte",
     "wnli",
-    "mnli-diagnostic",
+    "glue-diagnostic",
 ]
 
 
@@ -31,7 +31,9 @@ ALL_SUPERGLUE_TASKS = [
     "multirc",
     "rte-superglue",
     "winograd-coreference",
-    "wic"]
+    "wic",
+    "superglue-diagnostic"
+]
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
