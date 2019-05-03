@@ -119,7 +119,8 @@ def evaluate(
         all_preds[task.name] = task_preds
         log.info("Finished evaluating on: %s", task.name)
 
-    all_metrics["micro_avg"] /= max(n_examples_overall, 1) # hack for diagnostics
+    # hack for diagnostics
+    all_metrics["micro_avg"] /= max(n_examples_overall, 1)
     all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
@@ -168,9 +169,9 @@ def write_preds(
             _write_wic_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
-
         elif isinstance(task, GLUEDiagnosticTask):
             # glue-diagnostic is caught above by being in ALL_GLUE_TASKS
+            # currently this only catches superglue-diagnostic
             _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
