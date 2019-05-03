@@ -418,7 +418,7 @@ def _get_task(name, args, data_path, scratch_path):
     return task
 
 
-def get_skeletal_task(task_name, args):
+def get_task_without_loading_data(task_name, args):
     """ Build a task without loading data """
     task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
     task = task_cls(
