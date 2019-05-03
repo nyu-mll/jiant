@@ -1,14 +1,17 @@
 """Task definitions for language modeling tasks."""
+import json
+import logging as log
 import math
 import os
-from typing import Iterable, Sequence, Type
+from typing import Any, Dict, Iterable, List, Sequence, Type
 
 # Fields for instance processing
-from allennlp.data import Instance
+from allennlp.data import Instance, Token
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
 from ..utils.data_loaders import process_sentence
+from ..utils.utils import truncate
 from .registry import register_task
 from .tasks import (
     UNK_TOK_ALLENNLP,
@@ -56,7 +59,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for _ in open(split_path))
+            example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
@@ -67,11 +70,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         nll = self.scorer1.get_metric(reset)
         return {"perplexity": math.exp(nll)}
 
-    def load_data(self):
-        # Data is exposed as iterable: no preloading
-        pass
-
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """Loading data file and tokenizing the text
         Args:
             path: (str) data file path
@@ -90,16 +89,15 @@ class LanguageModelingTask(SequenceGenerationTask):
             indexers: (Indexer object) indexer to index input words
         """
 
-        def _make_instance(sent_):
+        def _make_instance(sent):
             """ Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            d = {
-                "input": sentence_to_text_field(sent_, indexers),
-                "targs": sentence_to_text_field(sent_[1:] + [sent_[0]], self.target_indexer),
-                "targs_b": sentence_to_text_field([sent_[-1]] + sent_[:-1], self.target_indexer),
-            }
+            d = {}
+            d["input"] = sentence_to_text_field(sent, indexers)
+            d["targs"] = sentence_to_text_field(sent[1:] + [sent[0]], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-1], self.target_indexer)
             return Instance(d)
 
         for sent in split:
@@ -110,7 +108,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.get_data_iter(self.files_by_split[split])
+        return self.load_data(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -120,7 +118,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent in self.get_data_iter(path):
+            for sent in self.load_data(path):
                 yield sent
 
 
@@ -131,7 +129,7 @@ class WikiTextLMTask(LanguageModelingTask):
     See base class: LanguageModelingTask
     """
 
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """ Rather than return a whole list of examples, stream them """
         nonatomics_toks = [UNK_TOK_ALLENNLP, "<unk>"]
         with open(path) as txt_fh:
