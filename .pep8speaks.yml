@@ -12,7 +12,7 @@ no_blank_comment: False  # If True, no comment is made on PR without any errors.
 message:  # Customize the comment made by the bot
     opened:  # Messages when a new PR is submitted
                 # The keyword {name} is converted into the author's username
-        footer: "You can automatically repair most issues by commenting `@pep8speaks pep8ify` on GitHub or by locally running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
+        footer: "You can repair most issues by installing [black](https://github.com/ambv/black) and running: `black -l 100 ./*`. If you contribute often, have a look at the 'Contributing' section of the [README](https://github.com/nyu-mll/jiant) for instructions on doing this automatically."
                 # The messages can be written as they would over GitHub
     updated:  # Messages when new commits are added to the PR
-        footer: "You can automatically repair most issues by locally running: `python -m autopep8 --max-line-length 100  --in-place --aggressive  --aggressive  ./*.py ./*/*.py ./*/*/*.py`"
+        footer: "You can repair most issues by installing [black](https://github.com/ambv/black) and running: `black -l 100 ./*`. If you contribute often, have a look at the 'Contributing' section of the [README](https://github.com/nyu-mll/jiant) for instructions on doing this automatically."

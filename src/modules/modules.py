@@ -222,7 +222,7 @@ class SentenceEncoder(Model):
         ] and "_elmo" in [
             name for name, _ in self._text_field_embedder.token_embedder_elmo.named_children()
         ]:
-            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()  # noqa # eek.
         if isinstance(self._phrase_layer, BiLMEncoder):
             self._phrase_layer.reset_states()
 
