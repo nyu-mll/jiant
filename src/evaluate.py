@@ -11,7 +11,13 @@ import pandas as pd
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, RTESuperGLUETask, WiCTask, GLUEDiagnosticTask
+from .tasks.tasks import (
+    CommitmentTask,
+    RTESuperGLUETask,
+    WiCTask,
+    GLUEDiagnosticTask,
+    WinogradCoreferenceTask,
+)
 from .tasks.qa import MultiRCTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
@@ -48,7 +54,10 @@ def evaluate(
     FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "qst_idx", "ans_idx"]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
-        tasks_module.ALL_GLUE_TASKS + ["wmt"] + tasks_module.ALL_COLA_NPI_TASKS
+        tasks_module.ALL_GLUE_TASKS
+        + ["wmt"]
+        + tasks_module.ALL_SUPERGLUE_TASKS
+        + tasks_module.ALL_COLA_NPI_TASKS
     )
     model.eval()
     iterator = BasicIterator(batch_size)
@@ -169,6 +178,10 @@ def write_preds(
             _write_wic_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, WinogradCoreferenceTask):
+            _write_winograd_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, GLUEDiagnosticTask):
             # glue-diagnostic is caught above by being in ALL_GLUE_TASKS
             # currently this only catches superglue-diagnostic
@@ -207,6 +220,7 @@ SUPERGLUE_NAME_MAP = {
     "wic": "WiC",
     "superglue-diagnostic": "AX",
 }
+
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
@@ -275,6 +289,25 @@ def _write_wic_preds(
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 
+def _write_winograd_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for Winograd Coreference task.  """
+    pred_map = {0: "False", 1: "True"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": pred_map[row["preds"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
 def _write_commitment_preds(
     task: str,
     preds_df: pd.DataFrame,
@@ -307,10 +340,15 @@ def _write_copa_preds(
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
-                         pred_dir: str, split_name: str,
-                         strict_glue_format: bool = False):
-    ''' Write predictions for MultiRC task. '''
+
+def _write_multirc_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for MultiRC task. """
     trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
@@ -327,10 +365,15 @@ def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
                 preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-def _write_rte_preds(task: str, preds_df: pd.DataFrame,
-                     pred_dir: str, split_name: str,
-                     strict_glue_format: bool = False):
-    ''' Write predictions for RTE task in SuperGLUE prediction format.  '''
+
+def _write_rte_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for RTE task in SuperGLUE prediction format.  """
     trg_map = {0: "not_entailment", 1: "entailment"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
@@ -341,10 +384,15 @@ def _write_rte_preds(task: str, preds_df: pd.DataFrame,
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
-def _write_diagnostics_preds(task: str, preds_df: pd.DataFrame,
-                            pred_dir: str, split_name: str,
-                            strict_glue_format: bool = False):
-    ''' Write predictions for GLUE/SuperGLUE diagnostics task.  '''
+
+def _write_diagnostics_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for GLUE/SuperGLUE diagnostics task.  """
 
     if task.n_classes == 2:
         pred_map = {0: "not_entailment", 1: "entailment"}
