@@ -16,8 +16,7 @@ A few things you might want to know about `jiant`:
 
 To run a simple example demo experiment using data from GLUE:
 
-1. Clone `jiant` and its submodules.
-2. Follow this [Get Started tutorial]()! 
+Follow this [getting started tutorial]()! 
 
 ### Submodules
 
