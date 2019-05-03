@@ -14,9 +14,7 @@ A few things you might want to know about `jiant`:
 
 ## Getting Started
 
-To run a simple example demo experiment using data from GLUE:
-
-Follow this [getting started tutorial]()! 
+To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial]()! 
 
 ## Official Documentation
 
@@ -24,7 +22,7 @@ Our official documentation is here: https://jiant.info/documentation#/
  
 
 ## Running
-To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. You can use the `--overrides` flag to override specific variables. For example:	
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:	
 ```sh	
 python main.py --config_file config/demo.conf \
     --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"	
@@ -33,7 +31,7 @@ will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
  To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)	
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.	
 *  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the GLUE data in a simple default setup.	
-*  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).	
+*  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip)..	
  To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 	
 
 
@@ -70,30 +68,6 @@ This package is released under the [MIT License](LICENSE.md). The material in th
 ## Getting Help
 
 Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
-
-## FAQs
-
-***It seems like my preproc/{task}\_\_{split}.data has nothing in it!***
-
-This probably means that you probably ran the script before downloading the data for that task. Thus, delete the file from preproc and then run main.py again to build the data splits from scratch.
-
-***How can I pass BERT embeddings straight to the classifier without a sentence encoder?***
-
-Right now, you need to set `skip_embs=1` and `sep_embs_for_skip=1` just because of the current way 
-our logic works. We're currently streamlining the logic around `sep_embs_for_skip` for the 1.0 release!
-
-
-***How can I do STILTS-style training?***
-
-Right now, we only support training in two stages. Training in more than two stages is possible, but will require you to divide your training up into multiple runs. For instance, assume you want to run multitask training on task set A, and then train on task set B, and finally fine-tune on task set C. You would perform the following:
-- First run: pretrain on task set A
-   - pretrain_tasks=“task_a1,task_a2”, target_tasks=“”
-- Second run: load checkpoints, and train on task set B and then C:
-   - load_model = 1
-   - load_target_train_checkpoint_arg=/path/to/saved/run
-   - pretrain_tasks=“task_b1,task_b2, target_tasks=task_c1,task_c2”
-
-
 
 ## Contributing
 
