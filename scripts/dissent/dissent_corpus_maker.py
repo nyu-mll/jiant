@@ -31,7 +31,7 @@ def alphanum_core(string):
         if any(c.isalpha() for c in word):  # re.search('[a-zA-Z0-9]', word) == 1:
             final_has_letters = word_ind
 
-    return " ".join(sentence_new[:final_has_letters + 1])
+    return " ".join(sentence_new[: final_has_letters + 1])
 
 
 def external_punc_remover(string):
@@ -62,12 +62,8 @@ def external_punc_remover(string):
 
 
 def parent_function(
-        parent_list,
-        this_index,
-        desired_parent,
-        rel_list,
-        opaque_index_1,
-        opaque_index_2):
+    parent_list, this_index, desired_parent, rel_list, opaque_index_1, opaque_index_2
+):
     if this_index == desired_parent:
         return -1
     # or rel_list[this_index] == "conj" or rel_list[this_index] == "advcl" or
@@ -86,12 +82,8 @@ def get_all_descendants(word_list, parent_list, index, rel_list, opaque_index_1,
         done = 0
         while not done:
             this_par = parent_function(
-                parent_list,
-                this_index,
-                index,
-                rel_list,
-                opaque_index_1,
-                opaque_index_2)
+                parent_list, this_index, index, rel_list, opaque_index_1, opaque_index_2
+            )
             if this_par == 0 or this_par == -1:
                 in_out = this_par * -1
                 binary.append(in_out)
@@ -166,7 +158,7 @@ def get_all_descendants(word_list, parent_list, index, rel_list, opaque_index_1,
         if any(c.isalpha() for c in word):  # re.search('[a-zA-Z0-9]', word) == 1:
             final_has_letters = word_ind
 
-    return " ".join(sentence_new[:final_has_letters + 1])
+    return " ".join(sentence_new[: final_has_letters + 1])
 
 
 def has_subj(rel_list, parent_list, index):
@@ -195,38 +187,49 @@ for line in wiki:
 
             for index, word in enumerate(word_list):
 
-                if word.lower() == "because" or word.lower() == "if" or word.lower(
-                ) == "before" or word.lower() == "so" or word.lower() == "though":
+                if (
+                    word.lower() == "because"
+                    or word.lower() == "if"
+                    or word.lower() == "before"
+                    or word.lower() == "so"
+                    or word.lower() == "though"
+                ):
                     if rel_list[index] == "mark" or rel_list[index] == "advmod":
                         parent = parent_list[index] - 1
                         grandparent = parent_list[parent] - 1
-                        if rel_list[parent] == "advcl" and has_subj(
-                                rel_list, parent_list, grandparent) and has_subj(
-                                rel_list, parent_list, parent):
+                        if (
+                            rel_list[parent] == "advcl"
+                            and has_subj(rel_list, parent_list, grandparent)
+                            and has_subj(rel_list, parent_list, parent)
+                        ):
                             sent1 = get_all_descendants(
-                                word_list, parent_list, grandparent, rel_list, index, parent)
+                                word_list, parent_list, grandparent, rel_list, index, parent
+                            )
                             sent2 = get_all_descendants(
-                                word_list, parent_list, parent, rel_list, index, index)
+                                word_list, parent_list, parent, rel_list, index, index
+                            )
                             connector = word
                             fo.write(
-                                external_punc_remover(sent1) +
-                                "\t" +
-                                external_punc_remover(sent2) +
-                                "\t" +
-                                connector +
-                                "\n")
+                                external_punc_remover(sent1)
+                                + "\t"
+                                + external_punc_remover(sent2)
+                                + "\t"
+                                + connector
+                                + "\n"
+                            )
                         elif grandparent == -1:
                             if index == 0:
                                 sent1 = prev_sent
                                 sent2 = " ".join(word_list[1:])
                                 connector = word
                                 fo.write(
-                                    external_punc_remover(sent1) +
-                                    "\t" +
-                                    external_punc_remover(sent2) +
-                                    "\t" +
-                                    connector +
-                                    "\n")
+                                    external_punc_remover(sent1)
+                                    + "\t"
+                                    + external_punc_remover(sent2)
+                                    + "\t"
+                                    + connector
+                                    + "\n"
+                                )
                             # pass # Here is where it would be previous sentence
                     else:
                         continue
@@ -234,33 +237,39 @@ for line in wiki:
                     if rel_list[index] == "advmod":
                         parent = parent_list[index] - 1
                         grandparent = parent_list[parent] - 1
-                        if rel_list[parent] == "advcl" and has_subj(
-                                rel_list, parent_list, grandparent) and has_subj(
-                                rel_list, parent_list, parent):
+                        if (
+                            rel_list[parent] == "advcl"
+                            and has_subj(rel_list, parent_list, grandparent)
+                            and has_subj(rel_list, parent_list, parent)
+                        ):
                             sent1 = get_all_descendants(
-                                word_list, parent_list, grandparent, rel_list, index, parent)
+                                word_list, parent_list, grandparent, rel_list, index, parent
+                            )
                             sent2 = get_all_descendants(
-                                word_list, parent_list, parent, rel_list, index, index)
+                                word_list, parent_list, parent, rel_list, index, index
+                            )
                             connector = word
                             fo.write(
-                                external_punc_remover(sent1) +
-                                "\t" +
-                                external_punc_remover(sent2) +
-                                "\t" +
-                                connector +
-                                "\n")
+                                external_punc_remover(sent1)
+                                + "\t"
+                                + external_punc_remover(sent2)
+                                + "\t"
+                                + connector
+                                + "\n"
+                            )
                         elif False:  # grandparent == -1:
                             if index == 0:
                                 sent1 = prev_sent
                                 sent2 = " ".join(word_list[1:])
                                 connector = word
                                 fo.write(
-                                    external_punc_remover(sent1) +
-                                    "\t" +
-                                    external_punc_remover(sent2) +
-                                    "\t" +
-                                    connector +
-                                    "\n")
+                                    external_punc_remover(sent1)
+                                    + "\t"
+                                    + external_punc_remover(sent2)
+                                    + "\t"
+                                    + connector
+                                    + "\n"
+                                )
 
                             # pass # Here is where it would be previous sentence
                     else:
@@ -272,20 +281,27 @@ for line in wiki:
                         if has_subj(rel_list, parent_list, parent):
                             has_conjunct = 0
                             for rel_index, rel in enumerate(rel_list):
-                                if rel == "conj" and parent_list[rel_index] - 1 == parent and has_subj(
-                                        rel_list, parent_list, rel_index) and rel_index > index:
+                                if (
+                                    rel == "conj"
+                                    and parent_list[rel_index] - 1 == parent
+                                    and has_subj(rel_list, parent_list, rel_index)
+                                    and rel_index > index
+                                ):
                                     sent1 = get_all_descendants(
-                                        word_list, parent_list, parent, rel_list, index, index)
+                                        word_list, parent_list, parent, rel_list, index, index
+                                    )
                                     sent2 = get_all_descendants(
-                                        word_list, parent_list, rel_index, rel_list, index, index)
+                                        word_list, parent_list, rel_index, rel_list, index, index
+                                    )
                                     connector = word
                                     fo.write(
-                                        external_punc_remover(sent1) +
-                                        "\t" +
-                                        external_punc_remover(sent2) +
-                                        "\t" +
-                                        connector +
-                                        "\n")
+                                        external_punc_remover(sent1)
+                                        + "\t"
+                                        + external_punc_remover(sent2)
+                                        + "\t"
+                                        + connector
+                                        + "\n"
+                                    )
                                     has_conjunct = 1
                             if not has_conjunct:
                                 if index == 0:
@@ -293,12 +309,13 @@ for line in wiki:
                                     sent2 = " ".join(word_list[1:])
                                     connector = word
                                     fo.write(
-                                        external_punc_remover(sent1) +
-                                        "\t" +
-                                        external_punc_remover(sent2) +
-                                        "\t" +
-                                        connector +
-                                        "\n")
+                                        external_punc_remover(sent1)
+                                        + "\t"
+                                        + external_punc_remover(sent2)
+                                        + "\t"
+                                        + connector
+                                        + "\n"
+                                    )
 
                                 # pass # Here is where it would be previous sentence
 
@@ -312,7 +329,7 @@ for line in wiki:
         continue
 
     this_rel = line.split("(")[0]
-    end_parts = line[line.index("(") + 1:].split()
+    end_parts = line[line.index("(") + 1 :].split()
     this_word = end_parts[1].split("-")[0]
     this_parent = int(end_parts[0].split("-")[-1][:-1])
 
@@ -325,8 +342,13 @@ for line in wiki:
 
             marked = 1
 
-    if this_word.lower() == "because" or this_word.lower() == "if" or this_word.lower(
-    ) == "before" or this_word.lower() == "though" or this_word.lower() == "so":
+    if (
+        this_word.lower() == "because"
+        or this_word.lower() == "if"
+        or this_word.lower() == "before"
+        or this_word.lower() == "though"
+        or this_word.lower() == "so"
+    ):
 
         if this_rel == "mark" or this_rel == "advmod":
             marked = 1

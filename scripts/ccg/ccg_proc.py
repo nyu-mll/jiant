@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 # First create the training set
 fo = open("ccg.train", "w")
@@ -24,7 +24,8 @@ directories = [
     "15",
     "16",
     "17",
-    "18"]
+    "18",
+]
 
 for directory in directories:
     for filename in os.listdir(directory):

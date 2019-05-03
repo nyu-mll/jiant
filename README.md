@@ -2,8 +2,6 @@
 
 [![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=svg)](https://circleci.com/gh/nyu-mll/jiant/tree/master)
 
-This repo contains the `jiant` sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
-
 `jiant` is a work-in-progress software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
 
 A few things you might want to know about `jiant`:
@@ -74,7 +72,7 @@ We also make use of many other data sources, including:
 - DisSent: Details for preparing the corpora are in [`scripts/dissent/README`](scripts/dissent/README).
 - DNC (**D**iverse **N**atural Language Inference **C**ollection), i.e. recast data: The DNC is available [online](https://github.com/decompositional-semantics-initiative/DNC). Follow the instructions described there to download the DNC.
 - CCG: Details for preparing the corpora are in [`scripts/ccg/README`](scripts/ccg/README).
-- Edge probing analysis tasks: see [`probing/data`](probing/data/README.md) for more information.
+- Edge probing analysis tasks: see _Papers_ below or [`probing/data`](probing/data/README.md) for more information.
 
 To incorporate the above data, placed the data in the data directory in its own directory (see task-directory relations in `src/preprocess.py` and `src/tasks.py`.
 
@@ -87,10 +85,12 @@ python main.py --config_file config/demo.conf \
 ```
 will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
-To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [path_config.sh](path_config.sh)
+To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
 *  $JIANT_PROJECT_PREFIX: the where the outputs will be saved.
 *  $JIANT_DATA_DIR: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
 *  $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
+
+To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 
 
 ## Command-Line Options
 
@@ -308,3 +308,9 @@ Post an issue here on GitHub if you have any problems, and create a pull request
 It seems like my preproc/{task}\_\_{split}.data has nothing in it!
 
 This probably means that you probably ran the script before downloading the data for that task. Thus, delete the file from preproc and then run main.py again to build the data splits from scratch.
+
+## Contributing
+
+We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
+install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
+please also add the tests.
