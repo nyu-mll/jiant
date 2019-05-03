@@ -444,9 +444,6 @@ def main(cl_arguments):
             )
         for task in target_tasks:
             # Skip mnli-diagnostic
-            # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
-            # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
-            # "is_probing_task is global flag specific to a run, not to a task.
             if task.name == "mnli-diagnostic":
                 continue
 

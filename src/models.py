@@ -485,22 +485,9 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         This function gets the task-specific parameters and builds
         the task-specific modules.
     """
-    if args.is_probing_task:
-        # TODO: move this logic to preprocess.py;
-        # current implementation reloads MNLI data, which is slow.
-        train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-        tasks_to_build, _, _ = get_tasks(
-            train_task_whitelist,
-            eval_task_whitelist,
-            args.max_seq_len,
-            path=args.data_dir,
-            scratch_path=args.exp_dir,
-        )
-    else:
-        tasks_to_build = tasks
 
     # Attach task-specific params.
-    for task in set(tasks + tasks_to_build):
+    for task in set(tasks):
         task_params = get_task_specific_params(args, task.name)
         log.info("\tTask '%s' params: %s", task.name, json.dumps(task_params.as_dict(), indent=2))
         # Store task-specific params in case we want to access later
