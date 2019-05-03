@@ -298,9 +298,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
                     "\t%s: Trainable parameter, count %d with %s", name, np.prod(param.size()), str(param.size())
                 )
         elif args.list_params:
-                log.info(
-                    "\t%s: Non-trainable parameter, count %d with %s", name, np.prod(param.size()), str(param.size())
-                )
+            log.info(
+                "\t%s: Non-trainable parameter, count %d with %s", name, np.prod(param.size()), str(param.size())
+            )
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(ct=trainable_param_count))
     return model
