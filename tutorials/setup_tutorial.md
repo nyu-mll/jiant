@@ -100,7 +100,7 @@ Next, we need to make a configuration file that defines the parameters of our ex
 include "defaults.conf" 
 ```
 
-Some  important options include:
+Some important options include:
 
 * `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
 * `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
