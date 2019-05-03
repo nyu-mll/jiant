@@ -25,7 +25,7 @@ Now, let's get your environment set up. Make sure you have `conda` installed (yo
 conda env create -f environment.yml
 ```
 
-Make sure to activate the environment by running 
+Make sure to activate the environment by running:
 
 ```
 conda activate jiant
@@ -58,12 +58,12 @@ We also support quite a few other data sources (check [here](https://jiant.info/
 Finally, you'll need to set a few environment variables in [user_config_template.sh](https://github.com/nyu-mll/jiant/blob/master/user_config_template.sh), which include:
 
 
-* $JIANT_PROJECT_PREFIX: the directory where things like logs and model checkpoints will be saved.
-* $JIANT_DATA_DIR: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. 
-* $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip)
+* `$JIANT_PROJECT_PREFIX`: the directory where things like logs and model checkpoints will be saved.
+* `$JIANT_DATA_DIR`: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. 
+* `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
 
 
-To avoid having your custom paths overwritten by future updates, you should save a copy of this file as `user_config.sh` (or something similar, but `user_config.sh` will be automatically ignored by git.
+To avoid having your custom paths overwritten by future updates, you should save a copy of this file as `user_config.sh` (or something similar, but a file with the name `user_config.sh` will be automatically ignored by git).
 Before running any experiments, you should run:
 
 ```
@@ -186,17 +186,17 @@ will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foob
 
 ### 3.b) Understanding the output logs
 
-We do support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly. 
+We support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly. 
 
-The logs include:
+There's a lot going on here (including some debugging information that we're working on suppressing), but a lot of it is useful. The logs include:
 
 * The process of setting up and loading tasks
 * Restoring checkpoints (if applicable)
-* Printing out the Model architecture
 * Indexing your data into AllenNLP instances for preparation for training.
+* Printing out the model architecture
 * When you get to training stage, updates of the current progress and validation. 
 
-One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks based on a parameter you can set in your experiment `weighting_method`, which is automatically set to proportional (so the largerthetask, the larger the probablty it will get sampled for a batch). 
+One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks based on a parameter you can set in your experiment `weighting_method`, which is automatically set to proportional (so the larger the task, the larger the probablty it will get sampled for a batch). 
 
 After validating, you will see something like this:
 ```
