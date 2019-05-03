@@ -62,7 +62,7 @@ class MosesTokenizer(Tokenizer):
 
 @functools.lru_cache(maxsize=8, typed=False)
 def get_tokenizer(tokenizer_name):
-    log.info(f"Loading Tokenizer {tokenizer_name}")
+    log.info(f"\tLoading Tokenizer {tokenizer_name}")
     if tokenizer_name.startswith("bert-"):
         from pytorch_pretrained_bert import BertTokenizer
 

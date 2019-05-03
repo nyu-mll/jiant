@@ -134,7 +134,6 @@ def build_trainer(
                 "verbose": True,
             }
         )
-        log.info("\tUsing ReduceLROnPlateau scheduler!")
 
     train_params = Params(
         {
@@ -389,9 +388,6 @@ class SamplingMultiTaskTrainer:
             scaling_weights = scaling_weights / np.max(scaling_weights)
 
         scaling_weights = dict(zip(task_names, scaling_weights))
-        log.info(
-            "Using loss scaling method: %s, with weights %s", scaling_method, str(scaling_weights)
-        )
         return scaling_weights
 
     def get_sampling_weights(self, weighting_method, num_tasks, task_n_train_examples):
@@ -407,33 +403,24 @@ class SamplingMultiTaskTrainer:
         """
         if weighting_method == "uniform":
             sample_weights = [1.0] * num_tasks
-            log.info("Sampling tasks uniformly.")
         elif weighting_method == "proportional":
             sample_weights = task_n_train_examples.astype(float)
-            log.info("Sampling tasks proportional to number of training examples.")
         elif weighting_method == "proportional_log_batch":
             sample_weights = np.log(task_n_train_batches)
-            log.info("Sampling tasks proportional to log number of training batches.")
         elif weighting_method == "proportional_log_example":
             sample_weights = np.log(task_n_train_examples)
-            log.info("Sampling tasks proportional to log number of training examples.")
         elif weighting_method == "inverse":
             sample_weights = 1 / task_n_train_examples
-            log.info("Sampling tasks inverse to number of training examples.")
         elif weighting_method == "inverse_log_example":
             sample_weights = 1 / np.log(task_n_train_examples)
-            log.info("Sampling tasks inverse to log number of training examples.")
         elif weighting_method == "inverse_log_batch":
             sample_weights = 1 / np.log(task_n_train_batches)
-            log.info("Sampling tasks inverse to log number of training batches.")
         elif "power_" in weighting_method:
             weighting_power = float(weighting_method.strip("power_"))
             sample_weights = task_n_train_examples ** weighting_power
-            log.info("Sampling tasks with %s.", weighting_method.replace("_", " of "))
         elif "softmax_" in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip("softmax_"))
             sample_weights = np.exp(task_n_train_examples / weighting_temp)
-            log.info("Sampling tasks with %s.", weighting_method.replace("_", " of temperature "))
         return sample_weights
 
     def train(
@@ -502,7 +489,7 @@ class SamplingMultiTaskTrainer:
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
-                log.info("Not loading.")
+                log.info("Starting training without restoring from a checkpoint.")
                 checkpoint_pattern = os.path.join(
                     self._serialization_dir, "*_{}_*.th".format(phase)
                 )
@@ -550,7 +537,7 @@ class SamplingMultiTaskTrainer:
         )
         offset = 0
         all_tr_metrics = {}
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
+        log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
             task = samples[(n_pass + offset) % validation_interval]  # randomly select a task
@@ -663,10 +650,11 @@ class SamplingMultiTaskTrainer:
 
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
-                    log.info("Statistic: %s", name)
+                    log_str = "%s:" % name
                     if name in all_tr_metrics:
-                        log.info("\ttraining: %3f", all_tr_metrics[name])
-                    log.info("\tvalidation: %3f", value)
+                        log_str += " training: %3f" % all_tr_metrics[name]
+                    log_str += " validation: %3f" % value
+                    log.info(log_str)
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
                 lrs = self._get_lr()  # log LR
@@ -725,7 +713,7 @@ class SamplingMultiTaskTrainer:
             all_metrics_str = ", ".join(
                 ["%s: %.5f" % (metric, score) for metric, score in epoch_metrics.items()]
             )
-            log.info("%s, %d, %s", metric, best_epoch, all_metrics_str)
+            log.info("%s (for best epoch %d): %s", metric, best_epoch, all_metrics_str)
         return results
 
     def _update_metric_history(
@@ -767,14 +755,15 @@ class SamplingMultiTaskTrainer:
             metric_history, this_epoch_metric, metric_decreases
         )
         if is_best_so_far:
-            log.info("Best model found for %s.", task_name)
+            log.info("Best result seen so far for %s.", task_name)
             metric_infos[metric]["best"] = (epoch, all_val_metrics)
             should_save = True
             if task_name == "macro":
                 new_best_macro = True
         if out_of_patience:
             metric_infos[metric]["stopped"] = True
-            log.info("Out of patience. Stopped tracking %s", task_name)
+            # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+            # log.info("Out of early stopping patience. Stopped tracking %s.", task_name)
         return metric_infos, this_epoch_metric, should_save, new_best_macro
 
     def _calculate_validation_performance(
@@ -928,10 +917,10 @@ class SamplingMultiTaskTrainer:
             else:
                 scheduler = None
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                log.info("Advancing scheduler.")
+                log.info("Updating LR scheduler:")
                 scheduler.step(this_epoch_metric, epoch)
-                log.info("\tBest %s: %.3f", metric, scheduler.lr_scheduler.best)
-                log.info("\t# bad epochs: %d", scheduler.lr_scheduler.num_bad_epochs)
+                log.info("\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best)
+                log.info("\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs)
 
         return all_val_metrics, should_save, new_best_macro
 
@@ -956,36 +945,38 @@ class SamplingMultiTaskTrainer:
                 task_info = task_infos[task.name]
                 n_epochs_trained = task_info["total_batches_trained"] / task_info["n_tr_batches"]
                 if n_epochs_trained >= self._max_epochs:
-                    log.info("Maximum epochs trained on %s.", task.name)
+                    # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+                    # log.info("Reached max_epochs limit for %s.", task.name)
                     task_info["stopped"] = True
             stop_epochs = min([info["stopped"] for info in task_infos.values()])
             if stop_epochs:
-                log.info("Maximum epochs trained on all tasks.")
+                log.info("Reached max_epochs limit on all tasks. Stopping training.")
                 should_stop = True
 
         if g_optimizer is None:  # check if minimum LR hit
             for task in tasks:
                 task_info = task_infos[task.name]
                 if task_info["optimizer"].param_groups[0]["lr"] < self._min_lr:
-                    log.info("Minimum lr hit on %s.", task.name)
+                    # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+                    # log.info("Minimum lr hit on %s.", task.name)
                     task_info["stopped"] = True
             stop_lr = min([info["stopped"] for info in task_infos.values()])
         else:
             stop_lr = g_optimizer.param_groups[0]["lr"] < self._min_lr
         if stop_lr:
-            log.info("All tasks hit minimum lr. Stopping training.")
+            log.info("Minimum LR reached. Stopping training.")
             should_stop = True
 
         # check if validation metric is stopped
         stop_metric = metric_infos[stop_metric]["stopped"]
         if stop_metric:
-            log.info("All metrics ran out of patience. Stopping training.")
+            log.info("Ran out of early stopping patience. Stopping training.")
             should_stop = True
 
         # check if max number of validations hit
         stop_val = bool(val_n >= self._max_vals)
         if stop_val:
-            log.info("Maximum number of validations hit. Stopping training.")
+            log.info("Maximum number of validations reached. Stopping training.")
             should_stop = True
 
         return should_stop
@@ -1106,7 +1097,7 @@ class SamplingMultiTaskTrainer:
                     "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
                 ),
             )
-        log.info("Saved files to %s", self._serialization_dir)
+        log.info("Saved to %s", self._serialization_dir)
 
         if phase != "target_train" and new_best_macro:
             self._unmark_previous_best(phase, epoch)

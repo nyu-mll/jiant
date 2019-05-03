@@ -83,7 +83,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
         for task in skip_task_models:
             new_keys_to_skip = [key for key in model_state if "%s_mdl" % task in key]
             if new_keys_to_skip:
-                logging.info("Skipping task-specific parameters for task: %s" % task)
+                logging.info("Not loading task-specific parameters for task: %s" % task)
                 keys_to_skip += new_keys_to_skip
             else:
                 logging.info("Found no task-specific parameters to skip for task: %s" % task)
@@ -180,20 +180,6 @@ def split_data(data, ratio, shuffle=1):
         splits[0].append(col[:split_pt])
         splits[1].append(col[split_pt:])
     return tuple(splits[0]), tuple(splits[1])
-
-
-def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
-    """
-    Unpack preds to varying-length numpy arrays by removing
-    extra first dimension.
-    Args:
-        preds: [batch_size, num_targets, ...]
-    Yields:
-        np.ndarray for each row of preds
-    """
-    preds = preds.detach().cpu()
-    for pred in torch.unbind(preds, dim=0):
-        yield pred.numpy()
 
 
 @Seq2SeqEncoder.register("masked_multi_head_self_attention")
