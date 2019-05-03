@@ -2,19 +2,27 @@
 Task definitions for language modeling tasks set up to use for unsupervised parsing encoders.
 Long term dependencies for language modeling: sentences concatenated together seperated by <EOS> token.
 """
+import json
+import logging as log
 import math
 import os
-from typing import Iterable, Type
+from typing import Any, Dict, Iterable, List, Sequence, Type
 
 # Fields for instance processing
-from allennlp.data import Instance
+from allennlp.data import Instance, Token
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
-from ..utils.data_loaders import load_tsv
+from ..utils.data_loaders import load_tsv, process_sentence
 from .lm import LanguageModelingTask
 from .registry import register_task
-from .tasks import sentence_to_text_field
+from .tasks import (
+    UNK_TOK_ALLENNLP,
+    UNK_TOK_ATOMIC,
+    SequenceGenerationTask,
+    atomic_tokenize,
+    sentence_to_text_field,
+)
 
 
 class LanguageModelingParsingTask(LanguageModelingTask):
@@ -59,7 +67,7 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -84,7 +92,7 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -109,7 +117,7 @@ class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     See base class: LanguageModelingTask
     """
 
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -155,14 +163,15 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
             "test": os.path.join(path, "test_matched.tsv"),
         }
 
-    def get_data_iter(self, path):
+    def load_data(self, path):
         """
-        Load data file (combine the entailment and contradiction sentence), tokenize text
-         and concat sentences to create long term dependencies.
+        Load data file (combine the entailment and contradiction sentence), tokenize text and
+        concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """
         seq_len = self.max_seq_len
+        tokens = []
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
         data = load_tsv(
             os.path.join(path),
@@ -173,6 +182,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
             targ_idx=11,
             targ_map=targ_map,
         )
+        rows = []
         tokens = []
         for x, y in zip(data[0], data[1]):
             tokens += x[1:-1] + ["<EOS>"] + y[1:-1] + ["<EOS>"]
