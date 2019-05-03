@@ -98,8 +98,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
     if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models.
-        # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
-        # during the do_target_task_training phase.
+        # Usually, there won't be trained parameters to skip, but this can happen if a run is
+        # killed during the do_target_task_training phase.
         task_names_to_avoid_loading = [task.name for task in target_tasks]
     else:
         task_names_to_avoid_loading = []
@@ -115,8 +115,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
             strict=strict,
         )
     else:
-        # Look for target train checkpoints (available only if we're restoring from a run that already
-        # finished), then look for training checkpoints.
+        # Look for target train checkpoints (available only if we're restoring from a run that
+        # already finished), then look for training checkpoints.
 
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
@@ -169,7 +169,8 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         )
         assert_for_log(
             not args.do_pretrain,
-            "Error: Attempting to train a model and then replace that model with one from a checkpoint.",
+            "Error: Attempting to train a model and then replace that model with one from "
+            "a checkpoint.",
         )
         steps_log.write("Loading model from path: %s \n" % args.load_target_train_checkpoint)
 
@@ -356,7 +357,8 @@ def initial_setup(args, cl_args):
             torch.cuda.manual_seed_all(seed)
         except Exception:
             log.warning(
-                "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU."
+                "GPU access failed. You might be using a CPU-only installation of PyTorch. "
+                "Falling back to CPU."
             )
             args.cuda = -1
 

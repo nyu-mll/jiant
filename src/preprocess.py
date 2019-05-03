@@ -316,7 +316,8 @@ def build_tasks(args):
     reindex_tasks = parse_task_list_arg(args.reindex_tasks)
     utils.assert_for_log(
         not (args.reload_indexing and not reindex_tasks),
-        'Flag reload_indexing was set, but no tasks are set to reindex (use -o "args.reindex_tasks = "task1,task2,..."")',
+        'Flag reload_indexing was set, but no tasks are set to reindex (use -o "args.reindex_tasks'
+        ' = "task1,task2,..."")',
     )
     for task in tasks:
         force_reindex = args.reload_indexing and task.name in reindex_tasks

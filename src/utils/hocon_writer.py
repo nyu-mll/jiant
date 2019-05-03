@@ -249,7 +249,7 @@ class HOCONConverter(object):
             return converters[output_format](config, compact, indent)
         else:
             raise Exception(
-                "Invalid format '{format}'. Format must be 'json', 'properties', 'yaml' or 'hocon'".format(
+                "Invalid format '{format}'. Format must be 'json', 'properties', 'yaml' or 'hocon'".format(  # noqa
                     format=output_format
                 )
             )

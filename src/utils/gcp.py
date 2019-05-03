@@ -5,7 +5,7 @@ import os
 
 
 def get_instance_id():
-    # https://stackoverflow.com/questions/31688646/get-the-name-or-id-of-the-current-google-compute-instance
+    # https://stackoverflow.com/questions/31688646/get-the-name-or-id-of-the-current-google-compute-instance  # noqa
     import requests
 
     metadata_server = "http://metadata/computeMetadata/v1/instance/"
@@ -13,7 +13,7 @@ def get_instance_id():
     gce_id = requests.get(metadata_server + "id", headers=metadata_flavor).text
     return gce_id
     #  gce_name = requests.get(metadata_server + 'hostname', headers = metadata_flavor).text
-    #  gce_machine_type = requests.get(metadata_server + 'machine-type', headers = metadata_flavor).text
+    #  gce_machine_type = requests.get(metadata_server + 'machine-type', headers = metadata_flavor).text  # noqa
 
 
 def get_remote_log_url(log_name, project_name="jsalt-sentence-rep"):
