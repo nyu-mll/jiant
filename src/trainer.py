@@ -886,7 +886,7 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(
+            n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
 
@@ -907,7 +907,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(  # noqa
                 epoch,
                 all_val_metrics,
                 metric,

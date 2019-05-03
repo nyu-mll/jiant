@@ -1931,7 +1931,8 @@ class CCGTaggingTask(TaggingTask):
         # Get the mask for each sentence, where the mask is whether or not
         # the token was split off by tokenization. We want to only count the first
         # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
-        # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
+        # experiment
+        # [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
         # (https://arxiv.org/abs/1810.04805)
         if self.bert_tokenization:
             import numpy.ma as ma
