@@ -476,7 +476,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in tasks_to_build:
+    for task in set(tasks):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
