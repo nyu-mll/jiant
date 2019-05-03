@@ -269,7 +269,7 @@ class BoWSentEncoder(Model):
 class PRPNPhraseLayer(Model):
     """
     Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
-    PRPN has a parser component that learns the latent constituency trees jointly with a 
+    PRPN has a parser component that learns the latent constituency trees jointly with a
     downstream task.
     """
 
@@ -465,7 +465,7 @@ class PairClassifier(nn.Module):
     """ Thin wrapper around a set of modules.
     For sentence pair classification.
     Pooler specifies how to aggregate inputted sequence of vectors.
-    Also allows for use of specific token representations to be addded to the overall 
+    Also allows for use of specific token representations to be addded to the overall
     representation
     """
 
