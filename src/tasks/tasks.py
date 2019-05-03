@@ -504,7 +504,7 @@ class SSTTask(SingleClassificationTask):
 @register_task("hd_cola_npi_qnt", rel_path="NPI/combs/minus_quantifiers")
 @register_task("hd_cola_npi_sup", rel_path="NPI/combs/minus_superlative")
 class CoLANPITask(SingleClassificationTask):
-    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for 
+    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for
        test-set
        Note: Used for an NYU seminar, data not yet public"""
 

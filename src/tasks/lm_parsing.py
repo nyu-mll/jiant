@@ -1,6 +1,6 @@
 """
 Task definitions for language modeling tasks set up to use for unsupervised parsing encoders.
-Long term dependencies for language modeling: sentences concatenated together seperated by 
+Long term dependencies for language modeling: sentences concatenated together seperated by
 <EOS> token.
 """
 import json

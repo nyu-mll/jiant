@@ -20,7 +20,7 @@ log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", 
 class Params(object):
     """Params handler object.
 
-    This functions as a nested dict, but allows for seamless dot-style access, similar to 
+    This functions as a nested dict, but allows for seamless dot-style access, similar to
     tf.HParams but without the type validation. For example:
 
     p = Params(name="model", num_layers=4)

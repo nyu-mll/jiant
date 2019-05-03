@@ -96,7 +96,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
     """ Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task.
-    Stops program execution if something goes wrong (e.g. task is malformed, 
+    Stops program execution if something goes wrong (e.g. task is malformed,
     resulting in KeyError).
 
     args:

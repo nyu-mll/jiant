@@ -942,7 +942,7 @@ class MultiTaskModel(nn.Module):
         """ forward function written specially for cases where we have only +ve pairs in input data
             -ve pairs are created by rotating either sent1 or sent2.
             Ex: [1,2,3,4] after rotation by 2 positions [3,4,1,2]
-            Assumption is each example in sent1 has only one corresponding example in sent2 which 
+            Assumption is each example in sent1 has only one corresponding example in sent2 which
                 is +ve
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         """
@@ -1160,7 +1160,7 @@ class MultiTaskModel(nn.Module):
                 - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
                             first half: [:batchSize*timeSteps, outputDim] is output layer from
                                 forward layer
-                            second half: [batchSize*timeSteps:, outputDim] is output layer from 
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from
                                 backward layer
                 - 'loss': size average CE loss
         """
@@ -1247,7 +1247,7 @@ class MultiTaskModel(nn.Module):
             task: (Task obejct)
         return:
             out: (dict)
-                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] 
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim]
                     is output layer from forward layer
                 - 'loss': size average CE loss
         """

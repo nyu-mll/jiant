@@ -212,8 +212,8 @@ class SamplingMultiTaskTrainer:
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
             Set to -1 to use all.
-        training_data_fraction: If set to a float between 0 and 1, load only the specified 
-            percentage of examples. Hashing is used to ensure that the same examples are loaded 
+        training_data_fraction: If set to a float between 0 and 1, load only the specified
+            percentage of examples. Hashing is used to ensure that the same examples are loaded
             each epoch.
         """
         self._model = model
@@ -275,21 +275,21 @@ class SamplingMultiTaskTrainer:
         track necessary information about the training status of each task and metric respectively.
 
         Returns:
-            - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info 
+            - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info
               contains:
-                - iterator: a task specific (because it uses that task's fields to dynamically 
+                - iterator: a task specific (because it uses that task's fields to dynamically
                     batch) batcher
                 - n_tr_batches: the number of training batches
-                - tr_generator: generator object that returns the batches, set to repeat 
+                - tr_generator: generator object that returns the batches, set to repeat
                     indefinitely
                 - loss: the accumulated loss (during training or validation)
                 - n_batches_since_val: number of batches trained on since the last validation
                 - total_batches_trained: number of batches trained over all validation checks
-                - optimizer: a task specific optimizer, not used if the global optimizer is not 
+                - optimizer: a task specific optimizer, not used if the global optimizer is not
                     None
-                - scheduler: a task specific scheduler, not used if the global optimizer is not 
+                - scheduler: a task specific scheduler, not used if the global optimizer is not
                     None
-                - stopped: a bool indicating if that task is stopped or not (if it ran out of 
+                - stopped: a bool indicating if that task is stopped or not (if it ran out of
                     patience or hit min lr)
                 - last_log: the time we last logged progress for the task
 
@@ -298,7 +298,7 @@ class SamplingMultiTaskTrainer:
                 which are privileged to get an aggregate multi-task score. Each dict contains:
                 - hist (List[float]): previous values of the metric
                 - stopped (Bool): whether or not that metric is stopped or not
-                - best (Tuple(Int, Dict)): information on the best value of that metric and when 
+                - best (Tuple(Int, Dict)): information on the best value of that metric and when
                     it happened
         """
         task_infos = {task.name: {} for task in tasks}

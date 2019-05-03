@@ -10,7 +10,7 @@ def get_strings(path, row_filter=None):
 
     Arguments:
       path: Path to a results.tsv file.
-      row_filter: Only return strings matching the specified run name. 
+      row_filter: Only return strings matching the specified run name.
           Also removes the name prefix.
     """
     strings = []

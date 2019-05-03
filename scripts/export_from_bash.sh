@@ -1,4 +1,4 @@
-# Running 'source scripts/export_from_bash.sh' from the base jiant/ dir will add the job of 
+# Running 'source scripts/export_from_bash.sh' from the base jiant/ dir will add the job of
 # running user_config.sh directly to the bash startup script (bashrc for Linux and bash_profile for MacOS).
 
 function changebashpaths() {
