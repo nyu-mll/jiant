@@ -9,7 +9,7 @@ import logging as log
 
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
-)  # noqa # nopep8
+)  # noqa
 
 import argparse
 import glob
