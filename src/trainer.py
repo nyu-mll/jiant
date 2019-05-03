@@ -919,8 +919,12 @@ class SamplingMultiTaskTrainer:
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
                 scheduler.step(this_epoch_metric, epoch)
-                log.info("\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best)
-                log.info("\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs)
+                log.info(
+                    "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
+                )
+                log.info(
+                    "\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs
+                )
 
         return all_val_metrics, should_save, new_best_macro
 

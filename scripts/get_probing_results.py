@@ -86,7 +86,7 @@ def compute_accs(accs):
         print("")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     all_models = ["random", "nli", "ccg", "lm", "mt", "reddit", "shapeworld"]
     data_dir = sys.argv[1]
     meta_data = get_metadata(data_dir)

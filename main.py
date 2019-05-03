@@ -6,7 +6,10 @@ To debug this, run with -m ipdb:
 """
 # pylint: disable=no-member
 import logging as log
-log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)  # noqa # nopep8
+
+log.basicConfig(
+    format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
+)  # noqa # nopep8
 
 import argparse
 import glob
@@ -272,15 +275,16 @@ def get_best_checkpoint_path(run_dir):
 
 def evaluate_and_write(args, model, tasks, splits_to_write):
     """ Evaluate a model on dev and/or test, then write predictions """
-    val_results, val_preds = evaluate.evaluate(
-        model, tasks, args.batch_size, args.cuda, "val")
-    if 'val' in splits_to_write:
-        evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
-                             strict_glue_format=args.write_strict_glue_format)
-    if 'test' in splits_to_write:
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    if "val" in splits_to_write:
+        evaluate.write_preds(
+            tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
+        )
+    if "test" in splits_to_write:
         _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
-        evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                             strict_glue_format=args.write_strict_glue_format)
+        evaluate.write_preds(
+            tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
+        )
     run_name = args.get("run_name", os.path.basename(args.run_dir))
 
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
@@ -309,14 +313,12 @@ def initial_setup(args, cl_args):
     """
     output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
-    maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
-    maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
+    maybe_make_dir(args.exp_dir)  # e.g. <project_dir>/jiant-demo
+    maybe_make_dir(args.run_dir)  # e.g. <project_dir>/jiant-demo/sst
     log_fh = log.FileHandler(args.local_log_path)
-    log_fmt = log.Formatter('%(asctime)s: %(message)s',
-                            datefmt='%m/%d %I:%M:%S %p')
+    log_fmt = log.Formatter("%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p")
     log_fh.setFormatter(log_fmt)
     log.getLogger().addHandler(log_fh)
-
 
     if cl_args.remote_log:
         from src.utils import gcp
@@ -517,7 +519,7 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                task_to_use = model._get_task_params(task.name).get('use_classifier', task.name)
+                task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
                 if task.name != task_to_use:
                     task_model_to_load = task_to_use
                 else:
@@ -527,7 +529,7 @@ def main(cl_arguments):
                 # and have a best set of sent encoder model weights per task.
                 finetune_path = os.path.join(
                     args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                    )
+                )
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:

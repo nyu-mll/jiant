@@ -11,9 +11,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
-from allennlp.data.token_indexers.elmo_indexer import (
-    ELMoCharacterMapper,
-)
+from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper
 from allennlp.models.model import Model
 from allennlp.modules import Highway, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.modules.elmo_lstm import ElmoLstm

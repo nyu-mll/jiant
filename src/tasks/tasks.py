@@ -1168,10 +1168,10 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-@register_task('glue-diagnostic', rel_path='MNLI/', n_classes=3)
-@register_task('superglue-diagnostic', rel_path='RTE/', n_classes=2)
+@register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
+@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
-    ''' Task class for GLUE/SuperGLUE diagnostic data '''
+    """ Task class for GLUE/SuperGLUE diagnostic data """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
         super().__init__(name, n_classes, **kw)
@@ -1184,8 +1184,8 @@ class GLUEDiagnosticTask(PairClassificationTask):
         )
 
     def load_data_and_create_scorers(self, path, max_seq_len, n_classes):
-        '''load diagnostics data. The tags for every column are loaded as indices.
-        They will be converted to bools in preprocess_split function'''
+        """load diagnostics data. The tags for every column are loaded as indices.
+        They will be converted to bools in preprocess_split function"""
 
         # Will create separate scorer for every tag. tag_group is the name of the
         # column it will have its own scorer
@@ -1198,9 +1198,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         if n_classes == 2:
-            targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 0}
+            targ_map = {"neutral": 0, "entailment": 1, "contradiction": 0}
         elif n_classes == 3:
-            targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+            targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
         else:
             raise ValueError("Invalid number of classes for NLI task")
 
@@ -1409,23 +1409,28 @@ class RTETask(PairClassificationTask):
         log.info("\tFinished loading RTE (from GLUE formatted data).")
 
 
-@register_task('rte-superglue', rel_path='RTE/')
+@register_task("rte-superglue", rel_path="RTE/")
 class RTESuperGLUETask(RTETask):
-    ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
+    """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        ''' '''
+        """ """
         super().__init__(path, max_seq_len, name, **kw)
 
     def load_data(self, path, max_seq_len):
-        ''' Process the datasets located at path. '''
+        """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, "entailment": 1}
+
         def _load_jsonl(data_file):
             data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             sent1s, sent2s, trgs, idxs = [], [], [], []
             for example in data:
-                sent1s.append(process_sentence(self._tokenizer_name, example["premise"], max_seq_len))
-                sent2s.append(process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len))
+                sent1s.append(
+                    process_sentence(self._tokenizer_name, example["premise"], max_seq_len)
+                )
+                sent2s.append(
+                    process_sentence(self._tokenizer_name, example["hypothesis"], max_seq_len)
+                )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 trgs.append(trg)
                 idxs.append(example["idx"])
@@ -1755,15 +1760,15 @@ class DisSentTask(PairClassificationTask):
             yield _make_instance(sent1, sent2, trg)
 
 
-@register_task('recast-puns', rel_path='DNC/recast_puns_data')
-@register_task('recast-ner', rel_path='DNC/recast_ner_data')
-@register_task('recast-verbnet', rel_path='DNC/recast_verbnet_data')
-@register_task('recast-verbcorner', rel_path='DNC/recast_verbcorner_data')
-@register_task('recast-sentiment', rel_path='DNC/recast_sentiment_data')
-@register_task('recast-factuality', rel_path='DNC/recast_factuality_data')
-@register_task('recast-winogender', rel_path='DNC/manually-recast-winogender')
-@register_task('recast-lexicosyntax', rel_path='DNC/lexicosyntactic_recasted')
-@register_task('recast-kg', rel_path='DNC/kg-relations')
+@register_task("recast-puns", rel_path="DNC/recast_puns_data")
+@register_task("recast-ner", rel_path="DNC/recast_ner_data")
+@register_task("recast-verbnet", rel_path="DNC/recast_verbnet_data")
+@register_task("recast-verbcorner", rel_path="DNC/recast_verbcorner_data")
+@register_task("recast-sentiment", rel_path="DNC/recast_sentiment_data")
+@register_task("recast-factuality", rel_path="DNC/recast_factuality_data")
+@register_task("recast-winogender", rel_path="DNC/manually-recast-winogender")
+@register_task("recast-lexicosyntax", rel_path="DNC/lexicosyntactic_recasted")
+@register_task("recast-kg", rel_path="DNC/kg-relations")
 class RecastNLITask(PairClassificationTask):
     """ Task class for NLI Recast Data"""
 
@@ -2466,12 +2471,16 @@ class SWAGTask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
-        
+
 
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test_with_labels.jsonl"}
+        self._files_by_split = {
+            "train": "train.jsonl",
+            "val": "val.jsonl",
+            "test": "test_with_labels.jsonl",
+        }
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
