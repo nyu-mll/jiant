@@ -22,10 +22,10 @@ import torch
 from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
+from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
-
 
 
 # Global notification handler, can be accessed outside main() during exception handling.
@@ -443,11 +443,11 @@ def main(cl_arguments):
                 "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
             )
         for task in target_tasks:
-            # Skip mnli-diagnostic
+            # Skip diagnostic tasks b/c they should not be trained on
             # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
             # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
             # "is_probing_task is global flag specific to a run, not to a task.
-            if task.name == "mnli-diagnostic":
+            if isinstance(task, GLUEDiagnosticTask):
                 continue
 
             if args.transfer_paradigm == "finetune":
@@ -520,22 +520,24 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if task.name == "mnli-diagnostic":
-                    # we'll load mnli-diagnostic during mnli
-                    continue
+                task_to_use = model._get_task_params(task.name).get('use_classifier', task.name)
+                if task.name != task_to_use:
+                    task_model_to_load = task_to_use
+                else:
+                    task_model_to_load = task.name
+
                 # Special checkpointing logic here since we train the sentence encoder
                 # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                finetune_path = os.path.join(
+                    args.run_dir, "model_state_%s_best.th" % task_model_to_load
+                    )
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                tasks = [task]
-                if task.name == "mnli":
-                    tasks += [t for t in target_tasks if t.name == "mnli-diagnostic"]
-                evaluate_and_write(args, model, tasks, splits_to_write)
+                evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here

@@ -44,8 +44,8 @@ from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
+    GLUEDiagnosticTask,
     JOCITask,
-    MultiNLIDiagnosticTask,
     MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
@@ -836,8 +836,8 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch["input"]))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, MultiNLIDiagnosticTask):
-            out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
+        elif isinstance(task, GLUEDiagnosticTask):
+            out = self._nli_diagnostic_forward(batch, task, predict)
         elif isinstance(
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
@@ -927,7 +927,7 @@ class MultiTaskModel(nn.Module):
                 _, out["preds"] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_MNLI_diagnostic_forward(self, batch, task, predict):
+    def _nli_diagnostic_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence
