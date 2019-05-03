@@ -1,0 +1,33 @@
+# Python CircleCI 2.0 configuration file
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: continuumio/miniconda3
+
+    working_directory: ~/repo
+
+    steps:
+      # Step 1: obtain repo from GitHub
+      - checkout
+      # Step 2: create virtual env and install dependencies
+      - run:
+          name: install dependencies
+          command: |
+            apt-get update
+            apt-get install -y cmake build-essential gcc g++
+            conda env create -q -f environment.yml
+            source activate jiant
+      # Step 3: run tests
+      - run:
+          name: run tests
+          command: |
+            mkdir ~/repo/test_output
+            source activate jiant
+            python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
+            nose2 -v
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
