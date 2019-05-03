@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Generic job script for all experiments on NYU CILVR machines.
+# If you're using a SLURM-managed cluster, modify this to suit your environment.
 
 #SBATCH --gres=gpu:1
 #SBATCH --mem=30000

@@ -1,17 +1,13 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
+__all__ = ["AlexNet", "alexnet"]
 
-__all__ = ['AlexNet', 'alexnet']
 
-
-model_urls = {
-    'alexnet': 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth',
-}
+model_urls = {"alexnet": "https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth"}
 
 
 class AlexNet(nn.Module):
-
     def __init__(self, num_classes=1000):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -57,5 +53,5 @@ def alexnet(pretrained=False, **kwargs):
     """
     model = AlexNet(**kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['alexnet']))
+        model.load_state_dict(model_zoo.load_url(model_urls["alexnet"]))
     return model
