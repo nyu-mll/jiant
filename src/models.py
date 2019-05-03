@@ -30,7 +30,7 @@ from .utils import config
 from .preprocess import parse_task_list_arg, get_tasks
 
 from .tasks.tasks import CCGTaggingTask, ClassificationTask, CoLATask, CoLAAnalysisTask, \
-    GroundedSWTask, GroundedTask, MultiNLIDiagnosticTask, GLUEDiagnosticTask, PairClassificationTask, \
+    GroundedSWTask, GroundedTask, GLUEDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, MultipleChoiceTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
     TaggingTask, WeakGroundedTask, JOCITask, WiCTask, SpanClassificationTask
@@ -735,7 +735,7 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch['input']))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, (MultiNLIDiagnosticTask, GLUEDiagnosticTask)):
+        elif isinstance(task, GLUEDiagnosticTask):
             out = self._pair_sentence_MNLI_diagnostic_forward(
                 batch, task, predict)
         elif isinstance(task, (PairClassificationTask, PairRegressionTask,

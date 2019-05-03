@@ -10,7 +10,7 @@ from csv import QUOTE_NONE, QUOTE_MINIMAL
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, WiCTask, GLUEDiagnosticTask, MultiNLIDiagnosticTask
+from .tasks.tasks import CommitmentTask, WiCTask, GLUEDiagnosticTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -64,9 +64,9 @@ def evaluate(model, tasks: Sequence[tasks_module.Task], batch_size: int,
         for batch_idx, batch in enumerate(generator):
             batch = move_to_device(batch, cuda_device)
             out = model.forward(task, batch, predict=True)
-            # We don't want mnli-diagnostic to affect the micro and macro average.
-            # Accuracy of mnli-diagnostic is hardcoded to 0.
-            if isinstance(task, (MultiNLIDiagnosticTask, GLUEDiagnosticTask)):
+            # We don't want diagnostic tasks to affect the micro and macro average.
+            # Accuracy on diagnostic tasks is hardcoded to 0.
+            if isinstance(task, GLUEDiagnosticTask):
                 n_examples += out["n_exs"]
             # get predictions
             if 'preds' not in out:
@@ -154,6 +154,7 @@ def write_preds(tasks: Iterable[tasks_module.Task], all_preds, pred_dir, split_n
             _write_wic_preds(task, preds_df, pred_dir, split_name,
                              strict_glue_format=strict_glue_format)
         elif isinstance(task, GLUEDiagnosticTask):
+            # mnli-diagnostic is caught above by being in ALL_GLUE_TASKS
             _write_diagnostics_preds(task, preds_df, pred_dir, split_name,
                                      strict_glue_format=strict_glue_format)
         else:
