@@ -153,10 +153,6 @@ def unescape_moses(moses_tokens):
     return [_MOSES_DETOKENIZER.unescape_xml(t) for t in moses_tokens]
 
 
-def truncate(sents, max_seq_len, sos, eos):
-    return [[sos] + s[: max_seq_len - 2] + [eos] for s in sents]
-
-
 def load_json_data(filename: str) -> Iterable:
     """ Load JSON records, one per line. """
     with open(filename, "r") as fd:

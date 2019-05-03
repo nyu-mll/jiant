@@ -411,9 +411,23 @@ def _get_task(name, args, data_path, scratch_path):
             tokenizer_name=args.tokenizer,
             **task_kw,
         )
+        task.load_data()
         utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, "wb"))
-    # task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+
+    return task
+
+
+def get_task_without_loading_data(task_name, args):
+    """ Build a task without loading data """
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
+    task = task_cls(
+        path=None,
+        max_seq_len=args.max_seq_len,
+        name=task_name,
+        tokenizer_name=args.tokenizer,
+        **task_kw,
+    )
     return task
 
 
@@ -427,8 +441,11 @@ def get_tasks(args):
     # TODO: We don't want diagnostic tasks in train_task_names
     # but want to support glue/superglue task macros.
     # A solution that doesn't rely on enumerating names would be nice.
-    pretrain_task_names = [name for name in pretrain_task_names if name not in
-                           {'glue-diagnostic', 'superglue-diagnostic'}]
+    pretrain_task_names = [
+        name
+        for name in pretrain_task_names
+        if name not in {"glue-diagnostic", "superglue-diagnostic"}
+    ]
 
     task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None
