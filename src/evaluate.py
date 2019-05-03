@@ -151,6 +151,7 @@ def write_preds(
             + ["wmt"]
             + tasks_module.ALL_COLA_NPI_TASKS
         )
+
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS
