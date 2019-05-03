@@ -87,6 +87,7 @@ Right now, we only support training in two stages. Training in more than two sta
    - load_target_train_checkpoint_arg=/path/to/saved/run
    - pretrain_tasks=“task_b1,task_b2, target_tasks=task_c1,task_c2”
 
+
 ***How can I pass BERT embeddings straight to the classifier without a sentence encoder? ***
 
 Right now, you need to set `skip_embs=1` and `sep_embs_for_skip=1` just because of the current way 
