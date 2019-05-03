@@ -520,26 +520,24 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                if isinstance(task, GLUEDiagnosticTask):
-                    # don't fine tine on diagnostic tasks
-                    continue
+                task_to_use = model._get_task_params(task.name).get('use_classifier', task.name)
+                if task.name != task_to_use:
+                    task_model_to_load = task_to_use
+                else:
+                    task_model_to_load = task.name
+
                 # Special checkpointing logic here since we train the sentence encoder
                 # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task.name)
+                finetune_path = os.path.join(
+                    args.run_dir, "model_state_%s_best.th" % task_model_to_load
+                    )
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir)
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                tasks = [task]
-                # TODO(Alex): make this less ugly
-                if task.name == 'mnli':
-                    tasks += [t for t in target_tasks if t.name == 'mnli-diagnostic']
-                if task.name == 'rte':
-                    tasks += [t for t in target_tasks if t.name == 'rte-diagnostic']
-
-                evaluate_and_write(args, model, tasks, splits_to_write)
+                evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here

@@ -72,7 +72,7 @@ def evaluate(
             out = model.forward(task, batch, predict=True)
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0.
-            if isinstance(task, GLUEDiagnosticTask):
+            if not isinstance(task, GLUEDiagnosticTask):
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -119,7 +119,7 @@ def evaluate(
         all_preds[task.name] = task_preds
         log.info("Finished evaluating on: %s", task.name)
 
-    all_metrics["micro_avg"] /= n_examples_overall
+    all_metrics["micro_avg"] /= max(n_examples_overall, 1) # hack for diagnostics
     all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
@@ -170,7 +170,7 @@ def write_preds(
             )
 
         elif isinstance(task, GLUEDiagnosticTask):
-            # mnli-diagnostic is caught above by being in ALL_GLUE_TASKS
+            # glue-diagnostic is caught above by being in ALL_GLUE_TASKS
             _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
@@ -204,7 +204,7 @@ SUPERGLUE_NAME_MAP = {
     "multirc": "MultiRC",
     "rte-superglue": "RTE",
     "wic": "WiC",
-    "rte-diagnostic": "AX",
+    "superglue-diagnostic": "AX",
 }
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
