@@ -424,8 +424,11 @@ def get_tasks(args):
 
     pretrain_task_names = parse_task_list_arg(args.pretrain_tasks)
     target_task_names = parse_task_list_arg(args.target_tasks)
-    # We don't want mnli-diagnostic in train_task_names
-    pretrain_task_names = [name for name in pretrain_task_names if name not in {"mnli-diagnostic"}]
+    # TODO: We don't want diagnostic tasks in train_task_names
+    # but want to support glue/superglue task macros.
+    # A solution that doesn't rely on enumerating names would be nice.
+    pretrain_task_names = [name for name in pretrain_task_names if name not in
+                           {'glue-diagnostic', 'superglue-diagnostic'}]
 
     task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None

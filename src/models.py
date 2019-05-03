@@ -44,8 +44,8 @@ from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
+    GLUEDiagnosticTask,
     JOCITask,
-    MultiNLIDiagnosticTask,
     MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
@@ -288,7 +288,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
     param_count = 0
     trainable_param_count = 0
     if args.list_params:
-        log.info("Trainable parameters:")
+        log.info("Model parameters:")
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
@@ -304,24 +304,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(ct=trainable_param_count))
     return model
-
-
-def get_task_whitelist(args):
-    """Filters tasks so that we only build models that we will use, meaning we only
-    build models for train tasks and for classifiers of eval tasks"""
-    eval_task_names = parse_task_list_arg(args.target_tasks)
-    eval_clf_names = []
-    for task_name in eval_task_names:
-        override_clf = config.get_task_attr(args, task_name, "use_classifier")
-        if override_clf == "none" or override_clf is None:
-            eval_clf_names.append(task_name)
-        else:
-            eval_clf_names.append(override_clf)
-    train_task_names = parse_task_list_arg(args.pretrain_tasks)
-    log.info(
-        "Whitelisting train tasks=%s, eval_clf_tasks=%s", str(train_task_names), str(eval_clf_names)
-    )
-    return train_task_names, eval_clf_names
 
 
 def build_embeddings(args, vocab, tasks, pretrained_embs=None):
@@ -491,29 +473,16 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         This function gets the task-specific parameters and builds
         the task-specific modules.
     """
-    if args.is_probing_task:
-        # TODO: move this logic to preprocess.py;
-        # current implementation reloads MNLI data, which is slow.
-        train_task_whitelist, eval_task_whitelist = get_task_whitelist(args)
-        tasks_to_build, _, _ = get_tasks(
-            train_task_whitelist,
-            eval_task_whitelist,
-            args.max_seq_len,
-            path=args.data_dir,
-            scratch_path=args.exp_dir,
-        )
-    else:
-        tasks_to_build = tasks
 
     # Attach task-specific params.
-    for task in set(tasks + tasks_to_build):
+    for task in set(tasks):
         task_params = get_task_specific_params(args, task.name)
         log.info("\tTask '%s' params: %s", task.name, json.dumps(task_params.as_dict(), indent=2))
         # Store task-specific params in case we want to access later
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in tasks_to_build:
+    for task in set(tasks):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
@@ -842,8 +811,8 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch["input"]))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, MultiNLIDiagnosticTask):
-            out = self._pair_sentence_MNLI_diagnostic_forward(batch, task, predict)
+        elif isinstance(task, GLUEDiagnosticTask):
+            out = self._nli_diagnostic_forward(batch, task, predict)
         elif isinstance(
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
@@ -933,7 +902,7 @@ class MultiTaskModel(nn.Module):
                 _, out["preds"] = logits.max(dim=1)
         return out
 
-    def _pair_sentence_MNLI_diagnostic_forward(self, batch, task, predict):
+    def _nli_diagnostic_forward(self, batch, task, predict):
         out = {}
 
         # embed the sentence

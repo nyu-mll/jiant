@@ -182,20 +182,6 @@ def split_data(data, ratio, shuffle=1):
     return tuple(splits[0]), tuple(splits[1])
 
 
-def unbind_predictions(self, preds: torch.Tensor) -> Iterable[np.ndarray]:
-    """
-    Unpack preds to varying-length numpy arrays by removing
-    extra first dimension.
-    Args:
-        preds: [batch_size, num_targets, ...]
-    Yields:
-        np.ndarray for each row of preds
-    """
-    preds = preds.detach().cpu()
-    for pred in torch.unbind(preds, dim=0):
-        yield pred.numpy()
-
-
 @Seq2SeqEncoder.register("masked_multi_head_self_attention")
 class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
     # pylint: disable=line-too-long
