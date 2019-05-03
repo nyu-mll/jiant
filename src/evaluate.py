@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, RTESuperGLUETask, WiCTask
+from .tasks.tasks import CommitmentTask, RTESuperGLUETask, WiCTask, WinogradCoreferenceTask
 from .tasks.qa import MultiRCTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
@@ -168,6 +168,10 @@ def write_preds(
             _write_wic_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, WinogradCoreferenceTask):
+            _write_winograd_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)
             continue
@@ -267,6 +271,23 @@ def _write_wic_preds(
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
+def _write_winograd_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for Winograd Coreference task.  """
+    pred_map = {0: "False", 1: "True"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": pred_map[row["preds"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 def _write_commitment_preds(
     task: str,
