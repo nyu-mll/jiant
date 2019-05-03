@@ -3,6 +3,7 @@ import json
 import logging as log
 import os
 import time
+from collections import defaultdict
 from csv import QUOTE_MINIMAL, QUOTE_NONE
 from typing import Dict, Iterable, List, Sequence, Tuple
 
@@ -10,7 +11,8 @@ import pandas as pd
 import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
-from .tasks.tasks import CommitmentTask, WiCTask
+from .tasks.tasks import CommitmentTask, RTESuperGLUETask, WiCTask, GLUEDiagnosticTask
+from .tasks.qa import MultiRCTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -41,8 +43,9 @@ def parse_write_preds_arg(write_preds_arg: str) -> List[str]:
 def evaluate(
     model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device: int, split="val"
 ) -> Tuple[Dict, pd.DataFrame]:
-    """Evaluate on a dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels"]
+    """Evaluate on a dataset
+    qst_idx and ans_idx are used for MultiRC and other question answering dataset"""
+    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "qst_idx", "ans_idx"]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS + ["wmt"] + tasks_module.ALL_COLA_NPI_TASKS
@@ -67,9 +70,9 @@ def evaluate(
         for batch_idx, batch in enumerate(generator):
             batch = move_to_device(batch, cuda_device)
             out = model.forward(task, batch, predict=True)
-            # We don't want mnli-diagnostic to affect the micro and macro average.
-            # Accuracy of mnli-diagnostic is hardcoded to 0.
-            if task.name != "mnli-diagnostic":
+            # We don't want diagnostic tasks to affect the micro and macro average.
+            # Accuracy on diagnostic tasks is hardcoded to 0.
+            if not isinstance(task, GLUEDiagnosticTask):
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -116,7 +119,8 @@ def evaluate(
         all_preds[task.name] = task_preds
         log.info("Finished evaluating on: %s", task.name)
 
-    all_metrics["micro_avg"] /= n_examples_overall
+    # hack for diagnostics
+    all_metrics["micro_avg"] /= max(n_examples_overall, 1)
     all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
@@ -153,8 +157,22 @@ def write_preds(
             _write_copa_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, MultiRCTask):
+            _write_multirc_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
+        elif isinstance(task, RTESuperGLUETask):
+            _write_rte_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, WiCTask):
             _write_wic_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
+        elif isinstance(task, GLUEDiagnosticTask):
+            # glue-diagnostic is caught above by being in ALL_GLUE_TASKS
+            # currently this only catches superglue-diagnostic
+            _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
         else:
@@ -165,6 +183,7 @@ def write_preds(
     return
 
 
+# Exact file names per task required by the GLUE evaluation server
 GLUE_NAME_MAP = {
     "cola": "CoLA",
     "diagnostic": "AX",
@@ -179,10 +198,15 @@ GLUE_NAME_MAP = {
     "wnli": "WNLI",
 }
 
-SUPERGLUE_NAME_MAP = {"commitbank": "CB"}
-
-SUPERGLUE_NAME_MAP = {"commitbank": "CB", "copa": "COPA", "wic": "WiC"}
-
+# Exact file names per task required by the SuperGLUE evaluation server
+SUPERGLUE_NAME_MAP = {
+    "commitbank": "CB",
+    "copa": "COPA",
+    "multirc": "MultiRC",
+    "rte-superglue": "RTE",
+    "wic": "WiC",
+    "superglue-diagnostic": "AX",
+}
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
@@ -279,6 +303,61 @@ def _write_copa_preds(
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
                 out_d = {"idx": int(row["idx"]), "label": int(row["preds"])}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+def _write_multirc_preds(task: str, preds_df: pd.DataFrame,
+                         pred_dir: str, split_name: str,
+                         strict_glue_format: bool = False):
+    ''' Write predictions for MultiRC task. '''
+    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        if strict_glue_format:
+            qst_ans_d = defaultdict(list)
+            for row_idx, row in preds_df.iterrows():
+                ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
+                qst_ans_d[int(row["qst_idx"])].append(ans_d)
+            for qst_idx, answers in qst_ans_d.items():
+                out_d = {"idx": qst_idx, "answers": answers}
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+        else:
+            for row_idx, row in preds_df.iterrows():
+                out_d = row.to_dict()
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+def _write_rte_preds(task: str, preds_df: pd.DataFrame,
+                     pred_dir: str, split_name: str,
+                     strict_glue_format: bool = False):
+    ''' Write predictions for RTE task in SuperGLUE prediction format.  '''
+    trg_map = {0: "not_entailment", 1: "entailment"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+def _write_diagnostics_preds(task: str, preds_df: pd.DataFrame,
+                            pred_dir: str, split_name: str,
+                            strict_glue_format: bool = False):
+    ''' Write predictions for GLUE/SuperGLUE diagnostics task.  '''
+
+    if task.n_classes == 2:
+        pred_map = {0: "not_entailment", 1: "entailment"}
+    elif task.n_classes == 3:
+        pred_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
+    else:
+        raise ValueError("Invalid number of output classes detected")
+
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": row["idx"], "label": pred_map[row["labels"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
