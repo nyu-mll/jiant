@@ -3,7 +3,7 @@
 
 Wecome to `jiant`! Let's help get you set up and running a demo experiment!
 
-##1. Install
+## 1. Install
 
 First off, let's make sure you've the full repository, including all the git submodules.
 
@@ -60,7 +60,7 @@ Finally, you'll need to set a few environment variables in [user_config_template
 
 * $JIANT_PROJECT_PREFIX: the directory where things like logs and model checkpoints will be saved.
 * $JIANT_DATA_DIR: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. 
-* $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here]() or fastText (2M) [here]().
+* $WORD_EMBS_FILE: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip)
 
 
 To avoid having your custom paths overwritten by future updates, you should save a copy of this file as `user_config.sh` (or something similar, but `user_config.sh` will be automatically ignored by git.
@@ -88,7 +88,7 @@ Now that we've set up the environment, let's get started!
 
 ## 3. Running our first experiment 
 
-###3.a) Configuring our experiment
+### 3.a) Configuring our experiment
 
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch. 
 This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy in config/tutorial.conf, and follow along - we'll explain everything that is in that file in a bit. 
@@ -184,7 +184,7 @@ python main.py --config_file config/tutorial.conf \
 will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
 
 
-###3.b) Understanding the output logs
+### 3.b) Understanding the output logs
 
 We do support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly. 
 
@@ -227,17 +227,16 @@ Lastly, we will evaluate on the target tasks, and write the results for test in 
 You should see something like this:
 
 ```
-05/03 06:06:38 PM: Evaluating...
-05/03 06:06:38 PM: Evaluating on: sts-b, split: val
-05/03 06:07:08 PM:  Task sts-b: batch 164
-05/03 06:07:12 PM: Task 'sts-b': sorting predictions by 'idx'
-05/03 06:07:12 PM: Finished evaluating on: sts-b
-05/03 06:07:12 PM: Evaluating on: wnli, split: val
-05/03 06:07:14 PM: Task 'wnli': sorting predictions by 'idx'
-05/03 06:07:14 PM: Finished evaluating on: wnli
-05/03 06:07:14 PM: Writing results for split 'val' to coreference_exp/jiant-demo/results.tsv
-05/03 06:07:14 PM: micro_avg: 0.680, macro_avg: 0.624, sts-b_corr: 0.685, sts-b_pearsonr: 0.683, sts-b_spearmanr: 0.688, wnli_accuracy: 0.563
-05/03 06:07:14 PM: Done!
+05/03 09:59:15 AM: Evaluating...
+05/03 09:59:15 AM: Evaluating on: sts-b, split: val
+05/03 09:59:23 AM: Task 'sts-b': sorting predictions by 'idx'
+05/03 09:59:23 AM: Finished evaluating on: sts-b
+05/03 09:59:23 AM: Evaluating on: wnli, split: val
+05/03 09:59:23 AM: Task 'wnli': sorting predictions by 'idx'
+05/03 09:59:23 AM: Finished evaluating on: wnli
+05/03 09:59:23 AM: Writing results for split 'val' to yo_try/jiant-demo/results.tsv
+05/03 09:59:23 AM: micro_avg: 0.168, macro_avg: 0.356, sts-b_corr: 0.149, sts-b_pearsonr: 0.146, sts-b_spearmanr: 0.152, wnli_accuracy: 0.563
+05/03 09:59:23 AM: Done!
 ```
 
 After running this experiment, you should have in your run directory:
@@ -253,4 +252,4 @@ Additionally, the validation scores will be written in `results.tsv` in your exp
 And there you have it! Your first experiment.
 If you are looking for where to go next, check out our documentation [here](https://jiant.info/documentation/#/?id=saving-preprocessed-data)!
 
-Happy jianting!
+Happy `jiant`ing!
