@@ -2464,7 +2464,7 @@ class SWAGTask(MultipleChoiceTask):
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test.jsonl"}
+        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test_with_labels.jsonl"}
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
@@ -2480,7 +2480,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             Parameters:
             batch: list of size batch_size of class predictions
             Returns:
-            One hot encoding of size [batch_size, 2]
+            one hot encoding of size [batch_size, 2]
             """
             ones = torch.sparse.torch.eye(depth).cuda()
             return ones.index_select(0, batch)
