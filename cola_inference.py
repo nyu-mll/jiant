@@ -1,4 +1,4 @@
-'''
+"""
 Run a model inference via a REPL (read-eval-print loop), or by processing an input corpus file.
 
 To run as REPL (default):
@@ -29,82 +29,106 @@ To process+evaluate (e.g.) the CoLA dev set:
 
 (Ensure that the repository is in your PYTHONPATH when running this script.)
 
-'''
+"""
 # pylint: disable=no-member
 import argparse
 import json
-import numpy as np
+import logging as log
 import os
-import pandas as pd
 import sys
 
-import logging as log
+import numpy as np
+import pandas as pd
+import torch
+from allennlp.data import Instance, Vocabulary
+from allennlp.data.dataset import Batch
+from allennlp.nn.util import move_to_device
 from tqdm import tqdm
 
-import torch
-
+from src.models import build_model
+from src.preprocess import build_indexers, build_tasks
 from src.tasks.tasks import process_sentence, sentence_to_text_field
 from src.utils import config
-from src.utils.utils import load_model_state, check_arg_name
 from src.utils.data_loaders import load_tsv
-from src.preprocess import build_tasks, build_indexers
-from src.models import build_model
+from src.utils.utils import check_arg_name, load_model_state
 
-from allennlp.data import Vocabulary
-from allennlp.data.dataset import Batch
-from allennlp.data import Instance
-from allennlp.nn.util import move_to_device
-
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def handle_arguments(cl_arguments):
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description="")
 
     # Configuration files
-    parser.add_argument('--config_file', '-c', type=str, nargs="+",
-                        help="Config file(s) (.conf) for model parameters.")
-    parser.add_argument('--overrides', '-o', type=str, default=None,
-                        help="Parameter overrides, as valid HOCON string.")
+    parser.add_argument(
+        "--config_file",
+        "-c",
+        type=str,
+        nargs="+",
+        help="Config file(s) (.conf) for model parameters.",
+    )
+    parser.add_argument(
+        "--overrides",
+        "-o",
+        type=str,
+        default=None,
+        help="Parameter overrides, as valid HOCON string.",
+    )
 
     # Inference arguments
-    parser.add_argument('--model_file_path', type=str, required=True,
-                        help="Path to saved model (.th).")
-    parser.add_argument('--inference_mode', type=str, default="repl",
-                        help="Run as REPL, or process a corpus file."
-                             " [repl, corpus]")
-    parser.add_argument('--input_path', type=str, default=None,
-                        help="Input path for running inference."
-                             " One input per line."
-                             " Only in eval_mode='corpus'")
-    parser.add_argument('--input_format', type=str, default="text",
-                        help="Format of input (text | train | dev | test)")
-    parser.add_argument('--output_path', type=str, default=None,
-                        help="Output path for running inference."
-                             " Only in eval_mode='corpus'")
-    parser.add_argument('--eval_output_path', type=str, default=None,
-                        help="Output path for metrics from evaluation."
-                             " Only in eval_mode='corpus'")
+    parser.add_argument(
+        "--model_file_path", type=str, required=True, help="Path to saved model (.th)."
+    )
+    parser.add_argument(
+        "--inference_mode",
+        type=str,
+        default="repl",
+        help="Run as REPL, or process a corpus file." " [repl, corpus]",
+    )
+    parser.add_argument(
+        "--input_path",
+        type=str,
+        default=None,
+        help="Input path for running inference."
+        " One input per line."
+        " Only in eval_mode='corpus'",
+    )
+    parser.add_argument(
+        "--input_format",
+        type=str,
+        default="text",
+        help="Format of input (text | train | dev | test)",
+    )
+    parser.add_argument(
+        "--output_path",
+        type=str,
+        default=None,
+        help="Output path for running inference." " Only in eval_mode='corpus'",
+    )
+    parser.add_argument(
+        "--eval_output_path",
+        type=str,
+        default=None,
+        help="Output path for metrics from evaluation." " Only in eval_mode='corpus'",
+    )
 
     return parser.parse_args(cl_arguments)
 
 
 def main(cl_arguments):
-    ''' Run REPL for a CoLA model '''
+    """ Run REPL for a CoLA model """
 
     # Arguments handling #
     cl_args = handle_arguments(cl_arguments)
     args = config.params_from_file(cl_args.config_file, cl_args.overrides)
     check_arg_name(args)
-    assert args.target_tasks == "cola", \
-        "Currently only supporting CoLA. ({})".format(args.target_tasks)
+    assert args.target_tasks == "cola", "Currently only supporting CoLA. ({})".format(
+        args.target_tasks
+    )
 
     if args.cuda >= 0:
         try:
             if not torch.cuda.is_available():
-                raise EnvironmentError("CUDA is not available, or not detected"
-                                       " by PyTorch.")
+                raise EnvironmentError("CUDA is not available, or not detected" " by PyTorch.")
             log.info("Using GPU %d", args.cuda)
             torch.cuda.set_device(args.cuda)
         except Exception:
@@ -121,12 +145,11 @@ def main(cl_arguments):
     # Build or load model #
     model = build_model(args, vocab, word_embs, tasks)
     log.info("Loading existing model from %s...", cl_args.model_file_path)
-    load_model_state(model, cl_args.model_file_path,
-                     args.cuda, [], strict=False)
+    load_model_state(model, cl_args.model_file_path, args.cuda, [], strict=False)
 
     # Inference Setup #
     model.eval()
-    vocab = Vocabulary.from_files(os.path.join(args.exp_dir, 'vocab'))
+    vocab = Vocabulary.from_files(os.path.join(args.exp_dir, "vocab"))
     indexers = build_indexers(args)
     task = take_one(tasks)
 
@@ -137,18 +160,23 @@ def main(cl_arguments):
         print("Running REPL for task: {}".format(task.name))
         run_repl(model, vocab, indexers, task, args)
     elif cl_args.inference_mode == "corpus":
-        run_corpus_inference(model, vocab, indexers, task, args,
-                             cl_args.input_path,
-                             cl_args.input_format,
-                             cl_args.output_path,
-                             cl_args.eval_output_path,
-                             )
+        run_corpus_inference(
+            model,
+            vocab,
+            indexers,
+            task,
+            args,
+            cl_args.input_path,
+            cl_args.input_format,
+            cl_args.output_path,
+            cl_args.eval_output_path,
+        )
     else:
         raise KeyError(cl_args.inference_mode)
 
 
 def run_repl(model, vocab, indexers, task, args):
-    ''' Run REPL '''
+    """ Run REPL """
     print("Input CTRL-C or enter 'QUIT' to terminate.")
     while True:
         try:
@@ -158,9 +186,7 @@ def run_repl(model, vocab, indexers, task, args):
                 break
 
             tokens = process_sentence(
-                tokenizer_name=task.tokenizer_name,
-                sent=input_string,
-                max_seq_len=args.max_seq_len,
+                tokenizer_name=task.tokenizer_name, sent=input_string, max_seq_len=args.max_seq_len
             )
             print("TOKENS:", " ".join("[{}]".format(tok) for tok in tokens))
             field = sentence_to_text_field(tokens, indexers)
@@ -184,10 +210,10 @@ def run_repl(model, vocab, indexers, task, args):
             break
 
 
-def run_corpus_inference(model, vocab, indexers, task, args,
-                         input_path, input_format, output_path,
-                         eval_output_path):
-    ''' Run inference on corpus '''
+def run_corpus_inference(
+    model, vocab, indexers, task, args, input_path, input_format, output_path, eval_output_path
+):
+    """ Run inference on corpus """
     tokens, labels = load_cola_data(input_path, task, input_format, args.max_seq_len)
     logit_batches = []
     for tokens_batch in tqdm(list(batchify(tokens, args.batch_size))):
@@ -205,10 +231,7 @@ def run_corpus_inference(model, vocab, indexers, task, args,
     # Future-proofing
     assert task.name == "cola"
     num_classes = logits.shape[1]
-    columns = (
-        [f"logit_{i}" for i in range(num_classes)]
-        + [f"prob_{i}" for i in range(num_classes)]
-    )
+    columns = [f"logit_{i}" for i in range(num_classes)] + [f"prob_{i}" for i in range(num_classes)]
 
     df = pd.DataFrame(data_out, columns=columns)
     df["pred"] = preds
@@ -227,15 +250,15 @@ def run_corpus_inference(model, vocab, indexers, task, args,
 
 
 def batchify(ls, batch_size):
-    ''' Partition a list into batches of batch_size '''
+    """ Partition a list into batches of batch_size """
     i = 0
     while i < len(ls):
-        yield ls[i:i + batch_size]
+        yield ls[i : i + batch_size]
         i += batch_size
 
 
 def prepare_batch(tokens_batch, vocab, indexers, args):
-    ''' Do preprocessing for batch '''
+    """ Do preprocessing for batch """
     instance_ls = []
     token_ls = []
     for tokens in tokens_batch:
@@ -249,7 +272,7 @@ def prepare_batch(tokens_batch, vocab, indexers, args):
 
 
 def take_one(ls):
-    ''' Extract singleton from list '''
+    """ Extract singleton from list """
     assert len(ls) == 1
     return ls[0]
 
@@ -260,20 +283,27 @@ def load_cola_data(input_path, task, input_format, max_seq_len):
             sentences = f_in.readlines()
         tokens = [
             process_sentence(
-                tokenizer_name=task.tokenizer_name,
-                sent=sentence,
-                max_seq_len=max_seq_len,
+                tokenizer_name=task.tokenizer_name, sent=sentence, max_seq_len=max_seq_len
             )
             for sentence in sentences
         ]
         labels = None
     elif input_format == "train" or input_format == "dev":
-        data = load_tsv(task.tokenizer_name, input_path, max_seq_len,
-                        s1_idx=3, s2_idx=None, label_idx=1)
+        data = load_tsv(
+            task.tokenizer_name, input_path, max_seq_len, s1_idx=3, s2_idx=None, label_idx=1
+        )
         tokens, labels = data[0], data[2]
     elif input_format == "test":
-        data = load_tsv(task.tokenizer_name, input_path, max_seq_len,
-                        s1_idx=1, s2_idx=None, has_labels=False, return_indices=True, skip_rows=1)
+        data = load_tsv(
+            task.tokenizer_name,
+            input_path,
+            max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            has_labels=False,
+            return_indices=True,
+            skip_rows=1,
+        )
         tokens, labels = data[0], None
     else:
         raise KeyError(input_format)
@@ -289,5 +319,5 @@ def get_cola_metrics(logits, preds, labels, task):
     return task.get_metrics(reset=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
