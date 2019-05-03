@@ -652,7 +652,6 @@ class SamplingMultiTaskTrainer:
                 for name, value in all_val_metrics.items():
                     log_str = "%s:" % name
                     if name in all_tr_metrics:
-                    log.info("\tvalidation: %3f", value)
                         log_str += " training: %3f" % all_tr_metrics[name]
                     log_str += " validation: %3f" % value
                     log.info(log_str)
