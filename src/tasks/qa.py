@@ -1,26 +1,19 @@
 """Task definitions for question answering tasks."""
-import codecs
 import collections
-import logging as log
 import json
-import math
 import os
 import re
-from typing import Iterable, Sequence, List, Dict, Any, Type
+from typing import Iterable, Sequence, Type
 
 import torch
-import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import Average, F1Measure
-from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.data.fields import LabelField, MetadataField, ListField, SequenceLabelField
-from allennlp.data import Instance, Token
+from allennlp.data.fields import LabelField, MetadataField
+from allennlp.data import Instance
 
 from ..utils.data_loaders import process_sentence
-from ..utils.utils import truncate
 
-from .tasks import Task, sentence_to_text_field
-from .tasks import sentence_to_text_field, atomic_tokenize
-from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
+from .tasks import Task
+from .tasks import sentence_to_text_field
 from .registry import register_task
 
 
@@ -45,14 +38,19 @@ class MultiRCTask(Task):
             "test": os.path.join(path, "test.jsonl"),
         }
 
+
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
 
-        Split should be one of 'train', 'val', or 'test'.
+        Split should be one of "train", "val", or "test".
         """
-        return self.load_data(self.files_by_split[split])
+        return self.load_data_for_path(self.files_by_split[split])
 
-    def load_data(self, path):
+    def load_data_for_path(self, path):
         """ Load data """
 
         with open(path, encoding="utf-8") as data_fh:
@@ -85,7 +83,7 @@ class MultiRCTask(Task):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for example in self.load_data(path):
+            for example in self.load_data_for_path(path):
                 yield example["paragraph"]["text"]
                 for question in example["paragraph"]["questions"]:
                     yield question["question"]
@@ -129,7 +127,7 @@ class MultiRCTask(Task):
                     yield _make_instance(para, question, ans, label, par_idx, qst_idx, ans_idx)
 
     def count_examples(self):
-        """ Compute here b/c we're streaming the sentences. """
+        """ Compute here b/c we"re streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(

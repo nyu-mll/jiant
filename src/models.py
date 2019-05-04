@@ -37,7 +37,6 @@ from .modules.onlstm.ON_LSTM import ONLSTMStack
 from .modules.prpn.PRPN import PRPN
 from .modules.seq2seq_decoder import Seq2SeqDecoder
 from .modules.span_modules import SpanClassifierModule
-from .preprocess import get_tasks, parse_task_list_arg
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask

@@ -412,9 +412,23 @@ def _get_task(name, args, data_path, scratch_path):
             tokenizer_name=args.tokenizer,
             **task_kw,
         )
+        task.load_data()
         utils.maybe_make_dir(os.path.dirname(pkl_path))
         pkl.dump(task, open(pkl_path, "wb"))
-    # task.truncate(max_seq_len, SOS_TOK, EOS_TOK)
+
+    return task
+
+
+def get_task_without_loading_data(task_name, args):
+    """ Build a task without loading data """
+    task_cls, rel_path, task_kw = TASKS_REGISTRY[task_name]
+    task = task_cls(
+        path=None,
+        max_seq_len=args.max_seq_len,
+        name=task_name,
+        tokenizer_name=args.tokenizer,
+        **task_kw,
+    )
     return task
 
 
@@ -445,7 +459,7 @@ def get_tasks(args):
         tasks.append(task)
 
         # Count examples, store in example_counts.
-        if not hasattr(task, "example_counts"):
+        if task.example_counts is None:
             task.count_examples()
         log.info(
             "\tTask '%s': %s",

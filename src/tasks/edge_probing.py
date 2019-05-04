@@ -1,22 +1,19 @@
 """Task definitions for edge probing."""
 import collections
 import itertools
-import json
 import logging as log
 import os
-from typing import Any, Dict, Iterable, List, Sequence, Type
-
-import numpy as np
+from typing import Dict, Iterable, List, Sequence, Type
 
 # Fields for instance processing
-from allennlp.data import Instance, Token
-from allennlp.data.fields import LabelField, ListField, MetadataField, SpanField, TextField
-from allennlp.training.metrics import BooleanAccuracy, CategoricalAccuracy, F1Measure
+from allennlp.data import Instance
+from allennlp.data.fields import ListField, MetadataField, SpanField
+from allennlp.training.metrics import BooleanAccuracy, F1Measure
 
 from ..allennlp_mods.correlation import FastMatthews
 from ..allennlp_mods.multilabel_field import MultiLabelField
-from ..utils import serialize, utils
-from .registry import REGISTRY, register_task  # global task registry
+from ..utils import utils
+from .registry import register_task  # global task registry
 from .tasks import Task, sentence_to_text_field
 
 ##
@@ -88,14 +85,16 @@ class EdgeProbingTask(Task):
             split: os.path.join(path, fname) + self._tokenizer_suffix
             for split, fname in files_by_split.items()
         }
-        self._iters_by_split = self.load_data()
+        self.path = path
+        self.label_file = label_file
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
-        label_file = os.path.join(path, label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
+        self._iters_by_split = None
+        self.all_labels = None
+        self.n_classes = None
+
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
 
@@ -107,7 +106,13 @@ class EdgeProbingTask(Task):
         self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
-    def _stream_records(self, filename):
+    def load_data(self):
+        label_file = os.path.join(self.path, self.label_file)
+        self.all_labels = list(utils.load_lines(label_file))
+        self.n_classes = len(self.all_labels)
+
+    @classmethod
+    def _stream_records(cls, filename):
         skip_ctr = 0
         total_ctr = 0
         for record in utils.load_json_data(filename):
@@ -157,7 +162,7 @@ class EdgeProbingTask(Task):
             #  iter = serialize.RepeatableIterator(loader)
             iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
-        return iters_by_split
+        self._iters_by_split = iters_by_split
 
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
@@ -166,14 +171,16 @@ class EdgeProbingTask(Task):
         """
         return self._iters_by_split[split]
 
-    def get_num_examples(self, split_text):
+    @classmethod
+    def get_num_examples(cls, split_text):
         """ Return number of examples in the result of get_split_text.
 
         Subclass can override this if data is not stored in column format.
         """
         return len(split_text)
 
-    def _make_span_field(self, s, text_field, offset=1):
+    @classmethod
+    def _make_span_field(cls, s, text_field, offset=1):
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
     def _pad_tokens(self, tokens):
