@@ -37,7 +37,6 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
-from jiant.preprocess import get_tasks, parse_task_list_arg
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -257,7 +256,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         cove_layer = None
         # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
         # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py  # noqa
         bert_cache_dir = os.getenv(
             "PYTORCH_PRETRAINED_BERT_CACHE", os.path.join(args.exp_dir, "bert_cache")
         )
@@ -287,13 +286,25 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info(model)
     param_count = 0
     trainable_param_count = 0
-    log.info("Trainable parameters:")
+    if args.list_params:
+        log.info("Model parameters:")
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
+            if args.list_params:
+                log.info(
+                    "\t%s: Trainable parameter, count %d with %s",
+                    name,
+                    np.prod(param.size()),
+                    str(param.size()),
+                )
+        elif args.list_params:
             log.info(
-                "%s: Trainable parameter count %d with %s", name, np.prod(param.size()), str(param.size())
+                "\t%s: Non-trainable parameter, count %d with %s",
+                name,
+                np.prod(param.size()),
+                str(param.size()),
             )
     log.info("Total number of parameters: {ct:d} ({ct:g})".format(ct=param_count))
     log.info("Number of trainable parameters: {ct:d} ({ct:g})".format(ct=trainable_param_count))
@@ -387,8 +398,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", "r"))
         else:
             # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
-            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
-            # classiifer task map.
+            # skipped, then there's a way to bypass this assertion by explicitly allowing for
+            # a missing classiifer task map.
             assert_for_log(
                 args.do_pretrain or args.allow_missing_task_map,
                 "Error: {} should already exist.".format(classifier_save_path),
@@ -476,7 +487,7 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
         setattr(model, "%s_task_params" % task.name, task_params)
 
     # Actually construct modules.
-    for task in tasks_to_build:
+    for task in set(tasks):
         # If the name of the task is different than the classifier it should use
         # then skip the module creation.
         if task.name != model._get_task_params(task.name).get("use_classifier", task.name):
@@ -568,7 +579,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_Response_mdl" % task.name, dnn_ResponseModel)
     elif isinstance(task, MultiRCTask):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
-        setattr(model, '%s_mdl' % task.name, module)
+        setattr(model, "%s_mdl" % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
 
@@ -755,15 +766,16 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     hid2voc = nn.Linear(args.s2s["d_hid_dec"], args.max_word_v_size)
     return decoder, hid2voc
 
+
 def build_qa_module(task, d_inp, use_bert, params):
-    ''' Build a simple QA module that
+    """ Build a simple QA module that
     1) pools representations (either of the joint (context, question, answer) or individually
     2) projects down to two logits
     3) classifier
 
-    This module models each question-answer pair _individually_ '''
+    This module models each question-answer pair _individually_ """
     pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params['d_proj'], pool_type=pool_type)
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
@@ -938,7 +950,8 @@ class MultiTaskModel(nn.Module):
         """ forward function written specially for cases where we have only +ve pairs in input data
             -ve pairs are created by rotating either sent1 or sent2.
             Ex: [1,2,3,4] after rotation by 2 positions [3,4,1,2]
-            Assumption is each example in sent1 has only one corresponding example in sent2 which is +ve
+            Assumption is each example in sent1 has only one corresponding example in sent2 which
+                is +ve
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         """
         out = {}
@@ -1153,8 +1166,10 @@ class MultiTaskModel(nn.Module):
         return:
             out: (dict)
                 - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
-                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
-                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from
+                                forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from
+                                backward layer
                 - 'loss': size average CE loss
         """
         out = {}
@@ -1240,7 +1255,8 @@ class MultiTaskModel(nn.Module):
             task: (Task obejct)
         return:
             out: (dict)
-                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim]
+                    is output layer from forward layer
                 - 'loss': size average CE loss
         """
 
@@ -1267,11 +1283,11 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _multiple_choice_reading_comprehension_forward(self, batch, task, predict):
-        ''' Forward call for multiple choice (selecting from a fixed set of answers)
+        """ Forward call for multiple choice (selecting from a fixed set of answers)
         reading comprehension (have a supporting paragraph).
 
         Batch has a tensor of shape (n_questions, n_answers, n_tokens)
-        '''
+        """
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
@@ -1279,7 +1295,7 @@ class MultiTaskModel(nn.Module):
             inp = batch["para_quest_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
-            out['n_exs'] = inp["bert_wpm_pretokenized"].size(0)
+            out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
         else:
             # else, we embed each independently and concat them
             par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
@@ -1288,17 +1304,17 @@ class MultiTaskModel(nn.Module):
             inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
             inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
             logits = classifier(inp, inp_mask)
-            out['n_exs'] = batch["answer"]["words"].size(0)
-        out['logits'] = logits
+            out["n_exs"] = batch["answer"]["words"].size(0)
+        out["logits"] = logits
 
-        if 'label' in batch:
+        if "label" in batch:
             idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
-            labels = batch['label']
-            out['loss'] = F.cross_entropy(logits, labels)
+            labels = batch["label"]
+            out["loss"] = F.cross_entropy(logits, labels)
             task.update_metrics(logits, labels, idxs)
 
         if predict:
-            out['preds'] = logits.argmax(dim=-1)
+            out["preds"] = logits.argmax(dim=-1)
 
         return out
 

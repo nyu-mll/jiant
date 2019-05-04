@@ -5,13 +5,13 @@ EXP_NAME=$2
 PARAM_FILE=${MODEL_DIR}"/params.conf"
 MODEL_FILE=${MODEL_DIR}"/model_state_eval_best.th"
 
-# Note: you should only be overriding run_name and target_tasks and (maybe) something like probe_path. 
+# Note: you should only be overriding run_name and target_tasks and (maybe) something like probe_path.
 
 # (Najoung) Prepositions, Negations
 python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = prepswap, target_tasks = nli-prob-prepswap, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, nli-prob-prepswap_use_classifier=mnli"
 python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = negation, target_tasks = nli-prob-negation, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, nli-prob-negation_use_classifier=mnli"
 
-# (Tom) NPs 
+# (Tom) NPs
 python main.py -c config/final.conf ${PARAM_FILE} config/eval_existing.conf -o "run_name = nps_final, target_tasks = nps, load_eval_checkpoint = ${MODEL_FILE}, exp_name = ${EXP_NAME}, nps_use_classifier=mnli"
 
 # (Roma) Spatial, Quantifiers, Appearence, Comparators

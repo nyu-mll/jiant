@@ -113,7 +113,7 @@ class BertEmbedderModule(nn.Module):
             # but doing so this way avoids the need to modify the BertModel
             # code.
             # Extract lexical embeddings; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py#L186
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py#L186  # noqa
             h_lex = self.model.embeddings.word_embeddings(ids)
             h_lex = self.model.embeddings.LayerNorm(h_lex)
             # following our use of the OpenAI model, don't use dropout for

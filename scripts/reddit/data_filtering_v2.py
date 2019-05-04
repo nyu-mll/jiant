@@ -41,7 +41,8 @@ out_f = open(out_file, "w")
 for year in [year_no]:
     for year_chunk in glob.glob(data_path + str(year) + "*"):
         print(year_chunk)
-        # data = pandas.read_csv(year_chunk, delimiter=delimiter, lineterminator='\n', iterator=True, chunksize=1, header=None, error_bad_lines=False)
+        # data = pandas.read_csv(year_chunk, delimiter=delimiter, lineterminator='\n',
+        #     iterator=True, chunksize=1, header=None, error_bad_lines=False)
         with codecs.open(year_chunk, "r", "utf-8", errors="ignore") as data:
             for row_temp in data:
                 total_count += 1

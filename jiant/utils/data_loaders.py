@@ -49,7 +49,8 @@ def load_tsv(
                     No value for labels will be returned.
         filter_idx: int this is the index that we want to filter from
         filter_value: string the value in which we want filter_idx to be equal to
-        return_indices: bool that describes if you need to return indices (for purposes of matching)
+        return_indices: bool that describes if you need to return indices
+            (for purposes of matching)
         label_fn is a function that expects a row and outputs the label
         tag_vocab is a allenlp vocab object contains the tags
         tag2idx_dict is a <string, int> dictionary from coarse category name to column index
