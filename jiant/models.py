@@ -351,7 +351,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            from .modules.cove.cove import MTLSTM as cove_lstm
+            from jiant.modules.cove.cove import MTLSTM as cove_lstm
 
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
