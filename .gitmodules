@@ -1,7 +1,7 @@
-[submodule "src/cove"]
-	path = src/modules/cove
+[submodule "jiant/cove"]
+	path = jiant/modules/cove
   url = https://github.com/salesforce/cove.git
   ignore = untracked
-[submodule "src/openai_transformer_lm/pytorch_huggingface"]
-	path = src/openai_transformer_lm/pytorch_huggingface
+[submodule "jiant/openai_transformer_lm/pytorch_huggingface"]
+	path = jiant/openai_transformer_lm/pytorch_huggingface
 	url = https://github.com/huggingface/pytorch-openai-transformer-lm.git
