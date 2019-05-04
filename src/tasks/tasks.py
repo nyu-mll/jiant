@@ -490,7 +490,8 @@ class SSTTask(SingleClassificationTask):
 @register_task("hd_cola_npi_qnt", rel_path="NPI/combs/minus_quantifiers")
 @register_task("hd_cola_npi_sup", rel_path="NPI/combs/minus_superlative")
 class CoLANPITask(SingleClassificationTask):
-    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for test-set
+    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for
+       test-set
        Note: Used for an NYU seminar, data not yet public"""
 
     def __init__(self, path, max_seq_len, name, **kw):
@@ -1959,7 +1960,8 @@ class CCGTaggingTask(TaggingTask):
         # Get the mask for each sentence, where the mask is whether or not
         # the token was split off by tokenization. We want to only count the first
         # sub-piece in the BERT tokenization in the loss and score, following Devlin's NER
-        # experiment [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
+        # experiment
+        # [BERT: Pretraining of Deep Bidirectional Transformers for Language Understanding]
         # (https://arxiv.org/abs/1810.04805)
         if self.bert_tokenization:
             import numpy.ma as ma
@@ -2521,12 +2523,16 @@ class SWAGTask(MultipleChoiceTask):
         """Get metrics specific to the task"""
         acc = self.scorer1.get_metric(reset)
         return {"accuracy": acc}
-        
+
 
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test_with_labels.jsonl"}
+        self._files_by_split = {
+            "train": "train.jsonl",
+            "val": "val.jsonl",
+            "test": "test_with_labels.jsonl",
+        }
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw

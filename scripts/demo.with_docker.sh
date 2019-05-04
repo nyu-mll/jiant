@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run jiant with demo.conf in a docker container. 
+# Run jiant with demo.conf in a docker container.
 #
 # The container expects a number of paths relative to /nfs/jsalt;
 # for now, we'll fake these by setting up a temp directory.

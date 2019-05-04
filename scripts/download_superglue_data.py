@@ -15,13 +15,13 @@ import zipfile
 
 TASKS = ["CB", "COPA", "MultiRC", "RTE", "WiC", "WSC", "diagnostic"]
 TASK2PATH = {
-        "CB": "https://dl.fbaipublicfiles.com/glue/superglue/data/CB.zip",
-        "COPA": "https://dl.fbaipublicfiles.com/glue/superglue/data/COPA.zip",
-        "MultiRC": "https://dl.fbaipublicfiles.com/glue/superglue/data/MultiRC.zip",
-        "RTE": "https://dl.fbaipublicfiles.com/glue/superglue/data/RTE.zip",
-        "WiC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WiC.zip",
-        "WSC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WSC.zip",
-        "diagnostic": "https://www.dropbox.com/s/ju7d95ifb072q9f/diagnostic-full.tsv?dl=1"
+    "CB": "https://dl.fbaipublicfiles.com/glue/superglue/data/CB.zip",
+    "COPA": "https://dl.fbaipublicfiles.com/glue/superglue/data/COPA.zip",
+    "MultiRC": "https://dl.fbaipublicfiles.com/glue/superglue/data/MultiRC.zip",
+    "RTE": "https://dl.fbaipublicfiles.com/glue/superglue/data/RTE.zip",
+    "WiC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WiC.zip",
+    "WSC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WSC.zip",
+    "diagnostic": "https://www.dropbox.com/s/ju7d95ifb072q9f/diagnostic-full.tsv?dl=1",
 }
 
 

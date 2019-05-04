@@ -256,7 +256,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         cove_layer = None
         # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
         # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py
+        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py  # noqa
         bert_cache_dir = os.getenv(
             "PYTORCH_PRETRAINED_BERT_CACHE", os.path.join(args.exp_dir, "bert_cache")
         )
@@ -398,8 +398,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             loaded_classifiers = json.load(open(args.run_dir + "/classifier_task_map.json", "r"))
         else:
             # No file exists, so assuming we are just starting to pretrain. If pretrain is to be
-            # skipped, then there's a way to bypass this assertion by explicitly allowing for a missing
-            # classiifer task map.
+            # skipped, then there's a way to bypass this assertion by explicitly allowing for
+            # a missing classiifer task map.
             assert_for_log(
                 args.do_pretrain or args.allow_missing_task_map,
                 "Error: {} should already exist.".format(classifier_save_path),
@@ -950,7 +950,8 @@ class MultiTaskModel(nn.Module):
         """ forward function written specially for cases where we have only +ve pairs in input data
             -ve pairs are created by rotating either sent1 or sent2.
             Ex: [1,2,3,4] after rotation by 2 positions [3,4,1,2]
-            Assumption is each example in sent1 has only one corresponding example in sent2 which is +ve
+            Assumption is each example in sent1 has only one corresponding example in sent2 which
+                is +ve
             So rotating sent1/sent2 and pairing with sent2/sent1 is one way to obtain -ve pairs
         """
         out = {}
@@ -1165,8 +1166,10 @@ class MultiTaskModel(nn.Module):
         return:
             out: (dict)
                 - 'logits': output layer, dimension: [batchSize * timeSteps * 2, outputDim]
-                            first half: [:batchSize*timeSteps, outputDim] is output layer from forward layer
-                            second half: [batchSize*timeSteps:, outputDim] is output layer from backward layer
+                            first half: [:batchSize*timeSteps, outputDim] is output layer from
+                                forward layer
+                            second half: [batchSize*timeSteps:, outputDim] is output layer from
+                                backward layer
                 - 'loss': size average CE loss
         """
         out = {}
@@ -1252,7 +1255,8 @@ class MultiTaskModel(nn.Module):
             task: (Task obejct)
         return:
             out: (dict)
-                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim] is output layer from forward layer
+                - 'logits': output layer, dimension: [batchSize * timeSteps, outputDim]
+                    is output layer from forward layer
                 - 'loss': size average CE loss
         """
 

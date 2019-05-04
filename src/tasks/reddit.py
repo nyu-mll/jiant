@@ -178,7 +178,8 @@ class RedditPairClassificationTask(PairClassificationTask):
 @register_task("mt_pair_classif_dummy", rel_path="wmt14_en_de_mini/")
 class MTDataPairClassificationTask(RedditPairClassificationTask):
     """ Task class for MT data pair classification using standard setup.
-        RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with different data
+        RedditPairClassificationTask and MTDataPairClassificationTask are same tasks with
+        different data
     """
 
     def __init__(self, path, max_seq_len, name, **kw):

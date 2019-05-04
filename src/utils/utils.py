@@ -96,7 +96,8 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
     """ Get pre-softmaxed mixing weights for ELMo from text_field_embedder for a given task.
-    Stops program execution if something goes wrong (e.g. task is malformed, resulting in KeyError).
+    Stops program execution if something goes wrong (e.g. task is malformed,
+    resulting in KeyError).
 
     args:
         - text_field_embedder (ElmoTextFieldEmbedder): the embedder used during the run
@@ -184,7 +185,7 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
     """
     This class implements the key-value scaled dot product attention mechanism
     detailed in the paper `Attention is all you Need
-    <https://www.semanticscholar.org/paper/Attention-Is-All-You-Need-Vaswani-Shazeer/0737da0767d77606169cbf4187b83e1ab62f6077>`_ .
+    <https://www.semanticscholar.org/paper/Attention-Is-All-You-Need-Vaswani-Shazeer/0737da0767d77606169cbf4187b83e1ab62f6077>`_ .  # noqa
 
     The attention mechanism is a weighted sum of a projection V of the inputs, with respect
     to the scaled, normalised dot product of Q and K, which are also both linear projections

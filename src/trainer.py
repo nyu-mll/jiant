@@ -212,8 +212,9 @@ class SamplingMultiTaskTrainer:
             best and (if different) most recent.
         val_data_limit: During training, use only the first N examples from the validation set.
             Set to -1 to use all.
-        training_data_fraction: If set to a float between 0 and 1, load only the specified percentage
-            of examples. Hashing is used to ensure that the same examples are loaded each epoch.
+        training_data_fraction: If set to a float between 0 and 1, load only the specified
+            percentage of examples. Hashing is used to ensure that the same examples are loaded
+            each epoch.
         """
         self._model = model
 
@@ -274,16 +275,22 @@ class SamplingMultiTaskTrainer:
         track necessary information about the training status of each task and metric respectively.
 
         Returns:
-            - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info contains:
-                - iterator: a task specific (because it uses that task's fields to dynamically batch) batcher
+            - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info
+              contains:
+                - iterator: a task specific (because it uses that task's fields to dynamically
+                    batch) batcher
                 - n_tr_batches: the number of training batches
-                - tr_generator: generator object that returns the batches, set to repeat indefinitely
+                - tr_generator: generator object that returns the batches, set to repeat
+                    indefinitely
                 - loss: the accumulated loss (during training or validation)
                 - n_batches_since_val: number of batches trained on since the last validation
                 - total_batches_trained: number of batches trained over all validation checks
-                - optimizer: a task specific optimizer, not used if the global optimizer is not None
-                - scheduler: a task specific scheduler, not used if the global optimizer is not None
-                - stopped: a bool indicating if that task is stopped or not (if it ran out of patience or hit min lr)
+                - optimizer: a task specific optimizer, not used if the global optimizer is not
+                    None
+                - scheduler: a task specific scheduler, not used if the global optimizer is not
+                    None
+                - stopped: a bool indicating if that task is stopped or not (if it ran out of
+                    patience or hit min lr)
                 - last_log: the time we last logged progress for the task
 
             - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
@@ -291,7 +298,8 @@ class SamplingMultiTaskTrainer:
                 which are privileged to get an aggregate multi-task score. Each dict contains:
                 - hist (List[float]): previous values of the metric
                 - stopped (Bool): whether or not that metric is stopped or not
-                - best (Tuple(Int, Dict)): information on the best value of that metric and when it happened
+                - best (Tuple(Int, Dict)): information on the best value of that metric and when
+                    it happened
         """
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
@@ -315,9 +323,9 @@ class SamplingMultiTaskTrainer:
             task_info["iterator"] = iterator
 
             if phase == "pretrain":
-                # Warning: This won't be precise when training_data_fraction is set, since each example is included
-                # or excluded independently using a hashing function. Fortunately, it
-                # doesn't need to be.
+                # Warning: This won't be precise when training_data_fraction is set, since each
+                #  example is included or excluded independently using a hashing function.
+                # Fortunately, it doesn't need to be.
                 task_info["n_tr_batches"] = math.ceil(
                     task.n_train_examples * self._training_data_fraction / batch_size
                 )
@@ -376,7 +384,8 @@ class SamplingMultiTaskTrainer:
             scaling_weights = 1 / np.log(task_n_train_examples)
         elif scaling_method == "max_inverse":
             scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best epochs for each task from a previous uniform run, normalizd by max epoch
+        # Weighting losses based on best epochs for each task from a previous uniform run,
+        # normalizd by max epoch
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif "max_epoch_" in scaling_method:
             epochs = scaling_method.strip("max_epoch_").split("_")
@@ -762,7 +771,8 @@ class SamplingMultiTaskTrainer:
                 new_best_macro = True
         if out_of_patience:
             metric_infos[metric]["stopped"] = True
-            # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+            # Commented out the below line as more confusing than helpful. May make sense to
+            # restore if we wind up using more complex stopping strategies.
             # log.info("Out of early stopping patience. Stopped tracking %s.", task_name)
         return metric_infos, this_epoch_metric, should_save, new_best_macro
 
@@ -770,7 +780,7 @@ class SamplingMultiTaskTrainer:
         self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
     ):
         """
-        This function builds validation generator, evaluates on each task and produces validation metrics.
+        Builds validation generator, evaluates on each task and produces validation metrics.
         Parameters
         ----------
         task: current task to get validation performance of
@@ -876,7 +886,7 @@ class SamplingMultiTaskTrainer:
 
         # Get validation numbers for each task
         for task in tasks:
-            n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(
+            n_examples_overall, task_infos, all_val_metrics = self._calculate_validation_performance(  # noqa
                 task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
             )
 
@@ -897,7 +907,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(  # noqa
                 epoch,
                 all_val_metrics,
                 metric,
@@ -919,8 +929,12 @@ class SamplingMultiTaskTrainer:
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
                 scheduler.step(this_epoch_metric, epoch)
-                log.info("\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best)
-                log.info("\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs)
+                log.info(
+                    "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
+                )
+                log.info(
+                    "\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs
+                )
 
         return all_val_metrics, should_save, new_best_macro
 
@@ -945,7 +959,8 @@ class SamplingMultiTaskTrainer:
                 task_info = task_infos[task.name]
                 n_epochs_trained = task_info["total_batches_trained"] / task_info["n_tr_batches"]
                 if n_epochs_trained >= self._max_epochs:
-                    # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+                    # Commented out the below line as more confusing than helpful. May make sense
+                    # to restore if we wind up using more complex stopping strategies.
                     # log.info("Reached max_epochs limit for %s.", task.name)
                     task_info["stopped"] = True
             stop_epochs = min([info["stopped"] for info in task_infos.values()])
@@ -957,7 +972,8 @@ class SamplingMultiTaskTrainer:
             for task in tasks:
                 task_info = task_infos[task.name]
                 if task_info["optimizer"].param_groups[0]["lr"] < self._min_lr:
-                    # Commented out the below line as more confusing than helpful. May make sense to restore if we wind up using more complex stopping strategies.
+                    # Commented out the below line as more confusing than helpful. May make sense
+                    # to restore if we wind up using more complex stopping strategies.
                     # log.info("Minimum lr hit on %s.", task.name)
                     task_info["stopped"] = True
             stop_lr = min([info["stopped"] for info in task_infos.values()])

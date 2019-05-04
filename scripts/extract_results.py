@@ -74,8 +74,8 @@ for path in args.log_files:
                     found_tasks = train_m.groups()[0]
                     if pretrain_tasks is not "" and found_tasks != pretrain_tasks:
                         print(
-                            "WARNING: Multiple sets of training tasks found. Skipping %s and reporting last."
-                            % (found_tasks)
+                            "WARNING: Multiple sets of training tasks found. "
+                            "Skipping %s and reporting last." % (found_tasks)
                         )
                     pretrain_tasks = found_tasks
 
@@ -83,7 +83,8 @@ for path in args.log_files:
                 if do_m:
                     do = do_m.groups()[0]
                     if dropout is None:
-                        # This is a bit of a hack: Take the first instance of dropout, which will come from the overall config.
+                        # This is a bit of a hack: Take the first instance of dropout,
+                        # which will come from the overall config.
                         # Later matches will appear for model-specific configs.
                         dropout = do
 

@@ -187,7 +187,7 @@ class EdgeProbingTask(Task):
         """Pad tokens according to the current tokenization style."""
         if self.tokenizer_name.startswith("bert-"):
             # standard padding for BERT; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
+            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85  # noqa
             return ["[CLS]"] + tokens + ["[SEP]"]
         else:
             return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
