@@ -742,7 +742,7 @@ class SamplingMultiTaskTrainer:
         This function updates metric history with the best validation score so far.
         Parameters
         ---------
-        epoch: int. 
+        epoch: int.
           Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
             any given task's training set.
         all_val_metrics: dict with current epoch's validation performance
