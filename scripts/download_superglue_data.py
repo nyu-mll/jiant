@@ -1,5 +1,8 @@
 """ Script for downloading all SuperGLUE data.
 
+For licence information, see the original dataset information links
+available from: https://super.gluebenchmark.com/
+
 Example usage:
   python download_superglue_data.py --data_dir data --tasks all
 
