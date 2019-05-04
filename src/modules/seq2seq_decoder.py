@@ -1,5 +1,5 @@
 # This is a slightly modified version of the AllenNLP SimpleSeq2Seq class:
-# https://github.com/allenai/allennlp/blob/master/allennlp/models/encoder_decoders/simple_seq2seq.py
+# https://github.com/allenai/allennlp/blob/master/allennlp/models/encoder_decoders/simple_seq2seq.py  # noqa
 
 import logging as log
 from typing import Dict

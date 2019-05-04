@@ -4,10 +4,10 @@ import os
 import sys
 
 
-def pad(s, l=30):
-    if len(s) > l:
-        return s[:l]
-    return s + " " * (l - len(s))
+def pad(s, le=30):
+    if len(s) > le:
+        return s[:le]
+    return s + " " * (le - len(s))
 
 
 def get_metadata(data_dir):
@@ -86,7 +86,7 @@ def compute_accs(accs):
         print("")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     all_models = ["random", "nli", "ccg", "lm", "mt", "reddit", "shapeworld"]
     data_dir = sys.argv[1]
     meta_data = get_metadata(data_dir)
