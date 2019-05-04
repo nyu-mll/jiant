@@ -6,7 +6,10 @@ To debug this, run with -m ipdb:
 """
 # pylint: disable=no-member
 import logging as log
-log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)  # noqa # nopep8
+
+log.basicConfig(
+    format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
+)  # noqa
 
 import argparse
 import glob
@@ -95,8 +98,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
     if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
         # If we're training models for evaluation, which is always done from scratch with a fresh
         # optimizer, we shouldn't load parameters for those models.
-        # Usually, there won't be trained parameters to skip, but this can happen if a run is killed
-        # during the do_target_task_training phase.
+        # Usually, there won't be trained parameters to skip, but this can happen if a run is
+        # killed during the do_target_task_training phase.
         task_names_to_avoid_loading = [task.name for task in target_tasks]
     else:
         task_names_to_avoid_loading = []
@@ -112,8 +115,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
             strict=strict,
         )
     else:
-        # Look for target train checkpoints (available only if we're restoring from a run that already
-        # finished), then look for training checkpoints.
+        # Look for target train checkpoints (available only if we're restoring from a run that
+        # already finished), then look for training checkpoints.
 
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
@@ -166,7 +169,8 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         )
         assert_for_log(
             not args.do_pretrain,
-            "Error: Attempting to train a model and then replace that model with one from a checkpoint.",
+            "Error: Attempting to train a model and then replace that model with one from "
+            "a checkpoint.",
         )
         steps_log.write("Loading model from path: %s \n" % args.load_target_train_checkpoint)
 
@@ -272,15 +276,16 @@ def get_best_checkpoint_path(run_dir):
 
 def evaluate_and_write(args, model, tasks, splits_to_write):
     """ Evaluate a model on dev and/or test, then write predictions """
-    val_results, val_preds = evaluate.evaluate(
-        model, tasks, args.batch_size, args.cuda, "val")
-    if 'val' in splits_to_write:
-        evaluate.write_preds(tasks, val_preds, args.run_dir, 'val',
-                             strict_glue_format=args.write_strict_glue_format)
-    if 'test' in splits_to_write:
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "val")
+    if "val" in splits_to_write:
+        evaluate.write_preds(
+            tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
+        )
+    if "test" in splits_to_write:
         _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
-        evaluate.write_preds(tasks, te_preds, args.run_dir, 'test',
-                             strict_glue_format=args.write_strict_glue_format)
+        evaluate.write_preds(
+            tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
+        )
     run_name = args.get("run_name", os.path.basename(args.run_dir))
 
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
@@ -309,14 +314,12 @@ def initial_setup(args, cl_args):
     """
     output = io.StringIO()
     maybe_make_dir(args.project_dir)  # e.g. /nfs/jsalt/exp/$HOSTNAME
-    maybe_make_dir(args.exp_dir)      # e.g. <project_dir>/jiant-demo
-    maybe_make_dir(args.run_dir)      # e.g. <project_dir>/jiant-demo/sst
+    maybe_make_dir(args.exp_dir)  # e.g. <project_dir>/jiant-demo
+    maybe_make_dir(args.run_dir)  # e.g. <project_dir>/jiant-demo/sst
     log_fh = log.FileHandler(args.local_log_path)
-    log_fmt = log.Formatter('%(asctime)s: %(message)s',
-                            datefmt='%m/%d %I:%M:%S %p')
+    log_fmt = log.Formatter("%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p")
     log_fh.setFormatter(log_fmt)
     log.getLogger().addHandler(log_fh)
-
 
     if cl_args.remote_log:
         from src.utils import gcp
@@ -354,7 +357,8 @@ def initial_setup(args, cl_args):
             torch.cuda.manual_seed_all(seed)
         except Exception:
             log.warning(
-                "GPU access failed. You might be using a CPU-only installation of PyTorch. Falling back to CPU."
+                "GPU access failed. You might be using a CPU-only installation of PyTorch. "
+                "Falling back to CPU."
             )
             args.cuda = -1
 
@@ -517,7 +521,7 @@ def main(cl_arguments):
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
             for task in target_tasks:
-                task_to_use = model._get_task_params(task.name).get('use_classifier', task.name)
+                task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
                 if task.name != task_to_use:
                     task_model_to_load = task_to_use
                 else:
@@ -527,7 +531,7 @@ def main(cl_arguments):
                 # and have a best set of sent encoder model weights per task.
                 finetune_path = os.path.join(
                     args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                    )
+                )
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:

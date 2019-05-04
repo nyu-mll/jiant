@@ -1,4 +1,4 @@
-# Tutorial: Getting Started 
+# Tutorial: Getting Started
 
 
 Wecome to `jiant`! Let's help get you set up and running a demo experiment!
@@ -29,7 +29,7 @@ Make sure to activate the environment by running:
 
 ```
 conda activate jiant
-``` 
+```
 
 before running any `jiant` code. (To deactivate run: `source deactivate`)
 
@@ -39,12 +39,12 @@ You will also need to install dependencies for `nltk` if you do not already have
 
 ```
 python -m nltk.downloader -d  perluniprops nonbreaking_prefixes punkt
-``` 
+```
 
 
- ## 2. Getting data and setting up our environment 
- 
- In this tutorial, we will be working with GLUE data. 
+ ## 2. Getting data and setting up our environment
+
+ In this tutorial, we will be working with GLUE data.
 The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
 
 
@@ -59,7 +59,7 @@ Finally, you'll need to set a few environment variables in [user_config_template
 
 
 * `$JIANT_PROJECT_PREFIX`: the directory where things like logs and model checkpoints will be saved.
-* `$JIANT_DATA_DIR`: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now. 
+* `$JIANT_DATA_DIR`: location of the data you want to train and evaluate on. As a starting point, this is often the directory created by the GLUE or SuperGLUE data downloaders. Let's use the `data/` directory for GLUE for now.
 * `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
 
 
@@ -76,28 +76,28 @@ To remember to do this, it can help to run commands like this by default:
 source user_config.sh; python main.py ...
 ```
 
-Or, for a more permanent solution, run 
+Or, for a more permanent solution, run
 
 ```
 source scripts/export_from_bash.sh
-``` 
+```
 
 from the root of the `jiant` directory, which adds the source command directly to your machine's bash file.
 
 Now that we've set up the environment, let's get started!
 
-## 3. Running our first experiment 
+## 3. Running our first experiment
 
 ### 3.a) Configuring our experiment
 
-Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch. 
-This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit. 
+Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch.
+This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
 
 
-Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file. 
+Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file.
 
 ```
-include "defaults.conf" 
+include "defaults.conf"
 ```
 
 Some important options include:
@@ -107,7 +107,7 @@ Some important options include:
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
 * `word_embs`: This is a string specifying the type of word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. *
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
-* `exp_name`, which expects a string of your experiment name. 
+* `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
 The main differences between an experiment and a run is that all runs in an experiment will have the same preprocessing (which may include tokenization differences), while runs his a specific experiment (which may differ from other runs by learning rate or type of sentence encoder, for example, your run name could be `rnn_encoder` for a run with a biLSTM sentence encoder).
 
@@ -119,7 +119,7 @@ sts-b += {
     classifier_hid_dim = 512
     pair_attn = 0
     max_vals = 16
-    val_interval = 10  
+    val_interval = 10
 }
 
 ```
@@ -166,13 +166,13 @@ sts-b += {
     classifier_hid_dim = 512
     pair_attn = 0
     max_vals = 16
-    val_interval = 10  
+    val_interval = 10
 }
 
 ```
 
 Now we get on to the actual experiment running!
-To run the experiment, you can simply run the below command via command line, or use a bash script. 
+To run the experiment, you can simply run the below command via command line, or use a bash script.
 
  You can use the `--overrides` flag to override specific variables. For example:
 
@@ -186,7 +186,7 @@ will run the demo config, but write output to `$JIANT_PROJECT_PREFIX/my_exp/foob
 
 ### 3.b) Understanding the output logs
 
-We support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly. 
+We support Tensorboard, however, you can also look at the logs to make sure everything in your experiment is running smoothly.
 
 There's a lot going on here (including some debugging information that we're working on suppressing), but a lot of it is useful. The logs include:
 
@@ -194,9 +194,9 @@ There's a lot going on here (including some debugging information that we're wor
 * Restoring checkpoints (if applicable)
 * Indexing your data into AllenNLP instances for preparation for training.
 * Printing out the model architecture
-* When you get to training stage, updates of the current progress and validation. 
+* When you get to training stage, updates of the current progress and validation.
 
-One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks based on a parameter you can set in your experiment `weighting_method`, which is automatically set to proportional (so the larger the task, the larger the probablty it will get sampled for a batch). 
+One important thing to notice is that during training, the updates will swap between sst and mrpc. This is because for each training batch, we sample the tasks based on a parameter you can set in your experiment `weighting_method`, which is automatically set to proportional (so the larger the task, the larger the probablty it will get sampled for a batch).
 
 After validating, you will see something like this:
 ```
@@ -223,7 +223,7 @@ There are two sets of losses and scores outputted for the two tasks. This is bec
 
 Then, after the pretraining phase, during target task training, you will see updates for only one task at a time, and after each validation, only scores for that one task.
 
-Lastly, we will evaluate on the target tasks, and write the results for test in your run directory. 
+Lastly, we will evaluate on the target tasks, and write the results for test in your run directory.
 You should see something like this:
 
 ```
@@ -247,7 +247,7 @@ After running this experiment, you should have in your run directory:
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
 
-Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to. 
+Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to.
 
 And there you have it! Your first experiment.
 If you are looking for where to go next, check out our documentation [here](https://jiant.info/documentation/#/)!

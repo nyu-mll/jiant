@@ -14,25 +14,25 @@ A few things you might want to know about `jiant`:
 
 ## Getting Started
 
-To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)! 
+To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)!
 
 ## Official Documentation
 
 Our official documentation is here: https://jiant.info/documentation#/
- 
+
 
 ## Running
-To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:	
-```sh	
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
+```sh
 python main.py --config_file config/demo.conf \
-    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"	
-```	
-will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.	
- To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)	
-*  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.	
-*  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.	
+    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
+```
+will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
+ To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
+*  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.
+*  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
 *  `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
-To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 	
+To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh).
 
 
 ## Suggested Citation

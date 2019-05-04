@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Helper script to generate ELMo weights file, where RNN weights are either randomized or randomized+orthogonalized..
+# Helper script to generate ELMo weights file, where RNN weights are either randomized or
+#   randomized+orthogonalized..
 # Uses h5py to read in default ELMo weights file, make copy of it, and modify and save the copy.
 #
 # Usage:
