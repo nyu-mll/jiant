@@ -219,6 +219,7 @@ SUPERGLUE_NAME_MAP = {
     "rte-superglue": "RTE",
     "wic": "WiC",
     "superglue-diagnostic": "AX",
+    "winograd-coreference": "WSC"
 }
 
 
