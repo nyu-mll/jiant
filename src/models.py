@@ -286,13 +286,22 @@ def build_model(args, vocab, pretrained_embs, tasks):
     log.info(model)
     param_count = 0
     trainable_param_count = 0
-    log.info("Trainable parameters:")
+    if args.list_params:
+        log.info("Model parameters:")
     for name, param in model.named_parameters():
         param_count += np.prod(param.size())
         if param.requires_grad:
             trainable_param_count += np.prod(param.size())
+            if args.list_params:
+                log.info(
+                    "\t%s: Trainable parameter, count %d with %s",
+                    name,
+                    np.prod(param.size()),
+                    str(param.size()),
+                )
+        elif args.list_params:
             log.info(
-                "%s: Trainable parameter count %d with %s",
+                "\t%s: Non-trainable parameter, count %d with %s",
                 name,
                 np.prod(param.size()),
                 str(param.size()),
