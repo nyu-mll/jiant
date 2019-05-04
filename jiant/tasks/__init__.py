@@ -1,5 +1,5 @@
 # Import task definitions to register their tasks.
-from jiant.tasks import edge_probing, lm, mt, nli_probing, reddit, tasks, qa
+from jiant.tasks import edge_probing, lm, mt, nli_probing, tasks, qa
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
