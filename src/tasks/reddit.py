@@ -1,15 +1,13 @@
 """Task definitions for reddit."""
 import codecs
-import logging as log
 import os
-from typing import Any, Dict, Iterable, List, Sequence, Type
+from typing import Iterable, Sequence, Type
 
-from allennlp.data import Instance, Token
-from allennlp.data.fields import LabelField, MetadataField, TextField
+from allennlp.data import Instance
+from allennlp.data.fields import LabelField
 from allennlp.training.metrics import Average
 
 from ..utils.data_loaders import process_sentence
-from ..utils.utils import truncate
 from .registry import register_task
 from .tasks import PairClassificationTask, RankingTask, sentence_to_text_field
 
@@ -34,14 +32,18 @@ class RedditTask(RankingTask):
         }
         self.max_seq_len = max_seq_len
 
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
         """
-        return self.load_data(self.files_by_split[split])
+        return self.get_data_iter(self.files_by_split[split])
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         with open(path, "r") as txt_fh:
             for row in txt_fh:
@@ -60,7 +62,7 @@ class RedditTask(RankingTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
+            for sent1, sent2, _ in self.get_data_iter(path):
                 yield sent1
                 yield sent2
 
@@ -68,19 +70,21 @@ class RedditTask(RankingTask):
         """ Compute here b/c we're streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
+            example_counts[split] = sum(1 for _ in open(split_path))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    @classmethod
+    def process_split(cls, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
+            d = {
+                "input1": sentence_to_text_field(input1, indexers),
+                "input2": sentence_to_text_field(input2, indexers),
+                "labels": LabelField(labels, label_namespace="labels", skip_indexing=True),
+            }
             # d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
             # d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
         for sent1, sent2, trg in split:
@@ -107,14 +111,18 @@ class RedditPairClassificationTask(PairClassificationTask):
         }
         self.max_seq_len = max_seq_len
 
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
         """
-        return self.load_data(self.files_by_split[split])
+        return self.get_data_iter(self.files_by_split[split])
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         with open(path, "r") as txt_fh:
             for row in txt_fh:
@@ -133,7 +141,7 @@ class RedditPairClassificationTask(PairClassificationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent1, sent2, _ in self.load_data(path):
+            for sent1, sent2, _ in self.get_data_iter(path):
                 yield sent1
                 yield sent2
 
@@ -141,19 +149,20 @@ class RedditPairClassificationTask(PairClassificationTask):
         """ Compute here b/c we're streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
+            example_counts[split] = sum(1 for _ in open(split_path))
         self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _make_instance(input1, input2, labels):
-            d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
+            d = {
+                "input1": sentence_to_text_field(input1, indexers),
+                "input2": sentence_to_text_field(input2, indexers),
+                "labels": LabelField(labels, label_namespace="labels", skip_indexing=True),
+            }
             # d['sent1_str'] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
             # d['sent2_str'] = MetadataField(" ".join(input2[1:-1]))
-            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
         for sent1, sent2, trg in split:
@@ -179,7 +188,7 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
             split: os.path.join(path, "%s.txt" % split) for split in ["train", "val", "test"]
         }
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
             for row in txt_fh:
@@ -196,6 +205,6 @@ class MTDataPairClassificationTask(RedditPairClassificationTask):
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(
-                1 for line in codecs.open(split_path, "r", "utf-8", errors="ignore")
+                1 for _ in codecs.open(split_path, "r", "utf-8", errors="ignore")
             )
         self.example_counts = example_counts
