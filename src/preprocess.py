@@ -458,7 +458,7 @@ def get_tasks(args):
         tasks.append(task)
 
         # Count examples, store in example_counts.
-        if not hasattr(task, "example_counts"):
+        if task.example_counts is None:
             task.count_examples()
         log.info(
             "\tTask '%s': %s",
