@@ -10,10 +10,14 @@
 #
 # TODO: turn this into a real integration test...
 
+# temporarily cd to jiant/
+pushd $(dirname $0)
+pushd $(git rev-parse --show-toplevel)
+
 set -eux
 
 # Get the path to this repo; we'll mount it from the container later.
-JIANT_PATH=$(readlink -f $(dirname $0))
+JIANT_PATH=$(readlink -f .)
 
 TEMP_DIR=${1:-"/tmp/jiant-demo"}
 
@@ -40,7 +44,6 @@ COMMAND+=( -o "exp_name=jiant-demo" )
 # Run demo.conf in the docker container.
 sudo docker run --runtime=nvidia --rm -v "$TEMP_DIR:/nfs/jsalt" \
   -v "$JIANT_PATH:/share/jiant" \
-  -e "NFS_PROJECT_PREFIX=/nfs/jsalt/exp" \
   -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp" \
   -e "PYTORCH_PRETRAINED_BERT_CACHE=/nfs/jsalt/share/bert_cache" \
   -e "ELMO_SRC_DIR=" \

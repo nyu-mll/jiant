@@ -1,24 +1,22 @@
 """Task definitions for language modeling tasks."""
-import json
-import logging as log
 import math
 import os
-
-from allennlp.training.metrics import Average
-from allennlp.data.token_indexers import SingleIdTokenIndexer
+from typing import Iterable, Sequence, Type
 
 # Fields for instance processing
-from allennlp.data import Instance, Token
+from allennlp.data import Instance
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.training.metrics import Average
 
-from ..utils.utils import truncate
 from ..utils.data_loaders import process_sentence
-
-from typing import Iterable, Sequence, List, Dict, Any, Type
-
-from .tasks import SequenceGenerationTask
-from .tasks import sentence_to_text_field, atomic_tokenize
-from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
 from .registry import register_task
+from .tasks import (
+    UNK_TOK_ALLENNLP,
+    UNK_TOK_ATOMIC,
+    SequenceGenerationTask,
+    atomic_tokenize,
+    sentence_to_text_field,
+)
 
 
 class LanguageModelingTask(SequenceGenerationTask):
@@ -45,12 +43,12 @@ class LanguageModelingTask(SequenceGenerationTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {
-            "words": SingleIdTokenIndexer(
-                namespace="tokens")}
-        self.files_by_split = {'train': os.path.join(path, "train.txt"),
-                               'val': os.path.join(path, "valid.txt"),
-                               'test': os.path.join(path, "test.txt")}
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.files_by_split = {
+            "train": os.path.join(path, "train.txt"),
+            "val": os.path.join(path, "valid.txt"),
+            "test": os.path.join(path, "test.txt"),
+        }
 
     def count_examples(self):
         """Computes number of samples
@@ -58,7 +56,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            example_counts[split] = sum(1 for line in open(split_path))
+            example_counts[split] = sum(1 for _ in open(split_path))
         self.example_counts = example_counts
 
     def get_metrics(self, reset=False):
@@ -67,9 +65,13 @@ class LanguageModelingTask(SequenceGenerationTask):
             reset: (boolean) reset any accumulators or internal state
         """
         nll = self.scorer1.get_metric(reset)
-        return {'perplexity': math.exp(nll)}
+        return {"perplexity": math.exp(nll)}
 
-    def load_data(self, path):
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
+    def get_data_iter(self, path):
         """Loading data file and tokenizing the text
         Args:
             path: (str) data file path
@@ -87,18 +89,19 @@ class LanguageModelingTask(SequenceGenerationTask):
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
         """
-        def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
+
+        def _make_instance(sent_):
+            """ Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
-            d = {}
-            d["input"] = sentence_to_text_field(sent, indexers)
-            d["targs"] = sentence_to_text_field(
-                sent[1:] + [sent[0]], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field(
-                [sent[-1]] + sent[:-1], self.target_indexer)
+            in the input for each direction """
+            d = {
+                "input": sentence_to_text_field(sent_, indexers),
+                "targs": sentence_to_text_field(sent_[1:] + [sent_[0]], self.target_indexer),
+                "targs_b": sentence_to_text_field([sent_[-1]] + sent_[:-1], self.target_indexer),
+            }
             return Instance(d)
+
         for sent in split:
             yield _make_instance(sent)
 
@@ -107,7 +110,7 @@ class LanguageModelingTask(SequenceGenerationTask):
         Args:
             split: (str) should be one of 'train', 'val', or 'test'.
         """
-        return self.load_data(self.files_by_split[split])
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """Yield sentences, used to compute vocabulary.
@@ -117,20 +120,20 @@ class LanguageModelingTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for sent in self.load_data(path):
+            for sent in self.get_data_iter(path):
                 yield sent
 
 
 # TODO: restructure LM task hierarchy
-@register_task('bwb', rel_path='BWB/')
+@register_task("bwb", rel_path="BWB/")
 class WikiTextLMTask(LanguageModelingTask):
     """ Language modeling on a Wikitext dataset
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
-        ''' Rather than return a whole list of examples, stream them '''
-        nonatomics_toks = [UNK_TOK_ALLENNLP, '<unk>']
+    def get_data_iter(self, path):
+        """ Rather than return a whole list of examples, stream them """
+        nonatomics_toks = [UNK_TOK_ALLENNLP, "<unk>"]
         with open(path) as txt_fh:
             for row in txt_fh:
                 toks = row.strip()
@@ -139,8 +142,13 @@ class WikiTextLMTask(LanguageModelingTask):
                 # WikiText103 preprocesses unknowns as '<unk>'
                 # which gets tokenized as '@', '@', 'UNKNOWN', ...
                 # We replace to avoid that
-                sent = atomic_tokenize(toks, UNK_TOK_ATOMIC, nonatomics_toks, self.max_seq_len,
-                                       tokenizer_name=self._tokenizer_name)
+                sent = atomic_tokenize(
+                    toks,
+                    UNK_TOK_ATOMIC,
+                    nonatomics_toks,
+                    self.max_seq_len,
+                    tokenizer_name=self._tokenizer_name,
+                )
                 # we also filtering out headers (artifact of the data)
                 # which are processed to have multiple = signs
                 if sent.count("=") >= 2 or len(toks) < self.min_seq_len + 2:
@@ -148,7 +156,7 @@ class WikiTextLMTask(LanguageModelingTask):
                 yield sent
 
 
-@register_task('wiki103', rel_path='WikiText103/')
+@register_task("wiki103", rel_path="WikiText103/")
 class WikiText103LMTask(WikiTextLMTask):
     """Language modeling task on Wikitext 103
     See base class: WikiTextLMTask
@@ -156,6 +164,8 @@ class WikiText103LMTask(WikiTextLMTask):
 
     def __init__(self, path, *args, **kw):
         super().__init__(path, *args, **kw)
-        self.files_by_split = {'train': os.path.join(path, "train.sentences.txt"),
-                               'val': os.path.join(path, "valid.sentences.txt"),
-                               'test': os.path.join(path, "test.sentences.txt")}
+        self.files_by_split = {
+            "train": os.path.join(path, "train.sentences.txt"),
+            "val": os.path.join(path, "valid.sentences.txt"),
+            "test": os.path.join(path, "test.sentences.txt"),
+        }
