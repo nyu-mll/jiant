@@ -38,7 +38,6 @@ class MultiRCTask(Task):
             "test": os.path.join(path, "test.jsonl"),
         }
 
-
     def load_data(self):
         # Data is exposed as iterable: no preloading
         pass
