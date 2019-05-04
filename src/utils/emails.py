@@ -2,13 +2,13 @@
 # Requires 'sendgrid' package:
 #   pip install sendgrid
 
-import sys
+import datetime
+import logging as log
 import os
 import socket
-import logging as log
-import datetime
-import pytz
+import sys
 
+import pytz
 import sendgrid
 from sendgrid.helpers import mail
 
@@ -24,8 +24,7 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", None)
 if SENDGRID_API_KEY is None:
     SENDGRID_API_KEY = _read_key_file(SENDGRID_KEY_PATH)
 
-DEFAULT_SENDER = mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com",
-                            name="Cookie Monster")
+DEFAULT_SENDER = mail.Email("jsalt.sentence.rep.2018+notifier@gmail.com", name="Cookie Monster")
 
 LOCALTZ = pytz.timezone("US/Eastern")
 
@@ -40,6 +39,7 @@ def send_message(message: mail.Mail):
     sg = sendgrid.SendGridAPIClient(apikey=SENDGRID_API_KEY)
     response = sg.client.mail.send.post(request_body=message.get())
     return response
+
 
 ##
 # Implementation-specific logic.
@@ -62,10 +62,10 @@ def get_notifier(to: str, args):
         """ Email notifier. Sends an email. """
         # Construct subject line from args:
         subj_tmpl = "{prefix:s} '{exp_name:s}/{run_name:s}' on host '{host:s}'"
-        prefix = (prefix + " run" if prefix else "Run")
-        subject = subj_tmpl.format(prefix=prefix, host=hostname,
-                                   exp_name=args.exp_name,
-                                   run_name=args.run_name)
+        prefix = prefix + " run" if prefix else "Run"
+        subject = subj_tmpl.format(
+            prefix=prefix, host=hostname, exp_name=args.exp_name, run_name=args.run_name
+        )
         # Add timestamp.
         now = datetime.datetime.now(LOCALTZ)
         now = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -75,15 +75,15 @@ def get_notifier(to: str, args):
         body += "\n\n Experiment log: {:s}".format(args.local_log_path)
         try:
             from . import gcp
-            body += ("\n Remote log (if enabled): " +
-                     gcp.get_remote_log_url(args.remote_log_name))
+
+            body += "\n Remote log (if enabled): " + gcp.get_remote_log_url(args.remote_log_name)
         except Exception as e:
             log.info("Unable to generate remote log URL - not on GCP?")
 
         # Add experiment args.
         body += "\n\n Parsed experiment args: {:s}".format(str(args))
         message = make_message(to, subject, body)
-        log.info("Sending notification email to %s with subject: \n\t%s",
-                 to, subject)
+        log.info("Sending notification email to %s with subject: \n\t%s", to, subject)
         return send_message(message)
+
     return _handler
