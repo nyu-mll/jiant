@@ -384,8 +384,8 @@ class SamplingMultiTaskTrainer:
             scaling_weights = 1 / np.log(task_n_train_examples)
         elif scaling_method == "max_inverse":
             scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best validation for each task from a previous uniform run,
-        # normalizd by the maximum
+        # Weighting losses based on best validation step for each task from a previous uniform run,
+        # normalizd by the maximum validation step
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif "max_epoch_" in scaling_method:
             epochs = scaling_method.strip("max_epoch_").split("_")
