@@ -268,8 +268,6 @@ def build_model(args, vocab, pretrained_embs, tasks):
         d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
     d_sent_input = args.d_hid
 
-    sent_encoder = build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer)
-
     sent_encoder, d_sent_output = build_sent_encoder(
         args, vocab, d_emb, tasks, embedder, cove_layer
     )
