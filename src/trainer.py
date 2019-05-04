@@ -651,11 +651,11 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "target_train")
+                    n_val, tasks, batch_size, periodic_save=(phase != "target_train")
                 )
 
                 # Check stopping conditions
-                should_stop = self._check_stop(epoch, stop_metric, tasks)
+                should_stop = self._check_stop(n_val, stop_metric, tasks)
 
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
@@ -691,7 +691,7 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop},
+                        {"pass": n_pass, "epoch": n_val, "should_stop": should_stop},
                         phase=phase,
                         new_best_macro=new_best_macro,
                     )
