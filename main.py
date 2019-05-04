@@ -322,12 +322,12 @@ def initial_setup(args, cl_args):
     log.getLogger().addHandler(log_fh)
 
     if cl_args.remote_log:
-        from src.utils import gcp
+        from jiant.utils import gcp
 
         gcp.configure_remote_logging(args.remote_log_name)
 
     if cl_args.notify:
-        from src.utils import emails
+        from jiant.utils import emails
 
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)

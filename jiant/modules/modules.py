@@ -24,12 +24,12 @@ from allennlp.nn import InitializerApplicator, util
 from allennlp.nn.activations import Activation
 from allennlp.nn.util import add_positional_features, add_sentence_boundary_token_ids
 
-from ..bert.utils import BertEmbedderModule
-from ..tasks.tasks import PairClassificationTask, PairRegressionTask
-from ..utils import utils
-from ..utils.utils import MaskedMultiHeadSelfAttention
-from .onlstm.ON_LSTM import ONLSTMStack
-from .prpn.PRPN import PRPN
+from jiant.bert.utils import BertEmbedderModule
+from jiant.tasks.tasks import PairClassificationTask, PairRegressionTask
+from jiant.utils import utils
+from jiant.utils.utils import MaskedMultiHeadSelfAttention
+from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
+from jiant.modules.prpn.PRPN import PRPN
 
 
 class NullPhraseLayer(nn.Module):

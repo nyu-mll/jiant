@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 
-import src.utils.data_loaders as data_loaders
+import jiant.utils.data_loaders as data_loaders
 
 
 class TestLoadTsvLabelsOneSentence(unittest.TestCase):

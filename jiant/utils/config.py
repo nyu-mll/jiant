@@ -10,7 +10,7 @@ from typing import Iterable, Sequence, Type, Union
 
 import pyhocon
 
-from . import hocon_writer
+from jiant.utils import hocon_writer
 
 
 # TODO: do we need this?

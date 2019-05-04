@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
 from torch.autograd import Variable
 
-from ..tasks.tasks import Task
-from . import modules
+from jiant.tasks.tasks import Task
+from jiant import modules
 
 
 class SpanClassifierModule(nn.Module):
