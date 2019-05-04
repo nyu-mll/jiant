@@ -3,7 +3,7 @@ import logging
 from src.tasks.registry import REGISTRY
 
 
-def test_instantiate_all_tasts():
+def test_instantiate_all_tasks():
     """
     All tasks should be able to be instantiated without needing to access actual data
 

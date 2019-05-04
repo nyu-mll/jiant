@@ -2054,9 +2054,9 @@ class SpanClassificationTask(Task):
 
         self._iters_by_split = None
 
-        label_file = os.path.join(path, label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
+        self.label_file = os.path.join(path, label_file)
+        self.all_labels = None
+        self.n_classes = None
         self._label_namespace = self.name + "_labels"
 
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
@@ -2092,6 +2092,8 @@ class SpanClassificationTask(Task):
             iter = list(self._stream_records(filename))
             iters_by_split[split] = iter
         self._iters_by_split = iters_by_split
+        self.all_labels = list(utils.load_lines(self.label_file))
+        self.n_classes = len(self.all_labels)
 
     def get_split_text(self, split: str):
         """
