@@ -69,7 +69,6 @@ def evaluate(
     assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
-        _ = task.get_metrics(reset=True)
         log.info("Evaluating on: %s, split: %s", task.name, split)
         last_log = time.time()
         n_examples = 0
@@ -351,7 +350,6 @@ def _write_multirc_preds(
     strict_glue_format: bool = False,
 ):
     """ Write predictions for MultiRC task. """
-    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:
