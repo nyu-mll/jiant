@@ -102,6 +102,7 @@ class MultiRCTask(Task):
             d["par_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
+            d["idx"] = MetadataField(ans_idx) # required by evaluate()
             if is_using_bert:
                 inp = para + question[1:-1] + answer[1:]
                 d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
@@ -138,12 +139,12 @@ class MultiRCTask(Task):
         self.example_counts = example_counts
 
     def update_metrics(self, logits, labels, idxs, tagmask=None):
-        """ Expects logits and labels for all answers for a single question """
+        """ A batch of logits, labels, and the paragraph+questions they go with """
         self.scorer1(logits, labels)
         logits, labels = logits.detach().cpu(), labels.detach().cpu()
         # track progress on each question
         for ex, logit, label in zip(idxs, logits, labels):
-            self._score_tracker[ex].append((logits, labels))
+            self._score_tracker[ex].append((logit, label))
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
@@ -152,8 +153,8 @@ class MultiRCTask(Task):
         ems, f1s = [], []
         for logits_and_labels in self._score_tracker.values():
             logits, labels = list(zip(*logits_and_labels))
-            logits = torch.cat(logits)
-            labels = torch.cat(labels)
+            logits = torch.stack(logits)
+            labels = torch.stack(labels)
 
             # question F1
             self.scorer3(logits, labels)

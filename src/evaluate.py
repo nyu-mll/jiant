@@ -50,8 +50,8 @@ def evaluate(
     model, tasks: Sequence[tasks_module.Task], batch_size: int, cuda_device: int, split="val"
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
-    qst_idx and ans_idx are used for MultiRC and other question answering dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "qst_idx", "ans_idx"]
+    {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
+    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "par_idx", "qst_idx", "ans_idx"]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
@@ -350,16 +350,19 @@ def _write_multirc_preds(
     strict_glue_format: bool = False,
 ):
     """ Write predictions for MultiRC task. """
-    trg_map = {0: "neutral", 1: "entailment", 2: "contradiction"}
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:
-            qst_ans_d = defaultdict(list)
+            par_qst_ans_d = defaultdict(lambda : defaultdict(list))
             for row_idx, row in preds_df.iterrows():
                 ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
-                qst_ans_d[int(row["qst_idx"])].append(ans_d)
-            for qst_idx, answers in qst_ans_d.items():
-                out_d = {"idx": qst_idx, "answers": answers}
+                par_qst_ans_d[int(row["par_idx"])][int(row["qst_idx"])].append(ans_d)
+            for par_idx, qst_ans_d in par_qst_ans_d.items():
+                qst_ds = []
+                for qst_idx, answers in qst_ans_d.items():
+                    qst_d = {"idx": qst_idx, "answers": answers}
+                    qst_ds.append(qst_d)
+                out_d = {"idx": par_idx, "paragraph": {"questions": qst_ds}}
                 preds_fh.write("{0}\n".format(json.dumps(out_d)))
         else:
             for row_idx, row in preds_df.iterrows():
