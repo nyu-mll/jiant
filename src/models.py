@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from allennlp.common import Params
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
@@ -44,7 +45,6 @@ from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
-    JOCITask,
     MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
@@ -941,19 +941,12 @@ class MultiTaskModel(nn.Module):
         if "labels" in batch:
             labels = batch["labels"]
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
-            if isinstance(task, JOCITask):
+            if isinstance(task, RegressionTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out["loss"] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
-                task.scorer1(mean_squared_error(logits_np, labels_np))
-                task.scorer2(logits_np, labels_np)
-            elif isinstance(task, STSBTask):
-                logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
-                out["loss"] = F.mse_loss(logits, labels)
-                task.update_metrics(
-                    logits.data.cpu().numpy(), labels.data.cpu().numpy(), tagmask=tagmask
-                )
+                task.update_metrics(logits_np, labels_np, tagmask=tagmask)
             else:
                 out["loss"] = F.cross_entropy(logits, labels)
                 task.update_metrics(logits, labels, tagmask=tagmask)

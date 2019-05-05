@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 
+
 # Fields for instance processing
 from allennlp.data import Instance, Token, vocabulary
 from allennlp.data.fields import (
@@ -21,6 +22,7 @@ from allennlp.data.fields import (
 )
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy, CategoricalAccuracy, F1Measure
+from sklearn.metrics import mean_squared_error
 
 from ..allennlp_mods.correlation import Correlation
 from ..allennlp_mods.numeric_field import NumericField
@@ -351,12 +353,12 @@ class PairOrdinalRegressionTask(RegressionTask):
         return {"1-mse": 1 - mse, "mse": mse, "spearmanr": spearmanr}
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        """ Process split text into a list of AllenNLP Instances. """
+        ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
-
-    def update_metrics(self):
-        # currently don't support metrics for regression task
-        # TODO(Yada): support them!
+    
+    def update_metrics(self, logits, labels, tagmask=None):
+        self.scorer1(mean_squared_error(logits, labels))  # update average MSE
+        self.scorer2(logits, labels)
         return
 
 
