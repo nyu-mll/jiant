@@ -189,10 +189,10 @@ class SamplingMultiTaskTrainer:
             their ``forward`` method returns a dictionary with a "loss" key, containing a
             scalar tensor representing the loss function to be optimized.
         patience , optional (default=2)
-            Number of epochs to be patient before early stopping.
+            Number of validations to be patient before early stopping.
         val_metric , optional (default="loss")
             Validation metric to measure for whether to stop training using patience
-            and whether to serialize an ``is_best`` model each epoch. The metric name
+            and whether to serialize an ``is_best`` model after each validation. The metric name
             must be prepended with either "+" or "-", which specifies whether the metric
             is an increasing or decreasing function.
         serialization_dir , optional (default=None)
@@ -384,8 +384,8 @@ class SamplingMultiTaskTrainer:
             scaling_weights = 1 / np.log(task_n_train_examples)
         elif scaling_method == "max_inverse":
             scaling_weights = 1 / task_n_train_examples
-        # Weighting losses based on best epochs for each task from a previous uniform run,
-        # normalizd by max epoch
+        # Weighting losses based on best validation step for each task from a previous uniform run,
+        # normalizd by the maximum validation step
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif "max_epoch_" in scaling_method:
             epochs = scaling_method.strip("max_epoch_").split("_")
@@ -622,8 +622,8 @@ class SamplingMultiTaskTrainer:
             if n_pass % validation_interval == 0:
 
                 # Dump and log all of our current info
-                epoch = int(n_pass / validation_interval)
-                log.info("***** Pass %d / Epoch %d *****", n_pass, epoch)
+                n_val = int(n_pass / validation_interval)
+                log.info("***** Step %d / Validation %d *****", n_pass, n_val)
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
@@ -651,11 +651,11 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    epoch, tasks, batch_size, periodic_save=(phase != "target_train")
+                    n_val, tasks, batch_size, periodic_save=(phase != "target_train")
                 )
 
                 # Check stopping conditions
-                should_stop = self._check_stop(epoch, stop_metric, tasks)
+                should_stop = self._check_stop(n_val, stop_metric, tasks)
 
                 # Log results to logger and tensorboard
                 for name, value in all_val_metrics.items():
@@ -691,7 +691,7 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"pass": n_pass, "epoch": epoch, "should_stop": should_stop},
+                        {"pass": n_pass, "epoch": n_val, "should_stop": should_stop},
                         phase=phase,
                         new_best_macro=new_best_macro,
                     )
@@ -718,6 +718,8 @@ class SamplingMultiTaskTrainer:
         results["macro"] = metric_infos["macro_avg"]["best"][0]
         log.info("***** VALIDATION RESULTS *****")
         for metric in metric_infos.keys():
+            # Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
+            # any given task's training set.
             best_epoch, epoch_metrics = metric_infos[metric]["best"]
             all_metrics_str = ", ".join(
                 ["%s: %.5f" % (metric, score) for metric, score in epoch_metrics.items()]
@@ -740,7 +742,9 @@ class SamplingMultiTaskTrainer:
         This function updates metric history with the best validation score so far.
         Parameters
         ---------
-        epoch: int
+        epoch: int.
+          Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
+            any given task's training set.
         all_val_metrics: dict with current epoch's validation performance
         metric: str, name of metric
         task_name: str, name of task
@@ -862,6 +866,9 @@ class SamplingMultiTaskTrainer:
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         """
         Validate on all tasks and return the results and whether to save this epoch or not.
+
+        Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
+          any given task's training set.
 
         Parameters
         ----------
