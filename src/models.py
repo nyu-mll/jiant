@@ -31,13 +31,13 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask, EOSIDTaskEasy
+    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer, MultipleChoiceClassifier
+    NullPhraseLayer
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -512,22 +512,6 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
     classifier = Classifier.from_params(4 * d_out, n_classes, params)
     module = PairClassifier(pooler, classifier, pair_attn)
     return module
-
-def build_multiplechoice_module(task, d_inp, model, vocab, params, d_hid, dropout):
-    ''' Build a multiple choice classifier of variable # '''
-
-    n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
-    d_out = params["d_proj"]
-    classifier = nn.Sequential(nn.Linear(d_out*n_classes, d_hid),
-                               nn.Tanh(), nn.LayerNorm(d_hid),
-                               nn.Dropout(p=dropout),
-                               nn.Linear(d_hid, n_classes))
-
-    #classifier = Classifier.from_params(params["d_proj"]*n_classes, n_classes, params)
-    module = MultipleChoiceClassifier(pooler, classifier)
-    return module
-
 
 def build_lm(task, d_inp, args):
     ''' Build LM components (just map hidden states to vocab logits) '''

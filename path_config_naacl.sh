@@ -23,6 +23,7 @@
 # export FASTTEXT_EMBS_FILE=None
 
 export PREFIX=/export/fs01/nk/exp/naacl
+export PROBE_PREFIX=/export/fs01/nk/exp/starsem
 export NFS_DATA_DIR=/export/a12/nk/share/glue_data
 export JIANT_DATA_DIR=${NFS_DATA_DIR}
 export WORD_EMBS_FILE=~/data/glove/glove.840B.300d.txt
@@ -31,7 +32,7 @@ export FASTTEXT_EMBS_FILE=None
 export PATH_TO_COVE=/export/a12/nk/share/cove
 
 export TRAIN_DIR=${PREFIX}/train
-export PROBE_DIR=${PREFIX}/probe
+export PROBE_DIR=${PROBE_PREFIX}/probe
 
 export PRETRAIN_MNLI=${TRAIN_DIR}/mnli
 export PRETRAIN_CCG=${TRAIN_DIR}/ccg

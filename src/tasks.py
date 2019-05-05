@@ -33,7 +33,7 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, load_tsv_eoseasy, process_sentence, truncate, load_diagnostic_tsv
+from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
 import codecs
 
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
@@ -1602,21 +1602,21 @@ class NLITypeProbingTask(PairClassificationTask):
         log.info("\tFinished loading NLI-type probing data.")
 
 
-@register_task('nli-prob-negation', rel_path='NLI-Prob/')
-class NLITypeProbingTaskNeg(PairClassificationTask):
+@register_task('nli-prob-negation', rel_path='probe-nli/')
+class NLITypeProbingTaskNeg(NLITypeProbingTask):
 
     def __init__(self, path, max_seq_len, name="nli-prob-negation", probe_path="probe_dummy.tsv"):
-        super(NLITypeProbingTaskNeg, self).__init__(name, 3)
+        super(NLITypeProbingTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
-
+ 
     def load_data(self, path, max_seq_len, probe_path):
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
+        targ_map = {'0': 0, '1': 1, '2': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'lexnegs.tsv'), max_seq_len,
-                            s1_idx=8, s2_idx=9, targ_idx=10, targ_map=targ_map, skip_rows=1)
+        val_data = load_tsv(os.path.join(path, 'nli-negation.tsv'), max_seq_len,
+                            s1_idx=8, s2_idx=9, targ_idx=0, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
 
@@ -1625,29 +1625,97 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading negation data.")
 
+@register_task('nli-prob-prep', rel_path='probe-nli/')
+class NLITypeProbingTaskPrepswap(NLITypeProbingTask):
 
-@register_task('nli-prob-prepswap', rel_path='NLI-Prob/')
-class NLITypeProbingTaskPrepswap(PairClassificationTask):
-
-    def __init__(self, path, max_seq_len, name="nli-prob-prepswap", probe_path="probe_dummy.tsv"):
-        super(NLITypeProbingTaskPrepswap, self).__init__(name, 3)
+    def __init__(self, path, max_seq_len, name="nli-prob-prep", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTask, self).__init__(name, 3)
         self.load_data(path, max_seq_len, probe_path)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
             self.val_data_text[0] + self.val_data_text[1]
 
     def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'0': 0, '1': 1, '2': 2}
         tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'all.prepswap.turk.newlabels.tsv'), max_seq_len,
-                            s1_idx=8, s2_idx=9, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'nli-prepositions.tsv'), max_seq_len,
+                            s1_idx=8, s2_idx=9, targ_idx=0, targ_map=targ_map, skip_rows=1)
         te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
                            s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading preposition swap data.")
+        log.info("\tFinished loading preposition data.")
 
+@register_task('nli-prob-quant', rel_path='probe-nli/')
+class NLITypeProbingTaskQuant(NLITypeProbingTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-quant", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'0': 0, '1': 1, '2': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'nli-quantification.tsv'), max_seq_len, idx_idx=0,
+                            s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+ 
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading quantification data.")
+
+@register_task('nli-prob-spatial', rel_path='probe-nli/')
+class NLITypeProbingTaskSpatial(NLITypeProbingTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-spatial", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'0': 0, '1': 1, '2': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'nli-spatial.tsv'), max_seq_len, idx_idx=0,
+                            s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+ 
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading spatial data.")
+
+@register_task('nli-prob-comp', rel_path='probe-nli/')
+class NLITypeProbingTaskComp(NLITypeProbingTask):
+
+    def __init__(self, path, max_seq_len, name="nli-prob-comp", probe_path="probe_dummy.tsv"):
+        super(NLITypeProbingTask, self).__init__(name, 3)
+        self.load_data(path, max_seq_len, probe_path)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
+            self.val_data_text[0] + self.val_data_text[1]
+
+    def load_data(self, path, max_seq_len, probe_path):
+        targ_map = {'0': 0, '1': 1, '2': 2}
+        tr_data = load_tsv(os.path.join(path, 'train_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'nli-comparatives.tsv'), max_seq_len, idx_idx=0,
+                            s1_idx=9, s2_idx=10, targ_idx=1, targ_map=targ_map, skip_rows=1)
+        te_data = load_tsv(os.path.join(path, 'test_dummy.tsv'), max_seq_len,
+                           s1_idx=1, s2_idx=2, targ_idx=None, skip_rows=0)
+ 
+        self.train_data_text = tr_data
+        self.val_data_text = val_data
+        self.test_data_text = te_data
+        log.info("\tFinished loading comparatives data.")
 
 @register_task('nps', rel_path='nps/')
 class NPSTask(PairClassificationTask):
@@ -2585,271 +2653,123 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
 
-@register_task('whid', rel_path='WH-iden/')
-class WHIdentificationTask(SingleClassificationTask):
+@register_task('acceptability-def', 'definiteness/')
+class AcceptabilityDefTask(SingleClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="whid"):
-        super(WHIdentificationTask, self).__init__(name, 6)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-
-    def load_data(self, path, max_seq_len):
-        targ_map = {'what': 0, 'when': 1, 'where': 2, 'why': 3, 'how': 4, 'who': 5}
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading Wh-identification task data.")
-
-@register_task('whid-turked', rel_path='WH-iden/')
-class WHIdentificationTask(SingleClassificationTask):
-
-    def __init__(self, path, max_seq_len, name="whid-turked"):
-        super(WHIdentificationTask, self).__init__(name, 6)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
-
-    def load_data(self, path, max_seq_len):
-        targ_map = {'what': 0, 'when': 1, 'where': 2, 'why': 3, 'how': 4, 'who': 5}
-        tr_data = load_tsv(os.path.join(path, 'agreed-train.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'agreed-dev.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'agreed-test.tsv'), max_seq_len,
-                        s1_idx=1, s2_idx=None, targ_idx=0, targ_map=targ_map, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading Wh-identification task data.")
-
-
-@register_task('defindef', 'definiteness/')
-class DefinitenessTask(SingleClassificationTask):
-
-    def __init__(self, path, max_seq_len, name="defindef"):
-        super(DefinitenessTask, self).__init__(name, max_seq_len)
-        self.load_data(path, max_seq_len)
+    def __init__(self, path, max_seq_len, name="acceptability-def", fold_no=1):
+        super(AcceptabilityDefTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len, fold_no)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
 
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+    def load_data(self, path, max_seq_len, fold_no):
+        tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading definiteness acceptability data.")
+        log.info("\tFinished loading definiteness acceptability data (fold{}).".format(fold_no))
 
     def get_metrics(self, reset=False):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
 
-@register_task('possid', 'poss-id/')
-class PossIdTask(PairClassificationTask):
+@register_task('acceptability-conj', 'coords/')
+class AcceptabilityConjTask(SingleClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="possid"):
-        super(PossIdTask, self).__init__(name, 2)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-        self.val_metric = "%s_acc_f1" % self.name
-        self.val_metric_decreases = False
-        self.scorer1 = CategoricalAccuracy()
-        self.scorer2 = F1Measure(1)
-
-
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading Possessor-Possessee identification data.")
-
-    def get_metrics(self, reset=False):
-        acc = self.scorer1.get_metric(reset)
-        pcs, rcl, f1 = self.scorer2.get_metric(reset)
-        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
-
-@register_task('coord', 'conj-coord/')
-class CoordinatingConjunctionTask(SingleClassificationTask):
-
-    def __init__(self, path, max_seq_len, name="coord"):
-        super(CoordinatingConjunctionTask, self).__init__(name, max_seq_len)
-        self.load_data(path, max_seq_len)
+    def __init__(self, path, max_seq_len, name="acceptability-conj", fold_no=1):
+        super(AcceptabilityConjTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len, fold_no)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
 
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
+    def load_data(self, path, max_seq_len, fold_no):
+        tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading coordinating conjunction swap acceptability data.")
+        log.info("\tFinished loading coordinating conjunctions acceptability data (fold{}).".format(fold_no))
 
     def get_metrics(self, reset=False):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
 
-@register_task('coord-turked', 'conj-coord/')
-class CoordinatingConjunctionTaskTurked(CoordinatingConjunctionTask):
-    def __init__(self, path, max_seq_len, name="coord-turked"):
-        super(CoordinatingConjunctionTaskTurked, self).__init__(name, max_seq_len)
+@register_task('acceptability-wh', 'whwords/')
+class AcceptabilityWHTask(SingleClassificationTask):
 
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev_turked.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=6, skip_rows=1)
-        te_data = load_tsv(os.path.join(path, 'test_turked.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=6, skip_rows=1)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading coordinating conjunction swap acceptability data.")
-
-@register_task('eosid', 'eos-id/')
-class EOSIdTask(SingleClassificationTask):
-
-    def __init__(self, path, max_seq_len, name="eosid"):
-        super(EOSIdTask, self).__init__(name, max_seq_len)
-        self.load_data(path, max_seq_len)
+    def __init__(self, path, max_seq_len, name="acceptability-wh", fold_no=1):
+        super(AcceptabilityWHTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len, fold_no)
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
 
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=None, targ_idx=1, skip_rows=0, targ_fn=lambda x: int(x)-1 if int(x)<=max_seq_len else max_seq_len-1)
+    def load_data(self, path, max_seq_len, fold_no):
+        tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading EOS-identification data.")
+        log.info("\tFinished loading WH-words acceptability data (fold{}).".format(fold_no))
 
     def get_metrics(self, reset=False):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
 
-@register_task('eosid-easy', 'eos-id/')
-class EOSIDTaskEasy(ClassificationTask):
+@register_task('acceptability-eos', 'eos/')
+class AcceptabilityEOSTask(PairClassificationTask):
 
-    def __init__(self, path, max_seq_len, name="eosid-easy", n_classes=5):
-        super(EOSIDTaskEasy, self).__init__(name)
-        self.n_classes = n_classes
-        self.max_seq_len = max_seq_len
-        self.load_data(path, max_seq_len)
-        self.sent_lists = [self.train_data_text[0] + self.val_data_text[0]]
+    def __init__(self, path, max_seq_len, name="acceptability-eos", fold_no=1):
+        super(AcceptabilityEOSTask, self).__init__(name, max_seq_len)
+        self.load_data(path, max_seq_len, fold_no)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
         self.val_metric = "%s_acc_f1" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorer2 = F1Measure(1)
-    
 
-    def load_data(self, path, max_seq_len):
-        tr_data = load_tsv_eoseasy(os.path.join(path, 'train_easy.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
-        val_data = load_tsv_eoseasy(os.path.join(path, 'dev_easy.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
-        te_data = load_tsv_eoseasy(os.path.join(path, 'test_easy.tsv'), max_seq_len,
-                        s1_idx=0, s2_idx=1, targ_idx=2, skip_rows=0, n_classes=self.n_classes, targ_fn=lambda x: int(x))
+    def load_data(self, path, max_seq_len, fold_no):
+        tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
+        val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
+        te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
+                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
         self.test_data_text = te_data
-        log.info("\tFinished loading EOS-identification data (easy version: 5-ary classification).")
+        log.info("\tFinished loading EOS acceptability task (fold{}).".format(fold_no))
 
     def get_metrics(self, reset=False):
         acc = self.scorer1.get_metric(reset)
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
-
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        for sent_list in self.sent_lists:
-            for choices in sent_list:
-                for choice in choices:
-                    yield choice
-
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        return process_multichoice_task_split(split, indexers, self.n_classes, self.max_seq_len)
-
-@register_task('mscoco_lm', rel_path='mscoco/grounded')
-class MSCOCOLMTask(WikiTextLMTask):
-    """Language modeling task on mscoco text only
-    See base class: WikiTextLMTask
-    """
-
-    def __init__(self, path, max_seq_len, name="mscoco_lm"):
-        super().__init__(path, max_seq_len, name)
-        self.files_by_split = {'train': os.path.join(path, "all_train_captions.txt"),
-                               'val': os.path.join(path, "all_dev_captions.txt"),
-                               'test': os.path.join(path, "all_dev_captions.txt")} # not using test
-
-
-@register_task('mscoco_nli', rel_path='mscoco/nli')
-class MSCOCOMultiNLITask(PairClassificationTask):
-    ''' Task class for Multi-Genre Natural Language Inference '''
-
-    def __init__(self, path, max_seq_len, name="mscoco_nli"):
-        '''MNLI'''
-        super(MSCOCOMultiNLITask, self).__init__(name, 3)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
-            self.val_data_text[0] + self.val_data_text[1]
-
-    def load_data(self, path, max_seq_len):
-        '''Process the dataset located at path.'''
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        tr_data = load_tsv(os.path.join(path, 'train.tsv'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
-        val_data = load_tsv(os.path.join(path, 'dev.tsv'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
-        te_data = load_tsv(os.path.join(path, 'test.tsv'), max_seq_len,
-                           s1_idx=0, s2_idx=1, targ_idx=2, targ_map=targ_map, skip_rows=0)
-
-        self.train_data_text = tr_data
-        self.val_data_text = val_data
-        self.test_data_text = te_data
-        log.info("\tFinished loading Pseudo-NLI data (generated from MSCOCO text).")
-
-
 

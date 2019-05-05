@@ -42,7 +42,8 @@ ALL_GLUE_TASKS = ['sst', 'cola', 'mrpc', 'qqp', 'sts-b',
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
-ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prepswap', 'nli-prob-negation', 'nli-alt', 'whid', 'whid-turked', 'possid', 'defindef', 'coord', 'eosid', 'eosid-easy']
+ALL_NLI_PROBING_TASKS = ['nli-prob', 'nps', 'nli-prob-prep', 'nli-prob-negation', 'nli-prob-comp', 'nli-prob-quant', 'nli-prob-spatial',
+                    'acceptability-def', 'acceptability-eos', 'acceptability-wh', 'acceptability-conj']
 
 # Tasks for which we need to construct task-specific vocabularies
 ALL_TARG_VOC_TASKS = ['wmt17_en_ru', 'wmt14_en_de', 'reddit_s2s',
@@ -245,6 +246,7 @@ def build_tasks(args):
                   path=args.data_dir, scratch_path=args.exp_dir,
                   load_pkl=bool(not args.reload_tasks),
                   nli_prob_probe_path=args['nli-prob'].probe_path,
+                  fold_no=args.fold_no,
                   max_targ_v_size=args.max_targ_word_v_size)
     for task in tasks:
         task_classifier = config.get_task_attr(args, task.name, "use_classifier")
@@ -405,7 +407,7 @@ def parse_task_list_arg(task_list):
 
 def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
               scratch_path=None, load_pkl=1, nli_prob_probe_path=None,
-              max_targ_v_size=20000):
+              fold_no=None, max_targ_v_size=20000):
     ''' Actually build or load (from pickles) the tasks. '''
     # We don't want mnli-diagnostic in train_task_names
     train_task_names = [name for name in train_task_names
@@ -430,10 +432,12 @@ def get_tasks(train_task_names, eval_task_names, max_seq_len, path=None,
             log.info('\tCreating task %s from scratch', name)
             task_cls = task_info[0]
             kw = task_info[2] if len(task_info) > 2 else {}
-            if name == 'nli-prob' or name == 'nli-alt':  # this task takes additional kw
+            if name.startswith('nli-'):  # this task takes additional kw
                 # TODO: remove special case, replace with something general
                 # to pass custom loader args to task.
                 kw['probe_path'] = nli_prob_probe_path
+            if name.startswith('acceptability-'):
+                kw['fold_no'] = fold_no
             if name in ALL_TARG_VOC_TASKS:
                 kw['max_targ_v_size'] = max_targ_v_size
             task = task_cls(task_src_path, max_seq_len, name=name, **kw)

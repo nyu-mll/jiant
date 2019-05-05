@@ -337,22 +337,6 @@ class PairClassifier(nn.Module):
         logits = self.classifier(pair_emb)
         return logits
 
-class MultipleChoiceClassifier(nn.Module):
-    ''' For multiple choice tasks'''
-
-    def __init__(self, pooler, classifier):
-        super(MultipleChoiceClassifier, self).__init__()
-        self.pooler = pooler
-        self.classifier = classifier
-
-    def forward(self, sentences, masks):
-        new_masks = [mask.squeeze(-1) if len(mask.size()) > 2 else mask for mask in masks]
-        embs = [self.pooler(sentence, new_mask) for sentence, new_mask in zip(sentences, new_masks)]
-        choice_emb = torch.cat(embs, 1)
-        logits = self.classifier(choice_emb)
-        return logits
-
-
 class AttnPairEncoder(Model):
     """
     Simplified version of BiDAF.
