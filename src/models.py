@@ -45,7 +45,6 @@ from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
-    JOCITask,
     MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
@@ -1021,7 +1020,7 @@ class MultiTaskModel(nn.Module):
             labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
             if isinstance(task, RegressionTask):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
-                out['loss'] = F.mse_loss(logits, labels)
+                out["loss"] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()
                 labels_np = labels.data.cpu().numpy()
                 task.update_metrics(logits_np, labels_np, tagmask=tagmask)
