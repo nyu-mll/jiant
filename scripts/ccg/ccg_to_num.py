@@ -1,4 +1,3 @@
-
 fi1 = open("ccg.train", "r")
 fi2 = open("ccg.test", "r")
 fi3 = open("ccg.dev", "r")

@@ -1,27 +1,21 @@
 """
 Task definitions for language modeling tasks set up to use for unsupervised parsing encoders.
-Long term dependencies for language modeling: sentences concatenated together seperated by <EOS> token.
+Long term dependencies for language modeling: sentences concatenated together seperated by
+<EOS> token.
 """
-import json
-import logging as log
 import math
 import os
-
-from allennlp.training.metrics import Average
-from allennlp.data.token_indexers import SingleIdTokenIndexer
+from typing import Iterable, Type
 
 # Fields for instance processing
-from allennlp.data import Instance, Token
+from allennlp.data import Instance
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.training.metrics import Average
 
-from ..utils.data_loaders import process_sentence, load_tsv
-
-from typing import Iterable, Sequence, List, Dict, Any, Type
-
-from .tasks import SequenceGenerationTask
-from .tasks import sentence_to_text_field, atomic_tokenize
-from .tasks import UNK_TOK_ALLENNLP, UNK_TOK_ATOMIC
+from ..utils.data_loaders import load_tsv
 from .lm import LanguageModelingTask
 from .registry import register_task
+from .tasks import sentence_to_text_field
 
 
 class LanguageModelingParsingTask(LanguageModelingTask):
@@ -44,28 +38,29 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
         """
+
         def _make_instance(sent):
-            ''' Forward targs adds <s> as a target for input </s>
+            """ Forward targs adds <s> as a target for input </s>
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
-            in the input for each direction '''
+            in the input for each direction """
             d = {}
             d["input"] = sentence_to_text_field(sent[:-1], indexers)
             d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
-            d["targs_b"] = sentence_to_text_field(
-                [sent[-1]] + sent[:-2], self.target_indexer)
+            d["targs_b"] = sentence_to_text_field([sent[-1]] + sent[:-2], self.target_indexer)
             return Instance(d)
+
         for sent in split:
             yield _make_instance(sent)
 
 
-@register_task('wsj', rel_path='WSJ/')
+@register_task("wsj", rel_path="WSJ/")
 class WSJLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on a PTB dataset
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -81,16 +76,16 @@ class WSJLanguageModelling(LanguageModelingParsingTask):
                 toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i + seq_len]
+                yield tokens[i : i + seq_len]
 
 
-@register_task('toronto_lm', rel_path='toronto/')
+@register_task("toronto_lm", rel_path="toronto/")
 class TorontoLanguageModelling(LanguageModelingParsingTask):
     """ Language modeling on the Toronto Books dataset
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -106,16 +101,16 @@ class TorontoLanguageModelling(LanguageModelingParsingTask):
                 toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i + seq_len]
+                yield tokens[i : i + seq_len]
 
 
-@register_task('egw_lm', rel_path='egw_corpus/')
+@register_task("egw_lm", rel_path="egw_corpus/")
 class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the English Gigaword dataset
     See base class: LanguageModelingTask
     """
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """Load data file, tokenize text and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
@@ -131,10 +126,10 @@ class EnglishgigawordLanguageModeling(LanguageModelingParsingTask):
                 toks = toks.split() + ["<EOS>"]
                 tokens += toks
             for i in range(0, len(tokens), seq_len):
-                yield tokens[i:i + seq_len]
+                yield tokens[i : i + seq_len]
 
 
-@register_task('mnli_lm', rel_path='MNLI/')
+@register_task("mnli_lm", rel_path="MNLI/")
 class MNLILanguageModeling(LanguageModelingParsingTask):
     """ Language modeling on the MNLI dataset
     See base class: LanguageModelingTask
@@ -154,25 +149,33 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
         self.val_metric_decreases = True
         self.max_seq_len = max_seq_len
         self.min_seq_len = 0
-        self.target_indexer = {
-            "words": SingleIdTokenIndexer(namespace="tokens")}
-        self.files_by_split = {'train': os.path.join(path, "train.tsv"),
-                               'val': os.path.join(path, "dev_matched.tsv"),
-                               'test': os.path.join(path, "test_matched.tsv")}
+        self.target_indexer = {"words": SingleIdTokenIndexer(namespace="tokens")}
+        self.files_by_split = {
+            "train": os.path.join(path, "train.tsv"),
+            "val": os.path.join(path, "dev_matched.tsv"),
+            "test": os.path.join(path, "test_matched.tsv"),
+        }
 
-    def load_data(self, path):
-        """Load data file (combine the entailment and contradiction sentence), tokenize text and concat sentences to create long term dependencies.
+    def get_data_iter(self, path):
+        """
+        Load data file (combine the entailment and contradiction sentence), tokenize text
+         and concat sentences to create long term dependencies.
         Args:
             path: (str) data file path
         """
         seq_len = self.max_seq_len
-        tokens = []
-        targ_map = {'neutral': 0, 'entailment': 1, 'contradiction': 2}
-        data = load_tsv(os.path.join(path), 1000, skip_rows=1,
-                        s1_idx=8, s2_idx=9, targ_idx=11, targ_map=targ_map)
-        rows = []
+        targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
+        data = load_tsv(
+            os.path.join(path),
+            1000,
+            skip_rows=1,
+            s1_idx=8,
+            s2_idx=9,
+            targ_idx=11,
+            targ_map=targ_map,
+        )
         tokens = []
         for x, y in zip(data[0], data[1]):
             tokens += x[1:-1] + ["<EOS>"] + y[1:-1] + ["<EOS>"]
         for i in range(0, len(tokens), seq_len):
-            yield tokens[i:i + seq_len]
+            yield tokens[i : i + seq_len]

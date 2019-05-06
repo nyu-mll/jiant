@@ -1,23 +1,20 @@
-import os
-import random
 import copy
 import logging as log
-
-from typing import List, Dict
+import os
+import random
+from typing import Dict, List
 
 import numpy as np
 import torch
 import torch.nn as nn
-
 from allennlp.modules import scalar_mix
-from ..preprocess import parse_task_list_arg
 
+from ..preprocess import parse_task_list_arg
+from .pytorch_huggingface import model_pytorch
 from .pytorch_huggingface import utils as openai_utils
 from .pytorch_huggingface.text_utils import TextEncoder
-from .pytorch_huggingface import model_pytorch
 
-OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__),
-                               "model")
+OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__), "model")
 ENCODER_PATH = os.path.join(OPENAI_DATA_DIR, "encoder_bpe_40000.json")
 BPE_PATH = os.path.join(OPENAI_DATA_DIR, "vocab_40000.bpe")
 
@@ -74,7 +71,7 @@ def prep_ids(ids_lists: List[List[int]], n_ctx=512, n_special=3) -> np.ndarray:
     x_in[:, :, 0] = FILL_ID
     x_in[:, :, 1] = N_VOCAB + n_special + np.arange(n_ctx)
     for i, ids in enumerate(ids_lists):
-        x_in[i, 1:len(ids) + 1, 0] = ids[:n_ctx - 2]
+        x_in[i, 1 : len(ids) + 1, 0] = ids[: n_ctx - 2]
     return x_in
 
 
@@ -85,6 +82,7 @@ def load_from_tf_checkpoint(model, ckpt_path: str):
     original openai/finetune-transformer-lm code.
     """
     from tensorflow import train as tf_train
+
     for name, p in model.named_parameters():
         path = name.split(".")
         if path[0] == "h":
@@ -98,8 +96,7 @@ def load_from_tf_checkpoint(model, ckpt_path: str):
             # embedding table.
             tf_names = ["model/we", "model/pe"]
             #  print(f"{name} -> {tf_names}")
-            vars_np = [tf_train.load_variable(ckpt_path, tf_name)
-                       for tf_name in tf_names]
+            vars_np = [tf_train.load_variable(ckpt_path, tf_name) for tf_name in tf_names]
             var_np = np.concatenate(vars_np, axis=0)
         else:
             raise ValueError(f"Unrecognized name: {name}")
@@ -116,7 +113,7 @@ class TransformerModel(nn.Module):
     Copy of model_pytorch.TransformerModel, modified to expose embedding layer.
     """
 
-    def __init__(self, cfg, vocab=40990, n_ctx=512, embeddings_mode='none'):
+    def __init__(self, cfg, vocab=40990, n_ctx=512, embeddings_mode="none"):
         super(TransformerModel, self).__init__()
         self.embeddings_mode = embeddings_mode
         self.n_embd = cfg.n_embd
@@ -130,14 +127,13 @@ class TransformerModel(nn.Module):
         nn.init.normal_(self.embed.weight, std=0.02)
 
         if self.embeddings_mode == "mix":
-            self.scalar_mix = scalar_mix.ScalarMix(cfg.n_layer + 1,
-                                                   do_layer_norm=False)
+            self.scalar_mix = scalar_mix.ScalarMix(cfg.n_layer + 1, do_layer_norm=False)
 
     def forward(self, x):
         x = x.view(-1, x.size(-2), x.size(-1))
         e = self.embed(x)
         h_lex = e[:, :, 0]
-        if self.embeddings_mode == 'only':
+        if self.embeddings_mode == "only":
             # Skip running Transformer if only need base layer.
             return h_lex  # token embs, no position info
 
@@ -152,7 +148,7 @@ class TransformerModel(nn.Module):
             h = encoded_layers[-1]
         #  elif self.embeddings_mode == "only":
         #      handled above by early return
-        elif self.embeddings_mode == 'cat':
+        elif self.embeddings_mode == "cat":
             # Concatenate embeddings layer.
             h = torch.cat([encoded_layers[-1], h_lex], dim=2)
         elif self.embeddings_mode == "mix":
@@ -160,8 +156,7 @@ class TransformerModel(nn.Module):
             # doing layer norm.
             h = self.scalar_mix([h_lex] + encoded_layers)
         else:
-            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
-                                      " not supported")
+            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported")
         return h
 
     def get_output_dim(self):
@@ -179,9 +174,9 @@ class OpenAIEmbedderModule(nn.Module):
         self.n_ctx = n_ctx  # max context width (seq len)
 
         full_emb_vocab = N_VOCAB + self.n_special + self.n_ctx
-        self.model = TransformerModel(self.model_cfg,
-                                      vocab=full_emb_vocab,
-                                      embeddings_mode=args.openai_embeddings_mode)
+        self.model = TransformerModel(
+            self.model_cfg, vocab=full_emb_vocab, embeddings_mode=args.openai_embeddings_mode
+        )
 
         # Need specific seed to reproduce results.
         seed = 42
@@ -191,43 +186,46 @@ class OpenAIEmbedderModule(nn.Module):
 
         if args.openai_transformer_ckpt:
             assert n_special == 3
-            log.info("Loading OpenAI transformer model from %s",
-                     args.openai_transformer_ckpt)
+            log.info("Loading OpenAI transformer model from %s", args.openai_transformer_ckpt)
             load_from_tf_checkpoint(self.model, args.openai_transformer_ckpt)
         else:
             loader_args = dict(n_special=n_special)
             # Path to model weights
-            loader_args['path'] = OPENAI_DATA_DIR + "/"
+            loader_args["path"] = OPENAI_DATA_DIR + "/"
             # Path to variable name mapping
-            loader_args['path_names'] = os.path.dirname(model_pytorch.__file__) + "/"
+            loader_args["path_names"] = os.path.dirname(model_pytorch.__file__) + "/"
             # Load pretrained weights from disk
-            log.info("Loading OpenAI transformer model from %s", loader_args['path'])
+            log.info("Loading OpenAI transformer model from %s", loader_args["path"])
             model_pytorch.load_openai_pretrained_model(self.model, **loader_args)
         log.info("Loaded OpenAI transformer model.")
 
         # Set trainability of this module.
         for param in self.model.parameters():
-            param.requires_grad = bool(args.transfer_paradigm == 'finetune')
+            param.requires_grad = bool(args.transfer_paradigm == "finetune")
 
         # Configure scalar mixing, ELMo-style.
         if args.openai_embeddings_mode == "mix":
             # TODO: if doing multiple target tasks, allow for multiple sets of
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
-            assert len(parse_task_list_arg(args.target_tasks)) <= 1, \
-                ("openai_embeddings_mode='mix' only supports a single set of "
-                 "scalars (but if you need this feature, see the TODO in "
-                 "the code!)")
-            if args.transfer_paradigm == 'frozen':
-                log.warning("NOTE: openai_embeddings_mode='mix', so scalar "
-                            "mixing weights will be fine-tuned even if "
-                            "transformer weights are frozen.")
+            assert len(parse_task_list_arg(args.target_tasks)) <= 1, (
+                "openai_embeddings_mode='mix' only supports a single set of "
+                "scalars (but if you need this feature, see the TODO in "
+                "the code!)"
+            )
+            if args.transfer_paradigm == "frozen":
+                log.warning(
+                    "NOTE: openai_embeddings_mode='mix', so scalar "
+                    "mixing weights will be fine-tuned even if "
+                    "transformer weights are frozen."
+                )
             # Make sure scalar mix is always tunable.
             for param in self.model.scalar_mix.parameters():
                 param.requires_grad = True
 
-    def forward(self, sent: Dict[str, torch.LongTensor],
-                unused_task_name: str="") -> torch.FloatTensor:
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
         """ Run transformer to get hidden states.
 
         Args:
@@ -241,8 +239,7 @@ class OpenAIEmbedderModule(nn.Module):
 
         # Model has fixed, learned positional component :(, so we must pass a
         # block of exactly n_ctx length.
-        ids = torch.zeros(var_ids.size()[0], self.n_ctx, dtype=var_ids.dtype,
-                          device=var_ids.device)
+        ids = torch.zeros(var_ids.size()[0], self.n_ctx, dtype=var_ids.dtype, device=var_ids.device)
         fill_len = min(var_ids.size()[1], self.n_ctx)
         ids[:, :fill_len] = var_ids[:, :fill_len]
         # "Correct" ids to account for different indexing between OpenAI and
@@ -258,8 +255,9 @@ class OpenAIEmbedderModule(nn.Module):
         ids -= 2
 
         # Generate positional indices.
-        pos_ids = torch.arange(self.n_ctx, dtype=torch.int64,
-                               device=ids.device).repeat(ids.size()[0], 1)
+        pos_ids = torch.arange(self.n_ctx, dtype=torch.int64, device=ids.device).repeat(
+            ids.size()[0], 1
+        )
         pos_ids = N_VOCAB + self.n_special + pos_ids
 
         # x is [batch_size, n_ctx, 2]
@@ -270,7 +268,7 @@ class OpenAIEmbedderModule(nn.Module):
         # Truncate back to the original ids length, for compatiblity with the
         # rest of our embedding models. This only drops padding
         # representations.
-        h_trunc = h[:, :var_ids.size()[1], :]
+        h_trunc = h[:, : var_ids.size()[1], :]
         return h_trunc
 
     def get_output_dim(self):

@@ -4,13 +4,13 @@ This is the main page for [What do you learn from context? Probing for sentence 
 
 ## Getting Started
 
-First, follow the set-up instructions for `jiant`: [Getting Started](../README.md#getting-started)  
+First, follow the set-up instructions for `jiant`: [Getting Started](../README.md#getting-started)
 In particular, you'll need to set the following environment variables:
-- `JIANT_PROJECT_PREFIX` to wherever you want experiments to be saved (like 
+- `JIANT_PROJECT_PREFIX` to wherever you want experiments to be saved (like
   `$HOME/exp`)
-- `JIANT_DATA_DIR` to the directory where you'll download the edge probing data 
+- `JIANT_DATA_DIR` to the directory where you'll download the edge probing data
   (like `$HOME/jiant_data`)
-- `GLOVE_EMBS_FILE` to a copy of `glove.840B.300d.txt` (get it 
+- `GLOVE_EMBS_FILE` to a copy of `glove.840B.300d.txt` (get it
   [here](http://nlp.stanford.edu/data/glove.840B.300d.zip)) if you want to use GloVe or CoVe.
 - _TODO(ian): add optional cache paths for ELMo and BERT_
 
@@ -22,12 +22,12 @@ mkdir -p $JIANT_DATA_DIR
 ```
 This should populate `$JIANT_DATA_DIR/edges` with directories for each task, each containing a number of `.json` files as well as `labels.txt`. For more details on the data format, see below.
 
-The main entry point for edge probing is [`jiant/main.py`](../main.py). The main arguments are a config file and any parameter overrides. The [`jiant/config/`](../config/) folder contains [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) files as a starting point for all the edge probing experiments. 
+The main entry point for edge probing is [`jiant/main.py`](../main.py). The main arguments are a config file and any parameter overrides. The [`jiant/config/`](../config/) folder contains [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) files as a starting point for all the edge probing experiments.
 
 For a quick test run, use a small dataset like `spr2` and a small encoder like CoVe:
 ```sh
 cd ${PWD%/jiant*}/jiant
-python main.py --config_file config/edgeprobe_cove.conf \
+python main.py --config_file config/edgeprobe/edgeprobe_cove.conf \
   -o "target_tasks=edges-spr2,exp_name=ep_cove_demo"
 ```
 This will keep the encoder fixed and train an edge probing classifier on the SPR2 dataset. It should run in about 4 minutes on a K80 GPU. It'll produce an output directory in `$JIANT_PROJECT_PREFIX/ep_cove_demo`. There's a lot of stuff in here, but the files of interest are:
@@ -49,20 +49,20 @@ tensorboard --logdir $JIANT_PROJECT_PREFIX/ep_cove_demo/run/tensorboard
 ```
 
 You can use the `run/*_val.json` and `run/*_test.json` files to run scoring and analysis. There are some helper utilities which allow you to load and aggregate predictions across multiple runs. In particular:
-- [analysis.py](analysis.py) contains utilities to load predictions into a set 
+- [analysis.py](analysis.py) contains utilities to load predictions into a set
   of DataFrames, as well as to pretty-print edge probing examples.
-- [edgeprobe_preds_sandbox.ipynb](edgeprobe_preds_sandbox.ipynb) walks through 
+- [edgeprobe_preds_sandbox.ipynb](edgeprobe_preds_sandbox.ipynb) walks through
   some of the features in `analysis.py`
-- [analyze_runs.py](analyze_runs.py) is a helper script to process a set of 
+- [analyze_runs.py](analyze_runs.py) is a helper script to process a set of
   predictions into a condensed `.tsv` format. It computes confusion matricies for each label and along various stratifiers (like span distance) so you can easily and quickly perform further aggregation and compute metrics like accuracy, precision, recall, and F1. In particular, the `run`, `task`, `label`, `stratifier` (optional), and `stratum_key` (optional) columns serve as identifiers, and the confusion matrix is stored in four columns: `tp_count`, `fp_count`, `tn_count`, and `tp_count`. If you want to aggregate over a group of labels (like SRL core roles), just sum the `*_count` columns for that group before computing metrics.
-- [edgeprobe_aggregate_analysis.ipynb](edgeprobe_aggregate_analysis.ipynb) is 
+- [edgeprobe_aggregate_analysis.ipynb](edgeprobe_aggregate_analysis.ipynb) is
   the notebook we used to generate the tables and figures in the paper. It's kind of messy, but ultimately just does some shallow processing over the output of `analyze_runs.py`. If you're trying to do your own analysis, the main idiosyncracies to know about are: for `ontonotes-coref`, use the `1` label instead of `_micro_avg_`, and for `srl-conll2012` we report a `_clean_micro_` metric which aggregates all the labels that don't start with `R-` or `C-`.
 
 ## Running the experiments from the paper
 
 We provide a frozen branch, [`edgeprobe_frozen_feb2019`](https://github.com/jsalt18-sentence-repl/jiant/tree/edgeprobe_frozen_feb2019), which should reflect the master branch as of the final version of the paper.
 
-The configs in `jiant/config/edgeprobe_*.conf` are the starting point for the experiments in the paper, but are supplemented by a number of parameter overrides (the `-o` flag to `main.py`). We use a set of bash functions to keep track of these, which are maintained in [`jiant/scripts/edges/exp_fns.sh`](../scripts/edges/exp_fns.sh).
+The configs in `jiant/config/edgeprobe/edgeprobe_*.conf` are the starting point for the experiments in the paper, but are supplemented by a number of parameter overrides (the `-o` flag to `main.py`). We use a set of bash functions to keep track of these, which are maintained in [`jiant/scripts/edges/exp_fns.sh`](../scripts/edges/exp_fns.sh).
 
 To run a standard experiment, you can do something like:
 ```sh
@@ -83,12 +83,12 @@ If you hit any snags (_Editor's note: it's research code, you probably will_), c
 This directory contains a number of utilities for the edge probing project.
 
 In particular:
-- [edge_data_stats.py](edge_data_stats.py) prints stats, like the number of 
+- [edge_data_stats.py](edge_data_stats.py) prints stats, like the number of
   tokens, number of spans, and number of labels.
-- [get_edge_data_labels.py](get_edge_data_labels.py) compiles a list of all the 
+- [get_edge_data_labels.py](get_edge_data_labels.py) compiles a list of all the
   unique labels found in a dataset.
 - [retokenize_edge_data.py](retokenize_edge_data.py) applies tokenizers (MosesTokenizer, OpenAI.BPE, or a BERT wordpiece model) and re-map spans to the new tokenization.
-- [convert_edge_data_to_tfrecord.py](convert_edge_data_to_tfrecord.py) converts 
+- [convert_edge_data_to_tfrecord.py](convert_edge_data_to_tfrecord.py) converts
   edge probing JSON data to TensorFlow examples.
 
 The [data/](data/) subdirectory contains scripts to download each probing dataset and convert it to the edge probing JSON format, described below.
