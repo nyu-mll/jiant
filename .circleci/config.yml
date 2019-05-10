@@ -28,7 +28,7 @@ jobs:
             nose2 -v
       # Step 4: style check
       - run:
-          name: run tests
+          name: check style
           command: |
             pip install black
             black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
