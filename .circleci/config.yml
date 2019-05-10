@@ -30,6 +30,7 @@ jobs:
       - run:
           name: run tests
           command: |
+            pip install black
             black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
 workflows:
   version: 2
