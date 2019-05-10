@@ -102,7 +102,7 @@ class MultiRCTask(Task):
             d["par_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
-            d["idx"] = MetadataField(ans_idx) # required by evaluate()
+            d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_bert:
                 inp = para + question[1:-1] + answer[1:]
                 d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
