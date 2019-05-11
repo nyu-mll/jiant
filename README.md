@@ -62,16 +62,31 @@ To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.o
 For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX), see the [probing/](probing/) directory.
 
 
-## License
-
-This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
-
 ## Getting Help
 
 Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
+
 
 ## Contributing
 
 We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
 install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
 please also add the tests.
+
+
+## License
+
+This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
+
+
+## Acknowledgments
+
+- Part of the development of `jiant` took at the 2018 Frederick Jelinek Memorial Summer Workshop on Speech and Language Technologies, and was supported by Johns Hopkins University with unrestricted gifts from Amazon, Facebook, Google, Microsoft and Mitsubishi Electric Research Laboratories. 
+- This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
+by recommendation of the Schmidt Futures program.
+- We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work. 
+- Developer Alex Wang is supported by the National Science Foundation Graduate Research Fellowship Program under Grant
+No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of the National Science
+Foundation.
+- Developer Yada Pruksachatkun is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.
