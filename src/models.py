@@ -38,7 +38,7 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.edge_probing import EdgeProbingTask
-from .tasks.acceptability import CoLAMinimalPairTask, CoLAAnalysisTask
+from .tasks.acceptability import NPIMinimalPairTask, CoLAAnalysisTask
 
 from .modules.modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -464,7 +464,7 @@ def build_task_specific_modules(
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
-    elif isinstance(task, CoLAMinimalPairTask):
+    elif isinstance(task, NPIMinimalPairTask):
         if task.name == 'npi_pair_frozen' and args.bert_model_name:
             mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
             setattr(model, '%s_mdl' % task.name, mask_lm_head)
@@ -739,7 +739,7 @@ class MultiTaskModel(nn.Module):
             out = self._grounded_ranking_bce_forward(batch, task, predict)
         elif isinstance(task, RankingTask):
             out = self._ranking_forward(batch, task, predict)
-        elif isinstance(task, CoLAMinimalPairTask):
+        elif isinstance(task, NPIMinimalPairTask):
             out = self._minimal_pair_acceptability_forward(batch, task, predict) 
         else:
             raise ValueError("Task-specific components not found!")
@@ -818,8 +818,12 @@ class MultiTaskModel(nn.Module):
             sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
             # pass to a task specific classifier
             classifier = self._get_classifier(task)
-            logits = classifier(sent_embs1, sent_mask1) - classifier(sent_embs2, sent_mask2)
-        
+            logits1, logits2 = classifier(sent_embs1, sent_mask1), classifier(sent_embs2, sent_mask2)
+            logits = torch.stack((logits1[:, 0] + logits2[:, 1],
+                                  logits1[:, 1] + logits2[:, 0],
+                                  logits1[:, 0] + logits2[:, 0],
+                                  logits1[:, 1] + logits2[:, 1]), dim=1)
+
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
         tagmask = batch.get('tagmask', None)

@@ -34,11 +34,11 @@ from typing import Iterable, Sequence, List, Dict, Any, Type
 
 @register_task('npi_pair_frozen', rel_path='NPI')
 @register_task('npi_pair_tuned', rel_path='NPI')
-class CoLAMinimalPairTask(Task):
+class NPIMinimalPairTask(Task):
     ''' Task class for minimal pair acceptability judgement '''
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(CoLAMinimalPairTask, self).__init__(name, **kw)
+        super(NPIMinimalPairTask, self).__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
         self.n_classes = 2
@@ -58,10 +58,12 @@ class CoLAMinimalPairTask(Task):
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(
-            count=len(
-                self.tag_list),
+            count=len(self.tag_list),
             scorer_type=Correlation,
             corr_type="matthews")
+        self.tag_scorers2 = create_subset_scorers(
+            count=len(self.tag_list),
+            scorer_type=CategoricalAccuracy)
 
         log.info("\tFinished loading CoLA minimal pairs.")
         return
@@ -105,6 +107,7 @@ class CoLAMinimalPairTask(Task):
         self.scorer2(logits, labels)
         if tagmask is not None:
             update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, preds, labels, tagmask)
         return
     
     def get_metrics(self, reset=False):
@@ -117,6 +120,12 @@ class CoLAMinimalPairTask(Task):
             collect_subset_scores(
                 self.tag_scorers1,
                 'mcc',
+                self.tag_list,
+                reset))
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers2,
+                'accuracy',
                 self.tag_list,
                 reset))
         return collected_metrics
