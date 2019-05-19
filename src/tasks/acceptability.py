@@ -107,7 +107,7 @@ class NPIMinimalPairTask(Task):
         self.scorer2(logits, labels)
         if tagmask is not None:
             update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
-            update_subset_scorers(self.tag_scorers2, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
         return
     
     def get_metrics(self, reset=False):
