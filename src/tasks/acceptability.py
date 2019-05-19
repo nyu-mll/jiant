@@ -32,8 +32,8 @@ from .tasks import create_subset_scorers, update_subset_scorers, collect_subset_
 
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
-@register_task('cola-pair-frozen', rel_path='CoLA')
-@register_task('cola-pair-tuned', rel_path='CoLA')
+@register_task('npi_pair_frozen', rel_path='NPI')
+@register_task('npi_pair_tuned', rel_path='NPI')
 class CoLAMinimalPairTask(Task):
     ''' Task class for minimal pair acceptability judgement '''
 
@@ -51,7 +51,7 @@ class CoLAMinimalPairTask(Task):
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        file_name = {"cola-pair-frozen": "acceptability_minimal_pairs.tsv", "cola-pair-tuned": "acceptability_pairs.tsv"}
+        file_name = {"npi_pair_frozen": "acceptability_minimal_pairs.tsv", "npi_pair_tuned": "acceptability_pairs.tsv"}
         self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, file_name[self.name]), max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
@@ -81,7 +81,7 @@ class CoLAMinimalPairTask(Task):
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["input2"] = sentence_to_text_field(input2, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            if self.name == "cola-pair-frozen":
+            if self.name == "npi_pair_frozen":
                 mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
                 input0 = [i for i in input1]
                 input0[mask_index] = BERT_MASK_TOK

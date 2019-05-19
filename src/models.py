@@ -465,10 +465,10 @@ def build_task_specific_modules(
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, '%s_hid2voc' % task.name, hid2voc)
     elif isinstance(task, CoLAMinimalPairTask):
-        if task.name == 'cola-pair-frozen' and args.bert_model_name:
+        if task.name == 'npi_pair_frozen' and args.bert_model_name:
             mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
             setattr(model, '%s_mdl' % task.name, mask_lm_head)
-        elif task.name == 'cola-pair-tuned':
+        elif task.name == 'npi_pair_tuned':
             module = build_single_sentence_module(task=task, d_inp=d_sent, use_bert=False, params=task_params)
             setattr(model, '%s_mdl' % task.name, module)
         else:
@@ -799,7 +799,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
 
-        if task.name == 'cola-pair-frozen':
+        if task.name == 'npi_pair_frozen':
             bs = get_batch_size(batch)
             # embed the sentence
             sent_embs, _ = self.sent_encoder(batch['input0'], task)
@@ -812,7 +812,7 @@ class MultiTaskModel(nn.Module):
             # calling self.sent_encoder reduce all token index in input0 by 2, 
             # this -2 to input1 and input2 looks strange, but it correctly negate that effect
             logits = torch.stack([logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1)
-        elif task.name == 'cola-pair-tuned':
+        elif task.name == 'npi_pair_tuned':
             # embed the sentence
             sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
