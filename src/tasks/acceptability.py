@@ -46,7 +46,8 @@ class NPIMinimalPairTask(Task):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
-        self.scorers = [self.scorer1, self.scorer2]
+        self.scorer3 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
     
     def load_data(self, path, max_seq_len):
         '''Load the data'''
@@ -62,6 +63,9 @@ class NPIMinimalPairTask(Task):
             scorer_type=Correlation,
             corr_type="matthews")
         self.tag_scorers2 = create_subset_scorers(
+            count=len(self.tag_list),
+            scorer_type=CategoricalAccuracy)
+        self.tag_scorers3 = create_subset_scorers(
             count=len(self.tag_list),
             scorer_type=CategoricalAccuracy)
 
@@ -102,12 +106,15 @@ class NPIMinimalPairTask(Task):
     
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-        _, preds = logits.max(dim=1)
+        logits_relative = logits[:, :self.n_classes]
+        _, preds = logits_relative.max(dim=1)
         self.scorer1(preds, labels)
-        self.scorer2(logits, labels)
+        self.scorer2(logits_relative, labels)
+        self.scorer3(logits, labels)
         if tagmask is not None:
             update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
-            update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits_relative, labels, tagmask)
+            update_subset_scorers(self.tag_scorers3, logits, labels, tagmask)
         return
     
     def get_metrics(self, reset=False):
@@ -115,7 +122,8 @@ class NPIMinimalPairTask(Task):
 
         collected_metrics = {
             'mcc': self.scorer1.get_metric(reset),
-            'accuracy': self.scorer2.get_metric(reset)}
+            'accuracy': self.scorer2.get_metric(reset),
+            'accuracy_strict': self.scorer3.get_metric(reset)}
         collected_metrics.update(
             collect_subset_scores(
                 self.tag_scorers1,
@@ -126,6 +134,12 @@ class NPIMinimalPairTask(Task):
             collect_subset_scores(
                 self.tag_scorers2,
                 'accuracy',
+                self.tag_list,
+                reset))
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers3,
+                'accuracy_strict',
                 self.tag_list,
                 reset))
         return collected_metrics
