@@ -26,6 +26,12 @@ jobs:
             source activate jiant
             python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
             nose2 -v
+      # Step 4: style check
+      - run:
+          name: check style
+          command: |
+            pip install black
+            black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
 workflows:
   version: 2
   test:
