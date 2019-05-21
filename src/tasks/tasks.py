@@ -2519,9 +2519,9 @@ class SWAGTask(MultipleChoiceTask):
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
         self._files_by_split = {
-            "train": "trainres.jsonl",
-            "val": "valres.jsonl",
-            "test": "testres.jsonl",
+            "train": "train.jsonl",
+            "val": "val.jsonl",
+            "test": "test.jsonl",
         }
         self.num_spans = 2
         super().__init__(
