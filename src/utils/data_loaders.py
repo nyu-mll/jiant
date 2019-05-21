@@ -11,11 +11,40 @@ import pandas as pd
 from allennlp.data import vocabulary
 
 from .tokenizers import get_tokenizer
+from .retokenize import realign_spans
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
+def load_span_data(
+        tokenizer_name, 
+        file_name,
+        label_fn=None,
+        has_labels=True
+    ):
+    """
+    Load a span-related task file in .jsonl format, does 
+    re-alignment of spans, and tokenizes the text.
+    The task file should of be of the following form: 
+        text: str, 
+        label: bool
+        target: dict that contains the spans  
+    Args:
+        tokenizer_name: str, 
+        file_name: str, 
+        label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
+    Returns:
+        List of dictionaries of the aligned spans and tokenized text.
+    """
+    rows = pd.read_json(file_name, lines=True)
+    # realign spans
+    rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
 
+    if has_labels is False:
+        rows["label"] = False
+    return list(rows.T.to_dict().values())
+
+    
 def load_tsv(
     tokenizer_name,
     data_file,

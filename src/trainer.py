@@ -1077,7 +1077,7 @@ class SamplingMultiTaskTrainer:
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "pretraining_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                    "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
                 ),
             )
 
@@ -1225,7 +1225,9 @@ class SamplingMultiTaskTrainer:
                 setattr(self._g_scheduler, param, val)
 
         metric_states = torch.load(metric_state_path)
+        import pdb; pdb.set_trace()
         for metric_name, metric_state in metric_states.items():
+
             self._metric_infos[metric_name]["hist"] = metric_state["hist"]
             self._metric_infos[metric_name]["stopped"] = metric_state["stopped"]
             self._metric_infos[metric_name]["best"] = metric_state["best"]
