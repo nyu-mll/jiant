@@ -160,11 +160,7 @@ def realign_spans(record, tokenizer_name):
     # save back into record
     _, all_text = aligner_fn(" ".join(text))
     record["target"]["span1"] = span_mapping[record["target"]["span1_index"]]
-    if record["target"]["span1"][0] == record["target"]["span1"][1]:
-        import pdb; pdb.set_trace()
     record["target"]["span2"] = span_mapping[record["target"]["span2_index"]]
-    if record["target"]["span2"][0] == record["target"]["span2"][1]:
-        import pdb; pdb.set_trace()
     record["text"] = " ".join(all_text)
     return record
 
