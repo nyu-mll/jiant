@@ -1228,7 +1228,6 @@ class SamplingMultiTaskTrainer:
                 setattr(self._g_scheduler, param, val)
 
         metric_states = torch.load(metric_state_path)
-        import pdb; pdb.set_trace()
         for metric_name, metric_state in metric_states.items():
 
             self._metric_infos[metric_name]["hist"] = metric_state["hist"]
