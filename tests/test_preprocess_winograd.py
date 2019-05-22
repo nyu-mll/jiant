@@ -4,7 +4,7 @@ import pandas as pd
 import shutil
 import tempfile
 import unittest
-import scripts.winograd.preprocess_winograd as preprocess_winograd
+import src.utils.retokenize as retokenize
 import json
 import copy
 
@@ -24,7 +24,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "Members of the House clapped their hands",
-                        "targets": [
+                        "target":
                             {
                                 "span1_index": 0,
                                 "span1_text": "members",
@@ -32,7 +32,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                                 "span2_text": "their",
                                 "label": True,
                             }
-                        ],
+                    
                     }
                 )
             )
@@ -42,7 +42,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "Mr. Ford told me to tell you to contact him",
-                        "targets": [
+                        "target": 
                             {
                                 "span1_index": 0,
                                 "span1_text": "Mr. Ford",
@@ -50,7 +50,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                                 "span2_text": "him",
                                 "label": True,
                             }
-                        ],
+                        
                     }
                 )
             )
@@ -60,7 +60,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "I told you already, Mr. Ford!",
-                        "targets": [
+                        "target": 
                             {
                                 "span1_index": 4,
                                 "span1_text": "Mr. Ford",
@@ -68,7 +68,7 @@ class TestPreprocessWinograd(unittest.TestCase):
                                 "span2_text": "I",
                                 "label": False,
                             }
-                        ],
+                        
                     }
                 )
             )
@@ -78,7 +78,7 @@ class TestPreprocessWinograd(unittest.TestCase):
         records = list(pd.read_json(self.path, lines=True).T.to_dict().values())
         orig_records = copy.deepcopy(records)
         for rec in records:
-            preprocess_winograd.realign_spans(rec, "bert-large-cased")
+            retokenize.realign_spans(rec, "bert-large-cased")
         print(records[0])
         print(orig_records[0])
         assert records[0]["text"] == orig_records[0]["text"]
@@ -86,19 +86,19 @@ class TestPreprocessWinograd(unittest.TestCase):
         assert records[1]["text"] != orig_records[1]["text"]
         assert records[2]["text"] != orig_records[2]["text"]
 
-        result_span1 = records[0]["targets"][0]["span1"]
-        result_span2 = records[0]["targets"][0]["span2"]
+        result_span1 = records[0]["target"]["span1"]
+        result_span2 = records[0]["target"]["span2"]
         assert result_span1 == [0, 1]
         assert result_span2 == [5, 6]
 
-        result_span1 = records[1]["targets"][0]["span1"]
-        result_span2 = records[1]["targets"][0]["span2"]
+        result_span1 = records[1]["target"]["span1"]
+        result_span2 = records[1]["target"]["span2"]
 
         assert result_span1 == [0, 3]
         assert result_span2 == [10, 11]
 
-        result_span1 = records[2]["targets"][0]["span1"]
-        result_span2 = records[2]["targets"][0]["span2"]
+        result_span1 = records[2]["target"]["span1"]
+        result_span2 = records[2]["target"]["span2"]
 
         assert result_span1 == [5, 9]
         assert result_span2 == [0, 1]
