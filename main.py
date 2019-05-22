@@ -117,7 +117,6 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         # Look for target train checkpoints (available only if we're restoring from a run that
         # already finished), then look for training checkpoints.
-
         best_path = get_best_checkpoint_path(args.run_dir)
         if best_path:
             load_model_state(
@@ -251,10 +250,11 @@ def _run_background_tensorboard(logdir, port):
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from target_task_training
-        2) best checkpoint from pretraining
-        3) checkpoint created from before any target task training
-        4) nothing found (empty string) """
+        1) best checkpoint from task specific checkpoint from target_task_trianing 
+        2) best checkpoint from target_task_training
+        3) best checkpoint from pretraining
+        4) checkpoint created from before any target task training
+        5) nothing found (empty string) """
     target_task_best = glob.glob(os.path.join(run_dir, "model_state_target_train_best.th"))
 
     if len(target_task_best) > 0:
@@ -264,7 +264,6 @@ def get_best_checkpoint_path(run_dir):
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-
     pre_target_train = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
 
     if len(pre_target_train) > 0:
