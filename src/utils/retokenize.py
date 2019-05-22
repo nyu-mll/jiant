@@ -93,6 +93,7 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Ma
     data = np.ones(len(ridxs), dtype=_DTYPE)
     return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
 
+
 def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
