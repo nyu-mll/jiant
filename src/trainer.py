@@ -1229,7 +1229,6 @@ class SamplingMultiTaskTrainer:
 
         metric_states = torch.load(metric_state_path)
         for metric_name, metric_state in metric_states.items():
-
             self._metric_infos[metric_name]["hist"] = metric_state["hist"]
             self._metric_infos[metric_name]["stopped"] = metric_state["stopped"]
             self._metric_infos[metric_name]["best"] = metric_state["best"]
