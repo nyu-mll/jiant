@@ -27,7 +27,13 @@ from sklearn.metrics import mean_squared_error
 from ..allennlp_mods.correlation import Correlation
 from ..allennlp_mods.numeric_field import NumericField
 from ..utils import utils
-from ..utils.data_loaders import get_tag_list, load_diagnostic_tsv, load_span_data, load_tsv, process_sentence
+from ..utils.data_loaders import (
+    get_tag_list,
+    load_diagnostic_tsv,
+    load_span_data,
+    load_tsv,
+    process_sentence,
+)
 from ..utils.tokenizers import get_tokenizer
 from .registry import register_task  # global task registry
 
@@ -2038,8 +2044,7 @@ class SpanClassificationTask(Task):
         assert label_file is not None
         assert files_by_split is not None
         self._files_by_split = {
-            split: os.path.join(path, fname)
-            for split, fname in files_by_split.items()
+            split: os.path.join(path, fname) for split, fname in files_by_split.items()
         }
         self.num_spans = num_spans
         self.max_seq_len = max_seq_len
@@ -2077,15 +2082,6 @@ class SpanClassificationTask(Task):
             total_ctr,
             filename,
         )
-
-    def load_data(self):
-        iters_by_split = collections.OrderedDict()
-        for split, filename in self._files_by_split.items():
-            if "test" in filename:
-                iters_by_split[split] = load_span_data(self.tokenizer_name, filename, has_labels=False)
-            else:
-                iters_by_split[split] = load_span_data(self.tokenizer_name, filename)
-        self._iters_by_split = iters_by_split
 
     def get_split_text(self, split: str):
         """
@@ -2128,14 +2124,14 @@ class SpanClassificationTask(Task):
 
         for i in range(self.num_spans):
             example["span" + str(i + 1) + "s"] = ListField(
-                [
-                    self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)
-                ]
+                [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
             )
         example["labels"] = ListField(
             [
                 MultiLabelField(
-                    [str(record["label"])], label_namespace=self._label_namespace, skip_indexing=False
+                    [str(record["label"])],
+                    label_namespace=self._label_namespace,
+                    skip_indexing=False,
                 )
             ]
         )
@@ -2518,17 +2514,24 @@ class SWAGTask(MultipleChoiceTask):
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {
-            "train": "train.jsonl",
-            "val": "val.jsonl",
-            "test": "test.jsonl",
-        }
+        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test.jsonl"}
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
         )
         self.n_classes = 2
         self.val_metric = "%s_acc" % self.name
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            if filename.endswith("test.jsonl"):
+                iters_by_split[split] = load_span_data(
+                    self.tokenizer_name, filename, has_labels=False
+                )
+            else:
+                iters_by_split[split] = load_span_data(self.tokenizer_name, filename)
+        self._iters_by_split = iters_by_split
 
     def get_all_labels(self):
         return ["True", "False"]
