@@ -353,9 +353,9 @@ class PairOrdinalRegressionTask(RegressionTask):
         return {"1-mse": 1 - mse, "mse": mse, "spearmanr": spearmanr}
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
+        """ Process split text into a list of AllenNLP Instances. """
         return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
-    
+
     def update_metrics(self, logits, labels, tagmask=None):
         self.scorer1(mean_squared_error(logits, labels))  # update average MSE
         self.scorer2(logits, labels)

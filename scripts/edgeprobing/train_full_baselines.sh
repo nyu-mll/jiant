@@ -8,7 +8,7 @@ NOTIFY_EMAIL=$1
 function run_exp() {
     OVERRIDES="exp_name=train-full-$1, run_name=run"
     OVERRIDES+=", pretrain_tasks=$1, max_vals=$2, val_interval=$3, elmo_chars_only=0"
-    python main.py --config_file config/edgeprobe_train.conf \
+    python main.py --config_file config/edgeprobe/edgeprobe_train.conf \
         -o "${OVERRIDES}" \
         --remote_log --notify "$NOTIFY_EMAIL"
 }

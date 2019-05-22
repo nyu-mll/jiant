@@ -27,7 +27,7 @@ The main entry point for edge probing is [`jiant/main.py`](../main.py). The main
 For a quick test run, use a small dataset like `spr2` and a small encoder like CoVe:
 ```sh
 cd ${PWD%/jiant*}/jiant
-python main.py --config_file config/edgeprobe_cove.conf \
+python main.py --config_file config/edgeprobe/edgeprobe_cove.conf \
   -o "target_tasks=edges-spr2,exp_name=ep_cove_demo"
 ```
 This will keep the encoder fixed and train an edge probing classifier on the SPR2 dataset. It should run in about 4 minutes on a K80 GPU. It'll produce an output directory in `$JIANT_PROJECT_PREFIX/ep_cove_demo`. There's a lot of stuff in here, but the files of interest are:
@@ -62,7 +62,7 @@ You can use the `run/*_val.json` and `run/*_test.json` files to run scoring and 
 
 We provide a frozen branch, [`edgeprobe_frozen_feb2019`](https://github.com/jsalt18-sentence-repl/jiant/tree/edgeprobe_frozen_feb2019), which should reflect the master branch as of the final version of the paper.
 
-The configs in `jiant/config/edgeprobe_*.conf` are the starting point for the experiments in the paper, but are supplemented by a number of parameter overrides (the `-o` flag to `main.py`). We use a set of bash functions to keep track of these, which are maintained in [`jiant/scripts/edges/exp_fns.sh`](../scripts/edges/exp_fns.sh).
+The configs in `jiant/config/edgeprobe/edgeprobe_*.conf` are the starting point for the experiments in the paper, but are supplemented by a number of parameter overrides (the `-o` flag to `main.py`). We use a set of bash functions to keep track of these, which are maintained in [`jiant/scripts/edges/exp_fns.sh`](../scripts/edges/exp_fns.sh).
 
 To run a standard experiment, you can do something like:
 ```sh
