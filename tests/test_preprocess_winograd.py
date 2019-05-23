@@ -112,7 +112,7 @@ class TestPreprocessWinograd(unittest.TestCase):
 
         result_span1 = records[3]["target"]["span1"]
         result_span2 = records[3]["target"]["span2"]
-        
+
         assert result_span1 == [3, 7]
         assert result_span2 == [0, 1]
 
