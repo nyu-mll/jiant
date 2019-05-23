@@ -73,12 +73,29 @@ class TestPreprocessWinograd(unittest.TestCase):
                 )
             )
             jsonfile.write("\n")
+            jsonfile.write(
+                json.dumps(
+                    {
+                        "text": "I look at Sarah's dog. It was cute.!",
+                        "target": 
+                            {
+                                "span1_index": 3,
+                                "span1_text": "Sarah's dog",
+                                "span2_index": 0,
+                                "span2_text": "I",
+                                "label": False,
+                            }
+                        
+                    }
+                )
+            )
 
     def test_bert(self):
         records = list(pd.read_json(self.path, lines=True).T.to_dict().values())
         orig_records = copy.deepcopy(records)
-        for rec in records:
+        for rec in records[:-1]:
             retokenize.realign_spans(rec, "bert-large-cased")
+        retokenize.realign_spans(rec[-1], "MosesTokenizer")
         print(records[0])
         print(orig_records[0])
         assert records[0]["text"] == orig_records[0]["text"]
@@ -101,6 +118,12 @@ class TestPreprocessWinograd(unittest.TestCase):
         result_span2 = records[2]["target"]["span2"]
 
         assert result_span1 == [5, 9]
+        assert result_span2 == [0, 1]
+
+        result_span1 = records[2]["target"]["span1"]
+        result_span2 = records[2]["target"]["span2"]
+
+        assert result_span1 == [3, 6]
         assert result_span2 == [0, 1]
 
     def tearDown(self):

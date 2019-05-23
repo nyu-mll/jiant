@@ -98,6 +98,7 @@ def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
     piece by piece.
+    Only BERT and Moses tokenization is supported currently. 
 
     Parameters
     -----------------------
