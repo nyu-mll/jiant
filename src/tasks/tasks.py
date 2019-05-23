@@ -2515,9 +2515,9 @@ class SWAGTask(MultipleChoiceTask):
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
         self._files_by_split = {
-            "train": "trainres.jsonl",
-            "val": "valres.jsonl",
-            "test": "testres.jsonl",
+            "train": "train.jsonl",
+            "val": "val.jsonl",
+            "test": "test.jsonl",
         }
         self.num_spans = 2
         super().__init__(
@@ -2529,7 +2529,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            if filename.endswith("testres.jsonl"):
+            if filename.endswith("test.jsonl"):
                 iters_by_split[split] = load_span_data(
                     self.tokenizer_name, filename, has_labels=False
                 )
