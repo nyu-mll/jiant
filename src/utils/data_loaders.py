@@ -20,7 +20,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
-    Re-alignment of spans involves transfomring the spans so that it matches the text after 
+    Re-alignment of spans involves transforming the spans so that it matches the text after 
     tokenization. 
     For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
     [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization, 
@@ -38,8 +38,10 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     rows = pd.read_json(file_name, lines=True)
     # realign spans
-    rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
+    import pdb
 
+    pdb.set_trace()
+    rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
     if has_labels is False:
         rows["label"] = False
     return list(rows.T.to_dict().values())

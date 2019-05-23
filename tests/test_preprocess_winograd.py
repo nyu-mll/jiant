@@ -24,15 +24,13 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "Members of the House clapped their hands",
-                        "target":
-                            {
-                                "span1_index": 0,
-                                "span1_text": "members",
-                                "span2_index": 5,
-                                "span2_text": "their",
-                                "label": True,
-                            }
-                    
+                        "target": {
+                            "span1_index": 0,
+                            "span1_text": "members",
+                            "span2_index": 5,
+                            "span2_text": "their",
+                            "label": True,
+                        },
                     }
                 )
             )
@@ -42,15 +40,13 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "Mr. Ford told me to tell you to contact him",
-                        "target": 
-                            {
-                                "span1_index": 0,
-                                "span1_text": "Mr. Ford",
-                                "span2_index": 9,
-                                "span2_text": "him",
-                                "label": True,
-                            }
-                        
+                        "target": {
+                            "span1_index": 0,
+                            "span1_text": "Mr. Ford",
+                            "span2_index": 9,
+                            "span2_text": "him",
+                            "label": True,
+                        },
                     }
                 )
             )
@@ -60,15 +56,13 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "I told you already, Mr. Ford!",
-                        "target": 
-                            {
-                                "span1_index": 4,
-                                "span1_text": "Mr. Ford",
-                                "span2_index": 0,
-                                "span2_text": "I",
-                                "label": False,
-                            }
-                        
+                        "target": {
+                            "span1_index": 4,
+                            "span1_text": "Mr. Ford",
+                            "span2_index": 0,
+                            "span2_text": "I",
+                            "label": False,
+                        },
                     }
                 )
             )
@@ -77,15 +71,13 @@ class TestPreprocessWinograd(unittest.TestCase):
                 json.dumps(
                     {
                         "text": "I look at Sarah's dog. It was cute.!",
-                        "target": 
-                            {
-                                "span1_index": 3,
-                                "span1_text": "Sarah's dog",
-                                "span2_index": 0,
-                                "span2_text": "I",
-                                "label": False,
-                            }
-                        
+                        "target": {
+                            "span1_index": 3,
+                            "span1_text": "Sarah's dog",
+                            "span2_index": 0,
+                            "span2_text": "I",
+                            "label": False,
+                        },
                     }
                 )
             )

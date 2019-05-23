@@ -2514,7 +2514,11 @@ class SWAGTask(MultipleChoiceTask):
 @register_task("winograd-coreference", rel_path="winograd-coref")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
-        self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test.jsonl"}
+        self._files_by_split = {
+            "train": "trainres.jsonl",
+            "val": "valres.jsonl",
+            "test": "testres.jsonl",
+        }
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
@@ -2525,7 +2529,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
     def load_data(self):
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
-            if filename.endswith("test.jsonl"):
+            if filename.endswith("testres.jsonl"):
                 iters_by_split[split] = load_span_data(
                     self.tokenizer_name, filename, has_labels=False
                 )
