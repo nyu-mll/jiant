@@ -27,7 +27,13 @@ from sklearn.metrics import mean_squared_error
 from ..allennlp_mods.correlation import Correlation
 from ..allennlp_mods.numeric_field import NumericField
 from ..utils import utils
-from ..utils.data_loaders import get_tag_list, load_diagnostic_tsv, load_tsv, process_sentence
+from ..utils.data_loaders import (
+    get_tag_list,
+    load_diagnostic_tsv,
+    load_span_data,
+    load_tsv,
+    process_sentence,
+)
 from ..utils.tokenizers import get_tokenizer
 from .registry import register_task  # global task registry
 
@@ -1995,23 +2001,12 @@ class CCGTaggingTask(TaggingTask):
 
 class SpanClassificationTask(Task):
     """
-     Generic class for span tasks.
+    Generic class for span tasks.
     Acts as a classifier, but with multiple targets for each input text.
     Targets are of the form (span1, span2,..., span_n, label), where the spans are
     half-open token intervals [i, j).
     The number of spans is constant across examples.
     """
-
-    @property
-    def _tokenizer_suffix(self):
-        """"
-        Suffix to make sure we use the correct source files,
-        based on the given tokenizer.
-        """
-        if self.tokenizer_name:
-            return ".retokenized." + self.tokenizer_name
-        else:
-            return ""
 
     def tokenizer_is_supported(self, tokenizer_name):
         """ Check if the tokenizer is supported for this task. """
@@ -2049,8 +2044,7 @@ class SpanClassificationTask(Task):
         assert label_file is not None
         assert files_by_split is not None
         self._files_by_split = {
-            split: os.path.join(path, fname) + self._tokenizer_suffix
-            for split, fname in files_by_split.items()
+            split: os.path.join(path, fname) for split, fname in files_by_split.items()
         }
         self.num_spans = num_spans
         self.max_seq_len = max_seq_len
@@ -2088,15 +2082,6 @@ class SpanClassificationTask(Task):
             total_ctr,
             filename,
         )
-
-    def load_data(self):
-        iters_by_split = collections.OrderedDict()
-        for split, filename in self._files_by_split.items():
-            iter = list(self._stream_records(filename))
-            iters_by_split[split] = iter
-        self._iters_by_split = iters_by_split
-        self.all_labels = list(utils.load_lines(self.label_file))
-        self.n_classes = len(self.all_labels)
 
     def get_split_text(self, split: str):
         """
@@ -2139,19 +2124,15 @@ class SpanClassificationTask(Task):
 
         for i in range(self.num_spans):
             example["span" + str(i + 1) + "s"] = ListField(
-                [
-                    self._make_span_field(t["span" + str(i + 1)], text_field, 1)
-                    for t in record["targets"]
-                ]
+                [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
             )
-
-        labels = [utils.wrap_singleton_string(t["label"]) for t in record["targets"]]
         example["labels"] = ListField(
             [
                 MultiLabelField(
-                    label_set, label_namespace=self._label_namespace, skip_indexing=False
+                    [str(record["label"])],
+                    label_namespace=self._label_namespace,
+                    skip_indexing=False,
                 )
-                for label_set in labels
             ]
         )
         return Instance(example)
@@ -2536,13 +2517,28 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         self._files_by_split = {
             "train": "train.jsonl",
             "val": "val.jsonl",
-            "test": "test_with_labels.jsonl",
+            "test": "test.jsonl",
         }
         self.num_spans = 2
         super().__init__(
             files_by_split=self._files_by_split, label_file="labels.txt", path=path, **kw
         )
+        self.n_classes = 2
         self.val_metric = "%s_acc" % self.name
+
+    def load_data(self):
+        iters_by_split = collections.OrderedDict()
+        for split, filename in self._files_by_split.items():
+            if filename.endswith("test.jsonl"):
+                iters_by_split[split] = load_span_data(
+                    self.tokenizer_name, filename, has_labels=False
+                )
+            else:
+                iters_by_split[split] = load_span_data(self.tokenizer_name, filename)
+        self._iters_by_split = iters_by_split
+
+    def get_all_labels(self):
+        return ["True", "False"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
