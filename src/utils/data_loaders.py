@@ -38,9 +38,6 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     rows = pd.read_json(file_name, lines=True)
     # realign spans
-    import pdb
-
-    pdb.set_trace()
     rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
     if has_labels is False:
         rows["label"] = False
