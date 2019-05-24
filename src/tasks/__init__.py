@@ -56,6 +56,7 @@ ALL_COLA_NPI_TASKS = [
     "hd_cola_npi_cond",
     "hd_cola_npi_adv",
     "all_cola_npi",
+    'wilcox_npi',
     "npi_adv_li",
     "npi_adv_sc",
     "npi_adv_pr",
@@ -85,28 +86,6 @@ ALL_COLA_NPI_TASKS = [
     "npi_sup_pr",
 ]
 
-
-ALL_COLA_NPI_TASKS = [
-    'cola_npi_sup',
-    'cola_npi_quessmp',
-    'cola_npi_ques',
-    'cola_npi_qnt',
-    'cola_npi_only',
-    'cola_npi_negsent',
-    'cola_npi_negdet',
-    'cola_npi_cond',
-    'cola_npi_adv',
-    'hd_cola_npi_sup',
-    'hd_cola_npi_quessmp',
-    'hd_cola_npi_ques',
-    'hd_cola_npi_qnt',
-    'hd_cola_npi_only',
-    'hd_cola_npi_negsent',
-    'hd_cola_npi_negdet',
-    'hd_cola_npi_cond',
-    'hd_cola_npi_adv',    
-    'all_cola_npi'    
-]
 
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list

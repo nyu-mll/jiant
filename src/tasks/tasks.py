@@ -488,6 +488,7 @@ class SSTTask(SingleClassificationTask):
 @register_task("cola_npi_qnt", rel_path="NPI/splits/quantifiers")
 @register_task("cola_npi_sup", rel_path="NPI/splits/superlative")
 @register_task("all_cola_npi", rel_path="NPI/combs/all_env")
+@register_task("wilcox_npi", rel_path="NPI/wilcox")
 @register_task("hd_cola_npi_adv", rel_path="NPI/combs/minus_adverbs")
 @register_task("hd_cola_npi_cond", rel_path="NPI/combs/minus_conditionals")
 @register_task("hd_cola_npi_negdet", rel_path="NPI/combs/minus_determiner_negation_biclausal")
