@@ -3,7 +3,7 @@
 # Default environment variables for JSALT code. May be overwritten by user.
 # See https://github.com/nyu-mll/jiant for more.
 
-# DO NOT COMMIT CHANGES TO THIS FILE! 
+# DO NOT COMMIT CHANGES TO THIS FILE!
 # Make a local copy and follow the instructions below.
 
 # Copy this to /etc/profile.d/ to auto-set environment vars on login.
@@ -31,7 +31,7 @@ export JIANT_DATA_DIR=~
 # A word embeddings file in GloVe/fastText format. Not used when using
 # ELMo, GPT, or BERT. To use more than one different set of embeddings
 # in your environment, create an additional environment variable (like)
-# FASTTEXT_WORD_EMBS_FILE, and reference it in each of your .conf config 
+# FASTTEXT_WORD_EMBS_FILE, and reference it in each of your .conf config
 # files with a line like:
 #     word_embs_file = ${FASTTEXT_WORD_EMBS_FILE}
 export WORD_EMBS_FILE=None

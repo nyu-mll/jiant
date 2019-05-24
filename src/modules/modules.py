@@ -11,9 +11,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
-from allennlp.data.token_indexers.elmo_indexer import (
-    ELMoCharacterMapper,
-)
+from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper
 from allennlp.models.model import Model
 from allennlp.modules import Highway, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
 from allennlp.modules.elmo_lstm import ElmoLstm
@@ -224,7 +222,7 @@ class SentenceEncoder(Model):
         ] and "_elmo" in [
             name for name, _ in self._text_field_embedder.token_embedder_elmo.named_children()
         ]:
-            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()
+            self._text_field_embedder.token_embedder_elmo._elmo._elmo_lstm._elmo_lstm.reset_states()  # noqa # eek.
         if isinstance(self._phrase_layer, BiLMEncoder):
             self._phrase_layer.reset_states()
 
@@ -271,7 +269,8 @@ class BoWSentEncoder(Model):
 class PRPNPhraseLayer(Model):
     """
     Implementation of PRPN (Shen et al., 2018) as a phrase layer for sentence encoder.
-    PRPN has a parser component that learns the latent constituency trees jointly with a downstream task.
+    PRPN has a parser component that learns the latent constituency trees jointly with a
+    downstream task.
     """
 
     def __init__(
@@ -466,7 +465,8 @@ class PairClassifier(nn.Module):
     """ Thin wrapper around a set of modules.
     For sentence pair classification.
     Pooler specifies how to aggregate inputted sequence of vectors.
-    Also allows for use of specific token representations to be addded to the overall representation
+    Also allows for use of specific token representations to be addded to the overall
+    representation
     """
 
     def __init__(self, pooler, classifier, attn=None):
@@ -609,7 +609,7 @@ class MaskedStackedSelfAttentionEncoder(Seq2SeqEncoder):
     """
     Implements a stacked self-attention encoder similar to the Transformer
     architecture in `Attention is all you Need
-    <https://www.semanticscholar.org/paper/Attention-Is-All-You-Need-Vaswani-Shazeer/0737da0767d77606169cbf4187b83e1ab62f6077>`_ .
+    <https://www.semanticscholar.org/paper/Attention-Is-All-You-Need-Vaswani-Shazeer/0737da0767d77606169cbf4187b83e1ab62f6077>`_ .  # noqa
 
     This encoder combines 3 layers in a 'block':
 
