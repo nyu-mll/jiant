@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-This file will preprocess the SuperGLUE Winograd Schema Challenge data, aligning the span indices to the tokenizaer of
-choice, and saving as a JSON file.
+This file will preprocess the SuperGLUE Winograd Schema Challenge data, aligning the span indices
+to the tokenizaer of choice, and saving as a JSON file.
 
 An example of the span index transformation is below:
 [Mr., Porter, is, nice] with span indices [0, 2] -> [Mr, ., Por, ter, is, nice ]
@@ -38,7 +38,7 @@ log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", 
 
 def realign_spans(record, tokenizer_name):
     """
-    Builds the indices alignment while also tokenizing the input 
+    Builds the indices alignment while also tokenizing the input
     piece by piece.
 
     Parameters

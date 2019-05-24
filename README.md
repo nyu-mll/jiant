@@ -1,6 +1,7 @@
 # jiant
 
-[![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=svg)](https://circleci.com/gh/nyu-mll/jiant/tree/master)
+[![CircleCI](https://circleci.com/gh/nyu-mll/jiant/tree/master.svg?style=svg)](https://circleci.com/gh/nyu-mll/jiant/tree/master) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+
 
 `jiant` is a work-in-progress software toolkit for natural language processing research, designed to facilitate work on multitask learning and transfer learning for sentence understanding tasks.
 
@@ -14,25 +15,25 @@ A few things you might want to know about `jiant`:
 
 ## Getting Started
 
-To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)! 
+To find the setup instructions for using jiant and to run a simple example demo experiment using data from GLUE, follow this [getting started tutorial](https://github.com/nyu-mll/jiant/tree/master/tutorials/setup_tutorial.md)!
 
 ## Official Documentation
 
 Our official documentation is here: https://jiant.info/documentation#/
- 
+
 
 ## Running
-To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:	
-```sh	
+To run an experiment, make a config file similar to `config/demo.conf` with your model configuration. In addition, you can use the `--overrides` flag to override specific variables. For example:
+```sh
 python main.py --config_file config/demo.conf \
-    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"	
-```	
-will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.	
- To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)	
-*  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.	
-*  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.	
+    --overrides "exp_name = my_exp, run_name = foobar, d_hid = 256"
+```
+will run the demo config, but output to `$JIANT_PROJECT_PREFIX/my_exp/foobar`.
+ To run the demo config, you will have to set environment variables. The best way to achieve that is to follow the instructions in [user_config_template.sh](user_config_template.sh)
+*  `$JIANT_PROJECT_PREFIX`: the where the outputs will be saved.
+*  `$JIANT_DATA_DIR`: location of the saved data. This is usually the location of the GLUE data in a simple default setup.
 *  `$WORD_EMBS_FILE`: location of any word embeddings you want to use (not necessary when using ELMo, GPT, or BERT). You can download GloVe (840B) [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) or fastText (2M) [here](https://s3-us-west-1.amazonaws.com/fasttext-vectors/crawl-300d-2M.vec.zip).
-To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh). 	
+To have `user_config.sh` run automatically, follow instructions in [scripts/export_from_bash.sh](export_from_bash.sh).
 
 
 ## Suggested Citation
@@ -61,16 +62,31 @@ To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.o
 For the [edge probing paper](https://openreview.net/forum?id=SJzSgnRcKX), see the [probing/](probing/) directory.
 
 
-## License
-
-This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
-
 ## Getting Help
 
 Post an issue here on GitHub if you have any problems, and create a pull request if you make any improvements (substantial or cosmetic) to the code that you're willing to share.
+
 
 ## Contributing
 
 We use the `black` coding style with a line limit of 100. After installing the requirements, simply running `pre-commit
 install` should ensure you comply with this in all your future commits. If you're adding features or fixing a bug,
 please also add the tests.
+
+
+## License
+
+This package is released under the [MIT License](LICENSE.md). The material in the allennlp_mods directory is based on [AllenNLP](https://github.com/allenai/allennlp), which was originally released under the Apache 2.0 license.
+
+
+## Acknowledgments
+
+- Part of the development of `jiant` took at the 2018 Frederick Jelinek Memorial Summer Workshop on Speech and Language Technologies, and was supported by Johns Hopkins University with unrestricted gifts from Amazon, Facebook, Google, Microsoft and Mitsubishi Electric Research Laboratories. 
+- This work was made possible in part by a donation to NYU from Eric and Wendy Schmidt made
+by recommendation of the Schmidt Futures program.
+- We gratefully acknowledge the support of NVIDIA Corporation with the donation of a Titan V GPU used at NYU in this work. 
+- Developer Alex Wang is supported by the National Science Foundation Graduate Research Fellowship Program under Grant
+No. DGE 1342536. Any opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of the National Science
+Foundation.
+- Developer Yada Pruksachatkun is supported by the Moore-Sloan Data Science Environment as part of the NYU Data Science Services initiative.

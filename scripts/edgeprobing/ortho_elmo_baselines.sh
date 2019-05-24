@@ -9,7 +9,7 @@ function run_exp() {
     OVERRIDES="exp_name=elmo-ortho-$1, run_name=run_seed_$2"
     OVERRIDES+=", pretrain_tasks=$1, elmo_chars_only=0"
     OVERRIDES+=", target_tasks=$1, elmo_weight_file_path=/nfs/jsalt/home/berlin/elmo_2x4096_512_2048cnn_2xhighway_weights_ortho_seed_$2.hdf5"
-    python main.py --config_file config/edgeprobe_bare.conf \
+    python main.py --config_file config/edgeprobe/edgeprobe_bare.conf \
         -o "${OVERRIDES}" \
         --remote_log --notify "$NOTIFY_EMAIL"
 }

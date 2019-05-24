@@ -1,18 +1,15 @@
 """Task definitions for machine translation tasks."""
 import codecs
 import collections
-import logging as log
 import math
 import os
-from typing import Any, Dict, Iterable, List, Sequence, Type
+from typing import Iterable, List, Sequence, Type
 
-import allennlp.common.util as allennlp_util
-from allennlp.data import Instance, Token
+from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
 from ..utils.data_loaders import process_sentence
-from ..utils.utils import truncate
 from .registry import register_task
 from .tasks import (
     UNK_TOK_ALLENNLP,
@@ -48,23 +45,27 @@ class MTTask(SequenceGenerationTask):
             split: os.path.join(path, "%s.txt" % split) for split in ["train", "val", "test"]
         }
 
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
     def get_split_text(self, split: str):
         """ Get split text as iterable of records.
 
         Split should be one of 'train', 'val', or 'test'.
         """
-        return self.load_data(self.files_by_split[split])
+        return self.get_data_iter(self.files_by_split[split])
 
     def get_all_labels(self) -> List[str]:
         """ Build vocabulary and return it as a list """
         word2freq = collections.Counter()
         for split in ["train", "val"]:
-            for _, sent in self.load_data(self.files_by_split[split]):
+            for _, sent in self.get_data_iter(self.files_by_split[split]):
                 for word in sent:
                     word2freq[word] += 1
         return [w for w, _ in word2freq.most_common(self.max_targ_v_size)]
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
             for row in txt_fh:
@@ -83,24 +84,25 @@ class MTTask(SequenceGenerationTask):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            yield from self.load_data(path)
+            yield from self.get_data_iter(path)
 
     def count_examples(self):
         """ Compute here b/c we're streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             example_counts[split] = sum(
-                1 for line in codecs.open(split_path, "r", "utf-8", errors="ignore")
+                1 for _ in codecs.open(split_path, "r", "utf-8", errors="ignore")
             )
         self.example_counts = example_counts
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
-        def _make_instance(input, target):
-            d = {}
-            d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer)
+        def _make_instance(input_, target):
+            d = {
+                "inputs": sentence_to_text_field(input_, indexers),
+                "targs": sentence_to_text_field(target, self.target_indexer),
+            }
             return Instance(d)
 
         for sent1, sent2 in split:
@@ -137,7 +139,7 @@ class RedditSeq2SeqTask(MTTask):
             "test": os.path.join(path, "test.csv"),
         }
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
             for row in txt_fh:
@@ -151,10 +153,11 @@ class RedditSeq2SeqTask(MTTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
-        def _make_instance(input, target):
-            d = {}
-            d["inputs"] = sentence_to_text_field(input, indexers)
-            d["targs"] = sentence_to_text_field(target, self.target_indexer)
+        def _make_instance(input_, target):
+            d = {
+                "inputs": sentence_to_text_field(input_, indexers),
+                "targs": sentence_to_text_field(target, self.target_indexer),
+            }
             return Instance(d)
 
         for sent1, sent2 in split:
@@ -181,7 +184,7 @@ class Wiki103Seq2SeqTask(MTTask):
             "test": os.path.join(path, "test.sentences.txt"),
         }
 
-    def load_data(self, path):
+    def get_data_iter(self, path):
         """ Load data """
         nonatomic_toks = self._nonatomic_toks
         with codecs.open(path, "r", "utf-8", errors="ignore") as txt_fh:
@@ -198,12 +201,13 @@ class Wiki103Seq2SeqTask(MTTask):
                 )
                 yield sent, []
 
-    def get_num_examples(self, split_text):
+    @classmethod
+    def get_num_examples(cls, split_text):
         """ Return number of examples in the result of get_split_text.
 
         Subclass can override this if data is not stored in column format.
         """
-        # pair setences# = sent# - 1
+        # pair sentences# = sent# - 1
         return len(split_text) - 1
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -212,10 +216,11 @@ class Wiki103Seq2SeqTask(MTTask):
         Split is a single list of sentences here.
         """
 
-        def _make_instance(prev_sent, sent):
-            d = {}
-            d["inputs"] = sentence_to_text_field(prev_sent, indexers)
-            d["targs"] = sentence_to_text_field(sent, self.target_indexer)
+        def _make_instance(prev_sent_, sent_):
+            d = {
+                "inputs": sentence_to_text_field(prev_sent_, indexers),
+                "targs": sentence_to_text_field(sent_, self.target_indexer),
+            }
             return Instance(d)
 
         prev_sent = None

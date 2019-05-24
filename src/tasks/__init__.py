@@ -1,5 +1,5 @@
 # Import task definitions to register their tasks.
-from . import edge_probing, lm, mt, nli_probing, reddit, tasks, qa
+from . import edge_probing, lm, mt, nli_probing, tasks, qa
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
@@ -32,7 +32,7 @@ ALL_SUPERGLUE_TASKS = [
     "rte-superglue",
     "winograd-coreference",
     "wic",
-    "superglue-diagnostic"
+    "superglue-diagnostic",
 ]
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently

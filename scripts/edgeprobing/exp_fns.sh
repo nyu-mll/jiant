@@ -35,7 +35,7 @@ function elmo_chars_exp() {
     # Usage: elmo_chars_exp <task_name>
     OVERRIDES="exp_name=elmo-chars-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_full_exp() {
@@ -43,7 +43,7 @@ function elmo_full_exp() {
     # Usage: elmo_full_exp <task_name>
     OVERRIDES="exp_name=elmo-full-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1, elmo_chars_only=0"
-    run_exp "config/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_ortho_exp() {
@@ -53,7 +53,7 @@ function elmo_ortho_exp() {
     OVERRIDES="exp_name=elmo-ortho-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, elmo_chars_only=0"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
-    run_exp "config/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function elmo_random_exp() {
@@ -63,7 +63,7 @@ function elmo_random_exp() {
     OVERRIDES="exp_name=elmo-random-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, elmo_chars_only=0"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
-    run_exp "config/edgeprobe_bare.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bare.conf" "${OVERRIDES}"
 }
 
 function train_chars_exp() {
@@ -71,7 +71,7 @@ function train_chars_exp() {
     # Usage: train_chars_exp <task_name> <max_vals> <val_interval>
     OVERRIDES="exp_name=train-chars-$1, run_name=run"
     OVERRIDES+=", pretrain_tasks=$1, max_vals=$2, val_interval=$3"
-    run_exp "config/edgeprobe_train.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
 }
 
 function train_full_exp() {
@@ -79,7 +79,7 @@ function train_full_exp() {
     # Usage: train_full_exp <task_name> <max_vals> <val_interval>
     OVERRIDES="exp_name=train-full-$1, run_name=run"
     OVERRIDES+=", pretrain_tasks=$1, max_vals=$2, val_interval=$3, elmo_chars_only=0"
-    run_exp "config/edgeprobe_train.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_train.conf" "${OVERRIDES}"
 }
 
 ##
@@ -89,7 +89,7 @@ function glove_exp() {
     # Usage: glove_exp <task_name>
     OVERRIDES="exp_name=glove-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe_glove.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_glove.conf" "${OVERRIDES}"
 }
 
 function cove_exp() {
@@ -97,7 +97,7 @@ function cove_exp() {
     # Usage: cove_exp <task_name>
     OVERRIDES="exp_name=cove-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe_cove.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_cove.conf" "${OVERRIDES}"
 }
 
 ##
@@ -107,7 +107,7 @@ function openai_exp() {
     # Usage: openai_exp <task_name>
     OVERRIDES="exp_name=openai-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
-    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_cat_exp() {
@@ -116,7 +116,7 @@ function openai_cat_exp() {
     OVERRIDES="exp_name=openai-cat-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=cat"
-    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_lex_exp() {
@@ -125,7 +125,7 @@ function openai_lex_exp() {
     OVERRIDES="exp_name=openai-lex-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=only"
-    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_mix_exp() {
@@ -134,7 +134,7 @@ function openai_mix_exp() {
     OVERRIDES="exp_name=openai-mix-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_embeddings_mode=mix"
-    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 function openai_bwb_exp() {
@@ -145,7 +145,7 @@ function openai_bwb_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_transformer_ckpt=${CKPT_PATH}"
     OVERRIDES+=", openai_embeddings_mode=cat"
-    run_exp "config/edgeprobe_openai.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_openai.conf" "${OVERRIDES}"
 }
 
 ##
@@ -159,7 +159,7 @@ function bert_cat_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=cat"
-    run_exp "config/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 function bert_lex_exp() {
@@ -169,7 +169,7 @@ function bert_lex_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=only"
-    run_exp "config/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
 function bert_mix_exp() {
@@ -179,5 +179,5 @@ function bert_mix_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=mix"
-    run_exp "config/edgeprobe_bert.conf" "${OVERRIDES}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }

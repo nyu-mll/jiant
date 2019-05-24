@@ -11,9 +11,37 @@ import pandas as pd
 from allennlp.data import vocabulary
 
 from .tokenizers import get_tokenizer
+from .retokenize import realign_spans
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+
+
+def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
+    """
+    Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
+    Re-alignment of spans involves transforming the spans so that it matches the text after 
+    tokenization. 
+    For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
+    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization, 
+    it becomes [0, 3].
+    The task file should of be of the following form: 
+        text: str, 
+        label: bool
+        target: dict that contains the spans  
+    Args:
+        tokenizer_name: str, 
+        file_name: str, 
+        label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
+    Returns:
+        List of dictionaries of the aligned spans and tokenized text.
+    """
+    rows = pd.read_json(file_name, lines=True)
+    # realign spans
+    rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
+    if has_labels is False:
+        rows["label"] = False
+    return list(rows.T.to_dict().values())
 
 
 def load_tsv(
@@ -49,7 +77,8 @@ def load_tsv(
                     No value for labels will be returned.
         filter_idx: int this is the index that we want to filter from
         filter_value: string the value in which we want filter_idx to be equal to
-        return_indices: bool that describes if you need to return indices (for purposes of matching)
+        return_indices: bool that describes if you need to return indices
+            (for purposes of matching)
         label_fn is a function that expects a row and outputs the label
         tag_vocab is a allenlp vocab object contains the tags
         tag2idx_dict is a <string, int> dictionary from coarse category name to column index

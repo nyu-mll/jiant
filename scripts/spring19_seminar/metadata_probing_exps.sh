@@ -6,7 +6,7 @@
 #SBATCH --output=slurm_%j.out
 
 # This script loads 46 pretrained checkpoints and runs corresponding probing tasks
-# It also runs probing tasks BERT and BOW plain models  
+# It also runs probing tasks BERT and BOW plain models
 # 4 models: bert, bertccg, bertmnli, BOW
 # 12 pre-training settings: plain, cola, all_cola_npi, hd_cola_npi_adv, hd_cola_npi_cond, hd_cola_npi_negdet, hd_cola_npi_negsent, hd_cola_npi_only, hd_cola_npi_qnt, hd_cola_npi_ques, hd_cola_npi_quessmp, hd_cola_npi_sup
 # bert_plain and bow_plain require no pre-training, so no loading is needed
@@ -89,7 +89,7 @@ python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.
 #load bertcgg plain, train and eval on all probing tasks (MAY HAVE TO SUPPLY MODEL NAME MANUALLY)
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_plain, load_target_train_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/model_state_main_epoch_??.best_macro.th\""
 
-#load bertcgg+cola, train and eval on all probing tasks 
+#load bertcgg+cola, train and eval on all probing tasks
 python main.py --config_file config/spring19_seminar/cola_var/npi_probing_tasks.conf --overrides "exp_name=NPI_probing_bertccg, run_name = bertccg_cola, load_eval_checkpoint = \"$JIANT_PROJECT_PREFIX/npi_bertccg/run_bertccg_model/model_state_cola_best.th\""
 
 #load bertcgg+all npi, train and eval on all probing tasks
