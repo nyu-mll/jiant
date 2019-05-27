@@ -94,6 +94,79 @@ def _mat_from_spans_sparse(spans: Sequence[Tuple[int, int]], n_chars: int) -> Ma
     return sparse.csr_matrix((data, (ridxs, cidxs)), shape=(len(spans), n_chars))
 
 
+def realign_spans(record, tokenizer_name):
+    """
+    Builds the indices alignment while also tokenizing the input
+    piece by piece.
+    Only BERT and Moses tokenization is supported currently. 
+
+    Parameters
+    -----------------------
+        record: dict with the below fields
+            text: str
+            targets: list of dictionaries
+                label: bool
+                span1_index: int, start index of first span
+                span1_text: str, text of first span
+                span2_index: int, start index of second span
+                span2_text: str, text of second span
+        tokenizer_name: str
+
+    Returns
+    ------------------------
+        record: dict with the below fields:
+            text: str in tokenized form
+            targets: dictionary with the below fields
+                -label: bool
+                -span_1: (int, int) of token indices
+                -span1_text: str, the string
+                -span2: (int, int) of token indices
+                -span2_text: str, the string
+    """
+
+    # find span indices and text
+    text = record["text"].split()
+    span1 = record["target"]["span1_index"]
+    span1_text = record["target"]["span1_text"]
+    span2 = record["target"]["span2_index"]
+    span2_text = record["target"]["span2_text"]
+
+    # construct end spans given span text space-tokenized length
+    span1 = [span1, span1 + len(span1_text.strip().split())]
+    span2 = [span2, span2 + len(span2_text.strip().split())]
+    indices = [span1, span2]
+
+    sorted_indices = sorted(indices, key=lambda x: x[0])
+    current_tokenization = []
+    span_mapping = {}
+
+    # align first span to tokenized text
+    aligner_fn = get_aligner_fn(tokenizer_name)
+    _, new_tokens = aligner_fn(" ".join(text[: sorted_indices[0][0]]))
+    current_tokenization.extend(new_tokens)
+    new_span1start = len(current_tokenization)
+    _, span_tokens = aligner_fn(" ".join(text[sorted_indices[0][0] : sorted_indices[0][1]]))
+    current_tokenization.extend(span_tokens)
+    new_span1end = len(current_tokenization)
+    span_mapping[sorted_indices[0][0]] = [new_span1start, new_span1end]
+
+    # re-indexing second span
+    _, new_tokens = aligner_fn(" ".join(text[sorted_indices[0][1] : sorted_indices[1][0]]))
+    current_tokenization.extend(new_tokens)
+    new_span2start = len(current_tokenization)
+    _, span_tokens = aligner_fn(" ".join(text[sorted_indices[1][0] : sorted_indices[1][1]]))
+    current_tokenization.extend(span_tokens)
+    new_span2end = len(current_tokenization)
+    span_mapping[sorted_indices[1][0]] = [new_span2start, new_span2end]
+
+    # save back into record
+    _, all_text = aligner_fn(" ".join(text))
+    record["target"]["span1"] = span_mapping[record["target"]["span1_index"]]
+    record["target"]["span2"] = span_mapping[record["target"]["span2_index"]]
+    record["text"] = " ".join(all_text)
+    return record
+
+
 class TokenAligner(object):
     """Align two similiar tokenizations.
 
