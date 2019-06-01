@@ -1,5 +1,5 @@
-FROM_DIR=$1 
-TO_DIR=$2 
+FROM_DIR=$1
+TO_DIR=$2
 
 cp ${FROM_DIR}/appear/nli-alt_val.tsv ${TO_DIR}/appear.tsv
 cp ${FROM_DIR}/compare/nli-alt_val.tsv ${TO_DIR}/compare.tsv
