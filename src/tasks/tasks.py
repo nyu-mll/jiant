@@ -34,7 +34,6 @@ from ..utils.data_loaders import (
     load_tsv,
     process_sentence,
 )
-# consider remove load diag
 from ..utils.tokenizers import get_tokenizer
 from .registry import register_task  # global task registry
 
@@ -1149,17 +1148,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         collect_metrics(self.ix_to_logic_dic, "logic")
         collect_metrics(self.ix_to_knowledge_dic, "knowledge")
-        return collected_metrics
-
-        collected_metrics = {'accuracy': 0.}
-        collected_metrics.update(
-            collect_subset_scores(
-                self.tag_scorers1,
-                'accuracy',
-                self.tag_list,
-                reset))
-        return collected_metrics
-    
+        return collected_metrics    
     
 
 @register_task("rte", rel_path="RTE/")
