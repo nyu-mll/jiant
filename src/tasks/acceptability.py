@@ -230,3 +230,116 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 self.tag_list,
                 reset))
         return collected_metrics
+
+
+@register_task("npi_adv_li", rel_path="NPI/probing/adverbs/licensor")
+@register_task("npi_adv_sc", rel_path="NPI/probing/adverbs/scope_with_licensor")
+@register_task("npi_adv_pr", rel_path="NPI/probing/adverbs/npi_present")
+@register_task("npi_cond_li", rel_path="NPI/probing/conditionals/licensor")
+@register_task("npi_cond_sc", rel_path="NPI/probing/conditionals/scope_with_licensor")
+@register_task("npi_cond_pr", rel_path="NPI/probing/conditionals/npi_present")
+@register_task("npi_negdet_li", rel_path="NPI/probing/determiner_negation_biclausal/licensor")
+@register_task(
+    "npi_negdet_sc", rel_path="NPI/probing/determiner_negation_biclausal/scope_with_licensor"
+)
+@register_task("npi_negdet_pr", rel_path="NPI/probing/determiner_negation_biclausal/npi_present")
+@register_task("npi_negsent_li", rel_path="NPI/probing/sentential_negation_biclausal/licensor")
+@register_task(
+    "npi_negsent_sc", rel_path="NPI/probing/sentential_negation_biclausal/scope_with_licensor"
+)
+@register_task("npi_negsent_pr", rel_path="NPI/probing/sentential_negation_biclausal/npi_present")
+@register_task("npi_only_li", rel_path="NPI/probing/only/licensor")
+@register_task("npi_only_sc", rel_path="NPI/probing/only/scope_with_licensor")
+@register_task("npi_only_pr", rel_path="NPI/probing/only/npi_present")
+@register_task("npi_qnt_li", rel_path="NPI/probing/quantifiers/licensor")
+@register_task("npi_qnt_sc", rel_path="NPI/probing/quantifiers/scope_with_licensor")
+@register_task("npi_qnt_pr", rel_path="NPI/probing/quantifiers/npi_present")
+@register_task("npi_ques_li", rel_path="NPI/probing/questions/licensor")
+@register_task("npi_ques_sc", rel_path="NPI/probing/questions/scope_with_licensor")
+@register_task("npi_ques_pr", rel_path="NPI/probing/questions/npi_present")
+@register_task("npi_quessmp_li", rel_path="NPI/probing/simplequestions/licensor")
+@register_task("npi_quessmp_sc", rel_path="NPI/probing/simplequestions/scope_with_licensor")
+@register_task("npi_quessmp_pr", rel_path="NPI/probing/simplequestions/npi_present")
+@register_task("npi_sup_li", rel_path="NPI/probing/superlative/licensor")
+@register_task("npi_sup_sc", rel_path="NPI/probing/superlative/scope_with_licensor")
+@register_task("npi_sup_pr", rel_path="NPI/probing/superlative/npi_present")
+@register_task("cola_npi_adv", rel_path="NPI/splits/adverbs")
+@register_task("cola_npi_cond", rel_path="NPI/splits/conditionals")
+@register_task("cola_npi_negdet", rel_path="NPI/splits/determiner_negation_biclausal")
+@register_task("cola_npi_negsent", rel_path="NPI/splits/sentential_negation_biclausal")
+@register_task("cola_npi_only", rel_path="NPI/splits/only")
+@register_task("cola_npi_ques", rel_path="NPI/splits/questions")
+@register_task("cola_npi_quessmp", rel_path="NPI/splits/simplequestions")
+@register_task("cola_npi_qnt", rel_path="NPI/splits/quantifiers")
+@register_task("cola_npi_sup", rel_path="NPI/splits/superlative")
+@register_task("all_cola_npi", rel_path="NPI/combs/all_env")
+@register_task("wilcox_npi", rel_path="NPI/wilcox")
+@register_task("hd_cola_npi_adv", rel_path="NPI/combs/minus_adverbs")
+@register_task("hd_cola_npi_cond", rel_path="NPI/combs/minus_conditionals")
+@register_task("hd_cola_npi_negdet", rel_path="NPI/combs/minus_determiner_negation_biclausal")
+@register_task("hd_cola_npi_negsent", rel_path="NPI/combs/minus_sentential_negation_biclausal")
+@register_task("hd_cola_npi_only", rel_path="NPI/combs/minus_only")
+@register_task("hd_cola_npi_ques", rel_path="NPI/combs/minus_questions")
+@register_task("hd_cola_npi_quessmp", rel_path="NPI/combs/minus_simplequestions")
+@register_task("hd_cola_npi_qnt", rel_path="NPI/combs/minus_quantifiers")
+@register_task("hd_cola_npi_sup", rel_path="NPI/combs/minus_superlative")
+class CoLANPITask(SingleClassificationTask):
+    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for
+       test-set
+       Note: Used for an NYU seminar, data not yet public"""
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        """ """
+        super(CoLANPITask, self).__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        # self.scorer1 = Average()
+        self.scorer1 = Correlation("matthews")
+        self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
+
+    def load_data(self):
+        """Load the data"""
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "train.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=1,
+        )
+        self.val_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "dev.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=1,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "test_full.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=3,
+            s2_idx=None,
+            label_idx=1,
+        )
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        log.info("\tFinished loading NPI Data.")
+
+    def get_metrics(self, reset=False):
+        return {"mcc": self.scorer1.get_metric(reset), "accuracy": self.scorer2.get_metric(reset)}
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        return
