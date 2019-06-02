@@ -1,4 +1,4 @@
-name: jiant_with_pyhocon
+name: jiant
 channels:
     - pytorch
 dependencies:
