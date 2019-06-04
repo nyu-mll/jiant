@@ -119,16 +119,17 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict
             )
         else:
-            assert_for_log(
-                args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
-            )
+            if args.do_pretrain == 1:
+                assert_for_log(
+                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                )
 
-            if args.transfer_paradigm == "finetune":
-                # Save model so we have a checkpoint to go back to after each
-                # task-specific finetune.
-                model_state = model.state_dict()
-                model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
-                torch.save(model_state, model_path)
+                if args.transfer_paradigm == "finetune":
+                    # Save model so we have a checkpoint to go back to after each
+                    # task-specific finetune.
+                    model_state = model.state_dict()
+                    model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
+                    torch.save(model_state, model_path)
 
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -265,6 +266,26 @@ def get_best_checkpoint_path(run_dir):
         return pre_target_train[0]
 
     return ""
+def do_finetune_evaluation(args, target_tasks, model, splits_to_write):
+    for task in target_tasks:
+        task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
+        if task.name != task_to_use:
+            task_model_to_load = task_to_use
+        else:
+            task_model_to_load = task.name
+
+        # Special checkpointing logic here since we train the sentence encoder
+        # and have a best set of sent encoder model weights per task.
+        finetune_path = os.path.join(
+            args.run_dir, "model_state_%s_best.th" % task_model_to_load
+        )
+        if os.path.exists(finetune_path):
+            ckpt_path = finetune_path
+        else:
+            ckpt_path = get_best_checkpoint_path(args.run_dir)
+        load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+
+        evaluate_and_write(args, model, [task], splits_to_write)
 
 
 def evaluate_and_write(args, model, tasks, splits_to_write):
@@ -403,7 +424,7 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            args.shared_optimizer,
+            shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -453,7 +474,7 @@ def main(cl_arguments):
 
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
-                [task.name, "target_train"],
+                [task.name],
                 model,
                 args.run_dir,
                 task.val_metric_decreases,
@@ -510,25 +531,7 @@ def main(cl_arguments):
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
-            for task in target_tasks:
-                task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-                if task.name != task_to_use:
-                    task_model_to_load = task_to_use
-                else:
-                    task_model_to_load = task.name
-
-                # Special checkpointing logic here since we train the sentence encoder
-                # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(
-                    args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                )
-                if os.path.exists(finetune_path):
-                    ckpt_path = finetune_path
-                else:
-                    ckpt_path = get_best_checkpoint_path(args.run_dir)
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-
-                evaluate_and_write(args, model, [task], splits_to_write)
+            do_finetune_evaluation(args, target_tasks, model, splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here
@@ -536,7 +539,6 @@ def main(cl_arguments):
             evaluate_and_write(args, model, target_tasks, splits_to_write)
 
     log.info("Done!")
-
 
 if __name__ == "__main__":
     try:
