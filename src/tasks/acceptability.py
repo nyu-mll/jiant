@@ -37,21 +37,28 @@ class NPIMinimalPairFrozenTask(Task):
     ''' Task class for frozen minimal pair (cloze) acceptability judgement '''
     def __init__(self, path, max_seq_len, name, **kw):
         super(NPIMinimalPairFrozenTask, self).__init__(name, **kw)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        self.path = path
+        self.max_seq_len = max_seq_len
         self.n_classes = 2
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
     
-    def load_data(self, path, max_seq_len):
+    def load_data(self):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_cloze_pairs.tsv"), max_seq_len,
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(self.path, "acceptability_cloze_pairs.tsv"), self.max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(
@@ -136,10 +143,10 @@ class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
         self.scorer3 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2, self.scorer3]
     
-    def load_data(self, path, max_seq_len):
+    def load_data(self):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(self.path, "acceptability_minimal_pairs.tsv"), self.max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
@@ -207,20 +214,25 @@ class CoLAAnalysisTask(SingleClassificationTask):
     """
     def __init__(self, path, max_seq_len, name, **kw):
         super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
-        self.load_data(path, max_seq_len)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        self.path = path
+        self.max_seq_len = max_seq_len
+        
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
 
-    def load_data(self, path, max_seq_len):
+    def load_data(self):
         '''Load the data'''
         # Load data from tsv
         tag_vocab = vocabulary.Vocabulary(counter=None)
         val_data = load_tsv(tokenizer_name=self._tokenizer_name,
-                            data_file=os.path.join(path, "dev_analysis.tsv"), max_seq_len=max_seq_len,
+                            data_file=os.path.join(self.path, "dev_analysis.tsv"), max_seq_len=self.max_seq_len,
                             s1_idx=3, s2_idx=None, label_idx=2, skip_rows=1, tag2idx_dict={
                                 'Domain': 1, 'Simple': 4, 'Pred': 5, 'Adjunct': 6, 'Arg Types': 7, 'Arg Altern': 8,
                                 'Imperative': 9, 'Binding': 10, 'Question': 11, 'Comp Clause': 12, 'Auxillary': 13,
@@ -228,6 +240,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.train_data_text = val_data
         self.val_data_text = val_data
         self.test_data_text = val_data
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]        
         # Create score for each tag from tag-index dict
         self.tag_list = get_tag_list(tag_vocab)
         self.tag_scorers1 = create_subset_scorers(
