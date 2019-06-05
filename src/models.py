@@ -43,7 +43,7 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
-from .tasks.acceptability import NPIMinimalPairTask, CoLAAnalysisTask
+from .tasks.acceptability import NPIMinimalPairFrozenTask, NPIMinimalPairTunedTask, CoLAAnalysisTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -516,15 +516,13 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, NPIMinimalPairTask):
-        if task.name == 'npi_pair_frozen' and args.bert_model_name:
-            mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
-            setattr(model, '%s_mdl' % task.name, mask_lm_head)
-        elif task.name == 'npi_pair_tuned':
-            module = build_single_sentence_module(task=task, d_inp=d_sent, use_bert=False, params=task_params)
-            setattr(model, '%s_mdl' % task.name, module)
-        else:
-            raise ValueError("Incorrect setting for minimal pair task")
+    elif isinstance(task, NPIMinimalPairTunedTask):
+        module = build_single_sentence_module(task=task, d_inp=d_sent, use_bert=False, params=task_params)
+        setattr(model, '%s_mdl' % task.name, module)
+    elif isinstance(task, NPIMinimalPairFrozenTask):
+        assert args.bert_model_name
+        mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
+        setattr(model, '%s_mdl' % task.name, mask_lm_head)
     elif isinstance(task, SpanClassificationTask):
         module = build_span_classifier(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -837,7 +835,7 @@ class MultiTaskModel(nn.Module):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
-        elif isinstance(task, NPIMinimalPairTask):
+        elif isinstance(task, NPIMinimalPairFrozenTask):
             out = self._minimal_pair_acceptability_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
@@ -898,7 +896,18 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
 
-        if task.name == 'npi_pair_frozen':
+        if isinstance(task, NPIMinimalPairTunedTask):
+            # embed the sentence
+            sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
+            # pass to a task specific classifier
+            classifier = self._get_classifier(task)
+            logits1, logits2 = classifier(sent_embs1, sent_mask1), classifier(sent_embs2, sent_mask2)
+            logits = torch.stack((logits1[:, 0] + logits2[:, 1],
+                                  logits1[:, 1] + logits2[:, 0],
+                                  logits1[:, 0] + logits2[:, 0],
+                                  logits1[:, 1] + logits2[:, 1]), dim=1)
+        else:
             bs = get_batch_size(batch)
             # embed the sentence
             sent_embs, _ = self.sent_encoder(batch['input0'], task)
@@ -911,17 +920,6 @@ class MultiTaskModel(nn.Module):
             # calling self.sent_encoder reduce all token index in input0 by 2, 
             # this -2 to input1 and input2 looks strange, but it correctly negate that effect
             logits = torch.stack([logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1)
-        elif task.name == 'npi_pair_tuned':
-            # embed the sentence
-            sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
-            sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
-            # pass to a task specific classifier
-            classifier = self._get_classifier(task)
-            logits1, logits2 = classifier(sent_embs1, sent_mask1), classifier(sent_embs2, sent_mask2)
-            logits = torch.stack((logits1[:, 0] + logits2[:, 1],
-                                  logits1[:, 1] + logits2[:, 0],
-                                  logits1[:, 0] + logits2[:, 0],
-                                  logits1[:, 1] + logits2[:, 1]), dim=1)
 
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -938,6 +936,7 @@ class MultiTaskModel(nn.Module):
         if predict:
             _, out['preds'] = logits.max(dim=1)
         return out
+    
     def _nli_diagnostic_forward(self, batch, task, predict):
         out = {}
 

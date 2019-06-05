@@ -33,12 +33,10 @@ from .tasks import create_subset_scorers, update_subset_scorers, collect_subset_
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
 @register_task('npi_pair_frozen', rel_path='NPI')
-@register_task('npi_pair_tuned', rel_path='NPI')
-class NPIMinimalPairTask(Task):
-    ''' Task class for minimal pair acceptability judgement '''
-
+class NPIMinimalPairFrozenTask(Task):
+    ''' Task class for frozen minimal pair (cloze) acceptability judgement '''
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIMinimalPairTask, self).__init__(name, **kw)
+        super(NPIMinimalPairFrozenTask, self).__init__(name, **kw)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
         self.n_classes = 2
@@ -46,14 +44,12 @@ class NPIMinimalPairTask(Task):
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
-        self.scorer3 = CategoricalAccuracy()
-        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
+        self.scorers = [self.scorer1, self.scorer2]
     
     def load_data(self, path, max_seq_len):
         '''Load the data'''
         tag_vocab = vocabulary.Vocabulary(counter=None)
-        file_name = {"npi_pair_frozen": "acceptability_minimal_pairs.tsv", "npi_pair_tuned": "acceptability_pairs.tsv"}
-        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, file_name[self.name]), max_seq_len,
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_cloze_pairs.tsv"), max_seq_len,
                            s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
@@ -65,11 +61,8 @@ class NPIMinimalPairTask(Task):
         self.tag_scorers2 = create_subset_scorers(
             count=len(self.tag_list),
             scorer_type=CategoricalAccuracy)
-        self.tag_scorers3 = create_subset_scorers(
-            count=len(self.tag_list),
-            scorer_type=CategoricalAccuracy)
 
-        log.info("\tFinished loading CoLA minimal pairs.")
+        log.info("\tFinished loading CoLA cloze pairs.")
         return
 
     def process_split(self, split, indexers):
@@ -103,6 +96,67 @@ class NPIMinimalPairTask(Task):
 
         instances = map(_make_instance, *split)
         return instances  # lazy iterator
+    
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        logits_relative = logits[:, :self.n_classes]
+        _, preds = logits_relative.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits_relative, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits_relative, labels, tagmask)
+        return
+    
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+
+        collected_metrics = {
+            'mcc': self.scorer1.get_metric(reset),
+            'accuracy': self.scorer2.get_metric(reset)}
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers1,
+                'mcc',
+                self.tag_list,
+                reset))
+        collected_metrics.update(
+            collect_subset_scores(
+                self.tag_scorers2,
+                'accuracy',
+                self.tag_list,
+                reset))
+        return collected_metrics
+
+@register_task('npi_pair_tuned', rel_path='NPI')
+class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
+    ''' Task class for tuned minimal pair acceptability judgement '''
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(NPIMinimalPairTunedTask, self).__init__(name, **kw)
+        self.scorer3 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
+    
+    def load_data(self, path, max_seq_len):
+        '''Load the data'''
+        tag_vocab = vocabulary.Vocabulary(counter=None)
+        self.train_data_text = load_tsv(self._tokenizer_name, os.path.join(path, "acceptability_minimal_pairs.tsv"), max_seq_len,
+                           s1_idx=1, s2_idx=2, label_idx=3, tag2idx_dict={'source': 0, 'condition': 4}, tag_vocab=tag_vocab)
+        self.val_data_text = self.test_data_text = self.train_data_text
+        # Create score for each tag from tag-index dict
+        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(self.tag_list),
+            scorer_type=Correlation,
+            corr_type="matthews")
+        self.tag_scorers2 = create_subset_scorers(
+            count=len(self.tag_list),
+            scorer_type=CategoricalAccuracy)
+        self.tag_scorers3 = create_subset_scorers(
+            count=len(self.tag_list),
+            scorer_type=CategoricalAccuracy)
+
+        log.info("\tFinished loading CoLA minimal pairs.")
+        return
     
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
