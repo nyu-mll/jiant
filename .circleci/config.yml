@@ -26,6 +26,14 @@ jobs:
             source activate jiant
             python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
             nose2 -v
+      # Step 4: demo.sh run test
+      -run:
+        name: running demo.sh
+        command: |
+          python download_glue_data.py --data_dir data --tasks all
+          export JIANT_PROJECT_PREFIX=sample_run
+          export JIANT_DATA_DIR=data
+          python main.py --config_file config/demo.conf
       # Step 4: style check
       - run:
           name: check style

@@ -494,9 +494,8 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if (
-            self._serialization_dir is not None and phase != "target_train"
-        ):  # Resume from serialization path
+        if self._serialization_dir is not None:
+            # Resume from serialization path
             if load_model and any(
                 ["model_state_" in x for x in os.listdir(self._serialization_dir)]
             ):
@@ -656,7 +655,7 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    n_val, tasks, batch_size, periodic_save=(phase != "target_train")
+                    n_val, tasks, batch_size
                 )
 
                 # Check stopping conditions
@@ -880,7 +879,7 @@ class SamplingMultiTaskTrainer:
         epoch: int
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
-        periodic_save: bool, alue of whether or not to save model and progress periodically
+        periodic_save: bool, value of whether or not to save model and progress periodically
 
         Returns
         __________
@@ -1054,18 +1053,14 @@ class SamplingMultiTaskTrainer:
             )
 
         epoch = training_state["epoch"]
-        if phase == "target_train":
-            model_path = os.path.join(self._serialization_dir, "model_state_target_train_best.th")
+        if new_best_macro:
+            best_str = ".best_macro"
         else:
-            if new_best_macro:
-                best_str = ".best_macro"
-            else:
-                best_str = ""
+            best_str = ""
 
-            model_path = os.path.join(
-                self._serialization_dir,
-                "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-            )
+        model_path = os.path.join(
+            self._serialization_dir, "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str)
+        )
 
         model_state = self._model.state_dict()
 
@@ -1075,57 +1070,59 @@ class SamplingMultiTaskTrainer:
                 del model_state[name]
         torch.save(model_state, model_path)
 
-        if phase != "target_train":
-            torch.save(
-                training_state,
-                os.path.join(
-                    self._serialization_dir,
-                    "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-                ),
-            )
+        torch.save(
+            training_state,
+            os.path.join(
+                self._serialization_dir,
+                "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+            ),
+        )
 
-            task_states = {}
-            for task_name, task_info in self._task_infos.items():
-                task_states[task_name] = {}
-                task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
-                task_states[task_name]["stopped"] = task_info["stopped"]
-                if self._g_optimizer is None:
-                    task_states[task_name]["optimizer"] = task_info["optimizer"].state_dict()
-                    sched_params = {}
-                    task_states[task_name]["scheduler"] = sched_params
-            task_states["global"] = {}
-            task_states["global"]["optimizer"] = (
-                self._g_optimizer.state_dict() if self._g_optimizer is not None else None
-            )
-            if self._g_scheduler is not None:
+        task_states = {}
+        import pdb
+
+        pdb.set_trace()
+        for task_name, task_info in self._task_infos.items():
+            task_states[task_name] = {}
+            task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
+            task_states[task_name]["stopped"] = task_info["stopped"]
+            if self._g_optimizer is None:
+                task_states[task_name]["optimizer"] = task_info["optimizer"].state_dict()
                 sched_params = {}
-                task_states["global"]["scheduler"] = sched_params
-            else:
-                task_states["global"]["scheduler"] = None
-            torch.save(
-                task_states,
-                os.path.join(
-                    self._serialization_dir,
-                    "task_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-                ),
-            )
+                task_states[task_name]["scheduler"] = sched_params
+        task_states["global"] = {}
+        task_states["global"]["optimizer"] = (
+            self._g_optimizer.state_dict() if self._g_optimizer is not None else None
+        )
+        if self._g_scheduler is not None:
+            sched_params = {}
+            task_states["global"]["scheduler"] = sched_params
+        else:
+            task_states["global"]["scheduler"] = None
+        torch.save(
+            task_states,
+            os.path.join(
+                self._serialization_dir,
+                "task_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+            ),
+        )
 
-            metric_states = {}
-            for metric_name, metric_info in self._metric_infos.items():
-                metric_states[metric_name] = {}
-                metric_states[metric_name]["hist"] = metric_info["hist"]
-                metric_states[metric_name]["stopped"] = metric_info["stopped"]
-                metric_states[metric_name]["best"] = metric_info["best"]
-            torch.save(
-                metric_states,
-                os.path.join(
-                    self._serialization_dir,
-                    "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-                ),
-            )
+        metric_states = {}
+        for metric_name, metric_info in self._metric_infos.items():
+            metric_states[metric_name] = {}
+            metric_states[metric_name]["hist"] = metric_info["hist"]
+            metric_states[metric_name]["stopped"] = metric_info["stopped"]
+            metric_states[metric_name]["best"] = metric_info["best"]
+        torch.save(
+            metric_states,
+            os.path.join(
+                self._serialization_dir,
+                "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+            ),
+        )
         log.info("Saved to %s", self._serialization_dir)
 
-        if phase != "target_train" and new_best_macro:
+        if new_best_macro:
             self._unmark_previous_best(phase, epoch)
 
         if not self._keep_all_checkpoints:
