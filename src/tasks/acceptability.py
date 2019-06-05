@@ -139,7 +139,7 @@ class NPIMinimalPairFrozenTask(Task):
 class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
     ''' Task class for tuned minimal pair acceptability judgement '''
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIMinimalPairTunedTask, self).__init__(name, **kw)
+        super(NPIMinimalPairTunedTask, self).__init__(path, max_seq_len, name, **kw)
         self.scorer3 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2, self.scorer3]
     
