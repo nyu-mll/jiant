@@ -115,7 +115,7 @@ class NPIMinimalPairFrozenTask(Task):
         self.scorer1(preds, labels)
         self.scorer2(logits_relative, labels)
         if tagmask is not None:
-            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)`
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
             update_subset_scorers(self.tag_scorers2, logits_relative, labels, tagmask)
         return
 
@@ -181,7 +181,7 @@ class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
             update_subset_scorers(self.tag_scorers2, logits_relative, labels, tagmask)
             update_subset_scorers(self.tag_scorers3, logits, labels, tagmask)
         return
-    
+
     def get_metrics(self, reset=False):
         '''Get metrics specific to the task'''
 
@@ -214,7 +214,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         super(CoLAAnalysisTask, self).__init__(name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-        
+
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
