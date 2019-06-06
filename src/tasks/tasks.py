@@ -1148,7 +1148,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         collect_metrics(self.ix_to_logic_dic, "logic")
         collect_metrics(self.ix_to_knowledge_dic, "knowledge")
-        return collected_metrics    
+        return collected_metrics
 
 
 @register_task("rte", rel_path="RTE/")

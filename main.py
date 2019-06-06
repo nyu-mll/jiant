@@ -447,10 +447,7 @@ def main(cl_arguments):
                 "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
             )
         for task in target_tasks:
-            # Skip tuning on a target task, if it does not really have a training set (like mnli-diagnostic)
-            # This has to be handled differently than probing tasks because probing tasks require the "is_probing_task"
-            # to be set to True. For mnli-diagnostic this flag will be False because it is part of GLUE and
-            # "is_probing_task is global flag specific to a run, not to a task.
+            # Skip tuning on a target task, if it does not really have a training set
             if task.no_train_data:
                 continue
 

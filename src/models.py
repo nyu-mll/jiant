@@ -517,7 +517,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, NPIMinimalPairTunedTask):
-        module = build_single_sentence_module(task=task, d_inp=d_sent, use_bert=False, params=task_params)
+        module = build_single_sentence_module(
+            task=task, d_inp=d_sent, use_bert=False, params=task_params
+        )
         setattr(model, '%s_mdl' % task.name, module)
     elif isinstance(task, NPIMinimalPairFrozenTask):
         assert args.bert_model_name
@@ -902,7 +904,8 @@ class MultiTaskModel(nn.Module):
             sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
             # pass to a task specific classifier
             classifier = self._get_classifier(task)
-            logits1, logits2 = classifier(sent_embs1, sent_mask1), classifier(sent_embs2, sent_mask2)
+            logits1 = classifier(sent_embs1, sent_mask1)
+            logits2 = classifier(sent_embs2, sent_mask2)
             logits = torch.stack((logits1[:, 0] + logits2[:, 1],
                                   logits1[:, 1] + logits2[:, 0],
                                   logits1[:, 0] + logits2[:, 0],
@@ -917,9 +920,11 @@ class MultiTaskModel(nn.Module):
             logits_full = classifier(sent_embs)[range(bs), index]
             sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index] - 2
             sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index] - 2
-            # calling self.sent_encoder reduce all token index in input0 by 2, 
+            # calling self.sent_encoder reduce all token index in input0 by 2,
             # this -2 to input1 and input2 looks strange, but it correctly negate that effect
-            logits = torch.stack([logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1)
+            logits = torch.stack(
+                [logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1
+            )
 
         out['logits'] = logits
         out['n_exs'] = get_batch_size(batch)
@@ -932,11 +937,11 @@ class MultiTaskModel(nn.Module):
             labels = batch['labels'].squeeze(-1)
         out['loss'] = F.cross_entropy(logits, labels)
         task.update_metrics(logits, labels, tagmask)
-        
+
         if predict:
             _, out['preds'] = logits.max(dim=1)
         return out
-    
+
     def _nli_diagnostic_forward(self, batch, task, predict):
         out = {}
 
