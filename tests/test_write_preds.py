@@ -23,6 +23,8 @@ from allennlp.data.fields import (
 
 
 def model_forward(task, batch, predict=True):
+    if task.name == "sts-b":
+        return {"n_exs": 4, "preds": [5.0, 4.0]}
     return {"n_exs": 4, "preds": [0, 1, 1, 1]}
 
 
@@ -33,36 +35,47 @@ class TestWritePreds(unittest.TestCase):
         return TextField(list(map(Token, sent)), token_indexers=indexers)
 
     def setUp(self):
+        """
+        Since we're testing write_preds, we need to mock model predictions and the parts 
+        of the model, arguments, and trainer needed to write to predictions. 
+        Unlike in update_metrics tests, the actual contents of the examples in val_data 
+        is not the most important as long as it adheres to the API necessary for examples
+        of that task. 
+        """
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
-        self.mrpc = tasks.MRPCTask(self.temp_dir, 100, "mrpc", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
         stsb_val_preds = pd.DataFrame(
-            data={
-                "idx": [0],
-                "labels": [0],
-                "preds": [0],
-                "sent1_str": ["When Tommy dropped his ice cream , Timmy"],
-                "sent2_str": ["Father gave Timmy a stern look"],
-            }
-        )
-        mrpc_val_preds = pd.DataFrame(
-            data={
-                "idx": [0],
-                "labels": [1],
-                "preds": [1],
-                "sentence_1": [" A man with a hard hat is dancing "],
-                "sentence_2": [" A man wearing a hard hat is dancing"],
-            }
+            data=[{
+                "idx": 0,
+                "labels": 5.00,
+                "preds": 5.00,
+                "sent1_str": "A man with a hard hat is dancing.",
+                "sent2_str": "A man wearing a hard hat is dancing",
+            }, 
+            {
+                "idx": 0,
+                "labels": 4.750,
+                "preds": 0.34,
+                "sent1_str": "A young child is riding a horse.",
+                "sent2_str": "A child is riding a horse.",
+            }]
         )
         wic_val_preds = pd.DataFrame(
-            data={
-                "idx": [0],
-                "sent1": ["Room and board. "],
-                "sent2": ["He nailed boards across the windows."],
-                "labels": [1],
-            }
+            data=[{
+                "idx": 0,
+                "sent1": "Room and board. ",
+                "sent2": "He nailed boards across the windows.",
+                "labels": 0,
+            }, 
+            {
+                "idx": 0,
+                "sent1": "Hook a fish",
+                "sent2": "He hooked a snake accidentally , and was so scared he dropped his rod into the water .",
+                "labels": 1,
+            }]
+
         )
         indexers = {"bert_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
         self.wic.val_data = [
@@ -127,12 +140,12 @@ class TestWritePreds(unittest.TestCase):
                 }
             ),
         ]
-        self.val_preds = {"sts-b": stsb_val_preds, "mrpc": mrpc_val_preds, "wic": wic_val_preds}
+        self.val_preds = {"sts-b": stsb_val_preds, "wic": wic_val_preds}
         self.vocab = vocabulary.Vocabulary.from_instances(self.wic.val_data)
         self.vocab.add_token_to_namespace("True", "wic_tags")
         for data in self.wic.val_data:
             data.index_fields(self.vocab)
-        self.glue_tasks = [self.stsb, self.mrpc, self.wic]
+        self.glue_tasks = [self.stsb, self.wic]
         self.args = mock.Mock()
         self.args.batch_size = 4
         self.args.cuda = -1
@@ -145,7 +158,6 @@ class TestWritePreds(unittest.TestCase):
         )
         assert (
             os.path.exists(self.temp_dir + "/STS-B.tsv")
-            and os.path.exists(self.temp_dir + "/MRPC.tsv")
             and os.path.exists(self.temp_dir + "/WIC.jsonl")
         )
 
@@ -155,15 +167,22 @@ class TestWritePreds(unittest.TestCase):
         )
         stsb_predictions = pd.read_csv(self.temp_dir + "/STS-B.tsv", sep="\t")
         assert "index" in stsb_predictions.columns and "prediction" in stsb_predictions.columns
-        assert stsb_predictions.iloc[0]["prediction"] == 0
-
+        assert stsb_predictions.iloc[0]["prediction"] == 5.00
+        import pdb; pdb.set_trace()
+        assert stsb_predictions.iloc[1]["prediction"] == 1.7
+        
     def test_write_preds_superglue(self):
+        """
+        Ensure that SuperGLUE write predictions for test is saved to the correct file 
+        format.
+        """
         evaluate.write_preds(
-            self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
+            [self.wic], self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
         wic_predictions = pd.read_json(self.temp_dir + "/WIC.jsonl", lines=True)
         assert "idx" in wic_predictions.columns and "label" in wic_predictions.columns
-        assert wic_predictions.iloc[0]["label"] == "true"
+        assert wic_predictions.iloc[0]["label"] == "false"
+        assert wic_predictions.iloc[1]["label"] == "true"
 
     @mock.patch("src.models.MultiTaskModel.forward", side_effect=model_forward)
     def test_evaluate_and_write(self, model_forward_function):
