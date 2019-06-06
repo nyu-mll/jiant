@@ -494,7 +494,7 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None:
+        if self._serialization_dir is not None and phase == 'pretrain':
             # Resume from serialization path
             if load_model and any(
                 ["model_state_" in x for x in os.listdir(self._serialization_dir)]
@@ -1074,14 +1074,11 @@ class SamplingMultiTaskTrainer:
             training_state,
             os.path.join(
                 self._serialization_dir,
-                "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                "trainng_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
             ),
         )
 
         task_states = {}
-        import pdb
-
-        pdb.set_trace()
         for task_name, task_info in self._task_infos.items():
             task_states[task_name] = {}
             task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
@@ -1181,7 +1178,7 @@ class SamplingMultiTaskTrainer:
 
         model_path = os.path.join(self._serialization_dir, "model_state_{}".format(suffix_to_load))
         training_state_path = os.path.join(
-            self._serialization_dir, "model_state_{}".format(suffix_to_load)
+            self._serialization_dir, "training_state_{}".format(suffix_to_load)
         )
         task_state_path = os.path.join(
             self._serialization_dir, "task_state_{}".format(suffix_to_load)

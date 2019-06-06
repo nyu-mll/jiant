@@ -120,9 +120,15 @@ def setup_target_task_training(args, target_tasks, model, strict):
             )
         else:
             if args.do_pretrain == 1:
-                assert_for_log(
-                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
-                )
+                best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
+                if best_pretrain:
+                    load_model_state(
+                        model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
+                    )
+                else:
+                    assert_for_log(
+                        args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                    )
 
                 if args.transfer_paradigm == "finetune":
                     # Save model so we have a checkpoint to go back to after each
@@ -414,7 +420,7 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            shared_optimizer,
+            args.shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -493,7 +499,7 @@ def main(cl_arguments):
             # This only affects for transfer_paradigm = frozen.
             if task.name in task_names_to_avoid_loading:
                 task_names_to_avoid_loading.remove(task.name)
-
+            import pdb; pdb.set_trace()
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
                 # training since we specificially finetune for each task.
@@ -511,13 +517,7 @@ def main(cl_arguments):
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 layer_path = get_best_checkpoint_path(args.run_dir, "target_train")
-                load_model_state(
-                    model,
-                    layer_path,
-                    args.cuda,
-                    strict=strict,
-                    skip_task_models=task_names_to_avoid_loading,
-                )
+                load_model_state(model,layer_path,args.cuda,strict=strict,skip_task_models=task_names_to_avoid_loading)
 
     if args.do_full_eval:
         # Evaluate
