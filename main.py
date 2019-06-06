@@ -503,9 +503,7 @@ def main(cl_arguments):
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
                 # training since we specificially finetune for each task.
-                pre_target_train = glob.glob(
-                    os.path.join(run_dir, "model_state_untrained_pre_target_train.th")
-                )
+                pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
                 if len(pre_target_train) > 0:
                     assert_for_log(
                         len(pre_target_train) == 1, "Too many best checkpoints. Something is wrong."
