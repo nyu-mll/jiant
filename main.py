@@ -499,7 +499,7 @@ def main(cl_arguments):
             # This only affects for transfer_paradigm = frozen.
             if task.name in task_names_to_avoid_loading:
                 task_names_to_avoid_loading.remove(task.name)
-            import pdb; pdb.set_trace()
+
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
                 # training since we specificially finetune for each task.
