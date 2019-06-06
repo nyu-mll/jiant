@@ -42,7 +42,7 @@ class NPIMinimalPairFrozenTask(Task):
         self.max_seq_len = max_seq_len
         self.n_classes = 2
 
-        s`elf.train_data_text = None
+        self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
 
