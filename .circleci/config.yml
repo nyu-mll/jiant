@@ -27,7 +27,7 @@ jobs:
             python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
             nose2 -v
       # Step 4: demo.sh run test
-      -run:
+      - run:
         name: running demo.sh
         command: |
           python download_glue_data.py --data_dir data --tasks all
