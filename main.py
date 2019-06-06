@@ -127,7 +127,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
                     )
                 else:
                     assert_for_log(
-                        args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                        args.allow_untrained_encoder_parameters,
+                        "No best checkpoint found to evaluate.",
                     )
 
                 if args.transfer_paradigm == "finetune":
@@ -254,7 +255,7 @@ def get_best_checkpoint_path(run_dir, phase):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from the phase so far
-        3) nothing found (empty string) """
+        2) nothing found (empty string) """
     macro_best = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
@@ -493,7 +494,7 @@ def main(cl_arguments):
             # Now that we've trained the task specific module for the task,
             # since we are accumulating the best parameters for
             # each task specific model, we allow for loading of the trained
-            # module. We avoid loading the task speicifc modules at first
+            # module. We avoid loading the task specific modules at first
             # in order to make sure that any module-specific training from pretraining
             # step does not affect the target task training step.
             # This only affects for transfer_paradigm = frozen.
@@ -502,7 +503,7 @@ def main(cl_arguments):
 
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
-                # training since we specificially finetune for each task.
+                # training since we specifically finetune for each task.
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
                 if len(pre_target_train) > 0:
                     assert_for_log(
@@ -515,7 +516,13 @@ def main(cl_arguments):
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 layer_path = get_best_checkpoint_path(args.run_dir, "target_train")
-                load_model_state(model,layer_path,args.cuda,strict=strict,skip_task_models=task_names_to_avoid_loading)
+                load_model_state(
+                    model,
+                    layer_path,
+                    args.cuda,
+                    strict=strict,
+                    skip_task_models=task_names_to_avoid_loading,
+                )
 
     if args.do_full_eval:
         # Evaluate

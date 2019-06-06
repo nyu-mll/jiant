@@ -494,7 +494,7 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None and phase == 'pretrain':
+        if self._serialization_dir is not None and phase == "pretrain":
             # Resume from serialization path
             if load_model and any(
                 ["model_state_" in x for x in os.listdir(self._serialization_dir)]
