@@ -1,392 +1,227 @@
-"""Task definitions for edge probing."""
-import collections
-import itertools
-import json
-import logging as log
-import os
+# Implementation of edge probing module.
 
+import torch
+import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
+from torch.autograd import Variable
 
-from allennlp.training.metrics import CategoricalAccuracy, \
-    BooleanAccuracy, F1Measure
-from ..allennlp_mods.correlation import FastMatthews
+from ..tasks.edge_probing import EdgeProbingTask
+from .import modules
 
-# Fields for instance processing
-from allennlp.data import Instance, Token
-from allennlp.data.fields import TextField, LabelField, \
-    SpanField, ListField, MetadataField
-from ..allennlp_mods.multilabel_field import MultiLabelField
+from allennlp.modules.span_extractors import \
+    EndpointSpanExtractor, SelfAttentiveSpanExtractor
 
-from ..utils import serialize
-from ..utils import utils
-
-from typing import Iterable, Sequence, List, Dict, Any, Type
-
-from .tasks import Task, sentence_to_text_field
-from .registry import register_task, REGISTRY  # global task registry
-
-##
-# Class definitions for edge probing. See below for actual task registration.
+from typing import Dict, Iterable, List
 
 
-class EdgeProbingTask(Task):
-    ''' Generic class for fine-grained edge probing.
-    Acts as a classifier, but with multiple targets for each input text.
-    Targets are of the form (span1, span2, label), where span1 and span2 are
-    half-open token intervals [i, j).
-    Subclass this for each dataset, or use register_task with appropriate kw
-    args.
+class EdgeClassifierModule(nn.Module):
+    ''' Build edge classifier components as a sub-module.
+    Use same classifier code as build_single_sentence_module,
+    except instead of whole-sentence pooling we'll use span1 and span2 indices
+    to extract span representations, and use these as input to the classifier.
+    This works in the current form, but with some provisos:
+        - Only considers the explicit set of spans in inputs; does not consider
+        all other spans as negatives. (So, this won't work for argument
+        _identification_ yet.)
+    TODO: consider alternate span-pooling operators: max or mean-pooling,
+    or SegRNN.
+    TODO: add span-expansion to negatives, one of the following modes:
+        - all-spans (either span1 or span2), treating not-seen as negative
+        - all-tokens (assuming span1 and span2 are length-1), e.g. for
+        dependency parsing
+        - batch-negative (pairwise among spans seen in batch, where not-seen
+        are negative)
     '''
-    @property
-    def _tokenizer_suffix(self):
-        ''' Suffix to make sure we use the correct source files,
-        based on the given tokenizer.
-        '''
-        if self.tokenizer_name:
-            return ".retokenized." + self.tokenizer_name
+
+    def _make_span_extractor(self):
+        if self.span_pooling == "attn":
+            return SelfAttentiveSpanExtractor(self.proj_dim)
         else:
-            return ""
+            return EndpointSpanExtractor(self.proj_dim,
+                                         combination=self.span_pooling)
 
-    def tokenizer_is_supported(self, tokenizer_name):
-        ''' Check if the tokenizer is supported for this task. '''
-        # Assume all tokenizers supported; if retokenized data not found
-        # for this particular task, we'll just crash on file loading.
-        return True
-
-    def __init__(self, path: str, max_seq_len: int,
-                 name: str,
-                 label_file: str = None,
-                 files_by_split: Dict[str, str] = None,
-                 is_symmetric: bool = False,
-                 single_sided: bool = False, **kw):
-        """Construct an edge probing task.
-        path, max_seq_len, and name are passed by the code in preprocess.py;
-        remaining arguments should be provided by a subclass constructor or via
-        @register_task.
-        Args:
-            path: data directory
-            max_seq_len: maximum sequence length (currently ignored)
-            name: task name
-            label_file: relative path to labels file
-            files_by_split: split name ('train', 'val', 'test') mapped to
-                relative filenames (e.g. 'train': 'train.json')
-            is_symmetric: if true, span1 and span2 are assumed to be the same
-                type and share parameters. Otherwise, we learn a separate
-                projection layer and attention weight for each.
-            single_sided: if true, only use span1.
+    def _make_cnn_layer(self, d_inp):
+        """Make a CNN layer as a projection of local context.
+        CNN maps [batch_size, max_len, d_inp]
+        to [batch_size, max_len, proj_dim] with no change in length.
         """
-        super().__init__(name, **kw)
+        k = 1 + 2 * self.cnn_context
+        padding = self.cnn_context
+        return nn.Conv1d(d_inp, self.proj_dim, kernel_size=k,
+                         stride=1, padding=padding, dilation=1,
+                         groups=1, bias=True)
 
-        assert label_file is not None
-        assert files_by_split is not None
-        self._files_by_split = {
-            split: os.path.join(path, fname) + self._tokenizer_suffix
-            for split, fname in files_by_split.items()
-        }
-        self._iters_by_split = self.load_data()
-        self.max_seq_len = max_seq_len
-        self.is_symmetric = is_symmetric
-        self.single_sided = single_sided
+    def __init__(self, task, d_inp: int, task_params):
+        super(EdgeClassifierModule, self).__init__()
+        # Set config options needed for forward pass.
+        self.loss_type = task_params['cls_loss_fn']
+        self.span_pooling = task_params['cls_span_pooling']
+        self.cnn_context = task_params['edgeprobe_cnn_context']
+        self.is_symmetric = task.is_symmetric
+        self.single_sided = task.single_sided
 
-        label_file = os.path.join(path, label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
-        # see add_task_label_namespace in preprocess.py
-        self._label_namespace = self.name + "_labels"
-
-        # Scorers
-        #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
-        self.mcc_scorer = FastMatthews()
-        self.acc_scorer = BooleanAccuracy()  # binary accuracy
-        self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
-        self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
-        self.val_metric_decreases = False
-
-    def _stream_records(self, filename):
-        skip_ctr = 0
-        total_ctr = 0
-        for record in utils.load_json_data(filename):
-            total_ctr += 1
-            # Skip records with empty targets.
-            # TODO(ian): don't do this if generating negatives!
-            if not record.get('targets', None):
-                skip_ctr += 1
-                continue
-            yield record
-        log.info("Read=%d, Skip=%d, Total=%d from %s",
-                 total_ctr - skip_ctr, skip_ctr, total_ctr,
-                 filename)
-
-    @staticmethod
-    def merge_preds(record: Dict, preds: Dict) -> Dict:
-        """ Merge predictions into record, in-place.
-        List-valued predictions should align to targets,
-        and are attached to the corresponding target entry.
-        Non-list predictions are attached to the top-level record.
-        """
-        record['preds'] = {}
-        for target in record['targets']:
-            target['preds'] = {}
-        for key, val in preds.items():
-            if isinstance(val, list):
-                assert len(val) == len(record['targets'])
-                for i, target in enumerate(record['targets']):
-                    target['preds'][key] = val[i]
-            else:
-                # non-list predictions, attach to top-level preds
-                record['preds'][key] = val
-        return record
-
-    def load_data(self):
-        iters_by_split = collections.OrderedDict()
-        for split, filename in self._files_by_split.items():
-            #  # Lazy-load using RepeatableIterator.
-            #  loader = functools.partial(utils.load_json_data,
-            #                             filename=filename)
-            #  iter = serialize.RepeatableIterator(loader)
-            iter = list(self._stream_records(filename))
-            iters_by_split[split] = iter
-        return iters_by_split
-
-    def get_split_text(self, split: str):
-        ''' Get split text as iterable of records.
-        Split should be one of 'train', 'val', or 'test'.
-        '''
-        return self._iters_by_split[split]
-
-    def get_num_examples(self, split_text):
-        ''' Return number of examples in the result of get_split_text.
-        Subclass can override this if data is not stored in column format.
-        '''
-        return len(split_text)
-
-    def _make_span_field(self, s, text_field, offset=1):
-        return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
-
-    def _pad_tokens(self, tokens):
-        """Pad tokens according to the current tokenization style."""
-        if self.tokenizer_name.startswith("bert-"):
-            # standard padding for BERT; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
-            return ["[CLS]"] + tokens + ["[SEP]"]
+        self.proj_dim = task_params['d_hid']
+        # Separate projection for span1, span2.
+        # Convolution allows using local context outside the span, with
+        # cnn_context = 0 behaving as a per-word linear layer.
+        # Use these to reduce dimensionality in case we're enumerating a lot of
+        # spans - we want to do this *before* extracting spans for greatest
+        # efficiency.
+        self.proj1 = self._make_cnn_layer(d_inp)
+        if self.is_symmetric or self.single_sided:
+            # Use None as dummy padding for readability,
+            # so that we can index projs[1] and projs[2]
+            self.projs = [None, self.proj1, self.proj1]
         else:
-            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
+            # Separate params for span2
+            self.proj2 = self._make_cnn_layer(d_inp)
+            self.projs = [None, self.proj1, self.proj2]
 
-    def make_instance(self, record, idx, indexers) -> Type[Instance]:
-        """Convert a single record to an AllenNLP Instance."""
-        tokens = record['text'].split()  # already space-tokenized by Moses
-        tokens = self._pad_tokens(tokens)
-        text_field = sentence_to_text_field(tokens, indexers)
+        # Span extractor, shared for both span1 and span2.
+        self.span_extractor1 = self._make_span_extractor()
+        if self.is_symmetric or self.single_sided:
+            self.span_extractors = [
+                None, self.span_extractor1, self.span_extractor1]
+        else:
+            self.span_extractor2 = self._make_span_extractor()
+            self.span_extractors = [
+                None, self.span_extractor1, self.span_extractor2]
 
-        d = {}
-        d["idx"] = MetadataField(idx)
-
-        d['input1'] = text_field
-
-        d['span1s'] = ListField([self._make_span_field(t['span1'], text_field, 1)
-                                 for t in record['targets']])
+        # Classifier gets concatenated projections of span1, span2
+        clf_input_dim = self.span_extractors[1].get_output_dim()
         if not self.single_sided:
-            d['span2s'] = ListField([self._make_span_field(t['span2'], text_field, 1)
-                                     for t in record['targets']])
+            clf_input_dim += self.span_extractors[2].get_output_dim()
+        self.classifier = modules.Classifier.from_params(clf_input_dim,
+                                                         task.n_classes,
+                                                         task_params)
 
-        # Always use multilabel targets, so be sure each label is a list.
-        labels = [utils.wrap_singleton_string(t['label'])
-                  for t in record['targets']]
-        d['labels'] = ListField([MultiLabelField(label_set,
-                                                 label_namespace=self._label_namespace,
-                                                 skip_indexing=False)
-                                 for label_set in labels])
-        return Instance(d)
+    def forward(self, batch: Dict,
+                word_embs_in_context: torch.Tensor,
+                sent_mask: torch.Tensor,
+                task: EdgeProbingTask,
+                predict: bool) -> Dict:
+        """ Run forward pass.
+        Expects batch to have the following entries:
+            'batch1' : [batch_size, max_len, ??]
+            'labels' : [batch_size, num_targets] of label indices
+            'span1s' : [batch_size, num_targets, 2] of spans
+            'span2s' : [batch_size, num_targets, 2] of spans
+        'labels', 'span1s', and 'span2s' are padded with -1 along second
+        (num_targets) dimension.
+        Args:
+            batch: dict(str -> Tensor) with entries described above.
+            word_embs_in_context: [batch_size, max_len, repr_dim] Tensor
+            sent_mask: [batch_size, max_len, 1] Tensor of {0,1}
+            task: EdgeProbingTask
+            predict: whether or not to generate predictions
+        Returns:
+            out: dict(str -> Tensor)
+        """
+        out = {}
 
-    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
-        ''' Process split text into a list of AllenNLP Instances. '''
-        def _map_fn(r, idx): return self.make_instance(r, idx, indexers)
-        return map(_map_fn, records, itertools.count())
+        batch_size = word_embs_in_context.shape[0]
+        out['n_inputs'] = batch_size
 
-    def get_all_labels(self) -> List[str]:
-        return self.all_labels
+        # Apply projection CNN layer for each span.
+        word_embs_in_context_t = word_embs_in_context.transpose(1, 2)  # needed for CNN layer
+        se_proj1 = self.projs[1](word_embs_in_context_t).transpose(2, 1).contiguous()
+        if not self.single_sided:
+            se_proj2 = self.projs[2](word_embs_in_context_t).transpose(2, 1).contiguous()
 
-    def get_sentences(self) -> Iterable[Sequence[str]]:
-        ''' Yield sentences, used to compute vocabulary. '''
-        for split, iter in self._iters_by_split.items():
-            # Don't use test set for vocab building.
-            if split.startswith("test"):
-                continue
-            for record in iter:
-                yield record["text"].split()
+        # Span extraction.
+        # [batch_size, num_targets] bool
+        span_mask = (batch['span1s'][:, :, 0] != -1)
+        out['mask'] = span_mask
+        total_num_targets = span_mask.sum()
+        out['n_targets'] = total_num_targets
+        out['n_exs'] = total_num_targets  # used by trainer.py
 
-    def get_metrics(self, reset=False):
-        '''Get metrics specific to the task'''
-        metrics = {}
-        metrics['mcc'] = self.mcc_scorer.get_metric(reset)
-        metrics['acc'] = self.acc_scorer.get_metric(reset)
-        precision, recall, f1 = self.f1_scorer.get_metric(reset)
-        metrics['precision'] = precision
-        metrics['recall'] = recall
-        metrics['f1'] = f1
-        return metrics
+        _kw = dict(sequence_mask=sent_mask.long(),
+                   span_indices_mask=span_mask.long())
+        # span1_emb and span2_emb are [batch_size, num_targets, span_repr_dim]
+        span1_emb = self.span_extractors[1](se_proj1, batch['span1s'], **_kw)
+        if not self.single_sided:
+            span2_emb = self.span_extractors[2](
+                se_proj2, batch['span2s'], **_kw)
+            span_emb = torch.cat([span1_emb, span2_emb], dim=2)
+        else:
+            span_emb = span1_emb
 
-##
-# Task definitions. We call the register_task decorator explicitly so that we
-# can group these in the code.
-##
+        # [batch_size, num_targets, n_classes]
+        logits = self.classifier(span_emb)
+        out['logits'] = logits
 
+        # Compute loss if requested.
+        if 'labels' in batch:
+            # Labels is [batch_size, num_targets, n_classes],
+            # with k-hot encoding provided by AllenNLP's MultiLabelField.
+            # Flatten to [total_num_targets, ...] first.
+            out['loss'] = self.compute_loss(logits[span_mask],
+                                            batch['labels'][span_mask],
+                                            task)
 
-##
-# Core probing tasks. as featured in the paper.
-##
-# Part-of-Speech tagging on OntoNotes.
-register_task('edges-pos-ontonotes',
-              rel_path='edges/ontonotes-constituents',
-              label_file="labels.pos.txt", files_by_split={
-                  'train': "consts_ontonotes_en_train.pos.json",
-                  'val': "consts_ontonotes_en_dev.pos.json",
-                  'test': "consts_ontonotes_en_test.pos.json",
-              }, single_sided=True)(EdgeProbingTask)
-# Constituency labeling (nonterminals) on OntoNotes.
-register_task('edges-nonterminal-ontonotes',
-              rel_path='edges/ontonotes-constituents',
-              label_file="labels.nonterminal.txt", files_by_split={
-                  'train': "consts_ontonotes_en_train.nonterminal.json",
-                  'val': "consts_ontonotes_en_dev.nonterminal.json",
-                  'test': "consts_ontonotes_en_test.nonterminal.json",
-              }, single_sided=True)(EdgeProbingTask)
-# Dependency edge labeling on English Web Treebank (UD).
-register_task('edges-dep-labeling-ewt', rel_path='edges/dep_ewt',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Entity type labeling on OntoNotes.
-register_task('edges-ner-ontonotes',
-              rel_path='edges/ontonotes-ner',
-              label_file="labels.txt", files_by_split={
-                  'train': "ner_ontonotes_en_train.json",
-                  'val': "ner_ontonotes_en_dev.json",
-                  'test': "ner_ontonotes_en_test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
-register_task('edges-srl-conll2012', rel_path='edges/srl_conll2012',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Re-processed version of edges-coref-ontonotes, via AllenNLP data loaders.
-register_task('edges-coref-ontonotes-conll',
-              rel_path='edges/ontonotes-coref-conll',
-              label_file="labels.txt", files_by_split={
-                  'train': "coref_conll_ontonotes_en_train.json",
-                  'val': "coref_conll_ontonotes_en_dev.json",
-                  'test': "coref_conll_ontonotes_en_test.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# SPR1, as an edge-labeling task (multilabel).
-register_task('edges-spr1', rel_path='edges/spr1',
-              label_file="labels.txt", files_by_split={
-                  'train': "spr1.train.json",
-                  'val': "spr1.dev.json",
-                  'test': "spr1.test.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# SPR2, as an edge-labeling task (multilabel).
-register_task('edges-spr2', rel_path='edges/spr2',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Definite pronoun resolution. Two labels.
-register_task('edges-dpr', rel_path='edges/dpr',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Relation classification on SemEval 2010 Task8. 19 labels.
-register_task('edges-rel-semeval', rel_path='edges/semeval',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.0.85.json",
-                  'val': "dev.json",
-                  'test': "test.json",
-              }, is_symmetric=False)(EdgeProbingTask)
+        if predict:
+            # Return preds as a list.
+            preds = self.get_predictions(logits)
+            out['preds'] = list(self.unbind_predictions(preds, span_mask))
 
-##
-# New or experimental tasks.
-##
-# Relation classification on TACRED. 42 labels.
-register_task('edges-rel-tacred', rel_path='edges/tacred/rel',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.json",
-                  'val': "dev.json",
-                  'test': "test.json",
-              }, is_symmetric=False)(EdgeProbingTask)
+        return out
 
-##
-# Older tasks or versions for backwards compatibility.
-##
-# Entity classification on TACRED. 17 labels.
-# NOTE: these are probably silver labels from CoreNLP,
-# so this is of limited use as a target.
-register_task('edges-ner-tacred', rel_path='edges/tacred/entity',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.json",
-                  'val': "dev.json",
-                  'test': "test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# SRL CoNLL 2005, formulated as an edge-labeling task.
-register_task('edges-srl-conll2005', rel_path='edges/srl_conll2005',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.wsj.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Coreference on OntoNotes corpus. Two labels.
-register_task('edges-coref-ontonotes', rel_path='edges/ontonotes-coref',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.edges.json",
-                  'val': "dev.edges.json",
-                  'test': "test.edges.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# Entity type labeling on CoNLL 2003.
-register_task('edges-ner-conll2003', rel_path='edges/ner_conll2003',
-              label_file="labels.txt", files_by_split={
-                  'train': "CoNLL-2003_train.json",
-                  'val': "CoNLL-2003_dev.json",
-                  'test': "CoNLL-2003_test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
-register_task('edges-dep-labeling', rel_path='edges/dep',
-              label_file="labels.txt", files_by_split={
-                  'train': "train.json",
-                  'val': "dev.json",
-                  'test': "test.json",
-              }, is_symmetric=False)(EdgeProbingTask)
-# PTB constituency membership / labeling.
-register_task('edges-constituent-ptb', rel_path='edges/ptb-membership',
-              label_file="labels.txt", files_by_split={
-                  'train': "ptb_train.json",
-                  'val': "ptb_dev.json",
-                  'test': "ptb_test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# Constituency membership / labeling on OntoNotes.
-register_task('edges-constituent-ontonotes',
-              rel_path='edges/ontonotes-constituents',
-              label_file="labels.txt", files_by_split={
-                  'train': "consts_ontonotes_en_train.json",
-                  'val': "consts_ontonotes_en_dev.json",
-                  'test': "consts_ontonotes_en_test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# CCG tagging (tokens only).
-register_task('edges-ccg-tag', rel_path='edges/ccg_tag',
-              label_file="labels.txt", files_by_split={
-                  'train': "ccg.tag.train.json",
-                  'val': "ccg.tag.dev.json",
-                  'test': "ccg.tag.test.json",
-              }, single_sided=True)(EdgeProbingTask)
-# CCG parsing (constituent labeling).
-register_task('edges-ccg-parse', rel_path='edges/ccg_parse',
-              label_file="labels.txt", files_by_split={
-                  'train': "ccg.parse.train.json",
-                  'val': "ccg.parse.dev.json",
-                  'test': "ccg.parse.test.json",
-              }, single_sided=True)(EdgeProbingTask)
+    def unbind_predictions(self, preds: torch.Tensor,
+                           masks: torch.Tensor) -> Iterable[np.ndarray]:
+        """ Unpack preds to varying-length numpy arrays.
+        Args:
+            preds: [batch_size, num_targets, ...]
+            masks: [batch_size, num_targets] boolean mask
+        Yields:
+            np.ndarray for each row of preds, selected by the corresponding row
+            of span_mask.
+        """
+        preds = preds.detach().cpu()
+        masks = masks.detach().cpu()
+        for pred, mask in zip(torch.unbind(preds, dim=0),
+                              torch.unbind(masks, dim=0)):
+            yield pred[mask].numpy()  # only non-masked predictions
+
+    def get_predictions(self, logits: torch.Tensor):
+        """Return class probabilities, same shape as logits.
+        Args:
+            logits: [batch_size, num_targets, n_classes]
+        Returns:
+            probs: [batch_size, num_targets, n_classes]
+        """
+        if self.loss_type == 'sigmoid':
+            return torch.sigmoid(logits)
+        else:
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % loss_type)
+
+    def compute_loss(self, logits: torch.Tensor,
+                     labels: torch.Tensor, task: EdgeProbingTask):
+        """ Compute loss & eval metrics.
+        Expect logits and labels to be already "selected" for good targets,
+        i.e. this function does not do any masking internally.
+        Args:
+            logits: [total_num_targets, n_classes] Tensor of float scores
+            labels: [total_num_targets, n_classes] Tensor of sparse binary targets
+        Returns:
+            loss: scalar Tensor
+        """
+        binary_preds = logits.ge(0).long()  # {0,1}
+
+        # Matthews coefficient and accuracy computed on {0,1} labels.
+        task.mcc_scorer(binary_preds, labels.long())
+        task.acc_scorer(binary_preds, labels.long())
+
+        # F1Measure() expects [total_num_targets, n_classes, 2]
+        # to compute binarized F1.
+        binary_scores = torch.stack([-1 * logits, logits], dim=2)
+        task.f1_scorer(binary_scores, labels)
+
+        if self.loss_type == 'sigmoid':
+            return F.binary_cross_entropy(torch.sigmoid(logits),
+                                          labels.float())
+        else:
+            raise ValueError("Unsupported loss type '%s' "
+                             "for edge probing." % self.loss_type)
