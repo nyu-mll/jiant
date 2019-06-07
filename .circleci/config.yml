@@ -7,6 +7,9 @@
 
       working_directory: ~/repo
 
+      environment:
+          JIANT_PROJECT_PREFIX: sample_run
+          JIANT_DATA_DIR: ~/repo/data
       steps:
         # Step 1: obtain repo from GitHub
         - checkout
@@ -24,19 +27,14 @@
             command: |
               mkdir ~/repo/test_output
               source activate jiant
-              python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
+              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               nose2 -v
         # Step 4: demo.sh run test
         - run:
           name: running demo.sh
           command: |
-            echo 'export PATH=/path/to/foo/bin:$PATH' >> $BASH_ENV
             python download_glue_data.py --data_dir data --tasks all
             python main.py --config_file config/demo.conf
-          environment:
-            JIANT_PROJECT_PREFIX: sample_run
-            JIANT_DATA_DIR: data
-            BASH_ENV: ~/.bashrc
         # Step 4: style check
         - run:
             name: check style
