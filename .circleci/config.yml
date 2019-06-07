@@ -27,6 +27,7 @@
             name: running demo.sh
             command: |
               python scripts/download_glue_data.py --data_dir data --tasks all
+              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               source activate jiant
               python main.py --config_file config/demo.conf
         # Step 4: run tests
@@ -35,7 +36,6 @@
             command: |
               mkdir ~/repo/test_output
               source activate jiant
-              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               nose2 -v
         # Step 5: style check
         - run:
