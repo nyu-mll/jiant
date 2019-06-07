@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from ..tasks.tasks import Task
-from ..utils.utils import unbind_predictions
 from .import modules
 
 from allennlp.modules.span_extractors import \
@@ -145,7 +144,7 @@ class SpanClassifierModule(nn.Module):
         if predict:
             # Return preds as a list.
             preds = self.get_predictions(logits)
-            out["preds"] = list(unbind_predictions(preds))
+            out["preds"] = preds
         return out
 
 
