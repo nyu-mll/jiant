@@ -191,3 +191,9 @@ class TestCheckpionting(unittest.TestCase):
             assert os.path.exists(
                 self.temp_dir + "/model_state_target_train_epoch_1.best_macro.th"
             ) and os.path.exists(self.temp_dir + "/model_state_target_train_epoch_2.th")
+
+        def does_produce_correct_demo_results(self):
+            file_path = "~/repo/sample_run/jiant-demo/results.tsv"
+            file = open(file_path, "rb")
+            print(file)
+            assert file
