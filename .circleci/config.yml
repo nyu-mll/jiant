@@ -31,10 +31,10 @@
               nose2 -v
         # Step 4: demo.sh run test
         - run:
-          name: running demo.sh
-          command: |
-            python scripts/download_glue_data.py --data_dir data --tasks all
-            python main.py --config_file config/demo.conf
+            name: running demo.sh
+            command: |
+              python scripts/download_glue_data.py --data_dir data --tasks all
+              python main.py --config_file config/demo.conf
         # Step 4: style check
         - run:
             name: check style
