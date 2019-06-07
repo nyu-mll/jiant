@@ -526,7 +526,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
             task, d_sent, use_bert=model.use_bert, params=task_params
         )
         setattr(model, "%s_mdl" % task.name, module)
-
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -625,7 +624,6 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Params):
     """ Build a single sentence classifier
-
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
@@ -633,7 +631,6 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
             sequence, rather than max pooling. We do this for BERT specifically to follow
             the convention set in the paper (Devlin et al., 2019).
         - params (Params): Params object with task-specific parameters
-
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
@@ -665,9 +662,10 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pair_attn = AttnPairEncoder(model.vocab, modeling_layer, dropout=params["dropout"])
         return pair_attn
 
-    # pool given the expected input dimension
-    if params["attn"]:
-        pooler = Pooler(project=False)
+    # Build the "pooler", which does pools a variable length sequence
+    #   possibly with a projection layer beforehand
+    if params["attn"] and not model.use_bert:
+        pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
         pool_type = "first" if model.use_bert else "max"
@@ -754,7 +752,6 @@ def build_qa_module(task, d_inp, use_bert, params):
     1) pools representations (either of the joint (context, question, answer) or individually
     2) projects down to two logits
     3) classifier
-
     This module models each question-answer pair _individually_ """
     pool_type = "first" if use_bert else "max"
     pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
@@ -777,6 +774,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
+        self.use_bert = bool(args.bert_model_name)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
@@ -866,7 +864,6 @@ class MultiTaskModel(nn.Module):
             task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
-            log.info(logits)
             if isinstance(task, RegressionTask):
                 if logits.ndimension() > 1:
                     assert (
@@ -882,8 +879,6 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
         if self.use_bert:
             sent, mask = self.sent_encoder(batch["inputs"], task)
@@ -922,8 +917,6 @@ class MultiTaskModel(nn.Module):
         out = {}
 
         # embed the sentence
-        sent1, mask1 = self.sent_encoder(batch['input1'], task)
-        sent2, mask2 = self.sent_encoder(batch['input2'], task)
         classifier = self._get_classifier(task)
         if self.use_bert:
             sent, mask = self.sent_encoder(batch["inputs"], task)
@@ -999,7 +992,8 @@ class MultiTaskModel(nn.Module):
                 - 'loss': size average CE loss
         """
         out = {}
-        b_size, seq_len, _ = batch['inputs']['elmo'].size()
+        # batch[inputs] only has one item
+        b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
         out["n_exs"] = get_batch_size(batch)
@@ -1154,7 +1148,6 @@ class MultiTaskModel(nn.Module):
     def _multiple_choice_reading_comprehension_forward(self, batch, task, predict):
         """ Forward call for multiple choice (selecting from a fixed set of answers)
         reading comprehension (have a supporting paragraph).
-
         Batch has a tensor of shape (n_questions, n_answers, n_tokens)
         """
         out = {}
@@ -1186,7 +1179,6 @@ class MultiTaskModel(nn.Module):
             out["preds"] = logits.argmax(dim=-1)
 
         return out
-
 
     def get_elmo_mixing_weights(self, tasks=[]):
         """ Get elmo mixing weights from text_field_embedder. Gives warning when fails.
