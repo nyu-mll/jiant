@@ -22,7 +22,14 @@
               apt-get install -y cmake build-essential gcc g++
               conda env create -q -f environment.yml
               source activate jiant
-        # Step 3: run tests
+        # Step 3: demo.sh run test
+        - run:
+            name: running demo.sh
+            command: |
+              python scripts/download_glue_data.py --data_dir data --tasks all
+              source activate jiant
+              python main.py --config_file config/demo.conf
+        # Step 4: run tests
         - run:
             name: run tests
             command: |
@@ -30,14 +37,7 @@
               source activate jiant
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               nose2 -v
-        # Step 4: demo.sh run test
-        - run:
-            name: running demo.sh
-            command: |
-              python scripts/download_glue_data.py --data_dir data --tasks all
-              source activate jiant
-              python main.py --config_file config/demo.conf
-        # Step 4: style check
+        # Step 5: style check
         - run:
             name: check style
             command: |
