@@ -16,6 +16,7 @@ dependencies:
         - tensorboard
         - tensorboardX==1.2
         - sendgrid==5.4.1
+        - pyhocon==0.3.35
         - nose2
         - python-Levenshtein
         - pre-commit==1.15.2
