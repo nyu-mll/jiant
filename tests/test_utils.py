@@ -152,5 +152,13 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
         assert "cat" in output_dictionary["sents1"][0], "sent1s output is wrong"
         assert "not" in output_dictionary["sents2"][0]
 
+    def does_produce_correct_demo_results(self):
+        file_path = "~/repo/sample_run/jiant-demo/results.tsv"
+        file = open(file_path, "rb")
+        print(file)
+        assert file
+
+    
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
+
