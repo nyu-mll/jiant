@@ -10,9 +10,9 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --branch v0.9.0  --recursive https://github.com/nyu-mll/jiant.git--recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
+git clone --branch v0.9.0  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 0.9 release of `jiant`. For the latent version, delete `--branch v0.9.0`. If you already cloned and just need to get the submodules, you can run:
+This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v0.9.0`. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
