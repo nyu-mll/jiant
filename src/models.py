@@ -520,11 +520,11 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         module = build_single_sentence_module(
             task=task, d_inp=d_sent, use_bert=False, params=task_params
         )
-        setattr(model, '%s_mdl' % task.name, module)
+        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, NPIMinimalPairFrozenTask):
         assert args.bert_model_name
         mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
-        setattr(model, '%s_mdl' % task.name, mask_lm_head)
+        setattr(model, "%s_mdl" % task.name, mask_lm_head)
     elif isinstance(task, SpanClassificationTask):
         module = build_span_classifier(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -900,46 +900,51 @@ class MultiTaskModel(nn.Module):
 
         if isinstance(task, NPIMinimalPairTunedTask):
             # embed the sentence
-            sent_embs1, sent_mask1 = self.sent_encoder(batch['input1'], task)
-            sent_embs2, sent_mask2 = self.sent_encoder(batch['input2'], task)
+            sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
             # pass to a task specific classifier
             classifier = self._get_classifier(task)
             logits1 = classifier(sent_embs1, sent_mask1)
             logits2 = classifier(sent_embs2, sent_mask2)
-            logits = torch.stack((logits1[:, 0] + logits2[:, 1],
-                                  logits1[:, 1] + logits2[:, 0],
-                                  logits1[:, 0] + logits2[:, 0],
-                                  logits1[:, 1] + logits2[:, 1]), dim=1)
+            logits = torch.stack(
+                (
+                    logits1[:, 0] + logits2[:, 1],
+                    logits1[:, 1] + logits2[:, 0],
+                    logits1[:, 0] + logits2[:, 0],
+                    logits1[:, 1] + logits2[:, 1],
+                ),
+                dim=1,
+            )
         else:
             bs = get_batch_size(batch)
             # embed the sentence
-            sent_embs, _ = self.sent_encoder(batch['input0'], task)
+            sent_embs, _ = self.sent_encoder(batch["input0"], task)
             # pass to a task specific classifier
             classifier = self._get_classifier(task)
-            index = batch['index'].squeeze(dim=1)
+            index = batch["index"].squeeze(dim=1)
             logits_full = classifier(sent_embs)[range(bs), index]
-            sent1_key = batch['input1']['bert_wpm_pretokenized'][range(bs), index] - 2
-            sent2_key = batch['input2']['bert_wpm_pretokenized'][range(bs), index] - 2
+            sent1_key = batch["input1"]["bert_wpm_pretokenized"][range(bs), index] - 2
+            sent2_key = batch["input2"]["bert_wpm_pretokenized"][range(bs), index] - 2
             # calling self.sent_encoder reduce all token index in input0 by 2,
             # this -2 to input1 and input2 looks strange, but it correctly negate that effect
             logits = torch.stack(
                 [logits_full[range(bs), sent2_key], logits_full[range(bs), sent1_key]], dim=1
             )
 
-        out['logits'] = logits
-        out['n_exs'] = get_batch_size(batch)
-        tagmask = batch.get('tagmask', None)
-        if batch['labels'].dim() == 0:
-            labels = batch['labels'].unsqueeze(0)
-        elif batch['labels'].dim() == 1:
-            labels = batch['labels']
+        out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch)
+        tagmask = batch.get("tagmask", None)
+        if batch["labels"].dim() == 0:
+            labels = batch["labels"].unsqueeze(0)
+        elif batch["labels"].dim() == 1:
+            labels = batch["labels"]
         else:
-            labels = batch['labels'].squeeze(-1)
-        out['loss'] = F.cross_entropy(logits, labels)
+            labels = batch["labels"].squeeze(-1)
+        out["loss"] = F.cross_entropy(logits, labels)
         task.update_metrics(logits, labels, tagmask)
 
         if predict:
-            _, out['preds'] = logits.max(dim=1)
+            _, out["preds"] = logits.max(dim=1)
         return out
 
     def _nli_diagnostic_forward(self, batch, task, predict):

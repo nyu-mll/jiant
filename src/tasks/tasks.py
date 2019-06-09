@@ -234,8 +234,9 @@ class Task(object):
 
     @property
     def no_train_data(self):
-        return self.get_split_text('train') == self.get_split_text('val') or \
-            self.get_split_text('train') == self.get_split_text('test')
+        return self.get_split_text("train") == self.get_split_text("val") or self.get_split_text(
+            "train"
+        ) == self.get_split_text("test")
 
     def get_split_text(self, split: str):
         """ Get split text, typically as list of columns.
