@@ -1,11 +1,18 @@
 #!/bin/bash
 
+# This file defines functions to recreate the intermediate training of BERT experiments (Table 3, "BERT with Intermediate Task Training").
+# To run, simply specify an experiment to run (see bottom of file for the options) and optionally a gpu ID, e.g. 
+# `> pretraining_bert_exps.sh fullbert-mnli 1`
+# will run the MNLI experiment on GPU 1.
+
 source user_config.sh
 source scripts/pretraining_bert_lc_exps.sh
 
 gpuid=${2:-0}
 
+#######################################
 ## Just BERT, no additional training ##
+#######################################
 function fullbert() {
     python main.py --config config/final-bert.conf --overrides "do_pretrain = 0, allow_untrained_encoder_parameters = 1, run_name = untrained-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
@@ -108,7 +115,7 @@ function fullbert_mt_de() {
 ##     GLUE MTL     ##
 ######################
 function fullbert_glue() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = \"mnli-alt,mrpc-alt,qnli-alt,sst-alt,sts-b-alt,rte-alt,wnli-alt,qqp-alt,cola-alt\", run_name = mtl-glue-topbert-v2, mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = \"mnli-alt,mrpc-alt,qnli-alt,sst-alt,sts-b-alt,rte-alt,wnli-alt,qqp-alt,cola-alt\", run_name = mtl-glue-topbert, mnli-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b-alt_pair_attn = 0, qqp-alt_pair_attn = 0, val_interval = 9000, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, cuda = ${gpuid}"
 }
 
 ######################
@@ -122,38 +129,7 @@ function fullbert_nonglue() {
 ##      all MTL     ##
 ######################
 function fullbert_all() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = \"mnli-alt,mrpc-alt,qnli-alt,sst-alt,sts-b-alt,rte-alt,wnli-alt,qqp-alt,cola-alt,wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,reddit_s2s_3.4G\", val_interval = 14000, run_name = mtl-all-topbert-v2, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, mnli-alt_pair_attn = 0, mrpc-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b_pair_attn = 0, qqp_pair_attn = 0, wnli-alt_pair_attn = 0, cuda = ${gpuid}"
-}
-
-#########################
-## Learning curve runs ##
-#########################
-function target_lc_mnli() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-mnli1k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = mnli, eval_data_fraction = 0.00255, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-mnli4k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = mnli, eval_data_fraction = 0.01019, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-mnli16k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = mnli, eval_data_fraction = 0.04074, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-mnli64k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = mnli, eval_data_fraction = 0.16297, cuda = ${gpuid}"
-}
-
-function target_lc_qqp() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qqp1k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qqp, eval_data_fraction = 0.00275, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qqp4k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qqp, eval_data_fraction = 0.01099, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qqp16k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qqp, eval_data_fraction = 0.04397, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qqp64k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qqp, eval_data_fraction = 0.17589, cuda = ${gpuid}"
-}
-
-function target_lc_qnli() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qnli1k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qnli, eval_data_fraction = 0.00922, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qnli4k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qnli, eval_data_fraction = 0.03689, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qnli16k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qnli, eval_data_fraction = 0.14755, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-qnli64k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = qnli, eval_data_fraction = 0.59021, cuda = ${gpuid}"
-}
-
-function target_lc_sst() {
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-sst1k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = sst, eval_data_fraction = 0.01485, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-sst4k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = sst, eval_data_fraction = 0.05939, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-sst16k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = sst, eval_data_fraction = 0.23757, cuda = ${gpuid}"
-    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = mnli-alt, run_name = trg-lc-sst32k, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, do_pretrain = 0, target_tasks = sst, eval_data_fraction = 0.47514, cuda = ${gpuid}"
+    python main.py --config config/final-bert.conf --overrides "pretrain_tasks = \"mnli-alt,mrpc-alt,qnli-alt,sst-alt,sts-b-alt,rte-alt,wnli-alt,qqp-alt,cola-alt,wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,reddit_s2s_3.4G\", val_interval = 14000, run_name = mtl-all-topbert, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, mnli-alt_pair_attn = 0, mrpc-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b_pair_attn = 0, qqp_pair_attn = 0, wnli-alt_pair_attn = 0, cuda = ${gpuid}"
 }
 
 ##############################
@@ -176,7 +152,6 @@ function wordbert_mnli() {
 function fullbert_all_eval() {
     python main.py --config config/final-bert.conf --overrides "pretrain_tasks = \"mnli-alt,mrpc-alt,qnli-alt,sst-alt,sts-b-alt,rte-alt,wnli-alt,qqp-alt,cola-alt,wmt17_en_ru,wmt14_en_de,dissentwikifullbig,wiki103_s2s,reddit_s2s_3.4G\", val_interval = 14000, run_name = mtl-all-topbert-v4, bert_embeddings_mode = top, sent_enc = \"null\", sep_embs_for_skip = 1, mnli-alt_pair_attn = 0, mrpc-alt_pair_attn = 0, qnli-alt_pair_attn = 0, sts-b_pair_attn = 0, qqp_pair_attn = 0, wnli-alt_pair_attn = 0, do_pretrain = 0, cuda = ${gpuid}"
 }
-
 
 
 if [ $1 == "wordbert-mnli" ]; then

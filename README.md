@@ -8,7 +8,8 @@ Specifically, this branch contains scripts to run experiments in doing additiona
 To reproduce the experiments in pretraining sentence encoders from scratch (Table 2) and intermediate training of ELMo (Table 3, ELMo with Intermediate Task Training), use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. 
 Note that this branch uses a slightly older version of jiant.
 
-The script `scripts/pretraining_bert_exps.sh` contains commands to recreate our experiments.
+The scripts `scripts/pretraining_bert_exps.sh` and `scripts/pretraining_bert_lc_exps.sh` contains commands to recreate our experiments.
+The former specifies commandline arguments to run each experiment in both files. To run, simply run the script with the desired experiments, e.g. `scripts/pretraining_bert_exps.sh fullbert-mnli 1` will finetune BERT on MNLI on GPU 1, and then finetune the resulting model on all of the GLUE tasks.
 
 ## Dependencies
 
