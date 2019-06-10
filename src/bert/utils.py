@@ -152,7 +152,7 @@ class BertEmbedderModule(nn.Module):
 
     def transplant_LM_head(self, args):
         """
-        download the masked LM classifier from huggingface bert
+        This function downloads the masked LM classifier from huggingface bert,
         and tying the word embbing layer weight and classifier word weight
 
         Returns:

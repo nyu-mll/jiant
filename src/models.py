@@ -43,7 +43,7 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
-from .tasks.acceptability import NPIMinimalPairFrozenTask, NPIMinimalPairTunedTask, CoLAAnalysisTask
+from .tasks.acceptability_probing import NPIClozePairTask, NPIMinimalPairTask, CoLAAnalysisTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -516,12 +516,12 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         d_sent = args.d_hid + (args.skip_embs * d_emb)
         hid2voc = build_lm(task, d_sent, args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, NPIMinimalPairTunedTask):
+    elif isinstance(task, NPIMinimalPairTask):
         module = build_single_sentence_module(
             task=task, d_inp=d_sent, use_bert=False, params=task_params
         )
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, NPIMinimalPairFrozenTask):
+    elif isinstance(task, NPIClozePairTask):
         assert args.bert_model_name
         mask_lm_head = model.sent_encoder._text_field_embedder.transplant_LM_head(args)
         setattr(model, "%s_mdl" % task.name, mask_lm_head)
@@ -837,7 +837,7 @@ class MultiTaskModel(nn.Module):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
-        elif isinstance(task, NPIMinimalPairFrozenTask):
+        elif isinstance(task, NPIClozePairTask):
             out = self._minimal_pair_acceptability_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
@@ -898,7 +898,7 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
 
-        if isinstance(task, NPIMinimalPairTunedTask):
+        if isinstance(task, NPIMinimalPairTask):
             # embed the sentence
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)

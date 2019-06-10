@@ -17,6 +17,7 @@ class NPSTask(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
     def load_data(self):
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
@@ -48,6 +49,7 @@ class NLITypeProbingTask(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
     def load_data(self):
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
@@ -77,6 +79,7 @@ class NLITypeProbingTaskNeg(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
     def load_data(self):
         targ_map = {"neutral": 0, "entailment": 1, "contradiction": 2}
@@ -107,6 +110,7 @@ class NLITypeProbingTaskPrepswap(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
     def load_data(self):
         prob_data = load_tsv(
@@ -143,6 +147,7 @@ class NLITypeProbingAltTask(NLITypeProbingTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
     def load_data(self):
         targ_map = {"0": 0, "1": 1, "2": 2}

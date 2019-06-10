@@ -6,4 +6,4 @@
 
 
 # bert frozen (masked language modeling)
-python main.py --config_file "config/spring19_seminar/npipair_bert_frozen.conf" --override "exp_name = npi_bertmlm, run_name = run_bertmlm"
+python main.py --config_file "config/spring19_seminar/npimlm_bert.conf" --override "exp_name = npi_bertmlm, run_name = run_bertmlm"

@@ -1,11 +1,5 @@
-"""Define the tasks and code for loading their data.
-
-- As much as possible, following the existing task hierarchy structure.
-- When inheriting, be sure to write and call load_data.
-- Set all text data as an attribute, task.sentences (List[List[str]])
-- Each task's val_metric should be name_metric, where metric is returned by
-get_metrics(): e.g. if task.val_metric = task_name + "_accuracy", then
-task.get_metrics() should return {"accuracy": accuracy_val, ... }
+"""
+Task definition for acceptability probing tasks
 """
 import codecs
 import collections
@@ -32,12 +26,12 @@ from .tasks import create_subset_scorers, update_subset_scorers, collect_subset_
 from typing import Iterable, Sequence, List, Dict, Any, Type
 
 
-@register_task("npi_pair_frozen", rel_path="NPI")
-class NPIMinimalPairFrozenTask(Task):
+@register_task("npi-cloze-pair", rel_path="NPI")
+class NPIClozePairTask(Task):
     """ Task class for frozen minimal pair (cloze) acceptability judgement """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIMinimalPairFrozenTask, self).__init__(name, **kw)
+        super(NPIClozePairTask, self).__init__(name, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.n_classes = 2
@@ -45,6 +39,7 @@ class NPIMinimalPairFrozenTask(Task):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
@@ -95,13 +90,12 @@ class NPIMinimalPairFrozenTask(Task):
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["input2"] = sentence_to_text_field(input2, indexers)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            if self.name == "npi_pair_frozen":
-                mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
-                input0 = [i for i in input1]
-                input0[mask_index] = BERT_MASK_TOK
-                d["input0"] = sentence_to_text_field(input0, indexers)
-                d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
-                d["index"] = IndexField(mask_index, d["input1"])
+            mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
+            input0 = [i for i in input1]
+            input0[mask_index] = BERT_MASK_TOK
+            d["input0"] = sentence_to_text_field(input0, indexers)
+            d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
+            d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
@@ -139,12 +133,12 @@ class NPIMinimalPairFrozenTask(Task):
         return collected_metrics
 
 
-@register_task("npi_pair_tuned", rel_path="NPI")
-class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
+@register_task("npi-minimal-pair", rel_path="NPI")
+class NPIMinimalPairTask(NPIClozePairTask):
     """ Task class for tuned minimal pair acceptability judgement """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIMinimalPairTunedTask, self).__init__(path, max_seq_len, name, **kw)
+        super(NPIMinimalPairTask, self).__init__(path, max_seq_len, name, **kw)
         self.scorer3 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2, self.scorer3]
 
@@ -176,6 +170,31 @@ class NPIMinimalPairTunedTask(NPIMinimalPairFrozenTask):
 
         log.info("\tFinished loading CoLA minimal pairs.")
         return
+
+    def process_split(self, split, indexers):
+        def _make_instance(input1, input2, labels, tagids):
+            """ from multiple types in one column create multiple fields
+            input0: shared part (masked form) of both sentence (only used in BERT)
+            input1: sentence1
+            input2: sentence2
+            index: which token is different
+            labels: is
+            tagmask: which tag the pair has, in this dataset, the source of data
+            """
+            d = {}
+            d["input1"] = sentence_to_text_field(input1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["input2"] = sentence_to_text_field(input2, indexers)
+            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+            d["tagmask"] = MultiLabelField(
+                tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
+            )
+
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances  # lazy iterator
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
@@ -225,6 +244,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
@@ -277,11 +297,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading CoLA sperate domain.")
+        log.info("\tFinished loading CoLA with domain and phenomenon-level tags .")
 
     def process_split(self, split, indexers):
         def _make_instance(input1, input2, labels, tagids):
-            """ from multiple types in one column create multiple fields """
             d = {}
             d["input1"] = sentence_to_text_field(input1, indexers)
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
@@ -372,9 +391,10 @@ class CoLAAnalysisTask(SingleClassificationTask):
 @register_task("hd_cola_npi_qnt", rel_path="NPI/combs/minus_quantifiers")
 @register_task("hd_cola_npi_sup", rel_path="NPI/combs/minus_superlative")
 class CoLANPITask(SingleClassificationTask):
-    """Class for NPI-related task; same with Warstdadt acceptability task but outputs labels for
-       test-set
-       Note: Used for an NYU seminar, data not yet public"""
+    """
+    class for NPI acceptablity task, similar to CoLA task
+    this is used for spring19 seminar in NYU
+    """
 
     def __init__(self, path, max_seq_len, name, **kw):
         """ """
@@ -388,7 +408,6 @@ class CoLANPITask(SingleClassificationTask):
 
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
-        # self.scorer1 = Average()
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]

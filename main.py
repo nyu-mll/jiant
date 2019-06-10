@@ -448,7 +448,7 @@ def main(cl_arguments):
             )
         for task in target_tasks:
             # Skip tuning on a target task, if it does not really have a training set
-            if task.no_train_data:
+            if task.eval_only_task:
                 continue
 
             if args.transfer_paradigm == "finetune":

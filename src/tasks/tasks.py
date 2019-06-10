@@ -196,6 +196,7 @@ class Task(object):
         self.name = name
         self._tokenizer_name = tokenizer_name
         self.scorers = []
+        self.eval_only_task = False
 
         self.sentences = None
         self.example_counts = None
@@ -231,12 +232,6 @@ class Task(object):
     @property
     def n_val_examples(self):
         return self.example_counts["val"]
-
-    @property
-    def no_train_data(self):
-        return self.get_split_text("train") == self.get_split_text("val") or self.get_split_text(
-            "train"
-        ) == self.get_split_text("test")
 
     def get_split_text(self, split: str):
         """ Get split text, typically as list of columns.
@@ -469,7 +464,6 @@ class CoLATask(SingleClassificationTask):
 
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
-        # self.scorer1 = Average()
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
@@ -969,6 +963,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
 
         self.ix_to_lex_sem_dic = None
         self.ix_to_pr_ar_str_dic = None
