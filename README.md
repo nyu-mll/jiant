@@ -2,7 +2,7 @@
 
 `jiant` is a sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
-This branch of `jiant` contains code and scripts to run part of the experiments in the paper [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860), which appears at ACL 2019. 
+This branch of `jiant` contains code and scripts to run part of the experiments in the paper [Can You Tell Me How to Get Past Sesame Street? Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860), which appears at ACL 2019. 
 This paper supersedes "Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling", an earlier version of the same paper by the same authors.
 Specifically, this branch contains scripts to run experiments in doing additional supervised finetuning of BERT with various NLP tasks (Table 3, BERT with Intermediate Task Training). 
 To reproduce the experiments in pretraining sentence encoders from scratch (Table 2) and intermediate training of ELMo (Table 3, ELMo with Intermediate Task Training), use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. 
