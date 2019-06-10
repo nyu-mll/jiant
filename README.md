@@ -1,14 +1,11 @@
 # jiant
-This repo contains the `jiant` sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
-The 'j' in `jiant` stands for JSALT. That's all the acronym we have.
+`jiant` is a sentence representation learning toolkit created at the [2018 JSALT Workshop](https://www.clsp.jhu.edu/workshops/18-workshop/) by the [General-Purpose Sentence Representation Learning](https://jsalt18-sentence-repl.github.io/) team. It is an extensible platform meant to make it easy to run experiments that involve multitask and transfer learning across sentence-level NLP tasks.
 
-jiant has been used in these two papers so far:
-
-- [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860)
-- [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX)
-
-To exactly reproduce experiments from [the ELMo's Friends paper](https://arxiv.org/abs/1812.10860) use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. That will contain a snapshot of the code as of early August, potentially with updated documentation.
+This branch of `jiant` contains code and scripts to run part of the experiments in the paper [Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling](https://arxiv.org/abs/1812.10860), to appear at ACL 2019. 
+This paper supersedes "Looking for ELMo's Friends: Sentence-Level Pretraining Beyond Language Modeling", an earlier version of the same paper by the same authors.
+This branch in particular contains scripts to run experiments in doing additional supervised finetuning of BERT with various NLP tasks (Table 3, BERT with Intermediate Task Training). The script to do so is `scripts/pretraining_bert_exps.sh`.
+To reproduce the experiments in pretraining sentence encoders from scratch (Table 2) and intermediate training of ELMo (Table 3, ELMo with Intermediate Task Training), use the [`jsalt-experiments`](https://github.com/jsalt18-sentence-repl/jiant/tree/jsalt-experiments) branch. 
 
 ## Dependencies
 
