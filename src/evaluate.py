@@ -151,6 +151,7 @@ def write_preds(
             + ["wmt"]
             + tasks_module.ALL_COLA_NPI_TASKS
         )
+
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
             strict = strict_glue_format and task.name in tasks_module.ALL_GLUE_TASKS
@@ -219,7 +220,7 @@ SUPERGLUE_NAME_MAP = {
     "rte-superglue": "RTE",
     "wic": "WiC",
     "superglue-diagnostic": "AX",
-    "winograd-coreference": "WSC"
+    "winograd-coreference": "WSC",
 }
 
 
@@ -353,7 +354,7 @@ def _write_multirc_preds(
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:
-            par_qst_ans_d = defaultdict(lambda : defaultdict(list))
+            par_qst_ans_d = defaultdict(lambda: defaultdict(list))
             for row_idx, row in preds_df.iterrows():
                 ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
                 par_qst_ans_d[int(row["par_idx"])][int(row["qst_idx"])].append(ans_d)

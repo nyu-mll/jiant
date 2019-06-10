@@ -56,6 +56,7 @@ ALL_COLA_NPI_TASKS = [
     "hd_cola_npi_cond",
     "hd_cola_npi_adv",
     "all_cola_npi",
+    "wilcox_npi",
     "npi_adv_li",
     "npi_adv_sc",
     "npi_adv_pr",

@@ -359,7 +359,7 @@ class SamplingMultiTaskTrainer:
         self._metric_infos = metric_infos
         return task_infos, metric_infos
 
-    def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_example):
+    def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_examples):
         """
         Parameters
         ----------------
@@ -385,7 +385,7 @@ class SamplingMultiTaskTrainer:
         elif scaling_method == "max_inverse":
             scaling_weights = 1 / task_n_train_examples
         # Weighting losses based on best validation step for each task from a previous uniform run,
-        # normalizd by the maximum validation step
+        # normalized by the maximum validation step
         # eg. 'max_epoch_9_18_1_11_18_2_14_16_1'
         elif "max_epoch_" in scaling_method:
             epochs = scaling_method.strip("max_epoch_").split("_")
@@ -399,13 +399,16 @@ class SamplingMultiTaskTrainer:
         scaling_weights = dict(zip(task_names, scaling_weights))
         return scaling_weights
 
-    def get_sampling_weights(self, weighting_method, num_tasks, task_n_train_examples):
+    def get_sampling_weights(
+        self, weighting_method, num_tasks, task_n_train_examples, task_n_train_batches
+    ):
         """
         Parameters
         ----------------
         weighting_method: str, weighting method
         num_tasks: int
         task_n_train_examples: list of ints of number of examples per task
+        task_n_train_batches: list of ints of number of batches per task
         Returns
         ----------------
         sampling weights: list of ints, to sample tasks to train on
@@ -430,6 +433,8 @@ class SamplingMultiTaskTrainer:
         elif "softmax_" in weighting_method:  # exp(x/temp)
             weighting_temp = float(weighting_method.strip("softmax_"))
             sample_weights = np.exp(task_n_train_examples / weighting_temp)
+        else:
+            raise KeyError(f"Unknown weighting method: {weighting_method}")
         return sample_weights
 
     def train(
@@ -527,7 +532,7 @@ class SamplingMultiTaskTrainer:
         task_n_train_batches = np.array([task_infos[task.name]["n_tr_batches"] for task in tasks])
         log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
         sample_weights = self.get_sampling_weights(
-            weighting_method, len(tasks), task_n_train_examples
+            weighting_method, len(tasks), task_n_train_examples, task_n_train_batches
         )
 
         normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
@@ -1033,9 +1038,7 @@ class SamplingMultiTaskTrainer:
             if ".best_macro" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
 
-    def _save_checkpoint(
-        self, training_state, phase="pretrain", new_best_macro=False, keep_all=False
-    ):
+    def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False):
         """
         Parameters
         ----------
@@ -1077,7 +1080,7 @@ class SamplingMultiTaskTrainer:
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "pretraining_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                    "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
                 ),
             )
 

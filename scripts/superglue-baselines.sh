@@ -34,8 +34,8 @@ function wsc() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = wsc, pretrain_tasks = \"winograd-coreference\", target_tasks = \"winograd-coreference\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 139, optimizer = adam"
 }
 
-if [ $1 == "cb" ]; then
-    cb
+if [ $1 == "commit" ]; then
+    commit
 elif [ $1 == "copa" ]; then
     copa
 elif [ $1 == "multirc" ]; then
