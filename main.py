@@ -131,14 +131,15 @@ def setup_target_task_training(args, target_tasks, model, strict):
                         "No best checkpoint found to evaluate.",
                     )
 
-                if args.transfer_paradigm == "finetune":
-                    # Save model so we have a checkpoint to go back to after each
-                    # task-specific finetune.
-                    model_state = model.state_dict()
-                    model_path = os.path.join(
-                        args.run_dir, "model_state_untrained_pre_target_train.th"
-                    )
-                    torch.save(model_state, model_path)
+            if args.transfer_paradigm == "finetune" and args.do_pretrain == 0:
+                # We want to do target training without pretrianing, thus 
+                # we need to first create a checkpoint to come back to for each of 
+                # the target tasks to finetune. 
+                model_state = model.state_dict()
+                model_path = os.path.join(
+                    args.run_dir, "model_state_untrained_pre_target_train.th"
+                )
+                torch.save(model_state, model_path)
 
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -260,29 +261,7 @@ def get_best_checkpoint_path(run_dir, phase):
     if len(macro_best) > 0:
         assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
         return macro_best[0]
-    return ""
-
-
-def do_finetune_evaluation(args, target_tasks, model, splits_to_write):
-    for task in target_tasks:
-        task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-        if task.name != task_to_use:
-            task_model_to_load = task_to_use
-        else:
-            task_model_to_load = task.name
-
-        # Special checkpointing logic here since we train the sentence encoder
-        # and have a best set of sent encoder model weights per task.
-        finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task_model_to_load)
-        if os.path.exists(finetune_path):
-            ckpt_path = finetune_path
-        else:
-            ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train")
-
-        assert "best" in ckpt_path
-        load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-
-        evaluate_and_write(args, model, [task], splits_to_write)
+    return None
 
 
 def evaluate_and_write(args, model, tasks, splits_to_write):
@@ -505,17 +484,14 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
-                if len(pre_target_train) > 0:
-                    assert_for_log(
-                        len(pre_target_train) == 1, "Too many best checkpoints. Something is wrong."
-                    )
-                    return pre_target_train[0]
+    
                 load_model_state(
                     model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
                 )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
                 layer_path = get_best_checkpoint_path(args.run_dir, "target_train")
+                assert layer_path, "No best checkpoint found."
                 load_model_state(
                     model,
                     layer_path,
@@ -529,7 +505,25 @@ def main(cl_arguments):
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
-            do_finetune_evaluation(args, target_tasks, model, splits_to_write)
+            for task in target_tasks:
+                task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
+                if task.name != task_to_use:
+                    task_model_to_load = task_to_use
+                else:
+                    task_model_to_load = task.name
+
+                # Special checkpointing logic here since we train the sentence encoder
+                # and have a best set of sent encoder model weights per task.
+                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task_model_to_load)
+                if os.path.exists(finetune_path):
+                    ckpt_path = finetune_path
+                else:
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train")
+
+                assert "best" in ckpt_path
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+
+                evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here

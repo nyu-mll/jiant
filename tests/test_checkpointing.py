@@ -5,16 +5,12 @@ import tempfile
 import unittest
 import src.trainer as trainer
 import torch
-from src import evaluate
 import os.path
-from main import evaluate_and_write
 import pandas as pd
-from src.models import MultiTaskModel
-import src.tasks.tasks as tasks
 from unittest import mock
+
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
-from ..allennlp_mods.numeric_field import NumericField
 from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
 from allennlp.common.params import Params
 from allennlp.data.iterators import BasicIterator, BucketIterator
@@ -22,6 +18,12 @@ from allennlp.training.learning_rate_schedulers import (  # pylint: disable=impo
     LearningRateScheduler,
 )
 from allennlp.training.optimizers import Optimizer
+
+from ..allennlp_mods.numeric_field import NumericField
+from src import evaluate
+from src.models import MultiTaskModel
+import src.tasks.tasks as tasks
+from main import evaluate_and_write
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
