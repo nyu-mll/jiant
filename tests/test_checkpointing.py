@@ -1,13 +1,12 @@
 import csv
 import os
+import os.path
 import shutil
 import tempfile
 import unittest
-import src.trainer as trainer
-import torch
-import os.path
-import pandas as pd
 from unittest import mock
+import torch
+import pandas as pd
 
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
@@ -18,9 +17,10 @@ from allennlp.training.learning_rate_schedulers import (  # pylint: disable=impo
     LearningRateScheduler,
 )
 from allennlp.training.optimizers import Optimizer
-
 from ..allennlp_mods.numeric_field import NumericField
+
 from src import evaluate
+import src.trainer as trainer
 from src.models import MultiTaskModel
 import src.tasks.tasks as tasks
 from main import evaluate_and_write
