@@ -125,21 +125,20 @@ def setup_target_task_training(args, target_tasks, model, strict):
                     load_model_state(
                         model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
                     )
-                else:
-                    assert_for_log(
-                        args.allow_untrained_encoder_parameters,
-                        "No best checkpoint found to evaluate.",
-                    )
-
-            if args.transfer_paradigm == "finetune" and args.do_pretrain == 0:
-                # We want to do target training without pretrianing, thus 
-                # we need to first create a checkpoint to come back to for each of 
-                # the target tasks to finetune. 
-                model_state = model.state_dict()
-                model_path = os.path.join(
-                    args.run_dir, "model_state_untrained_pre_target_train.th"
+            else:
+                assert_for_log(
+                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
                 )
-                torch.save(model_state, model_path)
+
+                if args.transfer_paradigm == "finetune":
+                    # We want to do target training without pretrianing, thus
+                    # we need to first create a checkpoint to come back to for each of
+                    # the target tasks to finetune.
+                    model_state = model.state_dict()
+                    model_path = os.path.join(
+                        args.run_dir, "model_state_untrained_pre_target_train.th"
+                    )
+                    torch.save(model_state, model_path)
 
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -248,19 +247,19 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 
-# TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
-# from here to trainer.py.
-
-
 def get_best_checkpoint_path(run_dir, phase):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from the phase so far
-        2) nothing found (empty string) """
-    macro_best = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
-    if len(macro_best) > 0:
-        assert_for_log(len(macro_best) == 1, "Too many best checkpoints. Something is wrong.")
-        return macro_best[0]
+        2) if we do only target training without pretraining, then load checkpoint before 
+        target training
+        3) nothing found (empty string) """
+    checkpoint = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
+    if len(checkpoint) == 0 and phase == "target_train":
+        checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+    if len(checkpoint) > 0:
+        assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
+        return checkpoint[0]
     return None
 
 
@@ -484,7 +483,7 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
-    
+
                 load_model_state(
                     model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
                 )
@@ -514,7 +513,9 @@ def main(cl_arguments):
 
                 # Special checkpointing logic here since we train the sentence encoder
                 # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(args.run_dir, "model_state_%s_best.th" % task_model_to_load)
+                finetune_path = os.path.join(
+                    args.run_dir, "model_state_%s_best.th" % task_model_to_load
+                )
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
