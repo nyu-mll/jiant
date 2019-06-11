@@ -168,7 +168,6 @@ class TestWritePreds(unittest.TestCase):
         stsb_predictions = pd.read_csv(self.temp_dir + "/STS-B.tsv", sep="\t")
         assert "index" in stsb_predictions.columns and "prediction" in stsb_predictions.columns
         assert stsb_predictions.iloc[0]["prediction"] == 5.00
-        import pdb; pdb.set_trace()
         assert stsb_predictions.iloc[1]["prediction"] == 1.7
         
     def test_write_preds_superglue(self):
@@ -185,18 +184,16 @@ class TestWritePreds(unittest.TestCase):
         assert wic_predictions.iloc[1]["label"] == "true"
 
     @mock.patch("src.models.MultiTaskModel.forward", side_effect=model_forward)
-    def test_evaluate_and_write(self, model_forward_function):
-        args = {
-            "write_strict_glue_format": True,
-            "cuda": -1,
-            "run_dir": self.temp_dir,
-            "exp_dir": "",
-            "run_name": "test",
-            "batch_size": 4,
-        }
+    def test_evaluate_and_write_does_run(self, model_forward_function):
+        """
+        Testing that evaluate_and_write runs without breaking.
+        """
         with mock.patch("src.models.MultiTaskModel") as MockModel:
             MockModel.return_value.eval.return_value = None
             MockModel.return_value.forward = model_forward
             MockModel.use_bert = 1
             model = MockModel()
             evaluate_and_write(self.args, model, [self.wic], splits_to_write="val")
+
+    def tear_down(self):
+        shutil.rmtree(self.temp_dir)
