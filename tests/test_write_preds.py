@@ -43,6 +43,7 @@ class TestWritePreds(unittest.TestCase):
         of that task. 
         """
         self.temp_dir = tempfile.mkdtemp()
+        self.temp_dir = '~/repo'+ self.temp_dir
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
@@ -175,8 +176,9 @@ class TestWritePreds(unittest.TestCase):
         Ensure that SuperGLUE write predictions for test is saved to the correct file 
         format.
         """
+        import pdb; pdb.set_trace()
         evaluate.write_preds(
-            [self.wic], self.val_preds, self.temp_dir, "test", strict_glue_format=True
+            self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
         wic_predictions = pd.read_json(self.temp_dir + "/WIC.jsonl", lines=True)
         assert "idx" in wic_predictions.columns and "label" in wic_predictions.columns
