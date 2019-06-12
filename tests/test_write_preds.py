@@ -44,6 +44,7 @@ class TestWritePreds(unittest.TestCase):
         """
         self.temp_dir = tempfile.mkdtemp()
         self.temp_dir = '~/repo'+ self.temp_dir
+        os.mkdir("~/repo")
         os.mkdir("~/repo/tmp")
         os.mkdir(self.temp_dir)
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
