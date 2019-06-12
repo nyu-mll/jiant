@@ -1,5 +1,7 @@
 """Train a multi-task model using AllenNLP
+
 To debug this, run with -m ipdb:
+
     python -m ipdb main.py --config_file ...
 """
 # pylint: disable=no-member
@@ -78,11 +80,13 @@ def setup_target_task_training(args, target_tasks, model, strict):
     Saves model states from pretraining if applicable, and
     loads the correct model state for the target task training
     stage.
+
     Parameters
     ----------------
     args: Params object
     target_tasks: list of target Task objects
     mdoel: a MultiTaskModel object
+
     Returns
     ----------------
     task_names_to_avoid_loading: list of strings, if we don't allow for
@@ -154,6 +158,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
     args: Params object
     pretrain_tasks: list of pretraining Task objects
     target_tasks: list of target task training Task objects
+
     Returns
     ----------------
     None
@@ -285,10 +290,12 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
 def initial_setup(args, cl_args):
     """
     Sets up email hook, creating seed, and cuda settings.
+
     Parameters
     ----------------
     args: Params object
     cl_args: list of arguments
+    
     Returns
     ----------------
     tasks: list of Task objects
