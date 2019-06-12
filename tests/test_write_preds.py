@@ -176,7 +176,6 @@ class TestWritePreds(unittest.TestCase):
         Ensure that SuperGLUE write predictions for test is saved to the correct file 
         format.
         """
-        import pdb; pdb.set_trace()
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
