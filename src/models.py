@@ -476,7 +476,11 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     # Attach task-specific params.
     for task in set(tasks):
         task_params = get_task_specific_params(args, task.name)
-        log.info("\tTask '%s' params: %s", task.name, json.dumps(task_params.as_dict(), indent=2))
+        log.info(
+            "\tTask '%s' params: %s",
+            task.name,
+            json.dumps(task_params.as_dict(quiet=True), indent=2),
+        )
         # Store task-specific params in case we want to access later
         setattr(model, "%s_task_params" % task.name, task_params)
 
