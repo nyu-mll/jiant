@@ -461,10 +461,6 @@ def main(cl_arguments):
 
     # For checkpointing logic
     if not args.do_target_task_training:
-        log.info(
-            "In strict mode because do_target_task_training is off. "
-            "Will crash if any tasks are missing from the checkpoint."
-        )
         strict = True
     else:
         strict = False
