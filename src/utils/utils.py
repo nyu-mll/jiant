@@ -134,7 +134,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
             del model_state[key]
 
     model.load_state_dict(model_state, strict=False)
-    logging.info("fdel state from %s", state_path)
+    logging.info("Loaded model state from %s", state_path)
 
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):
