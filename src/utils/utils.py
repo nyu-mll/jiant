@@ -9,6 +9,7 @@ import os
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
+import jsondiff
 
 import numpy as np
 import torch
@@ -42,6 +43,48 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         # characters, which is not what we want.
         return [item]
     return item
+
+
+def sort_param_recursive(data):
+    """
+    Sorts the keys of a config.Params object recursively.
+    """
+    import pyhocon
+
+    if isinstance(data, dict) and not isinstance(data, pyhocon.ConfigTree):
+        for name, _ in list(data.items()):
+            data[name] = sort_param_recursive(data[name])
+    else:
+        if isinstance(data, pyhocon.ConfigTree):
+            data = dict(sorted(data.items(), key=lambda x: x[0]))
+    return data
+
+
+def parse_json_diff(diff):
+    """
+    Parses the output of jsondiff's diff function(), which introduces
+    symbols such as replace as key. 
+    jsondiff only introduces jsondiff.replace, jsondiff.insert, and jsondiff.delete 
+    into json dictionaries. For jsondiff.replace and jsondiff.insert, we simply 
+    want to return the actual value, whereas for jsondiff.delete, we do not want to 
+    show deletions in our parameters. 
+    For example, for jsondiff.replace, the output of jsondiff may be the below:
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete 
+    the replace. The output of this function will be:
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    See for more information on jsondiff. 
+    """
+    new_diff = {}
+    if isinstance(diff, dict):
+        for name, value in list(diff.items()):
+
+            if name == jsondiff.replace or name == jsondiff.insert:
+                # get rid of the replace
+                return value
+
+            diff[name] = parse_diff(diff[name])
+    return diff
 
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
@@ -91,7 +134,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
             del model_state[key]
 
     model.load_state_dict(model_state, strict=False)
-    logging.info("Loaded model state from %s", state_path)
+    logging.info("fdel state from %s", state_path)
 
 
 def get_elmo_mixing_weights(text_field_embedder, task=None):

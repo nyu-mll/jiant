@@ -21,6 +21,7 @@ import sys
 import time
 import copy
 import torch
+import jsondiff
 
 from src import evaluate
 from src.models import build_model
@@ -29,8 +30,15 @@ from src import tasks as tasks_module
 from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
-from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
-
+from src.utils.utils import (
+    assert_for_log,
+    check_arg_name,
+    load_model_state,
+    maybe_make_dir,
+    parse_json_diff,
+    sort_param_recursive
+)
+import jsondiff
 
 # Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
@@ -292,47 +300,73 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
-def delete_irrelevant_args(args):
+
+def select_relevant_print_args(args):
+    """
+    Selects relevant arguments to print out. 
+    We select relevant arguments as the difference between defaults.conf and the experiment's 
+    configuration. 
+
+    Params
+    -----------
+    args: Params object
+
+    Returns
+    -----------
+    return_args: Params object with only relevant arguments
+    """
+    import pyhocon
+
+    exp_config_file = os.path.join(args.run_dir, "params.conf")
+    defaults_file = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)) + "/config/defaults.conf"
+    )
+    exp_basedir = os.path.dirname(exp_config_file)
+    default_basedir = os.path.dirname(defaults_file)
+    fd = open(exp_config_file, "r")
+    exp_config_string = fd.read()
+    exp_config_string += "\n"
+    fd = open(defaults_file, "r")
+    default_config_string = fd.read()
+    default_config_string += "\n"
+    exp_config = dict(
+        pyhocon.ConfigFactory.parse_string(exp_config_string, basedir=exp_basedir).items()
+    )
+    default_config = dict(
+        pyhocon.ConfigFactory.parse_string(default_config_string, basedir=default_basedir).items()
+    )
+    sorted_exp_config = sort_param_recursive(exp_config)
+    sorted_defaults_config = sort_param_recursive(default_config)
+    diff = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
+    return config.Params.clone(diff)
+
+
+def select_task_specific_args(exp_args, diff_args):
     """
     We create a new return rather than modifying in place because paramters that 
     are not useful for the end-user to be seen is still used in teh codebase for 
     logic correctness.
     """
-    exp_tasks = args.pretrain_tasks.split(",") + args.target_tasks.split(",") 
-    total_tasks = tasks_module.ALL_GLUE_TASKS + tasks_module.ALL_SUPERGLUE_TASKS
-    # get the task modules, doens' tnecessarily need to be the GLUE or SuperGLUE tasks.
-    # total tasks. 
-    tokenizer = args.tokenizer 
-    return_args = copy.deepcopy(args)
-    exp_tokenizer = None
-    tokens_to_delete = ["openai", "bert", "elmo", "cove"]
-    if tokenizer.startswith("OpenAI"):
-        exp_tokenizer = "openai"
-        tokens_to_delete.remove("openai")
-    elif tokenizer.startswith("bert"):
-        exp_tokenizer = "bert"
-    else: # == MoseTokenizer
-        import pdb; pdb.set_trace()
-        if args.cove == 1:
-            tokens_to_delete.remove("cove")
-        elif args.elmo == 1:
-            tokens_to_delete.remove("elmo")
-
-    # which ones are important. 
-    for key, value in list(args.as_dict().items()):
+    exp_tasks = []
+    if diff_args.get("pretrain_tasks"):
+        exp_tasks = diff_args.pretrain_tasks.split(",")
+    if diff_args.get("target_tasks"):
+        exp_tasks += diff_args.target_tasks.split(",")
+    if len(exp_tasks) == 0:
+        return diff_args
+    for key, value in list(exp_args.as_dict().items()):
         stripped_key = key.replace("_", " ")
         stripped_key = stripped_key.replace("-", " ")
-        param_to_delete = False
-        for task in total_tasks:
-            if task in stripped_key:
-                if task not in exp_tasks:
-                    param_to_delete = True
-        for token in tokens_to_delete:
-            if token in stripped_key:
-                param_to_delete = True
-        if param_to_delete or "edges" in key:
-            del return_args[key]
-    return return_args
+        param_task = None
+        for task in exp_tasks:
+            if task in stripped_key and (("edges" in stripped_key) == ("edges" in task)):
+                # make sure the task boht has edges or not
+                param_task = task
+        if param_task and param_task in exp_tasks:
+            # then include the task-speciifc parameter
+            diff_args[key] = value
+    return diff_args
+
 
 def initial_setup(args, cl_args):
     """
@@ -378,11 +412,13 @@ def initial_setup(args, cl_args):
         EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _log_git_info()
-    print_args = delete_irrelevant_args(args)
-    log.info("Parsed args: \n%s", print_args)
-
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
+
+    print_args = select_relevant_print_args(args)
+    print_args = select_task_specific_args(args, print_args)
+    log.info("Parsed args: \n%s", print_args)
+
     log.info("Saved config to %s", config_file)
 
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
