@@ -252,10 +252,6 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 
-# TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
-# from here to trainer.py.
-
-
 def get_best_checkpoint_path(run_dir):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
@@ -336,16 +332,17 @@ def select_relevant_print_args(args):
         pyhocon.ConfigFactory.parse_string(default_config_string, basedir=default_basedir).items()
     )
     sorted_exp_config = sort_param_recursive(exp_config)
-    sorted_defaults_config = sort_param_recursive(default_config)
-    diff = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
-    return config.Params.clone(diff)
+    sorted_defaults_config = sort_paramgit_recursive(default_config)
+    diff_args = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
+    diff_args = config.Params.clone(diff)
+    result_args = select_task_specific_args(args, diff_args)
+    return return_ags
 
 
 def select_task_specific_args(exp_args, diff_args):
     """
-    We create a new return rather than modifying in place because paramters that 
-    are not useful for the end-user to be seen is still used in teh codebase for 
-    logic correctness.
+    A helper function that adds in task-specific parameters from the experiment 
+    configurations for tasks in pretrain_tasks and target_tasks.
     """
     exp_tasks = []
     if diff_args.get("pretrain_tasks"):
@@ -358,12 +355,14 @@ def select_task_specific_args(exp_args, diff_args):
         stripped_key = key.replace("_", " ")
         stripped_key = stripped_key.replace("-", " ")
         param_task = None
+        # For each parameter, identify the task the parameter relates to (if any)
         for task in exp_tasks:
             if task in stripped_key and (("edges" in stripped_key) == ("edges" in task)):
-                # make sure the task boht has edges or not
+                # special logic for edges since there are edge versions of various
+                # tasks.
                 param_task = task
+        # Add parameters that pertain to the experiment tasks 
         if param_task and param_task in exp_tasks:
-            # then include the task-speciifc parameter
             diff_args[key] = value
     return diff_args
 
@@ -416,7 +415,6 @@ def initial_setup(args, cl_args):
     config.write_params(args, config_file)
 
     print_args = select_relevant_print_args(args)
-    print_args = select_task_specific_args(args, print_args)
     log.info("Parsed args: \n%s", print_args)
 
     log.info("Saved config to %s", config_file)
