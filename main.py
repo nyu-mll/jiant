@@ -19,12 +19,13 @@ import random
 import subprocess
 import sys
 import time
-
+import copy
 import torch
 
 from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
+from src import tasks as tasks_module
 from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
@@ -208,13 +209,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
-    log.info("Will run the following steps:\n%s", steps_log.getvalue())
+    log.info("Will run the following steps for this experiment:\n%s", steps_log.getvalue())
     steps_log.close()
 
 
 def _log_git_info():
     try:
-        log.info("Waiting on git info....")
         c = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout=10, stdout=subprocess.PIPE
         )
@@ -292,6 +292,47 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
 
+def delete_irrelevant_args(args):
+    """
+    We create a new return rather than modifying in place because paramters that 
+    are not useful for the end-user to be seen is still used in teh codebase for 
+    logic correctness.
+    """
+    exp_tasks = args.pretrain_tasks.split(",") + args.target_tasks.split(",") 
+    total_tasks = tasks_module.ALL_GLUE_TASKS + tasks_module.ALL_SUPERGLUE_TASKS
+    # get the task modules, doens' tnecessarily need to be the GLUE or SuperGLUE tasks.
+    # total tasks. 
+    tokenizer = args.tokenizer 
+    return_args = copy.deepcopy(args)
+    exp_tokenizer = None
+    tokens_to_delete = ["openai", "bert", "elmo", "cove"]
+    if tokenizer.startswith("OpenAI"):
+        exp_tokenizer = "openai"
+        tokens_to_delete.remove("openai")
+    elif tokenizer.startswith("bert"):
+        exp_tokenizer = "bert"
+    else: # == MoseTokenizer
+        import pdb; pdb.set_trace()
+        if args.cove == 1:
+            tokens_to_delete.remove("cove")
+        elif args.elmo == 1:
+            tokens_to_delete.remove("elmo")
+
+    # which ones are important. 
+    for key, value in list(args.as_dict().items()):
+        stripped_key = key.replace("_", " ")
+        stripped_key = stripped_key.replace("-", " ")
+        param_to_delete = False
+        for task in total_tasks:
+            if task in stripped_key:
+                if task not in exp_tasks:
+                    param_to_delete = True
+        for token in tokens_to_delete:
+            if token in stripped_key:
+                param_to_delete = True
+        if param_to_delete or "edges" in key:
+            del return_args[key]
+    return return_args
 
 def initial_setup(args, cl_args):
     """
@@ -337,8 +378,8 @@ def initial_setup(args, cl_args):
         EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _log_git_info()
-
-    log.info("Parsed args: \n%s", args)
+    print_args = delete_irrelevant_args(args)
+    log.info("Parsed args: \n%s", print_args)
 
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)

@@ -173,10 +173,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
-        log.info("Using BoW architecture for shared encoder!")
         assert_for_log(
             not args.skip_embs, "Skip connection not currently supported with `bow` encoder."
         )
@@ -194,7 +192,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == "transformer":
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(

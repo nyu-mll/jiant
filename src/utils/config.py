@@ -141,4 +141,5 @@ def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = N
 def write_params(params, config_file):
     config = pyhocon.ConfigFactory.from_dict(params.as_dict())
     with open(config_file, "w") as fd:
+        import pdb; pdb.set_trace()
         fd.write(hocon_writer.HOCONConverter.to_hocon(config, indent=2))
