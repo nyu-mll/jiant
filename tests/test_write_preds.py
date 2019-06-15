@@ -162,10 +162,8 @@ class TestWritePreds(unittest.TestCase):
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
-        assert (
-            os.path.exists(self.temp_dir + "/STS-B.tsv")
-            and os.path.exists(self.temp_dir + "/WIC.jsonl")
-        )
+        assert os.path.exists(self.temp_dir + "/STS-B.tsv"), "No STSB"
+        assert os.path.exists(self.temp_dir + "/WIC.jsonl"), "No WIC"
 
     def test_write_preds_glue(self):
         evaluate.write_preds(
