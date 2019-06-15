@@ -23,6 +23,7 @@ jobs:
           name: run tests
           command: |
             mkdir ~/repo/test_output
+            mkdir ~/repo/tmp/
             source activate jiant
             python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
             nose2 -v
