@@ -12,18 +12,8 @@ class TestUpdateMetricsAccuracy(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.task = tasks.QQPTask("", 100, "qqp", tokenizer_name="MosesTokenizer")
-        predictions = torch.Tensor(
-            [
-                [[1, 0], [1, 0]],
-                [[1, 0], [0, 1]]
-            ]
-        )
-        perfect_predictions = torch.Tensor(
-            [
-                [[0, 1], [0, 1]],
-                [[1, 0], [1, 0]]
-            ]
-        )
+        predictions = torch.Tensor([[[1, 0], [1, 0]], [[1, 0], [0, 1]]])
+        perfect_predictions = torch.Tensor([[[0, 1], [0, 1]], [[1, 0], [1, 0]]])
         true_labels = torch.Tensor([[1, 1], [0, 0]])
 
         one_batch_predictions = torch.Tensor([[0], [1]])
@@ -48,4 +38,4 @@ class TestUpdateMetricsAccuracy(unittest.TestCase):
         assert round(self.perfect_metrics["f1"], 1) == 1.0
 
     def tear_down(self):
-          shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.temp_dir)

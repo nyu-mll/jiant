@@ -14,12 +14,7 @@ from unittest import mock
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
 from ..allennlp_mods.numeric_field import NumericField
-from allennlp.data.fields import (
-    LabelField,
-    ListField,
-    MetadataField,
-    TextField,
-)
+from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
 
 
 def model_forward(task, batch, predict=True):
@@ -43,40 +38,42 @@ class TestWritePreds(unittest.TestCase):
         of that task. 
         """
         self.temp_dir = tempfile.mkdtemp()
-        self.temp_dir = '~/repo'+ self.temp_dir
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
         stsb_val_preds = pd.DataFrame(
-            data=[{
-                "idx": 0,
-                "labels": 5.00,
-                "preds": 5.00,
-                "sent1_str": "A man with a hard hat is dancing.",
-                "sent2_str": "A man wearing a hard hat is dancing",
-            }, 
-            {
-                "idx": 0,
-                "labels": 4.750,
-                "preds": 0.34,
-                "sent1_str": "A young child is riding a horse.",
-                "sent2_str": "A child is riding a horse.",
-            }]
+            data=[
+                {
+                    "idx": 0,
+                    "labels": 5.00,
+                    "preds": 5.00,
+                    "sent1_str": "A man with a hard hat is dancing.",
+                    "sent2_str": "A man wearing a hard hat is dancing",
+                },
+                {
+                    "idx": 0,
+                    "labels": 4.750,
+                    "preds": 0.34,
+                    "sent1_str": "A young child is riding a horse.",
+                    "sent2_str": "A child is riding a horse.",
+                },
+            ]
         )
         wic_val_preds = pd.DataFrame(
-            data=[{
-                "idx": 0,
-                "sent1": "Room and board. ",
-                "sent2": "He nailed boards across the windows.",
-                "labels": 0,
-            }, 
-            {
-                "idx": 0,
-                "sent1": "Hook a fish",
-                "sent2": "He hooked a snake accidentally , and was so scared he dropped his rod into the water .",
-                "labels": 1,
-            }]
-
+            data=[
+                {
+                    "idx": 0,
+                    "sent1": "Room and board. ",
+                    "sent2": "He nailed boards across the windows.",
+                    "labels": 0,
+                },
+                {
+                    "idx": 0,
+                    "sent1": "Hook a fish",
+                    "sent2": "He hooked a snake accidentally , and was so scared he dropped his rod into the water .",
+                    "labels": 1,
+                },
+            ]
         )
         indexers = {"bert_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
         self.wic.val_data = [
@@ -157,9 +154,8 @@ class TestWritePreds(unittest.TestCase):
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
-        assert (
-            os.path.exists(self.temp_dir + "/STS-B.tsv")
-            and os.path.exists(self.temp_dir + "/WIC.jsonl")
+        assert os.path.exists(self.temp_dir + "/STS-B.tsv") and os.path.exists(
+            self.temp_dir + "/WiC.jsonl"
         )
 
     def test_write_preds_glue(self):
@@ -170,16 +166,16 @@ class TestWritePreds(unittest.TestCase):
         assert "index" in stsb_predictions.columns and "prediction" in stsb_predictions.columns
         assert stsb_predictions.iloc[0]["prediction"] == 5.00
         assert stsb_predictions.iloc[1]["prediction"] == 1.7
-        
+
     def test_write_preds_superglue(self):
         """
         Ensure that SuperGLUE write predictions for test is saved to the correct file 
         format.
         """
         evaluate.write_preds(
-            self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
+            [self.wic], self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
-        wic_predictions = pd.read_json(self.temp_dir + "/WIC.jsonl", lines=True)
+        wic_predictions = pd.read_json(self.temp_dir + "/WiC.jsonl", lines=True)
         assert "idx" in wic_predictions.columns and "label" in wic_predictions.columns
         assert wic_predictions.iloc[0]["label"] == "false"
         assert wic_predictions.iloc[1]["label"] == "true"
