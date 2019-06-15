@@ -45,7 +45,7 @@ class TestWritePreds(unittest.TestCase):
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.temp_dir = self.current_path + "/tmp"
         if os.path.exists(self.temp_dir) is False:
-            os.mkdir(self.temp_dir)
+            os.mkdir(self.temp_dir, exist_ok=True)
 
         # the current one 
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
