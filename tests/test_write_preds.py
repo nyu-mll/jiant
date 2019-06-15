@@ -162,8 +162,10 @@ class TestWritePreds(unittest.TestCase):
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
-        assert os.path.exists(self.temp_dir + "/STS-B.tsv"), "No STSB"
-        assert os.path.exists(self.temp_dir + "/WIC.jsonl"), "No WIC"
+        assert (
+            os.path.exists(self.temp_dir + "/STS-B.tsv")
+            and os.path.exists(self.temp_dir + "/WiC.jsonl")
+        )
 
     def test_write_preds_glue(self):
         evaluate.write_preds(
@@ -182,7 +184,7 @@ class TestWritePreds(unittest.TestCase):
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
-        wic_predictions = pd.read_json(self.temp_dir + "/WIC.jsonl", lines=True)
+        wic_predictions = pd.read_json(self.temp_dir + "/WiC.jsonl", lines=True)
         assert "idx" in wic_predictions.columns and "label" in wic_predictions.columns
         assert wic_predictions.iloc[0]["label"] == "false"
         assert wic_predictions.iloc[1]["label"] == "true"
