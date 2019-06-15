@@ -43,8 +43,10 @@ class TestWritePreds(unittest.TestCase):
         of that task. 
         """
         self.current_path = os.path.dirname(os.path.realpath(__file__))
-        os.mkdir(self.current_path + "/tmp/")
         self.temp_dir = self.current_path + "/tmp"
+        if os.path.exists(self.temp_dir) is False:
+            os.mkdir(self.temp_dir)
+
         # the current one 
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
@@ -179,7 +181,6 @@ class TestWritePreds(unittest.TestCase):
         Ensure that SuperGLUE write predictions for test is saved to the correct file 
         format.
         """
-        print()
         evaluate.write_preds(
             self.glue_tasks, self.val_preds, self.temp_dir, "test", strict_glue_format=True
         )
