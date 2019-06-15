@@ -42,9 +42,7 @@ class TestWritePreds(unittest.TestCase):
         is not the most important as long as it adheres to the API necessary for examples
         of that task. 
         """
-        self.current_path = os.path.dirname(os.path.realpath(__file__))
-        os.mkdir(self.current_path + "/tmp")
-        self.temp_dir = self.current_path + "/tmp"
+        self.temp_dir = '/root/repo/tests/tmp'
         # the current one 
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
