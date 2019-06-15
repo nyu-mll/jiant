@@ -85,7 +85,19 @@ class TestWritePreds(unittest.TestCase):
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["Whats", "up", "right", "now"], indexers
+                        [
+                            "[CLS]",
+                            "Room",
+                            "and",
+                            "Board",
+                            "yo",
+                            ".",
+                            "[SEP]",
+                            "He",
+                            "nailed",
+                            "boards",
+                        ],
+                        indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),
                 }
@@ -93,14 +105,29 @@ class TestWritePreds(unittest.TestCase):
             Instance(
                 {
                     "sent1_str": MetadataField("C ##ir ##culate a rumor ."),
-                    "sent2_str": MetadataField(
-                        "This letter is being circulated among the faculty ."
-                    ),
+                    "sent2_str": MetadataField("This letter is being circulated"),
                     "idx": LabelField(1, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["Whats", "up", "right", "now"], indexers
+                        [
+                            "[CLS]",
+                            "C",
+                            "##ir",
+                            "##culate",
+                            "a",
+                            "rumor",
+                            "[SEP]",
+                            "This",
+                            "##let",
+                            "##ter",
+                            "is",
+                            "being",
+                            "c",
+                            "##ir",
+                            "##culated",
+                        ],
+                        indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),
                 }
@@ -108,31 +135,56 @@ class TestWritePreds(unittest.TestCase):
             Instance(
                 {
                     "sent1_str": MetadataField("Hook a fish'"),
-                    "sent2_str": MetadataField(
-                        "He hooked a snake accidentally , and was so scared he dropped his rod into the water ."
-                    ),
+                    "sent2_str": MetadataField("He hooked a snake accidentally"),
                     "idx": LabelField(1, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["Whats", "up", "right", "now"], indexers
+                        [
+                            "[CLS]",
+                            "Hook",
+                            "a",
+                            "fish",
+                            "[SEP]",
+                            "He",
+                            "hookoed",
+                            "a",
+                            "snake",
+                            "accidentally",
+                        ],
+                        indexers,
                     ),
                     "labels": LabelField(1, skip_indexing=1),
                 }
             ),
             Instance(
                 {
-                    "sent1_str": MetadataField(
-                        "For recreation he wrote poetry and solved cross ##word puzzles ."
-                    ),
-                    "sent2_str": MetadataField(
-                        "Drug abuse is often regarded as a form of recreation ."
-                    ),
+                    "sent1_str": MetadataField("For recreation he wrote poetry."),
+                    "sent2_str": MetadataField("Drug abuse is often regarded as recreation ."),
                     "idx": LabelField(1, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["Whats", "up", "right", "now"], indexers
+                        [
+                            "[CLS]",
+                            "For",
+                            "##re",
+                            "##creation",
+                            "he",
+                            "wrote",
+                            "poetry",
+                            "[SEP]",
+                            "Drug",
+                            "abuse",
+                            "is",
+                            "often",
+                            "##re",
+                            "##garded",
+                            "as",
+                            "##re",
+                            "##creation",
+                        ],
+                        indexers,
                     ),
                     "labels": LabelField(1, skip_indexing=1),
                 }
