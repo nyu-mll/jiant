@@ -42,7 +42,9 @@ class TestWritePreds(unittest.TestCase):
         is not the most important as long as it adheres to the API necessary for examples
         of that task. 
         """
-        self.temp_dir = '/root/repo/tests/tmp'
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        os.mkdir(self.current_path + "/tmp/")
+        self.temp_dir = self.current_path + "/tmp"
         # the current one 
         self.stsb = tasks.STSBTask(self.temp_dir, 100, "sts-b", tokenizer_name="MosesTokenizer")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
@@ -151,6 +153,8 @@ class TestWritePreds(unittest.TestCase):
         self.args.cuda = -1
         self.args.run_dir = self.temp_dir
         self.args.exp_dir = ""
+    def test_if_path_exists(self):
+        assert os.path.exists(self.temp_dir)
 
     def test_write_preds_does_run(self):
         evaluate.write_preds(
@@ -197,5 +201,4 @@ class TestWritePreds(unittest.TestCase):
             evaluate_and_write(self.args, model, [self.wic], splits_to_write="val")
 
     def tear_down(self):
-        shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.temp_dir)
