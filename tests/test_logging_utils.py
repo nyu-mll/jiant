@@ -59,7 +59,7 @@ class TestSortRecursively(unittest.TestCase):
             ),
             "rte": {"configs": pyhocon.ConfigTree([("b", 1), ("a", 3)])},
         }
-        sorted_diff = utils.sort_configtrees_in_param_recursive(input_diff)
+        sorted_diff = utils.sort_param_recursive(input_diff)
         assert list(sorted_diff["mrpc"].items()) == [
             ("classifier_dropout", 0.1),
             ("classifier_hid_dim", 256),
