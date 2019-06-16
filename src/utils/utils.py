@@ -45,15 +45,15 @@ def wrap_singleton_string(item: Union[Sequence, str]):
     return item
 
 
-def sort_param_recursive(data):
+def sort_configtrees_in_param_recursive(data):
     """
-    Sorts the keys of a config.Params object recursively.
+    Sorts the keys of a config.Params object in a param object recursively.
     """
     import pyhocon
 
     if isinstance(data, dict) and not isinstance(data, pyhocon.ConfigTree):
         for name, _ in list(data.items()):
-            data[name] = sort_param_recursive(data[name])
+            data[name] = sort_configtrees_in_param_recursive(data[name])
     else:
         if isinstance(data, pyhocon.ConfigTree):
             data = dict(sorted(data.items(), key=lambda x: x[0]))
@@ -62,11 +62,11 @@ def sort_param_recursive(data):
 
 def parse_json_diff(diff):
     """
-    Parses the output of jsondiff's diff function(), which introduces
-    symbols such as replace as key. 
-    jsondiff only introduces jsondiff.replace, jsondiff.insert, and jsondiff.delete 
-    into json dictionaries. For jsondiff.replace and jsondiff.insert, we simply 
-    want to return the actual value, whereas for jsondiff.delete, we do not want to 
+    Parses the output of jsondiff's diff() function, which introduces
+    symbols such as replace.
+    The potential keys introduced are jsondiff.replace, jsondiff.insert, and jsondiff.delete.
+    For jsondiff.replace and jsondiff.insert, we simply want to return the 
+    actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to 
     show deletions in our parameters. 
     For example, for jsondiff.replace, the output of jsondiff may be the below:
     {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
@@ -80,10 +80,16 @@ def parse_json_diff(diff):
         for name, value in list(diff.items()):
 
             if name == jsondiff.replace or name == jsondiff.insert:
-                # get rid of the replace
+                # get rid of the added jsondiff key
                 return value
 
-            diff[name] = parse_diff(diff[name])
+            if name == jsondiff.delete:
+                del diff[name]
+                return None
+
+            output = parse_json_diff(diff[name])
+            if output:
+                diff[name] = output
     return diff
 
 

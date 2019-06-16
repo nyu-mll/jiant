@@ -36,7 +36,7 @@ from src.utils.utils import (
     load_model_state,
     maybe_make_dir,
     parse_json_diff,
-    sort_param_recursive
+    sort_param_recursive,
 )
 import jsondiff
 
@@ -332,7 +332,7 @@ def select_relevant_print_args(args):
         pyhocon.ConfigFactory.parse_string(default_config_string, basedir=default_basedir).items()
     )
     sorted_exp_config = sort_param_recursive(exp_config)
-    sorted_defaults_config = sort_paramgit_recursive(default_config)
+    sorted_defaults_config = sort_param_recursive(default_config)
     diff_args = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
     diff_args = config.Params.clone(diff)
     result_args = select_task_specific_args(args, diff_args)
@@ -361,7 +361,7 @@ def select_task_specific_args(exp_args, diff_args):
                 # special logic for edges since there are edge versions of various
                 # tasks.
                 param_task = task
-        # Add parameters that pertain to the experiment tasks 
+        # Add parameters that pertain to the experiment tasks
         if param_task and param_task in exp_tasks:
             diff_args[key] = value
     return diff_args
