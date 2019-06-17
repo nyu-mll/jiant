@@ -37,7 +37,7 @@ from src.utils.utils import (
     maybe_make_dir,
     parse_json_diff,
     sort_param_recursive,
-    select_relevant_print_args
+    select_relevant_print_args,
 )
 import jsondiff
 
