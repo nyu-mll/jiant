@@ -19,17 +19,27 @@ import random
 import subprocess
 import sys
 import time
-
+import copy
 import torch
+import jsondiff
 
 from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
+from src import tasks as tasks_module
 from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
-from src.utils.utils import assert_for_log, check_arg_name, load_model_state, maybe_make_dir
-
+from src.utils.utils import (
+    assert_for_log,
+    check_arg_name,
+    load_model_state,
+    maybe_make_dir,
+    parse_json_diff,
+    sort_param_recursive,
+    select_relevant_print_args,
+)
+import jsondiff
 
 # Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
@@ -208,13 +218,12 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
-    log.info("Will run the following steps:\n%s", steps_log.getvalue())
+    log.info("Will run the following steps for this experiment:\n%s", steps_log.getvalue())
     steps_log.close()
 
 
 def _log_git_info():
     try:
-        log.info("Waiting on git info....")
         c = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout=10, stdout=subprocess.PIPE
         )
@@ -242,10 +251,6 @@ def _run_background_tensorboard(logdir, port):
         tb_process.terminate()
 
     atexit.register(_kill_tb_child)
-
-
-# TODO(Yada): Move logic for checkpointing finetuned vs frozen pretrained tasks
-# from here to trainer.py.
 
 
 def get_best_checkpoint_path(run_dir):
@@ -337,11 +342,12 @@ def initial_setup(args, cl_args):
         EMAIL_NOTIFIER(body="Starting run.", prefix="")
 
     _log_git_info()
-
-    log.info("Parsed args: \n%s", args)
-
     config_file = os.path.join(args.run_dir, "params.conf")
     config.write_params(args, config_file)
+
+    print_args = select_relevant_print_args(args)
+    log.info("Parsed args: \n%s", print_args)
+
     log.info("Saved config to %s", config_file)
 
     seed = random.randint(1, 10000) if args.random_seed < 0 else args.random_seed
@@ -420,10 +426,6 @@ def main(cl_arguments):
 
     # For checkpointing logic
     if not args.do_target_task_training:
-        log.info(
-            "In strict mode because do_target_task_training is off. "
-            "Will crash if any tasks are missing from the checkpoint."
-        )
         strict = True
     else:
         strict = False
