@@ -10,8 +10,10 @@ import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
 
+
 import numpy as np
 import torch
+import jsondiff
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
@@ -19,6 +21,8 @@ from allennlp.nn.util import device_mapping, masked_softmax
 from nltk.tokenize.moses import MosesDetokenizer
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
+
+from .config import Params
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -42,6 +46,124 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         # characters, which is not what we want.
         return [item]
     return item
+
+
+def sort_param_recursive(data):
+    """
+    Sorts the keys of a config.Params object in a param object recursively.
+    """
+    import pyhocon
+
+    if isinstance(data, dict) and not isinstance(data, pyhocon.ConfigTree):
+        for name, _ in list(data.items()):
+            data[name] = sort_param_recursive(data[name])
+    else:
+        if isinstance(data, pyhocon.ConfigTree):
+            data = dict(sorted(data.items(), key=lambda x: x[0]))
+    return data
+
+
+def parse_json_diff(diff):
+    """
+    Parses the output of jsondiff's diff() function, which introduces
+    symbols such as replace.
+    The potential keys introduced are jsondiff.replace, jsondiff.insert, and jsondiff.delete.
+    For jsondiff.replace and jsondiff.insert, we simply want to return the 
+    actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to 
+    show deletions in our parameters. 
+    For example, for jsondiff.replace, the output of jsondiff may be the below:
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete 
+    the replace. The output of this function will be:
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    See for more information on jsondiff. 
+    """
+    new_diff = {}
+    if isinstance(diff, dict):
+        for name, value in list(diff.items()):
+
+            if name == jsondiff.replace or name == jsondiff.insert:
+                # get rid of the added jsondiff key
+                return value
+
+            if name == jsondiff.delete:
+                del diff[name]
+                return None
+
+            output = parse_json_diff(diff[name])
+            if output:
+                diff[name] = output
+    return diff
+
+
+def select_relevant_print_args(args):
+    """
+        Selects relevant arguments to print out. 
+        We select relevant arguments as the difference between defaults.conf and the experiment's 
+        configuration. 
+
+        Params
+        -----------
+        args: Params object
+
+        Returns
+        -----------
+        return_args: Params object with only relevant arguments
+        """
+    import pyhocon
+
+    exp_config_file = os.path.join(args.run_dir, "params.conf")
+    defaults_file = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)).split("jiant")[0] + "jiant/config/defaults.conf"
+    )
+    exp_basedir = os.path.dirname(exp_config_file)
+    default_basedir = os.path.dirname(defaults_file)
+    fd = open(exp_config_file, "r")
+    exp_config_string = fd.read()
+    exp_config_string += "\n"
+    fd = open(defaults_file, "r")
+    default_config_string = fd.read()
+    default_config_string += "\n"
+    exp_config = dict(
+        pyhocon.ConfigFactory.parse_string(exp_config_string, basedir=exp_basedir).items()
+    )
+    default_config = dict(
+        pyhocon.ConfigFactory.parse_string(default_config_string, basedir=default_basedir).items()
+    )
+    sorted_exp_config = sort_param_recursive(exp_config)
+    sorted_defaults_config = sort_param_recursive(default_config)
+    diff_args = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
+    diff_args = Params.clone(diff_args)
+    result_args = select_task_specific_args(args, diff_args)
+    return result_args
+
+
+def select_task_specific_args(exp_args, diff_args):
+    """
+    A helper function that adds in task-specific parameters from the experiment 
+    configurations for tasks in pretrain_tasks and target_tasks.
+    """
+    exp_tasks = []
+    if diff_args.get("pretrain_tasks"):
+        exp_tasks = diff_args.pretrain_tasks.split(",")
+    if diff_args.get("target_tasks"):
+        exp_tasks += diff_args.target_tasks.split(",")
+    if len(exp_tasks) == 0:
+        return diff_args
+    for key, value in list(exp_args.as_dict().items()):
+        stripped_key = key.replace("_", " ")
+        stripped_key = stripped_key.replace("-", " ")
+        param_task = None
+        # For each parameter, identify the task the parameter relates to (if any)
+        for task in exp_tasks:
+            if task in stripped_key and (("edges" in stripped_key) == ("edges" in task)):
+                # special logic for edges since there are edge versions of various
+                # tasks.
+                param_task = task
+        # Add parameters that pertain to the experiment tasks
+        if param_task and param_task in exp_tasks:
+            diff_args[key] = value
+    return diff_args
 
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
