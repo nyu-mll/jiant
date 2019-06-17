@@ -1072,7 +1072,7 @@ class SamplingMultiTaskTrainer:
             training_state,
             os.path.join(
                 self._serialization_dir,
-                "trainng_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                "training_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
             ),
         )
 

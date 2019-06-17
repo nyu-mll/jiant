@@ -135,7 +135,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 )
 
                 if args.transfer_paradigm == "finetune":
-                    # We want to do target training without pretrianing, thus
+                    # We want to do target training without pretraining, thus
                     # we need to first create a checkpoint to come back to for each of
                     # the target tasks to finetune.
                     model_state = model.state_dict()
@@ -526,7 +526,11 @@ def main(cl_arguments):
                 if os.path.exists(finetune_path):
                     ckpt_path = finetune_path
                 else:
-                    ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train")
+                    if args.do_target_task_training == 0:
+                        phase = "pretrain"
+                    else:
+                        phase = "target_train"
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, phase)
 
                 assert "best" in ckpt_path
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
