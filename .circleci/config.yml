@@ -1,39 +1,50 @@
-# Python CircleCI 2.0 configuration file
-version: 2.1
-jobs:
-  test:
-    docker:
-      - image: continuumio/miniconda3
+  # Python CircleCI 2.0 configuration file
+  version: 2.1
+  jobs:
+    test:
+      docker:
+        - image: continuumio/miniconda3
 
-    working_directory: ~/repo
+      working_directory: ~/repo
 
-    steps:
-      # Step 1: obtain repo from GitHub
-      - checkout
-      # Step 2: create virtual env and install dependencies
-      - run:
-          name: install dependencies
-          command: |
-            apt-get update
-            apt-get install -y cmake build-essential gcc g++
-            conda env create -q -f environment.yml
-            source activate jiant
-      # Step 3: run tests
-      - run:
-          name: run tests
-          command: |
-            mkdir ~/repo/test_output
-            source activate jiant
-            python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
-            nose2 -v
-      # Step 4: style check
-      - run:
-          name: check style
-          command: |
-            pip install black
-            black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
-workflows:
-  version: 2
-  test:
-    jobs:
-      - test
+      environment:
+          JIANT_PROJECT_PREFIX: sample_run
+          JIANT_DATA_DIR: ~/repo/data
+          WORD_EMBS_FILE: ~/repo/data
+      steps:
+        # Step 1: obtain repo from GitHub
+        - checkout
+        # Step 2: create virtual env and install dependencies
+        - run:
+            name: install dependencies
+            command: |
+              apt-get update
+              apt-get install -y cmake build-essential gcc g++
+              conda env create -q -f environment.yml
+              source activate jiant
+        # Step 3: demo.sh run test
+        - run:
+            name: running demo.sh
+            command: |
+              python scripts/download_glue_data.py --data_dir data --tasks all
+              source activate jiant
+              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
+              python main.py --config_file config/demo.conf
+        # Step 4: run tests
+        - run:
+            name: run tests
+            command: |
+              mkdir ~/repo/test_output
+              source activate jiant
+              nose2 -v
+        # Step 5: style check
+        - run:
+            name: check style
+            command: |
+              pip install black
+              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
+  workflows:
+    version: 2
+    test:
+      jobs:
+        - test
