@@ -1075,7 +1075,6 @@ class SamplingMultiTaskTrainer:
                 "training_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
             ),
         )
->>>>>>> c62bac97464c078def6da7adaf8182b6ee7af331
 
         task_states = {}
         for task_name, task_info in self._task_infos.items():
