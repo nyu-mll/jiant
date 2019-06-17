@@ -126,10 +126,12 @@ def select_relevant_print_args(args):
         return_args: Params object with only relevant arguments
         """
     import pyhocon
+    from pathlib import Path
 
     exp_config_file = os.path.join(args.run_dir, "params.conf")
+    root_directory = Path(__file__).parents[2]
     defaults_file = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)).split("jiant")[0] + "jiant/config/defaults.conf"
+        str(root_directory) + "/config/defaults.conf"
     )
     exp_basedir = os.path.dirname(exp_config_file)
     default_basedir = os.path.dirname(defaults_file)
