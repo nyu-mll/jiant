@@ -173,10 +173,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
-        log.info("Using BoW architecture for shared encoder!")
         assert_for_log(
             not args.skip_embs, "Skip connection not currently supported with `bow` encoder."
         )
@@ -194,7 +192,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == "transformer":
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(
@@ -479,7 +476,11 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     # Attach task-specific params.
     for task in set(tasks):
         task_params = get_task_specific_params(args, task.name)
-        log.info("\tTask '%s' params: %s", task.name, json.dumps(task_params.as_dict(), indent=2))
+        log.info(
+            "\tTask '%s' params: %s",
+            task.name,
+            json.dumps(task_params.as_dict(quiet=True), indent=2),
+        )
         # Store task-specific params in case we want to access later
         setattr(model, "%s_task_params" % task.name, task_params)
 
