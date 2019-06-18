@@ -1,19 +1,21 @@
 import csv
 import os
+import os.path
 import shutil
 import tempfile
 import unittest
-import src.tasks.tasks as tasks
-import torch
-from src import evaluate
-import os.path
-from main import evaluate_and_write
-import pandas as pd
-from src.models import MultiTaskModel
 from unittest import mock
+import torch
+import pandas as pd
+
+from src import evaluate
+import src.tasks.tasks as tasks
+from src.models import MultiTaskModel
+from main import evaluate_and_write
+
+from ..allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
-from ..allennlp_mods.numeric_field import NumericField
 from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
 
 
@@ -70,7 +72,7 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "idx": 0,
                     "sent1": "Hook a fish",
-                    "sent2": "He hooked a snake accidentally , and was so scared he dropped his rod into the water .",
+                    "sent2": "He hooked a snake accidentally.",
                     "labels": 1,
                 },
             ]
@@ -79,7 +81,7 @@ class TestWritePreds(unittest.TestCase):
         self.wic.val_data = [
             Instance(
                 {
-                    "sent1_str": MetadataField("Room and board yo."),
+                    "sent1_str": MetadataField("Room and board."),
                     "sent2_str": MetadataField("He nailed boards"),
                     "idx": LabelField(1, skip_indexing=True),
                     "idx2": NumericField(2),
@@ -90,7 +92,6 @@ class TestWritePreds(unittest.TestCase):
                             "Room",
                             "and",
                             "Board",
-                            "yo",
                             ".",
                             "[SEP]",
                             "He",
