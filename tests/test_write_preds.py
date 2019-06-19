@@ -87,17 +87,7 @@ class TestWritePreds(unittest.TestCase):
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        [
-                            "[CLS]",
-                            "Room",
-                            "and",
-                            "Board",
-                            ".",
-                            "[SEP]",
-                            "He",
-                            "nailed",
-                            "boards",
-                        ],
+                        ["[CLS]", "Room", "and", "Board", ".", "[SEP]", "He", "nailed", "boards"],
                         indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),

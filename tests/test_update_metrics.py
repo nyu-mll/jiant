@@ -13,7 +13,7 @@ class TestUpdateMetricsAccuracy(unittest.TestCase):
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.task = tasks.QQPTask("", 100, "qqp", tokenizer_name="MosesTokenizer")
         # Note: predictions are of shape num_batches x batch_size x num_classes
-        # Here, QQP is binary thus num_classes = 2 and we make batch_size = 2. 
+        # Here, QQP is binary thus num_classes = 2 and we make batch_size = 2.
         predictions = torch.Tensor([[[1, 0], [1, 0]], [[1, 0], [0, 1]]])
         perfect_predictions = torch.Tensor([[[0, 1], [0, 1]], [[1, 0], [1, 0]]])
         true_labels = torch.Tensor([[1, 1], [0, 0]])
