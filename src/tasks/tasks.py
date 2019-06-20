@@ -1193,7 +1193,7 @@ class MultiNLITask(PairClassificationTask):
 
 
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
-@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
+@register_task("superglue-diagnostic", rel_path="RTE/diagnostics/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
     """ Task class for GLUE/SuperGLUE diagnostic data """
 
@@ -1241,6 +1241,18 @@ class GLUEDiagnosticTask(PairClassificationTask):
             s2_col="Hypothesis",
             label_col="Label",
             label_fn=targ_map.__getitem__,
+            skip_rows=1,
+        )
+
+        targ_map = {"not-entailed": 0, "entailed": 1}
+        winogender_data = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "winogender-dataaset.tsv"),
+            max_seq_len=self.max_seq_len,
+            label_fn=targ_map.__getitem__,
+            s1_idx=1,
+            s2_idx=2,
+            label_idx=3,
             skip_rows=1,
         )
 
