@@ -261,14 +261,24 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 
-def get_best_checkpoint_path(run_dir, phase):
+def get_best_checkpoint_path(run_dir, phase, task_name=None):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from the phase so far
-        2) if we do only target training without pretraining, then load checkpoint before 
+        1) best task-specific checkpoint
+        2) best checkpoint from the phase so far
+        3) if we do only target training without pretraining, then load checkpoint before 
         target training
-        3) nothing found (empty string) """
-    checkpoint = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
+        4) nothing found (empty string) 
+    """
+    checkpoint = []
+    if task_name is not None:
+        checkpoint = glob.glob(
+            os.path.join(run_dir + "/" + task_name + "/", "model_state_%s_epoch_*.best.th" % phase)
+        )
+    if len(checkpoint) == 0:
+        checkpoint = glob.glob(
+            os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase)
+        )
     if len(checkpoint) == 0 and phase == "target_train":
         checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
     if len(checkpoint) > 0:
@@ -495,7 +505,7 @@ def main(cl_arguments):
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
-                pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
+                pre_finetune_path = get_best_checkpoint_path(args.run_dir, "pretrain")
 
                 load_model_state(
                     model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
@@ -536,7 +546,8 @@ def main(cl_arguments):
                         phase = "pretrain"
                     else:
                         phase = "target_train"
-                    ckpt_path = get_best_checkpoint_path(args.run_dir, phase)
+                    # find the task-specific best checkpoint to evaluat eon
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, phase, task.name)
 
                 assert "best" in ckpt_path
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)

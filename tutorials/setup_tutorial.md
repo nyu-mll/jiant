@@ -241,7 +241,7 @@ You should see something like this:
 After running this experiment, you should have in your run directory:
 
 * a checkpoint of the best model state (based on your scores)
-* a `log.log` file which contains all the logs
+* a directory for each of the target_tasks containing the checkpoints of the model, task, and training state of the best performing model parameters for that task.   
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.

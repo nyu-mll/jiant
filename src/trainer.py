@@ -303,6 +303,11 @@ class SamplingMultiTaskTrainer:
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
+            if (
+                os.path.exists(self._serialization_dir + "/" + task.name) is False
+                and phase == "target_train"
+            ):
+                os.mkdir(self._serialization_dir + "/" + task.name)
 
             # Adding task-specific smart iterator to speed up training
             instance = [i for i in itertools.islice(task.train_data, 1)][0]
@@ -350,9 +355,13 @@ class SamplingMultiTaskTrainer:
             task_info["last_log"] = time.time()
 
         # Metric bookkeeping
-        all_metrics = [task.val_metric for task in tasks] + ["micro_avg", "macro_avg"]
+        all_metrics = [(task.name, task.val_metric) for task in tasks] + [
+            (None, "micro_avg"),
+            (None, "macro_avg"),
+        ]
         metric_infos = {
-            metric: {"hist": [], "stopped": False, "best": (-1, {})} for metric in all_metrics
+            metric[1]: {"task_name": metric[0], "hist": [], "stopped": False, "best": (-1, {})}
+            for metric in all_metrics
         }
         self._task_infos = task_infos
         self._metric_infos = metric_infos
@@ -870,7 +879,7 @@ class SamplingMultiTaskTrainer:
         """
         Validate on all tasks and return the results and whether to save this epoch or not.
         Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-          any given task's training set.
+        any given task's training set.
 
         Parameters
         ----------
@@ -916,7 +925,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(  # noqa
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
                 epoch,
                 all_val_metrics,
                 metric,
@@ -1016,23 +1025,34 @@ class SamplingMultiTaskTrainer:
         """ format some metrics as a string """
         return ", ".join(["%s: %.4f" % (name, value) for name, value in metrics.items()])
 
-    def _unmark_previous_best(self, phase, epoch):
+    def _unmark_previous_best(self, phase, epoch, task=""):
+        if task == "":
+            best_str = "best_macro"
+        else:
+            best_str = "best"
         marked_best = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase))
+            os.path.join(
+                self._serialization_dir + task, "*_state_{}_epoch_*.{}.th".format(phase, best_str)
+            )
         )
+        # and now, we will recursively elete all of these ones.
         for file in marked_best:
             # Skip the just-written checkpoint.
             if "_{}.".format(epoch) not in file:
-                os.rename(file, re.sub("%s$" % ".best_macro.th", ".th", file))
+                os.rename(file, re.sub("%s$" % ("." + best_str + ".th"), ".th", file))
 
-    def _delete_old_checkpoints(self, phase, epoch):
+    def _delete_old_checkpoints(self, phase, epoch, task=""):
+        if task != "":
+            best_str = "best_macro"
+        else:
+            best_str = "best"
         candidates = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.th".format(phase))
+            os.path.join(self._serialization_dir + task, "*_state_{}_epoch_*.th".format(phase))
         )
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if ".best_macro" not in file and "_{}.".format(epoch) not in file:
+            if "best" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
 
     def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False):
@@ -1041,6 +1061,8 @@ class SamplingMultiTaskTrainer:
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'pretrain' or 'target_train'.
+        all_val_metrics If this is not none, then we loop through and save each task's _best 
+        in addiiton to the other checkpoints. 
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from pretraining to target task training.
         """
@@ -1055,7 +1077,7 @@ class SamplingMultiTaskTrainer:
             best_str = ".best_macro"
         else:
             best_str = ""
-
+        # save the overall best model for this target train in terms of macro/micro_avg score.
         model_path = os.path.join(
             self._serialization_dir, "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str)
         )
@@ -1115,13 +1137,66 @@ class SamplingMultiTaskTrainer:
                 "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
             ),
         )
-        log.info("Saved to %s", self._serialization_dir)
+        log.info("Saved general checkpoints to %s", self._serialization_dir)
+
+        # for each of the tasks, we update the best task-speciic checkpoints
+        # only for target training.
+        if phase == "target_train":
+            self.save_task_specific_checkpoints(epoch, phase, task_states, model_state)
 
         if new_best_macro:
             self._unmark_previous_best(phase, epoch)
 
         if not self._keep_all_checkpoints:
             self._delete_old_checkpoints(phase, epoch)
+
+    def save_task_specific_checkpoints(self, epoch, phase, task_states, model_state):
+        """
+        Saves task specific checkpoints for all tasks where the validation performance improved. 
+
+        Parameters 
+        --------------------
+            - epoch: int
+            - task_states: dict, dictionary with task experiment parameters such as optimizer and scheduler. 
+            - model_state: experiment model
+        
+        Returns
+        --------------------
+        None
+        """
+        for metric_name, metric_info in self._metric_infos.items():
+            # if the best checpoint is thsi epoch
+            if metric_info["best"][0] == epoch and metric_info["task_name"] is not None:
+                task_name = metric_info["task_name"]
+                torch.save(
+                    metric_info,
+                    os.path.join(
+                        self._serialization_dir,
+                        task_name + "/metric_state_{}_epoch_{}.best.th".format(phase, epoch),
+                    ),
+                )
+                torch.save(
+                    task_states[task_name],
+                    os.path.join(
+                        self._serialization_dir,
+                        task_name + "/task_state_{}_epoch_{}.best.th".format(phase, epoch),
+                    ),
+                )
+
+                torch.save(
+                    model_state,
+                    os.path.join(
+                        self._serialization_dir,
+                        task_name + "/model_state_{}_epoch_{}.best.th".format(phase, epoch),
+                    ),
+                )
+                # delte previosu best.
+                self._unmark_previous_best(phase, epoch, task="/" + task_name + "/")
+                log.info(
+                    "Found better performance on %s: saving to %s".format(
+                        task_name, self._serialization_dir + task_name
+                    )
+                )
 
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=["pretrain"]):
 
