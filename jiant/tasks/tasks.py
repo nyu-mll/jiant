@@ -2570,6 +2570,13 @@ class MultipleChoiceTask(Task):
     pass
 
 
+class SpanPredictionTask(Task):
+
+    n_classes = 2
+
+    """ Generic task class for predicting a span """
+
+
 @register_task("copa", rel_path="COPA/")
 class COPATask(MultipleChoiceTask):
     """ Task class for Choice of Plausible Alternatives Task.  """

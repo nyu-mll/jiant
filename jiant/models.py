@@ -3,6 +3,7 @@ import copy
 import json
 import logging as log
 import os
+from typing import Dict, List
 
 import numpy as np
 import torch
@@ -29,6 +30,7 @@ from jiant.modules.simple_modules import (
     SingleClassifier,
     PairClassifier,
     NullPhraseLayer,
+    TokenMultiProjectionEncoder,
 )
 from jiant.modules.attn_pair_encoder import AttnPairEncoder
 from jiant.modules.sentence_encoder import SentenceEncoder
@@ -56,6 +58,7 @@ from jiant.tasks.tasks import (
     SequenceGenerationTask,
     SingleClassificationTask,
     SpanClassificationTask,
+    SpanPredictionTask,
     STSBTask,
     TaggingTask,
     WiCTask,
@@ -502,6 +505,11 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, SpanPredictionTask):
+        module = TokenMultiProjectionEncoder(
+            projection_names=["span_start", "span_end"], d_inp=d_sent, d_proj=task_params["d_proj"]
+        )
+        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, LanguageModelingParsingTask):
         # The LM Parsing task does not support embeddings that use skip_embs.
         hid2voc = build_lm(task, d_sent, args)
@@ -804,6 +812,8 @@ class MultiTaskModel(nn.Module):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
+        elif isinstance(task, SpanPredictionTask):
+            out = self._span_prediction_forward(batch, task, predict)
         else:
             raise ValueError("Task-specific components not found!")
         return out
@@ -891,6 +901,32 @@ class MultiTaskModel(nn.Module):
         sent_embs, sent_mask = self.sent_encoder(batch["input1"], task)
         module = getattr(self, "%s_mdl" % task.name)
         out = module.forward(batch, sent_embs, sent_mask, task, predict)
+        return out
+
+    def _span_prediction_forward(self, batch, task, predict):
+        sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
+        module = getattr(self, "%s_mdl" % task.name)
+        logits_dict = module.forward(sent_embs, sent_mask)
+        out = {"logits": logits_dict, "n_exs": get_batch_size(batch)}
+        if "span_start" in batch:
+            out["start_loss"] = F.cross_entropy(
+                input=logits_dict["span_start"], target=batch["span_start"].long().squeeze(dim=1)
+            )
+            out["end_loss"] = F.cross_entropy(
+                input=logits_dict["span_end"], target=batch["span_end"].long().squeeze(dim=1)
+            )
+            out["loss"] = (out["start_loss"] + out["end_loss"]) / 2
+            task.update_metrics(
+                logits=logits_dict,
+                labels={"span_start": batch["span_start"], "span_end": batch["span_end"]},
+            )
+
+        if predict:
+            out["preds"] = {
+                "span_start": torch.argmax(logits_dict["span_start"], dim=1),
+                "span_end": torch.argmax(logits_dict["span_end"], dim=1),
+            }
+
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
