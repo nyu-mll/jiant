@@ -113,46 +113,47 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_target_train_checkpoint == "none":
+    if args.load_target_train_checkpoint not in ("none", ""):
         # This is to load a particular target train checkpoint.
-        log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
-        load_model_state(
-            model,
-            args.load_target_train_checkpoint,
-            args.cuda,
-            task_names_to_avoid_loading,
-            strict=strict,
+        checkpoint = glob.glob(args.load_target_train_checkpoint)
+        assert len(checkpoint) > 0, "Specified load_target_train_checkpoint not found: %s".format(
+            args.load_target_train_checkpoint
         )
+        assert len(checkpoint) == 1, "Too many checkpoints match pattern: %s".format(
+            args.load_target_train_checkpoint
+        )
+        best_path = checkpoint[0]
+        log.info("Loading existing model from %s...", best_path)
+        load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         # Look for target train checkpoints (available only if we're restoring from a run that
         # already finished), then look for training checkpoints.
 
         best_path = get_best_checkpoint_path(args.run_dir, "target_train")
         if best_path:
+            # Continue target task training.
             load_model_state(
                 model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict
             )
         else:
-            if args.do_pretrain == 1:
-                best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
-                if best_pretrain:
-                    load_model_state(
-                        model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
-                    )
+            # Load a pretrained model and start target task training.
+            best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
+            if best_pretrain:
+                load_model_state(
+                    model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
+                )
             else:
                 assert_for_log(
                     args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
                 )
 
-                if args.transfer_paradigm == "finetune":
-                    # We want to do target training without pretraining, thus
-                    # we need to first create a checkpoint to come back to for each of
-                    # the target tasks to finetune.
-                    model_state = model.state_dict()
-                    model_path = os.path.join(
-                        args.run_dir, "model_state_untrained_pre_target_train.th"
-                    )
-                    torch.save(model_state, model_path)
+            if args.transfer_paradigm == "finetune":
+                # We want to do target training without pretraining, thus
+                # we need to first create a checkpoint to come back to for each of
+                # the target tasks to finetune.
+                model_state = model.state_dict()
+                model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
+                torch.save(model_state, model_path)
 
             log.warning("Evaluating untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -180,11 +181,6 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
     if args.load_target_train_checkpoint != "none":
-        assert_for_log(
-            os.path.exists(args.load_target_train_checkpoint),
-            "Error: Attempting to load model from non-existent path: [%s]"
-            % args.load_target_train_checkpoint,
-        )
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from "
