@@ -113,16 +113,18 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_target_train_checkpoint == "none":
+    if args.load_target_train_checkpoint not in ("none", ""):
         # This is to load a particular target train checkpoint.
-        log.info("Loading existing model from %s...", args.load_target_train_checkpoint)
-        load_model_state(
-            model,
-            args.load_target_train_checkpoint,
-            args.cuda,
-            task_names_to_avoid_loading,
-            strict=strict,
+        checkpoint = glob.glob(args.load_target_train_checkpoint)
+        assert len(checkpoint) > 0, "Specified load_target_train_checkpoint not found: %s".format(
+            args.load_target_train_checkpoint
         )
+        assert len(checkpoint) == 1, "Too many checkpoints match pattern: %s".format(
+            args.load_target_train_checkpoint
+        )
+        best_path = checkpoint[0]
+        log.info("Loading existing model from %s...", best_path)
+        load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         if args.do_pretrain == 1:
             best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
@@ -167,11 +169,6 @@ def check_configurations(args, pretrain_tasks, target_tasks):
         log.warn("\tMixing training tasks with increasing and decreasing val metrics!")
 
     if args.load_target_train_checkpoint != "none":
-        assert_for_log(
-            os.path.exists(args.load_target_train_checkpoint),
-            "Error: Attempting to load model from non-existent path: [%s]"
-            % args.load_target_train_checkpoint,
-        )
         assert_for_log(
             not args.do_pretrain,
             "Error: Attempting to train a model and then replace that model with one from "
@@ -300,7 +297,7 @@ def initial_setup(args, cl_args):
     ----------------
     args: Params object
     cl_args: list of arguments
-    
+
     Returns
     ----------------
     tasks: list of Task objects
@@ -494,7 +491,7 @@ def main(cl_arguments):
                 pre_finetune_path = get_best_checkpoint_path(args.run_dir, "pretrain")
 
                 load_model_state(
-                    model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
+                    model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
                 )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
