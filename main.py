@@ -265,7 +265,7 @@ def get_best_checkpoint_path(run_dir, phase):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best checkpoint from the phase so far
-        2) if we do only target training without pretraining, then load checkpoint before 
+        2) if we do only target training without pretraining, then load checkpoint before
         target training
         3) nothing found (empty string) """
     checkpoint = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
@@ -304,7 +304,7 @@ def initial_setup(args, cl_args):
     ----------------
     args: Params object
     cl_args: list of arguments
-    
+
     Returns
     ----------------
     tasks: list of Task objects
@@ -498,7 +498,7 @@ def main(cl_arguments):
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
 
                 load_model_state(
-                    model, pre_finetune_path, args.cuda, skip_task_models=[], strict=strict
+                    model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
                 )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
