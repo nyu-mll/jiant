@@ -86,7 +86,7 @@ def build_trainer(
     phase="pretrain",
 ):
     """Build a trainer from params.
-    
+
     Parameters
     ----------
     params: Trainer parameters as built by build_trainer_params.
@@ -528,25 +528,32 @@ class SamplingMultiTaskTrainer:
         task_names = [task.name for task in tasks]
         task_n_train_examples = np.array([task.n_train_examples for task in tasks])
         task_n_train_batches = np.array([task_infos[task.name]["n_tr_batches"] for task in tasks])
-        log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
-        sample_weights = self.get_sampling_weights(
-            weighting_method, len(tasks), task_n_train_examples, task_n_train_batches
-        )
-
-        normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
         log.info(
-            "Using weighting method: %s, with normalized sample weights %s ",
-            weighting_method,
-            np.array_str(normalized_sample_weights, precision=4),
+            "Training examples per task, before any subsampling: "
+            + str(dict(zip(task_names, task_n_train_examples)))
         )
+        if len(tasks) > 1:
+            sample_weights = self.get_sampling_weights(
+                weighting_method, len(tasks), task_n_train_examples, task_n_train_batches
+            )
+
+            normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
+            log.info(
+                "Using weighting method: %s, with normalized sample weights %s ",
+                weighting_method,
+                np.array_str(normalized_sample_weights, precision=4),
+            )
+            scaling_weights = self.get_scaling_weights(
+                scaling_method, len(tasks), task_names, task_n_train_examples
+            )
+        else:
+            sample_weights = normalized_sample_weights = [1.0]
+            scaling_weights = {task_names[0]: 1.0}
 
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        scaling_weights = self.get_scaling_weights(
-            scaling_method, len(tasks), task_names, task_n_train_examples
-        )
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
