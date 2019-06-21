@@ -113,7 +113,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         task_names_to_avoid_loading = []
 
-    if not args.load_target_train_checkpoint in ("none", ""):
+    if args.load_target_train_checkpoint not in ("none", ""):
         # This is to load a particular target train checkpoint.
         checkpoint = glob.glob(args.load_target_train_checkpoint)
         assert len(checkpoint) > 0, "Specified load_target_train_checkpoint not found: %s".format(
