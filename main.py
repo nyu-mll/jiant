@@ -124,37 +124,24 @@ def setup_target_task_training(args, target_tasks, model, strict):
             strict=strict,
         )
     else:
-        # Look for target train checkpoints (available only if we're restoring from a run that
-        # already finished), then look for training checkpoints.
-
-        best_path = get_best_checkpoint_path(args.run_dir, "target_train")
-        if best_path:
-            load_model_state(
-                model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict
-            )
+        if args.do_pretrain == 1:
+            best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
+            if best_pretrain:
+                load_model_state(
+                    model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
+                )
         else:
-            if args.do_pretrain == 1:
-                best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
-                if best_pretrain:
-                    load_model_state(
-                        model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
-                    )
-            else:
+            if args.transfer_paradigm == "finetune":
+                # We want to do target training without pretraining, thus
+                # we need to first create a checkpoint to come back to for each of
+                # the target tasks to finetune.
                 assert_for_log(
                     args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
                 )
-
-                if args.transfer_paradigm == "finetune":
-                    # We want to do target training without pretraining, thus
-                    # we need to first create a checkpoint to come back to for each of
-                    # the target tasks to finetune.
-                    model_state = model.state_dict()
-                    model_path = os.path.join(
-                        args.run_dir, "model_state_untrained_pre_target_train.th"
-                    )
-                    torch.save(model_state, model_path)
-
-            log.warning("Evaluating untrained encoder parameters!")
+                model_state = model.state_dict()
+                model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
+                torch.save(model_state, model_path)
+            log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
 
 
@@ -264,23 +251,22 @@ def _run_background_tensorboard(logdir, port):
 def get_best_checkpoint_path(run_dir, phase, task_name=None):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best task-specific checkpoint
-        2) best checkpoint from the phase so far
-        3) if we do only target training without pretraining, then load checkpoint before 
+        1) best task-specific checkpoint for target_train, used when evaluating
+        2) if we do only target training without pretraining, then load checkpoint before 
         target training
+        3) if we're doing pretraining, then load the overall best model state
         4) nothing found (empty string) 
     """
     checkpoint = []
-    if task_name is not None:
+    if phase == "target_train":
+        assert task_name is not None, "Specify a task checkpoint to evaluate from."
         checkpoint = glob.glob(
-            os.path.join(run_dir + "/" + task_name + "/", "model_state_%s_epoch_*.best.th" % phase)
+            os.path.join(run_dir, task_name, "model_state_%s_epoch_*.best_macro.th" % phase)
         )
     if len(checkpoint) == 0:
-        checkpoint = glob.glob(
-            os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase)
-        )
-    if len(checkpoint) == 0 and phase == "target_train":
         checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+    if len(checkpoint) == 0 and phase == "pretrain":
+        checkpoint = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
         return checkpoint[0]
@@ -512,7 +498,7 @@ def main(cl_arguments):
                 )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
-                layer_path = get_best_checkpoint_path(args.run_dir, "target_train")
+                layer_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
                 assert layer_path, "No best checkpoint found."
                 load_model_state(
                     model,
