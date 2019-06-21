@@ -59,79 +59,78 @@ def evaluate(
         + tasks_module.ALL_SUPERGLUE_TASKS
         + tasks_module.ALL_COLA_NPI_TASKS
     )
-    with torch.no_grad():
-        model.eval(
-        iterator = BasicIterator(batch_size)
+    model.eval()
+    iterator = BasicIterator(batch_size)
 
-        all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
-        all_preds = {}
-        n_examples_overall = 0
+    all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
+    all_preds = {}
+    n_examples_overall = 0
 
-        assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
+    assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
-        for task in tasks:
-            log.info("Evaluating on: %s, split: %s", task.name, split)
-            last_log = time.time()
-            n_examples = 0
-            task_preds = []  # accumulate DataFrames
-            assert split in ["train", "val", "test"]
-            dataset = getattr(task, "%s_data" % split)
-            generator = iterator(dataset, num_epochs=1, shuffle=False)
-            for batch_idx, batch in enumerate(generator):
-                batch = move_to_device(batch, cuda_device)
-                out = model.forward(task, batch, predict=True)
-                # We don't want diagnostic tasks to affect the micro and macro average.
-                # Accuracy on diagnostic tasks is hardcoded to 0.
-                if not isinstance(task, GLUEDiagnosticTask):
-                    n_examples += out["n_exs"]
-                # get predictions
-                if "preds" not in out:
-                    continue
-                preds = _coerce_list(out["preds"])
-                assert isinstance(preds, list), "Convert predictions to list!"
-                cols = {"preds": preds}
-                if task.name in IDX_REQUIRED_TASK_NAMES:
-                    assert "idx" in batch, f"'idx' field missing from batches " "for task {task.name}!"
-                for field in FIELDS_TO_EXPORT:
-                    if field in batch:
-                        cols[field] = _coerce_list(batch[field])
-
-                # Transpose data using Pandas
-                df = pd.DataFrame(cols)
-                task_preds.append(df)
-
-                if time.time() - last_log > LOG_INTERVAL:
-                    log.info("\tTask %s: batch %d", task.name, batch_idx)
-                    last_log = time.time()
-
-            # task_preds will be a DataFrame with columns
-            # ['preds'] + FIELDS_TO_EXPORT
-            # for GLUE tasks, preds entries should be single scalars.
-
-            # Update metrics
-            task_metrics = task.get_metrics(reset=True)
-            for name, value in task_metrics.items():
-                all_metrics["%s_%s" % (task.name, name)] = value
-            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
-            all_metrics["macro_avg"] += all_metrics[task.val_metric]
-            n_examples_overall += n_examples
-
-            if not task_preds:
-                log.warning("Task %s: has no predictions!", task.name)
+    for task in tasks:
+        log.info("Evaluating on: %s, split: %s", task.name, split)
+        last_log = time.time()
+        n_examples = 0
+        task_preds = []  # accumulate DataFrames
+        assert split in ["train", "val", "test"]
+        dataset = getattr(task, "%s_data" % split)
+        generator = iterator(dataset, num_epochs=1, shuffle=False)
+        for batch_idx, batch in enumerate(generator):
+            batch = move_to_device(batch, cuda_device)
+            out = model.forward(task, batch, predict=True)
+            # We don't want diagnostic tasks to affect the micro and macro average.
+            # Accuracy on diagnostic tasks is hardcoded to 0.
+            if not isinstance(task, GLUEDiagnosticTask):
+                n_examples += out["n_exs"]
+            # get predictions
+            if "preds" not in out:
                 continue
+            preds = _coerce_list(out["preds"])
+            assert isinstance(preds, list), "Convert predictions to list!"
+            cols = {"preds": preds}
+            if task.name in IDX_REQUIRED_TASK_NAMES:
+                assert "idx" in batch, f"'idx' field missing from batches " "for task {task.name}!"
+            for field in FIELDS_TO_EXPORT:
+                if field in batch:
+                    cols[field] = _coerce_list(batch[field])
 
-            # Combine task_preds from each batch to a single DataFrame.
-            task_preds = pd.concat(task_preds, ignore_index=True)
-            # Store predictions, sorting by index if given.
-            if "idx" in task_preds.columns:
-                log.info("Task '%s': sorting predictions by 'idx'", task.name)
-                task_preds.sort_values(by=["idx"], inplace=True)
-            all_preds[task.name] = task_preds
-            log.info("Finished evaluating on: %s", task.name)
+            # Transpose data using Pandas
+            df = pd.DataFrame(cols)
+            task_preds.append(df)
 
-        # hack for diagnostics
-        all_metrics["micro_avg"] /= max(n_examples_overall, 1)
-        all_metrics["macro_avg"] /= len(tasks)
+            if time.time() - last_log > LOG_INTERVAL:
+                log.info("\tTask %s: batch %d", task.name, batch_idx)
+                last_log = time.time()
+
+        # task_preds will be a DataFrame with columns
+        # ['preds'] + FIELDS_TO_EXPORT
+        # for GLUE tasks, preds entries should be single scalars.
+
+        # Update metrics
+        task_metrics = task.get_metrics(reset=True)
+        for name, value in task_metrics.items():
+            all_metrics["%s_%s" % (task.name, name)] = value
+        all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
+        all_metrics["macro_avg"] += all_metrics[task.val_metric]
+        n_examples_overall += n_examples
+
+        if not task_preds:
+            log.warning("Task %s: has no predictions!", task.name)
+            continue
+
+        # Combine task_preds from each batch to a single DataFrame.
+        task_preds = pd.concat(task_preds, ignore_index=True)
+        # Store predictions, sorting by index if given.
+        if "idx" in task_preds.columns:
+            log.info("Task '%s': sorting predictions by 'idx'", task.name)
+            task_preds.sort_values(by=["idx"], inplace=True)
+        all_preds[task.name] = task_preds
+        log.info("Finished evaluating on: %s", task.name)
+
+    # hack for diagnostics
+    all_metrics["micro_avg"] /= max(n_examples_overall, 1)
+    all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
 
