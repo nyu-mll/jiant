@@ -304,10 +304,10 @@ class SamplingMultiTaskTrainer:
         for task in tasks:
             task_info = task_infos[task.name]
             if (
-                os.path.exists(self._serialization_dir + "/" + task.name) is False
+                os.path.exists(os.path.join(self._serialization_dir, task.name)) is False
                 and phase == "target_train"
             ):
-                os.mkdir(self._serialization_dir + "/" + task.name)
+                os.mkdir(os.path.join(self._serialization_dir, task.name))
 
             # Adding task-specific smart iterator to speed up training
             instance = [i for i in itertools.islice(task.train_data, 1)][0]
@@ -1041,7 +1041,7 @@ class SamplingMultiTaskTrainer:
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if "best" not in file and "_{}.".format(epoch) not in file:
+            if ".best" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
 
     def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False):
@@ -1050,8 +1050,6 @@ class SamplingMultiTaskTrainer:
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'pretrain' or 'target_train'.
-        all_val_metrics If this is not none, then we loop through and save each task's _best 
-        in addiiton to the other checkpoints. 
         new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from pretraining to target task training.
         """

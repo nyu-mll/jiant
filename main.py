@@ -488,7 +488,7 @@ def main(cl_arguments):
             if args.transfer_paradigm == "finetune":
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
-                pre_finetune_path = get_best_checkpoint_path(args.run_dir, "pretrain")
+                pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
 
                 load_model_state(
                     model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
@@ -529,7 +529,7 @@ def main(cl_arguments):
                         phase = "pretrain"
                     else:
                         phase = "target_train"
-                    # find the task-specific best checkpoint to evaluat eon
+                    # Find the task-specific best checkpoint to evaluate on.
                     ckpt_path = get_best_checkpoint_path(args.run_dir, phase, task.name)
 
                 assert "best" in ckpt_path
