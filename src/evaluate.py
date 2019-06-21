@@ -60,7 +60,7 @@ def evaluate(
         + tasks_module.ALL_COLA_NPI_TASKS
     )
     with torch.no_grad():
-        model.eval()
+        model.eval(
         iterator = BasicIterator(batch_size)
 
         all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
@@ -133,7 +133,7 @@ def evaluate(
         all_metrics["micro_avg"] /= max(n_examples_overall, 1)
         all_metrics["macro_avg"] /= len(tasks)
 
-        return all_metrics, all_preds
+    return all_metrics, all_preds
 
 
 def write_preds(
