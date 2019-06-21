@@ -1077,7 +1077,7 @@ class SamplingMultiTaskTrainer:
             best_str = ".best_macro"
         else:
             best_str = ""
-        # save the overall best model for this target train in terms of macro/micro_avg score.
+        # Save the overall best model for this target train in terms of macro/micro_avg score.
         model_path = os.path.join(
             self._serialization_dir, "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str)
         )
@@ -1139,7 +1139,7 @@ class SamplingMultiTaskTrainer:
         )
         log.info("Saved general checkpoints to %s", self._serialization_dir)
 
-        # for each of the tasks, we update the best task-speciic checkpoints
+        # For each of the tasks, we update the best task-speciic checkpoints
         # only for target training.
         if phase == "target_train":
             self.save_task_specific_checkpoints(epoch, phase, task_states, model_state)
