@@ -265,7 +265,7 @@ def get_best_checkpoint_path(run_dir, phase):
         target training
         3) nothing found (empty string) """
     checkpoint = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
-    if len(checkpoint) == 0 and phase == "target_train":
+    if len(checkpoint) == 0:
         checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
