@@ -2169,7 +2169,7 @@ class SpanClassificationTask(Task):
         return metrics
 
 
-@register_task("commitbank", rel_path="CommitmentBank/")
+@register_task("commitbank", rel_path="CB/")
 class CommitmentTask(PairClassificationTask):
     """ NLI-formatted task detecting speaker commitment.
     Data and more info at github.com/mcdm/CommitmentBank/
