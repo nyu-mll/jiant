@@ -464,9 +464,6 @@ def main(cl_arguments):
                 task.val_metric_decreases,
                 phase="target_train",
             )
-            import pdb
-
-            pdb.set_trace()
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,
