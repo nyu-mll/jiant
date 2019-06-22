@@ -6,7 +6,6 @@ def get_args():
   parser.add_argument('--gold', type=str, default='../test/recast_winogender_data.json')
   parser.add_argument('--preds', type=str, default='recast_winogender_preds.json')
   args = parser.parse_args()
-  print(args)
   return args
 
 def main(args):
