@@ -137,13 +137,16 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 # We want to do target training without pretraining, thus
                 # we need to first create a checkpoint to come back to for each of
                 # the target tasks to finetune.
-                assert_for_log(
-                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
-                )
                 model_state = model.state_dict()
                 model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)
-            log.warning("Using untrained encoder parameters!")
+            else:
+                # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on 
+                # untrained encoder parameters.
+                assert_for_log(
+                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                )  
+                log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
 
 
