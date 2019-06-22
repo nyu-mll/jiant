@@ -258,12 +258,12 @@ def get_best_checkpoint_path(run_dir, phase, task_name=None):
     if phase == "target_train":
         assert task_name is not None, "Specify a task checkpoint to evaluate from."
         checkpoint = glob.glob(
-            os.path.join(run_dir, task_name, "model_state_%s_epoch_*.best_macro.th" % phase)
+            os.path.join(run_dir, task_name, "model_state_%s_epoch_*.best.th" % phase)
         )
     if len(checkpoint) == 0:
         checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
     if len(checkpoint) == 0 and phase == "pretrain":
-        checkpoint = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best_macro.th"))
+        checkpoint = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best.th"))
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
         return checkpoint[0]
@@ -489,7 +489,6 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
-
                 load_model_state(
                     model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
                 )
