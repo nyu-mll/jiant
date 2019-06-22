@@ -359,7 +359,7 @@ class SamplingMultiTaskTrainer:
         metric_infos = {
             metric: {"hist": [], "stopped": False, "best": (-1, {})} for metric in all_metrics
         }
-        self.task_to_metric_mapping = {task.val_metric: task.name}
+        self.task_to_metric_mapping = {task.val_metric: task.name for task in tasks}
         self._task_infos = task_infos
         self._metric_infos = metric_infos
         return task_infos, metric_infos
@@ -1151,7 +1151,7 @@ class SamplingMultiTaskTrainer:
         else:  # phase == "target_train":
             # For target train, we save a separate copy of BERT per task.
             self._save_target_train_checkpoints(
-                epoch, best_str, new_best_macro, task_states, model_state
+                epoch, best_str, new_best_macro, task_states, model_state, training_state
             )
 
         if not self._keep_all_checkpoints:
@@ -1160,7 +1160,7 @@ class SamplingMultiTaskTrainer:
         log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _save_target_train_checkpoints(
-        self, epoch, best_str, new_best_macro, task_states, model_state
+        self, epoch, best_str, new_best_macro, task_states, model_state, training_state
     ):
         """
         Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint 
@@ -1198,6 +1198,14 @@ class SamplingMultiTaskTrainer:
                     self._serialization_dir,
                     task_name,
                     "task_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+            torch.save(
+                training_state,
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "training_state_target_train_epoch_{}{}.th".format(epoch, best_str),
                 ),
             )
 
