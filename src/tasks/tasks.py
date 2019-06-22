@@ -2512,7 +2512,7 @@ class SWAGTask(MultipleChoiceTask):
         return {"accuracy": acc}
 
 
-@register_task("winograd-coreference", rel_path="winograd-coref")
+@register_task("winograd-coreference", rel_path="WSC")
 class WinogradCoreferenceTask(SpanClassificationTask):
     def __init__(self, path, **kw):
         self._files_by_split = {"train": "train.jsonl", "val": "val.jsonl", "test": "test.jsonl"}
