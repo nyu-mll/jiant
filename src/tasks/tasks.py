@@ -1192,6 +1192,25 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
+@register_task("winogender-bias", rel_path="RTE/diagnostics", n_classes=2)
+class WinoGenderTask(GlueDiagnosticTask):
+    """Supported wnogender task """
+    def __init__(self):
+        super().__init__(name, n_classes, **kw)
+                self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = n_classes
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data = None
+        self.acc = BooleanAccuracy()
+        self.gender_parity = 
+    def load_data(self):
+        data = list(pd.read_json(os.path.join(rel_path, "winogender.tsv")).T.to_dict().values())
+        self.test_data = data
+
+
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
 @register_task("superglue-diagnostic", rel_path="RTE/diagnostics/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
@@ -1241,18 +1260,6 @@ class GLUEDiagnosticTask(PairClassificationTask):
             s2_col="Hypothesis",
             label_col="Label",
             label_fn=targ_map.__getitem__,
-            skip_rows=1,
-        )
-
-        targ_map = {"not-entailed": 0, "entailed": 1}
-        winogender_data = load_tsv(
-            self._tokenizer_name,
-            os.path.join(self.path, "winogender-dataaset.tsv"),
-            max_seq_len=self.max_seq_len,
-            label_fn=targ_map.__getitem__,
-            s1_idx=1,
-            s2_idx=2,
-            label_idx=3,
             skip_rows=1,
         )
 
