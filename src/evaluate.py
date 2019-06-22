@@ -77,8 +77,10 @@ def evaluate(
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
-            batch = move_to_device(batch, cuda_device)
-            out = model.forward(task, batch, predict=True)
+            with torch.no_grad():
+                batch = move_to_device(batch, cuda_device)
+                out = model.forward(task, batch, predict=True)
+
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0.
             if not isinstance(task, GLUEDiagnosticTask):
