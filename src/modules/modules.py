@@ -445,7 +445,6 @@ class SingleClassifier(nn.Module):
     def forward(self, sent, mask, idxs=[]):
         """ Assumes batch_size x seq_len x d_emb """
         emb = self.pooler(sent, mask)
-
         # append any specific token representations, e.g. for WiC task
         ctx_embs = []
         for idx in [i.long() for i in idxs]:
@@ -456,7 +455,6 @@ class SingleClassifier(nn.Module):
             ctx_emb = sent.gather(dim=1, index=idx)
             ctx_embs.append(ctx_emb.squeeze(dim=1))
         final_emb = torch.cat([emb] + ctx_embs, dim=-1)
-
         logits = self.classifier(final_emb)
         return logits
 
