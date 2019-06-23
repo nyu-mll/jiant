@@ -23,6 +23,7 @@ from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
 
 from .config import Params
+from ..tasks import ALL_SUPERGLUE_TASKS, ALL_GLUE_TASKS
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -494,6 +495,8 @@ def check_arg_name(args):
         "load_eval_checkpoint": "load_target_train_checkpoint",
         "eval_data_fraction": "target_train_data_fraction",
     }
+    for task in ALL_GLUE_TASKS + ALL_SUPERGLUE_TASKS:
+        if "task_"
     for old_name, new_name in name_dict.items():
         assert_for_log(
             old_name not in args,
