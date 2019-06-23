@@ -172,3 +172,136 @@ class MultiRCTask(Task):
             self._score_tracker = collections.defaultdict(list)
 
         return {"ans_f1": ans_f1, "qst_f1": qst_f1, "em": em, "avg": (ans_f1 + em) / 2}
+
+
+@register_task("record", rel_path="ReCoRD/")
+class ReCoRDTask(Task):
+    """Reading Comprehension with commonsense Reasoning Dataset
+    See paper at https://sheng-z.github.io/ReCoRD-explorer """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        """ """
+        super().__init__(name, **kw)
+        self.scorer1 = F1Measure(positive_label=1)
+        self.scorer2 = Average()  # to delete
+        self.scorer3 = F1Measure(positive_label=1)
+        self._score_tracker = collections.defaultdict(list)
+        self.val_metric = "%s_avg" % self.name
+        self.val_metric_decreases = False
+        self.max_seq_len = max_seq_len
+        self.files_by_split = {
+            "train": os.path.join(path, "train.json"),
+            "val": os.path.join(path, "val.json"),
+            "test": os.path.join(path, "test.json"),
+        }
+
+    def load_data(self):
+        # Data is exposed as iterable: no preloading
+        pass
+
+    def get_split_text(self, split: str):
+        """ Get split text as iterable of records.
+
+        Split should be one of "train", "val", or "test".
+        """
+        return self.load_data_for_path(self.files_by_split[split])
+
+    def load_data_for_path(self, path):
+        """ Load data """
+
+        with open(path, encoding="utf-8") as data_fh:
+            examples = []
+            for item in data_fh:
+                psg = item["passage"]["text"]
+                ent_idxs = item["passage"]["entities"]
+                ents = [psg[idx["start"]: idx["end"] + 1] for idx in ent_idxs]
+                qas = item["qas"]
+                for qa in qas:
+                    anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
+                    ex = {"passage": psg,
+                          "ents": ents,
+                          "query": qa["query"],
+                          "answers": ans,
+                          "id": qa["id"]
+                         }
+                    examples.append(ex)
+        return examples
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+        """ Yield sentences, used to compute vocabulary. """
+        for split in self.files_by_split:
+            if split.startswith("test"):
+                continue
+            path = self.files_by_split[split]
+            for example in self.load_data_for_path(path):
+                yield example["passage"]
+                yield example["query"]
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        raise NotImplementedError
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(para, question, answer, label, par_idx, qst_idx, ans_idx):
+            """ pq_id: paragraph-question ID """
+            d = {}
+            d["paragraph_str"] = MetadataField(" ".join(para))
+            d["question_str"] = MetadataField(" ".join(question))
+            d["answer_str"] = MetadataField(" ".join(answer))
+            d["par_idx"] = MetadataField(par_idx)
+            d["qst_idx"] = MetadataField(qst_idx)
+            d["ans_idx"] = MetadataField(ans_idx)
+            d["idx"] = MetadataField(ans_idx)  # required by evaluate()
+            if is_using_bert:
+                inp = para + question[1:-1] + answer[1:]
+                d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["paragraph"] = sentence_to_text_field(para, indexers)
+                d["question"] = sentence_to_text_field(question, indexers)
+                d["answer"] = sentence_to_text_field(answer, indexers)
+            d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+
+            return Instance(d)
+
+        for example in split:
+            par_idx = example["idx"]
+            para = example["paragraph"]["text"]
+            for ex in example["paragraph"]["questions"]:
+                qst_idx = ex["idx"]
+                question = ex["question"]
+                for answer in ex["answers"]:
+                    ans_idx = answer["idx"]
+                    ans = answer["text"]
+                    label = int(answer["isAnswer"]) if "isAnswer" in answer else 0
+                    yield _make_instance(para, question, ans, label, par_idx, qst_idx, ans_idx)
+
+    def count_examples(self):
+        """ Compute here b/c we"re streaming the sentences. """
+        raise NotImplementedError
+        example_counts = {}
+        for split, split_path in self.files_by_split.items():
+            example_counts[split] = sum(
+                len(q["answers"])
+                for r in open(split_path, "r", encoding="utf-8")
+                for q in json.loads(r)["paragraph"]["questions"]
+            )
+
+        self.example_counts = example_counts
+
+    def update_metrics(self, logits, labels, idxs, tagmask=None):
+        """ A batch of logits, labels, and the paragraph+questions they go with """
+        raise NotImplementedError
+        self.scorer1(logits, labels)
+        logits, labels = logits.detach().cpu(), labels.detach().cpu()
+        # track progress on each question
+        for ex, logit, label in zip(idxs, logits, labels):
+            self._score_tracker[ex].append((logit, label))
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        raise NotImplementedError
+        _, _, f1 = self.scorer1.get_metric(reset)
+
+        em = 0.
+
+        return {"f1": f1, "em": em, "avg": (f1 + em) / 2}
