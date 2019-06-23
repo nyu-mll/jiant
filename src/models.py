@@ -42,7 +42,7 @@ from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -571,7 +571,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, MultiRCTask):
+    elif isinstance(task, (MultiRCTask, ReCoRDTask):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:
