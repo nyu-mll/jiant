@@ -2649,3 +2649,10 @@ class BooleanQuestionTask(PairClassificationTask):
             "recall": rcl,
         }
 
+    def count_examples(self, splits=["train", "val", "test"]):
+        """ Count examples in the dataset. """
+        self.example_counts = {}
+        for split in splits:
+            st = self.get_split_text(split)
+            self.example_counts[split] = len(st)
+
