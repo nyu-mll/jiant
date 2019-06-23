@@ -35,6 +35,8 @@ from ..utils.data_loaders import (
     process_sentence,
 )
 from ..utils.tokenizers import get_tokenizer
+from ..metrics.winogender_metrics import GenderParity
+
 from .registry import register_task  # global task registry
 
 """Define the tasks and code for loading their data.
@@ -1205,14 +1207,30 @@ class WinoGenderTask(GlueDiagnosticTask):
         self.val_data_text = None
         self.test_data = None
         self.acc = BooleanAccuracy()
-        self.gender_parity = 
+        self.gender_parity = GenderParity()
+
     def load_data(self):
         data = list(pd.read_json(os.path.join(rel_path, "winogender.tsv")).T.to_dict().values())
-        self.test_data = data
+        self.train_data_data = data
+        self.val_data_text  = data
 
+    def process_split(self, split, indexers):
+        def _make_instance(record):
+            """ from multiple types in one column create multiple fields """
+            d = {}
+            d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
+            d["sent1_str"] = MetadataField(record["sent1"])
+            d["sent2"] = sentence_to_text_field(record["sent2"]. indexers)
+            d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
+            d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances 
+        
 
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
-@register_task("superglue-diagnostic", rel_path="RTE/diagnostics/", n_classes=2)
+@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
     """ Task class for GLUE/SuperGLUE diagnostic data """
 

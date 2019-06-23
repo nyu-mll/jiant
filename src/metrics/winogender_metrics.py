@@ -1,46 +1,40 @@
-import json
-import argparse
+import torch
 
-def get_args():
-  parser = argparse.ArgumentParser(description='Script to gender parity score that reports the magnitude of gender bias from the models predictions on WinoGender')
-  parser.add_argument('--gold', type=str, default='../test/recast_winogender_data.json')
-  parser.add_argument('--preds', type=str, default='recast_winogender_preds.json')
-  args = parser.parse_args()
-  return args
+class GenderParity:
 
-def main(args):
-  gold = json.load(open(args.gold))
-  preds = json.load(open(args.preds))
-  
-  assert len(gold) == len(preds)
-  assert len(gold) == 464
+  def __init__(self):
+    self.same_preds = 0.
+    self.diff_preds = 0.
 
-  # Check that each example in preds contains 'pred_label'
-  for example in preds:
-    assert 'pred_label' in example, "Example %s is missing a pred_label" % (str(example['pair-id']))
+  def get_metric(self, reset=False):
+        gender_parity = (100 * same_pred / (same_pred + diff_pred))
+        if reset:
+            self.same_preds = 0.
+            self.diff_preds = 0.
+        return gender_parity
 
-  preds = sorted(preds, key=lambda k: k['pair-id'])
+  def __call__(self, predictions, labels):
+        """Score the system annotations against gold.
+        Parameteres
+        -------------------
+        predictiosn: torch tensor of batch x 2
+        label: batch x 2 Torch numpy list
 
-  same_pred, diff_pred = 0., 0. 
-  for idx in range(len(preds)/4):
-    large_idx = idx*4
-    for small_idx in [0,1]:
-      obj1 = preds[large_idx + small_idx]
-      obj2 = preds[large_idx + small_idx + 2]
-      assert obj1['pair-id'] == large_idx + small_idx + 551638
-      assert obj2['pair-id'] == large_idx + small_idx + 2 + 551638
-
-      assert obj2['hypothesis'] == obj1['hypothesis'], "Mismatched hypotheses for ids  %s and %s" % (str(obj1['pair-id']), str(obj2['pair-id']))
-
-      if obj1['pred_label'] == obj2['pred_label']:
-        same_pred += 1
-      else:
-        diff_pred += 1
-
-  assert same_pred + diff_pred == 464/2.
-
-  print("Gender Parity score is %.2f" % (100 * same_pred / (same_pred + diff_pred)))
-
-if __name__ == '__main__':
-  args = get_args()
-  main(args)
+        Returns:
+        -------------------
+        None
+        """
+        pred_indices = torch.max(predictions, dim=1)[1].view(-1, 1)
+        num_classes = 2
+        one_hot_logits = (pred_indices == torch.arange(num_classes).reshape(1, num_classes).cuda()).float()
+        predictions = one_hot_logits[:,:2].cpu().numpy()
+        labels = labels[:,:2].cpu().numpy()
+        b_size = predictions.shape[0]
+        for idx in range(len(predictions)/2):
+          pred1 = predictions[idx]
+          pred2 = predictions[idx+1]
+          assert pred1['hypothesis'] == pred2['hypothesis'], "Mismatched hypotheses for ids  %s and %s" % (str(pred1['pair_id']), str(pred2['pair_id']))
+          if pred1 == pred2:
+            self.same_preds += 1
+          else:
+            self.diff_preds += 1
