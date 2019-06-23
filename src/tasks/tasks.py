@@ -1408,24 +1408,30 @@ class WinoGenderTask(GLUEDiagnosticTask):
         self.gender_parity = GenderParity()
 
     def load_data(self):
-        import pdb; pdb.set_trace()
-        data = list(pd.read_json(os.path.join(self.path, "winogender.tsv")).T.to_dict().values())
-        self.train_data_data = data
-        self.val_data_text  = data
+        rows = pd.read_csv(os.path.join(self.path, "winogender.tsv"), sep="\t")
+        # if is_bert, then we will add [CLS], [SEP]
+        rows["sent1"] = rows["sent1"].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len))
+        rows["sent2"] = rows["sent2"].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len))
+        data = list(rows.T.to_dict().values())
+        self.train_data_text = data
+        self.val_data_text = data
         self.test_data_text = data
 
     def process_split(self, split, indexers):
         def _make_instance(record):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
+            if self.is_bert:
+                input_final = record["sent1"] + record["sent2"][1:]
+                d["inputs"] = sentence_to_text_field(input_final, indexers)
+            else:
+                d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
+                d["sent2"] = sentence_to_text_field(record["sent2"], indexers)
             d["sent1_str"] = MetadataField(record["sent1"])
-            d["sent2"] = sentence_to_text_field(record["sent2"]. indexers)
             d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
             d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
             return Instance(d)
-
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances 
         
 

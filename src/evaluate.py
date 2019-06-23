@@ -51,7 +51,7 @@ def evaluate(
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "par_idx", "qst_idx", "ans_idx"]
+    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "par_idx", "qst_idx", "ans_idx", "pair_id"]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
@@ -76,6 +76,7 @@ def evaluate(
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False)
+        import pdb; pdb.set_trace()
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
                 batch = move_to_device(batch, cuda_device)
@@ -83,7 +84,7 @@ def evaluate(
 
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0.
-            if not isinstance(task, GLUEDiagnosticTask):
+            if not isinstance(task, GLUEDiagnosticTask) and not task.name.startswith("winogender"):
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -123,6 +124,10 @@ def evaluate(
 
         # Combine task_preds from each batch to a single DataFrame.
         task_preds = pd.concat(task_preds, ignore_index=True)
+        if task.name.startswith("winogender"):
+            task.gender_parity_scorer(list(task_preds.T.to_dict().values()))
+            all_metrics["gender_parity"] = task.gender_parity_scorer.get_metrics(reset=True)
+
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
             log.info("Task '%s': sorting predictions by 'idx'", task.name)
@@ -132,7 +137,7 @@ def evaluate(
 
     # hack for diagnostics
     all_metrics["micro_avg"] /= max(n_examples_overall, 1)
-    all_metrics["macro_avg"] /= len(tasks)
+    all_metrics["macro_avg"] /= lenf(tasks)
 
     return all_metrics, all_preds
 
