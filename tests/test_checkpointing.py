@@ -91,7 +91,7 @@ class TestCheckpionting(unittest.TestCase):
         self.args.exp_dir = ""
 
     @mock.patch("src.trainer.build_trainer_params", side_effect=build_trainer_params)
-    def test_checkpointing_does_run(self, build_trainer_params_function):
+    def test_target_train_checkpointing_does_run(self, build_trainer_params_function):
         # check that checkpointing does run and does sanity checks that at each step
         # it saves the most recent checkpoint as well as the best checkpoint.
         with mock.patch("src.models.MultiTaskModel") as MockModel:
@@ -175,6 +175,7 @@ class TestCheckpionting(unittest.TestCase):
             )
             from allennlp.common.params import Params
 
+            test_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
             test_trainer._task_infos = _task_infos
             test_trainer._metric_infos = _metric_infos
             test_trainer._g_optimizer = g_optimizer
@@ -191,11 +192,14 @@ class TestCheckpionting(unittest.TestCase):
                 new_best_macro=False,
             )
             assert os.path.exists(
-                self.temp_dir + "/model_state_target_train_epoch_1.best_macro.th"
-            ) and os.path.exists(self.temp_dir + "/model_state_target_train_epoch_2.th")
+                os.path.join(
+                    self.temp_dir, self.wic.name, "model_state_target_train_epoch_1.best_macro.th"
+                )
+            ) and os.path.exists(
+                os.path.join(self.temp_dir, self.wic.name, "/model_state_target_train_epoch_2.th")
+            )
 
         def does_produce_correct_demo_results(self):
             file_path = "~/repo/sample_run/jiant-demo/results.tsv"
             file = open(file_path, "rb")
-            print(file)
             assert file
