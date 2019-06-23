@@ -1194,40 +1194,6 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-@register_task("winogender-bias", rel_path="RTE/diagnostics", n_classes=2)
-class WinoGenderTask(GlueDiagnosticTask):
-    """Supported wnogender task """
-    def __init__(self):
-        super().__init__(name, n_classes, **kw)
-                self.path = path
-        self.max_seq_len = max_seq_len
-        self.n_classes = n_classes
-
-        self.train_data_text = None
-        self.val_data_text = None
-        self.test_data = None
-        self.acc = BooleanAccuracy()
-        self.gender_parity = GenderParity()
-
-    def load_data(self):
-        data = list(pd.read_json(os.path.join(rel_path, "winogender.tsv")).T.to_dict().values())
-        self.train_data_data = data
-        self.val_data_text  = data
-
-    def process_split(self, split, indexers):
-        def _make_instance(record):
-            """ from multiple types in one column create multiple fields """
-            d = {}
-            d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
-            d["sent1_str"] = MetadataField(record["sent1"])
-            d["sent2"] = sentence_to_text_field(record["sent2"]. indexers)
-            d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
-            d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
-            return Instance(d)
-
-        instances = map(_make_instance, *split)
-        return instances 
-        
 
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
 @register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
@@ -1425,6 +1391,43 @@ class GLUEDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_knowledge_dic, "knowledge")
         return collected_metrics
 
+
+@register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
+class WinoGenderTask(GLUEDiagnosticTask):
+    """Supported wnogender task """
+    def __init__(self, path, max_seq_len, name, n_classes, **kw):
+        super().__init__( path, max_seq_len, name, n_classes, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = n_classes
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data = None
+        self.acc = BooleanAccuracy()
+        self.gender_parity = GenderParity()
+
+    def load_data(self):
+        import pdb; pdb.set_trace()
+        data = list(pd.read_json(os.path.join(self.path, "winogender.tsv")).T.to_dict().values())
+        self.train_data_data = data
+        self.val_data_text  = data
+        self.test_data_text = data
+
+    def process_split(self, split, indexers):
+        def _make_instance(record):
+            """ from multiple types in one column create multiple fields """
+            d = {}
+            d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
+            d["sent1_str"] = MetadataField(record["sent1"])
+            d["sent2"] = sentence_to_text_field(record["sent2"]. indexers)
+            d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
+            d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances 
+        
 
 @register_task("rte", rel_path="RTE/")
 class RTETask(PairClassificationTask):
