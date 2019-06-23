@@ -2286,7 +2286,10 @@ class WiCTask(PairClassificationTask):
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test_ANS.jsonl"))
+        #self.train_data_text = _load_split(os.path.join(self.path, "train.detok.jsonl"))
+        #self.val_data_text = _load_split(os.path.join(self.path, "val.detok.jsonl"))
+        #self.test_data_text = _load_split(os.path.join(self.path, "test.detok.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -2307,9 +2310,7 @@ class WiCTask(PairClassificationTask):
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["idx1"] = NumericField(idxs1)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            d["idx2"] = NumericField(idxs2)  # modify if using BERT
             if is_using_bert:
                 inp = input1 + input2[1:]  # throw away input2 leading [CLS]
                 d["inputs"] = sentence_to_text_field(inp, indexers)
@@ -2317,6 +2318,8 @@ class WiCTask(PairClassificationTask):
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
+            d["idx1"] = NumericField(idxs1)
+            d["idx2"] = NumericField(idxs2)  # modify if using BERT
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
 
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
