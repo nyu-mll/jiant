@@ -571,7 +571,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, (MultiRCTask, ReCoRDTask):
+    elif isinstance(task, (MultiRCTask, ReCoRDTask)):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:

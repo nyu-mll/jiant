@@ -1,8 +1,8 @@
 """Task definitions for question answering tasks."""
-import collections
-import json
 import os
 import re
+import json
+import collections
 from typing import Iterable, Sequence, Type
 
 import torch
@@ -196,12 +196,12 @@ class ReCoRDTask(Task):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
         self._score_tracker = collections.defaultdict(list)
-        self._answers = None # Used for computing metrics, set when loading data
+        self._answers = {} # Used for computing metrics, set when loading data
         self.max_seq_len = max_seq_len
         self.files_by_split = {
             "train": os.path.join(path, "train.json"),
-            "val": os.path.join(path, "val.json"),
-            "test": os.path.join(path, "test.json"),
+            "val": os.path.join(path, "dev.json"),
+            "test": os.path.join(path, "dev.json"),
         }
 
     def load_data(self):
@@ -219,32 +219,34 @@ class ReCoRDTask(Task):
         """ Load data """
 
         def split_then_tokenize(sent):
+            """ Tokenize questions while preserving @placeholder token """
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             sent_parts = [process_sentence(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts]
             return sent_parts[0] + ["@placeholder"] + sent_parts[1]
 
-        with open(path, encoding="utf-8") as data_fh:
-            examples = []
-            for item in data_fh:
-                psg_id = item["id"]
-                psg = process_sentence(self.tokenizer_name, item["passage"]["text"],
-                                       self.max_seq_len)
-                ent_idxs = item["passage"]["entities"]
-                ents = [psg[idx["start"]: idx["end"] + 1] for idx in ent_idxs]
-                qas = item["qas"]
-                for qa in qas:
-                    qst = split_then_tokenize(qa["query"])
-                    anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
-                    ex = {"passage": psg,
-                          "ents": ents,
-                          "query": qst_tok,
-                          "answers": ans,
-                          "psg_id": psg_id,
-                          "qst_id": qa["id"]
-                         }
-                    self._answers[qst_id] = anss
-                    examples.append(ex)
+        examples = []
+        data = json.load(open(path, encoding="utf-8"))["data"]
+        for item in data:
+            psg_id = item["id"]
+            psg = process_sentence(self.tokenizer_name, item["passage"]["text"],
+                                   self.max_seq_len)
+            ent_idxs = item["passage"]["entities"]
+            ents = [psg[idx["start"]: idx["end"] + 1] for idx in ent_idxs]
+            qas = item["qas"]
+            for qa in qas:
+                qst = split_then_tokenize(qa["query"])
+                qst_id = qa["id"]
+                anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
+                ex = {"passage": psg,
+                      "ents": ents,
+                      "query": qst,
+                      "answers": anss,
+                      "psg_id": psg_id,
+                      "qst_id": qst_id
+                     }
+                self._answers[qst_id] = anss
+                examples.append(ex)
 
         return examples
 
@@ -292,7 +294,7 @@ class ReCoRDTask(Task):
             return Instance(d)
 
         for example in split:
-            psg= example["passage"]
+            psg = example["passage"]
             qst_template = example["query"]
             ents = example["ents"]
             anss = example["answers"]
@@ -300,14 +302,14 @@ class ReCoRDTask(Task):
             qst_idx = example["psg_id"]
             for ent_idx, ent in enumerate(ents):
                 label = is_answer(ent, anss)
-                psg = insert_ent(ent, qst_template)
+                qst = insert_ent(ent, qst_template)
                 yield _make_instance(psg, qst, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
         """ Compute here b/c we"re streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            data = open(split_path, "r", encoding="utf-8")["data"]
+            data = json.load(open(split_path, "r", encoding="utf-8"))["data"]
             example_counts[split] = sum([len(d["passage"]["entities"]) for d in data])
         self.example_counts = example_counts
 
