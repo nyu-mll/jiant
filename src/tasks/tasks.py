@@ -1408,9 +1408,8 @@ class WinoGenderTask(GLUEDiagnosticTask):
         self.gender_parity = GenderParity()
 
     def load_data(self):
-        import pdb; pdb.set_trace()
-        data = list(pd.read_json(os.path.join(self.path, "winogender.tsv")).T.to_dict().values())
-        self.train_data_data = data
+        data = list(pd.read_csv(os.path.join(self.path, "winogender.tsv"), sep="\t").T.to_dict().values())
+        self.train_data_text = data
         self.val_data_text  = data
         self.test_data_text = data
 
@@ -1418,14 +1417,13 @@ class WinoGenderTask(GLUEDiagnosticTask):
         def _make_instance(record):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
+            d["sent1"] = sentence_to_text_field(record["sent1"].split(), indexers)
             d["sent1_str"] = MetadataField(record["sent1"])
-            d["sent2"] = sentence_to_text_field(record["sent2"]. indexers)
+            d["sent2"] = sentence_to_text_field(record["sent2"].split(), indexers)
             d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
             d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
             return Instance(d)
-
-        instances = map(_make_instance, *split)
+        instances = map(_make_instance, split)
         return instances 
         
 
