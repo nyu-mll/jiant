@@ -167,6 +167,15 @@ class TestCheckpionting(unittest.TestCase):
             model = MockModel()
             test_trainer, train_params, opt_params, schd_params = trainer.build_trainer(
                 self.args,
+                ["wic"],  # here, we use WIC twice to reduce the amount of boiler-plate code
+                model,
+                self.args.run_dir,
+                self.wic.val_metric_decreases,
+                phase="pretrain",
+            )
+
+            test_trainer, train_params, opt_params, schd_params = trainer.build_trainer(
+                self.args,
                 ["wic"],
                 model,
                 self.args.run_dir,
@@ -181,6 +190,12 @@ class TestCheckpionting(unittest.TestCase):
             test_trainer._metric_infos = _metric_infos
             test_trainer._g_optimizer = g_optimizer
             test_trainer._g_scheduler = g_scheduler
+            test_trainer._save_checkpoint(
+                {"pass": 10, "epoch": 1, "should_stop": 0}, phase="pretrain", new_best_macro=True
+            )
+            test_trainer._save_checkpoint(
+                {"pass": 10, "epoch": 2, "should_stop": 0}, phase="pretrain", new_best_macro=True
+            )
 
             test_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 1, "should_stop": 0},
@@ -192,12 +207,17 @@ class TestCheckpionting(unittest.TestCase):
                 phase="target_train",
                 new_best_macro=False,
             )
-            assert os.path.exists(
-                os.path.join(
-                    self.temp_dir, "wic", "model_state_target_train_epoch_1.best.th"
+            assert (
+                os.path.exists(
+                    os.path.join(self.temp_dir, "wic", "model_state_target_train_epoch_1.best.th")
                 )
-            ) and os.path.exists(
-                os.path.join(self.temp_dir, "wic","model_state_target_train_epoch_2.th")
+                and os.path.exists(
+                    os.path.join(self.temp_dir, "wic", "model_state_target_train_epoch_2.th")
+                )
+                and os.path.exists(
+                    os.path.join(self.temp_dir, "model_state_pretrain_epoch_2.best.th")
+                )
+                and os.path.exists(os.path.join(self.temp_dir, "model_state_pretrain_epoch_1.th"))
             )
 
         def does_produce_correct_demo_results(self):

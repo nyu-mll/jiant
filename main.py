@@ -141,11 +141,11 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)
             else:
-                # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on 
+                # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on
                 # untrained encoder parameters.
                 assert_for_log(
                     args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
-                )  
+                )
                 log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
 
@@ -544,7 +544,9 @@ def main(cl_arguments):
                 for task in pretrain_tasks:
                     ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
                     assert ".best" in ckpt_path
-                    load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                    load_model_state(
+                        model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
+                    )
                     evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
