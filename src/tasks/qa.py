@@ -223,7 +223,7 @@ class ReCoRDTask(Task):
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             sent_parts = [process_sentence(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts]
-            return sent_parts[0] + ["@placeholder"] + sent_parts[1]
+            return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
 
         examples = []
         data = json.load(open(path, encoding="utf-8"))["data"]
@@ -232,7 +232,7 @@ class ReCoRDTask(Task):
             psg = process_sentence(self.tokenizer_name, item["passage"]["text"],
                                    self.max_seq_len)
             ent_idxs = item["passage"]["entities"]
-            ents = [psg[idx["start"]: idx["end"] + 1] for idx in ent_idxs]
+            ents = [item["passage"]["text"][idx["start"]: idx["end"] + 1] for idx in ent_idxs]
             qas = item["qas"]
             for qa in qas:
                 qst = split_then_tokenize(qa["query"])
@@ -278,17 +278,16 @@ class ReCoRDTask(Task):
             d = {}
             d["passage_str"] = MetadataField(" ".join(psg))
             d["question_str"] = MetadataField(" ".join(qst))
-            d["answer_str"] = MetadataField(" ".join(answer))
             d["psg_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx) # required by evaluate()
             if is_using_bert:
-                inp = para + question[1:]
+                inp = psg + qst[1:]
                 d["psg_qst"] = sentence_to_text_field(inp, indexers)
             else:
-                d["passage"] = sentence_to_text_field(para, indexers)
-                d["question"] = sentence_to_text_field(question, indexers)
+                d["passage"] = sentence_to_text_field(psg, indexers)
+                d["question"] = sentence_to_text_field(qst, indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
