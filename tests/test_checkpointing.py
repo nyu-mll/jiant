@@ -173,6 +173,7 @@ class TestCheckpionting(unittest.TestCase):
                 self.wic.val_metric_decreases,
                 phase="target_train",
             )
+            os.mkdir(os.path.join(self.temp_dir, "wic"))
             from allennlp.common.params import Params
 
             test_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
@@ -193,10 +194,10 @@ class TestCheckpionting(unittest.TestCase):
             )
             assert os.path.exists(
                 os.path.join(
-                    self.temp_dir, self.wic.name, "model_state_target_train_epoch_1.best_macro.th"
+                    self.temp_dir, "wic", "model_state_target_train_epoch_1.best.th"
                 )
             ) and os.path.exists(
-                os.path.join(self.temp_dir, self.wic.name, "/model_state_target_train_epoch_2.th")
+                os.path.join(self.temp_dir, "wic","model_state_target_train_epoch_2.th")
             )
 
         def does_produce_correct_demo_results(self):
