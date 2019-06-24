@@ -591,6 +591,9 @@ def get_task_specific_params(args, task_name):
         return config.get_task_attr(args, task_name, attr_name)
 
     params = {}
+    import pdb
+
+    pdb.set_trace()
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
     params["d_proj"] = _get_task_attr("d_proj")

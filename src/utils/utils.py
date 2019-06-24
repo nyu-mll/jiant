@@ -23,7 +23,7 @@ from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
 
 from .config import Params
-from ..tasks import ALL_SUPERGLUE_TASKS, ALL_GLUE_TASKS
+from .. import tasks as task_modules
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -495,8 +495,12 @@ def check_arg_name(args):
         "load_eval_checkpoint": "load_target_train_checkpoint",
         "eval_data_fraction": "target_train_data_fraction",
     }
-    for task in ALL_GLUE_TASKS + ALL_SUPERGLUE_TASKS:
-        if "task_"
+    for task in task_modules.ALL_GLUE_TASKS + task_modules.ALL_SUPERGLUE_TASKS:
+        assert_for_log(
+            not args.regex_contains("^{}_".format(task)),
+            "Error: Attempting to load old task-specific args for task %s, please refer to the master branch's default configs for the most recent task specific argument structures."
+            % task,
+        )
     for old_name, new_name in name_dict.items():
         assert_for_log(
             old_name not in args,
