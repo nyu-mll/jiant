@@ -17,6 +17,7 @@ from allennlp.data.iterators import BasicIterator, BucketIterator
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
+from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
 from ..allennlp_mods.numeric_field import NumericField
 
@@ -167,7 +168,7 @@ class TestCheckpionting(unittest.TestCase):
             MockModel.return_value.named_parameters.return_value = [("model1", MockParams(True))]
             MockModel.use_bert = 1
             model = MockModel()
-            test_trainer, train_params, opt_params, schd_params = trainer.build_trainer(
+            pt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
                 ["wic"],  # here, we use WIC twice to reduce the amount of boiler-plate code
                 model,
@@ -176,7 +177,7 @@ class TestCheckpionting(unittest.TestCase):
                 phase="pretrain",
             )
 
-            test_trainer, train_params, opt_params, schd_params = trainer.build_trainer(
+            tt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
                 ["wic"],
                 model,
@@ -185,26 +186,29 @@ class TestCheckpionting(unittest.TestCase):
                 phase="target_train",
             )
             os.mkdir(os.path.join(self.temp_dir, "wic"))
-            from allennlp.common.params import Params
 
-            test_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
-            test_trainer._task_infos = _task_infos
-            test_trainer._metric_infos = _metric_infos
-            test_trainer._g_optimizer = g_optimizer
-            test_trainer._g_scheduler = g_scheduler
-            test_trainer._save_checkpoint(
+            tt_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
+            pt_trainer._task_infos = _task_infos
+            pt_trainer._metric_infos = _metric_infos
+            pt_trainer._g_optimizer = g_optimizer
+            pt_trainer._g_scheduler = g_scheduler
+            pt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 1, "should_stop": 0}, phase="pretrain", new_best_macro=True
             )
-            test_trainer._save_checkpoint(
+            pt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 2, "should_stop": 0}, phase="pretrain", new_best_macro=True
             )
+            tt_trainer._task_infos = _task_infos
+            tt_trainer._metric_infos = _metric_infos
+            tt_trainer._g_optimizer = g_optimizer
+            tt_trainer._g_scheduler = g_scheduler
 
-            test_trainer._save_checkpoint(
+            tt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 1, "should_stop": 0},
                 phase="target_train",
                 new_best_macro=True,
             )
-            test_trainer._save_checkpoint(
+            tt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 2, "should_stop": 0},
                 phase="target_train",
                 new_best_macro=False,
