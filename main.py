@@ -116,14 +116,15 @@ def setup_target_task_training(args, target_tasks, model, strict):
     if args.load_target_train_checkpoint not in ("none", ""):
         # This is to load a particular target train checkpoint.
         checkpoint = glob.glob(args.load_target_train_checkpoint)
-        assert len(checkpoint) > 0, "Specified load_target_train_checkpoint not found: %s".format(
-            args.load_target_train_checkpoint
+        assert len(checkpoint) > 0, (
+            "Specified load_target_train_checkpoint not found: %r"
+            % args.load_target_train_checkpoint
         )
-        assert len(checkpoint) == 1, "Too many checkpoints match pattern: %s".format(
-            args.load_target_train_checkpoint
+        assert len(checkpoint) == 1, (
+            "Too many checkpoints match pattern: %r" % args.load_target_train_checkpoint
         )
         best_path = checkpoint[0]
-        log.info("Loading existing model from %s...", best_path)
+        log.info("Loading existing model from %r...", best_path)
         load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         if args.do_pretrain == 1:
@@ -252,10 +253,10 @@ def get_best_checkpoint_path(run_dir, phase, task_name=None):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best task-specific checkpoint for target_train, used when evaluating
-        2) if we do only target training without pretraining, then load checkpoint before 
+        2) if we do only target training without pretraining, then load checkpoint before
         target training
         3) if we're doing pretraining, then load the overall best model state
-        4) nothing found (empty string) 
+        4) nothing found (empty string)
     """
     checkpoint = []
     if phase == "target_train":
