@@ -126,27 +126,13 @@ def setup_target_task_training(args, target_tasks, model, strict):
         log.info("Loading existing model from %s...", best_path)
         load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        # Look for target train checkpoints (available only if we're restoring from a run that
-        # already finished), then look for training checkpoints.
-
-        best_path = get_best_checkpoint_path(args.run_dir, "target_train")
-        if best_path:
-            # Continue target task training.
-            load_model_state(
-                model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict
-            )
-        else:
-            # Load a pretrained model and start target task training.
+        if args.do_pretrain == 1:
             best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
             if best_pretrain:
                 load_model_state(
                     model, best_pretrain, args.cuda, task_names_to_avoid_loading, strict=strict
                 )
-            else:
-                assert_for_log(
-                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
-                )
-
+        else:
             if args.transfer_paradigm == "finetune":
                 # We want to do target training without pretraining, thus
                 # we need to first create a checkpoint to come back to for each of
@@ -154,8 +140,13 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 model_state = model.state_dict()
                 model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
                 torch.save(model_state, model_path)
-
-            log.warning("Evaluating untrained encoder parameters!")
+            else:
+                # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on
+                # untrained encoder parameters.
+                assert_for_log(
+                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                )
+                log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
 
 
@@ -257,16 +248,25 @@ def _run_background_tensorboard(logdir, port):
     atexit.register(_kill_tb_child)
 
 
-def get_best_checkpoint_path(run_dir, phase):
+def get_best_checkpoint_path(run_dir, phase, task_name=None):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
-        1) best checkpoint from the phase so far
-        2) if we do only target training without pretraining, then load checkpoint before
+        1) best task-specific checkpoint for target_train, used when evaluating
+        2) if we do only target training without pretraining, then load checkpoint before 
         target training
-        3) nothing found (empty string) """
-    checkpoint = glob.glob(os.path.join(run_dir, "model_state_%s_epoch_*.best_macro.th" % phase))
+        3) if we're doing pretraining, then load the overall best model state
+        4) nothing found (empty string) 
+    """
+    checkpoint = []
+    if phase == "target_train":
+        assert task_name is not None, "Specify a task checkpoint to evaluate from."
+        checkpoint = glob.glob(
+            os.path.join(run_dir, task_name, "model_state_%s_epoch_*.best.th" % phase)
+        )
     if len(checkpoint) == 0:
         checkpoint = glob.glob(os.path.join(run_dir, "model_state_untrained_pre_target_train.th"))
+    if len(checkpoint) == 0 and phase == "pretrain":
+        checkpoint = glob.glob(os.path.join(run_dir, "model_state_pretrain_epoch_*.best.th"))
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
         return checkpoint[0]
@@ -492,13 +492,12 @@ def main(cl_arguments):
                 # Reload the original best model from before target-task
                 # training since we specifically finetune for each task.
                 pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
-
                 load_model_state(
                     model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
                 )
             else:  # args.transfer_paradigm == "frozen":
                 # Load the current overall best model.
-                layer_path = get_best_checkpoint_path(args.run_dir, "target_train")
+                layer_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
                 assert layer_path, "No best checkpoint found."
                 load_model_state(
                     model,
@@ -513,31 +512,42 @@ def main(cl_arguments):
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
         if args.transfer_paradigm == "finetune":
-            for task in target_tasks:
-                task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-                if task.name != task_to_use:
-                    task_model_to_load = task_to_use
-                else:
-                    task_model_to_load = task.name
-
-                # Special checkpointing logic here since we train the sentence encoder
-                # and have a best set of sent encoder model weights per task.
-                finetune_path = os.path.join(
-                    args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                )
-                if os.path.exists(finetune_path):
-                    ckpt_path = finetune_path
-                else:
-                    if args.do_target_task_training == 0:
-                        phase = "pretrain"
+            if args.do_target_task_training:
+                for task in target_tasks:
+                    task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
+                    if task.name != task_to_use:
+                        task_model_to_load = task_to_use
                     else:
-                        phase = "target_train"
-                    ckpt_path = get_best_checkpoint_path(args.run_dir, phase)
+                        task_model_to_load = task.name
 
-                assert "best" in ckpt_path
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                    # Special checkpointing logic here since we train the sentence encoder
+                    # and have a best set of sent encoder model weights per task.
+                    finetune_path = os.path.join(
+                        args.run_dir, "model_state_%s_best.th" % task_model_to_load
+                    )
+                    if os.path.exists(finetune_path):
+                        ckpt_path = finetune_path
+                    else:
+                        # Find the task-specific best checkpoint to evaluate on.
+                        ckpt_path = get_best_checkpoint_path(
+                            args.run_dir, "target_train", task.name
+                        )
+                    assert ".best" in ckpt_path
+                    load_model_state(
+                        model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
+                    )
 
-                evaluate_and_write(args, model, [task], splits_to_write)
+                    evaluate_and_write(args, model, [task], splits_to_write)
+            elif args.do_pretrain:
+                # If args.do_target_task_training = 0 and args.do_pretrain = 1
+                # then evaluate on pretraining checkpoints.
+                for task in pretrain_tasks:
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
+                    assert ".best" in ckpt_path
+                    load_model_state(
+                        model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
+                    )
+                    evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here

@@ -303,6 +303,11 @@ class SamplingMultiTaskTrainer:
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
+            if (
+                os.path.exists(os.path.join(self._serialization_dir, task.name)) is False
+                and phase == "target_train"
+            ):
+                os.mkdir(os.path.join(self._serialization_dir, task.name))
 
             # Adding task-specific smart iterator to speed up training
             instance = [i for i in itertools.islice(task.train_data, 1)][0]
@@ -354,6 +359,7 @@ class SamplingMultiTaskTrainer:
         metric_infos = {
             metric: {"hist": [], "stopped": False, "best": (-1, {})} for metric in all_metrics
         }
+        self.task_to_metric_mapping = {task.val_metric: task.name for task in tasks}
         self._task_infos = task_infos
         self._metric_infos = metric_infos
         return task_infos, metric_infos
@@ -878,7 +884,7 @@ class SamplingMultiTaskTrainer:
         """
         Validate on all tasks and return the results and whether to save this epoch or not.
         Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-          any given task's training set.
+        any given task's training set.
 
         Parameters
         ----------
@@ -924,7 +930,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(  # noqa
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
                 epoch,
                 all_val_metrics,
                 metric,
@@ -1024,24 +1030,62 @@ class SamplingMultiTaskTrainer:
         """ format some metrics as a string """
         return ", ".join(["%s: %.4f" % (name, value) for name, value in metrics.items()])
 
-    def _unmark_previous_best(self, phase, epoch):
+    def _unmark_previous_best(self, phase, epoch, task=""):
         marked_best = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase))
+            os.path.join(self._serialization_dir, task, "*_state_{}_epoch_*.best.th".format(phase))
         )
         for file in marked_best:
             # Skip the just-written checkpoint.
             if "_{}.".format(epoch) not in file:
-                os.rename(file, re.sub("%s$" % ".best_macro.th", ".th", file))
+                os.rename(file, re.sub("%s$" % (".best.th"), ".th", file))
 
-    def _delete_old_checkpoints(self, phase, epoch):
+    def _delete_old_checkpoints(self, phase, epoch, task=""):
         candidates = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.th".format(phase))
+            os.path.join(self._serialization_dir + task, "*_state_{}_epoch_*.th".format(phase))
         )
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if ".best_macro" not in file and "_{}.".format(epoch) not in file:
+            if ".best" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
+
+    def _save_pretrain_checkpoint(
+        self,
+        task_states,
+        metric_states,
+        training_state,
+        model_state,
+        model_path,
+        epoch,
+        best_str,
+        new_best_macro,
+    ):
+        """
+        Save to pretraining-specific location.
+        """
+        torch.save(
+            task_states,
+            os.path.join(
+                self._serialization_dir, "task_state_pretrain_epoch_{}{}.th".format(epoch, best_str)
+            ),
+        )
+        torch.save(
+            metric_states,
+            os.path.join(
+                self._serialization_dir,
+                "metric_state_pretrain_epoch_{}{}.th".format(epoch, best_str),
+            ),
+        )
+        torch.save(model_state, model_path)
+        torch.save(
+            training_state,
+            os.path.join(
+                self._serialization_dir,
+                "training_state_pretrain_epoch_{}{}.th".format(epoch, best_str),
+            ),
+        )
+        if new_best_macro:
+            self._unmark_previous_best("pretrain", epoch)
 
     def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False):
         """
@@ -1060,7 +1104,7 @@ class SamplingMultiTaskTrainer:
 
         epoch = training_state["epoch"]
         if new_best_macro:
-            best_str = ".best_macro"
+            best_str = ".best"
         else:
             best_str = ""
 
@@ -1074,15 +1118,6 @@ class SamplingMultiTaskTrainer:
         for name, param in self._model.named_parameters():
             if not param.requires_grad:
                 del model_state[name]
-        torch.save(model_state, model_path)
-
-        torch.save(
-            training_state,
-            os.path.join(
-                self._serialization_dir,
-                "training_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-            ),
-        )
 
         task_states = {}
         for task_name, task_info in self._task_infos.items():
@@ -1102,13 +1137,6 @@ class SamplingMultiTaskTrainer:
             task_states["global"]["scheduler"] = sched_params
         else:
             task_states["global"]["scheduler"] = None
-        torch.save(
-            task_states,
-            os.path.join(
-                self._serialization_dir,
-                "task_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-            ),
-        )
 
         metric_states = {}
         for metric_name, metric_info in self._metric_infos.items():
@@ -1116,20 +1144,89 @@ class SamplingMultiTaskTrainer:
             metric_states[metric_name]["hist"] = metric_info["hist"]
             metric_states[metric_name]["stopped"] = metric_info["stopped"]
             metric_states[metric_name]["best"] = metric_info["best"]
-        torch.save(
-            metric_states,
-            os.path.join(
-                self._serialization_dir,
-                "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-            ),
-        )
-        log.info("Saved to %s", self._serialization_dir)
 
-        if new_best_macro:
-            self._unmark_previous_best(phase, epoch)
+        if phase == "pretrain":
+            self._save_pretrain_checkpoint(
+                task_states,
+                metric_states,
+                training_state,
+                model_state,
+                model_path,
+                epoch,
+                best_str,
+                new_best_macro,
+            )
+        else:  # phase == "target_train":
+            # For target train, we save a separate copy of BERT per task.
+            self._save_target_train_checkpoints(
+                epoch, best_str, new_best_macro, task_states, model_state, training_state
+            )
 
         if not self._keep_all_checkpoints:
             self._delete_old_checkpoints(phase, epoch)
+
+        log.info("Saved checkpoints to %s", self._serialization_dir)
+
+    def _save_target_train_checkpoints(
+        self, epoch, best_str, new_best_macro, task_states, model_state, training_state
+    ):
+        """
+        Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint 
+        will contain different weights for BERT. If transfer_paradigm=frozen, the only difference will be 
+        in the weights for the task-specific modules.
+
+        Parameters 
+        --------------------
+            - epoch: int
+            - phase: str
+            - new_best_macro: bool
+            - task_states: dict
+            - model_state: dict of weights 
+            - model_state: experiment model
+        
+        Returns
+        --------------------
+        None
+        """
+        for metric_name, metric_info in self._metric_infos.items():
+            if metric_name in ["macro_avg", "micro_avg"]:
+                continue
+            task_name = self.task_to_metric_mapping[metric_name]
+            torch.save(
+                metric_info,
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "metric_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+            torch.save(
+                task_states[task_name],
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "task_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+            torch.save(
+                training_state,
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "training_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+
+            torch.save(
+                model_state,
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "model_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+            if new_best_macro:
+                self._unmark_previous_best("target_train", epoch, task=task_name)
 
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=["pretrain"]):
 
