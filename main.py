@@ -144,7 +144,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on
                 # untrained encoder parameters.
                 assert_for_log(
-                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                    args.allow_untrained_encoder_parameters,
+                    "No best checkpoint found to evaluate. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
                 )
                 log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -211,6 +212,20 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             args.target_tasks != "none",
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
+        if not args.do_target_task_training:
+            untrained_tasks = set(target_tasks)
+            if args.do_pretrain:
+                untrained_tasks -= set(pretrain_tasks)
+            if len(untrained_tasks) > 0:
+                assert (
+                    args.load_model
+                    or (args.load_target_train_checkpoint not in ["none", ""])
+                    or args.allow_untrained_encoder_parameters,
+                    "Evaluating a model without training it on this run or loading a checkpoint.  Set `allow_untrained_encoder_parameters` if you really want to use an untrained task model.",
+                )
+                log.warning(
+                    "Evauluating a target task model without training it in this run. It's up to you to ensure that you are loading parameters that were sufficiently trained for this task."
+                )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
     log.info("Will run the following steps for this experiment:\n%s", steps_log.getvalue())
@@ -252,10 +267,10 @@ def get_best_checkpoint_path(run_dir, phase, task_name=None):
     """ Look in run_dir for model checkpoint to load.
     Hierarchy is
         1) best task-specific checkpoint for target_train, used when evaluating
-        2) if we do only target training without pretraining, then load checkpoint before 
+        2) if we do only target training without pretraining, then load checkpoint before
         target training
         3) if we're doing pretraining, then load the overall best model state
-        4) nothing found (empty string) 
+        4) nothing found (empty string)
     """
     checkpoint = []
     if phase == "target_train":
