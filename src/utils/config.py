@@ -47,7 +47,6 @@ class Params(object):
         return getattr(self, k)
 
     def __contains__(self, k):
-        # Supporting wildcards.
         return k in self._known_keys
 
     def __setitem__(self, k, v):
