@@ -7,6 +7,7 @@ import unittest
 from unittest import mock
 import torch
 import pandas as pd
+import glob
 
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
@@ -91,9 +92,10 @@ class TestCheckpionting(unittest.TestCase):
         self.args.exp_dir = ""
 
     @mock.patch("src.trainer.build_trainer_params", side_effect=build_trainer_params)
-    def test_target_train_checkpointing_does_run(self, build_trainer_params_function):
-        # check that checkpointing does run and does sanity checks that at each step
-        # it saves the most recent checkpoint as well as the best checkpoint.
+    def test_checkpointing_does_run(self, build_trainer_params_function):
+        # Check that checkpointing does run and does sanity checks that at each step
+        # it saves the most recent checkpoint as well as the best checkpoint
+        # correctly for both pretrain and target_train stages.
         with mock.patch("src.models.MultiTaskModel") as MockModel:
             import torch
             import copy
@@ -220,7 +222,13 @@ class TestCheckpionting(unittest.TestCase):
                 and os.path.exists(os.path.join(self.temp_dir, "model_state_pretrain_epoch_1.th"))
             )
 
-        def does_produce_correct_demo_results(self):
+            # Assert only one checkpoint is created for pretrain stage.
+            pretrain_best_checkpoints = glob.glob(
+                os.path.join(self.temp_dir, "model_state_pretrain_epoch_*.best.th")
+            )
+            assert len(pretrain_best_checkpoints) == 1
+
+        def test_does_produce_results(self):
             file_path = "~/repo/sample_run/jiant-demo/results.tsv"
             file = open(file_path, "rb")
             assert file
