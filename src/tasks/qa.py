@@ -201,7 +201,7 @@ class ReCoRDTask(Task):
         self.files_by_split = {
             "train": os.path.join(path, "train.json"),
             "val": os.path.join(path, "dev.json"),
-            "test": os.path.join(path, "dev.json"),
+            "test": os.path.join(path, "test.json"),
         }
 
     def load_data(self):
@@ -233,6 +233,7 @@ class ReCoRDTask(Task):
                                    self.max_seq_len)
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"]: idx["end"] + 1] for idx in ent_idxs]
+            #ents = [process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1] for ent in ents]
             qas = item["qas"]
             for qa in qas:
                 qst = split_then_tokenize(qa["query"])
@@ -271,13 +272,15 @@ class ReCoRDTask(Task):
         def insert_ent(ent, template):
             """ Replace ent into template """
             assert "@placeholder" in template, "No placeholder detected!"
-            return [ent if t == "@placeholder" else t for t in template]
+            split_idx = template.index("@placeholder")
+            return template[:split_idx] + ent + template[split_idx + 1:]
 
-        def _make_instance(psg, qst, label, psg_idx, qst_idx, ans_idx):
+        def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: paragraph-question ID """
             d = {}
             d["passage_str"] = MetadataField(" ".join(psg))
             d["question_str"] = MetadataField(" ".join(qst))
+            d["answer_str"] = MetadataField(ans_str)
             d["psg_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
@@ -295,14 +298,17 @@ class ReCoRDTask(Task):
         for example in split:
             psg = example["passage"]
             qst_template = example["query"]
-            ents = example["ents"]
+
+            ent_strs = example["ents"]
+            ents = [process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1] for ent in ent_strs]
+
             anss = example["answers"]
             par_idx = example["psg_id"]
-            qst_idx = example["psg_id"]
-            for ent_idx, ent in enumerate(ents):
+            qst_idx = example["qst_id"]
+            for ent_idx, (ent, ent_str) in enumerate(zip(ents, ent_strs)):
                 label = is_answer(ent, anss)
                 qst = insert_ent(ent, qst_template)
-                yield _make_instance(psg, qst, label, par_idx, qst_idx, ent_idx)
+                yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
         """ Compute here b/c we"re streaming the sentences. """
@@ -325,11 +331,12 @@ class ReCoRDTask(Task):
             golds = self._answers[qst_idx]
             logits, anss = list(zip(*logits_and_anss))
             logits = torch.stack(logits)
-            pred = logits.argmax(dim=-1)
-            pred = anss[pred.item()]
+            # take the most probable choice as the model prediction
+            pred = torch.softmax(logits, dim=-1)[:, -1].argmax().item()
+            pred = anss[pred]
 
             # F1
-            f1 = self._get_f1(pred, golds)
+            f1 = max([_get_f1(pred, gold) for gold in golds])
             f1s.append(f1)
 
             # EM
@@ -338,6 +345,9 @@ class ReCoRDTask(Task):
 
         em = sum(ems) / len(ems)
         f1 = sum(f1s) / len(f1s)
+
+        if reset:
+            self._score_tracker = collections.defaultdict(list)
 
         return {"f1": f1, "em": em, "avg": (f1 + em) / 2}
 

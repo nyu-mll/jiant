@@ -824,7 +824,7 @@ class MultiTaskModel(nn.Module):
             out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, MultiRCTask):
+        elif isinstance(task, (MultiRCTask, ReCoRDTask)):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
@@ -1159,7 +1159,8 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         if self.use_bert:
             # if using BERT, we concatenate the context, question, and answer
-            inp = batch["para_quest_ans"]
+            inp = batch["psg_qst"]
+            #inp = batch["para_quest_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
             out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
@@ -1175,10 +1176,12 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
 
         if "label" in batch:
-            idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
+            idxs = batch["qst_idx"]
+            #idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = F.cross_entropy(logits, labels)
-            task.update_metrics(logits, labels, idxs)
+            task.update_metrics(logits, batch["answer_str"], idxs)
+            #task.update_metrics(logits, labels, idxs)
 
         if predict:
             out["preds"] = logits.argmax(dim=-1)
