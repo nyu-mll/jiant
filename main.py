@@ -32,13 +32,13 @@ from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import (
     assert_for_log,
-    check_arg_name,
     load_model_state,
     maybe_make_dir,
     parse_json_diff,
     sort_param_recursive,
     select_relevant_print_args,
 )
+from src import tasks as task_modules
 import jsondiff
 
 # Global notification handler, can be accessed outside main() during exception handling.
@@ -362,6 +362,36 @@ def initial_setup(args, cl_args):
             args.cuda = -1
 
     return args, seed
+
+
+def check_arg_name(args):
+    """ Raise error if obsolete arg names are present. """
+    # Mapping - key: old name, value: new name
+    name_dict = {
+        "task_patience": "lr_patience",
+        "do_train": "do_pretrain",
+        "train_for_eval": "do_target_task_training",
+        "do_eval": "do_full_eval",
+        "train_tasks": "pretrain_tasks",
+        "eval_tasks": "target_tasks",
+        "eval_data_fraction": "target_train_data_fraction",
+        "eval_val_interval": "target_train_val_interval",
+        "eval_max_vals": "target_train_max_vals",
+        "load_eval_checkpoint": "load_target_train_checkpoint",
+        "eval_data_fraction": "target_train_data_fraction",
+    }
+    for task in task_modules.ALL_GLUE_TASKS + task_modules.ALL_SUPERGLUE_TASKS:
+        assert_for_log(
+            not args.regex_contains("^{}_".format(task)),
+            "Error: Attempting to load old task-specific args for task %s, please refer to the master branch's default configs for the most recent task specific argument structures."
+            % task,
+        )
+    for old_name, new_name in name_dict.items():
+        assert_for_log(
+            old_name not in args,
+            "Error: Attempting to load old arg name [%s], please update to new name [%s]"
+            % (old_name, name_dict[old_name]),
+        )
 
 
 def main(cl_arguments):
