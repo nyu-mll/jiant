@@ -117,14 +117,14 @@ def setup_target_task_training(args, target_tasks, model, strict):
         # This is to load a particular target train checkpoint.
         checkpoint = glob.glob(args.load_target_train_checkpoint)
         assert len(checkpoint) > 0, (
-            "Specified load_target_train_checkpoint not found: %s"
+            "Specified load_target_train_checkpoint not found: %r"
             % args.load_target_train_checkpoint
         )
         assert len(checkpoint) == 1, (
-            "Too many checkpoints match pattern: %s" % args.load_target_train_checkpoint
+            "Too many checkpoints match pattern: %r" % args.load_target_train_checkpoint
         )
         best_path = checkpoint[0]
-        log.info("Loading existing model from %s...", best_path)
+        log.info("Loading existing model from %r...", best_path)
         load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         if args.do_pretrain == 1:
