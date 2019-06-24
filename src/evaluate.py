@@ -147,7 +147,6 @@ def write_preds(
 
         preds_df = all_preds[task.name]
         # Tasks that use _write_glue_preds:
-        import pdb; pdb.set_trace()
         glue_style_tasks = (
             tasks_module.ALL_NLI_PROBING_TASKS
             + tasks_module.ALL_GLUE_TASKS
