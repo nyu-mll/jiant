@@ -1454,8 +1454,6 @@ class WinoGenderTask(GLUEDiagnosticTask):
         return {"accuracy": self.acc_scorer.get_metric(reset)}
 
     def update_diagnostic_metrics(self, logits, labels, batch):
-        # Updates scorer for every tag in a given column (tag_group) and also the
-        # the scorer for the column itself.
         self.acc_scorer(logits, labels)
 
 
