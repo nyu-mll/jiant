@@ -89,7 +89,11 @@ def setup_target_task_training(args, target_tasks, model, strict):
     """
     Saves model states from pretraining if applicable, and
     loads the correct model state for the target task training
-    stage.
+    stage. 
+    The logic for loading the correct model state for target task training is:
+    1) If load_target_train_checkpoint is used, then load the weights from that checkpoint.
+    2) If we did pretraining, then load the best model from pretraining. 
+    3) Default case: We save untrained encoder weights.
 
     Parameters
     ----------------
@@ -127,7 +131,15 @@ def setup_target_task_training(args, target_tasks, model, strict):
         log.info("Loading existing model from %r...", best_path)
         load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        if args.do_pretrain == 1:
+        if args.load_target_train_checkpoint not in {"none", ""}:
+            load_model_state(
+                model,
+                args.load_target_train_checkpoint,
+                args.cuda,
+                task_names_to_avoid_loading,
+                strict=strict,
+            )
+        elif args.do_pretrain == 1:
             best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
             if best_pretrain:
                 load_model_state(
@@ -148,7 +160,40 @@ def setup_target_task_training(args, target_tasks, model, strict):
                     args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
                 )
                 log.warning("Using untrained encoder parameters!")
-    return task_names_to_avoid_loading
+
+        # The version of the model before target task training for the new task.
+        pre_target_train_model = copy.deepcopy(model)
+
+        if args.transfer_paradigm == "frozen":
+            # will be empty if elmo = 0. scalar_mix_0 should always be
+            # pretrain scalars
+            elmo_scalars = [
+                (n, p)
+                for n, p in model.named_parameters()
+                if "scalar_mix" in n and "scalar_mix_0" not in n
+            ]
+            # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero
+            # length.
+            assert_for_log(
+                not elmo_scalars or args.sep_embs_for_skip,
+                "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
+                "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
+            )
+
+        if args.transfer_paradigm == "finetune":
+            model_state = load_model_state(
+                model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
+            )
+            # Train both the task specific models as well as sentence
+            # encoder.
+            to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+        else:  # args.transfer_paradigm == "frozen":
+            # Only train task-specific module
+            pred_module = getattr(model, "%s_mdl" % task.name)
+            to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            to_train += elmo_scalars
+
+    return to_train
 
 
 def check_configurations(args, pretrain_tasks, target_tasks):
@@ -378,7 +423,6 @@ def check_arg_name(args):
         "eval_data_fraction": "target_train_data_fraction",
         "eval_val_interval": "target_train_val_interval",
         "eval_max_vals": "target_train_max_vals",
-        "load_eval_checkpoint": "load_target_train_checkpoint",
         "eval_data_fraction": "target_train_data_fraction",
     }
     for task in task_modules.ALL_GLUE_TASKS + task_modules.ALL_SUPERGLUE_TASKS:
@@ -456,36 +500,12 @@ def main(cl_arguments):
 
     if args.do_target_task_training:
         # Train on target tasks
-        task_names_to_avoid_loading = setup_target_task_training(args, target_tasks, model, strict)
-        if args.transfer_paradigm == "frozen":
-            # might be empty if elmo = 0. scalar_mix_0 should always be
-            # pretrain scalars
-            elmo_scalars = [
-                (n, p)
-                for n, p in model.named_parameters()
-                if "scalar_mix" in n and "scalar_mix_0" not in n
-            ]
-            # Fails when sep_embs_for_skip is 0 and elmo_scalars has nonzero
-            # length.
-            assert_for_log(
-                not elmo_scalars or args.sep_embs_for_skip,
-                "Error: ELMo scalars loaded and will be updated in do_target_task_training but "
-                "they should not be updated! Check sep_embs_for_skip flag or make an issue.",
-            )
+        pre_target_train_model_state = setup_target_task_training(args, target_tasks, model, strict)
+
         for task in target_tasks:
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
                 continue
-
-            if args.transfer_paradigm == "finetune":
-                # Train both the task specific models as well as sentence
-                # encoder.
-                to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-            else:  # args.transfer_paradigm == "frozen":
-                # Only train task-specific module
-                pred_module = getattr(model, "%s_mdl" % task.name)
-                to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
-                to_train += elmo_scalars
 
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
@@ -501,7 +521,7 @@ def main(cl_arguments):
                 batch_size=args.batch_size,
                 weighting_method=args.weighting_method,
                 scaling_method=args.scaling_method,
-                train_params=to_train,
+                train_params=pre_target_train_model_state,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
@@ -509,81 +529,29 @@ def main(cl_arguments):
                 phase="target_train",
             )
 
-            # Now that we've trained the task specific module for the task,
-            # since we are accumulating the best parameters for
-            # each task specific model, we allow for loading of the trained
-            # module. We avoid loading the task specific modules at first
-            # in order to make sure that any module-specific training from pretraining
-            # step does not affect the target task training step.
-            # This only affects for transfer_paradigm = frozen.
-            if task.name in task_names_to_avoid_loading:
-                task_names_to_avoid_loading.remove(task.name)
-
-            if args.transfer_paradigm == "finetune":
-                # Reload the original best model from before target-task
-                # training since we specifically finetune for each task.
-                pre_target_train = get_best_checkpoint_path(args.run_dir, "pretrain")
-                load_model_state(
-                    model, pre_target_train, args.cuda, skip_task_models=[], strict=strict
-                )
-            else:  # args.transfer_paradigm == "frozen":
-                # Load the current overall best model.
-                layer_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
-                assert layer_path, "No best checkpoint found."
-                load_model_state(
-                    model,
-                    layer_path,
-                    args.cuda,
-                    strict=strict,
-                    skip_task_models=task_names_to_avoid_loading,
-                )
-
     if args.do_full_eval:
-        # Evaluate
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-        if args.transfer_paradigm == "finetune":
-            if args.do_target_task_training:
-                for task in target_tasks:
-                    task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-                    if task.name != task_to_use:
-                        task_model_to_load = task_to_use
-                    else:
-                        task_model_to_load = task.name
 
-                    # Special checkpointing logic here since we train the sentence encoder
-                    # and have a best set of sent encoder model weights per task.
-                    finetune_path = os.path.join(
-                        args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                    )
-                    if os.path.exists(finetune_path):
-                        ckpt_path = finetune_path
-                    else:
-                        # Find the task-specific best checkpoint to evaluate on.
-                        ckpt_path = get_best_checkpoint_path(
-                            args.run_dir, "target_train", task.name
-                        )
-                    assert ".best" in ckpt_path
-                    load_model_state(
-                        model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
-                    )
+        if args.do_target_task_training:
+            for task in target_tasks:
+                # Find the task-specific best checkpoint to evaluate on.
+                if args.load_eval_checkpoint:
+                    ckpt_path = args.load_eval_checkpoint
+                else:
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
+                assert ".best" in ckpt_path
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                    evaluate_and_write(args, model, [task], splits_to_write)
-            elif args.do_pretrain:
-                # If args.do_target_task_training = 0 and args.do_pretrain = 1
-                # then evaluate on pretraining checkpoints.
-                for task in pretrain_tasks:
-                    ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
-                    assert ".best" in ckpt_path
-                    load_model_state(
-                        model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
-                    )
-                    evaluate_and_write(args, model, [task], splits_to_write)
-
-        elif args.transfer_paradigm == "frozen":
-            # Don't do any special checkpointing logic here
-            # since model already has all the trained task specific modules.
-            evaluate_and_write(args, model, target_tasks, splits_to_write)
+                evaluate_and_write(args, model, [task], splits_to_write)
+        elif args.do_pretrain:
+            # If args.do_target_task_training = 0 and args.do_pretrain = 1
+            # then evaluate on pretraining checkpoints.
+            for task in pretrain_tasks:
+                ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
+                assert ".best" in ckpt_path
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                evaluate_and_write(args, model, [task], splits_to_write)
 
     log.info("Done!")
 
