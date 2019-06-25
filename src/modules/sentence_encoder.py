@@ -7,7 +7,8 @@ import torch.nn as nn
 import torch.utils.data
 import torch.utils.data.distributed
 from allennlp.models.model import Model
-
+from allennlp.modules.time_distributed import TimeDistributed
+from allennlp.modules.highway import Highway
 # StackedSelfAttentionEncoder
 from allennlp.nn import InitializerApplicator, util
 
@@ -16,7 +17,8 @@ from ..tasks.tasks import PairClassificationTask, PairRegressionTask
 from ..utils import utils
 from .onlstm.ON_LSTM import ONLSTMStack
 from .prpn.PRPN import PRPN
-
+from .bilm_encoder import BiLMEncoder 
+from .simple_modules import NullPhraseLayer
 
 class SentenceEncoder(Model):
     """ Given a sequence of tokens, embed each token and pass through a sequence encoder. """

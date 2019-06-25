@@ -91,8 +91,8 @@ def evaluate(
                 out = model.forward(task, batch, predict=True)
 
             # We don't want diagnostic tasks to affect the micro and macro average.
-            # Accuracy on diagnostic tasks is hardcoded to 0.
-            if not isinstance(task, GLUEDiagnosticTask) and not task.name.startswith("winogender"):
+            # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender.
+            if not isinstance(task, GLUEDiagnosticTask) or task.name.startswith("winogender"):
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -121,6 +121,7 @@ def evaluate(
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
             all_metrics["%s_%s" % (task.name, name)] = value
+
         all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
         all_metrics["macro_avg"] += all_metrics[task.val_metric]
         n_examples_overall += n_examples
