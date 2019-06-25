@@ -131,15 +131,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
         log.info("Loading existing model from %r...", best_path)
         load_model_state(model, best_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
-        if args.load_target_train_checkpoint not in {"none", ""}:
-            load_model_state(
-                model,
-                args.load_target_train_checkpoint,
-                args.cuda,
-                task_names_to_avoid_loading,
-                strict=strict,
-            )
-        elif args.do_pretrain == 1:
+        if args.do_pretrain == 1:
             best_pretrain = get_best_checkpoint_path(args.run_dir, "pretrain")
             if best_pretrain:
                 load_model_state(
@@ -537,7 +529,15 @@ def main(cl_arguments):
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
                 if args.load_eval_checkpoint:
-                    ckpt_path = args.load_eval_checkpoint
+                    checkpoint = glob.glob(args.load_eval_checkpoint)
+                    assert len(checkpoint) > 0, (
+                        "Specified load_eval_checkpoint not found: %r"
+                        % args.load_eval_checkpoint
+                    )
+                    assert len(checkpoint) == 1, (
+                        "Too many checkpoints match pattern: %r" % args.load_eval_checkpoint
+                    )
+                    ckpt_path = checkpoint[0]
                 else:
                     ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
                 assert ".best" in ckpt_path
