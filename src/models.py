@@ -20,20 +20,20 @@ from sklearn.metrics import mean_squared_error
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 
 from .modules.edge_probing import EdgeClassifierModule
-from .modules.simple_modules import (
-    Pooler,
+from .modules.modules import (
+    AttnPairEncoder,
+    BiLMEncoder,
+    BoWSentEncoder,
     Classifier,
-    SingleClassifier,
-    PairClassifier,
+    ElmoCharacterEncoder,
     NullPhraseLayer,
+    ONLSTMPhraseLayer,
+    PairClassifier,
+    Pooler,
+    PRPNPhraseLayer,
+    SentenceEncoder,
+    SingleClassifier,
 )
-from .modules.attn_pair_encoder import AttnPairEncoder
-from .modules.sentence_encoder import SentenceEncoder
-from .modules.bilm_encoder import BiLMEncoder
-from .modules.bow_sentence_encoder import BoWSentEncoder
-from .modules.elmo_character_encoder import ElmoCharacterEncoder
-from .modules.onlstm_phrase_layer import ONLSTMPhraseLayer
-from .modules.prpn_phrase_layer import PRPNPhraseLayer
 from .modules.onlstm.ON_LSTM import ONLSTMStack
 from .modules.prpn.PRPN import PRPN
 from .modules.seq2seq_decoder import Seq2SeqDecoder

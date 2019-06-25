@@ -1,14 +1,17 @@
 # Implementation of span classification modules
 
-from typing import Dict
+import logging as log
+from typing import Dict, Iterable, List
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
+from torch.autograd import Variable
 
 from ..tasks.tasks import Task
-from .simple_modules import Classifier
+from . import modules
 
 
 class SpanClassifierModule(nn.Module):
@@ -70,7 +73,7 @@ class SpanClassifierModule(nn.Module):
 
         # Classifier gets concatenated projections of spans.
         clf_input_dim = self.span_extractors[1].get_output_dim() * num_spans
-        self.classifier = Classifier.from_params(clf_input_dim, task.n_classes, task_params)
+        self.classifier = modules.Classifier.from_params(clf_input_dim, task.n_classes, task_params)
 
     def forward(
         self,
