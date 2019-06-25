@@ -153,9 +153,6 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 )
                 log.warning("Using untrained encoder parameters!")
 
-        # The version of the model before target task training for the new task.
-        pre_target_train_model = copy.deepcopy(model)
-
         if args.transfer_paradigm == "frozen":
             # will be empty if elmo = 0. scalar_mix_0 should always be
             # pretrain scalars
@@ -498,7 +495,7 @@ def main(cl_arguments):
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
                 continue
-
+                
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
                 [task.name],
