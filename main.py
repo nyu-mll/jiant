@@ -545,25 +545,8 @@ def main(cl_arguments):
         if args.transfer_paradigm == "finetune":
             if args.do_target_task_training:
                 for task in target_tasks:
-                    task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-                    if task.name != task_to_use:
-                        task_model_to_load = task_to_use
-                    else:
-                        task_model_to_load = task.name
-
-                    # Special checkpointing logic here since we train the sentence encoder
-                    # and have a best set of sent encoder model weights per task.
-                    finetune_path = os.path.join(
-                        args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                    )
-                    if os.path.exists(finetune_path):
-                        ckpt_path = finetune_path
-                    else:
-                        # Find the task-specific best checkpoint to evaluate on.
-                        ckpt_path = get_best_checkpoint_path(
-                            args.run_dir, "target_train", task.name
-                        )
-                    assert ".best" in ckpt_path
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
+                    assert ckpt_path is not None and ".best" in ckpt_path
                     load_model_state(
                         model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
                     )
@@ -574,7 +557,7 @@ def main(cl_arguments):
                 # then evaluate on pretraining checkpoints.
                 for task in pretrain_tasks:
                     ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
-                    assert ".best" in ckpt_path
+                    assert ckpt_path is not None and ".best" in ckpt_path
                     load_model_state(
                         model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
                     )
