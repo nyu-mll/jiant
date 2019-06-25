@@ -201,6 +201,7 @@ class Task(object):
 
         self.sentences = None
         self.example_counts = None
+        self.contributes_micro_macro_avg = True
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -1194,7 +1195,6 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
-
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
 @register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
@@ -1214,6 +1214,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self.contributes_micro_macro_avg = False
 
     def load_data(self):
         """load diagnostics data. The tags for every column are loaded as indices.
@@ -1395,8 +1396,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
 class WinoGenderTask(GLUEDiagnosticTask):
     """Supported wnogender task """
+
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
-        super().__init__( path, max_seq_len, name, n_classes, **kw)
+        super().__init__(path, max_seq_len, name, n_classes, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
         self.n_classes = n_classes
@@ -1404,36 +1406,56 @@ class WinoGenderTask(GLUEDiagnosticTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data = None
-        self.acc = BooleanAccuracy()
-        self.gender_parity = GenderParity()
+        self.acc_scorer = BooleanAccuracy()
+        self.gender_parity_scorer = GenderParity()
+        self.val_mtric = "winogender-diagnostic_accuracy"
 
     def load_data(self):
-        rows = pd.read_json(os.path.join(self.path, "winogender.tsv"))
+        rows = pd.read_csv(os.path.join(self.path, "winogender.tsv"), sep="\t")
         # if is_bert, then we will add [CLS], [SEP]
-        rows["sent1"] = rows["sent1"].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len))
-        rows["sent2"] = rows["sent2"].apply(lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len))
+        rows["sent1"] = rows["sent1"].apply(
+            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
+        )
+        rows["sent2"] = rows["sent2"].apply(
+            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
+        )
         data = list(rows.T.to_dict().values())
         self.train_data_text = data
         self.val_data_text = data
         self.test_data_text = data
 
     def process_split(self, split, indexers):
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
         def _make_instance(record):
             """ from multiple types in one column create multiple fields """
             d = {}
-            if self.is_bert:
+            if is_using_bert:
                 input_final = record["sent1"] + record["sent2"][1:]
                 d["inputs"] = sentence_to_text_field(input_final, indexers)
             else:
                 d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
                 d["sent2"] = sentence_to_text_field(record["sent2"], indexers)
             d["sent1_str"] = MetadataField(record["sent1"])
-            d["sent2_str"] =  MetadataField(" ".join(record["sent2"]))
-            d["labels"] = LabelField(record["label"], label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(int(record["idx"]), label_namespace="idxs", skip_indexing=True)
+            d["pair_id"] = LabelField(
+                record["pair_id"], label_namespace="pair_id", skip_indexing=True
+            )
+            d["sent2_str"] = MetadataField(" ".join(record["sent2"]))
+            d["labels"] = LabelField(
+                int(record["label"]), label_namespace="labels", skip_indexing=True
+            )
             return Instance(d)
+
         instances = map(_make_instance, split)
-        return instances 
-        
+        return instances
+
+    def get_metrics(self, reset=False):
+        return {"accuracy": self.acc_scorer.get_metric(reset)}
+
+    def update_diagnostic_metrics(self, logits, labels, batch):
+        self.acc_scorer(logits, labels)
+
 
 @register_task("rte", rel_path="RTE/")
 class RTETask(PairClassificationTask):
