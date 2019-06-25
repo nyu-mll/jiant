@@ -51,7 +51,16 @@ def evaluate(
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "par_idx", "qst_idx", "ans_idx", "pair_id"]
+    FIELDS_TO_EXPORT = [
+        "idx",
+        "sent1_str",
+        "sent2_str",
+        "labels",
+        "par_idx",
+        "qst_idx",
+        "ans_idx",
+        "pair_id",
+    ]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
@@ -76,7 +85,6 @@ def evaluate(
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False)
-        import pdb; pdb.set_trace()
         for batch_idx, batch in enumerate(generator):
             with torch.no_grad():
                 batch = move_to_device(batch, cuda_device)
@@ -109,7 +117,6 @@ def evaluate(
         # task_preds will be a DataFrame with columns
         # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
-
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
@@ -126,7 +133,7 @@ def evaluate(
         task_preds = pd.concat(task_preds, ignore_index=True)
         if task.name.startswith("winogender"):
             task.gender_parity_scorer(list(task_preds.T.to_dict().values()))
-            all_metrics["gender_parity"] = task.gender_parity_scorer.get_metrics(reset=True)
+            all_metrics["gender_parity"] = task.gender_parity_scorer.get_metric(reset=True)
 
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
@@ -137,7 +144,7 @@ def evaluate(
 
     # hack for diagnostics
     all_metrics["micro_avg"] /= max(n_examples_overall, 1)
-    all_metrics["macro_avg"] /= lenf(tasks)
+    all_metrics["macro_avg"] /= len(tasks)
 
     return all_metrics, all_preds
 
