@@ -92,7 +92,7 @@ def evaluate(
 
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender.
-            if not isinstance(task, GLUEDiagnosticTask) or task.name.startswith("winogender"):
+            if task.contributes_micro_macro_avg:
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:

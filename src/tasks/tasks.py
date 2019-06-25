@@ -201,6 +201,7 @@ class Task(object):
 
         self.sentences = None
         self.example_counts = None
+        self.contributes_micro_macro_avg = True
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -1213,6 +1214,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self.contributes_micro_macro_avg = False
 
     def load_data(self):
         """load diagnostics data. The tags for every column are loaded as indices.
