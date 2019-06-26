@@ -587,8 +587,8 @@ def get_task_specific_params(args, task_name):
         AllenNLP Params object of task-specific params.
     """
 
-    def _get_task_attr(attr_name):
-        return config.get_task_attr(args, task_name, attr_name)
+    def _get_task_attr(attr_name, default=None):
+        return config.get_task_attr(args, task_name, attr_name, default)
 
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
