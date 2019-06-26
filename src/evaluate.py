@@ -162,7 +162,7 @@ def write_preds(
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
-        elif isinstance(task, BooleanQuestion):
+        elif isinstance(task, BooleanQuestionTask):
             _write_boolq_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
@@ -331,7 +331,7 @@ def _write_boolq_preds(
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
-                out_d = {"idx": row["idx"], "label": pred_map[row["labels"]]}
+                out_d = {"idx": int(row["idx"]), "label": pred_map[row["labels"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
