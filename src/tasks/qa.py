@@ -198,9 +198,9 @@ class ReCoRDTask(Task):
         self._score_tracker = collections.defaultdict(list)
         self.max_seq_len = max_seq_len
         self.files_by_split = {
-            "train": os.path.join(path, "train.1000.json"),
-            "val": os.path.join(path, "dev.1000.json"),
-            "test": os.path.join(path, "test.1000.json"),
+            "train": os.path.join(path, "train.json"),
+            "val": os.path.join(path, "dev.json"),
+            "test": os.path.join(path, "test.json"),
         }
         # Load asnwers, used for computing metrics
         self._load_answers()
