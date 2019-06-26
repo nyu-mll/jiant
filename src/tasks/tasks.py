@@ -2264,6 +2264,9 @@ class WiCTask(PairClassificationTask):
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
         def _process_sent_special(sent, word):
+            """ Tokenize the subsequence before the [first] instance of the word and after,
+            then concatenate everything together. This allows us to track where in the tokenized
+            sequence the marked word is located. """
             sent_parts = sent.split(word)
             sent_tok1 = process_sentence(self._tokenizer_name, sent_parts[0], self.max_seq_len)
             sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
@@ -2323,8 +2326,6 @@ class WiCTask(PairClassificationTask):
                 d["input2"] = sentence_to_text_field(input2, indexers)
             d["idx1"] = NumericField(idxs1[0])
             d["idx2"] = NumericField(idxs2[0])
-            #d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
-            #d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
 
