@@ -104,7 +104,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
 
     Returns
     ----------------
-    model_path:
+    model_path: str
     """
     # We avoid loading the task-specific modules at the very beginning.
     if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
