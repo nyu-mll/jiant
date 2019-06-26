@@ -14,8 +14,9 @@ function boolq() {
 }
 
 function mnli_then_boolq() {
-    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq_plus, pretrain_tasks = \"mnli\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq_plus, pretrain_tasks = \"mnli\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000"
 }
+
 function commit() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 60"
 }
