@@ -124,7 +124,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     else:
         if args.do_pretrain == 1:
             model_path = get_best_checkpoint_path(args, "pretrain")
-            if best_pretrain:
+            if model_path:
                 load_model_state(
                     model, model_path, args.cuda, task_names_to_avoid_loading, strict=strict
                 )
