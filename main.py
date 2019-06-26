@@ -145,7 +145,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
                 # If do_pretrain = 0 and transfer_paradigm=frozen, then do_eval will evaluate on
                 # untrained encoder parameters.
                 assert_for_log(
-                    args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                    args.allow_untrained_encoder_parameters,
+                    "No best checkpoint found to evaluate. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
                 )
                 log.warning("Using untrained encoder parameters!")
     return task_names_to_avoid_loading
@@ -212,6 +213,19 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             args.target_tasks != "none",
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
+        if not args.do_target_task_training:
+            untrained_tasks = set(target_tasks)
+            if args.do_pretrain:
+                untrained_tasks -= set(pretrain_tasks)
+            if len(untrained_tasks) > 0:
+                assert (
+                    args.load_model
+                    or args.load_target_train_checkpoint not in ["none", ""]
+                    or args.allow_untrained_encoder_parameters
+                ), "Evaluating a model without training it on this run or loading a checkpoint.  Set `allow_untrained_encoder_parameters` if you really want to use an untrained task model."
+                log.warning(
+                    "Evauluating a target task model without training it in this run. It's up to you to ensure that you are loading parameters that were sufficiently trained for this task."
+                )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
     log.info("Will run the following steps for this experiment:\n%s", steps_log.getvalue())
@@ -545,25 +559,8 @@ def main(cl_arguments):
         if args.transfer_paradigm == "finetune":
             if args.do_target_task_training:
                 for task in target_tasks:
-                    task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
-                    if task.name != task_to_use:
-                        task_model_to_load = task_to_use
-                    else:
-                        task_model_to_load = task.name
-
-                    # Special checkpointing logic here since we train the sentence encoder
-                    # and have a best set of sent encoder model weights per task.
-                    finetune_path = os.path.join(
-                        args.run_dir, "model_state_%s_best.th" % task_model_to_load
-                    )
-                    if os.path.exists(finetune_path):
-                        ckpt_path = finetune_path
-                    else:
-                        # Find the task-specific best checkpoint to evaluate on.
-                        ckpt_path = get_best_checkpoint_path(
-                            args.run_dir, "target_train", task.name
-                        )
-                    assert ".best" in ckpt_path
+                    ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
+                    assert ckpt_path is not None and ".best" in ckpt_path
                     load_model_state(
                         model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
                     )
@@ -574,7 +571,7 @@ def main(cl_arguments):
                 # then evaluate on pretraining checkpoints.
                 for task in pretrain_tasks:
                     ckpt_path = get_best_checkpoint_path(args.run_dir, "pretrain", task.name)
-                    assert ".best" in ckpt_path
+                    assert ckpt_path is not None and ".best" in ckpt_path
                     load_model_state(
                         model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
                     )
