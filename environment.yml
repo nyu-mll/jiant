@@ -11,7 +11,7 @@ dependencies:
     - pandas=0.23.0
     - pytz=2017.3
     - pip:
-        - allennlp==0.8.1
+        - allennlp==0.8.4
         - ipdb
         - tensorboard
         - tensorboardX==1.2
