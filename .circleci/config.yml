@@ -29,10 +29,11 @@
               python scripts/download_glue_data.py --data_dir data --tasks all
               source activate jiant
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
-              python main.py --config_file config/demo.conf --overrides "transfer_paradigm=finetune"
               python main.py --config_file config/demo.conf --overrides "run_name=var_1, transfer_paradigm=finetune, do_pretrain = 1, do_full_eval=0, do_target_task_training=0"
               python main.py --config_file config/demo.conf --overrides "run_name=var_2, do_pretrain = 1, do_full_eval=0, do_target_task_training=0"
               python main.py --config_file config/demo.conf --overrides "run_name=var_3, transfer_paradigm=finetune, do_pretrain = 0, do_full_eval=1, do_target_task_training=1"
+              python main.py --config_file config/demo.conf
+              python main.py --config_file config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
         # Step 4: run tests
         - run:
             name: run tests
