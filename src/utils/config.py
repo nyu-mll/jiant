@@ -100,25 +100,17 @@ class Params(object):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
 
-def get_task_attr(
-    args: Type[Params], task_names: Union[str, Sequence[str]], attr_name: str, default=None
-):
+def get_task_attr(args: Type[Params], task_name: str, attr_name: str, default=None):
     """ Get a task-specific param.
 
-    Look in args.task_name.attr_name, then args.task_name_attr_name,
+    Look in args.task_name.attr_name, then fall back to default (if provided),
     then fall back to args.attr_name.
     """
-    if isinstance(task_names, str):
-        task_names = [task_names]
-
-    for task_name in task_names:
-        if task_name in args and (attr_name in args[task_name]):
-            return args[task_name][attr_name]
-        compound_key = "%s_%s" % (task_name, attr_name)
-        if compound_key in args:
-            return args[compound_key]
-    #  return args[attr_name]
-    return args.get(attr_name, default)
+    if task_name in args and (attr_name in args[task_name]):
+        return args[task_name][attr_name]
+    if default is not None:
+        return default
+    return args[attr_name]
 
 
 def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None):

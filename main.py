@@ -204,6 +204,19 @@ def check_configurations(args, pretrain_tasks, target_tasks):
             args.target_tasks != "none",
             "Error: Must specify at least one target task: [%s]" % args.target_tasks,
         )
+        if not args.do_target_task_training:
+            untrained_tasks = set(target_tasks)
+            if args.do_pretrain:
+                untrained_tasks -= set(pretrain_tasks)
+            if len(untrained_tasks) > 0:
+                assert (
+                    args.load_model
+                    or args.load_target_train_checkpoint not in ["none", ""]
+                    or args.allow_untrained_encoder_parameters
+                ), "Evaluating a model without training it on this run or loading a checkpoint.  Set `allow_untrained_encoder_parameters` if you really want to use an untrained task model."
+                log.warning(
+                    "Evauluating a target task model without training it in this run. It's up to you to ensure that you are loading parameters that were sufficiently trained for this task."
+                )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
     log.info("Will run the following steps for this experiment:\n%s", steps_log.getvalue())
