@@ -403,15 +403,15 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
 
         Parameters
         -------------------
-        args: config.Param object 
-        ckpt_path: str
-        model: MultiTaskModel object 
+        args: config.Param object,
+        ckpt_path: str,
+        model: MultiTaskModel object, 
         strict: bool, 
-        task: Task object 
+        task: Task object
 
         Returns 
         -------------------
-        to_train: List of tuples of (name, weight) for trainable parameters
+        to_train: List of tuples of (name, weight) of trainable parameters
 
     """
 
