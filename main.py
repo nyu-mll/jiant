@@ -279,9 +279,11 @@ def get_best_checkpoint_path(args, phase, task_name=None):
     if phase == "eval":
         if args.load_eval_checkpoint not in ("none", ""):
             checkpoint = glob.glob(args.load_eval_checkpoint)
+            import pdb
+
+            pdb.set_trace()
             assert len(checkpoint) > 0, (
-                "Specified load_target_train_checkpoint not found: %r"
-                % args.load_target_train_checkpoint
+                "Specified load_eval_checkpoint not found: %r" % args.load_eval_checkpoint
             )
         else:
             # Get the best checkpoint from the target_train phase to evaluate on.
@@ -572,6 +574,9 @@ def main(cl_arguments):
 
         if args.do_target_task_training:
             for task in target_tasks:
+                import pdb
+
+                pdb.set_trace()
                 # Find the task-specific best checkpoint to evaluate on.
                 ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
                 assert ckpt_path is not None and ".best" in ckpt_path
