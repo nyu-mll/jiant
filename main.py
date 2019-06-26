@@ -560,7 +560,7 @@ def main(cl_arguments):
         if args.do_target_task_training:
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
-                if args.load_eval_checkpoint:
+                if args.load_eval_checkpoint not in ("none", "") :
                     checkpoint = glob.glob(args.load_eval_checkpoint)
                     ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
                 else:
