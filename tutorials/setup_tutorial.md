@@ -37,7 +37,7 @@ Some requirements may only be needed for specific configurations. If you have tr
 You will also need to install dependencies for `nltk` if you do not already have them:
 
 ```
-python -m nltk.downloader -d  perluniprops nonbreaking_prefixes punkt
+nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
 ```
 
 
