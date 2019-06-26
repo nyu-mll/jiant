@@ -12,6 +12,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.tasks import (
+    BooleanQuestionTask,
     CommitmentTask,
     RTESuperGLUETask,
     WiCTask,
@@ -159,7 +160,7 @@ def write_preds(
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
-        elif isinstance(task, BoolQTask):
+        elif isinstance(task, BooleanQuestion):
             _write_boolq_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
