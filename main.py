@@ -426,7 +426,7 @@ def reload_model(args, ckpt_path, model, index, strict, task):
     """
     if index > 0 and args.transfer_paradigm == "finetune":
         # Only reload after target_train for first task, and transfer_paradigm=finetune.
-        load_model_state(model, ckpt_path, args.cuda, skip_task_models=task, strict=strict)
+        load_model_state(model, ckpt_path, args.cuda, skip_task_models=[task.name], strict=strict)
 
     if args.transfer_paradigm == "frozen":
         # will be empty if elmo = 0. scalar_mix_0 should always be
