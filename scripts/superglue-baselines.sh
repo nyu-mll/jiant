@@ -29,8 +29,9 @@ function wic() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = wic, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
 }
 
-function wic_debug() {
-    python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = wic-v2, run_name = wic-v2, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
+function debug() {
+    #python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = wic-v2, run_name = wic-v2, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
+    python -m ipdb main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = wic-v2-nobert, run_name = wic-v2, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
 }
 
 function wsc() {
@@ -51,5 +52,5 @@ elif [ $1 == "wic" ]; then
 elif [ $1 == "wsc" ]; then
     wsc
 elif [ $1 == "debug" ]; then
-    wic_debug
+    debug
 fi

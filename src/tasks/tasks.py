@@ -2290,9 +2290,9 @@ class WiCTask(PairClassificationTask):
                     trgs.append(trg)
                 return [sents1, sents2, idxs1, idxs2, trgs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.detok.jsonl"))
-        self.val_data_text = _load_split(os.path.join(self.path, "dev.detok.jsonl"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.detok.jsonl"))
+        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
