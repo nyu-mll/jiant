@@ -2283,8 +2283,12 @@ class WiCTask(PairClassificationTask):
                     row = json.loads(row)
                     sent1 = row["sentence1"]
                     sent2 = row["sentence2"]
-                    sent1, start1, end1 = _process_sent_special(sent1, sent1[row["start1"]:row["end1"]])
-                    sent2, start2, end2 = _process_sent_special(sent2, sent2[row["start2"]:row["end2"]])
+                    sent1, start1, end1 = _process_sent_special(
+                        sent1, sent1[row["start1"] : row["end1"]]
+                    )
+                    sent2, start2, end2 = _process_sent_special(
+                        sent2, sent2[row["start2"] : row["end2"]]
+                    )
                     sents1.append(sent1)
                     sents2.append(sent2)
                     idxs1.append((start1, end1))

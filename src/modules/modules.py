@@ -454,13 +454,15 @@ class SingleClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
+                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(
+                    -1
+                ), "Invalid index dimension!"
                 idx = idx.expand([-1, -1, sent.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
 
             ctx_mask = (idx != 0).float()
-            ctx_mask[:, 0] = 1 # kind of a hack, but the first elements of this mask should never be zero
+            ctx_mask[:, 0] = 1  # the first elements of this mask should never be zero
             ctx_emb = sent.gather(dim=1, index=idx) * ctx_mask
             ctx_emb = ctx_emb.sum(dim=1) / ctx_mask.sum(dim=1)
             ctx_embs.append(ctx_emb)
@@ -509,7 +511,9 @@ class PairClassifier(nn.Module):
                 raise ValueError("Invalid dimensions of index tensor!")
 
             s1_ctx_mask = (idx != 0).float()
-            s1_ctx_mask[:, 0] = 1 # kind of a hack, but the first elements of this mask should never be zero
+            s1_ctx_mask[
+                :, 0
+            ] = 1  # kind of a hack, but the first elements of this mask should never be zero
             s1_ctx_emb = s1.gather(dim=1, index=idx) * s1_ctx_mask
             s1_ctx_emb = s1_ctx_emb.sum(dim=1) / s1_ctx_mask.sum(dim=1)
             s1_ctx_embs.append(s1_ctx_emb)
@@ -528,7 +532,9 @@ class PairClassifier(nn.Module):
                 raise ValueError("Invalid dimensions of index tensor!")
 
             s2_ctx_mask = (idx != 0).float()
-            s2_ctx_mask[:, 0] = 1 # kind of a hack, but the first elements of this mask should never be zero
+            s2_ctx_mask[
+                :, 0
+            ] = 1  # kind of a hack, but the first elements of this mask should never be zero
             s2_ctx_emb = s2.gather(dim=1, index=idx) * s2_ctx_mask
             s2_ctx_emb = s2_ctx_emb.sum(dim=1) / s2_ctx_mask.sum(dim=1)
             s2_ctx_embs.append(s2_ctx_emb)
