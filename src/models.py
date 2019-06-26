@@ -20,20 +20,20 @@ from sklearn.metrics import mean_squared_error
 from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
 
 from .modules.edge_probing import EdgeClassifierModule
-from .modules.modules import (
-    AttnPairEncoder,
-    BiLMEncoder,
-    BoWSentEncoder,
-    Classifier,
-    ElmoCharacterEncoder,
-    NullPhraseLayer,
-    ONLSTMPhraseLayer,
-    PairClassifier,
+from .modules.simple_modules import (
     Pooler,
-    PRPNPhraseLayer,
-    SentenceEncoder,
+    Classifier,
     SingleClassifier,
+    PairClassifier,
+    NullPhraseLayer,
 )
+from .modules.attn_pair_encoder import AttnPairEncoder
+from .modules.sentence_encoder import SentenceEncoder
+from .modules.bilm_encoder import BiLMEncoder
+from .modules.bow_sentence_encoder import BoWSentEncoder
+from .modules.elmo_character_encoder import ElmoCharacterEncoder
+from .modules.onlstm_phrase_layer import ONLSTMPhraseLayer
+from .modules.prpn_phrase_layer import PRPNPhraseLayer
 from .modules.onlstm.ON_LSTM import ONLSTMStack
 from .modules.prpn.PRPN import PRPN
 from .modules.seq2seq_decoder import Seq2SeqDecoder
@@ -173,10 +173,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLM architecture for shared encoder!")
     elif args.sent_enc == "bow":
         sent_encoder = BoWSentEncoder(vocab, embedder)
-        log.info("Using BoW architecture for shared encoder!")
         assert_for_log(
             not args.skip_embs, "Skip connection not currently supported with `bow` encoder."
         )
@@ -194,7 +192,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-        log.info("Using BiLSTM architecture for shared encoder!")
     elif args.sent_enc == "transformer":
         transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
         sent_encoder = SentenceEncoder(
@@ -479,7 +476,11 @@ def build_task_modules(args, tasks, model, d_sent, d_emb, embedder, vocab):
     # Attach task-specific params.
     for task in set(tasks):
         task_params = get_task_specific_params(args, task.name)
-        log.info("\tTask '%s' params: %s", task.name, json.dumps(task_params.as_dict(), indent=2))
+        log.info(
+            "\tTask '%s' params: %s",
+            task.name,
+            json.dumps(task_params.as_dict(quiet=True), indent=2),
+        )
         # Store task-specific params in case we want to access later
         setattr(model, "%s_task_params" % task.name, task_params)
 
@@ -586,8 +587,8 @@ def get_task_specific_params(args, task_name):
         AllenNLP Params object of task-specific params.
     """
 
-    def _get_task_attr(attr_name):
-        return config.get_task_attr(args, task_name, attr_name)
+    def _get_task_attr(attr_name, default=None):
+        return config.get_task_attr(args, task_name, attr_name, default)
 
     params = {}
     params["cls_type"] = _get_task_attr("classifier")

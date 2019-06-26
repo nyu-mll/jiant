@@ -27,7 +27,13 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from .tasks import ALL_COLA_NPI_TASKS, ALL_GLUE_TASKS, ALL_NLI_PROBING_TASKS, ALL_TARG_VOC_TASKS
+from .tasks import (
+    ALL_COLA_NPI_TASKS,
+    ALL_GLUE_TASKS,
+    ALL_SUPERGLUE_TASKS,
+    ALL_NLI_PROBING_TASKS,
+    ALL_TARG_VOC_TASKS,
+)
 from .tasks import REGISTRY as TASKS_REGISTRY
 from .tasks.mt import MTTask
 from .utils import config, serialize, utils
@@ -378,6 +384,8 @@ def parse_task_list_arg(task_list):
     for task_name in task_list.split(","):
         if task_name == "glue":
             task_names.extend(ALL_GLUE_TASKS)
+        elif task_name == "superglue":
+            task_names.extend(ALL_SUPERGLUE_TASKS)
         elif task_name == "none" or task_name == "":
             continue
         else:
