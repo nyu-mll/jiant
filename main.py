@@ -538,8 +538,10 @@ def main(cl_arguments):
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-
-        if args.do_target_task_training:
+        if args.do_target_task_training or (args.load_model and not args.do_pretrain):
+            # If we either do target task training, or if we only evaluate
+            # without pretraining or target task training
+            # then we evaluate on the target tasks.
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
                 ckpt_path = get_best_checkpoint_path(args, "eval", task.name)

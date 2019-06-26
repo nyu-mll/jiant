@@ -239,7 +239,7 @@ class TestCheckpointing(unittest.TestCase):
         target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
         assert target_ckpt == self.args.load_target_train_checkpoint
 
-        # Load from best prtrain checkpoint
+        # Load from best pretrain checkpoint.
         os.mkdir(os.path.join(self.temp_dir, "wic"))
         best_pretrain_path = os.path.join(self.temp_dir, "model_state_pretrain_epoch_1.best.th")
         open(best_pretrain_path, "wb").close()
