@@ -134,7 +134,8 @@ def setup_target_task_training(args, target_tasks, model, strict):
             # the target tasks to finetune.
             model_state = model.state_dict()
             assert_for_log(
-                args.allow_untrained_encoder_parameters, "No best checkpoint found to evaluate."
+                args.allow_untrained_encoder_parameters,
+                "No best checkpoint found to evaluate. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
             )
             model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
             torch.save(model_state, model_path)
@@ -250,33 +251,32 @@ def get_best_checkpoint_path(args, phase, task_name=None):
         3) if we're doing pretraining, then load the overall best model state
         4) user-specified eval checkpoint
         5) None
+
     """
     checkpoint = []
-    if phase == "target_train":
-        if args.load_target_train_checkpoint not in ("none", ""):
-            # This is to load a particular target train checkpoint.
-            checkpoint = glob.glob(args.load_target_train_checkpoint)
+    if phase == "target_train" and args.load_target_train_checkpoint not in ("none", ""):
+        checkpoint = glob.glob(args.load_target_train_checkpoint)
+        assert len(checkpoint) > 0, (
+            "Specified load_target_train_checkpoint not found: %r"
+            % args.load_target_train_checkpoint
+        )
+
+    if phase == "pretrain":
+        checkpoint = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th"))
+    if phase == "eval":
+        if args.load_eval_checkpoint not in ("none", ""):
+            checkpoint = glob.glob(args.load_eval_train_checkpoint)
             assert len(checkpoint) > 0, (
                 "Specified load_target_train_checkpoint not found: %r"
                 % args.load_target_train_checkpoint
             )
         else:
+            # Get the best checkpoint from the target_train phase to evaluate on.
             assert task_name is not None, "Specify a task checkpoint to evaluate from."
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_%s_epoch_*.best.th" % phase)
             )
-    if len(checkpoint) == 0:
-        checkpoint = glob.glob(
-            os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
-        )
-    if len(checkpoint) == 0 and phase == "pretrain":
-        checkpoint = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th"))
-    if len(checkpoint) == 0 and phase == "eval" and args.load_eval_checkpoint not in ("none", ""):
-        checkpoint = glob.glob(args.load_eval_train_checkpoint)
-        assert len(checkpoint) > 0, (
-            "Specified load_target_train_checkpoint not found: %r"
-            % args.load_target_train_checkpoint
-        )
+
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
         return checkpoint[0]
@@ -560,12 +560,8 @@ def main(cl_arguments):
         if args.do_target_task_training:
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
-                if args.load_eval_checkpoint not in ("none", "") :
-                    checkpoint = glob.glob(args.load_eval_checkpoint)
-                    ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                else:
-                    ckpt_path = get_best_checkpoint_path(args, "target_train", task.name)
-                assert ".best" in ckpt_path
+                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+                assert ckpt_path is not None and ".best" in ckpt_path
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
                 evaluate_and_write(args, model, [task], splits_to_write)
@@ -574,7 +570,7 @@ def main(cl_arguments):
             # then evaluate on pretraining checkpoints.
             for task in pretrain_tasks:
                 ckpt_path = get_best_checkpoint_path(args, "pretrain", task.name)
-                assert ".best" in ckpt_path
+                assert ckpt_path is not None and ".best" in ckpt_path
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
                 evaluate_and_write(args, model, [task], splits_to_write)
 
