@@ -106,28 +106,14 @@ def setup_target_task_training(args, target_tasks, model, strict):
     ----------------
     model_path: str
     """
-    # We avoid loading the task-specific modules at the very beginning.
-    if args.do_target_task_training and not args.allow_reuse_of_pretraining_parameters:
-        # If we're training models for evaluation, which is always done from scratch with a fresh
-        # optimizer, we shouldn't load parameters for those models.
-        # Usually, there won't be trained parameters to skip, but this can happen if a run is
-        # killed during the do_target_task_training phase.
-        task_names_to_avoid_loading = [task.name for task in target_tasks]
-    else:
-        task_names_to_avoid_loading = []
 
     if args.load_target_train_checkpoint not in ("none", ""):
         # This is to load a particular target train checkpoint.
         model_path = get_best_checkpoint_path(args, "target_train")
         log.info("Loading existing model from %r...", model_path)
-        load_model_state(model, model_path, args.cuda, task_names_to_avoid_loading, strict=strict)
     else:
         if args.do_pretrain == 1:
             model_path = get_best_checkpoint_path(args, "pretrain")
-            if model_path:
-                load_model_state(
-                    model, model_path, args.cuda, task_names_to_avoid_loading, strict=strict
-                )
         else:
             # We want to do target training without pretraining, thus
             # we need to first create a checkpoint to come back to for each of
@@ -135,7 +121,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
             model_state = model.state_dict()
             assert_for_log(
                 args.allow_untrained_encoder_parameters,
-                "No best checkpoint found to evaluate. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
+                "No best checkpoint found to target train on. Set `allow_untrained_encoder_parameters` if you really want to use an untrained encoder.",
             )
             model_path = os.path.join(args.run_dir, "model_state_untrained_pre_target_train.th")
             torch.save(model_state, model_path)
@@ -279,9 +265,6 @@ def get_best_checkpoint_path(args, phase, task_name=None):
     if phase == "eval":
         if args.load_eval_checkpoint not in ("none", ""):
             checkpoint = glob.glob(args.load_eval_checkpoint)
-            import pdb
-
-            pdb.set_trace()
             assert len(checkpoint) > 0, (
                 "Specified load_eval_checkpoint not found: %r" % args.load_eval_checkpoint
             )
@@ -574,9 +557,6 @@ def main(cl_arguments):
 
         if args.do_target_task_training:
             for task in target_tasks:
-                import pdb
-
-                pdb.set_trace()
                 # Find the task-specific best checkpoint to evaluate on.
                 ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
                 assert ckpt_path is not None and ".best" in ckpt_path
