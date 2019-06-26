@@ -196,13 +196,14 @@ class ReCoRDTask(Task):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
         self._score_tracker = collections.defaultdict(list)
-        self._answers = {} # Used for computing metrics, set when loading data
         self.max_seq_len = max_seq_len
         self.files_by_split = {
-            "train": os.path.join(path, "train.json"),
-            "val": os.path.join(path, "dev.json"),
-            "test": os.path.join(path, "test.json"),
+            "train": os.path.join(path, "train.1000.json"),
+            "val": os.path.join(path, "dev.1000.json"),
+            "test": os.path.join(path, "test.1000.json"),
         }
+        # Load asnwers, used for computing metrics
+        self._load_answers()
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
@@ -233,7 +234,6 @@ class ReCoRDTask(Task):
                                    self.max_seq_len)
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"]: idx["end"] + 1] for idx in ent_idxs]
-            #ents = [process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1] for ent in ents]
             qas = item["qas"]
             for qa in qas:
                 qst = split_then_tokenize(qa["query"])
@@ -246,10 +246,20 @@ class ReCoRDTask(Task):
                       "psg_id": psg_id,
                       "qst_id": qst_id
                      }
-                self._answers[qst_id] = anss
                 examples.append(ex)
 
         return examples
+
+    def _load_answers(self) -> None:
+        """ """
+        answers = {}
+        for split_path in self.files_by_split.values():
+            data = json.load(open(split_path, encoding="utf-8"))["data"]
+            for item in data:
+                for qa in item["qas"]:
+                    qst_id = qa["id"]
+                    answers[qst_id] = [a["text"] for a in qa["answers"]]
+        self._answers = answers
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
@@ -306,7 +316,7 @@ class ReCoRDTask(Task):
             par_idx = example["psg_id"]
             qst_idx = example["qst_id"]
             for ent_idx, (ent, ent_str) in enumerate(zip(ents, ent_strs)):
-                label = is_answer(ent, anss)
+                label = is_answer(ent_str, anss)
                 qst = insert_ent(ent, qst_template)
                 yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
 

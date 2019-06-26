@@ -290,7 +290,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
-    if "test" in split_to_write:
+    if "test" in splits_to_write:
         evaluate.write_results(te_results, results_tsv, run_name=run_name)
 
 
