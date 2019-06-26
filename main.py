@@ -105,7 +105,7 @@ def setup_target_task_training(args, target_tasks, model, strict):
     ----------------
     model_path: str
     """
-    model_path = get_best_checkpoint_path(args, "pretrain")
+    model_path = get_best_checkpoint_path(args, "target_train")
     if model_path is None:
         # We want to do target training without pretraining, thus
         # we need to first create a checkpoint to come back to for each of
@@ -553,7 +553,7 @@ def main(cl_arguments):
             # If args.do_target_task_training = 0 and args.do_pretrain = 1
             # then evaluate on pretraining checkpoints.
             for task in pretrain_tasks:
-                ckpt_path = get_best_checkpoint_path(args, "pretrain", task.name)
+                ckpt_path = get_best_checkpoint_path(args, "target_train", task.name)
                 assert ckpt_path is not None and ".best" in ckpt_path
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
                 evaluate_and_write(args, model, [task], splits_to_write)
