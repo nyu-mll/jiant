@@ -1,5 +1,5 @@
 from allennlp.models.model import Model
-from allennlp.nn import InitializerApplicator, util
+from allennlp.nn import InitializerApplicator
 from .prpn.PRPN import PRPN
 
 

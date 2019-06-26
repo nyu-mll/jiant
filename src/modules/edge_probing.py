@@ -1,13 +1,12 @@
 # Implementation of edge probing module.
 
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
-from torch.autograd import Variable
 
 from ..tasks.edge_probing import EdgeProbingTask
 from .simple_modules import Classifier
@@ -204,7 +203,7 @@ class EdgeClassifierModule(nn.Module):
         if self.loss_type == "sigmoid":
             return torch.sigmoid(logits)
         else:
-            raise ValueError("Unsupported loss type '%s' " "for edge probing." % loss_type)
+            raise ValueError("Unsupported loss type '%s' " "for edge probing." % self.loss_type)
 
     def compute_loss(self, logits: torch.Tensor, labels: torch.Tensor, task: EdgeProbingTask):
         """ Compute loss & eval metrics.
