@@ -111,11 +111,11 @@ def select_relevant_print_args(args):
         return_args: Params object with only relevant arguments
         """
     import pyhocon
+    from pathlib import Path
 
     exp_config_file = os.path.join(args.run_dir, "params.conf")
-    defaults_file = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)).split("jiant")[0] + "jiant/config/defaults.conf"
-    )
+    root_directory = Path(__file__).parents[2]
+    defaults_file = os.path.join(str(root_directory) + "/config/defaults.conf")
     exp_basedir = os.path.dirname(exp_config_file)
     default_basedir = os.path.dirname(defaults_file)
     fd = open(exp_config_file, "r")
@@ -476,27 +476,3 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
-
-
-def check_arg_name(args):
-    """ Raise error if obsolete arg names are present. """
-    # Mapping - key: old name, value: new name
-    name_dict = {
-        "task_patience": "lr_patience",
-        "do_train": "do_pretrain",
-        "train_for_eval": "do_target_task_training",
-        "do_eval": "do_full_eval",
-        "train_tasks": "pretrain_tasks",
-        "eval_tasks": "target_tasks",
-        "eval_data_fraction": "target_train_data_fraction",
-        "eval_val_interval": "target_train_val_interval",
-        "eval_max_vals": "target_train_max_vals",
-        "load_eval_checkpoint": "load_target_train_checkpoint",
-        "eval_data_fraction": "target_train_data_fraction",
-    }
-    for old_name, new_name in name_dict.items():
-        assert_for_log(
-            old_name not in args,
-            "Error: Attempting to load old arg name [%s], please update to new name [%s]"
-            % (old_name, name_dict[old_name]),
-        )

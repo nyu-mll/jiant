@@ -33,8 +33,16 @@ def build_trainer_params(args, task_names, phase="pretrain"):
     In particular, we want to search args for task specific training parameters.
     """
 
-    def _get_task_attr(attr_name):
-        return config.get_task_attr(args, task_names, attr_name)
+    def _get_attr(attr_name, default=None):
+        if phase == "pretrain":
+            # We ignore task-specific trainer attributes during pretraining.
+            if default is not None:
+                return default
+            return args[attr_name]
+        else:
+            # During target task training, we get task-specific attributes if available.
+            assert len(task_names) == 1
+            return config.get_task_attr(args, task_names[0], attr_name, default)
 
     params = {}
     train_opts = [
@@ -45,8 +53,6 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "lr_patience",
         "patience",
         "scheduler_threshold",
-    ]
-    extra_opts = [
         "sent_enc",
         "d_hid",
         "warmup",
@@ -57,21 +63,25 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "keep_all_checkpoints",
         "val_data_limit",
         "max_epochs",
-        "training_data_fraction",
+        "dec_val_scale",
     ]
     for attr in train_opts:
-        params[attr] = _get_task_attr(attr)
-    for attr in extra_opts:
-        if attr == "training_data_fraction":
-            if phase == "pretrain":
-                params[attr] = args.pretrain_data_fraction
-            else:
-                params[attr] = args.target_train_data_fraction
-        else:
-            params[attr] = getattr(args, attr)
-    params["max_vals"] = _get_task_attr("max_vals")
-    params["val_interval"] = _get_task_attr("val_interval")
-    params["dec_val_scale"] = _get_task_attr("dec_val_scale")
+        params[attr] = _get_attr(attr)
+
+    # Special case: If no task-specific arg is found for these, we'll need to fall back to a
+    # phase-specific default.
+    params["max_vals"] = _get_attr(
+        "max_vals", default=args.target_train_max_vals if phase == "target_train" else None
+    )
+    params["val_interval"] = _get_attr(
+        "val_interval", default=args.target_train_val_interval if phase == "target_train" else None
+    )
+    params["training_data_fraction"] = _get_attr(
+        "training_data_fraction",
+        default=args.target_train_data_fraction
+        if phase == "target_train"
+        else args.pretrain_data_fraction,
+    )
 
     return Params(params)
 
@@ -181,7 +191,6 @@ class SamplingMultiTaskTrainer:
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
-
         Parameters
         ----------
         model : ``Model``, required.
@@ -304,6 +313,11 @@ class SamplingMultiTaskTrainer:
         task_infos = {task.name: {} for task in tasks}
         for task in tasks:
             task_info = task_infos[task.name]
+            if (
+                os.path.exists(os.path.join(self._serialization_dir, task.name)) is False
+                and phase == "target_train"
+            ):
+                os.mkdir(os.path.join(self._serialization_dir, task.name))
 
             # Adding task-specific smart iterator to speed up training
             instance = [i for i in itertools.islice(task.train_data, 1)][0]
@@ -355,6 +369,7 @@ class SamplingMultiTaskTrainer:
         metric_infos = {
             metric: {"hist": [], "stopped": False, "best": (-1, {})} for metric in all_metrics
         }
+        self.task_to_metric_mapping = {task.val_metric: task.name for task in tasks}
         self._task_infos = task_infos
         self._metric_infos = metric_infos
         return task_infos, metric_infos
@@ -494,9 +509,8 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if (
-            self._serialization_dir is not None and phase != "target_train"
-        ):  # Resume from serialization path
+        if self._serialization_dir is not None and phase == "pretrain":
+            # Resume from serialization path
             if load_model and any(
                 ["model_state_" in x for x in os.listdir(self._serialization_dir)]
             ):
@@ -530,25 +544,32 @@ class SamplingMultiTaskTrainer:
         task_names = [task.name for task in tasks]
         task_n_train_examples = np.array([task.n_train_examples for task in tasks])
         task_n_train_batches = np.array([task_infos[task.name]["n_tr_batches"] for task in tasks])
-        log.info("Training examples per task: " + str(dict(zip(task_names, task_n_train_examples))))
-        sample_weights = self.get_sampling_weights(
-            weighting_method, len(tasks), task_n_train_examples, task_n_train_batches
-        )
-
-        normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
         log.info(
-            "Using weighting method: %s, with normalized sample weights %s ",
-            weighting_method,
-            np.array_str(normalized_sample_weights, precision=4),
+            "Training examples per task, before any subsampling: "
+            + str(dict(zip(task_names, task_n_train_examples)))
         )
+        if len(tasks) > 1:
+            sample_weights = self.get_sampling_weights(
+                weighting_method, len(tasks), task_n_train_examples, task_n_train_batches
+            )
+
+            normalized_sample_weights = np.array(sample_weights) / sum(sample_weights)
+            log.info(
+                "Using weighting method: %s, with normalized sample weights %s ",
+                weighting_method,
+                np.array_str(normalized_sample_weights, precision=4),
+            )
+            scaling_weights = self.get_scaling_weights(
+                scaling_method, len(tasks), task_names, task_n_train_examples
+            )
+        else:
+            sample_weights = normalized_sample_weights = [1.0]
+            scaling_weights = {task_names[0]: 1.0}
 
         # Sample the tasks to train on. Do it all at once (val_interval) for
         # MAX EFFICIENCY.
         samples = random.choices(tasks, weights=sample_weights, k=validation_interval)
 
-        scaling_weights = self.get_scaling_weights(
-            scaling_method, len(tasks), task_names, task_n_train_examples
-        )
         offset = 0
         all_tr_metrics = {}
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
@@ -656,7 +677,7 @@ class SamplingMultiTaskTrainer:
                 # Validate
                 log.info("Validating...")
                 all_val_metrics, should_save, new_best_macro = self._validate(
-                    n_val, tasks, batch_size, periodic_save=(phase != "target_train")
+                    n_val, tasks, batch_size
                 )
 
                 # Check stopping conditions
@@ -758,7 +779,6 @@ class SamplingMultiTaskTrainer:
         decrease validation metric.
         should_save: bool, for checkpointing
         new_best_macro: bool, indicator of whether the previous best preformance score was exceeded
-
         Returns
         ________
         metric_infos: dict storing information about the various metrics
@@ -790,6 +810,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
+
         Parameters
         ----------
         task: current task to get validation performance of
@@ -821,7 +842,8 @@ class SamplingMultiTaskTrainer:
 
         for batch in val_generator:
             batch_num += 1
-            out = self._forward(batch, task=task)
+            with torch.no_grad():
+                out = self._forward(batch, task=task)
             loss = out["loss"]
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
             n_examples += out["n_exs"]
@@ -871,16 +893,15 @@ class SamplingMultiTaskTrainer:
     def _validate(self, epoch, tasks, batch_size, periodic_save=True):
         """
         Validate on all tasks and return the results and whether to save this epoch or not.
-
         Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-          any given task's training set.
+        any given task's training set.
 
         Parameters
         ----------
         epoch: int
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
-        periodic_save: bool, alue of whether or not to save model and progress periodically
+        periodic_save: bool, value of whether or not to save model and progress periodically
 
         Returns
         __________
@@ -919,7 +940,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(  # noqa
+            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
                 epoch,
                 all_val_metrics,
                 metric,
@@ -1019,24 +1040,62 @@ class SamplingMultiTaskTrainer:
         """ format some metrics as a string """
         return ", ".join(["%s: %.4f" % (name, value) for name, value in metrics.items()])
 
-    def _unmark_previous_best(self, phase, epoch):
+    def _unmark_previous_best(self, phase, epoch, task=""):
         marked_best = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.best_macro.th".format(phase))
+            os.path.join(self._serialization_dir, task, "*_state_{}_epoch_*.best.th".format(phase))
         )
         for file in marked_best:
             # Skip the just-written checkpoint.
             if "_{}.".format(epoch) not in file:
-                os.rename(file, re.sub("%s$" % ".best_macro.th", ".th", file))
+                os.rename(file, re.sub("%s$" % (".best.th"), ".th", file))
 
-    def _delete_old_checkpoints(self, phase, epoch):
+    def _delete_old_checkpoints(self, phase, epoch, task=""):
         candidates = glob.glob(
-            os.path.join(self._serialization_dir, "*_state_{}_epoch_*.th".format(phase))
+            os.path.join(self._serialization_dir + task, "*_state_{}_epoch_*.th".format(phase))
         )
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if ".best_macro" not in file and "_{}.".format(epoch) not in file:
+            if ".best" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
+
+    def _save_pretrain_checkpoint(
+        self,
+        task_states,
+        metric_states,
+        training_state,
+        model_state,
+        model_path,
+        epoch,
+        best_str,
+        new_best_macro,
+    ):
+        """
+        Save to pretraining-specific location.
+        """
+        torch.save(
+            task_states,
+            os.path.join(
+                self._serialization_dir, "task_state_pretrain_epoch_{}{}.th".format(epoch, best_str)
+            ),
+        )
+        torch.save(
+            metric_states,
+            os.path.join(
+                self._serialization_dir,
+                "metric_state_pretrain_epoch_{}{}.th".format(epoch, best_str),
+            ),
+        )
+        torch.save(model_state, model_path)
+        torch.save(
+            training_state,
+            os.path.join(
+                self._serialization_dir,
+                "training_state_pretrain_epoch_{}{}.th".format(epoch, best_str),
+            ),
+        )
+        if new_best_macro:
+            self._unmark_previous_best("pretrain", epoch)
 
     def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False):
         """
@@ -1054,18 +1113,14 @@ class SamplingMultiTaskTrainer:
             )
 
         epoch = training_state["epoch"]
-        if phase == "target_train":
-            model_path = os.path.join(self._serialization_dir, "model_state_target_train_best.th")
+        if new_best_macro:
+            best_str = ".best"
         else:
-            if new_best_macro:
-                best_str = ".best_macro"
-            else:
-                best_str = ""
+            best_str = ""
 
-            model_path = os.path.join(
-                self._serialization_dir,
-                "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-            )
+        model_path = os.path.join(
+            self._serialization_dir, "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str)
+        )
 
         model_state = self._model.state_dict()
 
@@ -1073,69 +1128,120 @@ class SamplingMultiTaskTrainer:
         for name, param in self._model.named_parameters():
             if not param.requires_grad:
                 del model_state[name]
-        torch.save(model_state, model_path)
 
-        if phase != "target_train":
+        task_states = {}
+        for task_name, task_info in self._task_infos.items():
+            task_states[task_name] = {}
+            task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
+            task_states[task_name]["stopped"] = task_info["stopped"]
+            if self._g_optimizer is None:
+                task_states[task_name]["optimizer"] = task_info["optimizer"].state_dict()
+                sched_params = {}
+                task_states[task_name]["scheduler"] = sched_params
+        task_states["global"] = {}
+        task_states["global"]["optimizer"] = (
+            self._g_optimizer.state_dict() if self._g_optimizer is not None else None
+        )
+        if self._g_scheduler is not None:
+            sched_params = {}
+            task_states["global"]["scheduler"] = sched_params
+        else:
+            task_states["global"]["scheduler"] = None
+
+        metric_states = {}
+        for metric_name, metric_info in self._metric_infos.items():
+            metric_states[metric_name] = {}
+            metric_states[metric_name]["hist"] = metric_info["hist"]
+            metric_states[metric_name]["stopped"] = metric_info["stopped"]
+            metric_states[metric_name]["best"] = metric_info["best"]
+
+        if phase == "pretrain":
+            self._save_pretrain_checkpoint(
+                task_states,
+                metric_states,
+                training_state,
+                model_state,
+                model_path,
+                epoch,
+                best_str,
+                new_best_macro,
+            )
+        else:  # phase == "target_train":
+            # For target train, we save a separate copy of BERT per task.
+            self._save_target_train_checkpoints(
+                epoch, best_str, new_best_macro, task_states, model_state, training_state
+            )
+
+        if not self._keep_all_checkpoints:
+            self._delete_old_checkpoints(phase, epoch)
+
+        log.info("Saved checkpoints to %s", self._serialization_dir)
+
+    def _save_target_train_checkpoints(
+        self, epoch, best_str, new_best_macro, task_states, model_state, training_state
+    ):
+        """
+        Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint
+        will contain different weights for BERT. If transfer_paradigm=frozen, the only difference will be
+        in the weights for the task-specific modules.
+
+        Parameters
+        --------------------
+            - epoch: int
+            - phase: str
+            - new_best_macro: bool
+            - task_states: dict
+            - model_state: dict of weights
+            - model_state: experiment model
+
+        Returns
+        --------------------
+        None
+        """
+        for metric_name, metric_info in self._metric_infos.items():
+            if metric_name in ["macro_avg", "micro_avg"]:
+                continue
+            task_name = self.task_to_metric_mapping[metric_name]
+            torch.save(
+                metric_info,
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "metric_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
+            torch.save(
+                task_states[task_name],
+                os.path.join(
+                    self._serialization_dir,
+                    task_name,
+                    "task_state_target_train_epoch_{}{}.th".format(epoch, best_str),
+                ),
+            )
             torch.save(
                 training_state,
                 os.path.join(
                     self._serialization_dir,
-                    "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                    task_name,
+                    "training_state_target_train_epoch_{}{}.th".format(epoch, best_str),
                 ),
             )
 
-            task_states = {}
-            for task_name, task_info in self._task_infos.items():
-                task_states[task_name] = {}
-                task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
-                task_states[task_name]["stopped"] = task_info["stopped"]
-                if self._g_optimizer is None:
-                    task_states[task_name]["optimizer"] = task_info["optimizer"].state_dict()
-                    sched_params = {}
-                    task_states[task_name]["scheduler"] = sched_params
-            task_states["global"] = {}
-            task_states["global"]["optimizer"] = (
-                self._g_optimizer.state_dict() if self._g_optimizer is not None else None
-            )
-            if self._g_scheduler is not None:
-                sched_params = {}
-                task_states["global"]["scheduler"] = sched_params
-            else:
-                task_states["global"]["scheduler"] = None
             torch.save(
-                task_states,
+                model_state,
                 os.path.join(
                     self._serialization_dir,
-                    "task_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                    task_name,
+                    "model_state_target_train_epoch_{}{}.th".format(epoch, best_str),
                 ),
             )
-
-            metric_states = {}
-            for metric_name, metric_info in self._metric_infos.items():
-                metric_states[metric_name] = {}
-                metric_states[metric_name]["hist"] = metric_info["hist"]
-                metric_states[metric_name]["stopped"] = metric_info["stopped"]
-                metric_states[metric_name]["best"] = metric_info["best"]
-            torch.save(
-                metric_states,
-                os.path.join(
-                    self._serialization_dir,
-                    "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
-                ),
-            )
-        log.info("Saved to %s", self._serialization_dir)
-
-        if phase != "target_train" and new_best_macro:
-            self._unmark_previous_best(phase, epoch)
-
-        if not self._keep_all_checkpoints:
-            self._delete_old_checkpoints(phase, epoch)
+            if new_best_macro:
+                self._unmark_previous_best("target_train", epoch, task=task_name)
 
     def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=["pretrain"]):
 
         """
         Search for checkpoints to load, looking only for `main` training checkpoints.
-
         TODO: This is probably hairier than it needs to be. If you're good at string handling...
         """
         if not self._serialization_dir:
@@ -1184,7 +1290,7 @@ class SamplingMultiTaskTrainer:
 
         model_path = os.path.join(self._serialization_dir, "model_state_{}".format(suffix_to_load))
         training_state_path = os.path.join(
-            self._serialization_dir, "pretraining_state_{}".format(suffix_to_load)
+            self._serialization_dir, "training_state_{}".format(suffix_to_load)
         )
         task_state_path = os.path.join(
             self._serialization_dir, "task_state_{}".format(suffix_to_load)
