@@ -1,5 +1,7 @@
+**\*\*\*\*\* Note: The authors are working on important revisions of the probing datasets and they are not publicly available yet. Please contact Najoung for a preliminary copy of the dataset if you would like to take a look, but please wait for the official release on decomp to conduct any experiments. Preprocessing script will be available with the official release of the datasets. \*\*\*\*\***
+
 # Instructions
-This branch contains a version of the jiant code used in [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544). This directory contains scripts to run experiments described in the paper. Contact Najoung (see paper for email) if you run into any issues.
+This branch contains a version of the `jiant` code used in [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544). This directory contains scripts to run experiments described in the paper. Contact Najoung (see paper for email) if you run into any issues.
 
 ## Getting started
 First, set up `jiant` following the main instructions.
