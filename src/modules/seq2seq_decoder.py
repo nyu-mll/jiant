@@ -4,23 +4,18 @@
 import logging as log
 from typing import Dict
 
-import numpy
 import torch
-import torch.nn.functional as F
-from allennlp.common import Params
 from allennlp.common.util import END_SYMBOL, START_SYMBOL
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models.model import Model
-from allennlp.modules import Seq2SeqEncoder, TextFieldEmbedder
 from allennlp.modules.attention import BilinearAttention
-from allennlp.modules.similarity_functions import SimilarityFunction
 from allennlp.modules.token_embedders import Embedding
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits, weighted_sum
 from overrides import overrides
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.rnn import LSTMCell
 
-from .modules import Pooler
+from .simple_modules import Pooler
 
 
 class Seq2SeqDecoder(Model):
