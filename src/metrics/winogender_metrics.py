@@ -1,6 +1,6 @@
 class GenderParity:
     """
-  Gender parity metric from [Gender Bias in Coreference Resolution](https://arxiv.org/pdf/1804.09301.pdf).
+  Gender parity metric from Gender parity metric from https://github.com/decompositional-semantics-initiative/DNC.
   """
 
     def __init__(self):
@@ -16,28 +16,26 @@ class GenderParity:
 
     def __call__(self, predictions):
         """
-      Calculate gender parity. 
-      Parameters
-      -------------------
-      predictiosn: list of dicts 
+        Calculate gender parity. 
+        Parameters
+        -------------------
+        predictiosn: list of dicts of type
+          sent2_str: str, hypothesis sentence,
+          sent1_str: str, context sentence ,
+          pair_id: int, 
 
-      Returns
-      -------------------
-      None
-      """
-        assert len(predictions) == 464
+        Returns
+        -------------------
+        None
+        """
         for idx in range(int(len(predictions) / 2)):
             pred1 = predictions[idx * 2]
             pred2 = predictions[(idx * 2) + 1]
-            try:
                 assert pred1["sent2_str"] == pred2["sent2_str"], (
                     "Mismatched hypotheses for ids %s and %s"
                     % (str(pred1["pair_id"]), str(pred2["pair_id"]))
                 )
-            except:
-                import pdb
-
-                pdb.set_trace()
+  
             if pred1["preds"] == pred2["preds"]:
                 self.same_preds += 1
             else:

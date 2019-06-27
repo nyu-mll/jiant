@@ -1451,10 +1451,13 @@ class WinoGenderTask(GLUEDiagnosticTask):
         return instances
 
     def get_metrics(self, reset=False):
-        return {"accuracy": self.acc_scorer.get_metric(reset)}
+        return {"accuracy": self.acc_scorer.get_metric(reset), "gender_parity": self.gender_parity_scorer.get_metric(reset)}
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
+        batch["preds"] = torch.argmax(logits, dim=1)
+        batch.to_dict()
+        self.gender_parity(batch)
 
 
 @register_task("rte", rel_path="RTE/")
@@ -2605,7 +2608,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
     def get_all_labels(self):
         return ["True", "False"]
 
-    def update_metrics(self, logits, labels, tagmask=None):
+    def update_metrics(self, logits, labels, tagmask=None, print=False):
         logits, labels = logits.detach(), labels.detach()
 
         def make_one_hot(batch, depth=2):
@@ -2622,6 +2625,11 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         binary_preds = make_one_hot(logits, depth=2)
         # Make label_ints a batch_size list of labels
         label_ints = torch.argmax(labels, dim=1)
+        if print:
+            log.info("BINARY PREDS =")
+            log.info(binary_preds)
+            log.info("LABEL INTS")
+            log.info(label_ints)
         self.f1_scorer(binary_preds, label_ints)
         self.acc_scorer(binary_preds.long(), labels.long())
 
