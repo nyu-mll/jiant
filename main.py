@@ -555,7 +555,7 @@ def main(cl_arguments):
                 os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
             )
             assert len(ckpt_path) > 0
-            load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+            load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
 
     log.info("Done!")
