@@ -15,10 +15,10 @@ from .tasks.tasks import (
     CommitmentTask,
     RTESuperGLUETask,
     WiCTask,
-    GLUEDiagnosticTask,
     WinogradCoreferenceTask,
+    GLUEDiagnosticTask,
 )
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -177,6 +177,10 @@ def write_preds(
             _write_rte_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, ReCoRDTask):
+            _write_record_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, WiCTask):
             _write_wic_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
@@ -208,6 +212,7 @@ GLUE_NAME_MAP = {
     "mrpc": "MRPC",
     "qnli": "QNLI",
     "qqp": "QQP",
+    "record": "ReCoRD",
     "rte": "RTE",
     "sst": "SST-2",
     "sts-b": "STS-B",
@@ -353,6 +358,35 @@ def _write_multirc_preds(
     strict_glue_format: bool = False,
 ):
     """ Write predictions for MultiRC task. """
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        if strict_glue_format:
+            par_qst_ans_d = defaultdict(lambda: defaultdict(list))
+            for row_idx, row in preds_df.iterrows():
+                ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
+                par_qst_ans_d[int(row["par_idx"])][int(row["qst_idx"])].append(ans_d)
+            for par_idx, qst_ans_d in par_qst_ans_d.items():
+                qst_ds = []
+                for qst_idx, answers in qst_ans_d.items():
+                    qst_d = {"idx": qst_idx, "answers": answers}
+                    qst_ds.append(qst_d)
+                out_d = {"idx": par_idx, "paragraph": {"questions": qst_ds}}
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+        else:
+            for row_idx, row in preds_df.iterrows():
+                out_d = row.to_dict()
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
+def _write_record_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for ReCoRD task. """
+    assert False, "Not implemented error"
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:
