@@ -87,9 +87,9 @@ def handle_arguments(cl_arguments):
 
 def setup_target_task_training(args, target_tasks, model, strict):
     """
-    Saves model states from pretraining if applicable,
-    and gets the model path used to restore model after 
-    each target task run. 
+    Gets the model path used to restore model after each target 
+    task run, and saves current state if no other previous checkpoint can
+    be used as the model path.
     The logic for loading the correct model state for target task training is:
     1) If load_target_train_checkpoint is used, then load the weights from that checkpoint.
     2) If we did pretraining, then load the best model from pretraining. 
@@ -404,7 +404,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
         Parameters
         -------------------
         args: config.Param object,
-        ckpt_path: str:  path to reload model from, 
+        ckpt_path: str: path to reload model from, 
         model: MultiTaskModel object, 
         strict: bool, 
         task: Task object
