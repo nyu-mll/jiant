@@ -604,8 +604,8 @@ def get_task_specific_params(args, task_name):
         params["d_hid_attn"] = _get_task_attr("d_hid_attn")
         params["dropout"] = _get_task_attr("classifier_dropout")
 
-    # Used for edge probing. Other tasks can safely ignore.
-    params["cls_loss_fn"] = _get_task_attr("classifier_loss_fn")
+    # Used for span/edge classification. Other tasks can safely ignore.
+    params["cls_loss_fn"] = _get_task_attr("span_classifier_loss_fn")
     params["cls_span_pooling"] = _get_task_attr("classifier_span_pooling")
     params["edgeprobe_cnn_context"] = _get_task_attr("edgeprobe_cnn_context")
 
