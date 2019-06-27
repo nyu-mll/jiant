@@ -9,10 +9,6 @@ source user_config.sh
 seed=${3:-111}
 gpuid=${2:-0}
 
-function debug() {
-    #python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = debug-commitbank, run_name = mnli_then_commitbank, pretrain_tasks = \"mnli\", target_tasks = \"commitbank\", do_pretrain = 0, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 60, target_train_val_interval = 60"
-    python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = debug-commitbank, run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 60"
-}
 function commit() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 60"
 }
@@ -50,6 +46,4 @@ elif [ $1 == "wic" ]; then
     wic
 elif [ $1 == "wsc" ]; then
     wsc
-elif [ $1 == "debug" ]; then
-    debug
 fi
