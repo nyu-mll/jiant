@@ -33,8 +33,16 @@ def build_trainer_params(args, task_names, phase="pretrain"):
     In particular, we want to search args for task specific training parameters.
     """
 
-    def _get_task_attr(attr_name):
-        return config.get_task_attr(args, task_names, attr_name)
+    def _get_attr(attr_name, default=None):
+        if phase == "pretrain":
+            # We ignore task-specific trainer attributes during pretraining.
+            if default is not None:
+                return default
+            return args[attr_name]
+        else:
+            # During target task training, we get task-specific attributes if available.
+            assert len(task_names) == 1
+            return config.get_task_attr(args, task_names[0], attr_name, default)
 
     params = {}
     train_opts = [
@@ -45,8 +53,6 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "lr_patience",
         "patience",
         "scheduler_threshold",
-    ]
-    extra_opts = [
         "sent_enc",
         "d_hid",
         "warmup",
@@ -57,21 +63,25 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "keep_all_checkpoints",
         "val_data_limit",
         "max_epochs",
-        "training_data_fraction",
+        "dec_val_scale",
     ]
     for attr in train_opts:
-        params[attr] = _get_task_attr(attr)
-    for attr in extra_opts:
-        if attr == "training_data_fraction":
-            if phase == "pretrain":
-                params[attr] = args.pretrain_data_fraction
-            else:
-                params[attr] = args.target_train_data_fraction
-        else:
-            params[attr] = getattr(args, attr)
-    params["max_vals"] = _get_task_attr("max_vals")
-    params["val_interval"] = _get_task_attr("val_interval")
-    params["dec_val_scale"] = _get_task_attr("dec_val_scale")
+        params[attr] = _get_attr(attr)
+
+    # Special case: If no task-specific arg is found for these, we'll need to fall back to a
+    # phase-specific default.
+    params["max_vals"] = _get_attr(
+        "max_vals", default=args.target_train_max_vals if phase == "target_train" else None
+    )
+    params["val_interval"] = _get_attr(
+        "val_interval", default=args.target_train_val_interval if phase == "target_train" else None
+    )
+    params["training_data_fraction"] = _get_attr(
+        "training_data_fraction",
+        default=args.target_train_data_fraction
+        if phase == "target_train"
+        else args.pretrain_data_fraction,
+    )
 
     return Params(params)
 
@@ -1171,19 +1181,19 @@ class SamplingMultiTaskTrainer:
         self, epoch, best_str, new_best_macro, task_states, model_state, training_state
     ):
         """
-        Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint 
-        will contain different weights for BERT. If transfer_paradigm=frozen, the only difference will be 
+        Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint
+        will contain different weights for BERT. If transfer_paradigm=frozen, the only difference will be
         in the weights for the task-specific modules.
 
-        Parameters 
+        Parameters
         --------------------
             - epoch: int
             - phase: str
             - new_best_macro: bool
             - task_states: dict
-            - model_state: dict of weights 
+            - model_state: dict of weights
             - model_state: experiment model
-        
+
         Returns
         --------------------
         None
