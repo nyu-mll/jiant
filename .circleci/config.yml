@@ -30,6 +30,7 @@
               source activate jiant
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               python main.py --config_file config/demo.conf
+              python main.py --config_file config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
         # Step 4: run tests
         - run:
             name: run tests
