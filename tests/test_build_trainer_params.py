@@ -38,7 +38,8 @@ class TestBuildTrainerParams(unittest.TestCase):
         assert self.processed_pretrain_params["keep_all_checkpoints"] == 0  # From defaults
 
     def test_target_task_specific(self):
-        # Target task parameters should be task specific when possible, and draw on defaults otherwise.
+        # Target task parameters should be task specific when possible, and draw on defaults
+        # otherwise.
         assert self.processed_mnli_target_params["lr"] == 4.56
         assert self.processed_qqp_target_params["lr"] == 123.456
         assert self.processed_mnli_target_params["max_epochs"] == 456
