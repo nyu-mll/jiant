@@ -233,6 +233,9 @@ class TestCheckpointing(unittest.TestCase):
             assert len(pretrain_best_checkpoints) == 1
 
     def test_get_best_checkpointing(self):
+        """
+        Testing the get_best_checkpointing function for logic surrounding path logic.
+        """
         self.args.load_target_train_checkpoint = os.path.join(self.temp_dir, "target_checkpoint")
         self.args.load_eval_checkpoint = ""
         open(self.args.load_target_train_checkpoint, "wb").close()
@@ -243,7 +246,6 @@ class TestCheckpointing(unittest.TestCase):
         os.mkdir(os.path.join(self.temp_dir, "wic"))
         best_pretrain_path = os.path.join(self.temp_dir, "model_state_pretrain_epoch_1.best.th")
         open(best_pretrain_path, "wb").close()
-        self.args.load_target_train_checkpoint = ""
         target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
         assert target_ckpt == best_pretrain_path
 

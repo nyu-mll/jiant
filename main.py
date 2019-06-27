@@ -239,7 +239,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
         If phase == target_train:
             1) user-specified target task checkpoint
             2) best task-specific checkpoint from pretraining stage
-        if phase == eval:
+        If phase == eval:
             1) user-specified eval checkpoint
             2) best task-specific checkpoint for target_train, used when evaluating
     If all these fail, then we default to None.
@@ -404,7 +404,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
         Parameters
         -------------------
         args: config.Param object,
-        ckpt_path: str,
+        ckpt_path: str:  path to reload model from, 
         model: MultiTaskModel object, 
         strict: bool, 
         task: Task object
@@ -417,8 +417,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
 
     if args.transfer_paradigm == "finetune":
         load_model_state(model, ckpt_path, args.cuda, skip_task_models=[task.name], strict=strict)
-        # Train both the task specific models as well as sentence
-        # encoder.
+        # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
         # will be empty if elmo = 0. scalar_mix_0 should always be
@@ -510,7 +509,7 @@ def main(cl_arguments):
             if isinstance(task, GLUEDiagnosticTask):
                 continue
 
-            pre_target_train_model_params = load_model_for_target_train_run(
+            params_to_train = load_model_for_target_train_run(
                 args, pre_target_train_path, model, strict, task
             )
             trainer, _, opt_params, schd_params = build_trainer(
@@ -527,7 +526,7 @@ def main(cl_arguments):
                 batch_size=args.batch_size,
                 weighting_method=args.weighting_method,
                 scaling_method=args.scaling_method,
-                train_params=pre_target_train_model_params,
+                train_params=params_to_train,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
@@ -545,18 +544,19 @@ def main(cl_arguments):
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
                 ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                assert ckpt_path is not None and ".best" in ckpt_path
+                assert ckpt_path is not None
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
                 evaluate_and_write(args, model, [task], splits_to_write)
         elif args.do_pretrain:
             # If args.do_target_task_training = 0 and args.do_pretrain = 1
-            # then evaluate on pretraining checkpoints.
-            for task in pretrain_tasks:
-                ckpt_path = get_best_checkpoint_path(args, "target_train", task.name)
-                assert ckpt_path is not None and ".best" in ckpt_path
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-                evaluate_and_write(args, model, [task], splits_to_write)
+            # then evaluate on best pretraining checkpoint.
+            ckpt_path = glob.glob(
+                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
+            )
+            assert len(ckpt_path) > 0
+            load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+            evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
 
     log.info("Done!")
 
