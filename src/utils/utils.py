@@ -57,7 +57,6 @@ def find_last_checkpoint_suffix(serialization_dir, search_phase="pretrain", task
 
     """
     Search for checkpoints to load, looking only for `main` training checkpoints.
-    TODO: This is probably hairier than it needs to be. If you're good at string handling...
     """
     if not serialization_dir:
         raise ConfigurationError(

@@ -509,8 +509,7 @@ def main(cl_arguments):
             args.run_dir, target_tasks, "target_train", args.load_model
         )
         if len(task_directory) > 0:
-            # Only train on target tasks including and following the last target task
-            # to restore from.
+            # If there is a task to restore form, target train only on target tasks including and following that task.
             name_to_task = collections.OrderedDict([(task.name, task) for task in target_tasks])
             last_task_index = list(name_to_task.keys()).index(task_directory)
             target_tasks = target_tasks[last_task_index:]
