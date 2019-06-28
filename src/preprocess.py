@@ -35,7 +35,6 @@ from .tasks import (
     ALL_TARG_VOC_TASKS,
 )
 from .tasks import REGISTRY as TASKS_REGISTRY
-from .tasks.mt import MTTask
 from .utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
@@ -496,12 +495,8 @@ def get_words(tasks):
 
     for task in tasks:
         log.info("\tCounting words for task %s.", task.name)
-        if isinstance(task, MTTask):
-            for src_sent, tgt_sent in task.get_sentences():
-                update_vocab_freqs(src_sent)
-        else:
-            for sentence in task.get_sentences():
-                update_vocab_freqs(sentence)
+        for sentence in task.get_sentences():
+            update_vocab_freqs(sentence)
 
     # This branch is meant for tasks that have *English* target sentences
     # (or more generally, same language source and target sentences)
