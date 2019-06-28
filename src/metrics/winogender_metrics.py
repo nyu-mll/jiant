@@ -1,6 +1,6 @@
 class GenderParity:
     """
-  Gender parity metric from Gender parity metric from https://github.com/decompositional-semantics-initiative/DNC.
+  Gender parity metric from https://github.com/decompositional-semantics-initiative/DNC.
   """
 
     def __init__(self):
