@@ -43,6 +43,8 @@ class TestCheckpointing(unittest.TestCase):
             ).close()
 
     def test_check_for_previous_checkpoints(self):
+        # Testing that check_for_previous_checkpoints returns the correct checkpoints given 
+        # the state of a run directory.
         tasks = [self.mrpc, self.sst]
         task_directory, max_epoch, suffix = utils.check_for_previous_checkpoints(
             self.temp_dir, tasks, phase="pretrain", load_model=True
@@ -108,7 +110,7 @@ class TestCheckpointing(unittest.TestCase):
             )
 
     def test_find_last_checkpoint_epoch(self):
-        # Testing path-findign logic of find_last_checkpoint_epoch function.
+        # Testing path-finding logic of find_last_checkpoint_epoch function.
         max_epoch, suffix = utils.find_last_checkpoint_epoch(
             self.temp_dir, search_phase="pretrain", task_name=""
         )

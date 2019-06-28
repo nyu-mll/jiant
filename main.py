@@ -10,7 +10,6 @@ import logging as log
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
-import collections
 import argparse
 import glob
 import io
@@ -153,7 +152,7 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
     assert_for_log(
         args.transfer_paradigm in ["finetune", "frozen"],
-        "Transfer paradigm %s not supp args.load_modelorted!" % args.transfer_paradigm,
+        "Transfer paradigm %s not supported." % args.transfer_paradigm,
     )
 
     if args.do_pretrain:
@@ -516,7 +515,7 @@ def main(cl_arguments):
             args.run_dir, target_tasks, "target_train", args.load_model
         )
         if task_directory is not None:
-            # If there is a task to restore form, target train only on target tasks
+            # If there is a task to restore from, target train only on target tasks
             # including and following that task.
             last_task_index = [task.name for task in target_tasks].index(task_directory)
             target_tasks = target_tasks[last_task_index:]
