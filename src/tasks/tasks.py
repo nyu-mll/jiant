@@ -1460,7 +1460,7 @@ class WinogenderTask(GLUEDiagnosticTask):
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
         batch["preds"] = logits
-        # gender_parity_scorer expects a dictionary
+        # Convert batch to dict to fit gender_parity_scorer API.
         batch_dict = [
             {key: batch[key][index] for key in batch.keys() if key not in ["input1", "input2"]}
             for index in range(len(batch["sent1_str"]))
