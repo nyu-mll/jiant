@@ -509,11 +509,9 @@ class SamplingMultiTaskTrainer:
 
         # define these here b/c they might get overridden on load
         n_pass, should_stop = 0, False
-        if self._serialization_dir is not None and phase == "pretrain":
+        if self._serialization_dir is not None:
             # Resume from serialization path
-            if load_model and any(
-                ["model_state_" in x for x in os.listdir(self._serialization_dir)]
-            ):
+            if load_model:
                 n_pass, should_stop = self._restore_checkpoint()
                 log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
@@ -521,6 +519,7 @@ class SamplingMultiTaskTrainer:
                 checkpoint_pattern = os.path.join(
                     self._serialization_dir, "*_{}_*.th".format(phase)
                 )
+                last_checkpoint = self._find_last_checkpoint_suffix()
                 assert_for_log(
                     len(glob.glob(checkpoint_pattern)) == 0,
                     "There are existing checkpoints in %s which will be overwritten. "
@@ -1238,7 +1237,7 @@ class SamplingMultiTaskTrainer:
             if new_best_macro:
                 self._unmark_previous_best("target_train", epoch, task=task_name)
 
-    def _find_last_checkpoint_suffix(self, search_phases_in_priority_order=["pretrain"]):
+    def _find_last_checkpoint_suffix(self, search_phase="pretrain", task_name=""):
 
         """
         Search for checkpoints to load, looking only for `main` training checkpoints.
@@ -1250,24 +1249,23 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path."
             )
 
-        for current_search_phase in search_phases_in_priority_order:
-            max_epoch = 0
-            to_return = None
-            candidate_files = glob.glob(
-                os.path.join(
-                    self._serialization_dir, "model_state_{}_*".format(current_search_phase)
-                )
+        max_epoch = 0
+        to_return = None
+        candidate_files = glob.glob(
+            os.path.join(
+                self._serialization_dir, task_name, "model_state_{}_*".format(search_phase)
             )
-            for x in candidate_files:
-                epoch = int(
-                    x.split("model_state_{}_epoch_".format(current_search_phase))[-1].split(".")[0]
-                )
-                if epoch >= max_epoch:
-                    max_epoch = epoch
-                    to_return = x
-            return to_return.split("model_state_")[-1]
+        )
+        for x in candidate_files:
+            epoch = int(
+                x.split("model_state_{}_epoch_".format(current_search_phase))[-1].split(".")[0]
+            )
+            if epoch >= max_epoch:
+                max_epoch = epoch
+                to_return = x
+        return to_return.split("model_state_")[-1]
 
-    def _restore_checkpoint(self, search_phases_in_priority_order=["pretrain"]):
+    def _restore_checkpoint(self, search_phase, task_name=""):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -1283,7 +1281,7 @@ class SamplingMultiTaskTrainer:
         """
 
         suffix_to_load = self._find_last_checkpoint_suffix(
-            search_phases_in_priority_order=search_phases_in_priority_order
+            search_phase, task_name
         )
         assert suffix_to_load, "No checkpoint found."
         log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
