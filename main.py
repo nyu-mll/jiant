@@ -153,10 +153,17 @@ def check_configurations(args, pretrain_tasks, target_tasks):
 
     assert_for_log(
         args.transfer_paradigm in ["finetune", "frozen"],
-        "Transfer paradigm %s not supported!" % args.transfer_paradigm,
+        "Transfer paradigm %s not supp args.load_modelorted!" % args.transfer_paradigm,
     )
 
     if args.do_pretrain:
+        task_directory, _, _ = check_for_previous_checkpoints(
+            args.run_dir, target_tasks, "target_train", load_model=1
+        )
+        if task_directory is not None and args.load_model:
+            log.warning(
+                "do_pretrain = 1 but there are currently checkpoints in the target train stage. If you mean to start running from target_train, set do_pretrain=0, do_target_train=1, and load_model=1."
+            )
         assert_for_log(
             args.pretrain_tasks != "none",
             "Error: Must specify at least one pretraining task: [%s]" % args.pretrain_tasks,
@@ -505,13 +512,13 @@ def main(cl_arguments):
         # Train on target tasks
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
         # Check for previous target train checkpoints
-        task_directory = check_for_previous_checkpoints(
+        task_directory, _, _ = check_for_previous_checkpoints(
             args.run_dir, target_tasks, "target_train", args.load_model
         )
-        if len(task_directory) > 0:
-            # If there is a task to restore form, target train only on target tasks including and following that task.
-            name_to_task = collections.OrderedDict([(task.name, task) for task in target_tasks])
-            last_task_index = list(name_to_task.keys()).index(task_directory)
+        if task_directory is not None:
+            # If there is a task to restore form, target train only on target tasks
+            # including and following that task.
+            last_task_index = [task.name for task in target_tasks].index(task_directory)
             target_tasks = target_tasks[last_task_index:]
         for task in target_tasks:
             # Skip diagnostic tasks b/c they should not be trained on

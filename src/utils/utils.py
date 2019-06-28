@@ -34,48 +34,87 @@ _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
 def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
-    task_directory = ""
-    for task in tasks[::-1]:
-        last_checkpoint = find_last_checkpoint_suffix(serialization_dir, phase, task.name)
-        # if we haven't found a task directory yet
-        if last_checkpoint is not None and len(task_directory) == 0 and phase == "target_train":
-            task_directory = task.name
-    checkpoint_pattern = os.path.join(serialization_dir, task_directory, "*_{}_*.th".format(phase))
-    if not load_model:
-        assert_for_log(
-            len(glob.glob(checkpoint_pattern)) == 0,
-            "There are existing checkpoints in %s which will be overwritten. "
-            "If you are restoring from a run, or would like to train from an "
-            "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
-            "If you don't want them, delete them or change your experiment name."
-            % serialization_dir,
+    """
+    Check if there are previous checkpoints. 
+    If phase == target_train, we loop through each of the tasks from last to first 
+    to find the task with the most recent checkpoint. 
+    If phase == pretrain, we check if there is a most recent checkpoint in the run 
+    directory. 
+
+    Parameters 
+    ---------------------
+    serialization_dir: str, 
+    tasks: List of SamplingMultiTask objects, 
+    phase: str 
+    load_model: bool
+
+    Returns
+    ---------------------
+    task_directory: None or str
+    max_epoch: int, -1 if not found
+    suffix: None or str, the suffix of the checkpoint
+    """
+    task_directory = None
+    suffix = None
+    ckpt_epoch = -1
+    ckpt_suffix = None
+    if phase == "target_train":
+        for task in tasks[::-1]:
+            max_epoch, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
+            # if we haven't found a task directory yet
+            if max_epoch > -1 and task_directory is None and phase == "target_train":
+                task_directory = task.name
+                ckpt_epoch = max_epoch
+                ckpt_suffix = suffix
+    else:
+        task_directory = ""
+        ckpt_epoch, ckpt_suffix = find_last_checkpoint_epoch(serialization_dir, phase, "")
+    if task_directory is not None:
+        checkpoint_pattern = os.path.join(
+            serialization_dir, task_directory, "*_{}_*.th".format(phase)
         )
-    return task_directory
+        if not load_model:
+            assert_for_log(
+                len(glob.glob(checkpoint_pattern)) == 0,
+                "There are existing checkpoints in %s which will be overwritten. "
+                "If you are restoring from a run, or would like to train from an "
+                "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
+                "If you don't want them, delete them or change your experiment name."
+                % serialization_dir,
+            )
+    return task_directory, ckpt_epoch, ckpt_suffix
 
 
-def find_last_checkpoint_suffix(serialization_dir, search_phase="pretrain", task_name=""):
+def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_name=""):
 
     """
-    Search for checkpoints to load, looking only for `main` training checkpoints.
+    Search for the last epoch in a directory. 
+    Here, we check that all four checkpoints (model, training_state, task_state, metrics)
+    are loaded and return the most recent epoch with all four checkpoints. 
+
     """
     if not serialization_dir:
         raise ConfigurationError(
             "serialization_dir not specified - cannot " "restore a model without a directory path."
         )
-
-    max_epoch = 0
-    to_return = None
+    max_epoch = -1
+    suffix = None
     candidate_files = glob.glob(
-        os.path.join(serialization_dir, task_name, "model_state_{}_*".format(search_phase))
+        os.path.join(serialization_dir, task_name, "*_state_{}_*".format(search_phase))
     )
+    epoch_to_files = {}
     for x in candidate_files:
-        epoch = int(x.split("model_state_{}_epoch_".format(search_phase))[-1].split(".")[0])
-        if epoch >= max_epoch:
+        epoch = int(x.split("_state_{}_epoch_".format(search_phase))[-1].split(".")[0])
+        if not epoch_to_files.get(epoch):
+            epoch_to_files[epoch] = 0
+        epoch_to_files[epoch] += 1
+        if epoch >= max_epoch and epoch_to_files[epoch] == 4:
             max_epoch = epoch
-            to_return = x
-    if to_return is not None:
-        to_return = to_return.split(serialization_dir)[-1]
-    return to_return
+            suffix = x
+    if suffix is not None:
+        suffix = suffix.split(serialization_dir)[-1]
+        suffix = "_".join(suffix.split("_")[1:])
+    return max_epoch, suffix
 
 
 def copy_iter(elems):
