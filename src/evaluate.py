@@ -132,10 +132,7 @@ def evaluate(
 
         # Combine task_preds from each batch to a single DataFrame.
         task_preds = pd.concat(task_preds, ignore_index=True)
-        if task.name.startswith("winogender"):
-            task.gender_parity_scorer(list(task_preds.T.to_dict().values()))
-            all_metrics["gender_parity"] = task.gender_parity_scorer.get_metric(reset=True)
-
+        
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
             log.info("Task '%s': sorting predictions by 'idx'", task.name)
