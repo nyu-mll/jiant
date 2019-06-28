@@ -922,11 +922,18 @@ class MultiTaskModel(nn.Module):
             )
 
         if predict:
+            span_start = torch.argmax(logits_dict["span_start"], dim=1)
+            span_end = torch.argmax(logits_dict["span_end"], dim=1)
             out["preds"] = {
-                "span_start": torch.argmax(logits_dict["span_start"], dim=1),
-                "span_end": torch.argmax(logits_dict["span_end"], dim=1),
+                "span_start": span_start,
+                "span_end": span_end,
+                # raw_sentence/question is space-separated
+                # Adjust -1 for [CLS]/<SOS>
+                "span": [
+                    " ".join(raw_sentence.split()[span_start[i] - 1 : span_end[i]])
+                    for i, raw_sentence in enumerate(batch["raw_sentence"])
+                ],
             }
-
         return out
 
     def _pair_sentence_forward(self, batch, task, predict):
