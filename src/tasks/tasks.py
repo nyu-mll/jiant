@@ -1412,7 +1412,6 @@ class WinoGenderTask(GLUEDiagnosticTask):
 
     def load_data(self):
         rows = pd.read_csv(os.path.join(self.path, "winogender.tsv"), sep="\t")
-        # if is_bert, then we will add [CLS], [SEP]
         rows["sent1"] = rows["sent1"].apply(
             lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
         )
@@ -1423,6 +1422,8 @@ class WinoGenderTask(GLUEDiagnosticTask):
         self.train_data_text = data
         self.val_data_text = data
         self.test_data_text = data
+        self.sentences = [x["sent1"] for x in self.train_data_text]
+        self.sentences += [x["sent2"] for x in self.train_data_text]
 
     def process_split(self, split, indexers):
         is_using_bert = "bert_wpm_pretokenized" in indexers
@@ -1434,14 +1435,14 @@ class WinoGenderTask(GLUEDiagnosticTask):
                 input_final = record["sent1"] + record["sent2"][1:]
                 d["inputs"] = sentence_to_text_field(input_final, indexers)
             else:
-                d["sent1"] = sentence_to_text_field(record["sent1"], indexers)
-                d["sent2"] = sentence_to_text_field(record["sent2"], indexers)
+                d["input1"] = sentence_to_text_field(record["sent1"], indexers)
+                d["input2"] = sentence_to_text_field(record["sent2"], indexers)
             d["sent1_str"] = MetadataField(record["sent1"])
             d["idx"] = LabelField(int(record["idx"]), label_namespace="idxs", skip_indexing=True)
             d["pair_id"] = LabelField(
                 record["pair_id"], label_namespace="pair_id", skip_indexing=True
             )
-            d["sent2_str"] = MetadataField(" ".join(record["sent2"]))
+            d["sent2_str"] = MetadataField(record["sent2"])
             d["labels"] = LabelField(
                 int(record["label"]), label_namespace="labels", skip_indexing=True
             )
@@ -1455,9 +1456,10 @@ class WinoGenderTask(GLUEDiagnosticTask):
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
-        batch["preds"] = torch.argmax(logits, dim=1)
-        batch.to_dict()
-        self.gender_parity(batch)
+        batch["preds"] = logits
+        # gender_parity_scorer expects a dictionary
+        batch_dict = [{key: batch[key][i] for key in batch.keys() if key not in ["input1", "input2"]} for i in range(len(batch["sent1_str"]))]
+        self.gender_parity_scorer(batch_dict)
 
 
 @register_task("rte", rel_path="RTE/")
@@ -2608,7 +2610,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
     def get_all_labels(self):
         return ["False", "True"]
 
-    def update_metrics(self, logits, labels, tagmask=None, print=False):
+    def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
 
         def make_one_hot(batch, depth=2):
@@ -2627,11 +2629,6 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         binary_preds = make_one_hot(logits, depth=2)
         # Make label_ints a batch_size list of labels
         label_ints = torch.argmax(labels, dim=1)
-        if print:
-            log.info("BINARY PREDS =")
-            log.info(binary_preds)
-            log.info("LABEL INTS")
-            log.info(label_ints)
         self.f1_scorer(binary_preds, label_ints)
         self.acc_scorer(binary_preds.long(), labels.long())
 
