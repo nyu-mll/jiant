@@ -25,7 +25,9 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from .evaluate import evaluate
 from .utils import config
-from .utils.utils import assert_for_log  # pylint: disable=import-error
+from .utils.utils import assert_for_log, find_last_checkpoint_suffix, check_for_previous_checkpoints
+
+# pylint: disable=import-error
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
@@ -512,21 +514,11 @@ class SamplingMultiTaskTrainer:
         if self._serialization_dir is not None:
             # Resume from serialization path
             if load_model:
-                n_pass, should_stop = self._restore_checkpoint()
+                n_pass, should_stop = self._restore_checkpoint(phase, tasks)
                 log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
                 log.info("Starting training without restoring from a checkpoint.")
-                checkpoint_pattern = os.path.join(
-                    self._serialization_dir, "*_{}_*.th".format(phase)
-                )
-                last_checkpoint = self._find_last_checkpoint_suffix()
-                assert_for_log(
-                    len(glob.glob(checkpoint_pattern)) == 0,
-                    "There are existing checkpoints in %s which will be overwritten. "
-                    "Use load_model = 1 to load the checkpoints instead. "
-                    "If you don't want them, delete them or change your experiment name."
-                    % self._serialization_dir,
-                )
+                check_for_previous_checkpoints(self._serialization_dir, tasks, phase, load_model)
 
         if self._grad_clipping is not None:  # pylint: disable=invalid-unary-operand-type
 
@@ -1168,7 +1160,13 @@ class SamplingMultiTaskTrainer:
         else:  # phase == "target_train":
             # For target train, we save a separate copy of BERT per task.
             self._save_target_train_checkpoints(
-                epoch, best_str, new_best_macro, task_states, model_state, training_state
+                epoch,
+                best_str,
+                new_best_macro,
+                task_states,
+                model_state,
+                training_state,
+                metric_states,
             )
 
         if not self._keep_all_checkpoints:
@@ -1177,7 +1175,14 @@ class SamplingMultiTaskTrainer:
         log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _save_target_train_checkpoints(
-        self, epoch, best_str, new_best_macro, task_states, model_state, training_state
+        self,
+        epoch,
+        best_str,
+        new_best_macro,
+        task_states,
+        model_state,
+        training_state,
+        metric_states,
     ):
         """
         Saves task specific checkpoints. If transfer_paradigm=finetune, then each task-specific checkpoint
@@ -1202,7 +1207,7 @@ class SamplingMultiTaskTrainer:
                 continue
             task_name = self.task_to_metric_mapping[metric_name]
             torch.save(
-                metric_info,
+                metric_states,
                 os.path.join(
                     self._serialization_dir,
                     task_name,
@@ -1210,7 +1215,7 @@ class SamplingMultiTaskTrainer:
                 ),
             )
             torch.save(
-                task_states[task_name],
+                task_states,
                 os.path.join(
                     self._serialization_dir,
                     task_name,
@@ -1237,35 +1242,7 @@ class SamplingMultiTaskTrainer:
             if new_best_macro:
                 self._unmark_previous_best("target_train", epoch, task=task_name)
 
-    def _find_last_checkpoint_suffix(self, search_phase="pretrain", task_name=""):
-
-        """
-        Search for checkpoints to load, looking only for `main` training checkpoints.
-        TODO: This is probably hairier than it needs to be. If you're good at string handling...
-        """
-        if not self._serialization_dir:
-            raise ConfigurationError(
-                "serialization_dir not specified - cannot "
-                "restore a model without a directory path."
-            )
-
-        max_epoch = 0
-        to_return = None
-        candidate_files = glob.glob(
-            os.path.join(
-                self._serialization_dir, task_name, "model_state_{}_*".format(search_phase)
-            )
-        )
-        for x in candidate_files:
-            epoch = int(
-                x.split("model_state_{}_epoch_".format(current_search_phase))[-1].split(".")[0]
-            )
-            if epoch >= max_epoch:
-                max_epoch = epoch
-                to_return = x
-        return to_return.split("model_state_")[-1]
-
-    def _restore_checkpoint(self, search_phase, task_name=""):
+    def _restore_checkpoint(self, search_phase, tasks=None):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
@@ -1274,28 +1251,26 @@ class SamplingMultiTaskTrainer:
         computation graph, you should use the native Pytorch functions:
         `` model.load_state_dict(torch.load("/path/to/model/weights.th"))``
 
+        We restore based on the phase. If phase=target_train, we look backwards based 
+        on the tasks to find the most recen.
         Returns
         -------
         epoch
             The epoch at which to resume training.
         """
-
-        suffix_to_load = self._find_last_checkpoint_suffix(
-            search_phase, task_name
-        )
+        suffix_to_load = None
+        tasks = tasks[::-1]  # reverse the tasks
+        for task in tasks:
+            if suffix_to_load is None:
+                suffix_to_load = find_last_checkpoint_suffix(
+                    self._serialization_dir, search_phase, task.name
+                )
         assert suffix_to_load, "No checkpoint found."
         log.info("Found checkpoint {}. Loading.".format(suffix_to_load))
-
-        model_path = os.path.join(self._serialization_dir, "model_state_{}".format(suffix_to_load))
-        training_state_path = os.path.join(
-            self._serialization_dir, "training_state_{}".format(suffix_to_load)
-        )
-        task_state_path = os.path.join(
-            self._serialization_dir, "task_state_{}".format(suffix_to_load)
-        )
-        metric_state_path = os.path.join(
-            self._serialization_dir, "metric_state_{}".format(suffix_to_load)
-        )
+        model_path = "%s%s" % (self._serialization_dir, suffix_to_load)
+        training_state_path = model_path.replace("model", "training")
+        task_state_path = model_path.replace("model", "task")
+        metric_state_path = model_path.replace("model", "metric")
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
 
@@ -1306,7 +1281,6 @@ class SamplingMultiTaskTrainer:
                 log.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         self._model.load_state_dict(model_state, strict=False)
-
         task_states = torch.load(task_state_path)
         for task_name, task_state in task_states.items():
             if task_name == "global":

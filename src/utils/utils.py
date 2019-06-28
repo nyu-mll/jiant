@@ -9,7 +9,7 @@ import os
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
-
+import glob
 
 import numpy as np
 import torch
@@ -31,6 +31,52 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
+
+
+def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
+    task_directory = ""
+    for task in tasks[::-1]:
+        last_checkpoint = find_last_checkpoint_suffix(serialization_dir, phase, task.name)
+        # if we haven't found a task directory yet
+        if last_checkpoint is not None and len(task_directory) == 0 and phase == "target_train":
+            task_directory = task.name
+    checkpoint_pattern = os.path.join(serialization_dir, task_directory, "*_{}_*.th".format(phase))
+    if not load_model:
+        assert_for_log(
+            len(glob.glob(checkpoint_pattern)) == 0,
+            "There are existing checkpoints in %s which will be overwritten. "
+            "If you are restoring from a run, or would like to train from an "
+            "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
+            "If you don't want them, delete them or change your experiment name."
+            % serialization_dir,
+        )
+    return task_directory
+
+
+def find_last_checkpoint_suffix(serialization_dir, search_phase="pretrain", task_name=""):
+
+    """
+    Search for checkpoints to load, looking only for `main` training checkpoints.
+    TODO: This is probably hairier than it needs to be. If you're good at string handling...
+    """
+    if not serialization_dir:
+        raise ConfigurationError(
+            "serialization_dir not specified - cannot " "restore a model without a directory path."
+        )
+
+    max_epoch = 0
+    to_return = None
+    candidate_files = glob.glob(
+        os.path.join(serialization_dir, task_name, "model_state_{}_*".format(search_phase))
+    )
+    for x in candidate_files:
+        epoch = int(x.split("model_state_{}_epoch_".format(search_phase))[-1].split(".")[0])
+        if epoch >= max_epoch:
+            max_epoch = epoch
+            to_return = x
+    if to_return is not None:
+        to_return = to_return.split(serialization_dir)[-1]
+    return to_return
 
 
 def copy_iter(elems):

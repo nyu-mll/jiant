@@ -10,7 +10,7 @@ import logging as log
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
-
+import collections
 import argparse
 import glob
 import io
@@ -37,6 +37,7 @@ from src.utils.utils import (
     parse_json_diff,
     sort_param_recursive,
     select_relevant_print_args,
+    check_for_previous_checkpoints,
 )
 from src import tasks as task_modules
 import jsondiff
@@ -503,7 +504,16 @@ def main(cl_arguments):
     if args.do_target_task_training:
         # Train on target tasks
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
-
+        # Check for previous target train checkpoints
+        task_directory = check_for_previous_checkpoints(
+            args.run_dir, target_tasks, "target_train", args.load_model
+        )
+        if len(task_directory) > 0:
+            # Only train on target tasks including and following the last target task
+            # to restore from.
+            name_to_task = collections.OrderedDict([(task.name, task) for task in target_tasks])
+            last_task_index = list(name_to_task.keys()).index(task_directory)
+            target_tasks = target_tasks[last_task_index:]
         for task in target_tasks:
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
@@ -520,6 +530,7 @@ def main(cl_arguments):
                 task.val_metric_decreases,
                 phase="target_train",
             )
+
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,
@@ -530,7 +541,7 @@ def main(cl_arguments):
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
-                load_model=False,
+                load_model=task.name == task_directory,
                 phase="target_train",
             )
 
