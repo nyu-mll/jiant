@@ -6,8 +6,6 @@ import torch
 import torch.utils.data
 import torch.utils.data.distributed
 from allennlp.models.model import Model
-from allennlp.modules.time_distributed import TimeDistributed
-from allennlp.modules.highway import Highway
 
 # StackedSelfAttentionEncoder
 from allennlp.nn import InitializerApplicator, util
@@ -20,8 +18,6 @@ from .simple_modules import NullPhraseLayer
 from .bilm_encoder import BiLMEncoder
 from .onlstm.ON_LSTM import ONLSTMStack
 from .prpn.PRPN import PRPN
-from .bilm_encoder import BiLMEncoder
-from .simple_modules import NullPhraseLayer
 
 
 class SentenceEncoder(Model):
