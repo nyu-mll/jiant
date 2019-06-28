@@ -3,7 +3,6 @@
 The main component of interest is SentenceEncoder, which all the models use. """
 
 import torch
-import torch.nn as nn
 import torch.utils.data
 import torch.utils.data.distributed
 from allennlp.models.model import Model
@@ -12,10 +11,13 @@ from allennlp.modules.highway import Highway
 
 # StackedSelfAttentionEncoder
 from allennlp.nn import InitializerApplicator, util
+from allennlp.modules import Highway, TimeDistributed
 
 from ..bert.utils import BertEmbedderModule
 from ..tasks.tasks import PairClassificationTask, PairRegressionTask
 from ..utils import utils
+from .simple_modules import NullPhraseLayer
+from .bilm_encoder import BiLMEncoder
 from .onlstm.ON_LSTM import ONLSTMStack
 from .prpn.PRPN import PRPN
 from .bilm_encoder import BiLMEncoder

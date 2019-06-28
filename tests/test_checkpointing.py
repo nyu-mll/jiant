@@ -25,7 +25,7 @@ from src import evaluate
 import src.trainer as trainer
 from src.models import MultiTaskModel
 import src.tasks.tasks as tasks
-from main import evaluate_and_write
+from main import evaluate_and_write, get_best_checkpoint_path
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
@@ -55,7 +55,7 @@ def build_trainer_params(args, task_names, phase="pretrain"):
     }
 
 
-class TestCheckpionting(unittest.TestCase):
+class TestCheckpointing(unittest.TestCase):
     def sentence_to_text_field(self, sent, indexers):
         """ Helper function to map a sequence of tokens into a sequence of
         AllenNLP Tokens, then wrap in a TextField with the given indexers """
@@ -232,7 +232,37 @@ class TestCheckpionting(unittest.TestCase):
             )
             assert len(pretrain_best_checkpoints) == 1
 
-        def test_does_produce_results(self):
-            file_path = "~/repo/sample_run/jiant-demo/results.tsv"
-            file = open(file_path, "rb")
-            assert file
+    def test_get_best_checkpointing(self):
+        """
+        Testing the get_best_checkpointing function for path logic.
+        """
+        self.args.load_target_train_checkpoint = os.path.join(self.temp_dir, "target_checkpoint")
+        self.args.load_eval_checkpoint = ""
+        open(self.args.load_target_train_checkpoint, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
+        assert target_ckpt == self.args.load_target_train_checkpoint
+
+        # Load from best pretrain checkpoint.
+        self.args.load_target_train_checkpoint = ""
+        os.mkdir(os.path.join(self.temp_dir, "wic"))
+        best_pretrain_path = os.path.join(self.temp_dir, "model_state_pretrain_epoch_1.best.th")
+        open(best_pretrain_path, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
+        assert target_ckpt == best_pretrain_path
+
+        # Load from the best target train phase checkpoint.
+        best_target_train_path = os.path.join(
+            self.temp_dir, "wic", "model_state_target_train_epoch_1.best.th"
+        )
+        open(best_target_train_path, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="eval", task_name="wic")
+        assert target_ckpt == best_target_train_path
+
+        # Load from pre-existing eval checkpoint.
+        self.args.load_eval_checkpoint = str(os.path.join(self.temp_dir, "eval_checkpoint"))
+        open(self.args.load_eval_checkpoint, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="eval", task_name="wic")
+        target_ckpt == self.args.load_eval_checkpoint
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)

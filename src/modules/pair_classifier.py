@@ -1,3 +1,7 @@
+import torch
+from torch import nn
+
+
 class PairClassifier(nn.Module):
     """ Thin wrapper around a set of modules.
     For sentence pair classification.
