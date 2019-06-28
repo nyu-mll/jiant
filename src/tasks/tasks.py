@@ -2548,7 +2548,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             Returns:
             one hot encoding of size [batch_size, 2]
             """
-            ones = torch.sparse.torch.eye(depth).cuda()
+            ones = torch.sparse.torch.eye(depth)
+            if torch.cuda.is_available():
+                ones = ones.cuda()
             return ones.index_select(0, batch)
 
         binary_preds = make_one_hot(logits, depth=2)
