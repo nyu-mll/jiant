@@ -22,6 +22,7 @@ class GenderParity:
         predictions: list of dicts with fields
             sent2_str: str, hypothesis sentence,
             sent1_str: str, context sentence,
+            preds: int,
             pair_id: int
 
         Returns
@@ -31,11 +32,10 @@ class GenderParity:
         for idx in range(int(len(predictions) / 2)):
             pred1 = predictions[idx * 2]
             pred2 = predictions[(idx * 2) + 1]
-            if pred1["sent2_str"] != pred2["sent2_str"]:
-                import pdb
-
-                pdb.set_trace()
-
+            assert pred1["sent2_str"] == pred2["sent2_str"], (
+                "Mismatched hypotheses for ids %s and %s"
+                % (str(pred1["pair_id"]), str(pred2["pair_id"]))
+            )
             if pred1["preds"] == pred2["preds"]:
                 self.same_preds += 1
             else:
