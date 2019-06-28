@@ -19,7 +19,7 @@ class GenderParity:
         Calculate gender parity. 
         Parameters
         -------------------
-        predictiosn: list of dicts with fields
+        predictions: list of dicts with fields
             sent2_str: str, hypothesis sentence,
             sent1_str: str, context sentence,
             pair_id: int
