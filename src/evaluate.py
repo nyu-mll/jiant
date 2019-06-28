@@ -91,7 +91,7 @@ def evaluate(
                 out = model.forward(task, batch, predict=True)
 
             # We don't want diagnostic tasks to affect the micro and macro average.
-            # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostics.
+            # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostic.
             if task.contributes_micro_macro_avg:
                 n_examples += out["n_exs"]
             # get predictions
@@ -132,7 +132,7 @@ def evaluate(
 
         # Combine task_preds from each batch to a single DataFrame.
         task_preds = pd.concat(task_preds, ignore_index=True)
-        
+
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
             log.info("Task '%s': sorting predictions by 'idx'", task.name)

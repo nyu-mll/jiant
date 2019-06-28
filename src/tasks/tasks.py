@@ -1394,7 +1394,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
 
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
-class WinoGenderTask(GLUEDiagnosticTask):
+class WinogenderTask(GLUEDiagnosticTask):
     """Supported wnogender task """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
@@ -1452,13 +1452,19 @@ class WinoGenderTask(GLUEDiagnosticTask):
         return instances
 
     def get_metrics(self, reset=False):
-        return {"accuracy": self.acc_scorer.get_metric(reset), "gender_parity": self.gender_parity_scorer.get_metric(reset)}
+        return {
+            "accuracy": self.acc_scorer.get_metric(reset),
+            "gender_parity": self.gender_parity_scorer.get_metric(reset),
+        }
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
         batch["preds"] = logits
         # gender_parity_scorer expects a dictionary
-        batch_dict = [{key: batch[key][i] for key in batch.keys() if key not in ["input1", "input2"]} for i in range(len(batch["sent1_str"]))]
+        batch_dict = [
+            {key: batch[key][index] for key in batch.keys() if key not in ["input1", "input2"]}
+            for index in range(len(batch["sent1_str"]))
+        ]
         self.gender_parity_scorer(batch_dict)
 
 
