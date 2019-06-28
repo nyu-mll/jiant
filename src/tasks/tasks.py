@@ -2535,7 +2535,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         self._iters_by_split = iters_by_split
 
     def get_all_labels(self):
-        return ["True", "False"]
+        return ["False", "True"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
