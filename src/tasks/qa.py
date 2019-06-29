@@ -3,6 +3,7 @@ import collections
 import gzip
 import json
 import os
+import random
 import re
 import tqdm
 from typing import Iterable, Sequence, Type
@@ -213,7 +214,11 @@ class QASRLTask(SpanPredictionTask):
 
     def load_data(self):
         self.train_data = self._load_file(os.path.join(self.path, "orig", "train.jsonl.gz"))
+
         self.val_data = self._load_file(os.path.join(self.path, "orig", "dev.jsonl.gz"))
+        # Shuffle validation data to ensure diversity in periodic validation with val_data_limit
+        random.Random(1234).shuffle(self.val_data)
+
         self.test_data = self._load_file(os.path.join(self.path, "orig", "test.jsonl.gz"))
         self.sentences = []
 
