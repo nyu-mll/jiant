@@ -41,12 +41,12 @@ class BertEmbedderModule(nn.Module):
         super(BertEmbedderModule, self).__init__()
 
         self.model = pytorch_pretrained_bert.BertModel.from_pretrained(
-            args.bert_model_name, cache_dir=cache_dir
+            args.input_module, cache_dir=cache_dir
         )
         self.embeddings_mode = args.bert_embeddings_mode
 
         tokenizer = pytorch_pretrained_bert.BertTokenizer.from_pretrained(
-            args.bert_model_name, cache_dir=cache_dir
+            args.input_module, cache_dir=cache_dir
         )
         self._sep_id = tokenizer.vocab["[SEP]"]
         self._pad_id = tokenizer.vocab["[PAD]"]
