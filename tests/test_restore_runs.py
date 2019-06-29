@@ -98,17 +98,6 @@ class TestCheckpointing(unittest.TestCase):
             and suffix == "state_target_train_epoch_1.best.th"
         )
 
-    def test_check_for_previous_ckpt_assert(self):
-        # Testing that if args.load_model=1 and there are checkpoints in pretrain or target_train,
-        # check_for_previous_checkpoints throws an error.
-        with self.assertRaises(AssertionError) as error:
-            utils.check_for_previous_checkpoints(
-                self.temp_dir, tasks, phase="pretrain", load_model=False
-            )
-            utils.check_for_previous_checkpoints(
-                self.temp_dir, tasks, phase="target_train", load_model=False
-            )
-
     def test_find_last_checkpoint_epoch(self):
         # Testing path-finding logic of find_last_checkpoint_epoch function.
         max_epoch, suffix = utils.find_last_checkpoint_epoch(
