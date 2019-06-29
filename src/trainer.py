@@ -292,7 +292,7 @@ class SamplingMultiTaskTrainer:
                 - stopped: a bool indicating if that task is stopped or not (if it ran out of
                     patience or hit min lr)
                 - last_log: the time we last logged progress for the task
-            
+
             - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
                 Each metric should be the validation metric of a task, except {micro/macro}_avg,
                 which are privileged to get an aggregate multi-task score. Each dict contains:
@@ -367,6 +367,7 @@ class SamplingMultiTaskTrainer:
 
     def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_examples):
         """
+        
         Parameters
         ----------------
         scaling_method : str, scaling method
@@ -416,6 +417,7 @@ class SamplingMultiTaskTrainer:
         num_tasks: int
         task_n_train_examples: list of ints of number of examples per task
         task_n_train_batches: list of ints of number of batches per task
+        
         Returns
         ----------------
         sampling weights: list of ints, to sample tasks to train on
@@ -753,6 +755,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         This function updates metric history with the best validation score so far.
+        
         Parameters
         ---------
         epoch: int.
@@ -766,6 +769,7 @@ class SamplingMultiTaskTrainer:
         decrease validation metric.
         should_save: bool, for checkpointing
         new_best: bool, indicator of whether the previous best preformance score was exceeded
+        
         Returns
         ________
         metric_infos: dict storing information about the various metrics
@@ -797,7 +801,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
-       
+
         Parameters
         ----------
         task: current task to get validation performance of
@@ -882,12 +886,14 @@ class SamplingMultiTaskTrainer:
         Validate on all tasks and return the results and whether to save this epoch or not.
         Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
         any given task's training set.
+        
         Parameters
         ----------
         epoch: int
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
         periodic_save: bool, value of whether or not to save model and progress periodically
+
         Returns
         __________
         all_val_metrics: dictinary updated with micro and macro average validation performance
