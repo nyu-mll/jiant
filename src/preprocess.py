@@ -222,12 +222,12 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
-    if args.openai_transformer:
+    if args.input_module == "gpt":
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, "openai_bpe")
-    if args.bert_model_name:
+    if args.input_module.startswith("bert"):
         # Add pre-computed BPE vocabulary for BERT model.
-        add_bert_wpm_vocab(vocab, args.bert_model_name)
+        add_bert_wpm_vocab(vocab, args.input_module)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -236,9 +236,9 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if not args.word_embs == "none":
+    if args.input_module.startswith("bert") or args.input_module in ["elmo", "gpt"]:
         indexers["words"] = SingleIdTokenIndexer()
-    if args.elmo:
+    if args.input_module == "elmo":
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
@@ -248,7 +248,7 @@ def build_indexers(args):
             f"CoVe model expects Moses tokenization (MosesTokenizer);"
             " you are using args.tokenizer = {args.tokenizer}"
         )
-    if args.openai_transformer:
+    if args.input_module == "gpt":
         assert not indexers, (
             "OpenAI transformer is not supported alongside" " other indexers due to tokenization!"
         )
@@ -256,16 +256,16 @@ def build_indexers(args):
             "OpenAI transformer is not supported alongside" " other indexers due to tokenization!"
         )
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.bert_model_name:
+    if args.input_module.startswith("bert"):
         assert not indexers, (
             "BERT is not supported alongside" " other indexers due to tokenization!"
         )
-        assert args.tokenizer == args.bert_model_name, (
+        assert args.tokenizer == args.input_module, (
             "BERT models use custom WPM tokenization for "
             "each model, so tokenizer must match the "
             "specified BERT model."
         )
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.bert_model_name)
+        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
     return indexers
 
 
@@ -308,7 +308,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.word_embs not in ["none", "scratch"]:
+    if args.input_module != "scratch":
         emb_file = os.path.join(args.exp_dir, "embs.pkl")
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
