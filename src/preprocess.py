@@ -27,13 +27,7 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from .tasks import (
-    ALL_COLA_NPI_TASKS,
-    ALL_GLUE_TASKS,
-    ALL_SUPERGLUE_TASKS,
-    ALL_NLI_PROBING_TASKS,
-    ALL_TARG_VOC_TASKS,
-)
+from .tasks import ALL_COLA_NPI_TASKS, ALL_GLUE_TASKS, ALL_SUPERGLUE_TASKS, ALL_NLI_PROBING_TASKS
 from .tasks import REGISTRY as TASKS_REGISTRY
 from .utils import config, serialize, utils
 
