@@ -41,7 +41,6 @@ from .modules.span_modules import SpanClassifierModule
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
@@ -83,16 +82,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if
     # needed.
-    tfm_params = Params(
-        {
-            "input_dim": d_emb,
-            "hidden_dim": args.d_hid,
-            "projection_dim": args.d_tproj,
-            "feedforward_hidden_dim": args.d_ff,
-            "num_layers": args.n_layers_enc,
-            "num_attention_heads": args.n_heads,
-        }
-    )
     rnn_params = Params(
         {
             "input_size": d_emb,
@@ -192,19 +181,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-    elif args.sent_enc == "transformer":
-        transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-        sent_encoder = SentenceEncoder(
-            vocab,
-            embedder,
-            args.n_layers_highway,
-            transformer,
-            dropout=args.dropout,
-            skip_embs=args.skip_embs,
-            cove_layer=cove_layer,
-            sep_embs_for_skip=args.sep_embs_for_skip,
-        )
-        log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
@@ -547,26 +523,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
         setattr(model, "%s_decoder" % task.name, decoder)
-    elif isinstance(task, MTTask):
-        log.info("using {} attention".format(args.s2s["attention"]))
-        decoder_params = Params(
-            {
-                "input_dim": d_sent,
-                "target_embedding_dim": 300,
-                "decoder_hidden_size": args.s2s["d_hid_dec"],
-                "output_proj_input_dim": args.s2s["output_proj_input_dim"],
-                "max_decoding_steps": args.max_seq_len,
-                "target_namespace": task._label_namespace
-                if hasattr(task, "_label_namespace")
-                else "targets",
-                "attention": args.s2s["attention"],
-                "dropout": args.dropout,
-                "scheduled_sampling_ratio": 0.0,
-            }
-        )
-        decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        setattr(model, "%s_decoder" % task.name, decoder)
-
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
@@ -969,11 +925,6 @@ class MultiTaskModel(nn.Module):
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
         out["n_exs"] = get_batch_size(batch)
-
-        if isinstance(task, (MTTask)):
-            decoder = getattr(self, "%s_decoder" % task.name)
-            out.update(decoder.forward(sent, sent_mask, batch["targs"]))
-            task.scorer1(out["loss"].item())
 
         if "targs" in batch:
             pass
