@@ -1,5 +1,5 @@
 # Import task definitions to register their tasks.
-from . import edge_probing, lm, mt, nli_probing, tasks, qa
+from . import edge_probing, lm, nli_probing, tasks, qa
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
@@ -90,13 +90,3 @@ ALL_COLA_NPI_TASKS = [
 # people are mostly using nli-prob for now, but we will change to
 # using individual tasks later, so better to have as a list
 ALL_NLI_PROBING_TASKS = ["nli-prob", "nps", "nli-prob-prepswap", "nli-prob-negation", "nli-alt"]
-
-# Tasks for which we need to construct task-specific vocabularies
-ALL_TARG_VOC_TASKS = [
-    "wmt17_en_ru",
-    "wmt14_en_de",
-    "reddit_s2s",
-    "reddit_s2s_3.4G",
-    "wiki103_s2s",
-    "wiki2_s2s",
-]
