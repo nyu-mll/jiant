@@ -119,17 +119,29 @@ def build_trainer(
         opt_params["warmup"] = 0.1
     opt_params = Params(opt_params)
 
-    schd_params = Params(
-        {
-            "type": "reduce_on_plateau",
-            "mode": "min" if metric_should_decrease else "max",
-            "factor": params["lr_decay_factor"],
-            "patience": params["lr_patience"],
-            "threshold": params["scheduler_threshold"],
-            "threshold_mode": "abs",
-            "verbose": True,
-        }
-    )
+    if "transformer" in params["sent_enc"]:
+        assert False, "Transformer is not yet tested, still in experimental stage :-("
+        schd_params = Params(
+            {
+                "type": "noam",
+                "model_size": params["d_hid"],
+                "warmup_steps": params["warmup"],
+                "factor": 1.0,
+            }
+        )
+        log.info("\tUsing noam scheduler with warmup %d!", params["warmup"])
+    else:
+        schd_params = Params(
+            {
+                "type": "reduce_on_plateau",
+                "mode": "min" if metric_should_decrease else "max",
+                "factor": params["lr_decay_factor"],
+                "patience": params["lr_patience"],
+                "threshold": params["scheduler_threshold"],
+                "threshold_mode": "abs",
+                "verbose": True,
+            }
+        )
 
     train_params = Params(
         {
