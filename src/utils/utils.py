@@ -52,20 +52,19 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     ---------------------
     ckpt_directory: None or str, name of directory that checkpoints are in
     with regards to the run directory. 
-    max_epoch: int, -1 if not found.
+    val_pass: int, -1 if not found.
     suffix: None or str, the suffix of the checkpoint.
     """
     ckpt_directory = None
-    suffix = None
     ckpt_epoch = -1
     ckpt_suffix = None
     if phase == "target_train":
         for task in tasks[::-1]:
-            max_epoch, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
+            val_pass, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
             # If we have found a task with a valid checkpoint for the first time.
-            if max_epoch > -1 and ckpt_directory is None and phase == "target_train":
+            if val_pass > -1 and ckpt_directory is None and phase == "target_train":
                 ckpt_directory = task.name
-                ckpt_epoch = max_epoch
+                ckpt_epoch = val_pass
                 ckpt_suffix = suffix
     else:
         ckpt_epoch, ckpt_suffix = find_last_checkpoint_epoch(serialization_dir, phase, "")
@@ -96,24 +95,24 @@ def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_
         raise ConfigurationError(
             "serialization_dir not specified - cannot restore a model without a directory path."
         )
-    max_epoch = -1
     suffix = None
+    max_val_pass = -1
     candidate_files = glob.glob(
         os.path.join(serialization_dir, task_name, "*_state_{}_*".format(search_phase))
     )
-    epoch_to_files = {}
+    val_pass_to_files = {}
     for x in candidate_files:
-        epoch = int(x.split("_state_{}_epoch_".format(search_phase))[-1].split(".")[0])
-        if not epoch_to_files.get(epoch):
-            epoch_to_files[epoch] = 0
-        epoch_to_files[epoch] += 1
-        if epoch >= max_epoch and epoch_to_files[epoch] == 4:
-            max_epoch = epoch
+        val_pass = int(x.split("_state_{}_val_".format(search_phase))[-1].split(".")[0])
+        if not val_pass_to_files.get(val_pass):
+            val_pass_to_files[val_pass] = 0
+        val_pass_to_files[val_pass] += 1
+        if val_pass >= max_val_pass and val_pass_to_files[val_pass] == 4:
+            max_val_pass = val_pass
             suffix = x
     if suffix is not None:
         suffix = suffix.split(serialization_dir)[-1]
         suffix = "_".join(suffix.split("_")[1:])
-    return max_epoch, suffix
+    return max_val_pass, suffix
 
 
 def copy_iter(elems):

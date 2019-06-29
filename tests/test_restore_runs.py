@@ -20,24 +20,24 @@ class TestRestoreRuns(unittest.TestCase):
         os.mkdir(os.path.join(self.temp_dir, "sst"))
         for type_name in ["model", "task", "training", "metric"]:
             open(
-                os.path.join(self.temp_dir, "{}_state_pretrain_epoch_1.th".format(type_name)), "w"
+                os.path.join(self.temp_dir, "{}_state_pretrain_val_1.th".format(type_name)), "w"
             ).close()
             open(
-                os.path.join(self.temp_dir, "{}_state_pretrain_epoch_2.th".format(type_name)), "w"
+                os.path.join(self.temp_dir, "{}_state_pretrain_val_2.th".format(type_name)), "w"
             ).close()
             open(
-                os.path.join(self.temp_dir, "{}_state_pretrain_epoch_3.best.th".format(type_name)),
+                os.path.join(self.temp_dir, "{}_state_pretrain_val_3.best.th".format(type_name)),
                 "w",
             ).close()
             open(
                 os.path.join(
-                    self.temp_dir, "mrpc", "{}_state_target_train_epoch_1.best.th".format(type_name)
+                    self.temp_dir, "mrpc", "{}_state_target_train_val_1.best.th".format(type_name)
                 ),
                 "w",
             ).close()
             open(
                 os.path.join(
-                    self.temp_dir, "mrpc", "{}_state_target_train_epoch_2.th".format(type_name)
+                    self.temp_dir, "mrpc", "{}_state_target_train_val_2.th".format(type_name)
                 ),
                 "w",
             ).close()
@@ -49,16 +49,12 @@ class TestRestoreRuns(unittest.TestCase):
         task_directory, max_epoch, suffix = utils.check_for_previous_checkpoints(
             self.temp_dir, tasks, phase="pretrain", load_model=True
         )
-        assert (
-            task_directory == "" and max_epoch == 3 and suffix == "state_pretrain_epoch_3.best.th"
-        )
+        assert task_directory == "" and max_epoch == 3 and suffix == "state_pretrain_val_3.best.th"
         task_directory, max_epoch, suffix = utils.check_for_previous_checkpoints(
             self.temp_dir, tasks, phase="target_train", load_model=True
         )
         assert (
-            task_directory == "mrpc"
-            and max_epoch == 2
-            and suffix == "state_target_train_epoch_2.th"
+            task_directory == "mrpc" and max_epoch == 2 and suffix == "state_target_train_val_2.th"
         )
         # Test partial checkpoints.
         # If <4 checkpoints are found for an epoch, we do not count that epoch as
@@ -66,7 +62,7 @@ class TestRestoreRuns(unittest.TestCase):
         for type_name in ["model", "task"]:
             open(
                 os.path.join(
-                    self.temp_dir, "sst", "{}_state_target_train_epoch_1.best.th".format(type_name)
+                    self.temp_dir, "sst", "{}_state_target_train_val_1.best.th".format(type_name)
                 ),
                 "w",
             ).close()
@@ -76,20 +72,18 @@ class TestRestoreRuns(unittest.TestCase):
         # Even though there are partial checkpoints in the sst directory,
         # it still will return the most recent checkpoint as in mrpc.
         assert (
-            task_directory == "mrpc"
-            and max_epoch == 2
-            and suffix == "state_target_train_epoch_2.th"
+            task_directory == "mrpc" and max_epoch == 2 and suffix == "state_target_train_val_2.th"
         )
         for type_name in ["training", "metric"]:
             open(
                 os.path.join(
-                    self.temp_dir, "sst", "{}_state_target_train_epoch_1.best.th".format(type_name)
+                    self.temp_dir, "sst", "{}_state_target_train_val_1.best.th".format(type_name)
                 ),
                 "w",
             ).close()
             open(
                 os.path.join(
-                    self.temp_dir, "sst", "{}_state_target_train_epoch_2.best.th".format(type_name)
+                    self.temp_dir, "sst", "{}_state_target_train_val_2.best.th".format(type_name)
                 ),
                 "w",
             ).close()
@@ -102,7 +96,7 @@ class TestRestoreRuns(unittest.TestCase):
         assert (
             task_directory == "sst"
             and max_epoch == 1
-            and suffix == "state_target_train_epoch_1.best.th"
+            and suffix == "state_target_train_val_1.best.th"
         )
 
     def test_check_for_previous_ckpt_assert(self):
@@ -121,7 +115,7 @@ class TestRestoreRuns(unittest.TestCase):
         max_epoch, suffix = utils.find_last_checkpoint_epoch(
             self.temp_dir, search_phase="pretrain", task_name=""
         )
-        assert max_epoch == 3 and suffix == "state_pretrain_epoch_3.best.th"
+        assert max_epoch == 3 and suffix == "state_pretrain_val_3.best.th"
         max_epoch, suffix = utils.find_last_checkpoint_epoch(
             self.temp_dir, search_phase="target_train", task_name="sst"
         )
@@ -129,7 +123,7 @@ class TestRestoreRuns(unittest.TestCase):
         max_epoch, suffix = utils.find_last_checkpoint_epoch(
             self.temp_dir, search_phase="target_train", task_name="mrpc"
         )
-        assert max_epoch == 2 and suffix == "state_target_train_epoch_2.th"
+        assert max_epoch == 2 and suffix == "state_target_train_val_2.th"
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)

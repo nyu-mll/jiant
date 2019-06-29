@@ -502,7 +502,7 @@ class SamplingMultiTaskTrainer:
         self._g_scheduler = g_scheduler
 
         # define these here b/c they might get overridden on load
-        n_pass, should_stop = 0, False
+        n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
             if load_model:
@@ -514,8 +514,8 @@ class SamplingMultiTaskTrainer:
                         "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
                     )
                 else:
-                    n_pass, should_stop = self._restore_checkpoint(phase, tasks)
-                    log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
+                    n_step, should_stop = self._restore_checkpoint(phase, tasks)
+                    log.info("Loaded model from checkpoint. Starting at step %d.", n_step)
             else:
                 log.info("Starting training without restoring from a checkpoint.")
                 check_for_previous_checkpoints(self._serialization_dir, tasks, phase, load_model)
@@ -565,7 +565,7 @@ class SamplingMultiTaskTrainer:
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[(n_pass + offset) % validation_interval]  # randomly select a task
+            task = samples[(n_step + offset) % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info["stopped"]:
                 offset += 1
@@ -597,11 +597,11 @@ class SamplingMultiTaskTrainer:
                 if self._grad_norm:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
-                n_pass += 1  # update per batch
+                n_step += 1  # update per batch
 
                 # step scheduler if it's not ReduceLROnPlateau
                 if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                    scheduler.step_batch(n_pass)
+                    scheduler.step_batch(n_step)
 
             # Update training progress on that task
             task_info["n_batches_since_val"] = n_batches_since_val
@@ -616,13 +616,13 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
                     task_metrics_to_TB["loss"] = float(task_info["loss"] / n_batches_since_val)
-                    self._metrics_to_tensorboard_tr(n_pass, task_metrics_to_TB, task.name)
+                    self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
                 task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info(
                     "Update %d: task %s, batch %d (%d): %s",
-                    n_pass,
+                    n_step,
                     task.name,
                     n_batches_since_val,
                     total_batches_trained,
@@ -635,11 +635,11 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_pass % validation_interval == 0:
+            if n_step % validation_interval == 0:
 
                 # Dump and log all of our current info
-                n_val = int(n_pass / validation_interval)
-                log.info("***** Step %d / Validation %d *****", n_pass, n_val)
+                n_val = int(n_step / validation_interval)
+                log.info("***** Step %d / Validation %d *****", n_step, n_val)
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
@@ -679,7 +679,7 @@ class SamplingMultiTaskTrainer:
                     log_str += " validation: %3f" % value
                     log.info(log_str)
                 if self._TB_dir is not None:
-                    self._metrics_to_tensorboard_val(n_pass, all_val_metrics)
+                    self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 lrs = self._get_lr()  # log LR
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
@@ -705,13 +705,13 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"pass": n_pass, "epoch": n_val, "should_stop": should_stop},
+                        {"step": n_step, "validation_pass": n_val, "should_stop": should_stop},
                         tasks=tasks,
                         phase=phase,
                         new_best=new_best,
                     )
 
-        log.info("Stopped training after %d validation checks", n_pass / validation_interval)
+        log.info("Stopped training after %d validation checks", n_step / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
@@ -733,18 +733,16 @@ class SamplingMultiTaskTrainer:
         results["macro"] = metric_infos["macro_avg"]["best"][0]
         log.info("***** VALIDATION RESULTS *****")
         for metric in metric_infos.keys():
-            # Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-            # any given task's training set.
-            best_epoch, epoch_metrics = metric_infos[metric]["best"]
+            best_val_pass, val_pass_metrics = metric_infos[metric]["best"]
             all_metrics_str = ", ".join(
-                ["%s: %.5f" % (metric, score) for metric, score in epoch_metrics.items()]
+                ["%s: %.5f" % (metric, score) for metric, score in val_pass_metrics.items()]
             )
-            log.info("%s (for best epoch %d): %s", metric, best_epoch, all_metrics_str)
+            log.info("%s (for best val pass %d): %s", metric, best_val_pass, all_metrics_str)
         return results
 
     def _update_metric_history(
         self,
-        epoch,
+        val_pass,
         all_val_metrics,
         metric,
         task_name,
@@ -758,10 +756,8 @@ class SamplingMultiTaskTrainer:
         
         Parameters
         ---------
-        epoch: int.
-          Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-            any given task's training set.
-        all_val_metrics: dict with current epoch's validation performance
+        val_pass: int.
+        all_val_metrics: dict with performance on current validation pass.
         metric: str, name of metric
         task_name: str, name of task
         metric_infos: dict storing information about the various metrics
@@ -773,19 +769,19 @@ class SamplingMultiTaskTrainer:
         Returns
         ________
         metric_infos: dict storing information about the various metrics
-        this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
+        this_val_metric: dict, metric information for this validation pass, used for optimization scheduler
         should_save: bool
         new_best: bool
         """
-        this_epoch_metric = all_val_metrics[metric]
+        this_val_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]["hist"]
-        metric_history.append(this_epoch_metric)
+        metric_history.append(this_val_metric)
         is_best_so_far, out_of_patience = self._check_history(
-            metric_history, this_epoch_metric, metric_decreases
+            metric_history, this_val_metric, metric_decreases
         )
         if is_best_so_far:
             log.info("Best result seen so far for %s.", task_name)
-            metric_infos[metric]["best"] = (epoch, all_val_metrics)
+            metric_infos[metric]["best"] = (val_pass, all_val_metrics)
             should_save = True
             if task_name == "macro":
                 new_best = True
@@ -794,7 +790,7 @@ class SamplingMultiTaskTrainer:
             # Commented out the below line as more confusing than helpful. May make sense to
             # restore if we wind up using more complex stopping strategies.
             # log.info("Out of early stopping patience. Stopped tracking %s.", task_name)
-        return metric_infos, this_epoch_metric, should_save, new_best
+        return metric_infos, this_val_metric, should_save, new_best
 
     def _calculate_validation_performance(
         self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
@@ -881,15 +877,15 @@ class SamplingMultiTaskTrainer:
         all_val_metrics["macro_avg"] /= len(tasks)
         return n_examples_overall, task_infos, all_val_metrics
 
-    def _validate(self, epoch, tasks, batch_size, periodic_save=True):
+    def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
         """
-        Validate on all tasks and return the results and whether to save this epoch or not.
-        Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
-        any given task's training set.
-        
+
+        Validate on all tasks and return the results and whether to save this validation 
+        pass or not.
+
         Parameters
         ----------
-        epoch: int
+        val_pass: int
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
         periodic_save: bool, value of whether or not to save model and progress periodically
@@ -915,9 +911,9 @@ class SamplingMultiTaskTrainer:
             )
 
         # Track per task patience
-        should_save = periodic_save  # whether to save this epoch or not.
+        should_save = periodic_save  # whether to save this validation pass or not.
         # Currently we save every validation in the main training runs.
-        new_best = False  # whether this epoch is a new best
+        new_best = False  # whether this validation pass is a new best
 
         # update metric infos
         for task in tasks + ["micro", "macro"]:
@@ -931,8 +927,8 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best = self._update_metric_history(
-                epoch,
+            metric_infos, this_val_metric, should_save, new_best = self._update_metric_history(
+                val_pass,
                 all_val_metrics,
                 metric,
                 task_name,
@@ -952,12 +948,13 @@ class SamplingMultiTaskTrainer:
                 scheduler = None
             if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
-                scheduler.step(this_epoch_metric, epoch)
+                scheduler.step(this_val_metric, val_pass)
                 log.info(
                     "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
                 )
                 log.info(
-                    "\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs
+                    "\t# validation passes without improvement: %d",
+                    scheduler.lr_scheduler.num_bad_epochs,
                 )
 
         return all_val_metrics, should_save, new_best
@@ -1031,23 +1028,23 @@ class SamplingMultiTaskTrainer:
         """ format some metrics as a string """
         return ", ".join(["%s: %.4f" % (name, value) for name, value in metrics.items()])
 
-    def _unmark_previous_best(self, phase, epoch, task=""):
+    def _unmark_previous_best(self, phase, val_pass, task=""):
         marked_best = glob.glob(
-            os.path.join(self._serialization_dir, task, "*_state_{}_epoch_*.best.th".format(phase))
+            os.path.join(self._serialization_dir, task, "*_state_{}_val_*.best.th".format(phase))
         )
         for file in marked_best:
             # Skip the just-written checkpoint.
-            if "_{}.".format(epoch) not in file:
+            if "_{}.".format(val_pass) not in file:
                 os.rename(file, re.sub("%s$" % (".best.th"), ".th", file))
 
-    def _delete_old_checkpoints(self, phase, epoch, task=""):
+    def _delete_old_checkpoints(self, phase, val_pass, task=""):
         candidates = glob.glob(
-            os.path.join(self._serialization_dir + task, "*_state_{}_epoch_*.th".format(phase))
+            os.path.join(self._serialization_dir + task, "*_state_{}_val_*.th".format(phase))
         )
         for file in candidates:
             # Skip the best, because we'll need it.
             # Skip the just-written checkpoint.
-            if ".best" not in file and "_{}.".format(epoch) not in file:
+            if ".best" not in file and "_{}.".format(val_pass) not in file:
                 os.remove(file)
 
     def _save_checkpoint(self, training_state, phase="pretrain", new_best=False, tasks=None):
@@ -1065,7 +1062,7 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path."
             )
 
-        epoch = training_state["epoch"]
+        val_pass = training_state["validation_pass"]
         if new_best:
             best_str = ".best"
         else:
@@ -1081,7 +1078,7 @@ class SamplingMultiTaskTrainer:
         model_path = os.path.join(
             self._serialization_dir,
             task_directory,
-            "model_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+            "model_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
         )
 
         model_state = self._model.state_dict()
@@ -1122,7 +1119,7 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "task_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                "task_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         torch.save(
@@ -1130,7 +1127,7 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "metric_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                "metric_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         torch.save(model_state, model_path)
@@ -1139,21 +1136,21 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "training_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
+                "training_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         if new_best:
-            self._unmark_previous_best(phase, epoch, task_directory)
+            self._unmark_previous_best(phase, val_pass, task_directory)
 
         if not self._keep_all_checkpoints:
-            self._delete_old_checkpoints(phase, epoch)
+            self._delete_old_checkpoints(phase, val_pass)
 
         log.info("Saved checkpoints to %s", self._serialization_dir)
 
     def _restore_checkpoint(self, phase, tasks=None):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
-        This includes an epoch count and optimizer state, which is serialized separately
+        This includes a validation pass count and optimizer state, which is serialized separately
         from model parameters. This function should only be used to continue training since 
         it will load previous checkpoints. 
         
@@ -1168,12 +1165,13 @@ class SamplingMultiTaskTrainer:
 
         Returns
         -------
-        epoch: the epoch at which to resume training.
+        val_pass: the validation pass at which to resume training.
         """
-        task_directory, epoch, suffix = check_for_previous_checkpoints(
+
+        task_directory, val_pass, suffix = check_for_previous_checkpoints(
             self._serialization_dir, tasks, phase, load_model=True
         )
-        assert epoch > -1, "No checkpoint found."
+        assert val_pass > -1, "No checkpoint found."
         log.info("Found checkpoint {}. Loading.".format(suffix))
         if task_directory is None:
             task_directory = ""
@@ -1229,9 +1227,9 @@ class SamplingMultiTaskTrainer:
             self._metric_infos[metric_name]["best"] = metric_state["best"]
 
         training_state = torch.load(training_state_path)
-        return training_state["pass"], training_state["should_stop"]
+        return training_state["step"], training_state["should_stop"]
 
-    def _metrics_to_tensorboard_tr(self, epoch, train_metrics, task_name):
+    def _metrics_to_tensorboard_tr(self, val_pass, train_metrics, task_name):
         """
         Sends all of the train metrics to tensorboard
         """
@@ -1240,9 +1238,9 @@ class SamplingMultiTaskTrainer:
         for name in metric_names:
             train_metric = train_metrics.get(name)
             name = task_name + "/" + task_name + "_" + name
-            self._TB_train_log.add_scalar(name, train_metric, epoch)
+            self._TB_train_log.add_scalar(name, train_metric, val_pass)
 
-    def _metrics_to_tensorboard_val(self, epoch, val_metrics):
+    def _metrics_to_tensorboard_val(self, val_pass, val_metrics):
         """
         Sends all of the val metrics to tensorboard
         """
@@ -1251,7 +1249,7 @@ class SamplingMultiTaskTrainer:
         for name in metric_names:
             val_metric = val_metrics.get(name)
             name = name.split("_")[0] + "/" + name
-            self._TB_validation_log.add_scalar(name, val_metric, epoch)
+            self._TB_validation_log.add_scalar(name, val_metric, val_pass)
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
