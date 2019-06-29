@@ -470,7 +470,7 @@ def main(cl_arguments):
     if args.do_full_eval:
         # We evaluate on all target tasks during evaluation stage.
         eval_tasks = copy.deepcopy(target_tasks)
-        
+
     check_configurations(args, pretrain_tasks, target_tasks)
     if args.do_pretrain:
         # Train on pretrain tasks
