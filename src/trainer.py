@@ -1160,7 +1160,9 @@ class SamplingMultiTaskTrainer:
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes an epoch count and optimizer state, which is serialized separately
-        from model parameters. This function should only be used to continue training -
+        from model parameters. This function should only be used to continue training since 
+        it will load previous checkpoints. 
+        
         if you wish to load a model for inference/load parts of a model into a new
         computation graph, you should use the native Pytorch functions:
         `` model.load_state_dict(torch.load("/path/to/model/weights.th"))``
@@ -1169,6 +1171,7 @@ class SamplingMultiTaskTrainer:
         target task and work backwards, to find the most recent checkpoint in the target 
         train phase. If phase=pretrain, we check for checkpoints in the main run 
         directory.
+
         Returns
         -------
         epoch: the epoch at which to resume training.
