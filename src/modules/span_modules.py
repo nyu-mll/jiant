@@ -14,7 +14,6 @@ from .simple_modules import Classifier
 class SpanClassifierModule(nn.Module):
     """
         Build span classifier components as a sub-module.
-        from typing import Dict, Iterable, List
         Classifier that allows for spans and text as input.
         Use same classifier code as build_single_sentence_module,
         except we'll use span indices to extract span representations,
