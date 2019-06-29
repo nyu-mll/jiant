@@ -26,7 +26,8 @@
         - run:
             name: running demo.sh
             command: |
-              python scripts/download_glue_data.py --data_dir data --tasks all
+              python scripts/download_glue_data.py --data_dir data --tasks MRPC,STS-B,SST
+              python scripts/download_superglue_data.py --data_dir data --tasks CB
               source activate jiant
               python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
               python main.py --config_file config/demo.conf
