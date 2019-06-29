@@ -1144,7 +1144,6 @@ class SamplingMultiTaskTrainer:
 
         log.info("Saved checkpoints to %s", self._serialization_dir)
 
-
     def _restore_checkpoint(self, phase, tasks=None):
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
