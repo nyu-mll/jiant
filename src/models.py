@@ -158,7 +158,10 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        assert_for_log(args.input_module == "elmo-chars-only", "LM with full ELMo not supported")
+        assert_for_log(
+            args.input_module != "elmo" and not args.input_module.startswith("bert"),
+            "LM with full ELMo and BERT not supported",
+        )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
@@ -236,7 +239,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         # should prevent these from being enabled anyway.
         from .openai_transformer_lm.utils import OpenAIEmbedderModule
 
-        log.info("Using OpenAI transformer model; skipping other embedders.")
+        log.info("Using OpenAI transformer model.")
         cove_layer = None
         # Here, this uses openAIEmbedder.
         embedder = OpenAIEmbedderModule(args)
@@ -246,7 +249,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         # should prevent these from being enabled anyway.
         from .bert.utils import BertEmbedderModule
 
-        log.info(f"Using BERT model ({args.input_module}); skipping other embedders.")
+        log.info(f"Using BERT model ({args.input_module}).")
         cove_layer = None
         # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
         # cache; see
@@ -326,7 +329,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             "elmo-chars-only",
         ], "You do not have a valid value for input_module."
         embeddings = None
-        log.info("\tNot using word embeddings!")
         word_embs = None
 
     if word_embs is not None:

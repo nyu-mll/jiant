@@ -309,7 +309,8 @@ def initial_setup(args, cl_args):
     pretrain_tasks: list of pretraining tasks
     target_tasks: list of target tasks
     vocab: list of vocab
-    word_embs: loaded word embeddings, may be None if args.input_module = gpt, elmo, BERT
+    word_embs: loaded word embeddings, may be None if args.input_module in 
+    {gpt, elmo, elmo-chars-only, bert-*}
     model: a MultiTaskModel object
     """
     output = io.StringIO()
@@ -403,7 +404,7 @@ def check_arg_name(args):
     for input_type in old_input_module_vals:
         assert_for_log(
             input_type not in args,
-            "Error: Attempting to load old arg name [%s], please use input_module config parameter and refer to master branch's default configs for most recent way to specify [%s]"
+            "Error: Attempting to load old arg name [%s], please use input_module config parameter and refer to master branch's default configs for current way to specify [%s]"
             % (input_type, input_type),
         )
 
@@ -433,7 +434,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
-        # will be empty if args.input_module != "ELMo", scalar_mix_0 should always be
+        # will be empty if args.input_module != "elmo", scalar_mix_0 should always be
         # pretrain scalars
         elmo_scalars = [
             (n, p)
