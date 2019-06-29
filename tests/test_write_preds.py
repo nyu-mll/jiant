@@ -13,7 +13,7 @@ import src.tasks.tasks as tasks
 from src.models import MultiTaskModel
 from main import evaluate_and_write
 
-from ..allennlp_mods.numeric_field import NumericField
+from src.allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
 from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
