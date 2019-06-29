@@ -393,6 +393,19 @@ def check_arg_name(args):
             "Error: Attempting to load old arg name [%s], please update to new name [%s]"
             % (old_name, name_dict[old_name]),
         )
+    old_input_module_vals = [
+        "elmo",
+        "elmo_chars_only",
+        "bert_model_name",
+        "openai_transformer",
+        "word_embs",
+    ]
+    for input_type in old_input_module_vals:
+        assert_for_log(
+            input_type not in args,
+            "Error: Attempting to load old arg name [%s], please use input_module config parameter and refer to master branch's default configs for most recent way to specify [%s]"
+            % (input_type, input_type),
+        )
 
 
 def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
