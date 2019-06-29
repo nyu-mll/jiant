@@ -514,8 +514,16 @@ class SamplingMultiTaskTrainer:
         if self._serialization_dir is not None:
             # Resume from serialization path
             if load_model:
-                n_pass, should_stop = self._restore_checkpoint(phase, tasks)
-                log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
+                ckpt_directory, _, _ = check_for_previous_checkpoints(
+                    self._serialization_dir, tasks, phase, load_model
+                )
+                if ckpt_directory is None:
+                    log.warning(
+                        "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
+                    )
+                else:
+                    n_pass, should_stop = self._restore_checkpoint(phase, tasks)
+                    log.info("Loaded model from checkpoint. Starting at pass %d.", n_pass)
             else:
                 log.info("Starting training without restoring from a checkpoint.")
                 check_for_previous_checkpoints(self._serialization_dir, tasks, phase, load_model)
@@ -666,9 +674,7 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
-                all_val_metrics, should_save, new_best = self._validate(
-                    n_val, tasks, batch_size
-                )
+                all_val_metrics, should_save, new_best = self._validate(n_val, tasks, batch_size)
 
                 # Check stopping conditions
                 should_stop = self._check_stop(n_val, stop_metric, tasks)
@@ -1167,7 +1173,6 @@ class SamplingMultiTaskTrainer:
         -------
         epoch: The epoch at which to resume training.
         """
-        suffix_to_load = None
         task_directory, epoch, suffix = check_for_previous_checkpoints(
             self._serialization_dir, tasks, phase, load_model=True
         )
@@ -1178,9 +1183,15 @@ class SamplingMultiTaskTrainer:
         model_path = os.path.join(
             self._serialization_dir, task_directory, "_".join(["model", suffix])
         )
-        training_state_path = model_path.replace("model", "training")
-        task_state_path = model_path.replace("model", "task")
-        metric_state_path = model_path.replace("model", "metric")
+        training_state_path = os.path.join(
+            self._serialization_dir, task_directory, "_".join(["training", suffix])
+        )
+        task_state_path = os.path.join(
+            self._serialization_dir, task_directory, "_".join(["task", suffix])
+        )
+        metric_state_path = os.path.join(
+            self._serialization_dir, task_directory, "_".join(["metric", suffix])
+        )
 
         model_state = torch.load(model_path, map_location=device_mapping(self._cuda_device))
 

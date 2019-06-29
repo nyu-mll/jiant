@@ -502,19 +502,17 @@ def main(cl_arguments):
     if args.do_target_task_training:
         # Train on target tasks
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
-        if args.do_full_eval:
-            # We evaluate on all target tasks during evaluation stage.
-            eval_tasks = copy.deepcopy(target_tasks)
+        target_tasks_to_train = copy.deepcopy(target_tasks)
         # Check for previous target train checkpoints
         task_to_restore, _, _ = check_for_previous_checkpoints(
-            args.run_dir, target_tasks, "target_train", args.load_model
+            args.run_dir, target_tasks_to_train, "target_train", args.load_model
         )
         if task_to_restore is not None:
             # If there is a task to restore from, target train only on target tasks
             # including and following that task.
-            last_task_index = [task.name for task in target_tasks].index(task_to_restore)
-            target_tasks = target_tasks[last_task_index:]
-        for task in target_tasks:
+            last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
+            target_tasks_to_train = target_tasks_to_train[last_task_index:]
+        for task in target_tasks_to_train:
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
                 continue
@@ -552,7 +550,7 @@ def main(cl_arguments):
             # If we either do target task training, or if we only evaluate
             # without pretraining or target task training
             # then we evaluate on the target tasks.
-            for task in eval_tasks:
+            for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
                 ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
                 assert ckpt_path is not None

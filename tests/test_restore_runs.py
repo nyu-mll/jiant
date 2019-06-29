@@ -61,7 +61,7 @@ class TestRestoreRuns(unittest.TestCase):
             and suffix == "state_target_train_epoch_2.th"
         )
         # Test partial checkpoints.
-        # If <4 checkpoints are found for an epoch, we do not count that epoch as 
+        # If <4 checkpoints are found for an epoch, we do not count that epoch as
         # the most recent.
         for type_name in ["model", "task"]:
             open(
@@ -73,8 +73,8 @@ class TestRestoreRuns(unittest.TestCase):
         task_directory, max_epoch, suffix = utils.check_for_previous_checkpoints(
             self.temp_dir, tasks, phase="target_train", load_model=True
         )
-        # Even though there are partial checkpoints in the sst directory, 
-        # it still will return the most recent checkpoint as in mrpc. 
+        # Even though there are partial checkpoints in the sst directory,
+        # it still will return the most recent checkpoint as in mrpc.
         assert (
             task_directory == "mrpc"
             and max_epoch == 2
@@ -96,9 +96,9 @@ class TestRestoreRuns(unittest.TestCase):
         task_directory, max_epoch, suffix = utils.check_for_previous_checkpoints(
             self.temp_dir, tasks, phase="target_train", load_model=True
         )
-        # Now that there is a complete set of 4 checkpoints in the sst directory, 
-        # the function should return sst as the directory with the most recent 
-        # checkpoint.  
+        # Now that there is a complete set of 4 checkpoints in the sst directory,
+        # the function should return sst as the directory with the most recent
+        # checkpoint.
         assert (
             task_directory == "sst"
             and max_epoch == 1

@@ -50,11 +50,12 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
 
     Returns
     ---------------------
-    task_directory: None or str
+    ckpt_directory: None or str, name of directory that checkpoints are in
+    with regards to the run directory. 
     max_epoch: int, -1 if not found
     suffix: None or str, the suffix of the checkpoint
     """
-    task_directory = None
+    ckpt_directory = None
     suffix = None
     ckpt_epoch = -1
     ckpt_suffix = None
@@ -62,27 +63,25 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
         for task in tasks[::-1]:
             max_epoch, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
             # If we have found a task with a valid checkpoint for the first time.
-            if max_epoch > -1 and task_directory is None and phase == "target_train":
-                task_directory = task.name
+            if max_epoch > -1 and ckpt_directory is None and phase == "target_train":
+                ckpt_directory = task.name
                 ckpt_epoch = max_epoch
                 ckpt_suffix = suffix
     else:
-        task_directory = ""
         ckpt_epoch, ckpt_suffix = find_last_checkpoint_epoch(serialization_dir, phase, "")
-    if task_directory is not None:
-        checkpoint_pattern = os.path.join(
-            serialization_dir, task_directory, "*_{}_*.th".format(phase)
+        if ckpt_epoch > -1:
+            # If there exists a pretraining checkpoint, set ckpt_directory.
+            ckpt_directory = ""
+    if ckpt_directory is not None:
+        assert_for_log(
+            load_model,
+            "There are existing checkpoints in %s which will be overwritten. "
+            "If you are restoring from a run, or would like to train from an "
+            "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
+            "If you don't want them, delete them or change your experiment name."
+            % serialization_dir,
         )
-        if not load_model:
-            assert_for_log(
-                len(glob.glob(checkpoint_pattern)) == 0,
-                "There are existing checkpoints in %s which will be overwritten. "
-                "If you are restoring from a run, or would like to train from an "
-                "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
-                "If you don't want them, delete them or change your experiment name."
-                % serialization_dir,
-            )
-    return task_directory, ckpt_epoch, ckpt_suffix
+    return ckpt_directory, ckpt_epoch, ckpt_suffix
 
 
 def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_name=""):
