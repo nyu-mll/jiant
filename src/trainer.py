@@ -666,7 +666,7 @@ class SamplingMultiTaskTrainer:
 
                 # Validate
                 log.info("Validating...")
-                all_val_metrics, should_save, new_best_macro = self._validate(
+                all_val_metrics, should_save, new_best = self._validate(
                     n_val, tasks, batch_size
                 )
 
@@ -710,7 +710,7 @@ class SamplingMultiTaskTrainer:
                         {"pass": n_pass, "epoch": n_val, "should_stop": should_stop},
                         tasks=tasks,
                         phase=phase,
-                        new_best_macro=new_best_macro,
+                        new_best=new_best,
                     )
 
         log.info("Stopped training after %d validation checks", n_pass / validation_interval)
@@ -753,7 +753,7 @@ class SamplingMultiTaskTrainer:
         metric_infos,
         metric_decreases,
         should_save,
-        new_best_macro,
+        new_best,
     ):
         """
         This function updates metric history with the best validation score so far.
@@ -769,13 +769,13 @@ class SamplingMultiTaskTrainer:
         metric_decreases: bool, marker to show if we should increase or
         decrease validation metric.
         should_save: bool, for checkpointing
-        new_best_macro: bool, indicator of whether the previous best preformance score was exceeded
+        new_best: bool, indicator of whether the previous best preformance score was exceeded
         Returns
         ________
         metric_infos: dict storing information about the various metrics
         this_epoch_metric: dict, metric information for this epoch, used for optimization scheduler
         should_save: bool
-        new_best_macro: bool
+        new_best: bool
         """
         this_epoch_metric = all_val_metrics[metric]
         metric_history = metric_infos[metric]["hist"]
@@ -788,13 +788,13 @@ class SamplingMultiTaskTrainer:
             metric_infos[metric]["best"] = (epoch, all_val_metrics)
             should_save = True
             if task_name == "macro":
-                new_best_macro = True
+                new_best = True
         if out_of_patience:
             metric_infos[metric]["stopped"] = True
             # Commented out the below line as more confusing than helpful. May make sense to
             # restore if we wind up using more complex stopping strategies.
             # log.info("Out of early stopping patience. Stopped tracking %s.", task_name)
-        return metric_infos, this_epoch_metric, should_save, new_best_macro
+        return metric_infos, this_epoch_metric, should_save, new_best
 
     def _calculate_validation_performance(
         self, task, task_infos, tasks, batch_size, all_val_metrics, n_examples_overall
@@ -898,7 +898,7 @@ class SamplingMultiTaskTrainer:
         __________
         all_val_metrics: dictinary updated with micro and macro average validation performance
         should_save: bool, determines whether to save a checkpoint
-        new_best_macro: bool, whether or not the macro performance increased
+        new_best: bool, whether or not the macro performance increased
         """
         task_infos, metric_infos = self._task_infos, self._metric_infos
         g_scheduler = self._g_scheduler
@@ -917,7 +917,7 @@ class SamplingMultiTaskTrainer:
         # Track per task patience
         should_save = periodic_save  # whether to save this epoch or not.
         # Currently we save every validation in the main training runs.
-        new_best_macro = False  # whether this epoch is a new best
+        new_best = False  # whether this epoch is a new best
 
         # update metric infos
         for task in tasks + ["micro", "macro"]:
@@ -931,7 +931,7 @@ class SamplingMultiTaskTrainer:
                 task_name = task.name
             if metric_infos[metric]["stopped"]:
                 continue
-            metric_infos, this_epoch_metric, should_save, new_best_macro = self._update_metric_history(
+            metric_infos, this_epoch_metric, should_save, new_best = self._update_metric_history(
                 epoch,
                 all_val_metrics,
                 metric,
@@ -939,7 +939,7 @@ class SamplingMultiTaskTrainer:
                 metric_infos,
                 metric_decreases,
                 should_save,
-                new_best_macro,
+                new_best,
             )
 
             # Get scheduler, using global scheduler if exists and task is macro
@@ -960,7 +960,7 @@ class SamplingMultiTaskTrainer:
                     "\t# epochs without improvement: %d", scheduler.lr_scheduler.num_bad_epochs
                 )
 
-        return all_val_metrics, should_save, new_best_macro
+        return all_val_metrics, should_save, new_best
 
     def _get_lr(self):
         """ Get learning rate from the optimizer we're using """
@@ -1050,13 +1050,13 @@ class SamplingMultiTaskTrainer:
             if ".best" not in file and "_{}.".format(epoch) not in file:
                 os.remove(file)
 
-    def _save_checkpoint(self, training_state, phase="pretrain", new_best_macro=False, tasks=None):
+    def _save_checkpoint(self, training_state, phase="pretrain", new_best=False, tasks=None):
         """
         Parameters
         ----------
         training_state: An object containing trainer state (step number, etc.), to be saved.
         phase: Usually 'pretrain' or 'target_train'.
-        new_best_macro: If true, the saved checkpoint will be marked with .best_macro, and
+        new_best: If true, the saved checkpoint will be marked with .best_macro, and
             potentially used later when switching from pretraining to target task training.
         """
         if not self._serialization_dir:
@@ -1066,7 +1066,7 @@ class SamplingMultiTaskTrainer:
             )
 
         epoch = training_state["epoch"]
-        if new_best_macro:
+        if new_best:
             best_str = ".best"
         else:
             best_str = ""
@@ -1075,6 +1075,7 @@ class SamplingMultiTaskTrainer:
 
         if phase == "target_train":
             # We only pass in one task at a time during target train phase.
+            assert len(tasks) == 1
             task_directory = tasks[0].name
 
         model_path = os.path.join(
@@ -1141,7 +1142,7 @@ class SamplingMultiTaskTrainer:
                 "training_state_{}_epoch_{}{}.th".format(phase, epoch, best_str),
             ),
         )
-        if new_best_macro:
+        if new_best:
             self._unmark_previous_best(phase, epoch, task_directory)
 
         if not self._keep_all_checkpoints:
@@ -1158,7 +1159,7 @@ class SamplingMultiTaskTrainer:
         computation graph, you should use the native Pytorch functions:
         `` model.load_state_dict(torch.load("/path/to/model/weights.th"))``
 
-        We restore based on the phase. If phase=target_train, we start from the lsat 
+        We restore based on the phase. If phase=target_train, we start from the last 
         target task and work backwards, to find the most recent checkpoint in the target 
         train phase. If phase=pretrain, we check for checkpoints in the main run 
         directory.
@@ -1167,7 +1168,6 @@ class SamplingMultiTaskTrainer:
         epoch: The epoch at which to resume training.
         """
         suffix_to_load = None
-        tasks = tasks[::-1]  # reverse the tasks
         task_directory, epoch, suffix = check_for_previous_checkpoints(
             self._serialization_dir, tasks, phase, load_model=True
         )

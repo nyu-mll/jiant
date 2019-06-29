@@ -61,7 +61,7 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     if phase == "target_train":
         for task in tasks[::-1]:
             max_epoch, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
-            # if we haven't found a task directory yet
+            # If we have found a task with a valid checkpoint for the first time.
             if max_epoch > -1 and task_directory is None and phase == "target_train":
                 task_directory = task.name
                 ckpt_epoch = max_epoch
@@ -90,12 +90,12 @@ def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_
     """
     Search for the last epoch in a directory. 
     Here, we check that all four checkpoints (model, training_state, task_state, metrics)
-    are loaded and return the most recent epoch with all four checkpoints. 
+    exist and return the most recent epoch with all four checkpoints. 
 
     """
     if not serialization_dir:
         raise ConfigurationError(
-            "serialization_dir not specified - cannot " "restore a model without a directory path."
+            "serialization_dir not specified - cannot restore a model without a directory path."
         )
     max_epoch = -1
     suffix = None

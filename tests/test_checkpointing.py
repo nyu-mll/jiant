@@ -197,13 +197,13 @@ class TestCheckpointing(unittest.TestCase):
                 {"pass": 10, "epoch": 1, "should_stop": 0},
                 tasks=[self.wic],
                 phase="pretrain",
-                new_best_macro=True,
+                new_best=True,
             )
             pt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 2, "should_stop": 0},
                 tasks=[self.wic],
                 phase="pretrain",
-                new_best_macro=True,
+                new_best=True,
             )
             tt_trainer._task_infos = _task_infos
             tt_trainer._metric_infos = _metric_infos
@@ -214,13 +214,13 @@ class TestCheckpointing(unittest.TestCase):
                 {"pass": 10, "epoch": 1, "should_stop": 0},
                 tasks=[self.wic],
                 phase="target_train",
-                new_best_macro=True,
+                new_best=True,
             )
             tt_trainer._save_checkpoint(
                 {"pass": 10, "epoch": 2, "should_stop": 0},
                 tasks=[self.wic],
                 phase="target_train",
-                new_best_macro=False,
+                new_best=False,
             )
             assert (
                 os.path.exists(
