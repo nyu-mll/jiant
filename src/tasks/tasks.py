@@ -2209,8 +2209,8 @@ class CommitmentTask(PairClassificationTask):
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 targs.append(trg)
-                targs.append(trg)
                 idxs.append(example["idx"])
+            assert len(sent1s) == len(sent2s) == len(targs) == len(idxs), "Error processing CB data"
             return [sent1s, sent2s, targs, idxs]
 
         self.train_data_text = _load_data(os.path.join(self.path, "train.jsonl"))
@@ -2222,6 +2222,7 @@ class CommitmentTask(PairClassificationTask):
             + self.train_data_text[1]
             + self.val_data_text[1]
         )
+
         log.info("\tFinished loading CommitmentBank data.")
 
     def get_metrics(self, reset=False):
