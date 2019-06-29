@@ -467,6 +467,10 @@ def main(cl_arguments):
         tb_logdir = os.path.join(args.run_dir, "tensorboard")
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
+    if args.do_full_eval:
+        # We evaluate on all target tasks during evaluation stage.
+        eval_tasks = copy.deepcopy(target_tasks)
+        
     check_configurations(args, pretrain_tasks, target_tasks)
     if args.do_pretrain:
         # Train on pretrain tasks
