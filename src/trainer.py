@@ -713,7 +713,7 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"steps": n_steps, "validaton_steps": n_val, "should_stop": should_stop},
+                        {"steps": n_steps, "validation_pass": n_val, "should_stop": should_stop},
                         tasks=tasks,
                         phase=phase,
                         new_best=new_best,
@@ -1068,7 +1068,7 @@ class SamplingMultiTaskTrainer:
                 "restore a model without a directory path."
             )
 
-        val_pass = training_state["validaton_steps"]
+        val_pass = training_state["validation_pass"]
         if new_best:
             best_str = ".best"
         else:
