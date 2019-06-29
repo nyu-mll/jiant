@@ -10,7 +10,6 @@ import logging as log
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
-
 import argparse
 import glob
 import io
@@ -37,6 +36,7 @@ from src.utils.utils import (
     parse_json_diff,
     sort_param_recursive,
     select_relevant_print_args,
+    check_for_previous_checkpoints,
 )
 from src import tasks as task_modules
 import jsondiff
@@ -468,7 +468,6 @@ def main(cl_arguments):
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
     check_configurations(args, pretrain_tasks, target_tasks)
-
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")
@@ -503,8 +502,17 @@ def main(cl_arguments):
     if args.do_target_task_training:
         # Train on target tasks
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
-
-        for task in target_tasks:
+        target_tasks_to_train = copy.deepcopy(target_tasks)
+        # Check for previous target train checkpoints
+        task_to_restore, _, _ = check_for_previous_checkpoints(
+            args.run_dir, target_tasks_to_train, "target_train", args.load_model
+        )
+        if task_to_restore is not None:
+            # If there is a task to restore from, target train only on target tasks
+            # including and following that task.
+            last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
+            target_tasks_to_train = target_tasks_to_train[last_task_index:]
+        for task in target_tasks_to_train:
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
                 continue
@@ -520,6 +528,7 @@ def main(cl_arguments):
                 task.val_metric_decreases,
                 phase="target_train",
             )
+
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,
@@ -530,7 +539,7 @@ def main(cl_arguments):
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
-                load_model=False,
+                load_model=task.name == task_to_restore,
                 phase="target_train",
             )
 
