@@ -787,7 +787,7 @@ class SamplingMultiTaskTrainer:
         )
         if is_best_so_far:
             log.info("Best result seen so far for %s.", task_name)
-            metric_infos[metric]["best"] = (epoch, all_val_metrics)
+            metric_infos[metric]["best"] = (val_pass, all_val_metrics)
             should_save = True
             if task_name == "macro":
                 new_best = True
@@ -934,7 +934,7 @@ class SamplingMultiTaskTrainer:
             if metric_infos[metric]["stopped"]:
                 continue
             metric_infos, this_val_metric, should_save, new_best = self._update_metric_history(
-                epoch,
+                val_pass,
                 all_val_metrics,
                 metric,
                 task_name,
@@ -959,7 +959,8 @@ class SamplingMultiTaskTrainer:
                     "\tBest result seen so far for %s: %.3f", metric, scheduler.lr_scheduler.best
                 )
                 log.info(
-                    "\t# validation passes without improvement: %d", scheduler.lr_scheduler.num_bad_epochs
+                    "\t# validation passes without improvement: %d",
+                    scheduler.lr_scheduler.num_bad_epochs,
                 )
 
         return all_val_metrics, should_save, new_best
@@ -1124,7 +1125,7 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "task_state_{}_val_{}{}.th".format(phase, epoch, best_str),
+                "task_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         torch.save(
@@ -1132,7 +1133,7 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "metric_state_{}_val_{}{}.th".format(phase, epoch, best_str),
+                "metric_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         torch.save(model_state, model_path)
@@ -1141,17 +1142,16 @@ class SamplingMultiTaskTrainer:
             os.path.join(
                 self._serialization_dir,
                 task_directory,
-                "training_state_{}_val_{}{}.th".format(phase, epoch, best_str),
+                "training_state_{}_val_{}{}.th".format(phase, val_pass, best_str),
             ),
         )
         if new_best:
-            self._unmark_previous_best(phase, epoch, task_directory)
+            self._unmark_previous_best(phase, val_pass, task_directory)
 
         if not self._keep_all_checkpoints:
-            self._delete_old_checkpoints(phase, epoch)
+            self._delete_old_checkpoints(phase, val_pass)
 
         log.info("Saved checkpoints to %s", self._serialization_dir)
-
 
     def _restore_checkpoint(self, phase, tasks=None):
         """

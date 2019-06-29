@@ -253,9 +253,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
                 % args.load_target_train_checkpoint
             )
         else:
-            checkpoint = glob.glob(
-                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
-            )
+            checkpoint = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
     if phase == "eval":
         if args.load_eval_checkpoint not in ("none", ""):
             checkpoint = glob.glob(args.load_eval_checkpoint)
@@ -266,7 +264,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             # Get the best checkpoint from the target_train phase to evaluate on.
             assert task_name is not None, "Specify a task checkpoint to evaluate from."
             checkpoint = glob.glob(
-                os.path.join(args.run_dir, task_name, "model_state_target_train_epoch_*.best.th")
+                os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
 
     if len(checkpoint) > 0:
