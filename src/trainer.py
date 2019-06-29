@@ -123,29 +123,17 @@ def build_trainer(
         opt_params["warmup"] = 0.1
     opt_params = Params(opt_params)
 
-    if "transformer" in params["sent_enc"]:
-        assert False, "Transformer is not yet tested, still in experimental stage :-("
-        schd_params = Params(
-            {
-                "type": "noam",
-                "model_size": params["d_hid"],
-                "warmup_steps": params["warmup"],
-                "factor": 1.0,
-            }
-        )
-        log.info("\tUsing noam scheduler with warmup %d!", params["warmup"])
-    else:
-        schd_params = Params(
-            {
-                "type": "reduce_on_plateau",
-                "mode": "min" if metric_should_decrease else "max",
-                "factor": params["lr_decay_factor"],
-                "patience": params["lr_patience"],
-                "threshold": params["scheduler_threshold"],
-                "threshold_mode": "abs",
-                "verbose": True,
-            }
-        )
+    schd_params = Params(
+        {
+            "type": "reduce_on_plateau",
+            "mode": "min" if metric_should_decrease else "max",
+            "factor": params["lr_decay_factor"],
+            "patience": params["lr_patience"],
+            "threshold": params["scheduler_threshold"],
+            "threshold_mode": "abs",
+            "verbose": True,
+        }
+    )
 
     train_params = Params(
         {
@@ -304,6 +292,7 @@ class SamplingMultiTaskTrainer:
                 - stopped: a bool indicating if that task is stopped or not (if it ran out of
                     patience or hit min lr)
                 - last_log: the time we last logged progress for the task
+
             - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
                 Each metric should be the validation metric of a task, except {micro/macro}_avg,
                 which are privileged to get an aggregate multi-task score. Each dict contains:
@@ -812,7 +801,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
-        
+
         Parameters
         ----------
         task: current task to get validation performance of
@@ -904,7 +893,7 @@ class SamplingMultiTaskTrainer:
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
         periodic_save: bool, value of whether or not to save model and progress periodically
-        
+
         Returns
         __________
         all_val_metrics: dictinary updated with micro and macro average validation performance
