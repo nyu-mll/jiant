@@ -9,7 +9,6 @@ import os
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
-import glob
 
 import numpy as np
 import torch

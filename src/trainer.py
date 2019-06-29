@@ -1171,7 +1171,7 @@ class SamplingMultiTaskTrainer:
         directory.
         Returns
         -------
-        epoch: The epoch at which to resume training.
+        epoch: the epoch at which to resume training.
         """
         task_directory, epoch, suffix = check_for_previous_checkpoints(
             self._serialization_dir, tasks, phase, load_model=True
