@@ -21,8 +21,16 @@ def _get_f1(x, y):
     xs = x.split()
     ys = y.split()
 
-    pcs = sum([1 for y in ys if y in xs]) / len(ys)
-    rcl = sum([1 for x in xs if x in ys]) / len(xs)
+    try:
+        pcs = sum([1 for y in ys if y in xs]) / len(ys)
+    except ZeroDivisionError as e:
+        pcs = 0
+
+    try:
+        rcl = sum([1 for x in xs if x in ys]) / len(xs)
+    except ZeroDivisionError as e:
+        rcl = 0
+
     if pcs + rcl == 0:
         return 0
     else:
