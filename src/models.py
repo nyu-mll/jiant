@@ -309,6 +309,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
     token_embedders = {}
     # Word embeddings
+    n_token_vocab = vocab.get_vocab_size("tokens")
     if args.input_module in ["glove", "fastText"] and pretrained_embs is not None:
         word_embs = pretrained_embs
         assert word_embs.size()[0] == n_token_vocab
