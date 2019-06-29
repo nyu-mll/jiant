@@ -35,7 +35,7 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "val_data_limit": 10,
         "d_hid": 1024,
         "min_lr": 0.000,
-        "max_epochs": 4,
+        "max_vals": 4,
         "sent_enc": "null",
         "scheduler_threshold": 0.0001,
         "optimizer": "bert_adam",
@@ -44,7 +44,7 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "max_grad_norm": 5.0,
         "val_interval": 500,
         "keep_all_checkpoints": 0,
-        "max_vals": 2,
+        "max_epochs": 2,
         "scheduler_threshold": 0.05,
         "patience": 4,
         "dec_val_scale": 4,
@@ -193,13 +193,13 @@ class TestCheckpointing(unittest.TestCase):
             pt_trainer._g_optimizer = g_optimizer
             pt_trainer._g_scheduler = g_scheduler
             pt_trainer._save_checkpoint(
-                {"steps": 10, "validation_pass": 1, "should_stop": 0},
+                {"step": 10, "validation_pass": 1, "should_stop": 0},
                 tasks=[self.wic],
                 phase="pretrain",
                 new_best=True,
             )
             pt_trainer._save_checkpoint(
-                {"steps": 10, "validation_pass": 2, "should_stop": 0},
+                {"step": 10, "validation_pass": 2, "should_stop": 0},
                 tasks=[self.wic],
                 phase="pretrain",
                 new_best=True,
@@ -210,13 +210,13 @@ class TestCheckpointing(unittest.TestCase):
             tt_trainer._g_scheduler = g_scheduler
 
             tt_trainer._save_checkpoint(
-                {"steps": 10, "validation_pass": 1, "should_stop": 0},
+                {"step": 10, "validation_pass": 1, "should_stop": 0},
                 tasks=[self.wic],
                 phase="target_train",
                 new_best=True,
             )
             tt_trainer._save_checkpoint(
-                {"steps": 10, "validation_pass": 2, "should_stop": 0},
+                {"step": 10, "validation_pass": 2, "should_stop": 0},
                 tasks=[self.wic],
                 phase="target_train",
                 new_best=False,

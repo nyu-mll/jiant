@@ -510,7 +510,7 @@ class SamplingMultiTaskTrainer:
         self._g_scheduler = g_scheduler
 
         # define these here b/c they might get overridden on load
-        n_steps, should_stop = 0, False
+        n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
             if load_model:
@@ -522,8 +522,8 @@ class SamplingMultiTaskTrainer:
                         "load_model=1 but there is not checkpoint. Starting training without restoring from a checkpoint."
                     )
                 else:
-                    n_steps, should_stop = self._restore_checkpoint(phase, tasks)
-                    log.info("Loaded model from checkpoint. Starting at pass %d.", n_steps)
+                    n_step, should_stop = self._restore_checkpoint(phase, tasks)
+                    log.info("Loaded model from checkpoint. Starting at step %d.", n_step)
             else:
                 log.info("Starting training without restoring from a checkpoint.")
                 check_for_previous_checkpoints(self._serialization_dir, tasks, phase, load_model)
@@ -573,7 +573,7 @@ class SamplingMultiTaskTrainer:
         log.info("Beginning training with stopping criteria based on metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
-            task = samples[(n_steps + offset) % validation_interval]  # randomly select a task
+            task = samples[(n_step + offset) % validation_interval]  # randomly select a task
             task_info = task_infos[task.name]
             if task_info["stopped"]:
                 offset += 1
@@ -605,11 +605,11 @@ class SamplingMultiTaskTrainer:
                 if self._grad_norm:
                     clip_grad_norm_(self._model.parameters(), self._grad_norm)
                 optimizer.step()
-                n_steps += 1  # update per batch
+                n_step += 1  # update per batch
 
                 # step scheduler if it's not ReduceLROnPlateau
                 if not isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
-                    scheduler.step_batch(n_steps)
+                    scheduler.step_batch(n_step)
 
             # Update training progress on that task
             task_info["n_batches_since_val"] = n_batches_since_val
@@ -624,13 +624,13 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     task_metrics_to_TB = task_metrics.copy()
                     task_metrics_to_TB["loss"] = float(task_info["loss"] / n_batches_since_val)
-                    self._metrics_to_tensorboard_tr(n_steps, task_metrics_to_TB, task.name)
+                    self._metrics_to_tensorboard_tr(n_step, task_metrics_to_TB, task.name)
 
                 task_metrics["%s_loss" % task.name] = tr_loss / n_batches_since_val
                 description = self._description_from_metrics(task_metrics)
                 log.info(
                     "Update %d: task %s, batch %d (%d): %s",
-                    n_steps,
+                    n_step,
                     task.name,
                     n_batches_since_val,
                     total_batches_trained,
@@ -643,11 +643,11 @@ class SamplingMultiTaskTrainer:
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
-            if n_steps % validation_interval == 0:
+            if n_step % validation_interval == 0:
 
                 # Dump and log all of our current info
-                n_val = int(n_steps / validation_interval)
-                log.info("***** Step %d / Validation %d *****", n_steps, n_val)
+                n_val = int(n_step / validation_interval)
+                log.info("***** Step %d / Validation %d *****", n_step, n_val)
                 # Get metrics for all training progress so far
                 for task in tasks:
                     task_info = task_infos[task.name]
@@ -687,7 +687,7 @@ class SamplingMultiTaskTrainer:
                     log_str += " validation: %3f" % value
                     log.info(log_str)
                 if self._TB_dir is not None:
-                    self._metrics_to_tensorboard_val(n_steps, all_val_metrics)
+                    self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 lrs = self._get_lr()  # log LR
                 for name, value in lrs.items():
                     log.info("%s: %.6f", name, value)
@@ -713,13 +713,13 @@ class SamplingMultiTaskTrainer:
 
                 if should_save:
                     self._save_checkpoint(
-                        {"steps": n_steps, "validation_pass": n_val, "should_stop": should_stop},
+                        {"step": n_step, "validation_pass": n_val, "should_stop": should_stop},
                         tasks=tasks,
                         phase=phase,
                         new_best=new_best,
                     )
 
-        log.info("Stopped training after %d validation checks", n_steps / validation_interval)
+        log.info("Stopped training after %d validation checks", n_step / validation_interval)
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
@@ -1233,7 +1233,7 @@ class SamplingMultiTaskTrainer:
             self._metric_infos[metric_name]["best"] = metric_state["best"]
 
         training_state = torch.load(training_state_path)
-        return training_state["steps"], training_state["should_stop"]
+        return training_state["step"], training_state["should_stop"]
 
     def _metrics_to_tensorboard_tr(self, val_pass, train_metrics, task_name):
         """
