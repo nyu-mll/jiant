@@ -322,6 +322,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.input_module.startswith("bert") or args.input_module in [
             "gpt",
             "elmo",
+            "elmo-chars-only",
         ], "You do not have a valid value for input_module."
         embeddings = None
         log.info("\tNot using word embeddings!")
