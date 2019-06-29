@@ -13,14 +13,6 @@ function boolq() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq, pretrain_tasks = \"boolq\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
 }
 
-function mnli_then_boolq() {
-    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq_plus, pretrain_tasks = \"mnli\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000"
-}
-
-function boolq_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq, pretrain_tasks = \"boolq\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000"
-}
-
 function commit() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 60"
 }
@@ -60,8 +52,4 @@ elif [ $1 == "wsc" ]; then
     wsc
 elif [ $1 == "boolq" ]; then
     boolq
-elif [ $1 == "boolq++" ]; then
-    mnli_then_boolq
-elif [ $1 == "boolq-bow" ]; then
-    boolq_bow
 fi

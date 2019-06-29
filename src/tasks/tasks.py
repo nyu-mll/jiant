@@ -2586,22 +2586,18 @@ class BooleanQuestionTask(PairClassificationTask):
 
     def load_data(self):
         """ Process the dataset located at path.  """
-        #trg_map = {"true": 1, "false": 0}
         def _load_jsonl(data_file):
             raw_data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             data = []
             for d in raw_data:
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                #title = process_sentence(self._tokenizer_name, d["title"], self.max_seq_len)
-                #passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
                 passage = process_sentence(self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len)
                 new_datum = {
-                             #"title": title,
                              "question": question,
                              "passage": passage
                             }
                 if "answer" in d:
-                    new_datum["answer"] = d["answer"] #trg_map[d["answer"]]
+                    new_datum["answer"] = d["answer"]
                 data.append(new_datum)
             return data
 

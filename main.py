@@ -576,14 +576,6 @@ def main(cl_arguments):
                         model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
                     )
                     evaluate_and_write(args, model, [task], splits_to_write)
-            else:
-                for task in tasks:
-                    #ckpt_path = get_best_checkpoint_path(args.run_dir, "target_train", task.name)
-                    #assert ckpt_path is not None
-                    #load_model_state(
-                    #    model, ckpt_path, args.cuda, skip_task_models=[], strict=strict
-                    #)
-                    evaluate_and_write(args, model, [task], splits_to_write)
 
         elif args.transfer_paradigm == "frozen":
             # Don't do any special checkpointing logic here
