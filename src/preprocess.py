@@ -250,15 +250,15 @@ def build_indexers(args):
         )
     if args.input_module == "gpt":
         assert not indexers, (
-            "OpenAI transformer is not supported alongside" " other indexers due to tokenization!"
+           "OpenAI transformer is not supported alongside other indexers due to tokenization."
         )
         assert args.tokenizer == "OpenAI.BPE", (
-            "OpenAI transformer is not supported alongside" " other indexers due to tokenization!"
+            "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
         )
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
     if args.input_module.startswith("bert"):
         assert not indexers, (
-            "BERT is not supported alongside" " other indexers due to tokenization!"
+            "BERT is not supported alongside" " other indexers due to tokenization."
         )
         assert args.tokenizer == args.input_module, (
             "BERT models use custom WPM tokenization for "

@@ -159,7 +159,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        if args.input_module == "ELMo":
+        if args.input_module == "elmo":
             assert_for_log(args.elmo_chars_only, "LM with full ELMo not supported")
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
@@ -311,20 +311,22 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 
     token_embedders = {}
     # Word embeddings
-    n_token_vocab = vocab.get_vocab_size("tokens")
-    if not args.input_module.startswith("bert") and args.input_module not in ["gpt", "ELMo"]:
-        if args.input_module in ["glove", "fastText"] and pretrained_embs is not None:
-            word_embs = pretrained_embs
-            assert word_embs.size()[0] == n_token_vocab
-            d_word = word_embs.size()[1]
-            log.info("\tUsing pre-trained word embeddings: %s", str(word_embs.size()))
-        elif args.input_module == "scratch":
-            log.info("\tTraining word embeddings from scratch.")
-            d_word = args.d_word
-            word_embs = nn.Embedding(n_token_vocab, d_word).weight
-        else:
-            raise Exception("Not a valid type of word emb. Set to none for elmo.")
+    if args.input_module in ["glove", "fastText"] and pretrained_embs is not None:
+        word_embs = pretrained_embs
+        assert word_embs.size()[0] == n_token_vocab
+        d_word = word_embs.size()[1]
+        log.info("\tUsing pre-trained word embeddings: %s", str(word_embs.size()))
+    elif args.input_module == "scratch":
+        log.info("\tTraining word embeddings from scratch.")
+        d_word = args.d_word
+        word_embs = nn.Embedding(n_token_vocab, d_word).weight
+    else:
+        assert args.input_module.startswith("bert") or args.input_module in ["gpt", "elmo"], "You do not have a valid value for input_module."
+        embeddings = None
+        log.info("\tNot using word embeddings!")
+        word_embs = None
 
+    if word_embs is not None:
         embeddings = Embedding(
             num_embeddings=n_token_vocab,
             embedding_dim=d_word,
@@ -334,9 +336,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         )
         token_embedders["words"] = embeddings
         d_emb += d_word
-    else:
-        embeddings = None
-        log.info("\tNot using word embeddings!")
 
     # Handle cove
     cove_layer = None
