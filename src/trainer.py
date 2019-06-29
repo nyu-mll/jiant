@@ -123,29 +123,17 @@ def build_trainer(
         opt_params["warmup"] = 0.1
     opt_params = Params(opt_params)
 
-    if "transformer" in params["sent_enc"]:
-        assert False, "Transformer is not yet tested, still in experimental stage :-("
-        schd_params = Params(
-            {
-                "type": "noam",
-                "model_size": params["d_hid"],
-                "warmup_steps": params["warmup"],
-                "factor": 1.0,
-            }
-        )
-        log.info("\tUsing noam scheduler with warmup %d!", params["warmup"])
-    else:
-        schd_params = Params(
-            {
-                "type": "reduce_on_plateau",
-                "mode": "min" if metric_should_decrease else "max",
-                "factor": params["lr_decay_factor"],
-                "patience": params["lr_patience"],
-                "threshold": params["scheduler_threshold"],
-                "threshold_mode": "abs",
-                "verbose": True,
-            }
-        )
+    schd_params = Params(
+        {
+            "type": "reduce_on_plateau",
+            "mode": "min" if metric_should_decrease else "max",
+            "factor": params["lr_decay_factor"],
+            "patience": params["lr_patience"],
+            "threshold": params["scheduler_threshold"],
+            "threshold_mode": "abs",
+            "verbose": True,
+        }
+    )
 
     train_params = Params(
         {
@@ -193,6 +181,7 @@ class SamplingMultiTaskTrainer:
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
         diverse sizes.
+
         Parameters
         ----------
         model : ``Model``, required.
@@ -284,7 +273,7 @@ class SamplingMultiTaskTrainer:
     ):
         """ Set up the trainer by initializing task_infos and metric_infos, which
         track necessary information about the training status of each task and metric respectively.
-
+        
         Returns:
             - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info
               contains:
@@ -303,7 +292,7 @@ class SamplingMultiTaskTrainer:
                 - stopped: a bool indicating if that task is stopped or not (if it ran out of
                     patience or hit min lr)
                 - last_log: the time we last logged progress for the task
-
+            
             - metric_infos (Dict[str:Dict[str:???]]): dictionary containing metric information.
                 Each metric should be the validation metric of a task, except {micro/macro}_avg,
                 which are privileged to get an aggregate multi-task score. Each dict contains:
@@ -384,6 +373,7 @@ class SamplingMultiTaskTrainer:
         num_tasks: int
         task_names: list of str
         task_n_train_examples: list of ints of number of examples per task
+        
         Returns
         ----------------
         scaling weights: list of ints, to scale loss
@@ -471,7 +461,7 @@ class SamplingMultiTaskTrainer:
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
-
+        
         Parameters
         ----------
         tasks: a list of task objects to train on
@@ -485,7 +475,7 @@ class SamplingMultiTaskTrainer:
         shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
         phase: str, usually 'pretrain' or 'target_train'
-
+        
         Returns
         ----------
         Validation results
@@ -807,7 +797,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
-
+       
         Parameters
         ----------
         task: current task to get validation performance of
@@ -816,7 +806,7 @@ class SamplingMultiTaskTrainer:
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
         n_examples_overall = int, current number of examples the model is validated on
-
+        
         Returns
         -------
         n_examples_overall: int, current number of examples
@@ -892,14 +882,12 @@ class SamplingMultiTaskTrainer:
         Validate on all tasks and return the results and whether to save this epoch or not.
         Note/TODO: 'Epoch' here refers to validation passes, not proper epochs over
         any given task's training set.
-
         Parameters
         ----------
         epoch: int
         tasks: list of task objects to train on
         batch_size: int, the batch size to use for the tasks.periodic_save
         periodic_save: bool, value of whether or not to save model and progress periodically
-
         Returns
         __________
         all_val_metrics: dictinary updated with micro and macro average validation performance

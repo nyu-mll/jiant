@@ -82,16 +82,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if
     # needed.
-    tfm_params = Params(
-        {
-            "input_dim": d_emb,
-            "hidden_dim": args.d_hid,
-            "projection_dim": args.d_tproj,
-            "feedforward_hidden_dim": args.d_ff,
-            "num_layers": args.n_layers_enc,
-            "num_attention_heads": args.n_heads,
-        }
-    )
     rnn_params = Params(
         {
             "input_size": d_emb,
@@ -191,19 +181,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-    elif args.sent_enc == "transformer":
-        transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-        sent_encoder = SentenceEncoder(
-            vocab,
-            embedder,
-            args.n_layers_highway,
-            transformer,
-            dropout=args.dropout,
-            skip_embs=args.skip_embs,
-            cove_layer=cove_layer,
-            sep_embs_for_skip=args.sep_embs_for_skip,
-        )
-        log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
