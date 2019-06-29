@@ -158,8 +158,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        if args.input_module == "elmo":
-            assert_for_log(args.elmo_chars_only, "LM with full ELMo not supported")
+        assert_for_log(args.input_module == "elmo-chars-only", "LM with full ELMo not supported")
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
@@ -320,7 +319,10 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         d_word = args.d_word
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
-        assert args.input_module.startswith("bert") or args.input_module in ["gpt", "elmo"], "You do not have a valid value for input_module."
+        assert args.input_module.startswith("bert") or args.input_module in [
+            "gpt",
+            "elmo",
+        ], "You do not have a valid value for input_module."
         embeddings = None
         log.info("\tNot using word embeddings!")
         word_embs = None
@@ -418,13 +420,13 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         num_reps = 1 + max(loaded_classifiers.values())
     else:
         # All tasks share the same scalars.
-        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
+        # Not used if input_module = elmo-chars-only (i.e. no elmo)
         loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
-    if args.input_module == "ELMo":
+    if args.input_module.startswith("elmo"):
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        if args.elmo_chars_only:
+        if args.input_module == "elmo-chars-only":
             log.info("\tUsing ELMo character CNN only!")
             log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             elmo_embedder = ElmoCharacterEncoder(
@@ -457,7 +459,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     embedder = ElmoTextFieldEmbedder(
         token_embedders,
         loaded_classifiers,
-        elmo_chars_only=args.elmo_chars_only,
+        elmo_chars_only=args.input_module == "elmo-chars-only",
         sep_embs_for_skip=args.sep_embs_for_skip,
     )
 
@@ -755,7 +757,7 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
-        self.elmo = args.input_module == "ELMo" and not args.elmo_chars_only
+        self.elmo = args.input_module == "elmo"
         self.use_bert = bool(args.input_module.startswith("bert"))
         self.sep_embs_for_skip = args.sep_embs_for_skip
 

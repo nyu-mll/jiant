@@ -804,6 +804,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         Builds validation generator, evaluates on each task and produces validation metrics.
+        
         Parameters
         ----------
         task: current task to get validation performance of
@@ -812,6 +813,7 @@ class SamplingMultiTaskTrainer:
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
         n_examples_overall = int, current number of examples the model is validated on
+        
         Returns
         -------
         n_examples_overall: int, current number of examples

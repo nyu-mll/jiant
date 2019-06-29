@@ -229,9 +229,9 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if not args.input_module.startswith("bert") and args.input_module not in ["ELMo", "gpt"]:
+    if not args.input_module.startswith("bert") and args.input_module not in ["elmo", "gpt"]:
         indexers["words"] = SingleIdTokenIndexer()
-    if args.input_module == "ELMo":
+    if args.input_module == "elmo":
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
     if args.char_embs:
@@ -299,7 +299,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.input_module not in ["ELMo", "gpt", "scratch"] and not args.input_module.startswith(
+    if args.input_module not in ["elmo", "gpt", "scratch"] and not args.input_module.startswith(
         "bert"
     ):
         emb_file = os.path.join(args.exp_dir, "embs.pkl")

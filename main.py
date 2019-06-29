@@ -309,8 +309,7 @@ def initial_setup(args, cl_args):
     pretrain_tasks: list of pretraining tasks
     target_tasks: list of target tasks
     vocab: list of vocab
-    word_embs: loaded word embeddings, may be None if 
-    args.input_module = gpt, ELMo, BERT
+    word_embs: loaded word embeddings, may be None if args.input_module = gpt, elmo, BERT
     model: a MultiTaskModel object
     """
     output = io.StringIO()
