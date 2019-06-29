@@ -83,16 +83,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if
     # needed.
-    tfm_params = Params(
-        {
-            "input_dim": d_emb,
-            "hidden_dim": args.d_hid,
-            "projection_dim": args.d_tproj,
-            "feedforward_hidden_dim": args.d_ff,
-            "num_layers": args.n_layers_enc,
-            "num_attention_heads": args.n_heads,
-        }
-    )
     rnn_params = Params(
         {
             "input_size": d_emb,
