@@ -52,8 +52,8 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     ---------------------
     ckpt_directory: None or str, name of directory that checkpoints are in
     with regards to the run directory. 
-    max_epoch: int, -1 if not found
-    suffix: None or str, the suffix of the checkpoint
+    max_epoch: int, -1 if not found.
+    suffix: None or str, the suffix of the checkpoint.
     """
     ckpt_directory = None
     suffix = None
