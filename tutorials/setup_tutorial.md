@@ -37,11 +37,16 @@ Some requirements may only be needed for specific configurations. If you have tr
 You will also need to install dependencies for `nltk` if you do not already have them:
 
 ```
-python -m nltk.downloader -d  perluniprops nonbreaking_prefixes punkt
+nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
 ```
 
+### Optional
 
- ## 2. Getting data and setting up our environment
+If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 
+
+https://github.com/NVIDIA/apex#linux
+
+## 2. Getting data and setting up our environment
 
  In this tutorial, we will be working with GLUE data.
 The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
@@ -92,6 +97,9 @@ Now that we've set up the environment, let's get started!
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch.
 This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
 
+```
+cp config/demo.conf config/tutorial.conf
+```
 
 Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file.
 
