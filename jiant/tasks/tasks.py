@@ -198,6 +198,8 @@ class Task(object):
         - optimizer
     """
 
+    CSV_PREDS = False
+
     def __init__(self, name, tokenizer_name):
         self.name = name
         self._tokenizer_name = tokenizer_name

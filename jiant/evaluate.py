@@ -172,7 +172,6 @@ def write_preds(
             + ["wmt"]
             + tasks_module.ALL_COLA_NPI_TASKS
         )
-        simple_csv_preds_tasks = ["qasrl"]
 
         if task.name in glue_style_tasks:
             # Strict mode: strict GLUE format (no extra cols)
@@ -219,7 +218,7 @@ def write_preds(
             _write_diagnostics_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
-        elif task.name in simple_csv_preds_tasks:
+        elif task.CSV_PREDS:
             _write_simple_csv_preds(task, preds_df, pred_dir, split_name)
         else:
             log.warning("Task '%s' not supported by write_preds().", task.name)

@@ -5,7 +5,6 @@ import json
 import os
 import random
 import re
-import tqdm
 from typing import Iterable, Sequence, Type
 
 import torch
@@ -182,10 +181,13 @@ class MultiRCTask(Task):
 
 @register_task("qasrl", rel_path="QASRL/")
 class QASRLTask(SpanPredictionTask):
+
+    CSV_PREDS = True
+
     def __init__(self, path, max_seq_len, name, **kw):
         """QA-SRL (Question-Answer Driven Semantic Role Labeling)
         See http://qasrl.org/
-        Move the contents of qasrl-v2 into QASRL
+        Download, unzip, and rename the "qasrl-v2" folder to "QASRL"
         """
         super(QASRLTask, self).__init__(name, **kw)
         self.path = path
@@ -257,7 +259,7 @@ class QASRLTask(SpanPredictionTask):
         aligner_fn = get_aligner_fn(self.tokenizer_name)
         with gzip.open(path) as f:
             lines = f.read().splitlines()
-            for line in tqdm.tqdm(lines):
+            for line in lines:
                 datum = self.preprocess_qasrl_datum(json.loads(line))
                 sentence_tokens = datum["sentence_tokens"]
                 # " ".join because retokenizer functions assume space-delimited input tokens
