@@ -2535,7 +2535,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         self._iters_by_split = iters_by_split
 
     def get_all_labels(self):
-        return ["True", "False"]
+        return ["False", "True"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
@@ -2548,7 +2548,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             Returns:
             one hot encoding of size [batch_size, 2]
             """
-            ones = torch.sparse.torch.eye(depth).cuda()
+            ones = torch.sparse.torch.eye(depth)
+            if torch.cuda.is_available():
+                ones = ones.cuda()
             return ones.index_select(0, batch)
 
         binary_preds = make_one_hot(logits, depth=2)
