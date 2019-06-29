@@ -511,21 +511,15 @@ def _write_glue_preds(
         _apply_pred_map(preds_df, pred_map, "prediction")
         _write_preds_with_pd(
             preds_df.iloc[:9796],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[9796:19643],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[19643:],
-            os.path.join(
-                pred_dir, _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format),
         )
 
     elif task_name in ["rte", "qnli"]:
