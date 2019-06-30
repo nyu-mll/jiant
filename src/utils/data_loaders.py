@@ -97,6 +97,7 @@ def load_tsv(
         header=None,
         skiprows=skip_rows,
         quoting=quote_level,
+        keep_default_na=False,
         encoding="utf-8",
     )
     if filter_idx:
