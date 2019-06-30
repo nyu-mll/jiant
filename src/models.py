@@ -1184,7 +1184,13 @@ class MultiTaskModel(nn.Module):
             #task.update_metrics(logits, labels, idxs)
 
         if predict:
-            out["preds"] = logits.argmax(dim=-1)
+            if isinstance(task, ReCoRDTask):
+                # for ReCoRD, we want the logits to make
+                # predictions across answer choices
+                # (which are spread across batches)
+                out["preds"] = logits[:, 1]
+            else:
+                out["preds"] = logits.argmax(dim=-1)
 
         return out
 

@@ -536,8 +536,8 @@ def main(cl_arguments):
                         phase = "target_train"
                     ckpt_path = get_best_checkpoint_path(args.run_dir, phase)
 
-                assert "best" in ckpt_path
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                #assert "best" in ckpt_path
+                #load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
                 evaluate_and_write(args, model, [task], splits_to_write)
 
