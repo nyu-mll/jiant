@@ -40,8 +40,13 @@ You will also need to install dependencies for `nltk` if you do not already have
 nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
 ```
 
+### Optional
 
- ## 2. Getting data and setting up our environment
+If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 
+
+https://github.com/NVIDIA/apex#linux
+
+## 2. Getting data and setting up our environment
 
  In this tutorial, we will be working with GLUE data.
 The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:

@@ -2209,8 +2209,8 @@ class CommitmentTask(PairClassificationTask):
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 targs.append(trg)
-                targs.append(trg)
                 idxs.append(example["idx"])
+            assert len(sent1s) == len(sent2s) == len(targs) == len(idxs), "Error processing CB data"
             return [sent1s, sent2s, targs, idxs]
 
         self.train_data_text = _load_data(os.path.join(self.path, "train.jsonl"))
@@ -2222,6 +2222,7 @@ class CommitmentTask(PairClassificationTask):
             + self.train_data_text[1]
             + self.val_data_text[1]
         )
+
         log.info("\tFinished loading CommitmentBank data.")
 
     def get_metrics(self, reset=False):
@@ -2547,7 +2548,7 @@ class WinogradCoreferenceTask(SpanClassificationTask):
         self._iters_by_split = iters_by_split
 
     def get_all_labels(self):
-        return ["True", "False"]
+        return ["False", "True"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
@@ -2560,7 +2561,9 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             Returns:
             one hot encoding of size [batch_size, 2]
             """
-            ones = torch.sparse.torch.eye(depth).cuda()
+            ones = torch.sparse.torch.eye(depth)
+            if torch.cuda.is_available():
+                ones = ones.cuda()
             return ones.index_select(0, batch)
 
         binary_preds = make_one_hot(logits, depth=2)

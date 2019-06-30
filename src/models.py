@@ -41,7 +41,6 @@ from .modules.span_modules import SpanClassifierModule
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.mt import MTTask, RedditSeq2SeqTask, Wiki103Seq2SeqTask
 from .tasks.qa import MultiRCTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
@@ -83,16 +82,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     # Need special handling for language modeling
     # Note: sent_enc is expected to apply dropout to its input _and_ output if
     # needed.
-    tfm_params = Params(
-        {
-            "input_dim": d_emb,
-            "hidden_dim": args.d_hid,
-            "projection_dim": args.d_tproj,
-            "feedforward_hidden_dim": args.d_ff,
-            "num_layers": args.n_layers_enc,
-            "num_attention_heads": args.n_heads,
-        }
-    )
     rnn_params = Params(
         {
             "input_size": d_emb,
@@ -107,7 +96,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             args.d_word,
             args.d_hid,
             args.n_layers_enc,
-            args.chunk_size,
+            args.onlstm_chunk_size,
             args.onlstm_dropconnect,
             args.onlstm_dropouti,
             args.dropout,
@@ -159,8 +148,10 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
-        if args.elmo:
-            assert_for_log(args.elmo_chars_only, "LM with full ELMo not supported")
+        assert_for_log(
+            args.input_module != "elmo" and not args.input_module.startswith("bert"),
+            "LM with full ELMo and BERT not supported",
+        )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
@@ -192,19 +183,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 2 * args.d_hid
-    elif args.sent_enc == "transformer":
-        transformer = StackedSelfAttentionEncoder.from_params(copy.deepcopy(tfm_params))
-        sent_encoder = SentenceEncoder(
-            vocab,
-            embedder,
-            args.n_layers_highway,
-            transformer,
-            dropout=args.dropout,
-            skip_embs=args.skip_embs,
-            cove_layer=cove_layer,
-            sep_embs_for_skip=args.sep_embs_for_skip,
-        )
-        log.info("Using Transformer architecture for shared encoder!")
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
         assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
@@ -233,22 +211,22 @@ def build_model(args, vocab, pretrained_embs, tasks):
     """
 
     # Build embeddings.
-    if args.openai_transformer:
+    if args.input_module == "gpt":
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .openai_transformer_lm.utils import OpenAIEmbedderModule
 
-        log.info("Using OpenAI transformer model; skipping other embedders.")
+        log.info("Using OpenAI transformer model.")
         cove_layer = None
         # Here, this uses openAIEmbedder.
         embedder = OpenAIEmbedderModule(args)
         d_emb = embedder.get_output_dim()
-    elif args.bert_model_name:
+    elif args.input_module.startswith("bert"):
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .bert.utils import BertEmbedderModule
 
-        log.info(f"Using BERT model ({args.bert_model_name}); skipping other embedders.")
+        log.info(f"Using BERT model ({args.input_module}).")
         cove_layer = None
         # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
         # cache; see
@@ -312,19 +290,25 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     token_embedders = {}
     # Word embeddings
     n_token_vocab = vocab.get_vocab_size("tokens")
-    if args.word_embs != "none":
-        if args.word_embs in ["glove", "fastText"] and pretrained_embs is not None:
-            word_embs = pretrained_embs
-            assert word_embs.size()[0] == n_token_vocab
-            d_word = word_embs.size()[1]
-            log.info("\tUsing pre-trained word embeddings: %s", str(word_embs.size()))
-        elif args.word_embs == "scratch":
-            log.info("\tTraining word embeddings from scratch.")
-            d_word = args.d_word
-            word_embs = nn.Embedding(n_token_vocab, d_word).weight
-        else:
-            raise Exception("Not a valid type of word emb. Set to none for elmo.")
+    if args.input_module in ["glove", "fastText"] and pretrained_embs is not None:
+        word_embs = pretrained_embs
+        assert word_embs.size()[0] == n_token_vocab
+        d_word = word_embs.size()[1]
+        log.info("\tUsing pre-trained word embeddings: %s", str(word_embs.size()))
+    elif args.input_module == "scratch":
+        log.info("\tTraining word embeddings from scratch.")
+        d_word = args.d_word
+        word_embs = nn.Embedding(n_token_vocab, d_word).weight
+    else:
+        assert args.input_module.startswith("bert") or args.input_module in [
+            "gpt",
+            "elmo",
+            "elmo-chars-only",
+        ], "You do not have a valid value for input_module."
+        embeddings = None
+        word_embs = None
 
+    if word_embs is not None:
         embeddings = Embedding(
             num_embeddings=n_token_vocab,
             embedding_dim=d_word,
@@ -334,15 +318,12 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         )
         token_embedders["words"] = embeddings
         d_emb += d_word
-    else:
-        embeddings = None
-        log.info("\tNot using word embeddings!")
 
     # Handle cove
     cove_layer = None
     if args.cove:
         assert embeddings is not None
-        assert args.word_embs == "glove", "CoVe requires GloVe embeddings."
+        assert args.input_module == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
             from .modules.cove.cove import MTLSTM as cove_lstm
@@ -420,13 +401,13 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         num_reps = 1 + max(loaded_classifiers.values())
     else:
         # All tasks share the same scalars.
-        # Not used if self.elmo_chars_only = 1 (i.e. no elmo)
+        # Not used if input_module = elmo-chars-only (i.e. no elmo)
         loaded_classifiers = {"@pretrain@": 0}
         num_reps = 1
-    if args.elmo:
+    if args.input_module.startswith("elmo"):
         log.info("Loading ELMo from files:")
         log.info("ELMO_OPT_PATH = %s", ELMO_OPT_PATH)
-        if args.elmo_chars_only:
+        if args.input_module == "elmo-chars-only":
             log.info("\tUsing ELMo character CNN only!")
             log.info("ELMO_WEIGHTS_PATH = %s", ELMO_WEIGHTS_PATH)
             elmo_embedder = ElmoCharacterEncoder(
@@ -459,7 +440,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
     embedder = ElmoTextFieldEmbedder(
         token_embedders,
         loaded_classifiers,
-        elmo_chars_only=args.elmo_chars_only,
+        elmo_chars_only=args.input_module == "elmo-chars-only",
         sep_embs_for_skip=args.sep_embs_for_skip,
     )
 
@@ -547,26 +528,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         decoder = Seq2SeqDecoder(vocab, **decoder_params)
         setattr(model, "%s_decoder" % task.name, decoder)
-    elif isinstance(task, MTTask):
-        log.info("using {} attention".format(args.s2s["attention"]))
-        decoder_params = Params(
-            {
-                "input_dim": d_sent,
-                "target_embedding_dim": 300,
-                "decoder_hidden_size": args.s2s["d_hid_dec"],
-                "output_proj_input_dim": args.s2s["output_proj_input_dim"],
-                "max_decoding_steps": args.max_seq_len,
-                "target_namespace": task._label_namespace
-                if hasattr(task, "_label_namespace")
-                else "targets",
-                "attention": args.s2s["attention"],
-                "dropout": args.dropout,
-                "scheduled_sampling_ratio": 0.0,
-            }
-        )
-        decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        setattr(model, "%s_decoder" % task.name, decoder)
-
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
@@ -604,8 +565,8 @@ def get_task_specific_params(args, task_name):
         params["d_hid_attn"] = _get_task_attr("d_hid_attn")
         params["dropout"] = _get_task_attr("classifier_dropout")
 
-    # Used for edge probing. Other tasks can safely ignore.
-    params["cls_loss_fn"] = _get_task_attr("classifier_loss_fn")
+    # Used for span/edge classification. Other tasks can safely ignore.
+    params["cls_loss_fn"] = _get_task_attr("span_classifier_loss_fn")
     params["cls_span_pooling"] = _get_task_attr("classifier_span_pooling")
     params["edgeprobe_cnn_context"] = _get_task_attr("edgeprobe_cnn_context")
 
@@ -777,8 +738,8 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
-        self.elmo = args.elmo and not args.elmo_chars_only
-        self.use_bert = bool(args.bert_model_name)
+        self.elmo = args.input_module == "elmo"
+        self.use_bert = bool(args.input_module.startswith("bert"))
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
@@ -969,11 +930,6 @@ class MultiTaskModel(nn.Module):
         out = {}
         sent, sent_mask = self.sent_encoder(batch["inputs"], task)
         out["n_exs"] = get_batch_size(batch)
-
-        if isinstance(task, (MTTask)):
-            decoder = getattr(self, "%s_decoder" % task.name)
-            out.update(decoder.forward(sent, sent_mask, batch["targs"]))
-            task.scorer1(out["loss"].item())
 
         if "targs" in batch:
             pass
