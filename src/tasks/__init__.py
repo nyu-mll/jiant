@@ -29,6 +29,7 @@ ALL_SUPERGLUE_TASKS = [
     "commitbank",
     "copa",
     "multirc",
+    "record",
     "rte-superglue",
     "winograd-coreference",
     "wic",

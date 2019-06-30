@@ -212,7 +212,6 @@ GLUE_NAME_MAP = {
     "mrpc": "MRPC",
     "qnli": "QNLI",
     "qqp": "QQP",
-    "record": "ReCoRD",
     "rte": "RTE",
     "sst": "SST-2",
     "sts-b": "STS-B",
@@ -224,6 +223,7 @@ SUPERGLUE_NAME_MAP = {
     "commitbank": "CB",
     "copa": "COPA",
     "multirc": "MultiRC",
+    "record": "ReCoRD",
     "rte-superglue": "RTE",
     "wic": "WiC",
     "superglue-diagnostic": "AX",
@@ -386,7 +386,6 @@ def _write_record_preds(
     strict_glue_format: bool = False,
 ):
     """ Write predictions for ReCoRD task. """
-    assert False, "Not implemented error"
     preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         if strict_glue_format:

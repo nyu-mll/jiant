@@ -206,9 +206,9 @@ class ReCoRDTask(Task):
         self._score_tracker = collections.defaultdict(list)
         self.max_seq_len = max_seq_len
         self.files_by_split = {
-            "train": os.path.join(path, "train.json"),
-            "val": os.path.join(path, "dev.json"),
-            "test": os.path.join(path, "test.json"),
+            "train": os.path.join(path, "train.500.jsonl"),
+            "val": os.path.join(path, "dev.500.jsonl"),
+            "test": os.path.join(path, "test.500.jsonl"),
         }
         # Load asnwers, used for computing metrics
         self._load_answers()
@@ -235,9 +235,10 @@ class ReCoRDTask(Task):
             return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
 
         examples = []
-        data = json.load(open(path, encoding="utf-8"))["data"]
+        #data = json.load(open(path, encoding="utf-8"))["data"]
+        data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
-            psg_id = item["id"]
+            psg_id = item["idx"]
             psg = process_sentence(self.tokenizer_name, item["passage"]["text"],
                                    self.max_seq_len)
             ent_idxs = item["passage"]["entities"]
@@ -245,8 +246,11 @@ class ReCoRDTask(Task):
             qas = item["qas"]
             for qa in qas:
                 qst = split_then_tokenize(qa["query"])
-                qst_id = qa["id"]
-                anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
+                qst_id = qa["idx"]
+                if "answers" in qa:
+                    anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
+                else:
+                    anss = []
                 ex = {"passage": psg,
                       "ents": ents,
                       "query": qst,
@@ -261,11 +265,14 @@ class ReCoRDTask(Task):
     def _load_answers(self) -> None:
         """ """
         answers = {}
-        for split_path in self.files_by_split.values():
-            data = json.load(open(split_path, encoding="utf-8"))["data"]
+        for split, split_path in self.files_by_split.items():
+            if split == "test":
+                continue
+            #data = json.load(open(split_path, encoding="utf-8"))["data"]
+            data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             for item in data:
                 for qa in item["qas"]:
-                    qst_id = qa["id"]
+                    qst_id = qa["idx"]
                     answers[qst_id] = [a["text"] for a in qa["answers"]]
         self._answers = answers
 
@@ -332,7 +339,8 @@ class ReCoRDTask(Task):
         """ Compute here b/c we"re streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            data = json.load(open(split_path, "r", encoding="utf-8"))["data"]
+            #data = json.load(open(split_path, "r", encoding="utf-8"))["data"]
+            data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             example_counts[split] = sum([len(d["passage"]["entities"]) for d in data])
         self.example_counts = example_counts
 
