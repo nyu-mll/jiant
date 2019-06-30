@@ -96,7 +96,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             args.d_word,
             args.d_hid,
             args.n_layers_enc,
-            args.chunk_size,
+            args.onlstm_chunk_size,
             args.onlstm_dropconnect,
             args.onlstm_dropouti,
             args.dropout,
