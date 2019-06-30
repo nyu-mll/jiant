@@ -1408,14 +1408,14 @@ class WinogenderTask(GLUEDiagnosticTask):
         self.test_data = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
-        self.val_mtric = "winogender-diagnostic_accuracy"
+        self.val_mtric = "%s_accuracy" % name
 
     def load_data(self):
-        rows = pd.read_csv(os.path.join(self.path, "winogender.tsv"), sep="\t")
-        rows["sent1"] = rows["sent1"].apply(
+        rows = pd.read_json(os.path.join(self.path, "winogender.jsonl"), lines=True)
+        rows["sent1"] = rows["context"].apply(
             lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
         )
-        rows["sent2"] = rows["sent2"].apply(
+        rows["sent2"] = rows["hypothesis"].apply(
             lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
         )
         data = list(rows.T.to_dict().values())
@@ -1438,9 +1438,9 @@ class WinogenderTask(GLUEDiagnosticTask):
                 d["input1"] = sentence_to_text_field(record["sent1"], indexers)
                 d["input2"] = sentence_to_text_field(record["sent2"], indexers)
             d["sent1_str"] = MetadataField(record["sent1"])
-            d["idx"] = LabelField(int(record["idx"]), label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(int(record["index"]), label_namespace="idxs", skip_indexing=True)
             d["pair_id"] = LabelField(
-                record["pair_id"], label_namespace="pair_id", skip_indexing=True
+                record["pair-id"], label_namespace="pair_id", skip_indexing=True
             )
             d["sent2_str"] = MetadataField(record["sent2"])
             d["labels"] = LabelField(
@@ -1460,9 +1460,14 @@ class WinogenderTask(GLUEDiagnosticTask):
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
         batch["preds"] = logits
+        print(batch)
         # Convert batch to dict to fit gender_parity_scorer API.
         batch_dict = [
-            {key: batch[key][index] for key in batch.keys() if key not in ["input1", "input2"]}
+            {
+                key: batch[key][index]
+                for key in batch.keys()
+                if key not in ["input1", "input2", "inputs"]
+            }
             for index in range(len(batch["sent1_str"]))
         ]
         self.gender_parity_scorer(batch_dict)

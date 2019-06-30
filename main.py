@@ -266,6 +266,10 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
+            if len(checkpoint) == 0:
+                checkpoint = glob.glob(
+                    os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
+                )
 
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
@@ -558,13 +562,28 @@ def main(cl_arguments):
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
+        diagnostic_tasks = []
+        target_tasks_remove = []
+        for index, task in enumerate(target_tasks):
+            if task.name in task_modules.ALL_DIAGNOSTICS:
+                diagnostic_tasks.append(task)
+                target_tasks_remove.append(index)
+        # To avoid evaluating twice on a diagnostic task.
+        for index in sorted(target_tasks_remove, reverse=True):
+            del target_tasks[index]
+        if len(diagnostic_tasks) > 0:
+            for task in diagnostic_tasks:
+                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+                assert ckpt_path is not None
+                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+                evaluate_and_write(args, model, [task], splits_to_write)
         if args.do_target_task_training or (args.load_model and not args.do_pretrain):
             # If we either do target task training, or if we only evaluate
             # without pretraining or target task training
             # then we evaluate on the target tasks.
             for task in target_tasks:
                 # Find the task-specific best checkpoint to evaluate on.
-                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+                ckpt_path = get_best_checkpoint_path(args, "target_train", task.name)
                 assert ckpt_path is not None
                 load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
