@@ -22,14 +22,7 @@ function multirc() {
 }
 
 function record() {
-    #python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = debug_record, run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 500, val_data_limit = -1"
-    #python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = record-vi10k, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 1000, val_data_limit = -1, val_interval = 10000"
-    #python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = record-vi10k-v2, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000, val_data_limit = -1, val_interval = 10000"
-    python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = record-v2, run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 0, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000, val_data_limit = -1, val_interval = 10000"
-}
-
-function record_bow() {
-    python -m ipdb main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = record-bow, run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 0, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000, val_data_limit = -1, val_interval = 10000"
+    python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 10000, val_data_limit = -1"
 }
 
 function rte() {
@@ -59,6 +52,4 @@ elif [ $1 == "wic" ]; then
     wic
 elif [ $1 == "wsc" ]; then
     wsc
-elif [ $1 == "record-bow" ]; then
-    record_bow
 fi

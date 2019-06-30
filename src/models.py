@@ -1182,7 +1182,6 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
 
         if "label" in batch:
-            #idxs = batch["qst_idx"]
             idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = F.cross_entropy(logits, labels)
