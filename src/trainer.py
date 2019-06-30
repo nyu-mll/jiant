@@ -502,6 +502,7 @@ class SamplingMultiTaskTrainer:
         self._g_scheduler = g_scheduler
 
         # define these here b/c they might get overridden on load
+
         n_step, should_stop = 0, False
         if self._serialization_dir is not None:
             # Resume from serialization path
