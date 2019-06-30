@@ -208,7 +208,7 @@ class ReCoRDTask(Task):
         self.files_by_split = {
             "train": os.path.join(path, "train.jsonl"),
             "val": os.path.join(path, "dev.jsonl"),
-            "test": os.path.join(path, "test_ANS.jsonl"),
+            "test": os.path.join(path, "test.jsonl"),
         }
         # Load asnwers, used for computing metrics
         self._load_answers()
@@ -265,8 +265,8 @@ class ReCoRDTask(Task):
         """ """
         answers = {}
         for split, split_path in self.files_by_split.items():
-            #if split == "test":
-            #    continue
+            if split == "test":
+                continue
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             for item in data:
                 psg_id = f"{split}-{item['idx']}"
