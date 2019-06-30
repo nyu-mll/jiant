@@ -1158,30 +1158,39 @@ class MultiTaskModel(nn.Module):
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
-            # if using BERT, we concatenate the context, question, and answer
-            inp = batch["psg_qst"]
-            #inp = batch["para_quest_ans"]
+            # if using BERT, we concatenate the passage, question, and answer
+            inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
             out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
         else:
             # else, we embed each independently and concat them
-            par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
-            qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
-            ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)
-            inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
-            inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
+            psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
+            qst_emb, qst_mask = self.sent_encoder(batch["qst"], task)
+
+            if "ans" in batch:
+                ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
+                inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
+                out["n_exs"] = batch["ans"]["words"].size(0)
+            else: # ReCoRD inserts answer into the query
+                inp = torch.cat([psg_emb, qst_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
+                out["n_exs"] = batch["qst"]["words"].size(0)
+
             logits = classifier(inp, inp_mask)
-            out["n_exs"] = batch["answer"]["words"].size(0)
         out["logits"] = logits
 
         if "label" in batch:
-            idxs = batch["qst_idx"]
-            #idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
+            #idxs = batch["qst_idx"]
+            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = F.cross_entropy(logits, labels)
-            task.update_metrics(logits, batch["answer_str"], idxs)
-            #task.update_metrics(logits, labels, idxs)
+            if isinstance(task, ReCoRDTask):
+                # ReCoRD needs the answer string to compute F1
+                task.update_metrics(logits, batch["ans_str"], idxs)
+            else:
+                task.update_metrics(logits, labels, idxs)
 
         if predict:
             if isinstance(task, ReCoRDTask):

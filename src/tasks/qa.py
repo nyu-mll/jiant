@@ -112,23 +112,23 @@ class MultiRCTask(Task):
         """ Process split text into a list of AllenNLP Instances. """
         is_using_bert = "bert_wpm_pretokenized" in indexers
 
-        def _make_instance(para, question, answer, label, par_idx, qst_idx, ans_idx):
+        def _make_instance(passage, question, answer, label, par_idx, qst_idx, ans_idx):
             """ pq_id: paragraph-question ID """
             d = {}
-            d["paragraph_str"] = MetadataField(" ".join(para))
-            d["question_str"] = MetadataField(" ".join(question))
-            d["answer_str"] = MetadataField(" ".join(answer))
+            d["psg_str"] = MetadataField(" ".join(passage))
+            d["qst_str"] = MetadataField(" ".join(question))
+            d["ans_str"] = MetadataField(" ".join(answer))
             d["par_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_bert:
                 inp = para + question[1:-1] + answer[1:]
-                d["para_quest_ans"] = sentence_to_text_field(inp, indexers)
+                d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["paragraph"] = sentence_to_text_field(para, indexers)
-                d["question"] = sentence_to_text_field(question, indexers)
-                d["answer"] = sentence_to_text_field(answer, indexers)
+                d["psg"] = sentence_to_text_field(passage, indexers)
+                d["qst"] = sentence_to_text_field(question, indexers)
+                d["ans"] = sentence_to_text_field(answer, indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
@@ -206,9 +206,9 @@ class ReCoRDTask(Task):
         self._score_tracker = collections.defaultdict(list)
         self.max_seq_len = max_seq_len
         self.files_by_split = {
-            "train": os.path.join(path, "train.10.jsonl"),
-            "val": os.path.join(path, "dev.10.jsonl"),
-            "test": os.path.join(path, "test_ANS.10.jsonl"),
+            "train": os.path.join(path, "train.jsonl"),
+            "val": os.path.join(path, "dev.jsonl"),
+            "test": os.path.join(path, "test_ANS.jsonl"),
         }
         # Load asnwers, used for computing metrics
         self._load_answers()
@@ -222,9 +222,9 @@ class ReCoRDTask(Task):
 
         Split should be one of "train", "val", or "test".
         """
-        return self.load_data_for_path(self.files_by_split[split])
+        return self.load_data_for_path(self.files_by_split[split], split)
 
-    def load_data_for_path(self, path):
+    def load_data_for_path(self, path, split):
         """ Load data """
 
         def split_then_tokenize(sent):
@@ -235,7 +235,6 @@ class ReCoRDTask(Task):
             return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
 
         examples = []
-        #data = json.load(open(path, encoding="utf-8"))["data"]
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
             psg_id = item["idx"]
@@ -248,14 +247,14 @@ class ReCoRDTask(Task):
                 qst = split_then_tokenize(qa["query"])
                 qst_id = qa["idx"]
                 if "answers" in qa:
-                    anss = [a["text"] for a in qa["answers"]] # we don't use answer span info
+                    anss = [a["text"] for a in qa["answers"]]
                 else:
                     anss = []
                 ex = {"passage": psg,
                       "ents": ents,
                       "query": qst,
                       "answers": anss,
-                      "psg_id": psg_id,
+                      "psg_id": f"{split}-{psg_id}",
                       "qst_id": qst_id
                      }
                 examples.append(ex)
@@ -266,14 +265,14 @@ class ReCoRDTask(Task):
         """ """
         answers = {}
         for split, split_path in self.files_by_split.items():
-            if split == "test":
-                continue
-            #data = json.load(open(split_path, encoding="utf-8"))["data"]
+            #if split == "test":
+            #    continue
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             for item in data:
+                psg_id = f"{split}-{item['idx']}"
                 for qa in item["qas"]:
                     qst_id = qa["idx"]
-                    answers[qst_id] = [a["text"] for a in qa["answers"]]
+                    answers[(psg_id, qst_id)] = [a["text"] for a in qa["answers"]]
         self._answers = answers
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
@@ -282,7 +281,7 @@ class ReCoRDTask(Task):
             if split.startswith("test"):
                 continue
             path = self.files_by_split[split]
-            for example in self.load_data_for_path(path):
+            for example in self.load_data_for_path(path, split):
                 yield example["passage"]
                 yield example["query"]
 
@@ -303,19 +302,19 @@ class ReCoRDTask(Task):
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: paragraph-question ID """
             d = {}
-            d["passage_str"] = MetadataField(" ".join(psg))
-            d["question_str"] = MetadataField(" ".join(qst))
-            d["answer_str"] = MetadataField(ans_str)
+            d["psg_str"] = MetadataField(" ".join(psg))
+            d["qst_str"] = MetadataField(" ".join(qst))
+            d["ans_str"] = MetadataField(ans_str)
             d["psg_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx) # required by evaluate()
             if is_using_bert:
                 inp = psg + qst[1:]
-                d["psg_qst"] = sentence_to_text_field(inp, indexers)
+                d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["passage"] = sentence_to_text_field(psg, indexers)
-                d["question"] = sentence_to_text_field(qst, indexers)
+                d["psg"] = sentence_to_text_field(psg, indexers)
+                d["qst"] = sentence_to_text_field(qst, indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
@@ -339,22 +338,21 @@ class ReCoRDTask(Task):
         """ Compute here b/c we"re streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
-            #data = json.load(open(split_path, "r", encoding="utf-8"))["data"]
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             example_counts[split] = sum([len(d["passage"]["entities"]) for d in data])
         self.example_counts = example_counts
 
-    def update_metrics(self, logits, anss, qst_idxs, tagmask=None):
+    def update_metrics(self, logits, anss, idxs, tagmask=None):
         """ A batch of logits+answer strings and the questions they go with """
         logits = logits.detach().cpu()
-        for idx, logit, ans in zip(qst_idxs, logits, anss):
+        for idx, logit, ans in zip(idxs, logits, anss):
             self._score_tracker[idx].append((logit, ans))
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         ems, f1s = [], []
-        for qst_idx, logits_and_anss in self._score_tracker.items():
-            golds = self._answers[qst_idx]
+        for idx, logits_and_anss in self._score_tracker.items():
+            golds = self._answers[idx]
             logits, anss = list(zip(*logits_and_anss))
             logits = torch.stack(logits)
             # take the most probable choice as the model prediction
