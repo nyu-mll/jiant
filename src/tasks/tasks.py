@@ -2589,16 +2589,16 @@ class BooleanQuestionTask(PairClassificationTask):
 
     def load_data(self):
         """ Process the dataset located at path.  """
+
         def _load_jsonl(data_file):
             raw_data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             data = []
             for d in raw_data:
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                passage = process_sentence(self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len)
-                new_datum = {
-                             "question": question,
-                             "passage": passage
-                            }
+                passage = process_sentence(
+                    self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len
+                )
+                new_datum = {"question": question, "passage": passage}
                 answer = d["answer"] if "answer" in d else False
                 new_datum["answer"] = answer
                 data.append(new_datum)
@@ -2608,10 +2608,9 @@ class BooleanQuestionTask(PairClassificationTask):
         self.val_data_text = _load_jsonl(os.path.join(self.path, "dev.jsonl"))
         self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
 
-        self.sentences = (
-            [d["question"] for d in self.train_data_text + self.val_data_text] +
-            [d["passage"] for d in self.train_data_text + self.val_data_text]
-        )
+        self.sentences = [d["question"] for d in self.train_data_text + self.val_data_text] + [
+            d["passage"] for d in self.train_data_text + self.val_data_text
+        ]
         log.info("\tFinished loading BoolQ data.")
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
@@ -2625,7 +2624,7 @@ class BooleanQuestionTask(PairClassificationTask):
             if not is_using_bert:
                 new_d["input1"] = sentence_to_text_field(d["passage"], indexers)
                 new_d["input2"] = sentence_to_text_field(d["question"], indexers)
-            else: # BERT
+            else:  # BERT
                 psg_qst = d["passage"][:-1] + d["question"]
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["answer"], label_namespace="labels", skip_indexing=True)
@@ -2654,4 +2653,3 @@ class BooleanQuestionTask(PairClassificationTask):
         for split in splits:
             st = self.get_split_text(split)
             self.example_counts[split] = len(st)
-
