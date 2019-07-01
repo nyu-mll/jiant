@@ -572,7 +572,7 @@ def main(cl_arguments):
             # If args.do_target_task_training = 0 and args.do_pretrain = 1
             # then evaluate on best pretraining checkpoint.
             ckpt_path = glob.glob(
-                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
+                os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
             )
             assert len(ckpt_path) > 0
             load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
