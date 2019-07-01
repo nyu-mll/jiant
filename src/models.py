@@ -1107,7 +1107,7 @@ class MultiTaskModel(nn.Module):
             psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
             qst_emb, qst_mask = self.sent_encoder(batch["qst"], task)
 
-            if "ans" in batch: # most QA tasks, e.g. MultiRC have explicit answer fields
+            if "ans" in batch:  # most QA tasks, e.g. MultiRC have explicit answer fields
                 ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
                 inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)

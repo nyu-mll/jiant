@@ -16,18 +16,20 @@ from .tasks import Task
 from .tasks import sentence_to_text_field
 from .registry import register_task
 
+
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace.
     From official ReCoRD eval script """
+
     def remove_articles(text):
-        return re.sub(r'\b(a|an|the)\b', ' ', text)
+        return re.sub(r"\b(a|an|the)\b", " ", text)
 
     def white_space_fix(text):
-        return ' '.join(text.split())
+        return " ".join(text.split())
 
     def remove_punc(text):
         exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
+        return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
         return text.lower()
@@ -417,12 +419,12 @@ class ReCoRDTask(Task):
             pred = anss[pred]
 
             # F1
-            #f1 = max([_get_f1(pred, gold) for gold in golds])
+            # f1 = max([_get_f1(pred, gold) for gold in golds])
             f1 = metric_max_over_ground_truths(f1_score, pred, golds)
             f1s.append(f1)
 
             # EM
-            #em = max([int(pred == gold) for gold in golds])
+            # em = max([int(pred == gold) for gold in golds])
             em = metric_max_over_ground_truths(exact_match_score, pred, golds)
             ems.append(em)
 
