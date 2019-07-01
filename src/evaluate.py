@@ -12,6 +12,7 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.tasks import (
+    BooleanQuestionTask,
     CommitmentTask,
     RTESuperGLUETask,
     WiCTask,
@@ -161,6 +162,10 @@ def write_preds(
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
+        elif isinstance(task, BooleanQuestionTask):
+            _write_boolq_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, CommitmentTask):
             _write_commitment_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
@@ -216,6 +221,7 @@ GLUE_NAME_MAP = {
 
 # Exact file names per task required by the SuperGLUE evaluation server
 SUPERGLUE_NAME_MAP = {
+    "boolq": "BoolQ",
     "commitbank": "CB",
     "copa": "COPA",
     "multirc": "MultiRC",
@@ -307,6 +313,25 @@ def _write_winograd_preds(
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
                 out_d = {"idx": row["idx"], "label": pred_map[row["preds"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
+def _write_boolq_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for Boolean Questions task.  """
+    pred_map = {0: "false", 1: "true"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": int(row["idx"]), "label": pred_map[row["preds"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
