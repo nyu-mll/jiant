@@ -17,7 +17,8 @@ from .tasks import sentence_to_text_field
 from .registry import register_task
 
 def normalize_answer(s):
-    """Lower text and remove punctuation, articles and extra whitespace."""
+    """Lower text and remove punctuation, articles and extra whitespace.
+    From official ReCoRD eval script """
     def remove_articles(text):
         return re.sub(r'\b(a|an|the)\b', ' ', text)
 
@@ -35,6 +36,8 @@ def normalize_answer(s):
 
 
 def f1_score(prediction, ground_truth):
+    """ Compute normalized token level F1
+    From official ReCoRD eval script """
     prediction_tokens = normalize_answer(prediction).split()
     ground_truth_tokens = normalize_answer(ground_truth).split()
     common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
@@ -48,18 +51,24 @@ def f1_score(prediction, ground_truth):
 
 
 def exact_match_score(prediction, ground_truth):
+    """ Compute normalized exact match
+    From official ReCoRD eval script """
     return normalize_answer(prediction) == normalize_answer(ground_truth)
 
 
 def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
+    """ Compute max metric between prediction and each ground truth.
+    From official ReCoRD eval script """
     scores_for_ground_truths = []
     for ground_truth in ground_truths:
         score = metric_fn(prediction, ground_truth)
         scores_for_ground_truths.append(score)
     return max(scores_for_ground_truths)
 
+
 def _get_f1(x, y):
-    """ """
+    """ Compute token level F1.
+    Assumes x, y are strings with tokens separated by spaces. """
     xs = x.split()
     ys = y.split()
 
@@ -270,7 +279,7 @@ class ReCoRDTask(Task):
     def load_data_for_path(self, path, split):
         """ Load data """
 
-        def split_then_tokenize(sent):
+        def tokenize_preserve_placeholder(sent):
             """ Tokenize questions while preserving @placeholder token """
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
@@ -288,7 +297,7 @@ class ReCoRDTask(Task):
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
             qas = item["qas"]
             for qa in qas:
-                qst = split_then_tokenize(qa["query"])
+                qst = tokenize_preserve_placeholder(qa["query"])
                 qst_id = qa["idx"]
                 if "answers" in qa:
                     anss = [a["text"] for a in qa["answers"]]
@@ -339,7 +348,7 @@ class ReCoRDTask(Task):
             return x in ys
 
         def insert_ent(ent, template):
-            """ Replace ent into template """
+            """ Replace ent into template (query with @placeholder) """
             assert "@placeholder" in template, "No placeholder detected!"
             split_idx = template.index("@placeholder")
             return template[:split_idx] + ent + template[split_idx + 1 :]
@@ -383,7 +392,7 @@ class ReCoRDTask(Task):
                 yield _make_instance(psg, qst, ent_str, label, par_idx, qst_idx, ent_idx)
 
     def count_examples(self):
-        """ Compute here b/c we"re streaming the sentences. """
+        """ Compute here b/c we're streaming the sentences. """
         example_counts = {}
         for split, split_path in self.files_by_split.items():
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
