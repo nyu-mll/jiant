@@ -9,8 +9,8 @@
 
       environment:
           JIANT_PROJECT_PREFIX: sample_run
-          JIANT_DATA_DIR: ~/repo/data
-          WORD_EMBS_FILE: ~/repo/data
+          JIANT_DATA_DIR: data
+          WORD_EMBS_FILE: none
       steps:
         # Step 1: obtain repo from GitHub
         - checkout
