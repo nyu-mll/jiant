@@ -2599,8 +2599,8 @@ class BooleanQuestionTask(PairClassificationTask):
                              "question": question,
                              "passage": passage
                             }
-                if "answer" in d:
-                    new_datum["answer"] = d["answer"]
+                answer = d["answer"] if "answer" in d else False
+                new_datum["answer"] = answer
                 data.append(new_datum)
             return data
 
