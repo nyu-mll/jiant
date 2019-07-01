@@ -26,6 +26,7 @@ ALL_GLUE_TASKS = [
 
 
 ALL_SUPERGLUE_TASKS = [
+    "boolq",
     "commitbank",
     "copa",
     "multirc",

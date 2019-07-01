@@ -2567,3 +2567,89 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             "acc": self.acc_scorer.get_metric(reset),
         }
         return collected_metrics
+
+
+@register_task("boolq", rel_path="BoolQ")
+class BooleanQuestionTask(PairClassificationTask):
+    """Task class for Boolean Questions Task."""
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.scorer2 = F1Measure(1)
+        self.scorers = [self.scorer1, self.scorer2]
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
+
+    def load_data(self):
+        """ Process the dataset located at path.  """
+
+        def _load_jsonl(data_file):
+            raw_data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
+            data = []
+            for d in raw_data:
+                question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
+                passage = process_sentence(
+                    self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len
+                )
+                new_datum = {"question": question, "passage": passage}
+                answer = d["answer"] if "answer" in d else False
+                new_datum["answer"] = answer
+                data.append(new_datum)
+            return data
+
+        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(self.path, "dev.jsonl"))
+        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+
+        self.sentences = [d["question"] for d in self.train_data_text + self.val_data_text] + [
+            d["passage"] for d in self.train_data_text + self.val_data_text
+        ]
+        log.info("\tFinished loading BoolQ data.")
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AlleNNLP Instances. """
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(d, idx):
+            new_d = {}
+            new_d["question_str"] = MetadataField(" ".join(d["question"][1:-1]))
+            new_d["passage_str"] = MetadataField(" ".join(d["passage"][1:-1]))
+            if not is_using_bert:
+                new_d["input1"] = sentence_to_text_field(d["passage"], indexers)
+                new_d["input2"] = sentence_to_text_field(d["question"], indexers)
+            else:  # BERT
+                psg_qst = d["passage"][:-1] + d["question"]
+                new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
+            new_d["labels"] = LabelField(d["answer"], label_namespace="labels", skip_indexing=True)
+            new_d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            return Instance(new_d)
+
+        split = [split, itertools.count()]
+        instances = map(_make_instance, *split)
+        return instances
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {
+            "acc_f1": (acc + f1) / 2,
+            "accuracy": acc,
+            "f1": f1,
+            "precision": pcs,
+            "recall": rcl,
+        }
+
+    def count_examples(self, splits=["train", "val", "test"]):
+        """ Count examples in the dataset. """
+        self.example_counts = {}
+        for split in splits:
+            st = self.get_split_text(split)
+            self.example_counts[split] = len(st)
