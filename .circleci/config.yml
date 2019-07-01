@@ -24,8 +24,8 @@
         - run:
             name: download demo data
             command: |
-              python scripts/download_glue_data.py --data_dir data --tasks MRPC,STS,SST
-              python scripts/download_superglue_data.py --data_dir data --tasks CB
+              python scripts/download_glue_data.py --data_dir $JIANT_DATA_DIR --tasks MRPC,STS,SST
+              python scripts/download_superglue_data.py --data_dir $JIANT_DATA_DIR --tasks CB
               ls $JIANT_DATA_DIR/*
         # Step 4: create virtual env and install dependencies
         - run:
