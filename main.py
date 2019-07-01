@@ -10,7 +10,6 @@ import logging as log
 log.basicConfig(
     format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO
 )  # noqa
-
 import argparse
 import glob
 import io
@@ -37,6 +36,7 @@ from src.utils.utils import (
     parse_json_diff,
     sort_param_recursive,
     select_relevant_print_args,
+    check_for_previous_checkpoints,
 )
 from src import tasks as task_modules
 import jsondiff
@@ -87,12 +87,12 @@ def handle_arguments(cl_arguments):
 
 def setup_target_task_training(args, target_tasks, model, strict):
     """
-    Gets the model path used to restore model after each target 
+    Gets the model path used to restore model after each target
     task run, and saves current state if no other previous checkpoint can
     be used as the model path.
     The logic for loading the correct model state for target task training is:
     1) If load_target_train_checkpoint is used, then load the weights from that checkpoint.
-    2) If we did pretraining, then load the best model from pretraining. 
+    2) If we did pretraining, then load the best model from pretraining.
     3) Default case: we save untrained encoder weights.
 
     Parameters
@@ -233,9 +233,9 @@ def _run_background_tensorboard(logdir, port):
 
 
 def get_best_checkpoint_path(args, phase, task_name=None):
-    """ Look in run_dir for model checkpoint to load when setting up for 
+    """ Look in run_dir for model checkpoint to load when setting up for
     phase = target_train or phase = eval.
-    Hierarchy is: 
+    Hierarchy is:
         If phase == target_train:
             1) user-specified target task checkpoint
             2) best task-specific checkpoint from pretraining stage
@@ -253,9 +253,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
                 % args.load_target_train_checkpoint
             )
         else:
-            checkpoint = glob.glob(
-                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
-            )
+            checkpoint = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
     if phase == "eval":
         if args.load_eval_checkpoint not in ("none", ""):
             checkpoint = glob.glob(args.load_eval_checkpoint)
@@ -266,7 +264,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             # Get the best checkpoint from the target_train phase to evaluate on.
             assert task_name is not None, "Specify a task checkpoint to evaluate from."
             checkpoint = glob.glob(
-                os.path.join(args.run_dir, task_name, "model_state_target_train_epoch_*.best.th")
+                os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
 
     if len(checkpoint) > 0:
@@ -309,7 +307,8 @@ def initial_setup(args, cl_args):
     pretrain_tasks: list of pretraining tasks
     target_tasks: list of target tasks
     vocab: list of vocab
-    word_embs: loaded word embeddings, may be None if args.word_embs = none
+    word_embs: loaded word embeddings, may be None if args.input_module in
+    {gpt, elmo, elmo-chars-only, bert-*}
     model: a MultiTaskModel object
     """
     output = io.StringIO()
@@ -393,23 +392,36 @@ def check_arg_name(args):
             "Error: Attempting to load old arg name [%s], please update to new name [%s]"
             % (old_name, name_dict[old_name]),
         )
+    old_input_module_vals = [
+        "elmo",
+        "elmo_chars_only",
+        "bert_model_name",
+        "openai_transformer",
+        "word_embs",
+    ]
+    for input_type in old_input_module_vals:
+        assert_for_log(
+            input_type not in args,
+            "Error: Attempting to load old arg name [%s], please use input_module config parameter and refer to master branch's default configs for current way to specify [%s]"
+            % (input_type, input_type),
+        )
 
 
 def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
     """
-        Function that reloads model if necessary and extracts trainable parts 
-        of the model in preparation for target_task training. 
-        It only reloads model after the first task is trained. 
+        Function that reloads model if necessary and extracts trainable parts
+        of the model in preparation for target_task training.
+        It only reloads model after the first task is trained.
 
         Parameters
         -------------------
         args: config.Param object,
-        ckpt_path: str: path to reload model from, 
-        model: MultiTaskModel object, 
-        strict: bool, 
+        ckpt_path: str: path to reload model from,
+        model: MultiTaskModel object,
+        strict: bool,
         task: Task object
 
-        Returns 
+        Returns
         -------------------
         to_train: List of tuples of (name, weight) of trainable parameters
 
@@ -420,7 +432,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
         # Train both the task specific models as well as sentence encoder.
         to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     else:  # args.transfer_paradigm == "frozen":
-        # will be empty if elmo = 0. scalar_mix_0 should always be
+        # will be empty if args.input_module != "elmo", scalar_mix_0 should always be
         # pretrain scalars
         elmo_scalars = [
             (n, p)
@@ -468,7 +480,6 @@ def main(cl_arguments):
         _run_background_tensorboard(tb_logdir, cl_args.tensorboard_port)
 
     check_configurations(args, pretrain_tasks, target_tasks)
-
     if args.do_pretrain:
         # Train on pretrain tasks
         log.info("Training...")
@@ -503,8 +514,17 @@ def main(cl_arguments):
     if args.do_target_task_training:
         # Train on target tasks
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
-
-        for task in target_tasks:
+        target_tasks_to_train = copy.deepcopy(target_tasks)
+        # Check for previous target train checkpoints
+        task_to_restore, _, _ = check_for_previous_checkpoints(
+            args.run_dir, target_tasks_to_train, "target_train", args.load_model
+        )
+        if task_to_restore is not None:
+            # If there is a task to restore from, target train only on target tasks
+            # including and following that task.
+            last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
+            target_tasks_to_train = target_tasks_to_train[last_task_index:]
+        for task in target_tasks_to_train:
             # Skip diagnostic tasks b/c they should not be trained on
             if isinstance(task, GLUEDiagnosticTask):
                 continue
@@ -520,6 +540,7 @@ def main(cl_arguments):
                 task.val_metric_decreases,
                 phase="target_train",
             )
+
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,
@@ -530,7 +551,7 @@ def main(cl_arguments):
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
                 shared_optimizer=args.shared_optimizer,
-                load_model=False,
+                load_model=task.name == task_to_restore,
                 phase="target_train",
             )
 
@@ -551,9 +572,7 @@ def main(cl_arguments):
         elif args.do_pretrain:
             # If args.do_target_task_training = 0 and args.do_pretrain = 1
             # then evaluate on best pretraining checkpoint.
-            ckpt_path = glob.glob(
-                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
-            )
+            ckpt_path = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
             assert len(ckpt_path) > 0
             load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
