@@ -2264,7 +2264,7 @@ class WiCTask(PairClassificationTask):
 
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
-        def _process_sent_special(sent, word):
+        def _process_preserving_word(sent, word):
             """ Tokenize the subsequence before the [first] instance of the word and after,
             then concatenate everything together. This allows us to track where in the tokenized
             sequence the marked word is located. """
@@ -2284,10 +2284,10 @@ class WiCTask(PairClassificationTask):
                     row = json.loads(row)
                     sent1 = row["sentence1"]
                     sent2 = row["sentence2"]
-                    sent1, start1, end1 = _process_sent_special(
+                    sent1, start1, end1 = _process_preserving_word(
                         sent1, sent1[row["start1"] : row["end1"]]
                     )
-                    sent2, start2, end2 = _process_sent_special(
+                    sent2, start2, end2 = _process_preserving_word(
                         sent2, sent2[row["start2"] : row["end2"]]
                     )
                     sents1.append(sent1)

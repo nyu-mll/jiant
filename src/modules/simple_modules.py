@@ -108,15 +108,24 @@ class SingleClassifier(nn.Module):
 
         # append any specific token representations, e.g. for WiC task
         ctx_embs = []
-        for idx in [i.long() for i in idxs]:
+        for idx in idxs:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, sent.size(-1)])
-            ctx_emb = sent.gather(dim=1, index=idx)
-            ctx_embs.append(ctx_emb.squeeze(dim=1))
-        final_emb = torch.cat([emb] + ctx_embs, dim=-1)
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
 
+            ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            ctx_mask[:, 0] = 1
+            ctx_emb = sent.gather(dim=1, index=idx) * ctx_mask
+            ctx_emb = ctx_emb.sum(dim=1) / ctx_mask.sum(dim=1)
+            ctx_embs.append(ctx_emb)
+        final_emb = torch.cat([emb] + ctx_embs, dim=-1)
         logits = self.classifier(final_emb)
         return logits
 
@@ -149,23 +158,43 @@ class PairClassifier(nn.Module):
         emb2 = self.pooler(s2, mask2)
 
         s1_ctx_embs = []
-        for idx in [i.long() for i in idx1]:
+        for idx in idx1:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, s1.size(-1)])
-            s1_ctx_emb = s1.gather(dim=1, index=idx)
-            s1_ctx_embs.append(s1_ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
+
+            s1_ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            s1_ctx_mask[:, 0] = 1
+            s1_ctx_emb = s1.gather(dim=1, index=idx) * s1_ctx_mask
+            s1_ctx_emb = s1_ctx_emb.sum(dim=1) / s1_ctx_mask.sum(dim=1)
+            s1_ctx_embs.append(s1_ctx_emb)
         emb1 = torch.cat([emb1] + s1_ctx_embs, dim=-1)
 
         s2_ctx_embs = []
-        for idx in [i.long() for i in idx2]:
+        for idx in idx2:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, s2.size(-1)])
-            s2_ctx_emb = s2.gather(dim=1, index=idx)
-            s2_ctx_embs.append(s2_ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
+
+            s2_ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            s2_ctx_mask[:, 0] = 1
+            s2_ctx_emb = s2.gather(dim=1, index=idx) * s2_ctx_mask
+            s2_ctx_emb = s2_ctx_emb.sum(dim=1) / s2_ctx_mask.sum(dim=1)
+            s2_ctx_embs.append(s2_ctx_emb)
         emb2 = torch.cat([emb2] + s2_ctx_embs, dim=-1)
 
         pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
