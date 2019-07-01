@@ -51,7 +51,16 @@ def evaluate(
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "psg_idx", "qst_idx", "ans_idx", "ans_str"]
+    FIELDS_TO_EXPORT = [
+        "idx",
+        "sent1_str",
+        "sent2_str",
+        "labels",
+        "psg_idx",
+        "qst_idx",
+        "ans_idx",
+        "ans_str",
+    ]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
@@ -391,9 +400,7 @@ def _write_record_preds(
         if strict_glue_format:
             par_qst_ans_d = defaultdict(lambda: defaultdict(list))
             for row_idx, row in preds_df.iterrows():
-                ans_d = {"idx": int(row["ans_idx"]),
-                         "str": row["ans_str"],
-                         "logit": row["preds"]}
+                ans_d = {"idx": int(row["ans_idx"]), "str": row["ans_str"], "logit": row["preds"]}
                 par_qst_ans_d[row["psg_idx"]][row["qst_idx"]].append(ans_d)
             for par_idx, qst_ans_d in par_qst_ans_d.items():
                 qst_ds = []

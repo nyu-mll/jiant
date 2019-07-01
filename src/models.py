@@ -1173,7 +1173,7 @@ class MultiTaskModel(nn.Module):
                 inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
                 out["n_exs"] = batch["ans"]["words"].size(0)
-            else: # ReCoRD inserts answer into the query
+            else:  # ReCoRD inserts answer into the query
                 inp = torch.cat([psg_emb, qst_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
                 out["n_exs"] = batch["qst"]["words"].size(0)

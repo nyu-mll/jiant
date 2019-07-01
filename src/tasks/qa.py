@@ -16,6 +16,7 @@ from .tasks import Task
 from .tasks import sentence_to_text_field
 from .registry import register_task
 
+
 def _get_f1(x, y):
     """ """
     xs = x.split()
@@ -35,6 +36,7 @@ def _get_f1(x, y):
         return 0
     else:
         return 2 * (pcs * rcl) / (pcs + rcl)
+
 
 @register_task("multirc", rel_path="MultiRC/")
 class MultiRCTask(Task):
@@ -231,17 +233,18 @@ class ReCoRDTask(Task):
             """ Tokenize questions while preserving @placeholder token """
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
-            sent_parts = [process_sentence(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts]
+            sent_parts = [
+                process_sentence(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
+            ]
             return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
 
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
             psg_id = item["idx"]
-            psg = process_sentence(self.tokenizer_name, item["passage"]["text"],
-                                   self.max_seq_len)
+            psg = process_sentence(self.tokenizer_name, item["passage"]["text"], self.max_seq_len)
             ent_idxs = item["passage"]["entities"]
-            ents = [item["passage"]["text"][idx["start"]: idx["end"] + 1] for idx in ent_idxs]
+            ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
             qas = item["qas"]
             for qa in qas:
                 qst = split_then_tokenize(qa["query"])
@@ -250,13 +253,14 @@ class ReCoRDTask(Task):
                     anss = [a["text"] for a in qa["answers"]]
                 else:
                     anss = []
-                ex = {"passage": psg,
-                      "ents": ents,
-                      "query": qst,
-                      "answers": anss,
-                      "psg_id": f"{split}-{psg_id}",
-                      "qst_id": qst_id
-                     }
+                ex = {
+                    "passage": psg,
+                    "ents": ents,
+                    "query": qst,
+                    "answers": anss,
+                    "psg_id": f"{split}-{psg_id}",
+                    "qst_id": qst_id,
+                }
                 examples.append(ex)
 
         return examples
@@ -297,7 +301,7 @@ class ReCoRDTask(Task):
             """ Replace ent into template """
             assert "@placeholder" in template, "No placeholder detected!"
             split_idx = template.index("@placeholder")
-            return template[:split_idx] + ent + template[split_idx + 1:]
+            return template[:split_idx] + ent + template[split_idx + 1 :]
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
             """ pq_id: paragraph-question ID """
@@ -308,7 +312,7 @@ class ReCoRDTask(Task):
             d["psg_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
-            d["idx"] = MetadataField(ans_idx) # required by evaluate()
+            d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_bert:
                 inp = psg + qst[1:]
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
@@ -324,7 +328,10 @@ class ReCoRDTask(Task):
             qst_template = example["query"]
 
             ent_strs = example["ents"]
-            ents = [process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1] for ent in ent_strs]
+            ents = [
+                process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1]
+                for ent in ent_strs
+            ]
 
             anss = example["answers"]
             par_idx = example["psg_id"]
@@ -374,5 +381,3 @@ class ReCoRDTask(Task):
             self._score_tracker = collections.defaultdict(list)
 
         return {"f1": f1, "em": em, "avg": (f1 + em) / 2}
-
-
