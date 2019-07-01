@@ -6,6 +6,7 @@ import random
 import sys
 import time
 import types
+import re
 from typing import Iterable, Sequence, Type, Union
 
 import pyhocon
@@ -72,6 +73,12 @@ class Params(object):
         for k, v in kw.items():
             self[k] = v
 
+    def regex_contains(self, k):
+        """Searches Params for parameters that match a regex."""
+        r = re.compile(k)
+        results = list(filter(r.match, self._known_keys))
+        return len(results) > 0
+
     def get(self, k, default=None):
         return getattr(self, k, default)
 
@@ -93,33 +100,24 @@ class Params(object):
         return json.dumps(self.as_dict(), indent=2, sort_keys=True)
 
 
-def get_task_attr(
-    args: Type[Params], task_names: Union[str, Sequence[str]], attr_name: str, default=None
-):
+def get_task_attr(args: Type[Params], task_name: str, attr_name: str, default=None):
     """ Get a task-specific param.
 
-    Look in args.task_name.attr_name, then args.task_name_attr_name,
+    Look in args.task_name.attr_name, then fall back to default (if provided),
     then fall back to args.attr_name.
     """
-    if isinstance(task_names, str):
-        task_names = [task_names]
-    for task_name in task_names:
-        if task_name in args and (attr_name in args[task_name]):
-            return args[task_name][attr_name]
-        compound_key = "%s_%s" % (task_name, attr_name)
-        if compound_key in args:
-            return args[compound_key]
-    #  return args[attr_name]
-    return args.get(attr_name, default)
-
-
-# Argument handling is as follows:
-# 1) read config file into pyhocon.ConfigTree
-# 2) merge overrides into the ConfigTree
-# 3) validate specific parameters with custom logic
+    if task_name in args and (attr_name in args[task_name]):
+        return args[task_name][attr_name]
+    if default is not None:
+        return default
+    return args[attr_name]
 
 
 def params_from_file(config_files: Union[str, Iterable[str]], overrides: str = None):
+    # Argument handling is as follows:
+    # 1) read config file into pyhocon.ConfigTree
+    # 2) merge overrides into the ConfigTree
+    # 3) validate specific parameters with custom logic
     config_string = ""
     if isinstance(config_files, str):
         config_files = [config_files]
