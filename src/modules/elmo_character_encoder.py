@@ -2,9 +2,11 @@ import torch
 import numpy
 import json
 import h5py
+from allennlp.modules import Highway
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
 from allennlp.data.token_indexers.elmo_indexer import ELMoCharacterMapper
+from allennlp.nn.util import add_sentence_boundary_token_ids
 
 
 class ElmoCharacterEncoder(torch.nn.Module):

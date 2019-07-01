@@ -91,7 +91,7 @@ def evaluate(
                 out = model.forward(task, batch, predict=True)
 
             # We don't want diagnostic tasks to affect the micro and macro average.
-            # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostics.
+            # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostic.
             if task.contributes_micro_macro_avg:
                 n_examples += out["n_exs"]
             # get predictions
@@ -132,9 +132,6 @@ def evaluate(
 
         # Combine task_preds from each batch to a single DataFrame.
         task_preds = pd.concat(task_preds, ignore_index=True)
-        if task.name.startswith("winogender"):
-            task.gender_parity_scorer(list(task_preds.T.to_dict().values()))
-            all_metrics["gender_parity"] = task.gender_parity_scorer.get_metric(reset=True)
 
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
@@ -524,21 +521,15 @@ def _write_glue_preds(
         _apply_pred_map(preds_df, pred_map, "prediction")
         _write_preds_with_pd(
             preds_df.iloc[:9796],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[9796:19643],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[19643:],
-            os.path.join(
-                pred_dir, _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format),
         )
 
     elif task_name in ["rte", "qnli"]:
