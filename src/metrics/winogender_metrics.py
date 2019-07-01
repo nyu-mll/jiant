@@ -1,13 +1,15 @@
 class GenderParity:
     """
-  Gender parity metric from https://github.com/decompositional-semantics-initiative/DNC.
-  """
+    Gender parity metric from https://github.com/decompositional-semantics-initiative/DNC.
+    """
 
     def __init__(self):
         self.same_preds = 0.0
         self.diff_preds = 0.0
 
     def get_metric(self, reset=False):
+        if self.same_preds + self.diff_preds == 0:
+          return -1
         gender_parity = float(self.same_preds) / float(self.same_preds + self.diff_preds)
         if reset:
             self.same_preds = 0.0
@@ -40,3 +42,4 @@ class GenderParity:
                 self.same_preds += 1
             else:
                 self.diff_preds += 1
+

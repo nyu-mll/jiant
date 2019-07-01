@@ -1395,7 +1395,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
 class WinogenderTask(GLUEDiagnosticTask):
-    """Supported wnogender task """
+    """Supported winogender task """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
         super().__init__(path, max_seq_len, name, n_classes, **kw)
@@ -1408,7 +1408,7 @@ class WinogenderTask(GLUEDiagnosticTask):
         self.test_data = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
-        self.val_mtric = "%s_accuracy" % name
+        self.val_metric = "%s_accuracy" % name
 
     def load_data(self):
         rows = pd.read_json(os.path.join(self.path, "winogender.jsonl"), lines=True)
@@ -1460,7 +1460,6 @@ class WinogenderTask(GLUEDiagnosticTask):
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
         batch["preds"] = logits
-        print(batch)
         # Convert batch to dict to fit gender_parity_scorer API.
         batch_dict = [
             {
