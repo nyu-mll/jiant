@@ -266,6 +266,10 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
+            if len(checkpoint) == 0:
+                checkpoint = glob.glob(
+                    os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
+                )
 
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
