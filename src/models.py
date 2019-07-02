@@ -511,23 +511,6 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, (Wiki103Seq2SeqTask)):
-        log.info("using {} attention".format(args.s2s["attention"]))
-        decoder_params = Params(
-            {
-                "input_dim": d_sent,
-                "target_embedding_dim": 300,
-                "decoder_hidden_size": args.s2s["d_hid_dec"],
-                "output_proj_input_dim": args.s2s["output_proj_input_dim"],
-                "max_decoding_steps": args.max_seq_len,
-                "target_namespace": "tokens",
-                "attention": args.s2s["attention"],
-                "dropout": args.dropout,
-                "scheduled_sampling_ratio": 0.0,
-            }
-        )
-        decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        setattr(model, "%s_decoder" % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
