@@ -242,6 +242,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
         If phase == eval:
             1) user-specified eval checkpoint
             2) best task-specific checkpoint for target_train, used when evaluating
+            3) best pretraining checkpoint
     If all these fail, then we default to None.
     """
     checkpoint = []
@@ -266,6 +267,10 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
+            if len(checkpoint) == 0:
+                checkpoint = glob.glob(
+                    os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
+                )
 
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
@@ -558,15 +563,11 @@ def main(cl_arguments):
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-        diagnostic_tasks = []
-        target_tasks_to_remove = []
-        for index, task in enumerate(target_tasks):
-            if task.name in task_modules.ALL_DIAGNOSTICS:
-                diagnostic_tasks.append(task)
-                target_tasks_to_remove.append(index)
-        # To avoid evaluating twice on a diagnostic task.
-        for index in sorted(target_tasks_to_remove, reverse=True):
-            del target_tasks[index]
+
+        # Even if args.do_target_training = 0, evaluate on diagnostic tasks.
+        diagnostic_tasks = [task for task in target_tasks if task.is_diagnostic]
+        target_tasks[:] = [task for task in target_tasks if not task.is_diagnostic]
+
         for task in diagnostic_tasks:
             ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
             assert ckpt_path is not None
