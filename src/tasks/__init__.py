@@ -35,6 +35,7 @@ ALL_SUPERGLUE_TASKS = [
     "wic",
     "superglue-diagnostic",
 ]
+ALL_DIAGNOSTICS = ["superglue-diagnostic", "winogender-diagnostic", "glue-diagnostic"]
 
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
