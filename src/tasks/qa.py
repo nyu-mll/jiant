@@ -69,28 +69,6 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def _get_f1(x, y):
-    """ Compute token level F1.
-    Assumes x, y are strings with tokens separated by spaces. """
-    xs = x.split()
-    ys = y.split()
-
-    try:
-        pcs = sum([1 for y in ys if y in xs]) / len(ys)
-    except ZeroDivisionError as e:
-        pcs = 0
-
-    try:
-        rcl = sum([1 for x in xs if x in ys]) / len(xs)
-    except ZeroDivisionError as e:
-        rcl = 0
-
-    if pcs + rcl == 0:
-        return 0
-    else:
-        return 2 * (pcs * rcl) / (pcs + rcl)
-
-
 @register_task("multirc", rel_path="MultiRC/")
 class MultiRCTask(Task):
     """Multi-sentence Reading Comprehension task
