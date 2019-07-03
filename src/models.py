@@ -41,7 +41,7 @@ from .modules.span_modules import SpanClassifierModule
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -515,7 +515,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, MultiRCTask):
+    elif isinstance(task, (MultiRCTask, ReCoRDTask)):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:
@@ -768,7 +768,7 @@ class MultiTaskModel(nn.Module):
             out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, MultiRCTask):
+        elif isinstance(task, (MultiRCTask, ReCoRDTask)):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
@@ -1097,30 +1097,47 @@ class MultiTaskModel(nn.Module):
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
-            # if using BERT, we concatenate the context, question, and answer
-            inp = batch["para_quest_ans"]
+            # if using BERT, we concatenate the passage, question, and answer
+            inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
             out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
         else:
             # else, we embed each independently and concat them
-            par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
-            qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
-            ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)
-            inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
-            inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
+            psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
+            qst_emb, qst_mask = self.sent_encoder(batch["qst"], task)
+
+            if "ans" in batch:  # most QA tasks, e.g. MultiRC have explicit answer fields
+                ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
+                inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
+                out["n_exs"] = batch["ans"]["words"].size(0)
+            else:  # ReCoRD inserts answer into the query
+                inp = torch.cat([psg_emb, qst_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
+                out["n_exs"] = batch["qst"]["words"].size(0)
+
             logits = classifier(inp, inp_mask)
-            out["n_exs"] = batch["answer"]["words"].size(0)
         out["logits"] = logits
 
         if "label" in batch:
-            idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
+            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = F.cross_entropy(logits, labels)
-            task.update_metrics(logits, labels, idxs)
+            if isinstance(task, ReCoRDTask):
+                # ReCoRD needs the answer string to compute F1
+                task.update_metrics(logits, batch["ans_str"], idxs)
+            else:
+                task.update_metrics(logits, labels, idxs)
 
         if predict:
-            out["preds"] = logits.argmax(dim=-1)
+            if isinstance(task, ReCoRDTask):
+                # for ReCoRD, we want the logits to make
+                # predictions across answer choices
+                # (which are spread across batches)
+                out["preds"] = logits
+            else:
+                out["preds"] = logits.argmax(dim=-1)
 
         return out
 
