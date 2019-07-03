@@ -425,7 +425,11 @@ def _write_record_preds(
         if strict_glue_format:
             par_qst_ans_d = defaultdict(lambda: defaultdict(list))
             for row_idx, row in preds_df.iterrows():
-                ans_d = {"idx": int(row["ans_idx"]), "str": row["ans_str"], "logit": torch.FloatTensor(row["preds"])}
+                ans_d = {
+                    "idx": int(row["ans_idx"]),
+                    "str": row["ans_str"],
+                    "logit": torch.FloatTensor(row["preds"]),
+                }
                 par_qst_ans_d[row["psg_idx"]][row["qst_idx"]].append(ans_d)
             for par_idx, qst_ans_d in par_qst_ans_d.items():
                 for qst_idx, ans_ds in qst_ans_d.items():
@@ -434,7 +438,7 @@ def _write_record_preds(
                     logits_and_anss = [(d["logit"], d["str"]) for d in ans_ds]
                     logits_and_anss.sort(key=lambda x: x[1])
                     logits, anss = list(zip(*logits_and_anss))
-                    pred_idx = torch.softmax(torch.stack(logits), dim=-1)[:,-1].argmax().item()
+                    pred_idx = torch.softmax(torch.stack(logits), dim=-1)[:, -1].argmax().item()
                     answer = anss[pred_idx]
 
                     # write out answer
