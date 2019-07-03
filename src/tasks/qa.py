@@ -2,6 +2,7 @@
 import os
 import re
 import json
+import string
 import collections
 from typing import Iterable, Sequence, Type
 
@@ -42,7 +43,7 @@ def f1_score(prediction, ground_truth):
     From official ReCoRD eval script """
     prediction_tokens = normalize_answer(prediction).split()
     ground_truth_tokens = normalize_answer(ground_truth).split()
-    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+    common = collections.Counter(prediction_tokens) & collections.Counter(ground_truth_tokens)
     num_same = sum(common.values())
     if num_same == 0:
         return 0
@@ -172,7 +173,7 @@ class MultiRCTask(Task):
             d["psg_str"] = MetadataField(" ".join(passage))
             d["qst_str"] = MetadataField(" ".join(question))
             d["ans_str"] = MetadataField(" ".join(answer))
-            d["par_idx"] = MetadataField(par_idx)
+            d["psg_idx"] = MetadataField(par_idx)
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
@@ -409,22 +410,23 @@ class ReCoRDTask(Task):
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
+
         ems, f1s = [], []
         for idx, logits_and_anss in self._score_tracker.items():
             golds = self._answers[idx]
+            logits_and_anss.sort(key=lambda x: x[1])
             logits, anss = list(zip(*logits_and_anss))
             logits = torch.stack(logits)
+
             # take the most probable choice as the model prediction
-            pred = torch.softmax(logits, dim=-1)[:, -1].argmax().item()
-            pred = anss[pred]
+            pred_idx = torch.softmax(logits, dim=-1)[:, -1].argmax().item()
+            pred = anss[pred_idx]
 
             # F1
-            # f1 = max([_get_f1(pred, gold) for gold in golds])
             f1 = metric_max_over_ground_truths(f1_score, pred, golds)
             f1s.append(f1)
 
             # EM
-            # em = max([int(pred == gold) for gold in golds])
             em = metric_max_over_ground_truths(exact_match_score, pred, golds)
             ems.append(em)
 

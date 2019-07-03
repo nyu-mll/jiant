@@ -1135,7 +1135,7 @@ class MultiTaskModel(nn.Module):
                 # for ReCoRD, we want the logits to make
                 # predictions across answer choices
                 # (which are spread across batches)
-                out["preds"] = logits[:, 1]
+                out["preds"] = logits
             else:
                 out["preds"] = logits.argmax(dim=-1)
 
