@@ -2595,9 +2595,7 @@ class BooleanQuestionTask(PairClassificationTask):
             data = []
             for d in raw_data:
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                passage = process_sentence(
-                    self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len
-                )
+                passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
                 new_datum = {"question": question, "passage": passage}
                 answer = d["answer"] if "answer" in d else False
                 new_datum["answer"] = answer
