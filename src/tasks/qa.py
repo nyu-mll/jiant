@@ -259,14 +259,13 @@ class ReCoRDTask(Task):
         self.val_metric = "%s_avg" % self.name
         self.val_metric_decreases = False
         self._score_tracker = collections.defaultdict(list)
+        self._answers = None
         self.max_seq_len = max_seq_len
         self.files_by_split = {
             "train": os.path.join(path, "train.jsonl"),
             "val": os.path.join(path, "dev.jsonl"),
             "test": os.path.join(path, "test.jsonl"),
         }
-        # Load asnwers, used for computing metrics
-        self._load_answers()
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
@@ -410,6 +409,10 @@ class ReCoRDTask(Task):
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
+
+        # Load asnwers, used for computing metrics
+        if self._answers is None:
+            self._load_answers()
 
         ems, f1s = [], []
         for idx, logits_and_anss in self._score_tracker.items():
