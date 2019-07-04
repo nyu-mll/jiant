@@ -10,8 +10,10 @@ import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
 
+import glob
 import numpy as np
 import torch
+import jsondiff
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
@@ -20,6 +22,8 @@ from nltk.tokenize.moses import MosesDetokenizer
 from torch.autograd import Variable
 from torch.nn import Dropout, Linear, Parameter, init
 
+from .config import Params
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -27,6 +31,88 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.
 _MOSES_DETOKENIZER = MosesDetokenizer()
+
+
+def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
+    """
+    Check if there are previous checkpoints. 
+    If phase == target_train, we loop through each of the tasks from last to first 
+    to find the task with the most recent checkpoint. 
+    If phase == pretrain, we check if there is a most recent checkpoint in the run 
+    directory. 
+
+    Parameters 
+    ---------------------
+    serialization_dir: str, 
+    tasks: List of SamplingMultiTask objects, 
+    phase: str 
+    load_model: bool
+
+    Returns
+    ---------------------
+    ckpt_directory: None or str, name of directory that checkpoints are in
+    with regards to the run directory. 
+    val_pass: int, -1 if not found.
+    suffix: None or str, the suffix of the checkpoint.
+    """
+    ckpt_directory = None
+    ckpt_epoch = -1
+    ckpt_suffix = None
+    if phase == "target_train":
+        for task in tasks[::-1]:
+            val_pass, suffix = find_last_checkpoint_epoch(serialization_dir, phase, task.name)
+            # If we have found a task with a valid checkpoint for the first time.
+            if val_pass > -1 and ckpt_directory is None and phase == "target_train":
+                ckpt_directory = task.name
+                ckpt_epoch = val_pass
+                ckpt_suffix = suffix
+    else:
+        ckpt_epoch, ckpt_suffix = find_last_checkpoint_epoch(serialization_dir, phase, "")
+        if ckpt_epoch > -1:
+            # If there exists a pretraining checkpoint, set ckpt_directory.
+            ckpt_directory = ""
+    if ckpt_directory is not None:
+        assert_for_log(
+            load_model,
+            "There are existing checkpoints in %s which will be overwritten. "
+            "If you are restoring from a run, or would like to train from an "
+            "existing checkpoint, Use load_model = 1 to load the checkpoints instead. "
+            "If you don't want them, delete them or change your experiment name."
+            % serialization_dir,
+        )
+    return ckpt_directory, ckpt_epoch, ckpt_suffix
+
+
+def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_name=""):
+
+    """
+    Search for the last epoch in a directory. 
+    Here, we check that all four checkpoints (model, training_state, task_state, metrics)
+    exist and return the most recent epoch with all four checkpoints. 
+
+    """
+    if not serialization_dir:
+        raise ConfigurationError(
+            "serialization_dir not specified - cannot restore a model without a directory path."
+        )
+    suffix = None
+    max_val_pass = -1
+    candidate_files = glob.glob(
+        os.path.join(serialization_dir, task_name, "*_state_{}_*".format(search_phase))
+    )
+    val_pass_to_files = {}
+    for x in candidate_files:
+        val_pass = int(x.split("_state_{}_val_".format(search_phase))[-1].split(".")[0])
+        if not val_pass_to_files.get(val_pass):
+            val_pass_to_files[val_pass] = 0
+        val_pass_to_files[val_pass] += 1
+        if val_pass >= max_val_pass and val_pass_to_files[val_pass] == 4:
+            max_val_pass = val_pass
+            suffix = x
+    if suffix is not None:
+        suffix = suffix.split(serialization_dir)[-1]
+        suffix = "_".join(suffix.split("_")[1:])
+    return max_val_pass, suffix
 
 
 def copy_iter(elems):
@@ -42,6 +128,124 @@ def wrap_singleton_string(item: Union[Sequence, str]):
         # characters, which is not what we want.
         return [item]
     return item
+
+
+def sort_param_recursive(data):
+    """
+    Sorts the keys of a config.Params object in a param object recursively.
+    """
+    import pyhocon
+
+    if isinstance(data, dict) and not isinstance(data, pyhocon.ConfigTree):
+        for name, _ in list(data.items()):
+            data[name] = sort_param_recursive(data[name])
+    else:
+        if isinstance(data, pyhocon.ConfigTree):
+            data = dict(sorted(data.items(), key=lambda x: x[0]))
+    return data
+
+
+def parse_json_diff(diff):
+    """
+    Parses the output of jsondiff's diff() function, which introduces
+    symbols such as replace.
+    The potential keys introduced are jsondiff.replace, jsondiff.insert, and jsondiff.delete.
+    For jsondiff.replace and jsondiff.insert, we simply want to return the 
+    actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to 
+    show deletions in our parameters. 
+    For example, for jsondiff.replace, the output of jsondiff may be the below:
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete 
+    the replace. The output of this function will be:
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    See for more information on jsondiff. 
+    """
+    new_diff = {}
+    if isinstance(diff, dict):
+        for name, value in list(diff.items()):
+
+            if name == jsondiff.replace or name == jsondiff.insert:
+                # get rid of the added jsondiff key
+                return value
+
+            if name == jsondiff.delete:
+                del diff[name]
+                return None
+
+            output = parse_json_diff(diff[name])
+            if output:
+                diff[name] = output
+    return diff
+
+
+def select_relevant_print_args(args):
+    """
+        Selects relevant arguments to print out. 
+        We select relevant arguments as the difference between defaults.conf and the experiment's 
+        configuration. 
+
+        Params
+        -----------
+        args: Params object
+
+        Returns
+        -----------
+        return_args: Params object with only relevant arguments
+        """
+    import pyhocon
+    from pathlib import Path
+
+    exp_config_file = os.path.join(args.run_dir, "params.conf")
+    root_directory = Path(__file__).parents[2]
+    defaults_file = os.path.join(str(root_directory) + "/config/defaults.conf")
+    exp_basedir = os.path.dirname(exp_config_file)
+    default_basedir = os.path.dirname(defaults_file)
+    fd = open(exp_config_file, "r")
+    exp_config_string = fd.read()
+    exp_config_string += "\n"
+    fd = open(defaults_file, "r")
+    default_config_string = fd.read()
+    default_config_string += "\n"
+    exp_config = dict(
+        pyhocon.ConfigFactory.parse_string(exp_config_string, basedir=exp_basedir).items()
+    )
+    default_config = dict(
+        pyhocon.ConfigFactory.parse_string(default_config_string, basedir=default_basedir).items()
+    )
+    sorted_exp_config = sort_param_recursive(exp_config)
+    sorted_defaults_config = sort_param_recursive(default_config)
+    diff_args = parse_json_diff(jsondiff.diff(sorted_defaults_config, sorted_exp_config))
+    diff_args = Params.clone(diff_args)
+    result_args = select_task_specific_args(args, diff_args)
+    return result_args
+
+
+def select_task_specific_args(exp_args, diff_args):
+    """
+    A helper function that adds in task-specific parameters from the experiment 
+    configurations for tasks in pretrain_tasks and target_tasks.
+    """
+    exp_tasks = []
+    if diff_args.get("pretrain_tasks"):
+        exp_tasks = diff_args.pretrain_tasks.split(",")
+    if diff_args.get("target_tasks"):
+        exp_tasks += diff_args.target_tasks.split(",")
+    if len(exp_tasks) == 0:
+        return diff_args
+    for key, value in list(exp_args.as_dict().items()):
+        stripped_key = key.replace("_", " ")
+        stripped_key = stripped_key.replace("-", " ")
+        param_task = None
+        # For each parameter, identify the task the parameter relates to (if any)
+        for task in exp_tasks:
+            if task in stripped_key and (("edges" in stripped_key) == ("edges" in task)):
+                # special logic for edges since there are edge versions of various
+                # tasks.
+                param_task = task
+        # Add parameters that pertain to the experiment tasks
+        if param_task and param_task in exp_tasks:
+            diff_args[key] = value
+    return diff_args
 
 
 def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True):
@@ -354,27 +558,3 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
-
-
-def check_arg_name(args):
-    """ Raise error if obsolete arg names are present. """
-    # Mapping - key: old name, value: new name
-    name_dict = {
-        "task_patience": "lr_patience",
-        "do_train": "do_pretrain",
-        "train_for_eval": "do_target_task_training",
-        "do_eval": "do_full_eval",
-        "train_tasks": "pretrain_tasks",
-        "eval_tasks": "target_tasks",
-        "eval_data_fraction": "target_train_data_fraction",
-        "eval_val_interval": "target_train_val_interval",
-        "eval_max_vals": "target_train_max_vals",
-        "load_eval_checkpoint": "load_target_train_checkpoint",
-        "eval_data_fraction": "target_train_data_fraction",
-    }
-    for old_name, new_name in name_dict.items():
-        assert_for_log(
-            old_name not in args,
-            "Error: Attempting to load old arg name [%s], please update to new name [%s]"
-            % (old_name, name_dict[old_name]),
-        )

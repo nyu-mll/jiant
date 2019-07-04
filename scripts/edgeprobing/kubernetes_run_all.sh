@@ -3,7 +3,7 @@
 # Master script to start a full suite of edge probing experiments on
 # on Kubernetes. Comment out lines below to run only a subset of experiments.
 #
-# See exp_fns.sh for the override params, and config/edgeprobe_*.conf
+# See exp_fns.sh for the override params, and config/edgeprobe/edgeprobe_*.conf
 # for the base configs.
 #
 # To run on a particular cluster, authenticate to that cluster with:

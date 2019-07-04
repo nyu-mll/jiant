@@ -1,33 +1,55 @@
-# Python CircleCI 2.0 configuration file
-version: 2.1
-jobs:
-  test:
-    docker:
-      - image: continuumio/miniconda3
+  # Python CircleCI 2.0 configuration file
+  version: 2.1
+  jobs:
+    test:
+      docker:
+        - image: continuumio/miniconda3
 
-    working_directory: ~/repo
+      working_directory: ~/repo
 
-    steps:
-      # Step 1: obtain repo from GitHub
-      - checkout
-      # Step 2: create virtual env and install dependencies
-      - run:
-          name: install dependencies
-          command: |
-            apt-get update
-            apt-get install -y cmake build-essential gcc g++
-            conda env create -q -f environment.yml
-            source activate jiant
-      # Step 3: run tests
-      - run:
-          name: run tests
-          command: |
-            mkdir ~/repo/test_output
-            source activate jiant
-            python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
-            nose2 -v
-workflows:
-  version: 2
-  test:
-    jobs:
-      - test
+      environment:
+          JIANT_PROJECT_PREFIX: sample_run
+          JIANT_DATA_DIR: data
+          WORD_EMBS_FILE: none
+      steps:
+        # Step 1: obtain repo from GitHub
+        - checkout
+        # Step 2: style check
+        - run:
+            name: check style
+            command: |
+              pip install black
+              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
+        # Step 3: get data needed for demo.sh
+        - run:
+            name: download demo data
+            command: |
+              python scripts/download_glue_data.py --data_dir $JIANT_DATA_DIR --tasks MRPC,STS,SST
+              python scripts/download_superglue_data.py --data_dir $JIANT_DATA_DIR --tasks CB
+        # Step 4: create virtual env and install dependencies
+        - run:
+            name: install dependencies
+            command: |
+              apt-get update
+              apt-get install -y cmake build-essential gcc g++
+              conda env create -q -f environment.yml
+        # Step 5: demo.sh run test
+        - run:
+            name: running demo.sh
+            command: |
+              source activate jiant
+              python -m nltk.downloader perluniprops  nonbreaking_prefixes punkt
+              python main.py --config_file config/demo.conf
+              python main.py --config_file config/demo.conf --overrides "do_pretrain = 0, do_target_task_training = 0, load_model = 1"
+        # Step 6: run tests
+        - run:
+            name: run tests
+            command: |
+              mkdir ~/repo/test_output
+              source activate jiant
+              nose2 -v
+  workflows:
+    version: 2
+    test:
+      jobs:
+        - test

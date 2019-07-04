@@ -10,10 +10,9 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --recursive git@github.com:jsalt18-sentence-repl/jiant.git jiant
+git clone --branch v0.9.1  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-
-If you already cloned and just need to get the submodules, you can run:
+This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v0.9.1`. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
@@ -38,11 +37,16 @@ Some requirements may only be needed for specific configurations. If you have tr
 You will also need to install dependencies for `nltk` if you do not already have them:
 
 ```
-python -m nltk.downloader -d  perluniprops nonbreaking_prefixes punkt
+nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
 ```
 
+### Optional
 
- ## 2. Getting data and setting up our environment
+If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 
+
+https://github.com/NVIDIA/apex#linux
+
+## 2. Getting data and setting up our environment
 
  In this tutorial, we will be working with GLUE data.
 The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
@@ -93,6 +97,9 @@ Now that we've set up the environment, let's get started!
 Here, we'll try pretraining in a multitask setting on SST and MRPC and then finetuning on STS-B and WNLI separately using a BiLSTM sentence encoder and word embeddings trained from scratch.
 This is almost exactly what is specified in `config/demo.conf`, with one major change. From here, we suggest you to go to [`config/demo.conf`](https://github.com/nyu-mll/jiant/blob/master/config/demo.conf), make a copy called `config/tutorial.conf`, and follow along - we'll explain everything that is in the file in a bit.
 
+```
+cp config/demo.conf config/tutorial.conf
+```
 
 Next, we need to make a configuration file that defines the parameters of our experiment. `config/defaults.conf` has all the documentation on the various parameters (including the ones explained below). Any config file you create should import from `config/defaults.conf`, which you can do by putting the below at the top of your config file.
 
@@ -105,7 +112,7 @@ Some important options include:
 * `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
 * `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `word_embs`: This is a string specifying the type of word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. *
+* `input_module`: This is a string specifying the type of contextualized word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. 
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
@@ -148,7 +155,7 @@ classifier_hid_dim = 32
 max_seq_len = 10
 max_word_v_size = 1000
 
-word_embs = scratch
+input_module = scratch
 d_word = 50
 
 sent_enc = rnn
@@ -243,6 +250,7 @@ After running this experiment, you should have in your run directory:
 
 * a checkpoint of the best model state (based on your scores)
 * a `log.log` file which contains all the logs
+* a directory for each of the target_tasks containing the checkpoints of the model, task, and training state of the finetuned BERT models for that task.
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
