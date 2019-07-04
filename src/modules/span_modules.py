@@ -161,7 +161,9 @@ class SpanClassifierModule(nn.Module):
             pred = torch.argmax(pred, dim=1)
             return pred
         else:
-            raise ValueError("Unsupported loss type '%s' " "for edge probing." % self.loss_type)
+            raise ValueError(
+                "Unsupported loss type '%s' " "for span classification." % self.loss_type
+            )
 
     def compute_loss(self, logits: torch.Tensor, labels: torch.Tensor, task):
         """
@@ -180,4 +182,6 @@ class SpanClassifierModule(nn.Module):
             targets = (labels == 1).nonzero()[:, 1]
             return F.cross_entropy(logits, targets.long())
         else:
-            raise ValueError("Unsupported loss type '%s' " "for edge probing." % self.loss_type)
+            raise ValueError(
+                "Unsupported loss type '%s' " "for span classification." % self.loss_type
+            )
