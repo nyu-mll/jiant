@@ -574,9 +574,7 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_bert (bool): if using BERT, extract the first vector from the inputted
-            sequence, rather than max pooling. We do this for BERT specifically to follow
-            the convention set in the paper (Devlin et al., 2019).
+        - use_bert (bool): if using BERT, skip projection before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:
