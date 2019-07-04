@@ -31,7 +31,6 @@ from main import evaluate_and_write, get_best_checkpoint_path
 def build_trainer_params(args, task_names, phase="pretrain"):
     return {
         "lr": 1e-05,
-        "warmup": 4000,
         "val_data_limit": 10,
         "d_hid": 1024,
         "min_lr": 0.000,
