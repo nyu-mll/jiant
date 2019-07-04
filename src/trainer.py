@@ -1064,7 +1064,9 @@ class SamplingMultiTaskTrainer:
             task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
             task_states[task_name]["stopped"] = task_info["stopped"]
         task_states["global"] = {}
-        task_states["global"]["optimizer"] = (self._optimizer.state_dict())
+        task_states["global"]["optimizer"] = self._optimizer.state_dict()
+        # NOTE(Alex): AllenNLP wrapper doesn't expose scheduler state dict methods
+        task_states["global"]["scheduler"] = self._scheduler.lr_scheduler.state_dict()
 
         metric_states = {}
         for metric_name, metric_info in self._metric_infos.items():
@@ -1163,10 +1165,6 @@ class SamplingMultiTaskTrainer:
             self._task_infos[task_name]["total_batches_trained"] = task_state[
                 "total_batches_trained"
             ]
-            if "optimizer" in task_state:
-                self._task_infos[task_name]["optimizer"].load_state_dict(task_state["optimizer"])
-                for param, val in task_state["scheduler"].items():
-                    setattr(self._task_infos[task_name]["scheduler"], param, val)
             self._task_infos[task_name]["stopped"] = task_state["stopped"]
             generator = self._task_infos[task_name]["tr_generator"]
             for _ in itertools.islice(
@@ -1174,11 +1172,9 @@ class SamplingMultiTaskTrainer:
                 task_state["total_batches_trained"] % self._task_infos[task_name]["n_tr_batches"],
             ):
                 pass
-        if task_states["global"]["optimizer"] is not None:
-            self._optimizer.load_state_dict(task_states["global"]["optimizer"])
-        if task_states["global"]["scheduler"] is not None:
-            for param, val in task_states["global"]["scheduler"].items():
-                setattr(self._scheduler, param, val)
+        self._optimizer.load_state_dict(task_states["global"]["optimizer"])
+        # NOTE(Alex): AllenNLP wrapper doesn't expose scheduler state dict methods
+        self._scheduler.lr_scheduler.load_state_dict(task_states["global"]["scheduler"])
         metric_states = torch.load(metric_state_path)
         for metric_name, metric_state in metric_states.items():
             self._metric_infos[metric_name]["hist"] = metric_state["hist"]
