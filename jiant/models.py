@@ -17,7 +17,10 @@ from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.training.metrics import Average
 from sklearn.metrics import mean_squared_error
 
-from jiant.allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
+from jiant.allennlp_mods.elmo_text_field_embedder import (
+    ElmoTextFieldEmbedder,
+    ElmoTokenEmbedderWrapper,
+)
 
 from jiant.modules.edge_probing import EdgeClassifierModule
 from jiant.modules.simple_modules import (

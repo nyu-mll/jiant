@@ -25,7 +25,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
 from jiant.utils import config
-from jiant.utils.utils import assert_for_log, find_last_checkpoint_epoch, check_for_previous_checkpoints  # pylint: disable=import-error
+from jiant.utils.utils import (
+    assert_for_log,
+    find_last_checkpoint_epoch,
+    check_for_previous_checkpoints,
+)  # pylint: disable=import-error
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
