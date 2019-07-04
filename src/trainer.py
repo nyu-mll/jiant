@@ -57,7 +57,6 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "scheduler_threshold",
         "sent_enc",
         "d_hid",
-        "warmup",
         "max_grad_norm",
         "min_lr",
         "batch_size",
