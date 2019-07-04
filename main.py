@@ -473,7 +473,6 @@ def main(cl_arguments):
     start_time = time.time()
     model = build_model(args, vocab, word_embs, tasks)
     log.info("Finished building model in %.3fs", time.time() - start_time)
-    import ipdb; ipdb.set_trace()
 
     # Start Tensorboard if requested
     if cl_args.tensorboard:
