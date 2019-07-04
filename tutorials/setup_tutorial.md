@@ -254,6 +254,7 @@ After running this experiment, you should have in your run directory:
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
+* A `tensorboard` directory that logs the runs from train and val for all task-specific metrics. Note that right now we do not support logging for macro and micro averages.
 
 Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to.
 

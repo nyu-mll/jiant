@@ -1236,8 +1236,10 @@ class SamplingMultiTaskTrainer:
         metric_names = train_metrics.keys()
 
         for name in metric_names:
+            if name == "micro_avg" or name == "macro_avg":
+                continue
             train_metric = train_metrics.get(name)
-            name = task_name + "/" + task_name + "_" + name
+            name = os.path.join(task_name, task_name + "_" + name)
             self._TB_train_log.add_scalar(name, train_metric, val_pass)
 
     def _metrics_to_tensorboard_val(self, val_pass, val_metrics):
@@ -1247,8 +1249,10 @@ class SamplingMultiTaskTrainer:
         metric_names = val_metrics.keys()
 
         for name in metric_names:
+            if name == "micro_avg" or name == "macro_avg":
+                continue
             val_metric = val_metrics.get(name)
-            name = name.split("_")[0] + "/" + name
+            name = os.path.join(name.split("_")[0], name)
             self._TB_validation_log.add_scalar(name, val_metric, val_pass)
 
     @classmethod
