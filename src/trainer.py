@@ -1239,8 +1239,9 @@ class SamplingMultiTaskTrainer:
             if name == "micro_avg" or name == "macro_avg":
                 continue
             train_metric = train_metrics.get(name)
-            name = os.path.join(task_name, task_name + "_" + name)
-            self._TB_train_log.add_scalar(name, train_metric, val_pass)
+            task_name = self.task_to_metric_mapping[name]
+            log_name = os.path.join(task_name, name)
+            self._TB_train_log.add_scalar(log_name, train_metric, val_pass)
 
     def _metrics_to_tensorboard_val(self, val_pass, val_metrics):
         """
@@ -1252,8 +1253,9 @@ class SamplingMultiTaskTrainer:
             if name == "micro_avg" or name == "macro_avg":
                 continue
             val_metric = val_metrics.get(name)
-            name = os.path.join(name.split("_")[0], name)
-            self._TB_validation_log.add_scalar(name, val_metric, val_pass)
+            task_name = self.task_to_metric_mapping[name]
+            log_name = os.path.join(task_name, name)
+            self._TB_validation_log.add_scalar(log_name, val_metric, val_pass)
 
     @classmethod
     def from_params(cls, model, serialization_dir, params):
