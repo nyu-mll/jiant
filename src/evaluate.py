@@ -17,7 +17,6 @@ from .tasks.tasks import (
     RTESuperGLUETask,
     WiCTask,
     WinogradCoreferenceTask,
-    GLUEDiagnosticTask,
 )
 from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.edge_probing import EdgeProbingTask
@@ -93,7 +92,7 @@ def evaluate(
 
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0.
-            if not isinstance(task, GLUEDiagnosticTask):
+            if not task.is_diagnostic:
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -203,7 +202,7 @@ def write_preds(
             _write_winograd_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
-        elif isinstance(task, GLUEDiagnosticTask):
+        elif task.is_diagnostic:
             # glue-diagnostic is caught above by being in ALL_GLUE_TASKS
             # currently this only catches superglue-diagnostic
             _write_diagnostics_preds(

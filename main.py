@@ -26,7 +26,6 @@ from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
 from src import tasks as tasks_module
-from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import (
@@ -531,7 +530,7 @@ def main(cl_arguments):
             target_tasks_to_train = target_tasks_to_train[last_task_index:]
         for task in target_tasks_to_train:
             # Skip diagnostic tasks b/c they should not be trained on
-            if isinstance(task, GLUEDiagnosticTask):
+            if task.is_diagnostic:
                 continue
 
             params_to_train = load_model_for_target_train_run(
@@ -564,34 +563,13 @@ def main(cl_arguments):
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
 
-        # Even if args.do_target_training = 0, evaluate on diagnostic tasks.
-        diagnostic_tasks = [task for task in target_tasks if task.is_diagnostic]
-        target_tasks[:] = [task for task in target_tasks if not task.is_diagnostic]
-
-        for task in diagnostic_tasks:
+        # Evaluate on target_tasks.
+        for task in target_tasks:
+            # Find the task-specific best checkpoint to evaluate on.
             ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, [task], splits_to_write)
-
-        if args.do_target_task_training or (args.load_model and not args.do_pretrain):
-            # If we either do target task training, or if we only evaluate
-            # without pretraining or target task training
-            # then we evaluate on the target tasks.
-            for task in target_tasks:
-                # Find the task-specific best checkpoint to evaluate on.
-                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                assert ckpt_path is not None
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-
-                evaluate_and_write(args, model, [task], splits_to_write)
-        elif args.do_pretrain:
-            # If args.do_target_task_training = 0 and args.do_pretrain = 1
-            # then evaluate on best pretraining checkpoint.
-            ckpt_path = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
-            assert len(ckpt_path) > 0
-            load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
-            evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
 
     log.info("Done!")
 

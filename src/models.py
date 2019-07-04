@@ -43,7 +43,6 @@ from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
 from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.tasks import (
-    GLUEDiagnosticTask,
     MultipleChoiceTask,
     PairClassificationTask,
     PairOrdinalRegressionTask,
@@ -744,7 +743,7 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch["input"]))
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
-        elif isinstance(task, GLUEDiagnosticTask):
+        elif task.is_diagnostic:
             out = self._nli_diagnostic_forward(batch, task, predict)
         elif isinstance(
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
