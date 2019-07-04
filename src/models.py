@@ -537,6 +537,7 @@ def get_task_specific_params(args, task_name):
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
+    params["pool_type"] = _get_task_attr("pool_type")
     params["d_proj"] = _get_task_attr("d_proj")
     params["shared_pair_attn"] = args.shared_pair_attn
     if args.shared_pair_attn:
@@ -582,8 +583,7 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
     """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"])
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
@@ -615,9 +615,8 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
-        pool_type = "first" if model.use_bert else "max"
         pooler = Pooler(
-            project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type
+            project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
         )
         d_out = d_inp if model.use_bert else params["d_proj"]
 
@@ -668,9 +667,8 @@ def build_tagger(task, d_inp, out_dim):
 
 def build_multiple_choice_module(task, d_sent, use_bert, params):
     """ Basic parts for MC task: reduce a vector representation for each model into a scalar. """
-    pool_type = "first" if use_bert else "max"
     pooler = Pooler(
-        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type
+        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=params["pool_type"]
     )
     d_out = d_sent if use_bert else params["d_proj"]
     choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
@@ -701,8 +699,7 @@ def build_qa_module(task, d_inp, use_bert, params):
     3) classifier
 
     This module models each question-answer pair _individually_ """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"])
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
