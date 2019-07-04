@@ -196,7 +196,7 @@ class Task(object):
         self.name = name
         self._tokenizer_name = tokenizer_name
         self.scorers = []
-
+        self.eval_only_task = False
         self.sentences = None
         self.example_counts = None
 
@@ -1211,6 +1211,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self.eval_only_task = True
 
     def load_data(self):
         """load diagnostics data. The tags for every column are loaded as indices.
