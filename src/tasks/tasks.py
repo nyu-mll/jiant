@@ -1411,7 +1411,7 @@ class WinogenderTask(GLUEDiagnosticTask):
         self.val_mtric = "%s_accuracy" % name
 
     def load_data(self):
-        rows = pd.read_json(os.path.join(self.path, "winogender.jsonl"), lines=True)
+        rows = pd.read_json(os.path.join(self.path, "winogender_filtered.jsonl"), lines=True)
         rows["sent1"] = rows["context"].apply(
             lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
         )
@@ -1535,7 +1535,7 @@ class RTESuperGLUETask(RTETask):
 
     def load_data(self):
         """ Process the datasets located at path. """
-        targ_map = {"not_entailment": 0, "entailment": 1}
+        targ_map = {"not_entailment": 0, True: 1, False:0, "entailment": 1}
 
         def _load_jsonl(data_file):
             data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
@@ -1554,7 +1554,7 @@ class RTESuperGLUETask(RTETask):
 
         self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
         self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+        self.test_data_text = _load_jsonl(os.path.join(self.path, "/beegfs/yp913/fresh_jiant/data/RTE/diagnostics/winogender_filtered.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
