@@ -583,7 +583,9 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
     """
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"])
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
@@ -616,7 +618,10 @@ def build_pair_sentence_module(task, d_inp, model, params):
         d_out = params["d_hid_attn"] * 2
     else:
         pooler = Pooler(
-            project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+            project=not model.use_bert,
+            d_inp=d_inp,
+            d_proj=params["d_proj"],
+            pool_type=params["pool_type"],
         )
         d_out = d_inp if model.use_bert else params["d_proj"]
 
@@ -699,7 +704,9 @@ def build_qa_module(task, d_inp, use_bert, params):
     3) classifier
 
     This module models each question-answer pair _individually_ """
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"])
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
