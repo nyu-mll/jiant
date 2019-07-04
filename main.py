@@ -529,8 +529,8 @@ def main(cl_arguments):
             last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
             target_tasks_to_train = target_tasks_to_train[last_task_index:]
         for task in target_tasks_to_train:
-            # Skip diagnostic tasks b/c they should not be trained on
-            if task.is_diagnostic:
+            # Skip tasks that should not be trained on.
+            if task.eval_only_task:
                 continue
 
             params_to_train = load_model_for_target_train_run(
