@@ -57,7 +57,6 @@ def build_trainer_params(args, task_names, phase="pretrain"):
         "scheduler_threshold",
         "sent_enc",
         "d_hid",
-        "warmup",
         "max_grad_norm",
         "min_lr",
         "batch_size",
@@ -273,7 +272,7 @@ class SamplingMultiTaskTrainer:
     ):
         """ Set up the trainer by initializing task_infos and metric_infos, which
         track necessary information about the training status of each task and metric respectively.
-        
+
         Returns:
             - task_infos (Dict[str:Dict[str:???]]): dictionary containing where each task_info
               contains:
@@ -367,14 +366,14 @@ class SamplingMultiTaskTrainer:
 
     def get_scaling_weights(self, scaling_method, num_tasks, task_names, task_n_train_examples):
         """
-        
+
         Parameters
         ----------------
         scaling_method : str, scaling method
         num_tasks: int
         task_names: list of str
         task_n_train_examples: list of ints of number of examples per task
-        
+
         Returns
         ----------------
         scaling weights: list of ints, to scale loss
@@ -417,7 +416,7 @@ class SamplingMultiTaskTrainer:
         num_tasks: int
         task_n_train_examples: list of ints of number of examples per task
         task_n_train_batches: list of ints of number of batches per task
-        
+
         Returns
         ----------------
         sampling weights: list of ints, to sample tasks to train on
@@ -463,7 +462,7 @@ class SamplingMultiTaskTrainer:
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
-        
+
         Parameters
         ----------
         tasks: a list of task objects to train on
@@ -477,7 +476,7 @@ class SamplingMultiTaskTrainer:
         shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
         phase: str, usually 'pretrain' or 'target_train'
-        
+
         Returns
         ----------
         Validation results
@@ -754,7 +753,7 @@ class SamplingMultiTaskTrainer:
     ):
         """
         This function updates metric history with the best validation score so far.
-        
+
         Parameters
         ---------
         val_pass: int.
@@ -766,7 +765,7 @@ class SamplingMultiTaskTrainer:
         decrease validation metric.
         should_save: bool, for checkpointing
         new_best: bool, indicator of whether the previous best preformance score was exceeded
-        
+
         Returns
         ________
         metric_infos: dict storing information about the various metrics
@@ -807,7 +806,7 @@ class SamplingMultiTaskTrainer:
         batch_size: int, batch size to use for the tasks
         all_val_metrics: dictionary. storing the validation performance
         n_examples_overall = int, current number of examples the model is validated on
-        
+
         Returns
         -------
         n_examples_overall: int, current number of examples
@@ -881,7 +880,7 @@ class SamplingMultiTaskTrainer:
     def _validate(self, val_pass, tasks, batch_size, periodic_save=True):
         """
 
-        Validate on all tasks and return the results and whether to save this validation 
+        Validate on all tasks and return the results and whether to save this validation
         pass or not.
 
         Parameters
@@ -1152,16 +1151,16 @@ class SamplingMultiTaskTrainer:
         """
         Restores a model from a serialization_dir to the last saved checkpoint.
         This includes a validation pass count and optimizer state, which is serialized separately
-        from model parameters. This function should only be used to continue training since 
-        it will load previous checkpoints. 
-        
+        from model parameters. This function should only be used to continue training since
+        it will load previous checkpoints.
+
         if you wish to load a model for inference/load parts of a model into a new
         computation graph, you should use the native Pytorch functions:
         `` model.load_state_dict(torch.load("/path/to/model/weights.th"))``
 
-        We restore based on the phase. If phase=target_train, we start from the last 
-        target task and work backwards, to find the most recent checkpoint in the target 
-        train phase. If phase=pretrain, we check for checkpoints in the main run 
+        We restore based on the phase. If phase=target_train, we start from the last
+        target task and work backwards, to find the most recent checkpoint in the target
+        train phase. If phase=pretrain, we check for checkpoints in the main run
         directory.
 
         Returns
