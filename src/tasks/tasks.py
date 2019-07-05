@@ -2598,8 +2598,8 @@ class BooleanQuestionTask(PairClassificationTask):
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
                 passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
                 new_datum = {"question": question, "passage": passage}
-                answer = d["answer"] if "answer" in d else False
-                new_datum["answer"] = answer
+                answer = d["label"] if "label" in d else False
+                new_datum["label"] = answer
                 data.append(new_datum)
             return data
 
@@ -2626,7 +2626,7 @@ class BooleanQuestionTask(PairClassificationTask):
             else:  # BERT
                 psg_qst = d["passage"][:-1] + d["question"]
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
-            new_d["labels"] = LabelField(d["answer"], label_namespace="labels", skip_indexing=True)
+            new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
             return Instance(new_d)
 
