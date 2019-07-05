@@ -455,7 +455,6 @@ class SamplingMultiTaskTrainer:
         train_params,
         optimizer_params,
         scheduler_params,
-        shared_optimizer=1,
         load_model=1,
         phase="pretrain",
     ):
@@ -473,7 +472,6 @@ class SamplingMultiTaskTrainer:
         train_params: trainer config object
         optimizer_params: optimizer config object
         scheduler_params: scheduler config object
-        shared_optimizer: use a single optimizer object for all tasks in MTL - recommended
         load_model: bool, whether to restore and continue training if a checkpoint is found
         phase: str, usually 'pretrain' or 'target_train'
 
@@ -486,19 +484,14 @@ class SamplingMultiTaskTrainer:
             tasks, batch_size, train_params, optimizer_params, scheduler_params, phase
         )
 
-        if shared_optimizer:  # If shared_optimizer, ignore task_specific optimizers
-            optimizer_params = copy.deepcopy(optimizer_params)
-            if "t_total" in optimizer_params and self._max_epochs > 0:
-                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-                optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
-            g_optimizer = Optimizer.from_params(train_params, optimizer_params)
-            g_scheduler = LearningRateScheduler.from_params(
-                g_optimizer, copy.deepcopy(scheduler_params)
-            )
-        else:
-            g_optimizer, g_scheduler = None, None
-        self._g_optimizer = g_optimizer
-        self._g_scheduler = g_scheduler
+        optimizer_params = copy.deepcopy(optimizer_params)
+        if "t_total" in optimizer_params and self._max_epochs > 0:
+            n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+            optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
+        optimizer = Optimizer.from_params(train_params, optimizer_params)
+        scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
+        self._optimizer = optimizer
+        self._scheduler = scheduler
 
         # define these here b/c they might get overridden on load
 
@@ -571,8 +564,6 @@ class SamplingMultiTaskTrainer:
                 offset += 1
                 continue
             tr_generator = task_info["tr_generator"]
-            optimizer = g_optimizer if shared_optimizer else task_info["optimizer"]
-            scheduler = g_scheduler if shared_optimizer else task_info["scheduler"]
             total_batches_trained = task_info["total_batches_trained"]
             n_batches_since_val = task_info["n_batches_since_val"]
             tr_loss = task_info["loss"]
@@ -680,9 +671,7 @@ class SamplingMultiTaskTrainer:
                     log.info(log_str)
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
-                lrs = self._get_lr()  # log LR
-                for name, value in lrs.items():
-                    log.info("%s: %.6f", name, value)
+                log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
                 elmo_params = self._model.get_elmo_mixing_weights(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
@@ -897,7 +886,7 @@ class SamplingMultiTaskTrainer:
         new_best: bool, whether or not the macro performance increased
         """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        g_scheduler = self._g_scheduler
+        scheduler = self._scheduler
         self._model.eval()
         all_val_metrics = {("%s_loss" % task.name): 0.0 for task in tasks}
         all_val_metrics["macro_avg"] = 0.0
@@ -938,15 +927,9 @@ class SamplingMultiTaskTrainer:
                 new_best,
             )
 
-            # Get scheduler, using global scheduler if exists and task is macro
+            # Get scheduler, and update using macro score
             # micro has no scheduler updates
-            if task_name not in ["micro", "macro"] and g_scheduler is None:
-                scheduler = task_infos[task_name]["scheduler"]
-            elif g_scheduler is not None and task_name == "macro":
-                scheduler = g_scheduler
-            else:
-                scheduler = None
-            if scheduler is not None and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
+            if task_name == "macro" and isinstance(scheduler.lr_scheduler, ReduceLROnPlateau):
                 log.info("Updating LR scheduler:")
                 scheduler.step(this_val_metric, val_pass)
                 log.info(
@@ -959,20 +942,10 @@ class SamplingMultiTaskTrainer:
 
         return all_val_metrics, should_save, new_best
 
-    def _get_lr(self):
-        """ Get learning rate from the optimizer we're using """
-        if self._g_optimizer is not None:
-            lrs = {"global_lr": self._g_optimizer.param_groups[0]["lr"]}
-        else:
-            lrs = {}
-            for task, task_info in self._task_infos.items():
-                lrs["%s_lr" % task] = task_info["optimizer"].param_groups[0]["lr"]
-        return lrs
-
     def _check_stop(self, val_n, stop_metric, tasks):
         """ Check to see if should stop """
         task_infos, metric_infos = self._task_infos, self._metric_infos
-        g_optimizer = self._g_optimizer
+        optimizer = self._optimizer
 
         should_stop = False
         if self._max_epochs > 0:  # check if max # epochs hit
@@ -989,18 +962,7 @@ class SamplingMultiTaskTrainer:
                 log.info("Reached max_epochs limit on all tasks. Stopping training.")
                 should_stop = True
 
-        if g_optimizer is None:  # check if minimum LR hit
-            for task in tasks:
-                task_info = task_infos[task.name]
-                if task_info["optimizer"].param_groups[0]["lr"] < self._min_lr:
-                    # Commented out the below line as more confusing than helpful. May make sense
-                    # to restore if we wind up using more complex stopping strategies.
-                    # log.info("Minimum lr hit on %s.", task.name)
-                    task_info["stopped"] = True
-            stop_lr = min([info["stopped"] for info in task_infos.values()])
-        else:
-            stop_lr = g_optimizer.param_groups[0]["lr"] < self._min_lr
-        if stop_lr:
+        if optimizer.param_groups[0]["lr"] < self._min_lr:
             log.info("Minimum LR reached. Stopping training.")
             should_stop = True
 
@@ -1093,19 +1055,10 @@ class SamplingMultiTaskTrainer:
             task_states[task_name] = {}
             task_states[task_name]["total_batches_trained"] = task_info["total_batches_trained"]
             task_states[task_name]["stopped"] = task_info["stopped"]
-            if self._g_optimizer is None:
-                task_states[task_name]["optimizer"] = task_info["optimizer"].state_dict()
-                sched_params = {}
-                task_states[task_name]["scheduler"] = sched_params
         task_states["global"] = {}
-        task_states["global"]["optimizer"] = (
-            self._g_optimizer.state_dict() if self._g_optimizer is not None else None
-        )
-        if self._g_scheduler is not None:
-            sched_params = {}
-            task_states["global"]["scheduler"] = sched_params
-        else:
-            task_states["global"]["scheduler"] = None
+        task_states["global"]["optimizer"] = self._optimizer.state_dict()
+        # NOTE(Alex): AllenNLP wrapper doesn't expose scheduler state dict methods
+        task_states["global"]["scheduler"] = self._scheduler.lr_scheduler.state_dict()
 
         metric_states = {}
         for metric_name, metric_info in self._metric_infos.items():
@@ -1204,10 +1157,6 @@ class SamplingMultiTaskTrainer:
             self._task_infos[task_name]["total_batches_trained"] = task_state[
                 "total_batches_trained"
             ]
-            if "optimizer" in task_state:
-                self._task_infos[task_name]["optimizer"].load_state_dict(task_state["optimizer"])
-                for param, val in task_state["scheduler"].items():
-                    setattr(self._task_infos[task_name]["scheduler"], param, val)
             self._task_infos[task_name]["stopped"] = task_state["stopped"]
             generator = self._task_infos[task_name]["tr_generator"]
             for _ in itertools.islice(
@@ -1215,11 +1164,9 @@ class SamplingMultiTaskTrainer:
                 task_state["total_batches_trained"] % self._task_infos[task_name]["n_tr_batches"],
             ):
                 pass
-        if task_states["global"]["optimizer"] is not None:
-            self._g_optimizer.load_state_dict(task_states["global"]["optimizer"])
-        if task_states["global"]["scheduler"] is not None:
-            for param, val in task_states["global"]["scheduler"].items():
-                setattr(self._g_scheduler, param, val)
+        self._optimizer.load_state_dict(task_states["global"]["optimizer"])
+        # NOTE(Alex): AllenNLP wrapper doesn't expose scheduler state dict methods
+        self._scheduler.lr_scheduler.load_state_dict(task_states["global"]["scheduler"])
         metric_states = torch.load(metric_state_path)
         for metric_name, metric_state in metric_states.items():
             self._metric_infos[metric_name]["hist"] = metric_state["hist"]
