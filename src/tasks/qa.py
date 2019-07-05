@@ -85,9 +85,9 @@ class MultiRCTask(Task):
         self.val_metric_decreases = False
         self.max_seq_len = max_seq_len
         self.files_by_split = {
-            "train": os.path.join(path, "train.clean.jsonl"),
-            "val": os.path.join(path, "val.clean.jsonl"),
-            "test": os.path.join(path, "test.clean.jsonl"),
+            "train": os.path.join(path, "train.jsonl"),
+            "val": os.path.join(path, "val.jsonl"),
+            "test": os.path.join(path, "test.jsonl"),
         }
 
     def load_data(self):
