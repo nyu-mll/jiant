@@ -198,7 +198,7 @@ class Task(object):
         self.name = name
         self._tokenizer_name = tokenizer_name
         self.scorers = []
-
+        self.eval_only_task = False
         self.sentences = None
         self.example_counts = None
         self.contributes_micro_macro_avg = True
@@ -1214,7 +1214,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
-        self.contributes_micro_macro_avg = False
+        self.eval_only_task = True
 
     def load_data(self):
         """load diagnostics data. The tags for every column are loaded as indices.
@@ -2679,9 +2679,7 @@ class BooleanQuestionTask(PairClassificationTask):
             data = []
             for d in raw_data:
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                passage = process_sentence(
-                    self._tokenizer_name, " ".join([d["title"], d["passage"]]), self.max_seq_len
-                )
+                passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
                 new_datum = {"question": question, "passage": passage}
                 answer = d["answer"] if "answer" in d else False
                 new_datum["answer"] = answer

@@ -16,10 +16,10 @@ from .tasks.tasks import (
     CommitmentTask,
     RTESuperGLUETask,
     WiCTask,
-    GLUEDiagnosticTask,
     WinogradCoreferenceTask,
+    GLUEDiagnosticTask,
 )
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -57,10 +57,11 @@ def evaluate(
         "sent1_str",
         "sent2_str",
         "labels",
-        "par_idx",
+        "pair_id",
+        "psg_idx",
         "qst_idx",
         "ans_idx",
-        "pair_id",
+        "ans_str",
     ]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
@@ -192,6 +193,10 @@ def write_preds(
             _write_rte_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
+        elif isinstance(task, ReCoRDTask):
+            _write_record_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, WiCTask):
             _write_wic_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
@@ -235,6 +240,7 @@ SUPERGLUE_NAME_MAP = {
     "commitbank": "CB",
     "copa": "COPA",
     "multirc": "MultiRC",
+    "record": "ReCoRD",
     "rte-superglue": "RTE",
     "wic": "WiC",
     "superglue-diagnostic": "AX",
@@ -394,14 +400,52 @@ def _write_multirc_preds(
             par_qst_ans_d = defaultdict(lambda: defaultdict(list))
             for row_idx, row in preds_df.iterrows():
                 ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
-                par_qst_ans_d[int(row["par_idx"])][int(row["qst_idx"])].append(ans_d)
+                par_qst_ans_d[int(row["psg_idx"])][int(row["qst_idx"])].append(ans_d)
             for par_idx, qst_ans_d in par_qst_ans_d.items():
                 qst_ds = []
                 for qst_idx, answers in qst_ans_d.items():
                     qst_d = {"idx": qst_idx, "answers": answers}
                     qst_ds.append(qst_d)
-                out_d = {"idx": par_idx, "paragraph": {"questions": qst_ds}}
+                out_d = {"idx": par_idx, "passage": {"questions": qst_ds}}
                 preds_fh.write("{0}\n".format(json.dumps(out_d)))
+        else:
+            for row_idx, row in preds_df.iterrows():
+                out_d = row.to_dict()
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
+def _write_record_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for ReCoRD task. """
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        if strict_glue_format:
+            par_qst_ans_d = defaultdict(lambda: defaultdict(list))
+            for row_idx, row in preds_df.iterrows():
+                ans_d = {
+                    "idx": int(row["ans_idx"]),
+                    "str": row["ans_str"],
+                    "logit": torch.FloatTensor(row["preds"]),
+                }
+                par_qst_ans_d[row["psg_idx"]][row["qst_idx"]].append(ans_d)
+            for par_idx, qst_ans_d in par_qst_ans_d.items():
+                for qst_idx, ans_ds in qst_ans_d.items():
+
+                    # get prediction
+                    logits_and_anss = [(d["logit"], d["str"]) for d in ans_ds]
+                    logits_and_anss.sort(key=lambda x: x[1])
+                    logits, anss = list(zip(*logits_and_anss))
+                    pred_idx = torch.softmax(torch.stack(logits), dim=-1)[:, -1].argmax().item()
+                    answer = anss[pred_idx]
+
+                    # write out answer
+                    qst_d = {"idx": qst_idx, "label": answer}
+                    preds_fh.write("{0}\n".format(json.dumps(qst_d)))
         else:
             for row_idx, row in preds_df.iterrows():
                 out_d = row.to_dict()
