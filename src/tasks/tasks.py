@@ -2298,7 +2298,9 @@ class WiCTask(PairClassificationTask):
                     trg = trg_map[row["label"]] if "label" in row else 0
                     trgs.append(trg)
                     idxs.append(row["idx"])
-                    assert row["version"] == 1.1, "WiC version is not v1.1; you may be using stale data."
+                    assert (
+                        row["version"] == 1.1
+                    ), "WiC version is not v1.1; you may be using stale data."
                 return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
