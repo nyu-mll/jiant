@@ -2274,8 +2274,11 @@ class WiCTask(PairClassificationTask):
             sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
             sent_mid = process_sentence(self._tokenizer_name, word, self.max_seq_len)
             sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
-            start_idx = len(sent_tok1[:-1]) - 1
+            start_idx = len(sent_tok1[:-1])
             end_idx = start_idx + len(sent_mid[1:-1])
+            assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
+            assert word.startswith(sent_tok[start_idx]), "Detected corrupted marked word."
+            # assert word.endswith(sent_tok[end_idx - 1]), "" # This doesn't work b/c of ## added
             return sent_tok, start_idx, end_idx
 
         def _load_split(data_file):
@@ -2285,12 +2288,10 @@ class WiCTask(PairClassificationTask):
                     row = json.loads(row)
                     sent1 = row["sentence1"]
                     sent2 = row["sentence2"]
-                    sent1, start1, end1 = _process_preserving_word(
-                        sent1, sent1[row["start1"] : row["end1"]]
-                    )
-                    sent2, start2, end2 = _process_preserving_word(
-                        sent2, sent2[row["start2"] : row["end2"]]
-                    )
+                    word1 = sent1[row["start1"] : row["end1"]]
+                    word2 = sent2[row["start2"] : row["end2"]]
+                    sent1, start1, end1 = _process_preserving_word(sent1, word1)
+                    sent2, start2, end2 = _process_preserving_word(sent2, word2)
                     sents1.append(sent1)
                     sents2.append(sent2)
                     idxs1.append((start1, end1))
@@ -2299,8 +2300,8 @@ class WiCTask(PairClassificationTask):
                     trgs.append(trg)
                     idxs.append(row["idx"])
                     assert (
-                        row["version"] == 1.1
-                    ), "WiC version is not v1.1; you may be using stale data."
+                        "version" in row and row["version"] == 1.1
+                    ), "WiC version is not v1.1; examples indices are likely incorrect and data is likely pre-tokenized. Please re-download the data from super.gluebenchmark for the correct data."
                 return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))

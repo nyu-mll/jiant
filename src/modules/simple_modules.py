@@ -166,7 +166,7 @@ class PairClassifier(nn.Module):
 
     def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
         """
-        This class applies some type of pooling to get a fixed-size vector,
+        This class applies some type of pooling to each of two inputs to get two fixed-size vectors,
             possibly extracts some specific representations from the input sequence
             and concatenates those reps to the overall representations,
             then passes the whole thing through a classifier.
