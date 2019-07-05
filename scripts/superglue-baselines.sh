@@ -34,7 +34,7 @@ function rte() {
 }
 
 function wic() {
-    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = wic, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
+    python -m ipdb main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = superglue-v2, run_name = wic, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
 }
 
 function wsc() {

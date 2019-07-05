@@ -2279,7 +2279,7 @@ class WiCTask(PairClassificationTask):
             return sent_tok, start_idx, end_idx
 
         def _load_split(data_file):
-            sents1, sents2, idxs1, idxs2, trgs = [], [], [], [], []
+            sents1, sents2, idxs1, idxs2, trgs, idxs = [], [], [], [], [], []
             with open(data_file, "r") as data_fh:
                 for row in data_fh:
                     row = json.loads(row)
@@ -2297,11 +2297,13 @@ class WiCTask(PairClassificationTask):
                     idxs2.append((start2, end2))
                     trg = trg_map[row["label"]] if "label" in row else 0
                     trgs.append(trg)
-                return [sents1, sents2, idxs1, idxs2, trgs]
+                    idxs.append(row["idx"])
+                    assert row["version"] == 1.1, "WiC version is not v1.1; you may be using stale data."
+                return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
+        self.train_data_text = _load_split(os.path.join(self.path, "train.relabeled.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "val.relabeled.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test.relabeled.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -2330,16 +2332,12 @@ class WiCTask(PairClassificationTask):
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
-            d["idx1"] = NumericField(idxs1[0])
-            d["idx2"] = NumericField(idxs2[0])
+            d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
+            d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
 
             return Instance(d)
-
-        if len(split) < 6:  # counting iterator for idx
-            assert len(split) == 5
-            split.append(itertools.count())
 
         # Map over columns: input1, (input2), labels, idx
         instances = map(_make_instance, *split)

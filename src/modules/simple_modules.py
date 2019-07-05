@@ -114,7 +114,7 @@ class SingleClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
                 idx = idx.expand([-1, -1, sent.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
@@ -125,6 +125,7 @@ class SingleClassifier(nn.Module):
             ctx_emb = sent.gather(dim=1, index=idx) * ctx_mask
             ctx_emb = ctx_emb.sum(dim=1) / ctx_mask.sum(dim=1)
             ctx_embs.append(ctx_emb)
+        ipdb.set_trace()
         final_emb = torch.cat([emb] + ctx_embs, dim=-1)
         logits = self.classifier(final_emb)
         return logits
@@ -164,7 +165,7 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
                 idx = idx.expand([-1, -1, sent.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
@@ -184,7 +185,7 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(1) == sent.size(-1), "Invalid index dimension!"
+                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
                 idx = idx.expand([-1, -1, sent.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
