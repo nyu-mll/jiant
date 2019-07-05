@@ -108,16 +108,18 @@ class MultiRCTask(Task):
             examples = []
             for example in data_fh:
                 ex = json.loads(example)
-                # each example has a paragraph field -> (text, questions)
-                # text is the paragraph, which requires some preprocessing
+
+                assert (
+                    "version" in ex and ex["version"] == 1.1
+                ), "MultiRC version is invalid! Example indices are likely incorrect. Please re-download the data from super.gluebenchmark.com ."
+
+                # each example has a passage field -> (text, questions)
+                # text is the passage, which requires some preprocessing
                 # questions is a list of questions, has fields (question, sentences_used, answers)
-                para = re.sub(
-                    "<b>Sent .{1,2}: </b>", "", ex["paragraph"]["text"].replace("<br>", " ")
+                ex["passage"]["text"] = process_sentence(
+                    self.tokenizer_name, ex["passage"]["text"], self.max_seq_len
                 )
-                ex["paragraph"]["text"] = process_sentence(
-                    self.tokenizer_name, para, self.max_seq_len
-                )
-                for question in ex["paragraph"]["questions"]:
+                for question in ex["passage"]["questions"]:
                     question["question"] = process_sentence(
                         self.tokenizer_name, question["question"], self.max_seq_len
                     )
@@ -135,8 +137,8 @@ class MultiRCTask(Task):
                 continue
             path = self.files_by_split[split]
             for example in self.load_data_for_path(path):
-                yield example["paragraph"]["text"]
-                for question in example["paragraph"]["questions"]:
+                yield example["passage"]["text"]
+                for question in example["passage"]["questions"]:
                     yield question["question"]
                     for answer in question["answers"]:
                         yield answer["text"]
@@ -146,7 +148,7 @@ class MultiRCTask(Task):
         is_using_bert = "bert_wpm_pretokenized" in indexers
 
         def _make_instance(passage, question, answer, label, par_idx, qst_idx, ans_idx):
-            """ pq_id: paragraph-question ID """
+            """ pq_id: passage-question ID """
             d = {}
             d["psg_str"] = MetadataField(" ".join(passage))
             d["qst_str"] = MetadataField(" ".join(question))
@@ -168,14 +170,14 @@ class MultiRCTask(Task):
 
         for example in split:
             par_idx = example["idx"]
-            para = example["paragraph"]["text"]
-            for ex in example["paragraph"]["questions"]:
+            para = example["passage"]["text"]
+            for ex in example["passage"]["questions"]:
                 qst_idx = ex["idx"]
                 question = ex["question"]
                 for answer in ex["answers"]:
                     ans_idx = answer["idx"]
                     ans = answer["text"]
-                    label = int(answer["isAnswer"]) if "isAnswer" in answer else 0
+                    label = int(answer["label"]) if "label" in answer else 0
                     yield _make_instance(para, question, ans, label, par_idx, qst_idx, ans_idx)
 
     def count_examples(self):
@@ -185,13 +187,13 @@ class MultiRCTask(Task):
             example_counts[split] = sum(
                 len(q["answers"])
                 for r in open(split_path, "r", encoding="utf-8")
-                for q in json.loads(r)["paragraph"]["questions"]
+                for q in json.loads(r)["passage"]["questions"]
             )
 
         self.example_counts = example_counts
 
     def update_metrics(self, logits, labels, idxs, tagmask=None):
-        """ A batch of logits, labels, and the paragraph+questions they go with """
+        """ A batch of logits, labels, and the passage+questions they go with """
         self.scorer1(logits, labels)
         logits, labels = logits.detach().cpu(), labels.detach().cpu()
         # track progress on each question
@@ -334,7 +336,7 @@ class ReCoRDTask(Task):
             return template[:split_idx] + ent + template[split_idx + 1 :]
 
         def _make_instance(psg, qst, ans_str, label, psg_idx, qst_idx, ans_idx):
-            """ pq_id: paragraph-question ID """
+            """ pq_id: passage-question ID """
             d = {}
             d["psg_str"] = MetadataField(" ".join(psg))
             d["qst_str"] = MetadataField(" ".join(qst))
