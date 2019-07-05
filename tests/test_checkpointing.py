@@ -136,10 +136,10 @@ class TestCheckpointing(unittest.TestCase):
                 ("sent_encoder.layer.1", torch.Tensor([0.1, 0.3, 0.4, 0.8])),
                 ("type", torch.Tensor([0.1])),
             ]
-            g_scheduler = LearningRateScheduler.from_params(
+            scheduler = LearningRateScheduler.from_params(
                 Optimizer.from_params(train_params, opt_params2), copy.deepcopy(scheduler_params)
             )
-            g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
+            optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
             _task_infos = {
                 "wic": {
                     "iterator": iterator(self.wic.val_data, num_epochs=1),
@@ -148,8 +148,8 @@ class TestCheckpointing(unittest.TestCase):
                     "tr_generator": iterator(self.wic.val_data, num_epochs=1),
                     "total_batches_trained": 400,
                     "n_batches_since_val": 0,
-                    "optimizer": g_optimizer,
-                    "scheduler": g_scheduler,
+                    "optimizer": optimizer,
+                    "scheduler": scheduler,
                     "stopped": False,
                     "last_log": time.time(),
                 }
@@ -189,8 +189,8 @@ class TestCheckpointing(unittest.TestCase):
             tt_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
             pt_trainer._task_infos = _task_infos
             pt_trainer._metric_infos = _metric_infos
-            pt_trainer._g_optimizer = g_optimizer
-            pt_trainer._g_scheduler = g_scheduler
+            pt_trainer._optimizer = optimizer
+            pt_trainer._scheduler = scheduler
             pt_trainer._save_checkpoint(
                 {"step": 10, "validation_pass": 1, "should_stop": 0},
                 tasks=[self.wic],
@@ -205,8 +205,8 @@ class TestCheckpointing(unittest.TestCase):
             )
             tt_trainer._task_infos = _task_infos
             tt_trainer._metric_infos = _metric_infos
-            tt_trainer._g_optimizer = g_optimizer
-            tt_trainer._g_scheduler = g_scheduler
+            tt_trainer._optimizer = optimizer
+            tt_trainer._scheduler = scheduler
 
             tt_trainer._save_checkpoint(
                 {"step": 10, "validation_pass": 1, "should_stop": 0},

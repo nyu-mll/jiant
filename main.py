@@ -504,7 +504,6 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            args.shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -554,8 +553,7 @@ def main(cl_arguments):
                 train_params=params_to_train,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
-                shared_optimizer=args.shared_optimizer,
-                load_model=task.name == task_to_restore,
+                load_model=(task.name == task_to_restore),
                 phase="target_train",
             )
 
