@@ -125,7 +125,6 @@ class SingleClassifier(nn.Module):
             ctx_emb = sent.gather(dim=1, index=idx) * ctx_mask
             ctx_emb = ctx_emb.sum(dim=1) / ctx_mask.sum(dim=1)
             ctx_embs.append(ctx_emb)
-        ipdb.set_trace()
         final_emb = torch.cat([emb] + ctx_embs, dim=-1)
         logits = self.classifier(final_emb)
         return logits
