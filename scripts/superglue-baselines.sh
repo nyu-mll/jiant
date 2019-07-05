@@ -22,7 +22,11 @@ function copa() {
 }
 
 function multirc() {
-    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = multirc, pretrain_tasks = \"multirc\", target_tasks = \"multirc\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000"
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = multirc, pretrain_tasks = \"multirc\", target_tasks = \"multirc\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 1000, val_data_limit = -1"
+}
+
+function record() {
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 10000, val_data_limit = -1"
 }
 
 function rte() {
@@ -44,6 +48,8 @@ elif [ $1 == "copa" ]; then
     copa
 elif [ $1 == "multirc" ]; then
     multirc
+elif [ $1 == "record" ]; then
+    record
 elif [ $1 == "rte" ]; then
     rte
 elif [ $1 == "wic" ]; then
