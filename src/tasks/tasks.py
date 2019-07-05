@@ -2301,9 +2301,9 @@ class WiCTask(PairClassificationTask):
                     assert row["version"] == 1.1, "WiC version is not v1.1; you may be using stale data."
                 return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
-        self.train_data_text = _load_split(os.path.join(self.path, "train.relabeled.jsonl"))
-        self.val_data_text = _load_split(os.path.join(self.path, "val.relabeled.jsonl"))
-        self.test_data_text = _load_split(os.path.join(self.path, "test.relabeled.jsonl"))
+        self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = _load_split(os.path.join(self.path, "test.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
