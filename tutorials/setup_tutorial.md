@@ -112,7 +112,7 @@ Some important options include:
 * `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
 * `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `word_embs`: This is a string specifying the type of word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. *
+* `input_module`: This is a string specifying the type of contextualized word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. 
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
@@ -155,7 +155,7 @@ classifier_hid_dim = 32
 max_seq_len = 10
 max_word_v_size = 1000
 
-word_embs = scratch
+input_module = scratch
 d_word = 50
 
 sent_enc = rnn
@@ -254,6 +254,7 @@ After running this experiment, you should have in your run directory:
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
+* A `tensorboard` directory that logs the runs from train and val for all task-specific metrics. Note that right now we do not support logging for macro and micro averages.
 
 Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to.
 

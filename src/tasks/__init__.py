@@ -26,9 +26,11 @@ ALL_GLUE_TASKS = [
 
 
 ALL_SUPERGLUE_TASKS = [
+    "boolq",
     "commitbank",
     "copa",
     "multirc",
+    "record",
     "rte-superglue",
     "winograd-coreference",
     "wic",

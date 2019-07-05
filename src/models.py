@@ -41,7 +41,7 @@ from .modules.span_modules import SpanClassifierModule
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.lm import LanguageModelingTask
 from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
@@ -96,7 +96,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             args.d_word,
             args.d_hid,
             args.n_layers_enc,
-            args.chunk_size,
+            args.onlstm_chunk_size,
             args.onlstm_dropconnect,
             args.onlstm_dropouti,
             args.dropout,
@@ -511,28 +511,11 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     elif isinstance(task, EdgeProbingTask):
         module = EdgeClassifierModule(task, d_sent, task_params)
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, (Wiki103Seq2SeqTask)):
-        log.info("using {} attention".format(args.s2s["attention"]))
-        decoder_params = Params(
-            {
-                "input_dim": d_sent,
-                "target_embedding_dim": 300,
-                "decoder_hidden_size": args.s2s["d_hid_dec"],
-                "output_proj_input_dim": args.s2s["output_proj_input_dim"],
-                "max_decoding_steps": args.max_seq_len,
-                "target_namespace": "tokens",
-                "attention": args.s2s["attention"],
-                "dropout": args.dropout,
-                "scheduled_sampling_ratio": 0.0,
-            }
-        )
-        decoder = Seq2SeqDecoder(vocab, **decoder_params)
-        setattr(model, "%s_decoder" % task.name, decoder)
     elif isinstance(task, SequenceGenerationTask):
         decoder, hid2voc = build_decoder(task, d_sent, vocab, embedder, args)
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
-    elif isinstance(task, MultiRCTask):
+    elif isinstance(task, (MultiRCTask, ReCoRDTask)):
         module = build_qa_module(task, d_sent, model.use_bert, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:
@@ -554,6 +537,7 @@ def get_task_specific_params(args, task_name):
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
+    params["pool_type"] = _get_task_attr("pool_type")
     params["d_proj"] = _get_task_attr("d_proj")
     params["shared_pair_attn"] = args.shared_pair_attn
     if args.shared_pair_attn:
@@ -590,17 +574,16 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_bert (bool): if using BERT, extract the first vector from the inputted
-            sequence, rather than max pooling. We do this for BERT specifically to follow
-            the convention set in the paper (Devlin et al., 2019).
+        - use_bert (bool): if using BERT, skip projection before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
     """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
@@ -632,9 +615,11 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
-        pool_type = "first" if model.use_bert else "max"
         pooler = Pooler(
-            project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type
+            project=not model.use_bert,
+            d_inp=d_inp,
+            d_proj=params["d_proj"],
+            pool_type=params["pool_type"],
         )
         d_out = d_inp if model.use_bert else params["d_proj"]
 
@@ -685,9 +670,8 @@ def build_tagger(task, d_inp, out_dim):
 
 def build_multiple_choice_module(task, d_sent, use_bert, params):
     """ Basic parts for MC task: reduce a vector representation for each model into a scalar. """
-    pool_type = "first" if use_bert else "max"
     pooler = Pooler(
-        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type
+        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=params["pool_type"]
     )
     d_out = d_sent if use_bert else params["d_proj"]
     choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
@@ -718,8 +702,9 @@ def build_qa_module(task, d_inp, use_bert, params):
     3) classifier
 
     This module models each question-answer pair _individually_ """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
@@ -785,7 +770,7 @@ class MultiTaskModel(nn.Module):
             out = module.forward(batch, word_embs_in_context, sent_mask, task, predict)
         elif isinstance(task, SequenceGenerationTask):
             out = self._seq_gen_forward(batch, task, predict)
-        elif isinstance(task, MultiRCTask):
+        elif isinstance(task, (MultiRCTask, ReCoRDTask)):
             out = self._multiple_choice_reading_comprehension_forward(batch, task, predict)
         elif isinstance(task, SpanClassificationTask):
             out = self._span_forward(batch, task, predict)
@@ -1114,30 +1099,47 @@ class MultiTaskModel(nn.Module):
         out = {}
         classifier = self._get_classifier(task)
         if self.use_bert:
-            # if using BERT, we concatenate the context, question, and answer
-            inp = batch["para_quest_ans"]
+            # if using BERT, we concatenate the passage, question, and answer
+            inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
             out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
         else:
             # else, we embed each independently and concat them
-            par_emb, par_mask = self.sent_encoder(batch["paragraph"], task)
-            qst_emb, qst_mask = self.sent_encoder(batch["question"], task)
-            ans_emb, ans_mask = self.sent_encoder(batch["answer"], task)
-            inp = torch.cat([par_emb, qst_emb, ans_emb], dim=1)
-            inp_mask = torch.cat([par_mask, qst_mask, ans_mask], dim=1)
+            psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
+            qst_emb, qst_mask = self.sent_encoder(batch["qst"], task)
+
+            if "ans" in batch:  # most QA tasks, e.g. MultiRC have explicit answer fields
+                ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
+                inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
+                out["n_exs"] = batch["ans"]["words"].size(0)
+            else:  # ReCoRD inserts answer into the query
+                inp = torch.cat([psg_emb, qst_emb], dim=1)
+                inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
+                out["n_exs"] = batch["qst"]["words"].size(0)
+
             logits = classifier(inp, inp_mask)
-            out["n_exs"] = batch["answer"]["words"].size(0)
         out["logits"] = logits
 
         if "label" in batch:
-            idxs = [(p, q) for p, q in zip(batch["par_idx"], batch["qst_idx"])]
+            idxs = [(p, q) for p, q in zip(batch["psg_idx"], batch["qst_idx"])]
             labels = batch["label"]
             out["loss"] = F.cross_entropy(logits, labels)
-            task.update_metrics(logits, labels, idxs)
+            if isinstance(task, ReCoRDTask):
+                # ReCoRD needs the answer string to compute F1
+                task.update_metrics(logits, batch["ans_str"], idxs)
+            else:
+                task.update_metrics(logits, labels, idxs)
 
         if predict:
-            out["preds"] = logits.argmax(dim=-1)
+            if isinstance(task, ReCoRDTask):
+                # for ReCoRD, we want the logits to make
+                # predictions across answer choices
+                # (which are spread across batches)
+                out["preds"] = logits
+            else:
+                out["preds"] = logits.argmax(dim=-1)
 
         return out
 

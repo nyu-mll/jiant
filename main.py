@@ -26,7 +26,6 @@ from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
 from src import tasks as tasks_module
-from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import (
@@ -87,12 +86,12 @@ def handle_arguments(cl_arguments):
 
 def setup_target_task_training(args, target_tasks, model, strict):
     """
-    Gets the model path used to restore model after each target 
+    Gets the model path used to restore model after each target
     task run, and saves current state if no other previous checkpoint can
     be used as the model path.
     The logic for loading the correct model state for target task training is:
     1) If load_target_train_checkpoint is used, then load the weights from that checkpoint.
-    2) If we did pretraining, then load the best model from pretraining. 
+    2) If we did pretraining, then load the best model from pretraining.
     3) Default case: we save untrained encoder weights.
 
     Parameters
@@ -233,15 +232,16 @@ def _run_background_tensorboard(logdir, port):
 
 
 def get_best_checkpoint_path(args, phase, task_name=None):
-    """ Look in run_dir for model checkpoint to load when setting up for 
+    """ Look in run_dir for model checkpoint to load when setting up for
     phase = target_train or phase = eval.
-    Hierarchy is: 
+    Hierarchy is:
         If phase == target_train:
             1) user-specified target task checkpoint
             2) best task-specific checkpoint from pretraining stage
         If phase == eval:
             1) user-specified eval checkpoint
             2) best task-specific checkpoint for target_train, used when evaluating
+            3) best pretraining checkpoint
     If all these fail, then we default to None.
     """
     checkpoint = []
@@ -266,6 +266,10 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
+            if len(checkpoint) == 0:
+                checkpoint = glob.glob(
+                    os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
+                )
 
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
@@ -307,7 +311,7 @@ def initial_setup(args, cl_args):
     pretrain_tasks: list of pretraining tasks
     target_tasks: list of target tasks
     vocab: list of vocab
-    word_embs: loaded word embeddings, may be None if args.input_module in 
+    word_embs: loaded word embeddings, may be None if args.input_module in
     {gpt, elmo, elmo-chars-only, bert-*}
     model: a MultiTaskModel object
     """
@@ -409,19 +413,19 @@ def check_arg_name(args):
 
 def load_model_for_target_train_run(args, ckpt_path, model, strict, task):
     """
-        Function that reloads model if necessary and extracts trainable parts 
-        of the model in preparation for target_task training. 
-        It only reloads model after the first task is trained. 
+        Function that reloads model if necessary and extracts trainable parts
+        of the model in preparation for target_task training.
+        It only reloads model after the first task is trained.
 
         Parameters
         -------------------
         args: config.Param object,
-        ckpt_path: str: path to reload model from, 
-        model: MultiTaskModel object, 
-        strict: bool, 
+        ckpt_path: str: path to reload model from,
+        model: MultiTaskModel object,
+        strict: bool,
         task: Task object
 
-        Returns 
+        Returns
         -------------------
         to_train: List of tuples of (name, weight) of trainable parameters
 
@@ -500,7 +504,6 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            args.shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -525,8 +528,8 @@ def main(cl_arguments):
             last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
             target_tasks_to_train = target_tasks_to_train[last_task_index:]
         for task in target_tasks_to_train:
-            # Skip diagnostic tasks b/c they should not be trained on
-            if isinstance(task, GLUEDiagnosticTask):
+            # Skip tasks that should not be trained on.
+            if task.eval_only_task:
                 continue
 
             params_to_train = load_model_for_target_train_run(
@@ -550,34 +553,21 @@ def main(cl_arguments):
                 train_params=params_to_train,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
-                shared_optimizer=args.shared_optimizer,
-                load_model=task.name == task_to_restore,
+                load_model=(task.name == task_to_restore),
                 phase="target_train",
             )
 
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-        if args.do_target_task_training or (args.load_model and not args.do_pretrain):
-            # If we either do target task training, or if we only evaluate
-            # without pretraining or target task training
-            # then we evaluate on the target tasks.
-            for task in target_tasks:
-                # Find the task-specific best checkpoint to evaluate on.
-                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                assert ckpt_path is not None
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                evaluate_and_write(args, model, [task], splits_to_write)
-        elif args.do_pretrain:
-            # If args.do_target_task_training = 0 and args.do_pretrain = 1
-            # then evaluate on best pretraining checkpoint.
-            ckpt_path = glob.glob(
-                os.path.join(args.run_dir, "model_state_pretrain_epoch_*.best.th")
-            )
-            assert len(ckpt_path) > 0
-            load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
-            evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
+        # Evaluate on target_tasks.
+        for task in target_tasks:
+            # Find the task-specific best checkpoint to evaluate on.
+            ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+            assert ckpt_path is not None
+            load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+            evaluate_and_write(args, model, [task], splits_to_write)
 
     log.info("Done!")
 
