@@ -164,8 +164,8 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
-                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+                assert idx.size(-1) == 1 or idx.size(-1) == s1.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, s1.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
 
@@ -184,8 +184,8 @@ class PairClassifier(nn.Module):
             if len(idx.shape) == 2:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 3:
-                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(-1), "Invalid index dimension!"
-                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+                assert idx.size(-1) == 1 or idx.size(-1) == s2.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, s2.size(-1)]).long()
             else:
                 raise ValueError("Invalid dimensions of index tensor!")
 
