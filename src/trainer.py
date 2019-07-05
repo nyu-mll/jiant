@@ -671,9 +671,7 @@ class SamplingMultiTaskTrainer:
                     log.info(log_str)
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
-                lrs = self._get_lr()  # log LR
-                for name, value in lrs.items():
-                    log.info("%s: %.6f", name, value)
+                log.info(f"Global LR: {self._optimizer.param_groups[0]['lr']}")
                 elmo_params = self._model.get_elmo_mixing_weights(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
@@ -943,11 +941,6 @@ class SamplingMultiTaskTrainer:
                 )
 
         return all_val_metrics, should_save, new_best
-
-    def _get_lr(self):
-        """ Get learning rate from the optimizer we're using """
-        lrs = {"global_lr": self._optimizer.param_groups[0]["lr"]}
-        return lrs
 
     def _check_stop(self, val_n, stop_metric, tasks):
         """ Check to see if should stop """
