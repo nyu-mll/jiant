@@ -33,11 +33,11 @@ class TestWritePreds(unittest.TestCase):
 
     def setUp(self):
         """
-        Since we're testing write_preds, we need to mock model predictions and the parts 
-        of the model, arguments, and trainer needed to write to predictions. 
-        Unlike in update_metrics tests, the actual contents of the examples in val_data 
+        Since we're testing write_preds, we need to mock model predictions and the parts
+        of the model, arguments, and trainer needed to write to predictions.
+        Unlike in update_metrics tests, the actual contents of the examples in val_data
         is not the most important as long as it adheres to the API necessary for examples
-        of that task. 
+        of that task.
         """
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
@@ -53,7 +53,7 @@ class TestWritePreds(unittest.TestCase):
                     "sent2_str": "A man wearing a hard hat is dancing",
                 },
                 {
-                    "idx": 0,
+                    "idx": 1,
                     "labels": 4.750,
                     "preds": 0.34,
                     "sent1_str": "A young child is riding a horse.",
@@ -70,7 +70,7 @@ class TestWritePreds(unittest.TestCase):
                     "labels": 0,
                 },
                 {
-                    "idx": 0,
+                    "idx": 1,
                     "sent1": "Hook a fish",
                     "sent2": "He hooked a snake accidentally.",
                     "labels": 1,
@@ -83,7 +83,7 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("Room and board."),
                     "sent2_str": MetadataField("He nailed boards"),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(0, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
@@ -127,7 +127,7 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("Hook a fish'"),
                     "sent2_str": MetadataField("He hooked a snake accidentally"),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(2, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
@@ -138,7 +138,7 @@ class TestWritePreds(unittest.TestCase):
                             "fish",
                             "[SEP]",
                             "He",
-                            "hookoed",
+                            "hooked",
                             "a",
                             "snake",
                             "accidentally",
@@ -152,14 +152,14 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("For recreation he wrote poetry."),
                     "sent2_str": MetadataField("Drug abuse is often regarded as recreation ."),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(3, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
                         [
                             "[CLS]",
                             "For",
-                            "##re",
+                            "re",
                             "##creation",
                             "he",
                             "wrote",
@@ -169,10 +169,10 @@ class TestWritePreds(unittest.TestCase):
                             "abuse",
                             "is",
                             "often",
-                            "##re",
+                            "re",
                             "##garded",
                             "as",
-                            "##re",
+                            "re",
                             "##creation",
                         ],
                         indexers,
@@ -212,7 +212,7 @@ class TestWritePreds(unittest.TestCase):
 
     def test_write_preds_superglue(self):
         """
-        Ensure that SuperGLUE write predictions for test is saved to the correct file 
+        Ensure that SuperGLUE write predictions for test is saved to the correct file
         format.
         """
         evaluate.write_preds(
