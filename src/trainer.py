@@ -671,7 +671,7 @@ class SamplingMultiTaskTrainer:
                     log.info(log_str)
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
-                log.info(f"Global LR: {self._optimizer.param_groups[0]['lr']}")
+                log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
                 elmo_params = self._model.get_elmo_mixing_weights(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
