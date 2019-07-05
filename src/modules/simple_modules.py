@@ -103,7 +103,25 @@ class SingleClassifier(nn.Module):
         self.classifier = classifier
 
     def forward(self, sent, mask, idxs=[]):
-        """ Assumes batch_size x seq_len x d_emb """
+        """
+        This class applies some type of pooling to get a fixed-size vector,
+            possibly extracts some specific representations from the input sequence
+            and concatenates those reps to the overall representations,
+            then passes the whole thing through a classifier.
+
+        args:
+            - sent (FloatTensor): sequence of hidden states representing a sentence
+            Assumes batch_size x seq_len x d_emb.
+            - mask (FloatTensor): binary masking denoting which elements of sent are not padding
+            - idxs (List[LongTensor]): list of indices of to extract from sent and
+                concatenate to the post-pooling representation.
+                For each element in idxs, we extract all the non-pad (0) representations, pool,
+                and concatenate the resulting fixed size vector to the overall representation.
+
+        returns:
+            - logits (FloatTensor): logits for classes
+        """
+
         emb = self.pooler(sent, mask)
 
         # append any specific token representations, e.g. for WiC task
@@ -147,11 +165,25 @@ class PairClassifier(nn.Module):
         self.attn = attn
 
     def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
-        """ s1, s2: sequences of hidden states corresponding to sentence 1,2
-            mask1, mask2: binary mask corresponding to non-pad elements
-            idx{1,2}: indexes of particular tokens to extract in sentence {1, 2}
-                and append to the representation, e.g. for WiC
         """
+        This class applies some type of pooling to get a fixed-size vector,
+            possibly extracts some specific representations from the input sequence
+            and concatenates those reps to the overall representations,
+            then passes the whole thing through a classifier.
+
+        args:
+            - s1/s2 (FloatTensor): sequence of hidden states representing a sentence
+                Assumes batch_size x seq_len x d_emb.
+            - mask1/mask2 (FloatTensor): binary masking denoting which elements of sent are not padding
+            - idx{1,2} (List[LongTensor]): list of indices of to extract from sent and
+                concatenate to the post-pooling representation.
+                For each element in idxs, we extract all the non-pad (0) representations, pool,
+                and concatenate the resulting fixed size vector to the overall representation.
+
+        returns:
+            - logits (FloatTensor): logits for classes
+        """
+
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
         mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
         if self.attn is not None:
