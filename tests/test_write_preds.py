@@ -25,8 +25,7 @@ def model_forward(task, batch, predict=True):
         labels = torch.Tensor([0.875, 0.6])
         out = {"n_exs": 2, "preds": [1.0, 0.8]}
     elif task.name == "wic":
-        logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5],
-                               [0.5, 0.5], [0.5, 0.5]])
+        logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
         labels = torch.LongTensor([0, 1, 1, 0])
         out = {"n_exs": 4, "preds": [0, 1, 1, 1]}
     else:
@@ -98,7 +97,18 @@ class TestWritePreds(unittest.TestCase):
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["[CLS]", "Room", "and", "Board", ".", "[SEP]", "He", "nailed", "boards", "[SEP]",
+                        [
+                            "[CLS]",
+                            "Room",
+                            "and",
+                            "Board",
+                            ".",
+                            "[SEP]",
+                            "He",
+                            "nailed",
+                            "boards",
+                            "[SEP]",
+                        ],
                         indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),
@@ -128,7 +138,7 @@ class TestWritePreds(unittest.TestCase):
                             "c",
                             "##ir",
                             "##culated",
-                            "[SEP]"
+                            "[SEP]",
                         ],
                         indexers,
                     ),
@@ -154,7 +164,7 @@ class TestWritePreds(unittest.TestCase):
                             "a",
                             "snake",
                             "accidentally",
-                            "[SEP]"
+                            "[SEP]",
                         ],
                         indexers,
                     ),
@@ -187,7 +197,7 @@ class TestWritePreds(unittest.TestCase):
                             "as",
                             "re",
                             "##creation",
-                            "[SEP]"
+                            "[SEP]",
                         ],
                         indexers,
                     ),
