@@ -19,7 +19,7 @@ from allennlp.training.learning_rate_schedulers import (  # pylint: disable=impo
 )
 from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
-from ..allennlp_mods.numeric_field import NumericField
+from src.allennlp_mods.numeric_field import NumericField
 
 from src import evaluate
 import src.trainer as trainer
