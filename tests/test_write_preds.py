@@ -58,14 +58,14 @@ class TestWritePreds(unittest.TestCase):
             data=[
                 {
                     "idx": 0,
-                    "labels": 5.00,
-                    "preds": 5.00,
+                    "labels": 1.00,
+                    "preds": 1.00,
                     "sent1_str": "A man with a hard hat is dancing.",
                     "sent2_str": "A man wearing a hard hat is dancing",
                 },
                 {
                     "idx": 1,
-                    "labels": 4.750,
+                    "labels": 0.950,
                     "preds": 0.34,
                     "sent1_str": "A young child is riding a horse.",
                     "sent2_str": "A child is riding a horse.",
@@ -98,7 +98,7 @@ class TestWritePreds(unittest.TestCase):
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["[CLS]", "Room", "and", "Board", ".", "[SEP]", "He", "nailed", "boards"],
+                        ["[CLS]", "Room", "and", "Board", ".", "[SEP]", "He", "nailed", "boards", "[SEP]",
                         indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),
@@ -128,6 +128,7 @@ class TestWritePreds(unittest.TestCase):
                             "c",
                             "##ir",
                             "##culated",
+                            "[SEP]"
                         ],
                         indexers,
                     ),
@@ -153,6 +154,7 @@ class TestWritePreds(unittest.TestCase):
                             "a",
                             "snake",
                             "accidentally",
+                            "[SEP]"
                         ],
                         indexers,
                     ),
@@ -185,6 +187,7 @@ class TestWritePreds(unittest.TestCase):
                             "as",
                             "re",
                             "##creation",
+                            "[SEP]"
                         ],
                         indexers,
                     ),
