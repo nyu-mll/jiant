@@ -2265,26 +2265,44 @@ class WiCTask(PairClassificationTask):
 
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
+        def _process_preserving_word(sent, word):
+            """ Tokenize the subsequence before the [first] instance of the word and after,
+            then concatenate everything together. This allows us to track where in the tokenized
+            sequence the marked word is located. """
+            sent_parts = sent.split(word)
+            sent_tok1 = process_sentence(self._tokenizer_name, sent_parts[0], self.max_seq_len)
+            sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
+            sent_mid = process_sentence(self._tokenizer_name, word, self.max_seq_len)
+            sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
+            start_idx = len(sent_tok1[:-1])
+            end_idx = start_idx + len(sent_mid[1:-1])
+            assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
+            assert word.startswith(sent_tok[start_idx]), "Detected corrupted marked word."
+            # assert word.endswith(sent_tok[end_idx - 1]), "" # This doesn't work b/c of ## added
+            return sent_tok, start_idx, end_idx
+
         def _load_split(data_file):
-            sents1, sents2, idxs1, idxs2, trgs = [], [], [], [], []
+            sents1, sents2, idxs1, idxs2, trgs, idxs = [], [], [], [], [], []
             with open(data_file, "r") as data_fh:
                 for row in data_fh:
                     row = json.loads(row)
-                    sent1 = process_sentence(
-                        self._tokenizer_name, row["sentence1"], self.max_seq_len
-                    )
-                    sent2 = process_sentence(
-                        self._tokenizer_name, row["sentence2"], self.max_seq_len
-                    )
+                    sent1 = row["sentence1"]
+                    sent2 = row["sentence2"]
+                    word1 = sent1[row["start1"] : row["end1"]]
+                    word2 = sent2[row["start2"] : row["end2"]]
+                    sent1, start1, end1 = _process_preserving_word(sent1, word1)
+                    sent2, start2, end2 = _process_preserving_word(sent2, word2)
                     sents1.append(sent1)
                     sents2.append(sent2)
-                    idx1 = row["sentence1_idx"]
-                    idx2 = row["sentence2_idx"]
-                    idxs1.append(int(idx1))
-                    idxs2.append(int(idx2))
+                    idxs1.append((start1, end1))
+                    idxs2.append((start2, end2))
                     trg = trg_map[row["label"]] if "label" in row else 0
                     trgs.append(trg)
-                return [sents1, sents2, idxs1, idxs2, trgs]
+                    idxs.append(row["idx"])
+                    assert (
+                        "version" in row and row["version"] == 1.1
+                    ), "WiC version is not v1.1; examples indices are likely incorrect and data is likely pre-tokenized. Please re-download the data from super.gluebenchmark for the correct data."
+                return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
@@ -2309,25 +2327,20 @@ class WiCTask(PairClassificationTask):
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["idx1"] = NumericField(idxs1)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            d["idx2"] = NumericField(idxs2)  # modify if using BERT
             if is_using_bert:
                 inp = input1 + input2[1:]  # throw away input2 leading [CLS]
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                idxs2 += len(input1)
+                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
+            d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
+            d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
 
             return Instance(d)
-
-        if len(split) < 6:  # counting iterator for idx
-            assert len(split) == 5
-            split.append(itertools.count())
 
         # Map over columns: input1, (input2), labels, idx
         instances = map(_make_instance, *split)
