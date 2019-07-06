@@ -21,8 +21,19 @@ from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
 
 def model_forward(task, batch, predict=True):
     if task.name == "sts-b":
-        return {"n_exs": 4, "preds": [5.0, 4.0]}
-    return {"n_exs": 4, "preds": [0, 1, 1, 1]}
+        logits = torch.Tensor([0.6, 0.4])
+        labels = torch.Tensor([0.875, 0.6])
+        out = {"n_exs": 2, "preds": [1.0, 0.8]}
+    elif task.name == "wic":
+        logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5],
+                               [0.5, 0.5], [0.5, 0.5]])
+        labels = torch.LongTensor([0, 1, 1, 0])
+        out = {"n_exs": 4, "preds": [0, 1, 1, 1]}
+    else:
+        raise ValueError("Unexpected task found")
+
+    task.update_metrics(logits, labels)
+    return out
 
 
 class TestWritePreds(unittest.TestCase):
