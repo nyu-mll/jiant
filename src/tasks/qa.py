@@ -301,14 +301,15 @@ class ReCoRDTask(Task):
         """ """
         answers = {}
         for split, split_path in self.files_by_split.items():
-            if split == "test":
-                continue
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
             for item in data:
                 psg_id = f"{split}-{item['idx']}"
                 for qa in item["qas"]:
                     qst_id = qa["idx"]
-                    answers[(psg_id, qst_id)] = [a["text"] for a in qa["answers"]]
+                    if "answers" in qa:
+                        answers[(psg_id, qst_id)] = [a["text"] for a in qa["answers"]]
+                    else:
+                        answers[(psg_id, qst_id)] = ["No answer"]
         self._answers = answers
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
