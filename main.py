@@ -26,7 +26,6 @@ from src import evaluate
 from src.models import build_model
 from src.preprocess import build_tasks
 from src import tasks as tasks_module
-from src.tasks.tasks import GLUEDiagnosticTask
 from src.trainer import build_trainer
 from src.utils import config
 from src.utils.utils import (
@@ -242,6 +241,7 @@ def get_best_checkpoint_path(args, phase, task_name=None):
         If phase == eval:
             1) user-specified eval checkpoint
             2) best task-specific checkpoint for target_train, used when evaluating
+            3) best pretraining checkpoint
     If all these fail, then we default to None.
     """
     checkpoint = []
@@ -266,11 +266,10 @@ def get_best_checkpoint_path(args, phase, task_name=None):
             checkpoint = glob.glob(
                 os.path.join(args.run_dir, task_name, "model_state_target_train_val_*.best.th")
             )
-            if len(checkpoint) == 0: 
-                # If pretraining, and then evaluating on a task that is not target trained on, 
-                # such as with rte-superglue and superglue-diagnostic, then get the best 
-                # pretraining checkpoint 
-                checkpoint = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
+            if len(checkpoint) == 0:
+                checkpoint = glob.glob(
+                    os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th")
+                )
 
     if len(checkpoint) > 0:
         assert_for_log(len(checkpoint) == 1, "Too many best checkpoints. Something is wrong.")
@@ -290,8 +289,8 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
         evaluate.write_preds(
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
-    run_name = args.get("run_name", os.path.basename(args.run_dir))
 
+    run_name = args.get("run_name", os.path.basename(args.run_dir))
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
@@ -505,7 +504,6 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            args.shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -530,8 +528,8 @@ def main(cl_arguments):
             last_task_index = [task.name for task in target_tasks_to_train].index(task_to_restore)
             target_tasks_to_train = target_tasks_to_train[last_task_index:]
         for task in target_tasks_to_train:
-            # Skip diagnostic tasks b/c they should not be trained on
-            if isinstance(task, GLUEDiagnosticTask):
+            # Skip tasks that should not be trained on.
+            if task.eval_only_task:
                 continue
 
             params_to_train = load_model_for_target_train_run(
@@ -555,47 +553,21 @@ def main(cl_arguments):
                 train_params=params_to_train,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
-                shared_optimizer=args.shared_optimizer,
-                load_model=task.name == task_to_restore,
+                load_model=(task.name == task_to_restore),
                 phase="target_train",
             )
 
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
-        diagnostic_tasks = []
-        target_tasks_remove = []
-        for index, task in enumerate(target_tasks):
-            if task.name in task_modules.ALL_DIAGNOSTICS:
-                diagnostic_tasks.append(task)
-                target_tasks_remove.append(index)
-        # To avoid evaluating twice on a diagnostic task.
-        for index in sorted(target_tasks_remove, reverse=True):
-            del target_tasks[index]
-        if len(diagnostic_tasks) > 0:
-            for task in diagnostic_tasks:
-                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                assert ckpt_path is not None
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
-                evaluate_and_write(args, model, [task], splits_to_write)
-        if args.do_target_task_training or (args.load_model and not args.do_pretrain):
-            # If we either do target task training, or if we only evaluate
-            # without pretraining or target task training
-            # then we evaluate on the target tasks.
-            for task in target_tasks:
-                # Find the task-specific best checkpoint to evaluate on.
-                ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
-                assert ckpt_path is not None
-                load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
 
-                evaluate_and_write(args, model, [task], splits_to_write)
-        elif args.do_pretrain:
-            # If args.do_target_task_training = 0 and args.do_pretrain = 1
-            # then evaluate on best pretraining checkpoint.
-            ckpt_path = glob.glob(os.path.join(args.run_dir, "model_state_pretrain_val_*.best.th"))
-            assert len(ckpt_path) > 0
-            load_model_state(model, ckpt_path[0], args.cuda, skip_task_models=[], strict=strict)
-            evaluate_and_write(args, model, pretrain_tasks, splits_to_write)
+        # Evaluate on target_tasks.
+        for task in target_tasks:
+            # Find the task-specific best checkpoint to evaluate on.
+            ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+            assert ckpt_path is not None
+            load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
+            evaluate_and_write(args, model, [task], splits_to_write)
 
     log.info("Done!")
 
