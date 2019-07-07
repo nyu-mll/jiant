@@ -12,13 +12,14 @@ import torch
 from allennlp.data.iterators import BasicIterator
 from . import tasks as tasks_module
 from .tasks.tasks import (
+    BooleanQuestionTask,
     CommitmentTask,
     RTESuperGLUETask,
     WiCTask,
-    GLUEDiagnosticTask,
     WinogradCoreferenceTask,
+    GLUEDiagnosticTask,
 )
-from .tasks.qa import MultiRCTask
+from .tasks.qa import MultiRCTask, ReCoRDTask
 from .tasks.edge_probing import EdgeProbingTask
 from .tasks.tasks import COPATask
 from allennlp.nn.util import move_to_device
@@ -51,7 +52,16 @@ def evaluate(
 ) -> Tuple[Dict, pd.DataFrame]:
     """Evaluate on a dataset
     {par,qst,ans}_idx are used for MultiRC and other question answering dataset"""
-    FIELDS_TO_EXPORT = ["idx", "sent1_str", "sent2_str", "labels", "par_idx", "qst_idx", "ans_idx"]
+    FIELDS_TO_EXPORT = [
+        "idx",
+        "sent1_str",
+        "sent2_str",
+        "labels",
+        "psg_idx",
+        "qst_idx",
+        "ans_idx",
+        "ans_str",
+    ]
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
@@ -77,8 +87,10 @@ def evaluate(
         dataset = getattr(task, "%s_data" % split)
         generator = iterator(dataset, num_epochs=1, shuffle=False)
         for batch_idx, batch in enumerate(generator):
-            batch = move_to_device(batch, cuda_device)
-            out = model.forward(task, batch, predict=True)
+            with torch.no_grad():
+                batch = move_to_device(batch, cuda_device)
+                out = model.forward(task, batch, predict=True)
+
             # We don't want diagnostic tasks to affect the micro and macro average.
             # Accuracy on diagnostic tasks is hardcoded to 0.
             if not isinstance(task, GLUEDiagnosticTask):
@@ -159,6 +171,10 @@ def write_preds(
         elif isinstance(task, EdgeProbingTask):
             # Edge probing tasks, have structured output.
             _write_edge_preds(task, preds_df, pred_dir, split_name)
+        elif isinstance(task, BooleanQuestionTask):
+            _write_boolq_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
         elif isinstance(task, CommitmentTask):
             _write_commitment_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
@@ -173,6 +189,10 @@ def write_preds(
             )
         elif isinstance(task, RTESuperGLUETask):
             _write_rte_preds(
+                task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
+            )
+        elif isinstance(task, ReCoRDTask):
+            _write_record_preds(
                 task, preds_df, pred_dir, split_name, strict_glue_format=strict_glue_format
             )
         elif isinstance(task, WiCTask):
@@ -214,9 +234,11 @@ GLUE_NAME_MAP = {
 
 # Exact file names per task required by the SuperGLUE evaluation server
 SUPERGLUE_NAME_MAP = {
+    "boolq": "BoolQ",
     "commitbank": "CB",
     "copa": "COPA",
     "multirc": "MultiRC",
+    "record": "ReCoRD",
     "rte-superglue": "RTE",
     "wic": "WiC",
     "superglue-diagnostic": "AX",
@@ -310,6 +332,25 @@ def _write_winograd_preds(
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
 
 
+def _write_boolq_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for Boolean Questions task.  """
+    pred_map = {0: "false", 1: "true"}
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        for row_idx, row in preds_df.iterrows():
+            if strict_glue_format:
+                out_d = {"idx": int(row["idx"]), "label": pred_map[row["preds"]]}
+            else:
+                out_d = row.to_dict()
+            preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
 def _write_commitment_preds(
     task: str,
     preds_df: pd.DataFrame,
@@ -357,14 +398,52 @@ def _write_multirc_preds(
             par_qst_ans_d = defaultdict(lambda: defaultdict(list))
             for row_idx, row in preds_df.iterrows():
                 ans_d = {"idx": int(row["ans_idx"]), "label": int(row["preds"])}
-                par_qst_ans_d[int(row["par_idx"])][int(row["qst_idx"])].append(ans_d)
+                par_qst_ans_d[int(row["psg_idx"])][int(row["qst_idx"])].append(ans_d)
             for par_idx, qst_ans_d in par_qst_ans_d.items():
                 qst_ds = []
                 for qst_idx, answers in qst_ans_d.items():
                     qst_d = {"idx": qst_idx, "answers": answers}
                     qst_ds.append(qst_d)
-                out_d = {"idx": par_idx, "paragraph": {"questions": qst_ds}}
+                out_d = {"idx": par_idx, "passage": {"questions": qst_ds}}
                 preds_fh.write("{0}\n".format(json.dumps(out_d)))
+        else:
+            for row_idx, row in preds_df.iterrows():
+                out_d = row.to_dict()
+                preds_fh.write("{0}\n".format(json.dumps(out_d)))
+
+
+def _write_record_preds(
+    task: str,
+    preds_df: pd.DataFrame,
+    pred_dir: str,
+    split_name: str,
+    strict_glue_format: bool = False,
+):
+    """ Write predictions for ReCoRD task. """
+    preds_file = _get_pred_filename(task.name, pred_dir, split_name, strict_glue_format)
+    with open(preds_file, "w", encoding="utf-8") as preds_fh:
+        if strict_glue_format:
+            par_qst_ans_d = defaultdict(lambda: defaultdict(list))
+            for row_idx, row in preds_df.iterrows():
+                ans_d = {
+                    "idx": int(row["ans_idx"]),
+                    "str": row["ans_str"],
+                    "logit": torch.FloatTensor(row["preds"]),
+                }
+                par_qst_ans_d[row["psg_idx"]][row["qst_idx"]].append(ans_d)
+            for par_idx, qst_ans_d in par_qst_ans_d.items():
+                for qst_idx, ans_ds in qst_ans_d.items():
+
+                    # get prediction
+                    logits_and_anss = [(d["logit"], d["str"]) for d in ans_ds]
+                    logits_and_anss.sort(key=lambda x: x[1])
+                    logits, anss = list(zip(*logits_and_anss))
+                    pred_idx = torch.softmax(torch.stack(logits), dim=-1)[:, -1].argmax().item()
+                    answer = anss[pred_idx]
+
+                    # write out answer
+                    qst_d = {"idx": qst_idx, "label": answer}
+                    preds_fh.write("{0}\n".format(json.dumps(qst_d)))
         else:
             for row_idx, row in preds_df.iterrows():
                 out_d = row.to_dict()
@@ -509,21 +588,15 @@ def _write_glue_preds(
         _apply_pred_map(preds_df, pred_map, "prediction")
         _write_preds_with_pd(
             preds_df.iloc[:9796],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-m", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[9796:19643],
-            os.path.join(
-                pred_dir, _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("mnli-mm", pred_dir, split_name, strict_glue_format),
         )
         _write_preds_with_pd(
             preds_df.iloc[19643:],
-            os.path.join(
-                pred_dir, _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format)
-            ),
+            _get_pred_filename("diagnostic", pred_dir, split_name, strict_glue_format),
         )
 
     elif task_name in ["rte", "qnli"]:

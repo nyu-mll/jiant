@@ -7,6 +7,7 @@ import unittest
 from unittest import mock
 import torch
 import pandas as pd
+import glob
 
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
@@ -16,20 +17,20 @@ from allennlp.data.iterators import BasicIterator, BucketIterator
 from allennlp.training.learning_rate_schedulers import (  # pylint: disable=import-error
     LearningRateScheduler,
 )
+from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
-from ..allennlp_mods.numeric_field import NumericField
+from src.allennlp_mods.numeric_field import NumericField
 
 from src import evaluate
 import src.trainer as trainer
 from src.models import MultiTaskModel
 import src.tasks.tasks as tasks
-from main import evaluate_and_write
+from main import evaluate_and_write, get_best_checkpoint_path
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
     return {
         "lr": 1e-05,
-        "warmup": 4000,
         "val_data_limit": 10,
         "d_hid": 1024,
         "min_lr": 0.000,
@@ -53,7 +54,7 @@ def build_trainer_params(args, task_names, phase="pretrain"):
     }
 
 
-class TestCheckpionting(unittest.TestCase):
+class TestCheckpointing(unittest.TestCase):
     def sentence_to_text_field(self, sent, indexers):
         """ Helper function to map a sequence of tokens into a sequence of
         AllenNLP Tokens, then wrap in a TextField with the given indexers """
@@ -92,8 +93,9 @@ class TestCheckpionting(unittest.TestCase):
 
     @mock.patch("src.trainer.build_trainer_params", side_effect=build_trainer_params)
     def test_checkpointing_does_run(self, build_trainer_params_function):
-        # check that checkpointing does run and does sanity checks that at each step
-        # it saves the most recent checkpoint as well as the best checkpoint.
+        # Check that checkpointing does run and does sanity checks that at each step
+        # it saves the most recent checkpoint as well as the best checkpoint
+        # correctly for both pretrain and target_train stages.
         with mock.patch("src.models.MultiTaskModel") as MockModel:
             import torch
             import copy
@@ -134,10 +136,10 @@ class TestCheckpionting(unittest.TestCase):
                 ("sent_encoder.layer.1", torch.Tensor([0.1, 0.3, 0.4, 0.8])),
                 ("type", torch.Tensor([0.1])),
             ]
-            g_scheduler = LearningRateScheduler.from_params(
+            scheduler = LearningRateScheduler.from_params(
                 Optimizer.from_params(train_params, opt_params2), copy.deepcopy(scheduler_params)
             )
-            g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
+            optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
             _task_infos = {
                 "wic": {
                     "iterator": iterator(self.wic.val_data, num_epochs=1),
@@ -146,8 +148,8 @@ class TestCheckpionting(unittest.TestCase):
                     "tr_generator": iterator(self.wic.val_data, num_epochs=1),
                     "total_batches_trained": 400,
                     "n_batches_since_val": 0,
-                    "optimizer": g_optimizer,
-                    "scheduler": g_scheduler,
+                    "optimizer": optimizer,
+                    "scheduler": scheduler,
                     "stopped": False,
                     "last_log": time.time(),
                 }
@@ -165,7 +167,16 @@ class TestCheckpionting(unittest.TestCase):
             MockModel.return_value.named_parameters.return_value = [("model1", MockParams(True))]
             MockModel.use_bert = 1
             model = MockModel()
-            test_trainer, train_params, opt_params, schd_params = trainer.build_trainer(
+            pt_trainer, _, _, _ = trainer.build_trainer(
+                self.args,
+                ["wic"],  # here, we use WIC twice to reduce the amount of boiler-plate code
+                model,
+                self.args.run_dir,
+                self.wic.val_metric_decreases,
+                phase="pretrain",
+            )
+
+            tt_trainer, _, _, _ = trainer.build_trainer(
                 self.args,
                 ["wic"],
                 model,
@@ -173,29 +184,92 @@ class TestCheckpionting(unittest.TestCase):
                 self.wic.val_metric_decreases,
                 phase="target_train",
             )
-            from allennlp.common.params import Params
+            os.mkdir(os.path.join(self.temp_dir, "wic"))
 
-            test_trainer._task_infos = _task_infos
-            test_trainer._metric_infos = _metric_infos
-            test_trainer._g_optimizer = g_optimizer
-            test_trainer._g_scheduler = g_scheduler
-
-            test_trainer._save_checkpoint(
-                {"pass": 10, "epoch": 1, "should_stop": 0},
-                phase="target_train",
-                new_best_macro=True,
+            tt_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
+            pt_trainer._task_infos = _task_infos
+            pt_trainer._metric_infos = _metric_infos
+            pt_trainer._optimizer = optimizer
+            pt_trainer._scheduler = scheduler
+            pt_trainer._save_checkpoint(
+                {"step": 10, "validation_pass": 1, "should_stop": 0},
+                tasks=[self.wic],
+                phase="pretrain",
+                new_best=True,
             )
-            test_trainer._save_checkpoint(
-                {"pass": 10, "epoch": 2, "should_stop": 0},
-                phase="target_train",
-                new_best_macro=False,
+            pt_trainer._save_checkpoint(
+                {"step": 10, "validation_pass": 2, "should_stop": 0},
+                tasks=[self.wic],
+                phase="pretrain",
+                new_best=True,
             )
-            assert os.path.exists(
-                self.temp_dir + "/model_state_target_train_epoch_1.best_macro.th"
-            ) and os.path.exists(self.temp_dir + "/model_state_target_train_epoch_2.th")
+            tt_trainer._task_infos = _task_infos
+            tt_trainer._metric_infos = _metric_infos
+            tt_trainer._optimizer = optimizer
+            tt_trainer._scheduler = scheduler
 
-        def does_produce_correct_demo_results(self):
-            file_path = "~/repo/sample_run/jiant-demo/results.tsv"
-            file = open(file_path, "rb")
-            print(file)
-            assert file
+            tt_trainer._save_checkpoint(
+                {"step": 10, "validation_pass": 1, "should_stop": 0},
+                tasks=[self.wic],
+                phase="target_train",
+                new_best=True,
+            )
+            tt_trainer._save_checkpoint(
+                {"step": 10, "validation_pass": 2, "should_stop": 0},
+                tasks=[self.wic],
+                phase="target_train",
+                new_best=False,
+            )
+            assert (
+                os.path.exists(
+                    os.path.join(self.temp_dir, "wic", "model_state_target_train_val_1.best.th")
+                )
+                and os.path.exists(
+                    os.path.join(self.temp_dir, "wic", "model_state_target_train_val_2.th")
+                )
+                and os.path.exists(
+                    os.path.join(self.temp_dir, "model_state_pretrain_val_2.best.th")
+                )
+                and os.path.exists(os.path.join(self.temp_dir, "model_state_pretrain_val_1.th"))
+            )
+
+            # Assert only one checkpoint is created for pretrain stage.
+            pretrain_best_checkpoints = glob.glob(
+                os.path.join(self.temp_dir, "model_state_pretrain_val_*.best.th")
+            )
+            assert len(pretrain_best_checkpoints) == 1
+
+    def test_get_best_checkpointing(self):
+        """
+        Testing the get_best_checkpointing function for path logic.
+        """
+        self.args.load_target_train_checkpoint = os.path.join(self.temp_dir, "target_checkpoint")
+        self.args.load_eval_checkpoint = ""
+        open(self.args.load_target_train_checkpoint, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
+        assert target_ckpt == self.args.load_target_train_checkpoint
+
+        # Load from best pretrain checkpoint.
+        self.args.load_target_train_checkpoint = ""
+        os.mkdir(os.path.join(self.temp_dir, "wic"))
+        best_pretrain_path = os.path.join(self.temp_dir, "model_state_pretrain_val_1.best.th")
+        open(best_pretrain_path, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="target_train", task_name=None)
+        assert target_ckpt == best_pretrain_path
+
+        # Load from the best target train phase checkpoint.
+        best_target_train_path = os.path.join(
+            self.temp_dir, "wic", "model_state_target_train_val_1.best.th"
+        )
+        open(best_target_train_path, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="eval", task_name="wic")
+        assert target_ckpt == best_target_train_path
+
+        # Load from pre-existing eval checkpoint.
+        self.args.load_eval_checkpoint = str(os.path.join(self.temp_dir, "eval_checkpoint"))
+        open(self.args.load_eval_checkpoint, "wb").close()
+        target_ckpt = get_best_checkpoint_path(self.args, phase="eval", task_name="wic")
+        target_ckpt == self.args.load_eval_checkpoint
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
