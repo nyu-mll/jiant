@@ -288,8 +288,8 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
         evaluate.write_preds(
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
-    run_name = args.get("run_name", os.path.basename(args.run_dir))
 
+    run_name = args.get("run_name", os.path.basename(args.run_dir))
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
     evaluate.write_results(val_results, results_tsv, run_name=run_name)
@@ -503,7 +503,6 @@ def main(cl_arguments):
             to_train,
             opt_params,
             schd_params,
-            args.shared_optimizer,
             args.load_model,
             phase="pretrain",
         )
@@ -553,8 +552,7 @@ def main(cl_arguments):
                 train_params=params_to_train,
                 optimizer_params=opt_params,
                 scheduler_params=schd_params,
-                shared_optimizer=args.shared_optimizer,
-                load_model=task.name == task_to_restore,
+                load_model=(task.name == task_to_restore),
                 phase="target_train",
             )
 
