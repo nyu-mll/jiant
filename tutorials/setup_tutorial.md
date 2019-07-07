@@ -35,9 +35,11 @@ before running any `jiant` code. (To deactivate run: `source deactivate`)
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
 You will also need to install dependencies for `nltk` if you do not already have them:
-
+First, start up the python interactive shell with `python`. Then, download the various dependencies.
 ```
-nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
+nltk.download("perluniprops")
+nltk.download("nonbreaking_prefixes")
+nltk.download("punkt")
 ```
 
 ### Optional
