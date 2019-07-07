@@ -24,14 +24,6 @@ from jiant.allennlp_mods.elmo_text_field_embedder import (
 
 from jiant.modules.edge_probing import EdgeClassifierModule
 from jiant.modules.simple_modules import (
-    AttnPairEncoder,
-    BiLMEncoder,
-    BoWSentEncoder,
-    Classifier,
-    ElmoCharacterEncoder,
-    NullPhraseLayer,
-    ONLSTMPhraseLayer,
-    PairClassifier,
     Pooler,
     Classifier,
     SingleClassifier,
