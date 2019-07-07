@@ -42,6 +42,23 @@ function wsc() {
     python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = wsc, pretrain_tasks = \"winograd-coreference\", target_tasks = \"winograd-coreference\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 4, val_interval = 139, optimizer = adam"
 }
 
+function boolq_plus() {
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = boolq_plus, pretrain_tasks = \"mnli\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000, target_train_val_interval = 1000"
+}
+
+function commit_plus() {
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = commitbank_plus, pretrain_tasks = \"mnli\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000, target_train_val_interval = 60"
+}
+
+function copa_plus() {
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = copa_plus, pretrain_tasks = \"swag\", target_tasks = \"copa\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000, target_train_val_interval = 100"
+}
+
+function rte_plus() {
+    python main.py --config config/superglue-bert.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, run_name = rte_plus, pretrain_tasks = \"rte-superglue\", target_tasks = \"rte-superglue,superglue-diagnostic\", do_pretrain = 1, do_target_task_training = 1, do_full_eval = 1, batch_size = 4, val_interval = 1000, target_train_val_interval = 625"
+}
+
+
 if [ $1 == "commit" ]; then
     commit
 elif [ $1 == "copa" ]; then
@@ -58,4 +75,12 @@ elif [ $1 == "wsc" ]; then
     wsc
 elif [ $1 == "boolq" ]; then
     boolq
+elif [ $1 == "boolq++" ]; then
+    boolq_plus
+elif [ $1 == "commit++" ]; then
+    commit_plus
+elif [ $1 == "copa++" ]; then
+    copa_plus
+elif [ $1 == "rte++" ]; then
+    rte_plus
 fi
