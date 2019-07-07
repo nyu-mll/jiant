@@ -91,12 +91,12 @@ class TestCheckpointing(unittest.TestCase):
         self.args.run_dir = self.temp_dir
         self.args.exp_dir = ""
 
-    @mock.patch("src.trainer.build_trainer_params", side_effect=build_trainer_params)
+    @mock.patch("jiant.trainer.build_trainer_params", side_effect=build_trainer_params)
     def test_checkpointing_does_run(self, build_trainer_params_function):
         # Check that checkpointing does run and does sanity checks that at each step
         # it saves the most recent checkpoint as well as the best checkpoint
         # correctly for both pretrain and target_train stages.
-        with mock.patch("src.models.MultiTaskModel") as MockModel:
+        with mock.patch("jiant.models.MultiTaskModel") as MockModel:
             import torch
             import copy
             import time
