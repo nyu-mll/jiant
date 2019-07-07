@@ -247,12 +247,12 @@ class TestWritePreds(unittest.TestCase):
         assert wic_predictions.iloc[0]["label"] == "false"
         assert wic_predictions.iloc[1]["label"] == "true"
 
-    @mock.patch("src.models.MultiTaskModel.forward", side_effect=model_forward)
+    @mock.patch("jiant.models.MultiTaskModel.forward", side_effect=model_forward)
     def test_evaluate_and_write_does_run(self, model_forward_function):
         """
         Testing that evaluate_and_write runs without breaking.
         """
-        with mock.patch("src.models.MultiTaskModel") as MockModel:
+        with mock.patch("jiant.models.MultiTaskModel") as MockModel:
             MockModel.return_value.eval.return_value = None
             MockModel.return_value.forward = model_forward
             MockModel.use_bert = 1
