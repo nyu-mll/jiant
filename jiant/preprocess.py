@@ -30,6 +30,7 @@ from allennlp.data.token_indexers import (
 from jiant.tasks import (
     ALL_COLA_NPI_TASKS,
     ALL_GLUE_TASKS,
+    ALL_SUPERGLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY

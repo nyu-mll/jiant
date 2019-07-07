@@ -15,6 +15,7 @@ from jiant import tasks as tasks_module
 from jiant.tasks.tasks import (
     BooleanQuestionTask,
     CommitmentTask,
+    COPATask,
     RTESuperGLUETask,
     WiCTask,
     WinogradCoreferenceTask,
@@ -22,7 +23,6 @@ from jiant.tasks.tasks import (
 )
 from jiant.tasks.qa import MultiRCTask, ReCoRDTask
 from jiant.tasks.edge_probing import EdgeProbingTask
-from jiant.tasks.tasks import COPATask
 
 
 LOG_INTERVAL = 30

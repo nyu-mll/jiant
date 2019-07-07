@@ -14,7 +14,6 @@ import pyhocon
 from jiant.utils import hocon_writer
 
 
-# TODO: do we need this?
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
