@@ -31,7 +31,6 @@ from jiant.tasks import (
     ALL_COLA_NPI_TASKS,
     ALL_GLUE_TASKS,
     ALL_NLI_PROBING_TASKS,
-    ALL_TARG_VOC_TASKS,
 )
 from jiant.tasks import REGISTRY as TASKS_REGISTRY
 from jiant.utils import config, serialize, utils
