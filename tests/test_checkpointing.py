@@ -19,12 +19,12 @@ from allennlp.training.learning_rate_schedulers import (  # pylint: disable=impo
 )
 from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
-from src.allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.numeric_field import NumericField
 
-from src import evaluate
-import src.trainer as trainer
-from src.models import MultiTaskModel
-import src.tasks.tasks as tasks
+from jiant import evaluate
+import jiant.trainer as trainer
+from jiant.models import MultiTaskModel
+import jiant.tasks.tasks as tasks
 from main import evaluate_and_write, get_best_checkpoint_path
 
 

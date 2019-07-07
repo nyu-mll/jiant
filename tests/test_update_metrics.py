@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 import unittest
-import src.tasks.tasks as tasks
+import jiant.tasks.tasks as tasks
 import torch
 
 
