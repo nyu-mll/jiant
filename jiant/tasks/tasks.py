@@ -2277,8 +2277,6 @@ class WiCTask(PairClassificationTask):
             start_idx = len(sent_tok1[:-1])
             end_idx = start_idx + len(sent_mid[1:-1])
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
-            assert word.startswith(sent_tok[start_idx]), "Detected corrupted marked word."
-            # assert word.endswith(sent_tok[end_idx - 1]), "" # This doesn't work b/c of ## added
             return sent_tok, start_idx, end_idx
 
         def _load_split(data_file):
