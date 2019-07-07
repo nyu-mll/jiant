@@ -33,6 +33,7 @@ from ..utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
+    load_jsonl
 )
 from ..utils.tokenizers import get_tokenizer
 from ..metrics.winogender_metrics import GenderParity
@@ -1412,19 +1413,19 @@ class WinogenderTask(GLUEDiagnosticTask):
         self.val_metric = "%s_accuracy" % name
 
     def load_data(self):
-        rows = pd.read_json(os.path.join(self.path, "winogender.jsonl"), lines=True)
-        rows["sent1"] = rows["context"].apply(
-            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
+        """ Process the datasets located at path. """
+        targ_map = {"not_entailment": 0, "entailment": 1}
+
+        self.train_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.val_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.test_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
         )
-        rows["sent2"] = rows["hypothesis"].apply(
-            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
-        )
-        data = list(rows.T.to_dict().values())
-        self.train_data_text = data
-        self.val_data_text = data
-        self.test_data_text = data
-        self.sentences = [x["sent1"] for x in self.train_data_text]
-        self.sentences += [x["sent2"] for x in self.train_data_text]
+        log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers):
         is_using_bert = "bert_wpm_pretokenized" in indexers
@@ -1441,7 +1442,7 @@ class WinogenderTask(GLUEDiagnosticTask):
             d["sent1_str"] = MetadataField(record["sent1"])
             d["idx"] = LabelField(int(record["index"]), label_namespace="idxs", skip_indexing=True)
             d["pair_id"] = LabelField(
-                record["pair-id"], label_namespace="pair_id", skip_indexing=True
+                record["pair_id"], label_namespace="pair_id", skip_indexing=True
             )
             d["sent2_str"] = MetadataField(record["sent2"])
             d["labels"] = LabelField(
@@ -1537,24 +1538,9 @@ class RTESuperGLUETask(RTETask):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, "entailment": 1}
 
-        def _load_jsonl(data_file):
-            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
-            sent1s, sent2s, trgs, idxs = [], [], [], []
-            for example in data:
-                sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
-                )
-                sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
-                )
-                trg = targ_map[example["label"]] if "label" in example else 0
-                trgs.append(trg)
-                idxs.append(example["idx"])
-            return [sent1s, sent2s, trgs, idxs]
-
-        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+        self.train_data_text = load_jsonl(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = load_jsonl(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = load_jsonl(os.path.join(self.path, "test.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
