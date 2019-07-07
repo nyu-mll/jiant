@@ -33,6 +33,7 @@ from ..utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
+    load_jsonl
 )
 from ..utils.tokenizers import get_tokenizer
 from ..metrics.winogender_metrics import GenderParity
@@ -1214,6 +1215,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self.contributes_micro_macro_avg = False
         self.eval_only_task = True
 
     def load_data(self):
@@ -1395,7 +1397,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
 class WinogenderTask(GLUEDiagnosticTask):
-    """Supported wnogender task """
+    """Supported winogender task """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
         super().__init__(path, max_seq_len, name, n_classes, **kw)
@@ -1408,22 +1410,22 @@ class WinogenderTask(GLUEDiagnosticTask):
         self.test_data = None
         self.acc_scorer = BooleanAccuracy()
         self.gender_parity_scorer = GenderParity()
-        self.val_mtric = "%s_accuracy" % name
+        self.val_metric = "%s_accuracy" % name
 
     def load_data(self):
-        rows = pd.read_json(os.path.join(self.path, "winogender_filtered.jsonl"), lines=True)
-        rows["sent1"] = rows["context"].apply(
-            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
+        """ Process the datasets located at path. """
+        targ_map = {"not_entailment": 0, "entailment": 1}
+
+        self.train_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.val_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.test_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
         )
-        rows["sent2"] = rows["hypothesis"].apply(
-            lambda x: process_sentence(self.tokenizer_name, x, self.max_seq_len)
-        )
-        data = list(rows.T.to_dict().values())
-        self.train_data_text = data
-        self.val_data_text = data
-        self.test_data_text = data
-        self.sentences = [x["sent1"] for x in self.train_data_text]
-        self.sentences += [x["sent2"] for x in self.train_data_text]
+        log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers):
         is_using_bert = "bert_wpm_pretokenized" in indexers
@@ -1440,7 +1442,7 @@ class WinogenderTask(GLUEDiagnosticTask):
             d["sent1_str"] = MetadataField(record["sent1"])
             d["idx"] = LabelField(int(record["index"]), label_namespace="idxs", skip_indexing=True)
             d["pair_id"] = LabelField(
-                record["pair-id"], label_namespace="pair_id", skip_indexing=True
+                record["pair_id"], label_namespace="pair_id", skip_indexing=True
             )
             d["sent2_str"] = MetadataField(record["sent2"])
             d["labels"] = LabelField(
@@ -1460,7 +1462,6 @@ class WinogenderTask(GLUEDiagnosticTask):
     def update_diagnostic_metrics(self, logits, labels, batch):
         self.acc_scorer(logits, labels)
         batch["preds"] = logits
-        print(batch)
         # Convert batch to dict to fit gender_parity_scorer API.
         batch_dict = [
             {
@@ -1537,24 +1538,6 @@ class RTESuperGLUETask(RTETask):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, True: 1, False:0, "entailment": 1}
 
-        def _load_jsonl(data_file):
-            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
-            sent1s, sent2s, trgs, idxs = [], [], [], []
-            for example in data:
-                sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
-                )
-                sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
-                )
-                trg = targ_map[example["label"]] if "label" in example else 0
-                trgs.append(trg)
-                idxs.append(example["idx"])
-            return [sent1s, sent2s, trgs, idxs]
-
-        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_jsonl(os.path.join(self.path, "/beegfs/yp913/fresh_jiant/data/RTE/diagnostics/winogender_filtered.jsonl"))
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -2348,26 +2331,42 @@ class WiCTask(PairClassificationTask):
 
         trg_map = {"true": 1, "false": 0, True: 1, False: 0}
 
+        def _process_preserving_word(sent, word):
+            """ Tokenize the subsequence before the [first] instance of the word and after,
+            then concatenate everything together. This allows us to track where in the tokenized
+            sequence the marked word is located. """
+            sent_parts = sent.split(word)
+            sent_tok1 = process_sentence(self._tokenizer_name, sent_parts[0], self.max_seq_len)
+            sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
+            sent_mid = process_sentence(self._tokenizer_name, word, self.max_seq_len)
+            sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
+            start_idx = len(sent_tok1[:-1])
+            end_idx = start_idx + len(sent_mid[1:-1])
+            assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
+            return sent_tok, start_idx, end_idx
+
         def _load_split(data_file):
-            sents1, sents2, idxs1, idxs2, trgs = [], [], [], [], []
+            sents1, sents2, idxs1, idxs2, trgs, idxs = [], [], [], [], [], []
             with open(data_file, "r") as data_fh:
                 for row in data_fh:
                     row = json.loads(row)
-                    sent1 = process_sentence(
-                        self._tokenizer_name, row["sentence1"], self.max_seq_len
-                    )
-                    sent2 = process_sentence(
-                        self._tokenizer_name, row["sentence2"], self.max_seq_len
-                    )
+                    sent1 = row["sentence1"]
+                    sent2 = row["sentence2"]
+                    word1 = sent1[row["start1"] : row["end1"]]
+                    word2 = sent2[row["start2"] : row["end2"]]
+                    sent1, start1, end1 = _process_preserving_word(sent1, word1)
+                    sent2, start2, end2 = _process_preserving_word(sent2, word2)
                     sents1.append(sent1)
                     sents2.append(sent2)
-                    idx1 = row["sentence1_idx"]
-                    idx2 = row["sentence2_idx"]
-                    idxs1.append(int(idx1))
-                    idxs2.append(int(idx2))
+                    idxs1.append((start1, end1))
+                    idxs2.append((start2, end2))
                     trg = trg_map[row["label"]] if "label" in row else 0
                     trgs.append(trg)
-                return [sents1, sents2, idxs1, idxs2, trgs]
+                    idxs.append(row["idx"])
+                    assert (
+                        "version" in row and row["version"] == 1.1
+                    ), "WiC version is not v1.1; examples indices are likely incorrect and data is likely pre-tokenized. Please re-download the data from super.gluebenchmark for the correct data."
+                return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))
         self.val_data_text = _load_split(os.path.join(self.path, "val.jsonl"))
@@ -2392,25 +2391,20 @@ class WiCTask(PairClassificationTask):
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["idx1"] = NumericField(idxs1)
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            d["idx2"] = NumericField(idxs2)  # modify if using BERT
             if is_using_bert:
                 inp = input1 + input2[1:]  # throw away input2 leading [CLS]
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                idxs2 += len(input1)
+                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
+            d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
+            d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
 
             return Instance(d)
-
-        if len(split) < 6:  # counting iterator for idx
-            assert len(split) == 5
-            split.append(itertools.count())
 
         # Map over columns: input1, (input2), labels, idx
         instances = map(_make_instance, *split)
@@ -2681,8 +2675,8 @@ class BooleanQuestionTask(PairClassificationTask):
                 question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
                 passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
                 new_datum = {"question": question, "passage": passage}
-                answer = d["answer"] if "answer" in d else False
-                new_datum["answer"] = answer
+                answer = d["label"] if "label" in d else False
+                new_datum["label"] = answer
                 data.append(new_datum)
             return data
 
@@ -2709,7 +2703,7 @@ class BooleanQuestionTask(PairClassificationTask):
             else:  # BERT
                 psg_qst = d["passage"][:-1] + d["question"]
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
-            new_d["labels"] = LabelField(d["answer"], label_namespace="labels", skip_indexing=True)
+            new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
             return Instance(new_d)
 

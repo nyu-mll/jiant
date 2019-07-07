@@ -57,6 +57,7 @@ def evaluate(
         "sent1_str",
         "sent2_str",
         "labels",
+        "par_idx",
         "pair_id",
         "psg_idx",
         "qst_idx",
