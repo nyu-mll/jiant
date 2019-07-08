@@ -27,9 +27,14 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from .tasks import ALL_COLA_NPI_TASKS, ALL_GLUE_TASKS, ALL_SUPERGLUE_TASKS, ALL_NLI_PROBING_TASKS
-from .tasks import REGISTRY as TASKS_REGISTRY
-from .utils import config, serialize, utils
+from jiant.tasks import (
+    ALL_COLA_NPI_TASKS,
+    ALL_GLUE_TASKS,
+    ALL_SUPERGLUE_TASKS,
+    ALL_NLI_PROBING_TASKS,
+)
+from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"

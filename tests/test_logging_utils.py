@@ -6,7 +6,7 @@ import unittest
 import pyhocon
 import jsondiff
 
-import src.utils.utils as utils
+import jiant.utils.utils as utils
 
 
 class TestParseJsonDiff(unittest.TestCase):
