@@ -7,8 +7,8 @@ Let us make an imaginary pair classification task with a new dataset SomeDataset
 
 First, we need to make sure that your files are in the right place.  Let us say that it is under your data/SomeDataset folder. Make sure your file is in a TSV file.
 
-The first stop is [`src/tasks/tasks.py`.
-](https://github.com/nyu-mll/jiant/blob/master/src/tasks/tasks.py)
+The first stop is [`jiant/tasks/tasks.py`.
+](https://github.com/nyu-mll/jiant/blob/master/jiant/tasks/tasks.py)
 
 We keep track of tasks via a registry, so you'll have to add a decorator to the beginning of your task. In the rel_path, you don't have to add the full path, but only what comes after your general data_dir path.
 
@@ -41,7 +41,7 @@ A lot of the following functions may already be written for your task type (espe
 
 
 
-1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV to a format that can be made into AllenNLP iterators. In this function, you will want to call load_tsv from src/utils/data_loaders.py, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to load_tsv (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/src/utils/data_loaders.py) for more documentation on load_tsv.  An example is below
+1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV to a format that can be made into AllenNLP iterators. In this function, you will want to call `load_tsv` from `jiant/utils/data_loaders.py`, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to `load_tsv` (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/jiant/utils/data_loaders.py) for more documentation on `load_tsv`.  An example is below
 
 ```python
     def load_data(self, path, max_seq_len):
@@ -83,7 +83,7 @@ A lot of the following functions may already be written for your task type (espe
 ```python
 self.sentences = self.train_data_text[0] + self.val_data_text[0]
 ```
-6. `process_split` (inheritable) takes in a split of your data and produces an iterable of AllenNLP Instances. An Instance is a wrapper around a dictionary of (field_name, Field) pairs. Fields are objects to help with data processing (indexing, padding, etc.). See [here](https://github.com/nyu-mll/jiant/blob/1ee392e8dfba4a5fc5d0aca06a9f780a6a1b1e1e/src/tasks/tasks.py#L338) for an example.
+6. `process_split` (inheritable) takes in a split of your data and produces an iterable of AllenNLP Instances. An Instance is a wrapper around a dictionary of (field_name, Field) pairs. Fields are objects to help with data processing (indexing, padding, etc.). See [here](https://github.com/nyu-mll/jiant/blob/1ee392e8dfba4a5fc5d0aca06a9f780a6a1b1e1e/jiant/tasks/tasks.py#L338) for an example.
 
 7. `count_examples` (inheritable) sets `task.example_counts` (Dict[str:int]): the number of examples per split (train, val, test).
 
@@ -133,9 +133,9 @@ class SomeDataClassificationTask(PairClassificationTask):
         return {'f1': f1}
 ```
 
-Phew! Now, you also have to add the models you're going to use for your task, which lives in [` src/models/py`](https://github.com/zphang/jiant/blob/repretrain/src/models.py).
+Phew! Now, you also have to add the models you're going to use for your task, which lives in [`jiant/models/py`](https://github.com/zphang/jiant/blob/repretrain/jiant/models.py).
 
-Since our task type is PairClassificationTask, a well supported type of task, we can skip this step. However, if your task type is not well supported (or you want to try a different sort of model), in `src/models/models.py`, you will need to change the `build_task_specific_module` function to include a branch for your logic.
+Since our task type is PairClassificationTask, a well supported type of task, we can skip this step. However, if your task type is not well supported (or you want to try a different sort of model), in `jiant/models/models.py`, you will need to change the `build_task_specific_module` function to include a branch for your logic.
 ```python
 	def build_task_specific_modules(
         task, model, d_sent, d_emb, vocab, embedder, args):
@@ -145,7 +145,7 @@ Since our task type is PairClassificationTask, a well supported type of task, we
         	setattr(model, '%s_mdl' % task.name, hid2voc)
 ```
 
-You will also need to modify the `forward` function in `src/models.py` (again, not if you're inheriting from a well-supported task type!), which consist of passing your inputs into a sentence encoder and then through the task specific module you had coded up before. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the Instance objects you created in preprocessing, as well as a predict flag that indicates if your forward function should generate predictions or not.
+You will also need to modify the `forward` function in `jiant/models.py` (again, not if you're inheriting from a well-supported task type!), which consist of passing your inputs into a sentence encoder and then through the task specific module you had coded up before. The model will receive the task class you created and a batch of data, where each batch is a dictionary with keys of the Instance objects you created in preprocessing, as well as a predict flag that indicates if your forward function should generate predictions or not.
 
 
 ```python

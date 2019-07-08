@@ -1,6 +1,6 @@
 import logging
 
-from src.tasks.registry import REGISTRY
+from jiant.tasks.registry import REGISTRY
 
 
 def test_instantiate_all_tasks():

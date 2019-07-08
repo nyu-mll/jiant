@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from allennlp.modules.span_extractors import EndpointSpanExtractor, SelfAttentiveSpanExtractor
 
-from ..tasks.edge_probing import EdgeProbingTask
-from .simple_modules import Classifier
+from jiant.tasks.edge_probing import EdgeProbingTask
+from jiant.modules.simple_modules import Classifier
 
 
 class EdgeClassifierModule(nn.Module):

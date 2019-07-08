@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from allennlp.data import vocabulary
 
-from .tokenizers import get_tokenizer
-from .retokenize import realign_spans
+from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.retokenize import realign_spans
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"

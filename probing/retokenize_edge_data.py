@@ -36,8 +36,8 @@ from typing import List, Text, Tuple
 from tqdm import tqdm
 
 from pytorch_pretrained_bert import BertTokenizer
-from src.openai_transformer_lm import utils as openai_utils
-from src.utils import retokenize, tokenizers, utils
+from jiant.openai_transformer_lm import utils as openai_utils
+from jiant.utils import retokenize, tokenizers, utils
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
