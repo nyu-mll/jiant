@@ -245,6 +245,7 @@ SUPERGLUE_NAME_MAP = {
     "wic": "WiC",
     "superglue-diagnostic": "AX",
     "winograd-coreference": "WSC",
+    "winogender-diagnostic": "winogender",
 }
 
 
