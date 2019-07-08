@@ -1398,7 +1398,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
 @register_task("superglue-diagnostic", rel_path="RTE/")
 class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
-    """ Task class for GLUE/SuperGLUE diagnostic data """
+    """ Task class for SuperGLUE diagnostic data """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(path, max_seq_len, name, n_classes=3, **kw)
@@ -1426,7 +1426,7 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
             """ This function builds the vocab mapping for a particular labelspace,
             which in practice is a coarse-grained diagnostic category. """
             values = set([d[labelspace] for d in data if labelspace in d])
-            vocab = vocabulary.Vocabulary(counter=None)
+            vocab = vocabulary.Vocabulary(counter=None, non_padded_namespaces=[labelspace])
             for value in values:
                 vocab.add_token_to_namespace(value, labelspace)
             idx_to_word = vocab.get_index_to_token_vocabulary(labelspace)
@@ -1489,12 +1489,7 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         )
         self.val_data_text = self.train_data_text
         self.test_data_text = self.train_data_text
-        self.sentences = (
-            self.train_data_text[0]
-            + self.train_data_text[1]
-            + self.val_data_text[0]
-            + self.val_data_text[1]
-        )
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
         log.info("\tFinished loading diagnostic data.")
 
         # TODO: use FastMatthews instead to save memory.
@@ -1503,7 +1498,7 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
         self._scorer_all_mcc = Correlation("matthews") # score all examples according to MCC
-        self._scorer_all_acc = CategoricalAccuracy() # score all examples according to acc
+        self._scorer_all_acc = CategoricalAccuracy()   # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
 

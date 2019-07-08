@@ -285,7 +285,7 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
             tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
         )
     if "test" in splits_to_write:
-        te_results, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
+        _, te_preds = evaluate.evaluate(model, tasks, args.batch_size, args.cuda, "test")
         evaluate.write_preds(
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
