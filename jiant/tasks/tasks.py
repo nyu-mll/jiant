@@ -1548,15 +1548,25 @@ class RTESuperGLUETask(RTETask):
     def load_data(self):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, True: 1, False: 0, "entailment": 1}
-        self.train_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "train.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
-        )
-        self.val_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "val.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
-        )
-        self.test_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "test.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
-        )
+        def _load_jsonl(data_file):
+            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
+            sent1s, sent2s, trgs, idxs = [], [], [], []
+            for example in data:
+                sent1s.append(
+                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
+                )
+                sent2s.append(
+                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
+                )
+                trg = targ_map[example["label"]] if "label" in example else 0
+                trgs.append(trg)
+                idxs.append(example["idx"])
+            return [sent1s, sent2s, trgs, idxs]
+
+        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
+        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
