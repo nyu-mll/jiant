@@ -1279,14 +1279,15 @@ class GLUEDiagnosticTask(PairClassificationTask):
         create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
-        self._scorer_all_mcc = Correlation("matthews") # score all examples according to MCC
-        self._scorer_all_acc = CategoricalAccuracy() # score all examples according to acc
+        self._scorer_all_mcc = Correlation("matthews")  # score all examples according to MCC
+        self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
         # the scorer for the column itself.
         _, preds = logits.max(dim=1)
+
         def update_scores_for_tag_group(ix_to_tags_dic, tag_group):
             for ix, tag in ix_to_tags_dic.items():
                 # 0 is for missing tag so here we use it to update scorer for the column
@@ -1444,11 +1445,14 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
                     continue
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
-
         targ_map = {"entailment": 1, "not_entailment": 0}
         data = [json.loads(d) for d in open(os.path.join(self.path, "AX.labeled.jsonl"))]
-        sent1s = [process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data]
-        sent2s = [process_sentence(self._tokenizer_name, d["sentence2"], self.max_seq_len) for d in data]
+        sent1s = [
+            process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
+        ]
+        sent2s = [
+            process_sentence(self._tokenizer_name, d["sentence2"], self.max_seq_len) for d in data
+        ]
         labels = [targ_map[d["label"]] for d in data]
         idxs = [int(d["idx"]) for d in data]
         lxs2idx, idx2lxs, lxs = _build_label_vocab("lexical-semantics", data)
@@ -1468,7 +1472,7 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
             "ix_to_pr_ar_str_dic": idx2pas,
             "ix_to_logic_dic": idx2lgc,
             "ix_to_knowledge_dic": idx2knw,
-            }
+        }
 
         self.ix_to_lex_sem_dic = diag_data_dic["ix_to_lex_sem_dic"]
         self.ix_to_pr_ar_str_dic = diag_data_dic["ix_to_pr_ar_str_dic"]
@@ -1497,8 +1501,8 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
-        self._scorer_all_mcc = Correlation("matthews") # score all examples according to MCC
-        self._scorer_all_acc = CategoricalAccuracy()   # score all examples according to acc
+        self._scorer_all_mcc = Correlation("matthews")  # score all examples according to MCC
+        self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
 

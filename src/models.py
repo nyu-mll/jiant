@@ -848,7 +848,7 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = F.cross_entropy(logits, labels)
-            #task.update_diagnostic_metrics(predicted, labels, batch)
+            # task.update_diagnostic_metrics(predicted, labels, batch)
             task.update_diagnostic_metrics(logits, labels, batch)
 
         if predict:
