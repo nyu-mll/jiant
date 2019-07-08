@@ -40,7 +40,7 @@ class Pooler(nn.Module):
             seq_emb = proj_seq.sum(dim=1) / mask.sum(dim=1)
         elif self.pool_type == "final":
             idxs = mask.expand_as(proj_seq).sum(dim=1, keepdim=True).long() - 1
-            seq_emb = proj_seq.gather(dim=1, index=idxs)
+            seq_emb = proj_seq.gather(dim=1, index=idxs).squeeze(dim=1)
         elif self.pool_type == "first":
             seq_emb = proj_seq[:, 0]
         return seq_emb
@@ -103,20 +103,49 @@ class SingleClassifier(nn.Module):
         self.classifier = classifier
 
     def forward(self, sent, mask, idxs=[]):
-        """ Assumes batch_size x seq_len x d_emb """
+        """
+        This class applies some type of pooling to get a fixed-size vector,
+            possibly extracts some specific representations from the input sequence
+            and concatenates those reps to the overall representations,
+            then passes the whole thing through a classifier.
+
+        args:
+            - sent (FloatTensor): sequence of hidden states representing a sentence
+            Assumes batch_size x seq_len x d_emb.
+            - mask (FloatTensor): binary masking denoting which elements of sent are not padding
+            - idxs (List[LongTensor]): list of indices of to extract from sent and
+                concatenate to the post-pooling representation.
+                For each element in idxs, we extract all the non-pad (0) representations, pool,
+                and concatenate the resulting fixed size vector to the overall representation.
+
+        returns:
+            - logits (FloatTensor): logits for classes
+        """
+
         emb = self.pooler(sent, mask)
 
         # append any specific token representations, e.g. for WiC task
         ctx_embs = []
-        for idx in [i.long() for i in idxs]:
+        for idx in idxs:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, sent.size(-1)])
-            ctx_emb = sent.gather(dim=1, index=idx)
-            ctx_embs.append(ctx_emb.squeeze(dim=1))
-        final_emb = torch.cat([emb] + ctx_embs, dim=-1)
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(-1) == sent.size(
+                    -1
+                ), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, sent.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
 
+            ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            ctx_mask[:, 0] = 1
+            ctx_emb = sent.gather(dim=1, index=idx) * ctx_mask
+            ctx_emb = ctx_emb.sum(dim=1) / ctx_mask.sum(dim=1)
+            ctx_embs.append(ctx_emb)
+        final_emb = torch.cat([emb] + ctx_embs, dim=-1)
         logits = self.classifier(final_emb)
         return logits
 
@@ -136,11 +165,25 @@ class PairClassifier(nn.Module):
         self.attn = attn
 
     def forward(self, s1, s2, mask1, mask2, idx1=[], idx2=[]):
-        """ s1, s2: sequences of hidden states corresponding to sentence 1,2
-            mask1, mask2: binary mask corresponding to non-pad elements
-            idx{1,2}: indexes of particular tokens to extract in sentence {1, 2}
-                and append to the representation, e.g. for WiC
         """
+        This class applies some type of pooling to each of two inputs to get two fixed-size vectors,
+            possibly extracts some specific representations from the input sequence
+            and concatenates those reps to the overall representations,
+            then passes the whole thing through a classifier.
+
+        args:
+            - s1/s2 (FloatTensor): sequence of hidden states representing a sentence
+                Assumes batch_size x seq_len x d_emb.
+            - mask1/mask2 (FloatTensor): binary masking denoting which elements of sent are not padding
+            - idx{1,2} (List[LongTensor]): list of indices of to extract from sent and
+                concatenate to the post-pooling representation.
+                For each element in idxs, we extract all the non-pad (0) representations, pool,
+                and concatenate the resulting fixed size vector to the overall representation.
+
+        returns:
+            - logits (FloatTensor): logits for classes
+        """
+
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
         mask2 = mask2.squeeze(-1) if len(mask2.size()) > 2 else mask2
         if self.attn is not None:
@@ -149,23 +192,43 @@ class PairClassifier(nn.Module):
         emb2 = self.pooler(s2, mask2)
 
         s1_ctx_embs = []
-        for idx in [i.long() for i in idx1]:
+        for idx in idx1:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, s1.size(-1)])
-            s1_ctx_emb = s1.gather(dim=1, index=idx)
-            s1_ctx_embs.append(s1_ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(-1) == s1.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, s1.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
+
+            s1_ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            s1_ctx_mask[:, 0] = 1
+            s1_ctx_emb = s1.gather(dim=1, index=idx) * s1_ctx_mask
+            s1_ctx_emb = s1_ctx_emb.sum(dim=1) / s1_ctx_mask.sum(dim=1)
+            s1_ctx_embs.append(s1_ctx_emb)
         emb1 = torch.cat([emb1] + s1_ctx_embs, dim=-1)
 
         s2_ctx_embs = []
-        for idx in [i.long() for i in idx2]:
+        for idx in idx2:
             if len(idx.shape) == 1:
                 idx = idx.unsqueeze(-1)
             if len(idx.shape) == 2:
-                idx = idx.unsqueeze(-1).expand([-1, -1, s2.size(-1)])
-            s2_ctx_emb = s2.gather(dim=1, index=idx)
-            s2_ctx_embs.append(s2_ctx_emb.squeeze(dim=1))
+                idx = idx.unsqueeze(-1)
+            if len(idx.shape) == 3:
+                assert idx.size(-1) == 1 or idx.size(-1) == s2.size(-1), "Invalid index dimension!"
+                idx = idx.expand([-1, -1, s2.size(-1)]).long()
+            else:
+                raise ValueError("Invalid dimensions of index tensor!")
+
+            s2_ctx_mask = (idx != 0).float()
+            # the first element of the mask should never be zero
+            s2_ctx_mask[:, 0] = 1
+            s2_ctx_emb = s2.gather(dim=1, index=idx) * s2_ctx_mask
+            s2_ctx_emb = s2_ctx_emb.sum(dim=1) / s2_ctx_mask.sum(dim=1)
+            s2_ctx_embs.append(s2_ctx_emb)
         emb2 = torch.cat([emb2] + s2_ctx_embs, dim=-1)
 
         pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)

@@ -19,19 +19,18 @@ from allennlp.training.learning_rate_schedulers import (  # pylint: disable=impo
 )
 from allennlp.common.params import Params
 from allennlp.training.optimizers import Optimizer
-from ..allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.numeric_field import NumericField
 
-from src import evaluate
-import src.trainer as trainer
-from src.models import MultiTaskModel
-import src.tasks.tasks as tasks
+from jiant import evaluate
+import jiant.trainer as trainer
+from jiant.models import MultiTaskModel
+import jiant.tasks.tasks as tasks
 from main import evaluate_and_write, get_best_checkpoint_path
 
 
 def build_trainer_params(args, task_names, phase="pretrain"):
     return {
         "lr": 1e-05,
-        "warmup": 4000,
         "val_data_limit": 10,
         "d_hid": 1024,
         "min_lr": 0.000,
@@ -92,12 +91,12 @@ class TestCheckpointing(unittest.TestCase):
         self.args.run_dir = self.temp_dir
         self.args.exp_dir = ""
 
-    @mock.patch("src.trainer.build_trainer_params", side_effect=build_trainer_params)
+    @mock.patch("jiant.trainer.build_trainer_params", side_effect=build_trainer_params)
     def test_checkpointing_does_run(self, build_trainer_params_function):
         # Check that checkpointing does run and does sanity checks that at each step
         # it saves the most recent checkpoint as well as the best checkpoint
         # correctly for both pretrain and target_train stages.
-        with mock.patch("src.models.MultiTaskModel") as MockModel:
+        with mock.patch("jiant.models.MultiTaskModel") as MockModel:
             import torch
             import copy
             import time
@@ -137,10 +136,10 @@ class TestCheckpointing(unittest.TestCase):
                 ("sent_encoder.layer.1", torch.Tensor([0.1, 0.3, 0.4, 0.8])),
                 ("type", torch.Tensor([0.1])),
             ]
-            g_scheduler = LearningRateScheduler.from_params(
+            scheduler = LearningRateScheduler.from_params(
                 Optimizer.from_params(train_params, opt_params2), copy.deepcopy(scheduler_params)
             )
-            g_optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
+            optimizer = Optimizer.from_params(train_params, copy.deepcopy(opt_params))
             _task_infos = {
                 "wic": {
                     "iterator": iterator(self.wic.val_data, num_epochs=1),
@@ -149,8 +148,8 @@ class TestCheckpointing(unittest.TestCase):
                     "tr_generator": iterator(self.wic.val_data, num_epochs=1),
                     "total_batches_trained": 400,
                     "n_batches_since_val": 0,
-                    "optimizer": g_optimizer,
-                    "scheduler": g_scheduler,
+                    "optimizer": optimizer,
+                    "scheduler": scheduler,
                     "stopped": False,
                     "last_log": time.time(),
                 }
@@ -190,8 +189,8 @@ class TestCheckpointing(unittest.TestCase):
             tt_trainer.task_to_metric_mapping = {self.wic.val_metric: self.wic.name}
             pt_trainer._task_infos = _task_infos
             pt_trainer._metric_infos = _metric_infos
-            pt_trainer._g_optimizer = g_optimizer
-            pt_trainer._g_scheduler = g_scheduler
+            pt_trainer._optimizer = optimizer
+            pt_trainer._scheduler = scheduler
             pt_trainer._save_checkpoint(
                 {"step": 10, "validation_pass": 1, "should_stop": 0},
                 tasks=[self.wic],
@@ -206,8 +205,8 @@ class TestCheckpointing(unittest.TestCase):
             )
             tt_trainer._task_infos = _task_infos
             tt_trainer._metric_infos = _metric_infos
-            tt_trainer._g_optimizer = g_optimizer
-            tt_trainer._g_scheduler = g_scheduler
+            tt_trainer._optimizer = optimizer
+            tt_trainer._scheduler = scheduler
 
             tt_trainer._save_checkpoint(
                 {"step": 10, "validation_pass": 1, "should_stop": 0},

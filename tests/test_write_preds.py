@@ -8,12 +8,12 @@ from unittest import mock
 import torch
 import pandas as pd
 
-from src import evaluate
-import src.tasks.tasks as tasks
-from src.models import MultiTaskModel
+from jiant import evaluate
+import jiant.tasks.tasks as tasks
+from jiant.models import MultiTaskModel
 from main import evaluate_and_write
 
-from ..allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
 from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
@@ -21,8 +21,18 @@ from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
 
 def model_forward(task, batch, predict=True):
     if task.name == "sts-b":
-        return {"n_exs": 4, "preds": [5.0, 4.0]}
-    return {"n_exs": 4, "preds": [0, 1, 1, 1]}
+        logits = torch.Tensor([0.6, 0.4])
+        labels = torch.Tensor([0.875, 0.6])
+        out = {"n_exs": 2, "preds": [1.0, 0.8]}
+    elif task.name == "wic":
+        logits = torch.Tensor([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
+        labels = torch.LongTensor([0, 1, 1, 0])
+        out = {"n_exs": 4, "preds": [0, 1, 1, 1]}
+    else:
+        raise ValueError("Unexpected task found")
+
+    task.update_metrics(logits, labels)
+    return out
 
 
 class TestWritePreds(unittest.TestCase):
@@ -33,11 +43,11 @@ class TestWritePreds(unittest.TestCase):
 
     def setUp(self):
         """
-        Since we're testing write_preds, we need to mock model predictions and the parts 
-        of the model, arguments, and trainer needed to write to predictions. 
-        Unlike in update_metrics tests, the actual contents of the examples in val_data 
+        Since we're testing write_preds, we need to mock model predictions and the parts
+        of the model, arguments, and trainer needed to write to predictions.
+        Unlike in update_metrics tests, the actual contents of the examples in val_data
         is not the most important as long as it adheres to the API necessary for examples
-        of that task. 
+        of that task.
         """
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
@@ -47,14 +57,14 @@ class TestWritePreds(unittest.TestCase):
             data=[
                 {
                     "idx": 0,
-                    "labels": 5.00,
-                    "preds": 5.00,
+                    "labels": 1.00,
+                    "preds": 1.00,
                     "sent1_str": "A man with a hard hat is dancing.",
                     "sent2_str": "A man wearing a hard hat is dancing",
                 },
                 {
-                    "idx": 0,
-                    "labels": 4.750,
+                    "idx": 1,
+                    "labels": 0.950,
                     "preds": 0.34,
                     "sent1_str": "A young child is riding a horse.",
                     "sent2_str": "A child is riding a horse.",
@@ -70,7 +80,7 @@ class TestWritePreds(unittest.TestCase):
                     "labels": 0,
                 },
                 {
-                    "idx": 0,
+                    "idx": 1,
                     "sent1": "Hook a fish",
                     "sent2": "He hooked a snake accidentally.",
                     "labels": 1,
@@ -83,11 +93,22 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("Room and board."),
                     "sent2_str": MetadataField("He nailed boards"),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(0, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
-                        ["[CLS]", "Room", "and", "Board", ".", "[SEP]", "He", "nailed", "boards"],
+                        [
+                            "[CLS]",
+                            "Room",
+                            "and",
+                            "Board",
+                            ".",
+                            "[SEP]",
+                            "He",
+                            "nailed",
+                            "boards",
+                            "[SEP]",
+                        ],
                         indexers,
                     ),
                     "labels": LabelField(0, skip_indexing=1),
@@ -117,6 +138,7 @@ class TestWritePreds(unittest.TestCase):
                             "c",
                             "##ir",
                             "##culated",
+                            "[SEP]",
                         ],
                         indexers,
                     ),
@@ -127,7 +149,7 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("Hook a fish'"),
                     "sent2_str": MetadataField("He hooked a snake accidentally"),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(2, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
@@ -138,10 +160,11 @@ class TestWritePreds(unittest.TestCase):
                             "fish",
                             "[SEP]",
                             "He",
-                            "hookoed",
+                            "hooked",
                             "a",
                             "snake",
                             "accidentally",
+                            "[SEP]",
                         ],
                         indexers,
                     ),
@@ -152,14 +175,14 @@ class TestWritePreds(unittest.TestCase):
                 {
                     "sent1_str": MetadataField("For recreation he wrote poetry."),
                     "sent2_str": MetadataField("Drug abuse is often regarded as recreation ."),
-                    "idx": LabelField(1, skip_indexing=True),
+                    "idx": LabelField(3, skip_indexing=True),
                     "idx2": NumericField(2),
                     "idx1": NumericField(3),
                     "inputs": self.sentence_to_text_field(
                         [
                             "[CLS]",
                             "For",
-                            "##re",
+                            "re",
                             "##creation",
                             "he",
                             "wrote",
@@ -169,11 +192,12 @@ class TestWritePreds(unittest.TestCase):
                             "abuse",
                             "is",
                             "often",
-                            "##re",
+                            "re",
                             "##garded",
                             "as",
-                            "##re",
+                            "re",
                             "##creation",
+                            "[SEP]",
                         ],
                         indexers,
                     ),
@@ -212,7 +236,7 @@ class TestWritePreds(unittest.TestCase):
 
     def test_write_preds_superglue(self):
         """
-        Ensure that SuperGLUE write predictions for test is saved to the correct file 
+        Ensure that SuperGLUE write predictions for test is saved to the correct file
         format.
         """
         evaluate.write_preds(
@@ -223,12 +247,12 @@ class TestWritePreds(unittest.TestCase):
         assert wic_predictions.iloc[0]["label"] == "false"
         assert wic_predictions.iloc[1]["label"] == "true"
 
-    @mock.patch("src.models.MultiTaskModel.forward", side_effect=model_forward)
+    @mock.patch("jiant.models.MultiTaskModel.forward", side_effect=model_forward)
     def test_evaluate_and_write_does_run(self, model_forward_function):
         """
         Testing that evaluate_and_write runs without breaking.
         """
-        with mock.patch("src.models.MultiTaskModel") as MockModel:
+        with mock.patch("jiant.models.MultiTaskModel") as MockModel:
             MockModel.return_value.eval.return_value = None
             MockModel.return_value.forward = model_forward
             MockModel.use_bert = 1

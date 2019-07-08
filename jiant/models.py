@@ -17,32 +17,35 @@ from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.training.metrics import Average
 from sklearn.metrics import mean_squared_error
 
-from .allennlp_mods.elmo_text_field_embedder import ElmoTextFieldEmbedder, ElmoTokenEmbedderWrapper
+from jiant.allennlp_mods.elmo_text_field_embedder import (
+    ElmoTextFieldEmbedder,
+    ElmoTokenEmbedderWrapper,
+)
 
-from .modules.edge_probing import EdgeClassifierModule
-from .modules.simple_modules import (
+from jiant.modules.edge_probing import EdgeClassifierModule
+from jiant.modules.simple_modules import (
     Pooler,
     Classifier,
     SingleClassifier,
     PairClassifier,
     NullPhraseLayer,
 )
-from .modules.attn_pair_encoder import AttnPairEncoder
-from .modules.sentence_encoder import SentenceEncoder
-from .modules.bilm_encoder import BiLMEncoder
-from .modules.bow_sentence_encoder import BoWSentEncoder
-from .modules.elmo_character_encoder import ElmoCharacterEncoder
-from .modules.onlstm_phrase_layer import ONLSTMPhraseLayer
-from .modules.prpn_phrase_layer import PRPNPhraseLayer
-from .modules.onlstm.ON_LSTM import ONLSTMStack
-from .modules.prpn.PRPN import PRPN
-from .modules.seq2seq_decoder import Seq2SeqDecoder
-from .modules.span_modules import SpanClassifierModule
-from .tasks.edge_probing import EdgeProbingTask
-from .tasks.lm import LanguageModelingTask
-from .tasks.lm_parsing import LanguageModelingParsingTask
-from .tasks.qa import MultiRCTask, ReCoRDTask
-from .tasks.tasks import (
+from jiant.modules.attn_pair_encoder import AttnPairEncoder
+from jiant.modules.sentence_encoder import SentenceEncoder
+from jiant.modules.bilm_encoder import BiLMEncoder
+from jiant.modules.bow_sentence_encoder import BoWSentEncoder
+from jiant.modules.elmo_character_encoder import ElmoCharacterEncoder
+from jiant.modules.onlstm_phrase_layer import ONLSTMPhraseLayer
+from jiant.modules.prpn_phrase_layer import PRPNPhraseLayer
+from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
+from jiant.modules.prpn.PRPN import PRPN
+from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
+from jiant.modules.span_modules import SpanClassifierModule
+from jiant.tasks.edge_probing import EdgeProbingTask
+from jiant.tasks.lm import LanguageModelingTask
+from jiant.tasks.lm_parsing import LanguageModelingParsingTask
+from jiant.tasks.qa import MultiRCTask, ReCoRDTask
+from jiant.tasks.tasks import (
     GLUEDiagnosticTask,
     MultipleChoiceTask,
     PairClassificationTask,
@@ -56,8 +59,8 @@ from .tasks.tasks import (
     TaggingTask,
     WiCTask,
 )
-from .utils import config
-from .utils.utils import (
+from jiant.utils import config
+from jiant.utils.utils import (
     assert_for_log,
     get_batch_size,
     get_batch_utilization,
@@ -326,7 +329,7 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         assert args.input_module == "glove", "CoVe requires GloVe embeddings."
         assert d_word == 300, "CoVe expects 300-dimensional GloVe embeddings."
         try:
-            from .modules.cove.cove import MTLSTM as cove_lstm
+            from jiant.modules.cove.cove import MTLSTM as cove_lstm
 
             # Have CoVe do an internal GloVe lookup, but don't add residual.
             # We'll do this manually in modules.py; see
@@ -537,6 +540,7 @@ def get_task_specific_params(args, task_name):
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
+    params["pool_type"] = _get_task_attr("pool_type")
     params["d_proj"] = _get_task_attr("d_proj")
     params["shared_pair_attn"] = args.shared_pair_attn
     if args.shared_pair_attn:
@@ -573,17 +577,16 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_bert (bool): if using BERT, extract the first vector from the inputted
-            sequence, rather than max pooling. We do this for BERT specifically to follow
-            the convention set in the paper (Devlin et al., 2019).
+        - use_bert (bool): if using BERT, skip projection before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:
         - SingleClassifier (nn.Module): single-sentence classifier consisting of
             (optional) a linear projection, pooling, and an MLP classifier
     """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
@@ -615,9 +618,11 @@ def build_pair_sentence_module(task, d_inp, model, params):
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
-        pool_type = "first" if model.use_bert else "max"
         pooler = Pooler(
-            project=not model.use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type
+            project=not model.use_bert,
+            d_inp=d_inp,
+            d_proj=params["d_proj"],
+            pool_type=params["pool_type"],
         )
         d_out = d_inp if model.use_bert else params["d_proj"]
 
@@ -668,9 +673,8 @@ def build_tagger(task, d_inp, out_dim):
 
 def build_multiple_choice_module(task, d_sent, use_bert, params):
     """ Basic parts for MC task: reduce a vector representation for each model into a scalar. """
-    pool_type = "first" if use_bert else "max"
     pooler = Pooler(
-        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=pool_type
+        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=params["pool_type"]
     )
     d_out = d_sent if use_bert else params["d_proj"]
     choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
@@ -701,8 +705,9 @@ def build_qa_module(task, d_inp, use_bert, params):
     3) classifier
 
     This module models each question-answer pair _individually_ """
-    pool_type = "first" if use_bert else "max"
-    pooler = Pooler(project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=pool_type)
+    pooler = Pooler(
+        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+    )
     d_out = d_inp if use_bert else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)

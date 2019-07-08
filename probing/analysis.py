@@ -16,7 +16,7 @@ import pandas as pd
 from allennlp.data import Vocabulary
 from sklearn import metrics
 
-from src.utils import utils
+from jiant.utils import utils
 
 ##
 # Task list for stable ordering, and human-friendly display names.

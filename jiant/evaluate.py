@@ -10,23 +10,20 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 import pandas as pd
 import torch
 from allennlp.data.iterators import BasicIterator
-from . import tasks as tasks_module
-from .tasks.tasks import (
+from allennlp.nn.util import move_to_device
+from jiant import tasks as tasks_module
+from jiant.tasks.tasks import (
     BooleanQuestionTask,
     CommitmentTask,
+    COPATask,
     RTESuperGLUETask,
     WiCTask,
     WinogradCoreferenceTask,
     GLUEDiagnosticTask,
 )
-from .tasks.qa import MultiRCTask, ReCoRDTask
-from .tasks.edge_probing import EdgeProbingTask
-from .tasks.tasks import COPATask
-from allennlp.nn.util import move_to_device
+from jiant.tasks.qa import MultiRCTask, ReCoRDTask
+from jiant.tasks.edge_probing import EdgeProbingTask
 
-from . import tasks as tasks_module
-from .tasks.edge_probing import EdgeProbingTask
-from .tasks.tasks import CommitmentTask
 
 LOG_INTERVAL = 30
 
