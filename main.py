@@ -290,7 +290,6 @@ def evaluate_and_write(args, model, tasks, splits_to_write):
             tasks, te_preds, args.run_dir, "test", strict_glue_format=args.write_strict_glue_format
         )
 
-    import ipdb; ipdb.set_trace()
     run_name = args.get("run_name", os.path.basename(args.run_dir))
     results_tsv = os.path.join(args.exp_dir, "results.tsv")
     log.info("Writing results for split 'val' to %s", results_tsv)
