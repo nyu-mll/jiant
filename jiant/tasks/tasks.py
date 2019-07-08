@@ -24,10 +24,10 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, BooleanAccuracy, CategoricalAccuracy, F1Measure
 from sklearn.metrics import mean_squared_error
 
-from ..allennlp_mods.correlation import Correlation
-from ..allennlp_mods.numeric_field import NumericField
-from ..utils import utils
-from ..utils.data_loaders import (
+from jiant.allennlp_mods.correlation import Correlation
+from jiant.allennlp_mods.numeric_field import NumericField
+from jiant.utils import utils
+from jiant.utils.data_loaders import (
     get_tag_list,
     load_diagnostic_tsv,
     load_span_data,
@@ -35,10 +35,9 @@ from ..utils.data_loaders import (
     process_sentence,
     load_pair_nli_jsonl,
 )
-from ..utils.tokenizers import get_tokenizer
-from ..metrics.winogender_metrics import GenderParity
-
-from .registry import register_task  # global task registry
+from jiant.utils.tokenizers import get_tokenizer
+from jiant.tasks.registry import register_task  # global task registry
+from jiant.metrics.winogender_metrics import GenderParity
 
 """Define the tasks and code for loading their data.
 

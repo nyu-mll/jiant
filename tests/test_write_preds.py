@@ -8,12 +8,12 @@ from unittest import mock
 import torch
 import pandas as pd
 
-from src import evaluate
-import src.tasks.tasks as tasks
-from src.models import MultiTaskModel
+from jiant import evaluate
+import jiant.tasks.tasks as tasks
+from jiant.models import MultiTaskModel
 from main import evaluate_and_write
 
-from src.allennlp_mods.numeric_field import NumericField
+from jiant.allennlp_mods.numeric_field import NumericField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data import Instance, Token, vocabulary
 from allennlp.data.fields import LabelField, ListField, MetadataField, TextField
@@ -247,12 +247,12 @@ class TestWritePreds(unittest.TestCase):
         assert wic_predictions.iloc[0]["label"] == "false"
         assert wic_predictions.iloc[1]["label"] == "true"
 
-    @mock.patch("src.models.MultiTaskModel.forward", side_effect=model_forward)
+    @mock.patch("jiant.models.MultiTaskModel.forward", side_effect=model_forward)
     def test_evaluate_and_write_does_run(self, model_forward_function):
         """
         Testing that evaluate_and_write runs without breaking.
         """
-        with mock.patch("src.models.MultiTaskModel") as MockModel:
+        with mock.patch("jiant.models.MultiTaskModel") as MockModel:
             MockModel.return_value.eval.return_value = None
             MockModel.return_value.forward = model_forward
             MockModel.use_bert = 1

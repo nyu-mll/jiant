@@ -5,7 +5,7 @@ Require one argument: path_to_file.
 
 import sys
 
-from src.utils import config  # use symlink from scripts to src
+from jiant.utils import config  # use symlink from scripts to jiant
 
 # Mapping - key: old name, value: new name
 name_dict = {

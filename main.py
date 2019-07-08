@@ -22,13 +22,13 @@ import copy
 import torch
 import jsondiff
 
-from src import evaluate
-from src.models import build_model
-from src.preprocess import build_tasks
-from src import tasks as tasks_module
-from src.trainer import build_trainer
-from src.utils import config
-from src.utils.utils import (
+from jiant import evaluate
+from jiant.models import build_model
+from jiant.preprocess import build_tasks
+from jiant import tasks as task_modules
+from jiant.trainer import build_trainer
+from jiant.utils import config
+from jiant.utils.utils import (
     assert_for_log,
     load_model_state,
     maybe_make_dir,
@@ -37,8 +37,7 @@ from src.utils.utils import (
     select_relevant_print_args,
     check_for_previous_checkpoints,
 )
-from src import tasks as task_modules
-import jsondiff
+
 
 # Global notification handler, can be accessed outside main() during exception handling.
 EMAIL_NOTIFIER = None
@@ -325,12 +324,12 @@ def initial_setup(args, cl_args):
     log.getLogger().addHandler(log_fh)
 
     if cl_args.remote_log:
-        from src.utils import gcp
+        from jiant.utils import gcp
 
         gcp.configure_remote_logging(args.remote_log_name)
 
     if cl_args.notify:
-        from src.utils import emails
+        from jiant.utils import emails
 
         global EMAIL_NOTIFIER
         log.info("Registering email notifier for %s", cl_args.notify)
