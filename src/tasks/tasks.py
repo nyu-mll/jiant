@@ -33,7 +33,7 @@ from ..utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
-    load_jsonl,
+    load_pair_nli_jsonl,
 )
 from ..utils.tokenizers import get_tokenizer
 from ..metrics.winogender_metrics import GenderParity
@@ -202,7 +202,7 @@ class Task(object):
         self.eval_only_task = False
         self.sentences = None
         self.example_counts = None
-        self.contributes_micro_macro_avg = True
+        self.contributes_to_aggregate_score = True
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -1215,7 +1215,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
-        self.contributes_micro_macro_avg = False
+        self.contributes_to_aggregate_score = False
         self.eval_only_task = True
 
     def load_data(self):
@@ -1416,19 +1416,19 @@ class WinogenderTask(GLUEDiagnosticTask):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, "entailment": 1}
 
-        self.train_data_text = load_jsonl(
+        self.train_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "winogender_filtered.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
             targ_map,
         )
-        self.val_data_text = load_jsonl(
+        self.val_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "winogender_filtered.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
             targ_map,
         )
-        self.test_data_text = load_jsonl(
+        self.test_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "winogender_filtered.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
@@ -1440,7 +1440,7 @@ class WinogenderTask(GLUEDiagnosticTask):
             + self.val_data_text[0]
             + self.val_data_text[1]
         )
-        log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
+        log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers):
         return process_single_pair_task_split(split, indexers, is_pair=True)
@@ -1529,13 +1529,13 @@ class RTESuperGLUETask(RTETask):
     def load_data(self):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, True: 1, False: 0, "entailment": 1}
-        self.train_data_text = load_jsonl(
+        self.train_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "train.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
-        self.val_data_text = load_jsonl(
+        self.val_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "val.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
-        self.test_data_text = load_jsonl(
+        self.test_data_text = load_pair_nli_jsonl(
             os.path.join(self.path, "test.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.sentences = (

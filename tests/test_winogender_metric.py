@@ -12,7 +12,6 @@ from src.metrics.winogender_metrics import GenderParity
 class TestWinogenderMetric(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
-        self.path = os.path.join(self.temp_dir, "temp_ccg_dataset.tsv")
         self.batch_dict1 = [
             {
                 "sent1_str": "The employee called the customer to hand over the bag she stole",

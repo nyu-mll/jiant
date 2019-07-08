@@ -44,7 +44,24 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     return list(rows.T.to_dict().values())
 
 
-def load_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
+def load_pair_nli_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
+    """
+    Loads a pair NLI task. 
+
+    Parameters
+    -----------------
+    data_file: path to data file,
+    tokenizer_name: str, 
+    max_seq_len: int, 
+    targ_map: a dictionary that maps labels to ints 
+
+    Returns
+    -----------------
+    sent1s: list of strings of tokenized first sentences, 
+    sent2s: list of strings of tokenized second sentences, 
+    trgs: list of ints of labels,
+    idxs: list of ints
+    """
     data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
     sent1s, sent2s, trgs, idxs = [], [], [], []
     for example in data:
