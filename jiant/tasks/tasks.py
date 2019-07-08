@@ -1548,6 +1548,7 @@ class RTESuperGLUETask(RTETask):
     def load_data(self):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, True: 1, False: 0, "entailment": 1}
+
         def _load_jsonl(data_file):
             data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             sent1s, sent2s, trgs, idxs = [], [], [], []
