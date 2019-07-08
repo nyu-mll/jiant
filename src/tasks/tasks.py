@@ -33,7 +33,7 @@ from ..utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
-    load_jsonl
+    load_jsonl,
 )
 from ..utils.tokenizers import get_tokenizer
 from ..metrics.winogender_metrics import GenderParity
@@ -1416,9 +1416,24 @@ class WinogenderTask(GLUEDiagnosticTask):
         """ Process the datasets located at path. """
         targ_map = {"not_entailment": 0, "entailment": 1}
 
-        self.train_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
-        self.val_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
-        self.test_data_text = load_jsonl(os.path.join(self.path, "winogender_filtered.jsonl"))
+        self.train_data_text = load_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
+        self.val_data_text = load_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
+        self.test_data_text = load_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]
@@ -1428,30 +1443,7 @@ class WinogenderTask(GLUEDiagnosticTask):
         log.info("\tFinished loading RTE (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers):
-        is_using_bert = "bert_wpm_pretokenized" in indexers
-
-        def _make_instance(record):
-            """ from multiple types in one column create multiple fields """
-            d = {}
-            if is_using_bert:
-                input_final = record["sent1"] + record["sent2"][1:]
-                d["inputs"] = sentence_to_text_field(input_final, indexers)
-            else:
-                d["input1"] = sentence_to_text_field(record["sent1"], indexers)
-                d["input2"] = sentence_to_text_field(record["sent2"], indexers)
-            d["sent1_str"] = MetadataField(record["sent1"])
-            d["idx"] = LabelField(int(record["index"]), label_namespace="idxs", skip_indexing=True)
-            d["pair_id"] = LabelField(
-                record["pair_id"], label_namespace="pair_id", skip_indexing=True
-            )
-            d["sent2_str"] = MetadataField(record["sent2"])
-            d["labels"] = LabelField(
-                int(record["label"]), label_namespace="labels", skip_indexing=True
-            )
-            return Instance(d)
-
-        instances = map(_make_instance, split)
-        return instances
+        return process_single_pair_task_split(split, indexers, is_pair=True)
 
     def get_metrics(self, reset=False):
         return {
@@ -1536,8 +1528,16 @@ class RTESuperGLUETask(RTETask):
 
     def load_data(self):
         """ Process the datasets located at path. """
-        targ_map = {"not_entailment": 0, True: 1, False:0, "entailment": 1}
-
+        targ_map = {"not_entailment": 0, True: 1, False: 0, "entailment": 1}
+        self.train_data_text = load_jsonl(
+            os.path.join(self.path, "train.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
+        self.val_data_text = load_jsonl(
+            os.path.join(self.path, "val.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
+        self.test_data_text = load_jsonl(
+            os.path.join(self.path, "test.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]

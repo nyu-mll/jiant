@@ -9,11 +9,11 @@ import os
 import random
 import time
 from typing import Dict, Iterable, List, Optional, Sequence, Union
-
 import glob
 import numpy as np
 import torch
 import jsondiff
+
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.modules.seq2seq_encoders.seq2seq_encoder import Seq2SeqEncoder
