@@ -33,9 +33,11 @@ from jiant.utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
+    load_pair_nli_jsonl,
 )
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
+from jiant.metrics.winogender_metrics import GenderParity
 
 """Define the tasks and code for loading their data.
 
@@ -199,6 +201,7 @@ class Task(object):
         self.eval_only_task = False
         self.sentences = None
         self.example_counts = None
+        self.contributes_to_aggregate_score = True
 
     def load_data(self):
         """ Load data from path and create splits. """
@@ -1211,6 +1214,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self.contributes_to_aggregate_score = False
         self.eval_only_task = True
 
     def load_data(self):
@@ -1390,6 +1394,94 @@ class GLUEDiagnosticTask(PairClassificationTask):
         return collected_metrics
 
 
+@register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
+class WinogenderTask(GLUEDiagnosticTask):
+    """Supported winogender task """
+
+    def __init__(self, path, max_seq_len, name, n_classes, **kw):
+        super().__init__(path, max_seq_len, name, n_classes, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = n_classes
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data = None
+        self.acc_scorer = BooleanAccuracy()
+        self.gender_parity_scorer = GenderParity()
+        self.val_metric = "%s_accuracy" % name
+
+    def load_data(self):
+        """ Process the datasets located at path. """
+        targ_map = {"not_entailment": 0, "entailment": 1}
+
+        self.train_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
+        self.val_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
+        self.test_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "winogender_filtered.jsonl"),
+            self._tokenizer_name,
+            self.max_seq_len,
+            targ_map,
+        )
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+        )
+        log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
+
+    def process_split(self, split, indexers):
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def _make_instance(input1, input2, labels, idx, pair_id):
+            d = {}
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            if is_using_bert:
+                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+                d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                if input2:
+                    d["input2"] = sentence_to_text_field(input2, indexers)
+                    d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["pair_id"] = LabelField(pair_id, label_namespace="pair_id", skip_indexing=True)
+            return Instance(d)
+
+    def get_metrics(self, reset=False):
+        return {
+            "accuracy": self.acc_scorer.get_metric(reset),
+            "gender_parity": self.gender_parity_scorer.get_metric(reset),
+        }
+
+    def update_diagnostic_metrics(self, logits, labels, batch):
+        self.acc_scorer(logits, labels)
+        batch["preds"] = logits
+        # Convert batch to dict to fit gender_parity_scorer API.
+        batch_dict = [
+            {
+                key: batch[key][index]
+                for key in batch.keys()
+                if key not in ["input1", "input2", "inputs"]
+            }
+            for index in range(len(batch["sent1_str"]))
+        ]
+        self.gender_parity_scorer(batch_dict)
+
+
 @register_task("rte", rel_path="RTE/")
 class RTETask(PairClassificationTask):
     """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """
@@ -1452,26 +1544,16 @@ class RTESuperGLUETask(RTETask):
 
     def load_data(self):
         """ Process the datasets located at path. """
-        targ_map = {"not_entailment": 0, "entailment": 1}
-
-        def _load_jsonl(data_file):
-            data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
-            sent1s, sent2s, trgs, idxs = [], [], [], []
-            for example in data:
-                sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
-                )
-                sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
-                )
-                trg = targ_map[example["label"]] if "label" in example else 0
-                trgs.append(trg)
-                idxs.append(example["idx"])
-            return [sent1s, sent2s, trgs, idxs]
-
-        self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
-        self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
+        targ_map = {"not_entailment": 0, True: 1, False: 0, "entailment": 1}
+        self.train_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "train.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
+        self.val_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "val.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
+        self.test_data_text = load_pair_nli_jsonl(
+            os.path.join(self.path, "test.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
+        )
         self.sentences = (
             self.train_data_text[0]
             + self.train_data_text[1]

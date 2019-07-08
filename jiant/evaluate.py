@@ -54,6 +54,7 @@ def evaluate(
         "sent1_str",
         "sent2_str",
         "labels",
+        "pair_id",
         "psg_idx",
         "qst_idx",
         "ans_idx",
@@ -87,10 +88,7 @@ def evaluate(
             with torch.no_grad():
                 batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
-
-            # We don't want diagnostic tasks to affect the micro and macro average.
-            # Accuracy on diagnostic tasks is hardcoded to 0.
-            if not isinstance(task, GLUEDiagnosticTask):
+            if task.contributes_to_aggregate_score:
                 n_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
@@ -115,13 +113,16 @@ def evaluate(
         # task_preds will be a DataFrame with columns
         # ['preds'] + FIELDS_TO_EXPORT
         # for GLUE tasks, preds entries should be single scalars.
-
         # Update metrics
         task_metrics = task.get_metrics(reset=True)
         for name, value in task_metrics.items():
             all_metrics["%s_%s" % (task.name, name)] = value
-        all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
-        all_metrics["macro_avg"] += all_metrics[task.val_metric]
+
+        # We don't want diagnostic tasks to affect the micro and macro average.
+        # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostic.
+        if task.contributes_to_aggregate_score:
+            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
+            all_metrics["macro_avg"] += all_metrics[task.val_metric]
         n_examples_overall += n_examples
 
         if not task_preds:
@@ -130,6 +131,7 @@ def evaluate(
 
         # Combine task_preds from each batch to a single DataFrame.
         task_preds = pd.concat(task_preds, ignore_index=True)
+
         # Store predictions, sorting by index if given.
         if "idx" in task_preds.columns:
             log.info("Task '%s': sorting predictions by 'idx'", task.name)
@@ -240,6 +242,7 @@ SUPERGLUE_NAME_MAP = {
     "wic": "WiC",
     "superglue-diagnostic": "AX",
     "winograd-coreference": "WSC",
+    "winogender-diagnostic": "Winogender",
 }
 
 
