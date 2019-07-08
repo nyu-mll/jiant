@@ -79,7 +79,7 @@ function record_bow() {
 }
 
 function rte_bow() {
-    python -m ipdb main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-rte\", run_name = rte, pretrain_tasks = \"rte-superglue\", target_tasks = \"rte-superglue,superglue-diagnostic,winogender-diagnostic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 625"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-rte\", run_name = rte, pretrain_tasks = \"rte-superglue\", target_tasks = \"rte-superglue,superglue-diagnostic,winogender-diagnostic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 625"
 }
 
 function wic_bow() {
