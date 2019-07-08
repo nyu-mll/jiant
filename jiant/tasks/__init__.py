@@ -1,12 +1,12 @@
 # Import task definitions to register their tasks.
-from . import edge_probing, lm, nli_probing, tasks, qa
+from jiant.tasks import edge_probing, lm, nli_probing, tasks, qa
 
 # REGISTRY needs to be available to modules within this package,
 # but we also import it here to make it available at the package level.
-from .registry import REGISTRY
+from jiant.tasks.registry import REGISTRY
 
 # Task class definition
-from .tasks import Task
+from jiant.tasks.tasks import Task
 
 ##
 # Task lists for handling as a group; these names correspond to the keys in
@@ -26,15 +26,19 @@ ALL_GLUE_TASKS = [
 
 
 ALL_SUPERGLUE_TASKS = [
+    "boolq",
     "commitbank",
     "copa",
     "multirc",
+    "record",
     "rte-superglue",
     "winograd-coreference",
     "wic",
     "superglue-diagnostic",
+    "winogender-diagnostic",
 ]
 
+ALL_DIAGNOSTICS = ["superglue-diagnostic", "winogender-diagnostic", "glue-diagnostic"]
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
     "cola_npi_sup",

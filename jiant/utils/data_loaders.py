@@ -5,13 +5,13 @@ files downloaded in scripts/download_data_glue.py
 """
 import codecs
 import csv
-
+import json
 import numpy as np
 import pandas as pd
 from allennlp.data import vocabulary
 
-from .tokenizers import get_tokenizer
-from .retokenize import realign_spans
+from jiant.utils.tokenizers import get_tokenizer
+from jiant.utils.retokenize import realign_spans
 
 BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -20,18 +20,18 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
-    Re-alignment of spans involves transforming the spans so that it matches the text after 
-    tokenization. 
+    Re-alignment of spans involves transforming the spans so that it matches the text after
+    tokenization.
     For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
-    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization, 
+    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization,
     it becomes [0, 3].
-    The task file should of be of the following form: 
-        text: str, 
+    The task file should of be of the following form:
+        text: str,
         label: bool
-        target: dict that contains the spans  
+        target: dict that contains the spans
     Args:
-        tokenizer_name: str, 
-        file_name: str, 
+        tokenizer_name: str,
+        file_name: str,
         label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
     Returns:
         List of dictionaries of the aligned spans and tokenized text.
@@ -42,6 +42,37 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     if has_labels is False:
         rows["label"] = False
     return list(rows.T.to_dict().values())
+
+
+def load_pair_nli_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
+    """
+    Loads a pair NLI task. 
+
+    Parameters
+    -----------------
+    data_file: path to data file,
+    tokenizer_name: str, 
+    max_seq_len: int, 
+    targ_map: a dictionary that maps labels to ints 
+
+    Returns
+    -----------------
+    sent1s: list of strings of tokenized first sentences, 
+    sent2s: list of strings of tokenized second sentences, 
+    trgs: list of ints of labels,
+    idxs: list of ints
+    """
+    data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
+    sent1s, sent2s, trgs, idxs, pair_ids = [], [], [], [], []
+    for example in data:
+        sent1s.append(process_sentence(tokenizer_name, example["premise"], max_seq_len))
+        sent2s.append(process_sentence(tokenizer_name, example["hypothesis"], max_seq_len))
+        trg = targ_map[example["label"]] if "label" in example else 0
+        trgs.append(trg)
+        idxs.append(example["idx"])
+        if "pair_id" in example:
+            pair_ids.append(example["pair_id"])
+    return [sent1s, sent2s, trgs, idxs, pair_ids]
 
 
 def load_tsv(

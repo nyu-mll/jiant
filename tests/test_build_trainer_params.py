@@ -1,6 +1,6 @@
 import unittest
-from src.trainer import build_trainer_params
-from src.utils.config import params_from_file
+from jiant.trainer import build_trainer_params
+from jiant.utils.config import params_from_file
 
 
 class TestBuildTrainerParams(unittest.TestCase):

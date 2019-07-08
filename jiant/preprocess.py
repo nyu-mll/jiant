@@ -27,9 +27,14 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from .tasks import ALL_COLA_NPI_TASKS, ALL_GLUE_TASKS, ALL_SUPERGLUE_TASKS, ALL_NLI_PROBING_TASKS
-from .tasks import REGISTRY as TASKS_REGISTRY
-from .utils import config, serialize, utils
+from jiant.tasks import (
+    ALL_COLA_NPI_TASKS,
+    ALL_GLUE_TASKS,
+    ALL_SUPERGLUE_TASKS,
+    ALL_NLI_PROBING_TASKS,
+)
+from jiant.tasks import REGISTRY as TASKS_REGISTRY
+from jiant.utils import config, serialize, utils
 
 # NOTE: these are not that same as AllenNLP SOS, EOS tokens
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
@@ -559,7 +564,7 @@ def add_bert_wpm_vocab(vocab, bert_model_name):
     """
     from pytorch_pretrained_bert import BertTokenizer
 
-    do_lower_case = bert_model_name.endswith("uncased")
+    do_lower_case = "uncased" in bert_model_name
     tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=do_lower_case)
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
     log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name, len(ordered_vocab))

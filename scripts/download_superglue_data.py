@@ -25,6 +25,7 @@ TASK2PATH = {
     "WiC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WiC.zip",
     "WSC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WSC.zip",
     "diagnostic": "https://www.dropbox.com/s/ju7d95ifb072q9f/diagnostic-full.tsv?dl=1",
+    "winogender-diagnostic": "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/WinoGender.zip",
 }
 
 
@@ -45,8 +46,15 @@ def download_diagnostic(data_dir):
     print("Downloading and extracting diagnostic...")
     if not os.path.isdir(os.path.join(data_dir, "RTE")):
         os.mkdir(os.path.join(data_dir, "RTE"))
-    data_file = os.path.join(data_dir, "RTE", "diagnostic-full.tsv")
+    diagnostic_dir = os.path.join(data_dir, "RTE", "diagnostics")
+    if not os.path.isdir(diagnostic_dir):
+        os.mkdir(diagnostic_dir)
+    data_file = os.path.join(diagnostic_dir, "diagnostic-full.tsv")
     urllib.request.urlretrieve(TASK2PATH["diagnostic"], data_file)
+    urllib.request.urlretrieve(
+        TASK2PATH["winogender-diagnostic"],
+        os.path.join(diagnostic_dir, "winogender_filtered.jsonl"),
+    )
     print("\tCompleted!")
     return
 

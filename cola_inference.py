@@ -45,12 +45,12 @@ from allennlp.data.dataset import Batch
 from allennlp.nn.util import move_to_device
 from tqdm import tqdm
 
-from src.models import build_model
-from src.preprocess import build_indexers, build_tasks
-from src.tasks.tasks import process_sentence, sentence_to_text_field
-from src.utils import config
-from src.utils.data_loaders import load_tsv
-from src.utils.utils import check_arg_name, load_model_state
+from jiant.models import build_model
+from jiant.preprocess import build_indexers, build_tasks
+from jiant.tasks.tasks import process_sentence, sentence_to_text_field
+from jiant.utils import config
+from jiant.utils.data_loaders import load_tsv
+from jiant.utils.utils import check_arg_name, load_model_state
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
