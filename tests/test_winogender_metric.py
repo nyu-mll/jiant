@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import pandas as pd
 
-from src.metrics.winogender_metrics import GenderParity
+from jiant.metrics.winogender_metrics import GenderParity
 
 
 class TestWinogenderMetric(unittest.TestCase):
