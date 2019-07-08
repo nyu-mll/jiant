@@ -16,7 +16,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-TASKS = ["CB", "COPA", "MultiRC", "RTE", "WiC", "WSC", "diagnostic"]
+TASKS = ["CB", "COPA", "MultiRC", "RTE", "WiC", "WSC", "diagnostic", "winogender-diagnostic"]
 TASK2PATH = {
     "CB": "https://dl.fbaipublicfiles.com/glue/superglue/data/CB.zip",
     "COPA": "https://dl.fbaipublicfiles.com/glue/superglue/data/COPA.zip",
@@ -25,6 +25,7 @@ TASK2PATH = {
     "WiC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WiC.zip",
     "WSC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WSC.zip",
     "diagnostic": "https://www.dropbox.com/s/ju7d95ifb072q9f/diagnostic-full.tsv?dl=1",
+    "winogender-diagnostic": "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/WinoGender.zip",
 }
 
 
@@ -47,6 +48,13 @@ def download_diagnostic(data_dir):
         os.mkdir(os.path.join(data_dir, "RTE"))
     data_file = os.path.join(data_dir, "RTE", "diagnostic-full.tsv")
     urllib.request.urlretrieve(TASK2PATH["diagnostic"], data_file)
+    winogender_dir = os.path.join(data_dir, "RTE", "diagnostics")
+    if not os.path.isdir(winogender_dir):
+        os.mkdir(winogender_dir)
+    urllib.request.urlretrieve(
+        TASK2PATH["winogender-diagnostic"],
+        os.path.join(winogender_dir, "winogender_filtered.jsonl"),
+    )
     print("\tCompleted!")
     return
 
@@ -84,7 +92,7 @@ def main(arguments):
     tasks = get_tasks(args.tasks)
 
     for task in tasks:
-        if task == "diagnostic":
+        if task in ["diagnostic", "winogender-diagnostic"]:
             download_diagnostic(args.data_dir)
         else:
             download_and_extract(task, args.data_dir)
