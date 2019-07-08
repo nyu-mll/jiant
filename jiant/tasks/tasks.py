@@ -1481,44 +1481,6 @@ class WinogenderTask(GLUEDiagnosticTask):
         ]
         self.gender_parity_scorer(batch_dict)
 
-    def process_single_pair_task_split(split, indexers, is_pair=True, classification=True):
-        """
-        Convert a dataset of sentences into padded sequences of indices. Shared
-        across several classes.
-
-        Args:
-            - split (list[list[str]]): list of inputs (possibly pair) and outputs
-            - indexers ()
-            - is_pair (Bool)
-            - classification (Bool)
-
-        Returns:
-            - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
-        """
-        # check here if using bert to avoid passing model info to tasks
-        is_using_bert = "bert_wpm_pretokenized" in indexers
-
-        def _make_instance(input1, input2, labels, idx):
-            d = {}
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            if is_using_bert and is_pair:
-                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
-                d["inputs"] = sentence_to_text_field(inp, indexers)
-                d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                if input2:
-                    d["input2"] = sentence_to_text_field(input2, indexers)
-                    d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-            if classification:
-                d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            else:
-                d["labels"] = NumericField(labels)
-
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
-
-            return Instance(d)
-
 
 @register_task("rte", rel_path="RTE/")
 class RTETask(PairClassificationTask):
