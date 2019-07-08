@@ -1193,7 +1193,7 @@ class MultiNLITask(PairClassificationTask):
 
 
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
-@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
+#@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
     """ Task class for GLUE/SuperGLUE diagnostic data """
 
@@ -1408,6 +1408,8 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self._scorer_all_mcc = None
+        self._scorer_all_acc = None
         self.eval_only_task = True
 
     def load_data(self):
@@ -1494,12 +1496,15 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
-        self._scorer_all = Correlation("matthews") # score all examples
+        self._scorer_all_mcc = Correlation("matthews") # score all examples according to MCC
+        self._scorer_all_acc = CategoricalAccuracy() # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
         # the scorer for the column itself.
+
+        _, preds = logits.max(dim=1)
         def update_scores_for_tag_group(ix_to_tags_dic, tag_group):
             for ix, tag in ix_to_tags_dic.items():
                 # 0 is for missing tag so here we use it to update scorer for the column
@@ -1522,9 +1527,9 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
                 if indices_to_pull.size()[0] == 0:
                     continue
                 sub_labels = labels[indices_to_pull[:, 0]]
-                sub_logits = logits[indices_to_pull[:, 0]]
+                sub_preds = preds[indices_to_pull[:, 0]]
                 scorer = getattr(self, scorer_str)
-                scorer(sub_logits, sub_labels)
+                scorer(sub_preds, sub_labels)
             return
 
         # Updates scorers for each tag.
@@ -1532,7 +1537,8 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         update_scores_for_tag_group(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         update_scores_for_tag_group(self.ix_to_logic_dic, "logic")
         update_scores_for_tag_group(self.ix_to_knowledge_dic, "knowledge")
-        self._scorer_all(logits, labels)
+        self._scorer_all_mcc(preds, labels)
+        self._scorer_all_acc(logits, labels)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
@@ -1606,7 +1612,8 @@ class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
         collect_metrics(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         collect_metrics(self.ix_to_logic_dic, "logic")
         collect_metrics(self.ix_to_knowledge_dic, "knowledge")
-        collected_metrics["all_mcc"] = self._scorer_all.get_metric(reset)
+        collected_metrics["all_mcc"] = self._scorer_all_mcc.get_metric(reset)
+        collected_metrics["all_acc"] = self._scorer_all_acc.get_metric(reset)
         return collected_metrics
 
 
