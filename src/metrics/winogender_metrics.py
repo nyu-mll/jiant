@@ -9,7 +9,7 @@ class GenderParity:
 
     def get_metric(self, reset=False):
         if self.same_preds + self.diff_preds == 0:
-          return -1
+            return -1
         gender_parity = float(self.same_preds) / float(self.same_preds + self.diff_preds)
         if reset:
             self.same_preds = 0.0
@@ -42,4 +42,3 @@ class GenderParity:
                 self.same_preds += 1
             else:
                 self.diff_preds += 1
-
