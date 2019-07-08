@@ -59,36 +59,36 @@ function rte_plus() {
 }
 
 function boolq_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-boolq-v2\", run_name = boolq, pretrain_tasks = \"boolq\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-boolq\", run_name = boolq, pretrain_tasks = \"boolq\", target_tasks = \"boolq\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000"
 }
 
 function commit_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-commit-v2\", run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 60"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-commit\", run_name = commitbank, pretrain_tasks = \"commitbank\", target_tasks = \"commitbank\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 60"
 }
 
 function copa_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-copa-v2\", run_name = copa, pretrain_tasks = \"copa\", target_tasks = \"copa\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 100"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-copa\", run_name = copa, pretrain_tasks = \"copa\", target_tasks = \"copa\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 100"
 }
 
 function multirc_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-multirc-v2\", run_name = multirc, pretrain_tasks = \"multirc\", target_tasks = \"multirc\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000, val_data_limit = -1"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-multirc\", run_name = multirc, pretrain_tasks = \"multirc\", target_tasks = \"multirc\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000, val_data_limit = -1"
 }
 
 function record_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-record-v2\", run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 10000, val_data_limit = -1"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-record\", run_name = record, pretrain_tasks = \"record\", target_tasks = \"record\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, batch_size = 8, val_interval = 10000, val_data_limit = -1"
 }
 
 function rte_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-rte-v2\", run_name = rte, pretrain_tasks = \"rte-superglue,winogender-diagnostic\", target_tasks = \"rte-superglue,superglue-diagnostic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 625"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-rte\", run_name = rte, pretrain_tasks = \"rte-superglue\", target_tasks = \"rte-superglue,superglue-diagnostic,winogender-diagnostic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 625"
 }
 
 function wic_bow() {
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-wic-v2\", run_name = wic, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-wic\", run_name = wic, pretrain_tasks = \"wic\", target_tasks = \"wic\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 1000"
 }
 
 function wsc_bow() {
     # NOTE: We use Adam b/c we were getting weird degenerate runs with BERT Adam
-    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-wsc-v2\", run_name = wsc, pretrain_tasks = \"winograd-coreference\", target_tasks = \"winograd-coreference\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 139, optimizer = adam"
+    python main.py --config config/superglue-bow.conf --overrides "random_seed = ${seed}, cuda = ${gpuid}, exp_name = \"bow-wsc\", run_name = wsc, pretrain_tasks = \"winograd-coreference\", target_tasks = \"winograd-coreference\", do_pretrain = 1, do_target_task_training = 0, do_full_eval = 1, val_interval = 139, optimizer = adam"
 }
 
 if [ $1 == "boolq" ]; then
