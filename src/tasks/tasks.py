@@ -1390,6 +1390,226 @@ class GLUEDiagnosticTask(PairClassificationTask):
         return collected_metrics
 
 
+@register_task("superglue-diagnostic", rel_path="RTE/")
+class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
+    """ Task class for GLUE/SuperGLUE diagnostic data """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(path, max_seq_len, name, n_classes=3, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = 3
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.ix_to_lex_sem_dic = None
+        self.ix_to_pr_ar_str_dic = None
+        self.ix_to_logic_dic = None
+        self.ix_to_knowledge_dic = None
+        self.eval_only_task = True
+
+    def load_data(self):
+        """load diagnostics data. The tags for every column are loaded as indices.
+        They will be converted to bools in preprocess_split function"""
+
+        def _build_label_vocab(labelspace, data):
+            """ This function builds the vocab mapping for a particular labelspace,
+            which in practice is a coarse-grained diagnostic category. """
+            values = set([d[labelspace] for d in data if labelspace in d])
+            vocab = vocabulary.Vocabulary(counter=None)
+            for value in values:
+                vocab.add_token_to_namespace(value, labelspace)
+            idx_to_word = vocab.get_index_to_token_vocabulary(labelspace)
+            word_to_idx = vocab.get_token_to_index_vocabulary(labelspace)
+            indexed = [[word_to_idx[d[labelspace]]] for d in data if labelspace in d]
+            return word_to_idx, idx_to_word, indexed
+
+        def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
+            """ Create a scorer for each tag in a given tag group.
+            The entire tag_group also has its own scorer"""
+            setattr(self, "scorer__%s" % tag_group, scorer(arg_to_scorer))
+            for index, tag in tags_dict.items():
+                # 0 is missing value
+                if index == 0:
+                    continue
+                setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+
+
+        targ_map = {"entailment": 1, "not_entailment": 0}
+        data = [json.loads(d) for d in open(os.path.join(self.path, "AX.labeled.jsonl"))]
+        sent1s = [process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data]
+        sent2s = [process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data]
+        labels = [targ_map[d["label"]] for d in data]
+        idxs = [int(d["idx"]) for d in data]
+        lxs2idx, idx2lxs, lxs = _build_label_vocab("lexical-semantics", data)
+        pas2idx, idx2pas, pas = _build_label_vocab("predicate-argument-structure", data)
+        lgc2idx, idx2lgc, lgc = _build_label_vocab("logic", data)
+        knw2idx, idx2knw, knw = _build_label_vocab("knowledge", data)
+        diag_data_dic = {
+            "sents1": sent1s,
+            "sents2": sent2s,
+            "targs": labels,
+            "idxs": idxs,
+            "lex_sem": lxs,
+            "pr_ar_str": pas,
+            "logic": lgc,
+            "knowledge": knw,
+            "ix_to_lex_sem_dic": idx2lxs,
+            "ix_to_pr_ar_str_dic": idx2pas,
+            "ix_to_logic_dic": idx2lgc,
+            "ix_to_knowledge_dic": idx2knw,
+            }
+
+        self.ix_to_lex_sem_dic = diag_data_dic["ix_to_lex_sem_dic"]
+        self.ix_to_pr_ar_str_dic = diag_data_dic["ix_to_pr_ar_str_dic"]
+        self.ix_to_logic_dic = diag_data_dic["ix_to_logic_dic"]
+        self.ix_to_knowledge_dic = diag_data_dic["ix_to_knowledge_dic"]
+
+        # Train, val, test splits are same. We only need one split but the code
+        # probably expects all splits to be present.
+        self.train_data_text = (
+            diag_data_dic["sents1"],
+            diag_data_dic["sents2"],
+            diag_data_dic["targs"],
+            diag_data_dic["idxs"],
+            diag_data_dic["lex_sem"],
+            diag_data_dic["pr_ar_str"],
+            diag_data_dic["logic"],
+            diag_data_dic["knowledge"],
+        )
+        self.val_data_text = self.train_data_text
+        self.test_data_text = self.train_data_text
+        self.sentences = (
+            self.train_data_text[0]
+            + self.train_data_text[1]
+            + self.val_data_text[0]
+            + self.val_data_text[1]
+        )
+        log.info("\tFinished loading diagnostic data.")
+
+        # TODO: use FastMatthews instead to save memory.
+        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, "lex_sem")
+        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
+        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
+        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
+        self._scorer_all = Correlation("matthews") # score all examples
+        log.info("\tFinished creating score functions for diagnostic data.")
+
+    def update_diagnostic_metrics(self, logits, labels, batch):
+        # Updates scorer for every tag in a given column (tag_group) and also the
+        # the scorer for the column itself.
+        def update_scores_for_tag_group(ix_to_tags_dic, tag_group):
+            for ix, tag in ix_to_tags_dic.items():
+                # 0 is for missing tag so here we use it to update scorer for the column
+                # itself (tag_group).
+                if ix == 0:
+                    # This will contain 1s on positions where at least one of the tags of this
+                    # column is present.
+                    mask = batch[tag_group]
+                    scorer_str = "scorer__%s" % tag_group
+                # This branch will update scorers of individual tags in the
+                # column
+                else:
+                    # batch contains_field for every tag. It's either 0 or 1.
+                    mask = batch["%s__%s" % (tag_group, tag)]
+                    scorer_str = "scorer__%s__%s" % (tag_group, tag)
+
+                # This will take only values for which the tag is true.
+                indices_to_pull = torch.nonzero(mask)
+                # No example in the batch is labeled with the tag.
+                if indices_to_pull.size()[0] == 0:
+                    continue
+                sub_labels = labels[indices_to_pull[:, 0]]
+                sub_logits = logits[indices_to_pull[:, 0]]
+                scorer = getattr(self, scorer_str)
+                scorer(sub_logits, sub_labels)
+            return
+
+        # Updates scorers for each tag.
+        update_scores_for_tag_group(self.ix_to_lex_sem_dic, "lex_sem")
+        update_scores_for_tag_group(self.ix_to_pr_ar_str_dic, "pr_ar_str")
+        update_scores_for_tag_group(self.ix_to_logic_dic, "logic")
+        update_scores_for_tag_group(self.ix_to_knowledge_dic, "knowledge")
+        self._scorer_all(logits, labels)
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        """ Process split text into a list of AllenNLP Instances. """
+        is_using_bert = "bert_wpm_pretokenized" in indexers
+
+        def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
+            # If there is something in this row then tag_group should be set to
+            # 1.
+            is_tag_group = 1 if len(tag_arr) != 0 else 0
+            fields_dict[tag_group] = LabelField(
+                is_tag_group, label_namespace=tag_group, skip_indexing=True
+            )
+            # For every possible tag in the column set 1 if the tag is present for
+            # this example, 0 otherwise.
+            for ix, tag in ix_to_tag_dict.items():
+                if ix == 0:
+                    continue
+                is_present = 1 if ix in tag_arr else 0
+                fields_dict["%s__%s" % (tag_group, tag)] = LabelField(
+                    is_present, label_namespace="%s__%s" % (tag_group, tag), skip_indexing=True
+                )
+            return
+
+        def _make_instance(input1, input2, label, idx, lex_sem, pr_ar_str, logic, knowledge):
+            """ from multiple types in one column create multiple fields """
+            d = {}
+            if is_using_bert:
+                inp = input1 + input2[1:]  # drop the leading [CLS] token
+                d["inputs"] = sentence_to_text_field(inp, indexers)
+            else:
+                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input2"] = sentence_to_text_field(input2, indexers)
+            d["labels"] = LabelField(label, label_namespace="labels", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idx", skip_indexing=True)
+            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+
+            # adds keys to dict "d" for every possible type in the column
+            create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, "lex_sem")
+            create_labels_from_tags(d, self.ix_to_pr_ar_str_dic, pr_ar_str, "pr_ar_str")
+            create_labels_from_tags(d, self.ix_to_logic_dic, logic, "logic")
+            create_labels_from_tags(d, self.ix_to_knowledge_dic, knowledge, "knowledge")
+
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        #  return list(instances)
+        return instances  # lazy iterator
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+        collected_metrics = {}
+        # We do not compute accuracy for this dataset but the eval function
+        # requires this key.
+        collected_metrics["accuracy"] = 0
+
+        def collect_metrics(ix_to_tag_dict, tag_group):
+            for index, tag in ix_to_tag_dict.items():
+                # Index 0 is used for missing data, here it will be used for score of the
+                # whole category.
+                if index == 0:
+                    scorer_str = "scorer__%s" % tag_group
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics["%s" % (tag_group)] = scorer.get_metric(reset)
+                else:
+                    scorer_str = "scorer__%s__%s" % (tag_group, tag)
+                    scorer = getattr(self, scorer_str)
+                    collected_metrics["%s__%s" % (tag_group, tag)] = scorer.get_metric(reset)
+
+        collect_metrics(self.ix_to_lex_sem_dic, "lex_sem")
+        collect_metrics(self.ix_to_pr_ar_str_dic, "pr_ar_str")
+        collect_metrics(self.ix_to_logic_dic, "logic")
+        collect_metrics(self.ix_to_knowledge_dic, "knowledge")
+        collected_metrics["all_mcc"] = self._scorer_all.get_metric(reset)
+        return collected_metrics
+
+
 @register_task("rte", rel_path="RTE/")
 class RTETask(PairClassificationTask):
     """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """

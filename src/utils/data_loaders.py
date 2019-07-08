@@ -20,18 +20,18 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
-    Re-alignment of spans involves transforming the spans so that it matches the text after 
-    tokenization. 
+    Re-alignment of spans involves transforming the spans so that it matches the text after
+    tokenization.
     For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
-    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization, 
+    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization,
     it becomes [0, 3].
-    The task file should of be of the following form: 
-        text: str, 
+    The task file should of be of the following form:
+        text: str,
         label: bool
-        target: dict that contains the spans  
+        target: dict that contains the spans
     Args:
-        tokenizer_name: str, 
-        file_name: str, 
+        tokenizer_name: str,
+        file_name: str,
         label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
     Returns:
         List of dictionaries of the aligned spans and tokenized text.
@@ -164,8 +164,8 @@ def load_diagnostic_tsv(
     skip_rows=0,
     delimiter="\t",
 ):
-    """Load a tsv and  indexes the columns from the diagnostic tsv.
-        This is only used for MNLI-diagnostic right now.
+    """Load a tsv and indexes the columns from the diagnostic tsv.
+        This is only used for GLUEDiagnosticTask right now.
     Args:
         data_file: string
         max_seq_len: int
