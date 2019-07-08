@@ -71,7 +71,7 @@ def evaluate(
 
     all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
     all_preds = {}
-    n_examples_overall = 0 # n examples over all tasks
+    n_examples_overall = 0  # n examples over all tasks
     assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
