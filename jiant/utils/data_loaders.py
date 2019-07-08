@@ -63,14 +63,16 @@ def load_pair_nli_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
     idxs: list of ints
     """
     data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
-    sent1s, sent2s, trgs, idxs = [], [], [], []
+    sent1s, sent2s, trgs, idxs, pair_ids = [], [], [], [], []
     for example in data:
         sent1s.append(process_sentence(tokenizer_name, example["premise"], max_seq_len))
         sent2s.append(process_sentence(tokenizer_name, example["hypothesis"], max_seq_len))
         trg = targ_map[example["label"]] if "label" in example else 0
         trgs.append(trg)
         idxs.append(example["idx"])
-    return [sent1s, sent2s, trgs, idxs]
+        if "pair_id" in example:
+            pair_ids.append(example["pair_id"])
+    return [sent1s, sent2s, trgs, idxs, pair_ids]
 
 
 def load_tsv(
