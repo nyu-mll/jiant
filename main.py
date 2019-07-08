@@ -560,6 +560,7 @@ def main(cl_arguments):
     if args.do_full_eval:
         log.info("Evaluating...")
         splits_to_write = evaluate.parse_write_preds_arg(args.write_preds)
+
         # Evaluate on target_tasks.
         for task in target_tasks:
             # Find the task-specific best checkpoint to evaluate on.
