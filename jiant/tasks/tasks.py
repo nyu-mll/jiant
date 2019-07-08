@@ -1192,7 +1192,9 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
+# GLUE diagnostic (3-class NLI), expects TSV
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
+# GLUE diagnostic (2 class NLI, merging neutral and contradiction into not_entailment)
 @register_task("glue-diagnostic-binary", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
     """ Task class for GLUE diagnostic data """
@@ -1397,9 +1399,10 @@ class GLUEDiagnosticTask(PairClassificationTask):
         return collected_metrics
 
 
-@register_task("superglue-diagnostic", rel_path="RTE/")
-class SuperGLUEDiagnosticTask(GLUEDiagnosticTask):
-    """ Task class for SuperGLUE diagnostic data """
+# SuperGLUE diagnostic (2-class NLI), expects JSONL
+@register_task("broadcoverage-diagnostic", rel_path="RTE/")
+class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
+    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(path, max_seq_len, name, n_classes=3, **kw)
@@ -1564,7 +1567,8 @@ class RTETask(PairClassificationTask):
 
 @register_task("rte-superglue", rel_path="RTE/")
 class RTESuperGLUETask(RTETask):
-    """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """
+    """ Task class for Recognizing Textual Entailment 1, 2, 3, 5
+    Uses JSONL format used by SuperGLUE"""
 
     def load_data(self):
         """ Process the datasets located at path. """
