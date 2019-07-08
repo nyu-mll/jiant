@@ -195,7 +195,7 @@ def load_diagnostic_tsv(
     def targs_to_idx(col_name):
         # This function builds the index to vocab (and its inverse) mapping
         values = set(rows[col_name].values)
-        vocab = vocabulary.Vocabulary(counter=None)
+        vocab = vocabulary.Vocabulary(counter=None, non_padded_namespaces=[col_name])
         for value in values:
             vocab.add_token_to_namespace(value, col_name)
         idx_to_word = vocab.get_index_to_token_vocabulary(col_name)

@@ -1193,9 +1193,9 @@ class MultiNLITask(PairClassificationTask):
 
 
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
-#@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
+@register_task("glue-diagnostic-binary", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
-    """ Task class for GLUE/SuperGLUE diagnostic data """
+    """ Task class for GLUE diagnostic data """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
         super().__init__(name, n_classes, **kw)
