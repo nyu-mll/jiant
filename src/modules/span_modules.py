@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from ..tasks.tasks import Task
-from .import modules
+from . import modules
 
 from allennlp.modules.span_extractors import \
     EndpointSpanExtractor, SelfAttentiveSpanExtractor
