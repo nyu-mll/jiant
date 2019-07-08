@@ -2650,4 +2650,3 @@ class BooleanQuestionTask(PairClassificationTask):
         for split in splits:
             st = self.get_split_text(split)
             self.example_counts[split] = len(st)
->>>>>>> 202d290b2b921c991b44b68f1cb3bbfb06b9170d
