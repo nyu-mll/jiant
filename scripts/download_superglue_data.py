@@ -33,15 +33,14 @@ TASK2PATH = {
 
 def download_and_extract(task, data_dir):
     print("Downloading and extracting %s..." % task)
-    if not os.path.isdir(os.path.join(data_dir, task)):
-        os.mkdir(os.path.join(data_dir, task))
-    data_file = os.path.join(data_dir, task, "%s.zip" % task)
-
+    if not os.path.isdir(data_dir):
+        os.mkdir(data_dir)
+    data_file = os.path.join(data_dir, "%s.zip" % task)
     urllib.request.urlretrieve(TASK2PATH[task], data_file)
     with zipfile.ZipFile(data_file) as zip_ref:
-        zip_ref.extractall(os.path.join(data_dir, task))
+        zip_ref.extractall(data_dir)
     os.remove(data_file)
-    print("\tCompleted!")
+    print(f"\tCompleted! Downloaded {task} data to directory {data_dir}")
 
 
 def download_diagnostic(data_dir):
