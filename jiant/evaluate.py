@@ -306,7 +306,7 @@ def _write_wic_preds(
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
-                out_d = {"idx": row["idx"], "label": pred_map[row["labels"]]}
+                out_d = {"idx": row["idx"], "label": pred_map[row["preds"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
@@ -462,7 +462,7 @@ def _write_rte_preds(
     with open(preds_file, "w", encoding="utf-8") as preds_fh:
         for row_idx, row in preds_df.iterrows():
             if strict_glue_format:
-                out_d = {"idx": row["idx"], "label": trg_map[row["labels"]]}
+                out_d = {"idx": row["idx"], "label": trg_map[row["preds"]]}
             else:
                 out_d = row.to_dict()
             preds_fh.write("{0}\n".format(json.dumps(out_d)))
