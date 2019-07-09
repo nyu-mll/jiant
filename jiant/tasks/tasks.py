@@ -1454,7 +1454,7 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {"entailment": 1, "not_entailment": 0}
-        data = [json.loads(d) for d in open(os.path.join(self.path, "BroadCoverage.jsonl"))]
+        data = [json.loads(d) for d in open(os.path.join(self.path, "AX-b.jsonl"))]
         sent1s = [
             process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
         ]
@@ -1536,19 +1536,19 @@ class WinogenderTask(GLUEDiagnosticTask):
         targ_map = {"not_entailment": 0, "entailment": 1}
 
         self.train_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
+            os.path.join(self.path, "AX-g.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
             targ_map,
         )
         self.val_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
+            os.path.join(self.path, "AX-g.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
             targ_map,
         )
         self.test_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
+            os.path.join(self.path, "AX-g.jsonl"),
             self._tokenizer_name,
             self.max_seq_len,
             targ_map,
