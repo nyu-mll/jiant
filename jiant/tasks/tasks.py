@@ -1536,22 +1536,13 @@ class WinogenderTask(GLUEDiagnosticTask):
         targ_map = {"not_entailment": 0, "entailment": 1}
 
         self.train_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "AX-g.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.val_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "AX-g.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.test_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "AX-g.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.sentences = (
             self.train_data_text[0]
