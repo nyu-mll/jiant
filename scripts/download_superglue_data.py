@@ -8,11 +8,11 @@ Example usage:
 
 """
 
-import argparse
 import os
-import shutil
 import sys
+import shutil
 import tempfile
+import argparse
 import urllib.request
 import zipfile
 
@@ -44,7 +44,6 @@ def download_and_extract(task, data_dir):
 
 
 def download_diagnostic(data_dir):
-    import ipdb; ipdb.set_trace()
     print("Downloading and extracting diagnostic...")
     if not os.path.isdir(os.path.join(data_dir, "RTE")):
         os.mkdir(os.path.join(data_dir, "RTE"))
@@ -56,12 +55,16 @@ def download_diagnostic(data_dir):
     urllib.request.urlretrieve(TASK2PATH["broadcoverage-diagnostic"], data_file)
     with zipfile.ZipFile(data_file) as zip_ref:
         zip_ref.extractall(diagnostic_dir)
+        shutil.move(os.path.join(diagnostic_dir, "AX-b", "AX-b.jsonl"), diagnostic_dir)
+        os.rmdir(os.path.join(diagnostic_dir, "AX-b"))
     os.remove(data_file)
 
     data_file = os.path.join(diagnostic_dir, "winogender.zip")
     urllib.request.urlretrieve(TASK2PATH["winogender-diagnostic"], data_file)
     with zipfile.ZipFile(data_file) as zip_ref:
         zip_ref.extractall(diagnostic_dir)
+        shutil.move(os.path.join(diagnostic_dir, "AX-g", "AX-g.jsonl"), diagnostic_dir)
+        os.rmdir(os.path.join(diagnostic_dir, "AX-g"))
     os.remove(data_file)
     print("\tCompleted!")
     return
