@@ -78,12 +78,14 @@ class TestWritePreds(unittest.TestCase):
                     "sent1": "Room and board. ",
                     "sent2": "He nailed boards across the windows.",
                     "labels": 0,
+                    "preds": 0,
                 },
                 {
                     "idx": 1,
                     "sent1": "Hook a fish",
                     "sent2": "He hooked a snake accidentally.",
                     "labels": 1,
+                    "preds": 1,
                 },
             ]
         )
