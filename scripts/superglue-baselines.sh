@@ -5,6 +5,7 @@
 #           as well as their *-bow variants and *++ for {"boolq", "cb", "copa", "rte"}
 #   - GPU_ID: GPU to use, or -1 for CPU. Defaults to 0.
 #   - SEED: random seed. Defaults to 111.
+
 source user_config.sh
 seed=${3:-111}
 gpuid=${2:-0}
