@@ -1405,7 +1405,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
 
 # SuperGLUE diagnostic (2-class NLI), expects JSONL
-@register_task("broadcoverage-diagnostic", rel_path="RTE/")
+@register_task("broadcoverage-diagnostic", rel_path="RTE/diagnostics")
 class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
     """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
 
@@ -1454,7 +1454,7 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {"entailment": 1, "not_entailment": 0}
-        data = [json.loads(d) for d in open(os.path.join(self.path, "AX.labeled.jsonl"))]
+        data = [json.loads(d) for d in open(os.path.join(self.path, "BroadCoverage.jsonl"))]
         sent1s = [
             process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
         ]

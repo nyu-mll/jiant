@@ -239,9 +239,9 @@ SUPERGLUE_NAME_MAP = {
     "record": "ReCoRD",
     "rte-superglue": "RTE",
     "wic": "WiC",
-    "superglue-diagnostic": "AX",
     "winograd-coreference": "WSC",
-    "winogender-diagnostic": "Winogender",
+    "broadcoverage-diagnostic": "AX-b",
+    "winogender-diagnostic": "AX-g",
 }
 
 
