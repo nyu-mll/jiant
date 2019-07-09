@@ -1410,10 +1410,10 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
     """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super().__init__(path, max_seq_len, name, n_classes=3, **kw)
+        super().__init__(path, max_seq_len, name, n_classes=2, **kw)
         self.path = path
         self.max_seq_len = max_seq_len
-        self.n_classes = 3
+        self.n_classes = 2
 
         self.train_data_text = None
         self.val_data_text = None
