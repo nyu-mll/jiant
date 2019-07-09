@@ -11,6 +11,7 @@ dependencies:
     - pandas=0.23.0
     - pytz=2017.3
     - jsondiff
+    - pip
     - pip:
         - allennlp==0.8.4
         - ipdb
