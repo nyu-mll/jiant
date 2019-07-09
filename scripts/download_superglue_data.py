@@ -16,7 +16,7 @@ import tempfile
 import urllib.request
 import zipfile
 
-TASKS = ["CB", "COPA", "MultiRC", "RTE", "WiC", "WSC", "diagnostic"]
+TASKS = ["CB", "COPA", "MultiRC", "RTE", "WiC", "WSC", "BoolQ", "ReCoRD", "diagnostic"]
 TASK2PATH = {
     "CB": "https://dl.fbaipublicfiles.com/glue/superglue/data/CB.zip",
     "COPA": "https://dl.fbaipublicfiles.com/glue/superglue/data/COPA.zip",
@@ -26,6 +26,8 @@ TASK2PATH = {
     "WSC": "https://dl.fbaipublicfiles.com/glue/superglue/data/WSC.zip",
     "diagnostic": "https://www.dropbox.com/s/ju7d95ifb072q9f/diagnostic-full.tsv?dl=1",
     "winogender-diagnostic": "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/WinoGender.zip",
+    "BoolQ": "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/BoolQ.zip",
+    "ReCoRD": "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/ReCoRD.zip",
 }
 
 
@@ -76,7 +78,11 @@ def get_tasks(task_names):
 def main(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-d", "--data_dir", help="directory to save data to", type=str, default="../superglue_data"
+        "-d",
+        "--data_dir",
+        help="directory to save data to",
+        type=str,
+        default="../superglue_data",
     )
     parser.add_argument(
         "-t",
