@@ -446,7 +446,7 @@ def get_tasks(args):
     target_task_names = parse_task_list_arg(args.target_tasks)
     # TODO: We don't want diagnostic tasks in train_task_names
     # but want to support glue/superglue task macros.
-    pretrain_task_names = filter(lambda x: x not in ALL_DIAGNOSTICS, pretrain_task_names)
+    pretrain_task_names = list(filter(lambda x: x not in ALL_DIAGNOSTICS, pretrain_task_names))
 
     task_names = sorted(set(pretrain_task_names + target_task_names))
     assert data_path is not None
