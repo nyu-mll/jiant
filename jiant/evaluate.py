@@ -120,9 +120,9 @@ def evaluate(
         # We don't want diagnostic tasks to affect the micro and macro average.
         # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostic.
         if task.contributes_to_aggregate_score:
-            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
+            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_task_examples
             all_metrics["macro_avg"] += all_metrics[task.val_metric]
-            n_examples_overall += n_examples
+            n_examples_overall += n_task_examples
 
         if not task_preds:
             log.warning("Task %s: has no predictions!", task.name)
