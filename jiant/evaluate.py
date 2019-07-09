@@ -63,7 +63,6 @@ def evaluate(
     # Enforce that these tasks have the 'idx' field set.
     IDX_REQUIRED_TASK_NAMES = (
         tasks_module.ALL_GLUE_TASKS
-        + ["wmt"]
         + tasks_module.ALL_SUPERGLUE_TASKS
         + tasks_module.ALL_COLA_NPI_TASKS
     )

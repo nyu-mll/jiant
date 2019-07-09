@@ -35,23 +35,23 @@ _MOSES_DETOKENIZER = MosesDetokenizer()
 
 def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     """
-    Check if there are previous checkpoints. 
-    If phase == target_train, we loop through each of the tasks from last to first 
-    to find the task with the most recent checkpoint. 
-    If phase == pretrain, we check if there is a most recent checkpoint in the run 
-    directory. 
+    Check if there are previous checkpoints.
+    If phase == target_train, we loop through each of the tasks from last to first
+    to find the task with the most recent checkpoint.
+    If phase == pretrain, we check if there is a most recent checkpoint in the run
+    directory.
 
-    Parameters 
+    Parameters
     ---------------------
-    serialization_dir: str, 
-    tasks: List of SamplingMultiTask objects, 
-    phase: str 
+    serialization_dir: str,
+    tasks: List of SamplingMultiTask objects,
+    phase: str
     load_model: bool
 
     Returns
     ---------------------
     ckpt_directory: None or str, name of directory that checkpoints are in
-    with regards to the run directory. 
+    with regards to the run directory.
     val_pass: int, -1 if not found.
     suffix: None or str, the suffix of the checkpoint.
     """
@@ -86,9 +86,9 @@ def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
 def find_last_checkpoint_epoch(serialization_dir, search_phase="pretrain", task_name=""):
 
     """
-    Search for the last epoch in a directory. 
+    Search for the last epoch in a directory.
     Here, we check that all four checkpoints (model, training_state, task_state, metrics)
-    exist and return the most recent epoch with all four checkpoints. 
+    exist and return the most recent epoch with all four checkpoints.
 
     """
     if not serialization_dir:
@@ -150,15 +150,15 @@ def parse_json_diff(diff):
     Parses the output of jsondiff's diff() function, which introduces
     symbols such as replace.
     The potential keys introduced are jsondiff.replace, jsondiff.insert, and jsondiff.delete.
-    For jsondiff.replace and jsondiff.insert, we simply want to return the 
-    actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to 
-    show deletions in our parameters. 
+    For jsondiff.replace and jsondiff.insert, we simply want to return the
+    actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to
+    show deletions in our parameters.
     For example, for jsondiff.replace, the output of jsondiff may be the below:
     {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
-    since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete 
+    since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete
     the replace. The output of this function will be:
     {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
-    See for more information on jsondiff. 
+    See for more information on jsondiff.
     """
     new_diff = {}
     if isinstance(diff, dict):
@@ -180,9 +180,9 @@ def parse_json_diff(diff):
 
 def select_relevant_print_args(args):
     """
-        Selects relevant arguments to print out. 
-        We select relevant arguments as the difference between defaults.conf and the experiment's 
-        configuration. 
+        Selects relevant arguments to print out.
+        We select relevant arguments as the difference between defaults.conf and the experiment's
+        configuration.
 
         Params
         -----------
@@ -222,7 +222,7 @@ def select_relevant_print_args(args):
 
 def select_task_specific_args(exp_args, diff_args):
     """
-    A helper function that adds in task-specific parameters from the experiment 
+    A helper function that adds in task-specific parameters from the experiment
     configurations for tasks in pretrain_tasks and target_tasks.
     """
     exp_tasks = []
