@@ -147,8 +147,8 @@ class TestLoadDiagnosticDataset(unittest.TestCase):
             len(output_dictionary["lex_sem"][0]) == 0
         ), "If the field in row is blank in diagnostic dataset, we should return []"
         assert output_dictionary["logic"][0] == [
-            2
-        ], "If the field in row is not blank, we should return [2], where 2 is index"
+            0
+        ], "If the field in row is not blank, we should return [0], where 0 is index"
         assert "cat" in output_dictionary["sents1"][0], "sent1s output is wrong"
         assert "not" in output_dictionary["sents2"][0]
 

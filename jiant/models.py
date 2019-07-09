@@ -843,9 +843,6 @@ class MultiTaskModel(nn.Module):
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch)
 
-        labels = batch["labels"].squeeze(-1)
-        out["loss"] = F.cross_entropy(logits, labels)
-        _, predicted = logits.max(dim=1)
         if "labels" in batch:
             if batch["labels"].dim() == 0:
                 labels = batch["labels"].unsqueeze(0)
@@ -854,10 +851,13 @@ class MultiTaskModel(nn.Module):
             else:
                 labels = batch["labels"].squeeze(-1)
             out["loss"] = F.cross_entropy(logits, labels)
-            task.update_diagnostic_metrics(predicted, labels, batch)
+            # task.update_diagnostic_metrics(predicted, labels, batch)
+            task.update_diagnostic_metrics(logits, labels, batch)
 
         if predict:
+            _, predicted = logits.max(dim=1)
             out["preds"] = predicted
+
         return out
 
     def _span_forward(self, batch, task, predict):

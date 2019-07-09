@@ -1195,10 +1195,12 @@ class MultiNLITask(PairClassificationTask):
         log.info("\tFinished loading MNLI data.")
 
 
+# GLUE diagnostic (3-class NLI), expects TSV
 @register_task("glue-diagnostic", rel_path="MNLI/", n_classes=3)
-@register_task("superglue-diagnostic", rel_path="RTE/", n_classes=2)
+# GLUE diagnostic (2 class NLI, merging neutral and contradiction into not_entailment)
+@register_task("glue-diagnostic-binary", rel_path="RTE/", n_classes=2)
 class GLUEDiagnosticTask(PairClassificationTask):
-    """ Task class for GLUE/SuperGLUE diagnostic data """
+    """ Task class for GLUE diagnostic data """
 
     def __init__(self, path, max_seq_len, name, n_classes, **kw):
         super().__init__(name, n_classes, **kw)
@@ -1214,6 +1216,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self.ix_to_pr_ar_str_dic = None
         self.ix_to_logic_dic = None
         self.ix_to_knowledge_dic = None
+        self._scorer_all_mcc = None
+        self._scorer_all_acc = None
+
         self.contributes_to_aggregate_score = False
         self.eval_only_task = True
 
@@ -1281,11 +1286,15 @@ class GLUEDiagnosticTask(PairClassificationTask):
         create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
         create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
         create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
+        self._scorer_all_mcc = Correlation("matthews")  # score all examples according to MCC
+        self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
     def update_diagnostic_metrics(self, logits, labels, batch):
         # Updates scorer for every tag in a given column (tag_group) and also the
         # the scorer for the column itself.
+        _, preds = logits.max(dim=1)
+
         def update_scores_for_tag_group(ix_to_tags_dic, tag_group):
             for ix, tag in ix_to_tags_dic.items():
                 # 0 is for missing tag so here we use it to update scorer for the column
@@ -1308,9 +1317,9 @@ class GLUEDiagnosticTask(PairClassificationTask):
                 if indices_to_pull.size()[0] == 0:
                     continue
                 sub_labels = labels[indices_to_pull[:, 0]]
-                sub_logits = logits[indices_to_pull[:, 0]]
+                sub_preds = preds[indices_to_pull[:, 0]]
                 scorer = getattr(self, scorer_str)
-                scorer(sub_logits, sub_labels)
+                scorer(sub_preds, sub_labels)
             return
 
         # Updates scorers for each tag.
@@ -1318,6 +1327,8 @@ class GLUEDiagnosticTask(PairClassificationTask):
         update_scores_for_tag_group(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         update_scores_for_tag_group(self.ix_to_logic_dic, "logic")
         update_scores_for_tag_group(self.ix_to_knowledge_dic, "knowledge")
+        self._scorer_all_mcc(preds, labels)
+        self._scorer_all_acc(logits, labels)
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
@@ -1370,9 +1381,6 @@ class GLUEDiagnosticTask(PairClassificationTask):
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         collected_metrics = {}
-        # We do not compute accuracy for this dataset but the eval function
-        # requires this key.
-        collected_metrics["accuracy"] = 0
 
         def collect_metrics(ix_to_tag_dict, tag_group):
             for index, tag in ix_to_tag_dict.items():
@@ -1391,7 +1399,119 @@ class GLUEDiagnosticTask(PairClassificationTask):
         collect_metrics(self.ix_to_pr_ar_str_dic, "pr_ar_str")
         collect_metrics(self.ix_to_logic_dic, "logic")
         collect_metrics(self.ix_to_knowledge_dic, "knowledge")
+        collected_metrics["all_mcc"] = self._scorer_all_mcc.get_metric(reset)
+        collected_metrics["accuracy"] = self._scorer_all_acc.get_metric(reset)
         return collected_metrics
+
+
+# SuperGLUE diagnostic (2-class NLI), expects JSONL
+@register_task("broadcoverage-diagnostic", rel_path="RTE/diagnostics")
+class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
+    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super().__init__(path, max_seq_len, name, n_classes=2, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self.n_classes = 2
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+
+        self.ix_to_lex_sem_dic = None
+        self.ix_to_pr_ar_str_dic = None
+        self.ix_to_logic_dic = None
+        self.ix_to_knowledge_dic = None
+        self._scorer_all_mcc = None
+        self._scorer_all_acc = None
+        self.eval_only_task = True
+
+    def load_data(self):
+        """load diagnostics data. The tags for every column are loaded as indices.
+        They will be converted to bools in preprocess_split function"""
+
+        def _build_label_vocab(labelspace, data):
+            """ This function builds the vocab mapping for a particular labelspace,
+            which in practice is a coarse-grained diagnostic category. """
+            values = set([d[labelspace] for d in data if labelspace in d])
+            vocab = vocabulary.Vocabulary(counter=None, non_padded_namespaces=[labelspace])
+            for value in values:
+                vocab.add_token_to_namespace(value, labelspace)
+            idx_to_word = vocab.get_index_to_token_vocabulary(labelspace)
+            word_to_idx = vocab.get_token_to_index_vocabulary(labelspace)
+            indexed = [[word_to_idx[d[labelspace]]] for d in data if labelspace in d]
+            return word_to_idx, idx_to_word, indexed
+
+        def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
+            """ Create a scorer for each tag in a given tag group.
+            The entire tag_group also has its own scorer"""
+            setattr(self, "scorer__%s" % tag_group, scorer(arg_to_scorer))
+            for index, tag in tags_dict.items():
+                # 0 is missing value
+                if index == 0:
+                    continue
+                setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
+
+        targ_map = {"entailment": 1, "not_entailment": 0}
+        data = [json.loads(d) for d in open(os.path.join(self.path, "BroadCoverage.jsonl"))]
+        sent1s = [
+            process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
+        ]
+        sent2s = [
+            process_sentence(self._tokenizer_name, d["sentence2"], self.max_seq_len) for d in data
+        ]
+        labels = [targ_map[d["label"]] for d in data]
+        idxs = [int(d["idx"]) for d in data]
+        lxs2idx, idx2lxs, lxs = _build_label_vocab("lexical-semantics", data)
+        pas2idx, idx2pas, pas = _build_label_vocab("predicate-argument-structure", data)
+        lgc2idx, idx2lgc, lgc = _build_label_vocab("logic", data)
+        knw2idx, idx2knw, knw = _build_label_vocab("knowledge", data)
+        diag_data_dic = {
+            "sents1": sent1s,
+            "sents2": sent2s,
+            "targs": labels,
+            "idxs": idxs,
+            "lex_sem": lxs,
+            "pr_ar_str": pas,
+            "logic": lgc,
+            "knowledge": knw,
+            "ix_to_lex_sem_dic": idx2lxs,
+            "ix_to_pr_ar_str_dic": idx2pas,
+            "ix_to_logic_dic": idx2lgc,
+            "ix_to_knowledge_dic": idx2knw,
+        }
+
+        self.ix_to_lex_sem_dic = diag_data_dic["ix_to_lex_sem_dic"]
+        self.ix_to_pr_ar_str_dic = diag_data_dic["ix_to_pr_ar_str_dic"]
+        self.ix_to_logic_dic = diag_data_dic["ix_to_logic_dic"]
+        self.ix_to_knowledge_dic = diag_data_dic["ix_to_knowledge_dic"]
+
+        # Train, val, test splits are same. We only need one split but the code
+        # probably expects all splits to be present.
+        self.train_data_text = (
+            diag_data_dic["sents1"],
+            diag_data_dic["sents2"],
+            diag_data_dic["targs"],
+            diag_data_dic["idxs"],
+            diag_data_dic["lex_sem"],
+            diag_data_dic["pr_ar_str"],
+            diag_data_dic["logic"],
+            diag_data_dic["knowledge"],
+        )
+        self.val_data_text = self.train_data_text
+        self.test_data_text = self.train_data_text
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        log.info("\tFinished loading diagnostic data.")
+
+        # TODO: use FastMatthews instead to save memory.
+        create_score_function(Correlation, "matthews", self.ix_to_lex_sem_dic, "lex_sem")
+        create_score_function(Correlation, "matthews", self.ix_to_pr_ar_str_dic, "pr_ar_str")
+        create_score_function(Correlation, "matthews", self.ix_to_logic_dic, "logic")
+        create_score_function(Correlation, "matthews", self.ix_to_knowledge_dic, "knowledge")
+        self._scorer_all_mcc = Correlation("matthews")  # score all examples according to MCC
+        self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
+        log.info("\tFinished creating score functions for diagnostic data.")
 
 
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
@@ -1543,7 +1663,8 @@ class RTETask(PairClassificationTask):
 
 @register_task("rte-superglue", rel_path="RTE/")
 class RTESuperGLUETask(RTETask):
-    """ Task class for Recognizing Textual Entailment 1, 2, 3, 5 """
+    """ Task class for Recognizing Textual Entailment 1, 2, 3, 5
+    Uses JSONL format used by SuperGLUE"""
 
     def load_data(self):
         """ Process the datasets located at path. """

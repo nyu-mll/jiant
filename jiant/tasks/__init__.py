@@ -34,11 +34,11 @@ ALL_SUPERGLUE_TASKS = [
     "rte-superglue",
     "winograd-coreference",
     "wic",
-    "superglue-diagnostic",
+    "broadcoverage-diagnostic",
     "winogender-diagnostic",
 ]
 
-ALL_DIAGNOSTICS = ["superglue-diagnostic", "winogender-diagnostic", "glue-diagnostic"]
+ALL_DIAGNOSTICS = ["broadcoverage-diagnostic", "winogender-diagnostic", "glue-diagnostic"]
 # Tasks for the spring19_seminar; similar to cola but write predictions differently
 ALL_COLA_NPI_TASKS = [
     "cola_npi_sup",

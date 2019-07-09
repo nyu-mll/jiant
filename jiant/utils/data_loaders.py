@@ -195,8 +195,8 @@ def load_diagnostic_tsv(
     skip_rows=0,
     delimiter="\t",
 ):
-    """Load a tsv and  indexes the columns from the diagnostic tsv.
-        This is only used for MNLI-diagnostic right now.
+    """Load a tsv and indexes the columns from the diagnostic tsv.
+        This is only used for GLUEDiagnosticTask right now.
     Args:
         data_file: string
         max_seq_len: int
@@ -226,7 +226,7 @@ def load_diagnostic_tsv(
     def targs_to_idx(col_name):
         # This function builds the index to vocab (and its inverse) mapping
         values = set(rows[col_name].values)
-        vocab = vocabulary.Vocabulary(counter=None)
+        vocab = vocabulary.Vocabulary(counter=None, non_padded_namespaces=[col_name])
         for value in values:
             vocab.add_token_to_namespace(value, col_name)
         idx_to_word = vocab.get_index_to_token_vocabulary(col_name)

@@ -72,14 +72,13 @@ def evaluate(
 
     all_metrics = {"micro_avg": 0.0, "macro_avg": 0.0}
     all_preds = {}
-    n_examples_overall = 0
-
+    n_examples_overall = 0  # n examples over all tasks
     assert len(tasks) > 0, "Configured to evaluate, but specified no task to evaluate."
 
     for task in tasks:
         log.info("Evaluating on: %s, split: %s", task.name, split)
         last_log = time.time()
-        n_examples = 0
+        n_task_examples = 0
         task_preds = []  # accumulate DataFrames
         assert split in ["train", "val", "test"]
         dataset = getattr(task, "%s_data" % split)
@@ -88,8 +87,8 @@ def evaluate(
             with torch.no_grad():
                 batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
-            if task.contributes_to_aggregate_score:
-                n_examples += out["n_exs"]
+
+            n_task_examples += out["n_exs"]
             # get predictions
             if "preds" not in out:
                 continue
@@ -121,9 +120,9 @@ def evaluate(
         # We don't want diagnostic tasks to affect the micro and macro average.
         # Accuracy on diagnostic tasks is hardcoded to 0 except for winogender-diagnostic.
         if task.contributes_to_aggregate_score:
-            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_examples
+            all_metrics["micro_avg"] += all_metrics[task.val_metric] * n_task_examples
             all_metrics["macro_avg"] += all_metrics[task.val_metric]
-        n_examples_overall += n_examples
+            n_examples_overall += n_task_examples
 
         if not task_preds:
             log.warning("Task %s: has no predictions!", task.name)
@@ -240,9 +239,9 @@ SUPERGLUE_NAME_MAP = {
     "record": "ReCoRD",
     "rte-superglue": "RTE",
     "wic": "WiC",
-    "superglue-diagnostic": "AX",
     "winograd-coreference": "WSC",
-    "winogender-diagnostic": "Winogender",
+    "broadcoverage-diagnostic": "AX-b",
+    "winogender-diagnostic": "AX-g",
 }
 
 
