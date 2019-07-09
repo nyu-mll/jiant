@@ -1513,6 +1513,7 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
         self._scorer_all_acc = CategoricalAccuracy()  # score all examples according to acc
         log.info("\tFinished creating score functions for diagnostic data.")
 
+
 @register_task("winogender-diagnostic", rel_path="RTE/diagnostics", n_classes=2)
 class WinogenderTask(GLUEDiagnosticTask):
     """Supported winogender task """
