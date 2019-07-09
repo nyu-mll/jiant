@@ -19,7 +19,7 @@
             name: check style
             command: |
               pip install black
-              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|src/modules/cove)/"
+              black . --check --exclude "/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|jiant/modules/cove)/"
         # Step 3: get data needed for demo.sh
         - run:
             name: download demo data

@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as f
 
-from ...utils.locked_dropout import LockedDropout
+from jiant.utils.locked_dropout import LockedDropout
 
 
 def embedded_dropout(embed, words, dropout=0.1, scale=None):

@@ -11,9 +11,8 @@ from typing import Iterable, Sequence, Type, Union
 
 import pyhocon
 
-from . import hocon_writer
+from jiant.utils import hocon_writer
 
-"""Train a multi-task model using AllenNLP """
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 

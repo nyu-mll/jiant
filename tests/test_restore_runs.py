@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-from src import evaluate
-import src.tasks.tasks as tasks
-from src.utils import utils
+from jiant import evaluate
+import jiant.tasks.tasks as tasks
+from jiant.utils import utils
 from main import evaluate_and_write, get_best_checkpoint_path
 
 

@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 import unittest
-import src.tasks.tasks as tasks
+import jiant.tasks.tasks as tasks
 import torch
 
 
@@ -28,7 +28,7 @@ class TestUpdateMetricsAccuracy(unittest.TestCase):
         self.perfect_metrics = self.task.get_metrics(reset=True)
 
     def test_accuracy(self):
-        # match predictions and labels to be the same format as in src/models.py
+        # match predictions and labels to be the same format as in jiant/models.py
         # only measures accuracy
         assert "acc_f1" in list(self.imperfect_metrics.keys())
         assert self.imperfect_metrics["accuracy"] == 1.0 / 4.0

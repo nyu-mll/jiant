@@ -16,7 +16,7 @@ import sys
 
 from tqdm import tqdm
 
-from src.utils import utils
+from jiant.utils import utils
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 

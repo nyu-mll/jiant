@@ -9,10 +9,10 @@ import torch
 import torch.nn as nn
 from allennlp.modules import scalar_mix
 
-from ..preprocess import parse_task_list_arg
-from .pytorch_huggingface import model_pytorch
-from .pytorch_huggingface import utils as openai_utils
-from .pytorch_huggingface.text_utils import TextEncoder
+from jiant.preprocess import parse_task_list_arg
+from jiant.openai_transformer_lm.pytorch_huggingface import model_pytorch
+from jiant.openai_transformer_lm.pytorch_huggingface import utils as openai_utils
+from jiant.openai_transformer_lm.pytorch_huggingface.text_utils import TextEncoder
 
 OPENAI_DATA_DIR = os.path.join(os.path.dirname(openai_utils.__file__), "model")
 ENCODER_PATH = os.path.join(OPENAI_DATA_DIR, "encoder_bpe_40000.json")

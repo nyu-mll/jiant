@@ -35,9 +35,8 @@ before running any `jiant` code. (To deactivate run: `source deactivate`)
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
 You will also need to install dependencies for `nltk` if you do not already have them:
-
 ```
-nltk.downloader -d ./nltk_data  perluniprops nonbreaking_prefixes punkt
+python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
 ### Optional
@@ -254,6 +253,7 @@ After running this experiment, you should have in your run directory:
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
+* A `tensorboard` directory that logs the runs from train and val for all task-specific metrics. Note that right now we do not support logging for macro and micro averages.
 
 Additionally, the validation scores will be written in `results.tsv` in your experiment directory with the name of the run it belongs to.
 

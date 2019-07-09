@@ -8,9 +8,9 @@ from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
-from ..utils.data_loaders import process_sentence
-from .registry import register_task
-from .tasks import (
+from jiant.utils.data_loaders import process_sentence
+from jiant.tasks.registry import register_task
+from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
     UNK_TOK_ATOMIC,
     SequenceGenerationTask,

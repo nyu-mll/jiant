@@ -6,9 +6,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-import src.tasks.tasks as tasks
-from src.utils.config import params_from_file
-from src.preprocess import get_task_without_loading_data, build_indexers, get_vocab
+import jiant.tasks.tasks as tasks
+from jiant.utils.config import params_from_file
+from jiant.preprocess import get_task_without_loading_data, build_indexers, get_vocab
 
 
 class TestProprocess(unittest.TestCase):

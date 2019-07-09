@@ -19,9 +19,9 @@ in JSON form. See realign_spans for more details.
 """
 
 from typing import Tuple, List, Text
-from src.utils import tokenizers
-from src.utils import retokenize
-from src.utils import utils
+from jiant.utils import tokenizers
+from jiant.utils import retokenize
+from jiant.utils import utils
 import argparse
 import functools
 import json

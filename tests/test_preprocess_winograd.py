@@ -4,7 +4,7 @@ import pandas as pd
 import shutil
 import tempfile
 import unittest
-import src.utils.retokenize as retokenize
+import jiant.utils.retokenize as retokenize
 import json
 import copy
 

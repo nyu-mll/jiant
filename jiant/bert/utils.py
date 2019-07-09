@@ -8,7 +8,7 @@ from allennlp.modules import scalar_mix
 # huggingface implementation of BERT
 import pytorch_pretrained_bert
 
-from ..preprocess import parse_task_list_arg
+from jiant.preprocess import parse_task_list_arg
 
 
 def _get_seg_ids(ids, sep_id):
