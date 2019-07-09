@@ -44,22 +44,24 @@ def download_and_extract(task, data_dir):
 
 
 def download_diagnostic(data_dir):
+    import ipdb; ipdb.set_trace()
     print("Downloading and extracting diagnostic...")
     if not os.path.isdir(os.path.join(data_dir, "RTE")):
         os.mkdir(os.path.join(data_dir, "RTE"))
     diagnostic_dir = os.path.join(data_dir, "RTE", "diagnostics")
     if not os.path.isdir(diagnostic_dir):
         os.mkdir(diagnostic_dir)
+
     data_file = os.path.join(diagnostic_dir, "broadcoverage.zip")
     urllib.request.urlretrieve(TASK2PATH["broadcoverage-diagnostic"], data_file)
     with zipfile.ZipFile(data_file) as zip_ref:
-        zip_ref.extractall(os.path.join(data_dir))
+        zip_ref.extractall(diagnostic_dir)
     os.remove(data_file)
 
     data_file = os.path.join(diagnostic_dir, "winogender.zip")
     urllib.request.urlretrieve(TASK2PATH["winogender-diagnostic"], data_file)
     with zipfile.ZipFile(data_file) as zip_ref:
-        zip_ref.extractall(os.path.join(data_dir))
+        zip_ref.extractall(diagnostic_dir)
     os.remove(data_file)
     print("\tCompleted!")
     return
