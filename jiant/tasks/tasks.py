@@ -2711,7 +2711,7 @@ class BooleanQuestionTask(PairClassificationTask):
             return data
 
         self.train_data_text = _load_jsonl(os.path.join(self.path, "train.jsonl"))
-        self.val_data_text = _load_jsonl(os.path.join(self.path, "dev.jsonl"))
+        self.val_data_text = _load_jsonl(os.path.join(self.path, "val.jsonl"))
         self.test_data_text = _load_jsonl(os.path.join(self.path, "test.jsonl"))
 
         self.sentences = [d["question"] for d in self.train_data_text + self.val_data_text] + [
