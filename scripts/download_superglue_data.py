@@ -78,11 +78,7 @@ def get_tasks(task_names):
 def main(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-d",
-        "--data_dir",
-        help="directory to save data to",
-        type=str,
-        default="../superglue_data",
+        "-d", "--data_dir", help="directory to save data to", type=str, default="../superglue_data"
     )
     parser.add_argument(
         "-t",
