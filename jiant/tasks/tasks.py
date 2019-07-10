@@ -2750,8 +2750,10 @@ class WinogradCoreferenceTask(SpanClassificationTask):
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-        self.f1_scorer(logits, labels)
-        self.acc_scorer(logits, labels)
+        _, preds = logits.max(dim=1)
+
+        self.f1_scorer(logits, labels)  # expects [batch_size, n_classes] for preds
+        self.acc_scorer(preds, labels)  # expects [batch_size, 1] for both
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
