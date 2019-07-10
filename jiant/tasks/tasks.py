@@ -2263,7 +2263,6 @@ class SpanClassificationTask(Task):
         self._iters_by_split = None
 
         self.label_file = os.path.join(path, label_file)
-        self.all_labels = None
         self.n_classes = None
         self._label_namespace = self.name + "_labels"
 
@@ -2349,9 +2348,6 @@ class SpanClassificationTask(Task):
             return self.make_instance(r, idx, indexers)
 
         return map(_map_fn, records, itertools.count())
-
-    def get_all_labels(self) -> List[str]:
-        return self.all_labels
 
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
