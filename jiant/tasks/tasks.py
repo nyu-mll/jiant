@@ -2263,7 +2263,7 @@ class SpanClassificationTask(Task):
         self._iters_by_split = None
 
         self.label_file = os.path.join(path, label_file)
-        self.all_labels = None
+        self.all_labels = []
         self.n_classes = None
         self._label_namespace = self.name + "_labels"
 
