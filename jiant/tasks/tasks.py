@@ -2337,14 +2337,8 @@ class SpanClassificationTask(Task):
             example["span" + str(i + 1) + "s"] = ListField(
                 [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
             )
-        example["labels"] = ListField(
-            [
-                MultiLabelField(
-                    [str(record["label"])],
-                    label_namespace=self._label_namespace,
-                    skip_indexing=False,
-                )
-            ]
+        example["labels"] = LabelField(
+            record["label"], label_namespace="labels", skip_indexing=True
         )
         return Instance(example)
 
@@ -2753,33 +2747,15 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                     self.tokenizer_name, filename, has_labels=False
                 )
             else:
-                iters_by_split[split] = load_span_data(self.tokenizer_name, filename)
+                iters_by_split[split] = load_span_data(
+                    self.tokenizer_name, filename, label_fn=lambda x: int(x)
+                )
         self._iters_by_split = iters_by_split
-
-    def get_all_labels(self):
-        return ["False", "True"]
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-
-        def make_one_hot(batch, depth=2):
-            """
-            Creates a one-hot embedding of dimension 2.
-            Parameters:
-            batch: list of size batch_size of class predictions
-            Returns:
-            one hot encoding of size [batch_size, 2]
-            """
-            ones = torch.sparse.torch.eye(depth)
-            if torch.cuda.is_available():
-                ones = ones.cuda()
-            return ones.index_select(0, batch)
-
-        binary_preds = make_one_hot(logits, depth=2)
-        # Make label_ints a batch_size list of labels
-        label_ints = torch.argmax(labels, dim=1)
-        self.f1_scorer(binary_preds, label_ints)
-        self.acc_scorer(binary_preds.long(), labels.long())
+        self.f1_scorer(logits, labels)
+        self.acc_scorer(logits, labels)
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""

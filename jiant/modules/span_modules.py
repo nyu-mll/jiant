@@ -130,10 +130,10 @@ class SpanClassifierModule(nn.Module):
         # Compute loss if requested.
         if "labels" in batch:
             logits = logits.squeeze(dim=1)
-            out["loss"] = self.compute_loss(logits, batch["labels"].squeeze(dim=1), task)
+            out["loss"] = self.compute_loss(logits, batch["labels"], task)
             predictions = self.get_predictions(logits)
             tagmask = batch.get("tagmask", None)
-            task.update_metrics(predictions, batch["labels"].squeeze(dim=1), tagmask=tagmask)
+            task.update_metrics(predictions, batch["labels"], tagmask=tagmask)
 
         if predict:
             # Return preds as a list.
@@ -179,8 +179,7 @@ class SpanClassifierModule(nn.Module):
         if self.loss_type == "sigmoid":
             return F.binary_cross_entropy(torch.sigmoid(logits), labels.float())
         elif self.loss_type == "softmax":
-            targets = (labels == 1).nonzero()[:, 1]
-            return F.cross_entropy(logits, targets.long())
+            return F.cross_entropy(logits, labels.long())
         else:
             raise ValueError(
                 "Unsupported loss type '%s' " "for span classification." % self.loss_type

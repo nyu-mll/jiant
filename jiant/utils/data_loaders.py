@@ -40,7 +40,9 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     # realign spans
     rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
     if has_labels is False:
-        rows["label"] = False
+        rows["label"] = 0
+    elif label_fn is not None:
+        rows["label"] = rows["label"].apply(label_fn)
     return list(rows.T.to_dict().values())
 
 
