@@ -12,7 +12,7 @@ This project uses submodules to manage some dependencies on other research code,
 ```
 git clone --branch v1.0.0  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v0.9.1`. If you already cloned and just need to get the submodules, you can run:
+This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v1.0.0`. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
