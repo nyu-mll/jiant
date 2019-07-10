@@ -42,7 +42,7 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     if has_labels is False:
         rows["label"] = False
     else:
-        if label_fin is not None:
+        if label_fn is not None:
             rows["label"] = rows["label"].apply(lambda x: label_fn(x))
     return list(rows.T.to_dict().values())
 
