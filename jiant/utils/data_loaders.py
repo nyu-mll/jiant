@@ -41,6 +41,9 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     rows = rows.apply(lambda x: realign_spans(x, tokenizer_name), axis=1)
     if has_labels is False:
         rows["label"] = False
+    else:
+        if label_fin is not None:
+            rows["label"] = rows["label"].apply(lambda x: label_fn(x))
     return list(rows.T.to_dict().values())
 
 
