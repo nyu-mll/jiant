@@ -2337,15 +2337,8 @@ class SpanClassificationTask(Task):
             example["span" + str(i + 1) + "s"] = ListField(
                 [self._make_span_field(record["target"]["span" + str(i + 1)], text_field, 1)]
             )
-        example["labels"] = ListField(
-            [
-                MultiLabelField(
-                    [record["label"]],
-                    label_namespace=self._label_namespace,
-                    skip_indexing=True,
-                    num_labels=self.n_classes,
-                )
-            ]
+        example["labels"] = LabelField(
+            record["label"], label_namespace="labels", skip_indexing=True
         )
         return Instance(example)
 
@@ -2776,10 +2769,10 @@ class WinogradCoreferenceTask(SpanClassificationTask):
             return ones.index_select(0, batch)
 
         binary_preds = make_one_hot(logits, depth=2)
-        # Make label_ints a batch_size list of labels
-        label_ints = torch.argmax(labels, dim=1)
-        self.f1_scorer(binary_preds, label_ints)
-        self.acc_scorer(binary_preds.long(), labels.long())
+        labels_one_hot = make_one_hot(labels, depth=2)
+
+        self.f1_scorer(binary_preds, labels)
+        self.acc_scorer(binary_preds.long(), labels_one_hot.long())
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""

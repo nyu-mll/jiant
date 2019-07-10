@@ -179,8 +179,7 @@ class SpanClassifierModule(nn.Module):
         if self.loss_type == "sigmoid":
             return F.binary_cross_entropy(torch.sigmoid(logits), labels.float())
         elif self.loss_type == "softmax":
-            targets = (labels == 1).nonzero()[:, 1]
-            return F.cross_entropy(logits, targets.long())
+            return F.cross_entropy(logits, labels.long())
         else:
             raise ValueError(
                 "Unsupported loss type '%s' " "for span classification." % self.loss_type
