@@ -1440,7 +1440,7 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
                 vocab.add_token_to_namespace(value, labelspace)
             idx_to_word = vocab.get_index_to_token_vocabulary(labelspace)
             word_to_idx = vocab.get_token_to_index_vocabulary(labelspace)
-            indexed = [[word_to_idx[d[labelspace]]] for d in data if labelspace in d]
+            indexed = [[word_to_idx[d[labelspace]]] if labelspace in d else [] for d in data]
             return word_to_idx, idx_to_word, indexed
 
         def create_score_function(scorer, arg_to_scorer, tags_dict, tag_group):
@@ -1454,7 +1454,7 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
                 setattr(self, "scorer__%s__%s" % (tag_group, tag), scorer(arg_to_scorer))
 
         targ_map = {"entailment": 1, "not_entailment": 0}
-        data = [json.loads(d) for d in open(os.path.join(self.path, "BroadCoverage.jsonl"))]
+        data = [json.loads(d) for d in open(os.path.join(self.path, "AX-b.jsonl"))]
         sent1s = [
             process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
         ]
@@ -1536,22 +1536,13 @@ class WinogenderTask(GLUEDiagnosticTask):
         targ_map = {"not_entailment": 0, "entailment": 1}
 
         self.train_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.val_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.test_data_text = load_pair_nli_jsonl(
-            os.path.join(self.path, "Winogender.jsonl"),
-            self._tokenizer_name,
-            self.max_seq_len,
-            targ_map,
+            os.path.join(self.path, "AX-g.jsonl"), self._tokenizer_name, self.max_seq_len, targ_map
         )
         self.sentences = (
             self.train_data_text[0]
@@ -1576,7 +1567,7 @@ class WinogenderTask(GLUEDiagnosticTask):
                 if input2:
                     d["input2"] = sentence_to_text_field(input2, indexers)
                     d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
-                d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
+            d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
             d["pair_id"] = LabelField(pair_id, label_namespace="pair_id", skip_indexing=True)
             return Instance(d)
@@ -1591,8 +1582,9 @@ class WinogenderTask(GLUEDiagnosticTask):
         }
 
     def update_diagnostic_metrics(self, logits, labels, batch):
-        self.acc_scorer(logits, labels)
-        batch["preds"] = logits
+        _, preds = logits.max(dim=1)
+        self.acc_scorer(preds, labels)
+        batch["preds"] = preds
         # Convert batch to dict to fit gender_parity_scorer API.
         batch_dict = [
             {

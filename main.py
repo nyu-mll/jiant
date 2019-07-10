@@ -563,7 +563,8 @@ def main(cl_arguments):
         # Evaluate on target_tasks.
         for task in target_tasks:
             # Find the task-specific best checkpoint to evaluate on.
-            ckpt_path = get_best_checkpoint_path(args, "eval", task.name)
+            task_to_use = model._get_task_params(task.name).get("use_classifier", task.name)
+            ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, [task], splits_to_write)
