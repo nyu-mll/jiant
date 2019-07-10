@@ -131,7 +131,6 @@ class SpanClassifierModule(nn.Module):
         if "labels" in batch:
             logits = logits.squeeze(dim=1)
             out["loss"] = self.compute_loss(logits, batch["labels"], task)
-            predictions = self.get_predictions(logits)
             tagmask = batch.get("tagmask", None)
             task.update_metrics(logits, batch["labels"], tagmask=tagmask)
 
