@@ -2748,31 +2748,14 @@ class WinogradCoreferenceTask(SpanClassificationTask):
                 )
             else:
                 iters_by_split[split] = load_span_data(
-                    self.tokenizer_name, filename, label_fn=lambda x: 0 if x is False else 1
+                    self.tokenizer_name, filename, label_fn=lambda x: int(x)
                 )
         self._iters_by_split = iters_by_split
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
-
-        def make_one_hot(batch, depth=2):
-            """
-            Creates a one-hot embedding of dimension 2.
-            Parameters:
-            batch: list of size batch_size of class predictions
-            Returns:
-            one hot encoding of size [batch_size, 2]
-            """
-            ones = torch.sparse.torch.eye(depth)
-            if torch.cuda.is_available():
-                ones = ones.cuda()
-            return ones.index_select(0, batch)
-
-        binary_preds = make_one_hot(logits, depth=2)
-        labels_one_hot = make_one_hot(labels, depth=2)
-
-        self.f1_scorer(binary_preds, labels)
-        self.acc_scorer(binary_preds.long(), labels_one_hot.long())
+        self.f1_scorer(logits, labels)
+        self.acc_scorer(logits, labels)
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
