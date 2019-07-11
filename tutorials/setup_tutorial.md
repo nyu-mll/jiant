@@ -12,7 +12,11 @@ This project uses submodules to manage some dependencies on other research code,
 ```
 git clone --branch v1.0.0  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
-This will download the full repository and load the 0.9 release of `jiant`. For the latest version, delete `--branch v1.0.0`. If you already cloned and just need to get the submodules, you can run:
+This will download the full repository and load the 1.0 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.0 release with
+```
+git checkout tags/v1.0.0 -b 1.0_master
+```
+This will create a branch called 1.0_master with HEAD at version 1.0. If you already cloned and just need to get the submodules, you can run:
 
 ```
 git submodule update --init --recursive
@@ -206,22 +210,21 @@ One important thing to notice is that during training, the updates will swap bet
 
 After validating, you will see something like this:
 ```
-05/03 09:54:26 AM: Best result seen so far for sst.
-05/03 09:54:26 AM: Best result seen so far for micro.
-05/03 09:54:26 AM: Best result seen so far for macro.
-05/03 09:54:26 AM: Updating LR scheduler:
-05/03 09:54:26 AM:  Best result seen so far for macro_avg: 0.461
-05/03 09:54:26 AM:  # epochs without improvement: 0
-05/03 09:54:26 AM: mrpc_loss: training: 0.519646 validation: 1.319582
-05/03 09:54:26 AM: sst_loss: training: 0.716894 validation: 0.686724
-05/03 09:54:26 AM: macro_avg: validation: 0.460515
-05/03 09:54:26 AM: micro_avg: validation: 0.373241
-05/03 09:54:26 AM: mrpc_acc_f1: training: 0.704310 validation: 0.748025
-05/03 09:54:26 AM: mrpc_accuracy: training: 0.650000 validation: 0.683824
-                .
-                .
-                .
-05/03 09:54:26 AM: sst_accuracy: training: 0.494444 validation: 0.547018
+07/11 07:40:02 AM: Updating LR scheduler:
+07/11 07:40:02 AM: 	Best result seen so far for macro_avg: 0.271
+07/11 07:40:02 AM: 	# validation passes without improvement: 1
+07/11 07:40:02 AM: sts-b_loss: training: 0.158664 validation: 0.165524
+07/11 07:40:02 AM: macro_avg: validation: 0.179073
+07/11 07:40:02 AM: micro_avg: validation: 0.179073
+07/11 07:40:02 AM: sts-b_corr: training: 0.078465 validation: 0.179073
+07/11 07:40:02 AM: sts-b_pearsonr: training: 0.087550 validation: 0.189559
+07/11 07:40:02 AM: sts-b_spearmanr: training: 0.069380 validation: 0.168587
+07/11 07:40:02 AM: Global learning rate: 0.0003
+07/11 07:40:02 AM: Saved checkpoints to coreference_exp/my_exp/foobar
+07/11 07:40:02 AM: ***** Step 90 / Validation 9 *****
+.
+.
+.
 
 ```
 
@@ -233,23 +236,24 @@ Lastly, we will evaluate on the target tasks, and write the results for test in 
 You should see something like this:
 
 ```
-05/03 09:59:15 AM: Evaluating...
-05/03 09:59:15 AM: Evaluating on: sts-b, split: val
-05/03 09:59:23 AM: Task 'sts-b': sorting predictions by 'idx'
-05/03 09:59:23 AM: Finished evaluating on: sts-b
-05/03 09:59:23 AM: Evaluating on: wnli, split: val
-05/03 09:59:23 AM: Task 'wnli': sorting predictions by 'idx'
-05/03 09:59:23 AM: Finished evaluating on: wnli
-05/03 09:59:23 AM: Writing results for split 'val' to yo_try/jiant-demo/results.tsv
-05/03 09:59:23 AM: micro_avg: 0.168, macro_avg: 0.356, sts-b_corr: 0.149, sts-b_pearsonr: 0.146, sts-b_spearmanr: 0.152, wnli_accuracy: 0.563
-05/03 09:59:23 AM: Done!
+07/11 07:40:04 AM: Evaluating on: commitbank, split: val
+07/11 07:40:04 AM: Task 'commitbank': sorting predictions by 'idx'
+07/11 07:40:04 AM: Finished evaluating on: commitbank
+07/11 07:40:04 AM: Writing results for split 'val' to coreference_exp/my_exp/results.tsv
+07/11 07:40:04 AM: micro_avg: 0.473, macro_avg: 0.473, commitbank_accuracy: 0.679, commitbank_f1: 0.473, commitbank_precision: 0.452, commitbank_recall: 0.496
+07/11 07:40:04 AM: Loaded model state from coreference_exp/my_exp/foobar/sts-b/model_state_target_train_val_10.best.th
+07/11 07:40:04 AM: Evaluating on: sts-b, split: val
+07/11 07:40:06 AM: Task 'sts-b': sorting predictions by 'idx'
+07/11 07:40:06 AM: Finished evaluating on: sts-b
+07/11 07:40:06 AM: Writing results for split 'val' to coreference_exp/my_exp/results.tsv
+07/11 07:40:06 AM: micro_avg: 0.271, macro_avg: 0.271, sts-b_corr: 0.271, sts-b_pearsonr: 0.279, sts-b_spearmanr: 0.263
+07/11 07:40:06 AM: Done!
 ```
 
 After running this experiment, you should have in your run directory:
 
-* a checkpoint of the best model state (based on your scores)
+* a checkpoint of the best model state (based on your scores) for both pretraining and target task training phase. The target task checkpoints will be under a subdirectory of the target tasks in the run directory, including checkpoints for metrics, model states, training states, and task states at each epoch.
 * a `log.log` file which contains all the logs
-* a directory for each of the target_tasks containing the checkpoints of the model, task, and training state of the finetuned BERT models for that task.
 * `params.conf` (a saved version of the parameters used)
 * written predictions for test for each of the target trained tasks (with file names `{task_name}-test.tsv`)
 * a saved checkpoint of your best validation metric.
