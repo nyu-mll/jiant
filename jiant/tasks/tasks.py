@@ -107,7 +107,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         else:
             d["labels"] = NumericField(labels)
 
-        d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+        d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
 
         return Instance(d)
 
@@ -723,7 +723,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
-                tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
+                tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
             return Instance(d)
 
@@ -1339,7 +1339,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
             # 1.
             is_tag_group = 1 if len(tag_arr) != 0 else 0
             fields_dict[tag_group] = LabelField(
-                is_tag_group, label_namespace=tag_group, skip_indexing=True
+                is_tag_group, label_namespace=tag_group + "_tags", skip_indexing=True
             )
             # For every possible tag in the column set 1 if the tag is present for
             # this example, 0 otherwise.
@@ -1348,7 +1348,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
                     continue
                 is_present = 1 if ix in tag_arr else 0
                 fields_dict["%s__%s" % (tag_group, tag)] = LabelField(
-                    is_present, label_namespace="%s__%s" % (tag_group, tag), skip_indexing=True
+                    is_present, label_namespace="%s__%s_tags" % (tag_group, tag), skip_indexing=True
                 )
             return
 
@@ -1362,7 +1362,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
                 d["input1"] = sentence_to_text_field(input1, indexers)
                 d["input2"] = sentence_to_text_field(input2, indexers)
             d["labels"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idx", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idx_tags", skip_indexing=True)
             d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
             d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
 
@@ -1568,8 +1568,8 @@ class WinogenderTask(GLUEDiagnosticTask):
                     d["input2"] = sentence_to_text_field(input2, indexers)
                     d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
-            d["pair_id"] = LabelField(pair_id, label_namespace="pair_id", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
+            d["pair_id"] = LabelField(pair_id, label_namespace="pair_id_tags", skip_indexing=True)
             return Instance(d)
 
         instances = map(_make_instance, *split)
@@ -2131,7 +2131,7 @@ class CCGTaggingTask(TaggingTask):
             for sent in split[2]
         ]
         mask = [
-            MultiLabelField(mask, label_namespace="indices", skip_indexing=True, num_labels=511)
+            MultiLabelField(mask, label_namespace="idx_tags", skip_indexing=True, num_labels=511)
             for mask in split[3]
         ]
         instances = [
@@ -2535,7 +2535,7 @@ class WiCTask(PairClassificationTask):
             d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
             d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
 
             return Instance(d)
 
@@ -2630,7 +2630,7 @@ class COPATask(MultipleChoiceTask):
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
 
         split = list(split)
@@ -2709,7 +2709,7 @@ class SWAGTask(MultipleChoiceTask):
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
                 d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
-            d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
 
         split = list(split)
@@ -2821,7 +2821,7 @@ class BooleanQuestionTask(PairClassificationTask):
                 psg_qst = d["passage"][:-1] + d["question"]
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
-            new_d["idx"] = LabelField(idx, label_namespace="idxs", skip_indexing=True)
+            new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(new_d)
 
         split = [split, itertools.count()]
