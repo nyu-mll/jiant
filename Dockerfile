@@ -63,7 +63,7 @@ RUN python -m spacy download en
 
 # Install AllenNLP. Need to update some other deps first.
 RUN conda install greenlet=0.4.15
-RUN pip install allennlp==0.8.1
+RUN pip install allennlp==0.8.4
 RUN pip install --upgrade pytorch-pretrained-bert==0.5.1
 
 # Install local data files.
