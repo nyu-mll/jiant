@@ -10,11 +10,11 @@ First off, let's make sure you've the full repository, including all the git sub
 This project uses submodules to manage some dependencies on other research code, in particular for loading CoVe, GPT, and BERT. To make sure you get these repos when you download `jiant`, add `--recursive` to your `clone` command:
 
 ```
-git clone --branch v1.0.0  --recursive https://github.com/nyu-mll/jiant.git jiant
+git clone --branch v1.0.1  --recursive https://github.com/nyu-mll/jiant.git jiant
 ```
 This will download the full repository and load the 1.0 release of `jiant`. If you already have `jiant` downloaded locally, you can switch to the 1.0 release with
 ```
-git checkout tags/v1.0.0 -b 1.0_master
+git checkout tags/v1.0.1 -b 1.0_master
 ```
 This will create a branch called 1.0_master with HEAD at version 1.0. If you already cloned and just need to get the submodules, you can run:
 
