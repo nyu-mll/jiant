@@ -2818,7 +2818,7 @@ class BooleanQuestionTask(PairClassificationTask):
                 new_d["input1"] = sentence_to_text_field(d["passage"], indexers)
                 new_d["input2"] = sentence_to_text_field(d["question"], indexers)
             else:  # BERT
-                psg_qst = d["passage"][:-1] + d["question"]
+                psg_qst = d["passage"] + d["question"][1:]
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
