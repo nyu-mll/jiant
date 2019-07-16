@@ -158,7 +158,7 @@ function bert_cat_exp() {
     OVERRIDES="exp_name=bert-${2}-cat-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
-    OVERRIDES+=", bert_embeddings_mode=cat"
+    OVERRIDES+=", pytorch_transformers_embedding_mode=cat"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -168,7 +168,7 @@ function bert_lex_exp() {
     OVERRIDES="exp_name=bert-${2}-lex-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
-    OVERRIDES+=", bert_embeddings_mode=only"
+    OVERRIDES+=", pytorch_transformers_embedding_mode=only"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -178,6 +178,6 @@ function bert_mix_exp() {
     OVERRIDES="exp_name=bert-${2}-mix-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", bert_model_name=bert-$2"
-    OVERRIDES+=", bert_embeddings_mode=mix"
+    OVERRIDES+=", pytorch_transformers_embedding_mode=mix"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }

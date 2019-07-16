@@ -13,7 +13,7 @@ from allennlp.data import vocabulary
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.utils.retokenize import realign_spans
 
-BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
+CLS_TOK, SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
@@ -48,19 +48,19 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
 
 def load_pair_nli_jsonl(data_file, tokenizer_name, max_seq_len, targ_map):
     """
-    Loads a pair NLI task. 
+    Loads a pair NLI task.
 
     Parameters
     -----------------
     data_file: path to data file,
-    tokenizer_name: str, 
-    max_seq_len: int, 
-    targ_map: a dictionary that maps labels to ints 
+    tokenizer_name: str,
+    max_seq_len: int,
+    targ_map: a dictionary that maps labels to ints
 
     Returns
     -----------------
-    sent1s: list of strings of tokenized first sentences, 
-    sent2s: list of strings of tokenized second sentences, 
+    sent1s: list of strings of tokenized first sentences,
+    sent2s: list of strings of tokenized second sentences,
     trgs: list of ints of labels,
     idxs: list of ints
     """
@@ -291,12 +291,14 @@ def process_sentence(tokenizer_name, sent, max_seq_len):
     max_seq_len -= 2
     assert max_seq_len > 0, "Max sequence length should be at least 2!"
     tokenizer = get_tokenizer(tokenizer_name)
-    if tokenizer_name.startswith("bert-"):
-        sos_tok, eos_tok = BERT_CLS_TOK, BERT_SEP_TOK
-    else:
-        sos_tok, eos_tok = SOS_TOK, EOS_TOK
+
     if isinstance(sent, str):
-        return [sos_tok] + tokenizer.tokenize(sent)[:max_seq_len] + [eos_tok]
+        seq = tokenizer.tokenize(sent)[:max_seq_len]
     elif isinstance(sent, list):
         assert isinstance(sent[0], str), "Invalid sentence found!"
-        return [sos_tok] + sent[:max_seq_len] + [eos_tok]
+        seq = sent[:max_seq_len]
+
+    if tokenizer_name.startswith("bert-"):
+        sos_tok, eos_tok = CLS_TOK, SEP_TOK
+    elif tokenizer_name.startswith("transfo-"):
+        sos_tok, eos_tok = SOS_TOK, EOS_TOK

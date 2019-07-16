@@ -189,6 +189,9 @@ class EdgeProbingTask(Task):
             # standard padding for BERT; see
             # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85  # noqa
             return ["[CLS]"] + tokens + ["[SEP]"]
+        elif self.tokenizer_name.startswith("transfo-"):
+            # standard padding for XLNet
+            return tokens + ["[SEP]"] + ["[CLS]"]
         else:
             return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
 

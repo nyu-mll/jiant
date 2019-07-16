@@ -22,4 +22,5 @@ dependencies:
         - nose2
         - python-Levenshtein
         - pre-commit==1.15.2
+        - pytorch-transformers==1.0.0
 

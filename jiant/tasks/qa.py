@@ -145,7 +145,7 @@ class MultiRCTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(passage, question, answer, label, par_idx, qst_idx, ans_idx):
             """ pq_id: passage-question ID """
@@ -157,7 +157,7 @@ class MultiRCTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if is_using_bert:
+            if is_using_pytorch_transformers:
                 inp = para + question[1:-1] + answer[1:]
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
@@ -324,7 +324,7 @@ class ReCoRDTask(Task):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def is_answer(x, ys):
             """ Given a list of answers, determine if x is an answer """
@@ -346,7 +346,7 @@ class ReCoRDTask(Task):
             d["qst_idx"] = MetadataField(qst_idx)
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
-            if is_using_bert:
+            if is_using_pytorch_transformers:
                 inp = psg + qst[1:]
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:

@@ -88,7 +88,7 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
         - instances (Iterable[Instance]): an iterable of AllenNLP Instances with fields
     """
     # check here if using bert to avoid passing model info to tasks
-    is_using_bert = "bert_wpm_pretokenized" in indexers
+    is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
     def _make_instance(input1, input2, labels, idx):
         d = {}
@@ -1332,7 +1332,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def create_labels_from_tags(fields_dict, ix_to_tag_dict, tag_arr, tag_group):
             # If there is something in this row then tag_group should be set to
@@ -1553,7 +1553,7 @@ class WinogenderTask(GLUEDiagnosticTask):
         log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers):
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, labels, idx, pair_id):
             d = {}
@@ -2001,7 +2001,7 @@ class DisSentTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, labels):
             d = {}
@@ -2318,6 +2318,9 @@ class SpanClassificationTask(Task):
             # standard padding for BERT; see
             # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
             return ["[CLS]"] + tokens + ["[SEP]"]
+        elif self.tokenizer_name.startswith("xlnet-"):
+            # standard padding for XLNet
+            return tokens + ["[SEP]", "[CLS]"]
         else:
             return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
 
@@ -2519,7 +2522,7 @@ class WiCTask(PairClassificationTask):
 
         """
         # check here if using bert to avoid passing model info to tasks
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
@@ -2618,7 +2621,7 @@ class COPATask(MultipleChoiceTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(context, choices, question, label, idx):
             d = {}
@@ -2697,7 +2700,7 @@ class SWAGTask(MultipleChoiceTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(question, choices, label, idx):
             d = {}
@@ -2808,7 +2811,7 @@ class BooleanQuestionTask(PairClassificationTask):
 
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
-        is_using_bert = "bert_wpm_pretokenized" in indexers
+        is_using_bert = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(d, idx):
             new_d = {}

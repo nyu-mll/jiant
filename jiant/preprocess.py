@@ -224,9 +224,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.input_module == "gpt":
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, "openai_bpe")
-    if args.input_module.startswith("bert"):
-        # Add pre-computed BPE vocabulary for BERT model.
-        add_bert_wpm_vocab(vocab, args.input_module)
+    if args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+        # Add pre-computed BPE vocabulary for BERT/XLNet model.
+        add_pytorch_transformers_wpm_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -235,7 +235,11 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if not args.input_module.startswith("bert") and args.input_module not in ["elmo", "gpt"]:
+    if (
+        not args.input_module.startswith("bert")
+        and not args.input_module.startswith("xlnet")
+        and args.input_module not in ["elmo", "gpt"]
+    ):
         indexers["words"] = SingleIdTokenIndexer()
     if args.input_module == "elmo":
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
@@ -255,14 +259,15 @@ def build_indexers(args):
             args.tokenizer == "OpenAI.BPE"
         ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.input_module.startswith("bert"):
-        assert not indexers, "BERT is not supported alongside other indexers due to tokenization."
-        assert args.tokenizer == args.input_module, (
-            "BERT models use custom WPM tokenization for "
-            "each model, so tokenizer must match the "
-            "specified BERT model."
-        )
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
+    if args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+        assert (
+            not indexers
+        ), "BERT/XLNet are not supported alongside other indexers due to tokenization."
+        # assert args.tokenizer == args.input_module, (
+        #     "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer must match the "
+        #     "specified model."
+        # )
+        indexers["pytorch_transformers_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
     return indexers
 
 
@@ -305,8 +310,10 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.input_module not in ["elmo", "gpt", "scratch"] and not args.input_module.startswith(
-        "bert"
+    if (
+        args.input_module not in ["elmo", "gpt", "scratch"]
+        and not args.input_module.startswith("bert")
+        and not args.input_module.startswith("xlnet")
     ):
         emb_file = os.path.join(args.exp_dir, "embs.pkl")
         if args.reload_vocab or not os.path.exists(emb_file):
@@ -552,20 +559,27 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_bert_wpm_vocab(vocab, bert_model_name):
-    """Add BERT WPM vocabulary for use with pre-tokenized data.
+def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
+    """Add BERT/XLNet WPM vocabulary for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
-    anything special so we can just use the standard indexers.
+    These tokenizers have a convert_tokens_to_ids method, but this doesn't do
+    anything special, so we can just use the standard indexers.
     """
-    from pytorch_pretrained_bert import BertTokenizer
+    do_lower_case = "uncased" in tokenizer_name
 
-    do_lower_case = "uncased" in bert_model_name
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=do_lower_case)
+    if tokenizer_name.startswith("bert"):
+        from pytorch_transformers import BertTokenizer
+
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    else:
+        from pytorch_transformers import XLNetTokenizer
+
+        tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
-    log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name, len(ordered_vocab))
+    log.info("WPM vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
-        vocab.add_token_to_namespace(word, bert_model_name)
+        vocab.add_token_to_namespace(word, tokenizer_name)
 
 
 def add_openai_bpe_vocab(vocab, namespace="openai_bpe"):

@@ -64,7 +64,7 @@ class TestCheckpointing(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.path = os.path.join(self.temp_dir, "temp_dataset.tsv")
         self.wic = tasks.WiCTask(self.temp_dir, 100, "wic", tokenizer_name="MosesTokenizer")
-        indexers = {"bert_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
+        indexers = {"pytorch_transformers_wpm_pretokenized": SingleIdTokenIndexer("bert-xe-cased")}
         self.wic.val_data = [
             Instance(
                 {

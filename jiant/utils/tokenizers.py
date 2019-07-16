@@ -64,10 +64,15 @@ class MosesTokenizer(Tokenizer):
 def get_tokenizer(tokenizer_name):
     log.info(f"\tLoading Tokenizer {tokenizer_name}")
     if tokenizer_name.startswith("bert-"):
-        from pytorch_pretrained_bert import BertTokenizer
+        from pytorch_transformers import BertTokenizer
 
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("transfo-xl-"):
+        from pytorch_transformers import TransfoXLTokenizer
+
+        do_lower_case = tokenizer_name.endswith("uncased")
+        tokenizer = TransfoXLTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name == "OpenAI.BPE":
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":
