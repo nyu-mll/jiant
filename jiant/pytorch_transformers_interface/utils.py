@@ -22,9 +22,4 @@ def get_seg_ids(ids, sep_id):
     for row, idx in zip(seg_ids, sep_idxs[::2]):
         row[: idx + 1].fill_(0)
 
-    torch.set_printoptions(threshold=5000)
-    print(ids)
-    print(seg_ids)
-    print(sep_id)
-    print()
     return seg_ids

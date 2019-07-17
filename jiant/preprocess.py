@@ -263,10 +263,10 @@ def build_indexers(args):
         assert (
             not indexers
         ), "BERT/XLNet are not supported alongside other indexers due to tokenization."
-        # assert args.tokenizer == args.input_module, (
-        #     "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer must match the "
-        #     "specified model."
-        # )
+        assert args.tokenizer == args.input_module, (
+            "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer must match the "
+            "specified model."
+        )
         indexers["pytorch_transformers_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
     return indexers
 

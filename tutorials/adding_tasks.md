@@ -41,7 +41,7 @@ A lot of the following functions may already be written for your task type (espe
 
 
 
-1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV to a format that can be made into AllenNLP iterators. In this function, you will want to call `load_tsv` from `jiant/utils/data_loaders.py`, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to `load_tsv` (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/jiant/utils/data_loaders.py) for more documentation on `load_tsv`.  An example is below
+1.  The `load_data` (inheritable) function is for loading your data. This function loads your TSV/JSONL/... to a format that can be made into AllenNLP iterators. In this function, you will want to call `load_tsv` from `jiant/utils/data_loaders.py`, which loads and tokenizes the data. Currently, only English tokenization is supported. You can specify the fields to load from as parameters to `load_tsv` (which right now is based on number-based indexing). See [here](https://github.com/jsalt18-sentence-repl/jiant/blob/master/jiant/utils/data_loaders.py) for more documentation on `load_tsv`.  An example is below
 
 ```python
     def load_data(self, path, max_seq_len):
