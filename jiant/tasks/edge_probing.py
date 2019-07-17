@@ -55,7 +55,6 @@ class EdgeProbingTask(Task):
         name: str,
         label_file: str = None,
         files_by_split: Dict[str, str] = None,
-        is_symmetric: bool = False,
         single_sided: bool = False,
         **kw,
     ):
@@ -72,9 +71,6 @@ class EdgeProbingTask(Task):
             label_file: relative path to labels file
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
-            is_symmetric: if true, span1 and span2 are assumed to be the same
-                type and share parameters. Otherwise, we learn a separate
-                projection layer and attention weight for each.
             single_sided: if true, only use span1.
         """
         super().__init__(name, **kw)
@@ -88,7 +84,6 @@ class EdgeProbingTask(Task):
         self.path = path
         self.label_file = os.path.join(self.path, label_file)
         self.max_seq_len = max_seq_len
-        self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
         # Placeholders; see self.load_data()
@@ -287,7 +282,6 @@ register_task(
         "val": "en_ewt-ud-dev.json",
         "test": "en_ewt-ud-test.json",
     },
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Entity type labeling on OntoNotes.
 register_task(
@@ -303,7 +297,6 @@ register_task(
     rel_path="edges/ontonotes/srl",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Coreference on OntoNotes (single-sentence context).
 register_task(
@@ -311,7 +304,6 @@ register_task(
     rel_path="edges/ontonotes/coref",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # SPR1, as an edge-labeling task (multilabel).
 register_task(
@@ -319,7 +311,6 @@ register_task(
     rel_path="edges/spr1",
     label_file="labels.txt",
     files_by_split={"train": "spr1.train.json", "val": "spr1.dev.json", "test": "spr1.test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # SPR2, as an edge-labeling task (multilabel).
 register_task(
@@ -331,7 +322,6 @@ register_task(
         "val": "edges.dev.json",
         "test": "edges.test.json",
     },
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Definite pronoun resolution. Two labels.
 register_task(
@@ -339,7 +329,6 @@ register_task(
     rel_path="edges/dpr",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Relation classification on SemEval 2010 Task8. 19 labels.
 register_task(
@@ -347,7 +336,6 @@ register_task(
     rel_path="edges/semeval",
     label_file="labels.txt",
     files_by_split={"train": "train.0.85.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 
 ##
@@ -359,6 +347,5 @@ register_task(
     rel_path="edges/tacred/rel",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 
