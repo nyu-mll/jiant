@@ -118,7 +118,7 @@ def _index_split(task, split, indexers, vocab, record_file):
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, indexers)
+    instance_iter = task.process_split(split_text, indexers, boundary_token_fn)
     if hasattr(instance_iter, "__len__"):  # if non-lazy
         log.warn(
             "%s: non-lazy Instance generation. You'll want to refactor "

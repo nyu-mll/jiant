@@ -11,7 +11,7 @@ from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 
-from jiant.utils.data_loaders import process_sentence
+from jiant.utils.data_loaders import truncate_and_tokenize
 
 from jiant.tasks.tasks import Task
 from jiant.tasks.tasks import sentence_to_text_field
@@ -116,15 +116,15 @@ class MultiRCTask(Task):
                 # each example has a passage field -> (text, questions)
                 # text is the passage, which requires some preprocessing
                 # questions is a list of questions, has fields (question, sentences_used, answers)
-                ex["passage"]["text"] = process_sentence(
+                ex["passage"]["text"] = truncate_and_tokenize(
                     self.tokenizer_name, ex["passage"]["text"], self.max_seq_len
                 )
                 for question in ex["passage"]["questions"]:
-                    question["question"] = process_sentence(
+                    question["question"] = truncate_and_tokenize(
                         self.tokenizer_name, question["question"], self.max_seq_len
                     )
                     for answer in question["answers"]:
-                        answer["text"] = process_sentence(
+                        answer["text"] = truncate_and_tokenize(
                             self.tokenizer_name, answer["text"], self.max_seq_len
                         )
                 examples.append(ex)
@@ -143,7 +143,7 @@ class MultiRCTask(Task):
                     for answer in question["answers"]:
                         yield answer["text"]
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
@@ -158,12 +158,12 @@ class MultiRCTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_pytorch_transformers:
-                inp = para + question[1:-1] + answer[1:]
+                inp = boundary_token_fn(para + question, answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(passage, indexers)
-                d["qst"] = sentence_to_text_field(question, indexers)
-                d["ans"] = sentence_to_text_field(answer, indexers)
+                d["psg"] = sentence_to_text_field(boundary_token_fn(passage), indexers)
+                d["qst"] = sentence_to_text_field(boundary_token_fn(question), indexers)
+                d["ans"] = sentence_to_text_field(boundary_token_fn(answer), indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
@@ -266,7 +266,7 @@ class ReCoRDTask(Task):
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             sent_parts = [
-                process_sentence(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
+                truncate_and_tokenize(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
             ]
             return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
 
@@ -274,7 +274,9 @@ class ReCoRDTask(Task):
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
             psg_id = item["idx"]
-            psg = process_sentence(self.tokenizer_name, item["passage"]["text"], self.max_seq_len)
+            psg = truncate_and_tokenize(
+                self.tokenizer_name, item["passage"]["text"], self.max_seq_len
+            )
             ent_idxs = item["passage"]["entities"]
             ents = [item["passage"]["text"][idx["start"] : idx["end"] + 1] for idx in ent_idxs]
             qas = item["qas"]
@@ -362,7 +364,7 @@ class ReCoRDTask(Task):
 
             ent_strs = example["ents"]
             ents = [
-                process_sentence(self._tokenizer_name, ent, self.max_seq_len)[1:-1]
+                truncate_and_tokenize(self._tokenizer_name, ent, self.max_seq_len)[1:-1]
                 for ent in ent_strs
             ]
 

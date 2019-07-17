@@ -32,7 +32,7 @@ from jiant.utils.data_loaders import (
     load_diagnostic_tsv,
     load_span_data,
     load_tsv,
-    process_sentence,
+    truncate_and_tokenize,
     load_pair_nli_jsonl,
 )
 from jiant.utils.tokenizers import get_tokenizer
@@ -68,7 +68,7 @@ def atomic_tokenize(
     with the *first* nonatomic token in the list. """
     for nonatomic_tok in nonatomic_toks:
         sent = sent.replace(nonatomic_tok, atomic_tok)
-    sent = process_sentence(tokenizer_name, sent, max_seq_len)
+    sent = truncate_and_tokenize(tokenizer_name, sent, max_seq_len)
     sent = [nonatomic_toks[0] if t == atomic_tok else t for t in sent]
     return sent
 
@@ -1456,10 +1456,12 @@ class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
         targ_map = {"entailment": 1, "not_entailment": 0}
         data = [json.loads(d) for d in open(os.path.join(self.path, "AX-b.jsonl"))]
         sent1s = [
-            process_sentence(self._tokenizer_name, d["sentence1"], self.max_seq_len) for d in data
+            truncate_and_tokenize(self._tokenizer_name, d["sentence1"], self.max_seq_len)
+            for d in data
         ]
         sent2s = [
-            process_sentence(self._tokenizer_name, d["sentence2"], self.max_seq_len) for d in data
+            truncate_and_tokenize(self._tokenizer_name, d["sentence2"], self.max_seq_len)
+            for d in data
         ]
         labels = [targ_map[d["label"]] for d in data]
         idxs = [int(d["idx"]) for d in data]
@@ -1667,10 +1669,14 @@ class RTESuperGLUETask(RTETask):
             sent1s, sent2s, trgs, idxs = [], [], [], []
             for example in data:
                 sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
+                    truncate_and_tokenize(
+                        self._tokenizer_name, example["premise"], self.max_seq_len
+                    )
                 )
                 sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
+                    truncate_and_tokenize(
+                        self._tokenizer_name, example["hypothesis"], self.max_seq_len
+                    )
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 trgs.append(trg)
@@ -1976,8 +1982,8 @@ class DisSentTask(PairClassificationTask):
                 row = row.strip().split("\t")
                 if len(row) != 3 or not (row[0] and row[1] and row[2]):
                     continue
-                sent1 = process_sentence(self._tokenizer_name, row[0], self.max_seq_len)
-                sent2 = process_sentence(self._tokenizer_name, row[1], self.max_seq_len)
+                sent1 = truncate_and_tokenize(self._tokenizer_name, row[0], self.max_seq_len)
+                sent2 = truncate_and_tokenize(self._tokenizer_name, row[1], self.max_seq_len)
                 targ = int(row[2])
                 yield (sent1, sent2, targ)
 
@@ -2405,10 +2411,14 @@ class CommitmentTask(PairClassificationTask):
             sent1s, sent2s, targs, idxs = [], [], [], []
             for example in data:
                 sent1s.append(
-                    process_sentence(self._tokenizer_name, example["premise"], self.max_seq_len)
+                    truncate_and_tokenize(
+                        self._tokenizer_name, example["premise"], self.max_seq_len
+                    )
                 )
                 sent2s.append(
-                    process_sentence(self._tokenizer_name, example["hypothesis"], self.max_seq_len)
+                    truncate_and_tokenize(
+                        self._tokenizer_name, example["hypothesis"], self.max_seq_len
+                    )
                 )
                 trg = targ_map[example["label"]] if "label" in example else 0
                 targs.append(trg)
@@ -2472,9 +2482,9 @@ class WiCTask(PairClassificationTask):
             then concatenate everything together. This allows us to track where in the tokenized
             sequence the marked word is located. """
             sent_parts = sent.split(word)
-            sent_tok1 = process_sentence(self._tokenizer_name, sent_parts[0], self.max_seq_len)
-            sent_tok2 = process_sentence(self._tokenizer_name, sent_parts[1], self.max_seq_len)
-            sent_mid = process_sentence(self._tokenizer_name, word, self.max_seq_len)
+            sent_tok1 = truncate_and_tokenize(self._tokenizer_name, sent_parts[0], self.max_seq_len)
+            sent_tok2 = truncate_and_tokenize(self._tokenizer_name, sent_parts[1], self.max_seq_len)
+            sent_mid = truncate_and_tokenize(self._tokenizer_name, word, self.max_seq_len)
             sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
             start_idx = len(sent_tok1[:-1])
             end_idx = start_idx + len(sent_mid[1:-1])
@@ -2598,13 +2608,17 @@ class COPATask(MultipleChoiceTask):
                     else "What happened as a result?"
                 )
                 choices = [
-                    process_sentence(self._tokenizer_name, choice, self.max_seq_len)
+                    truncate_and_tokenize(self._tokenizer_name, choice, self.max_seq_len)
                     for choice in [choice1, choice2]
                 ]
                 targ = example["label"] if "label" in example else 0
-                contexts.append(process_sentence(self._tokenizer_name, context, self.max_seq_len))
+                contexts.append(
+                    truncate_and_tokenize(self._tokenizer_name, context, self.max_seq_len)
+                )
                 choicess.append(choices)
-                questions.append(process_sentence(self._tokenizer_name, question, self.max_seq_len))
+                questions.append(
+                    truncate_and_tokenize(self._tokenizer_name, question, self.max_seq_len)
+                )
                 targs.append(targ)
             return [contexts, choicess, questions, targs]
 
@@ -2674,13 +2688,13 @@ class SWAGTask(MultipleChoiceTask):
             questions, choicess, targs = [], [], []
             data = pd.read_csv(data_file)
             for ex_idx, ex in data.iterrows():
-                sent1 = process_sentence(self._tokenizer_name, ex["sent1"], self.max_seq_len)
+                sent1 = truncate_and_tokenize(self._tokenizer_name, ex["sent1"], self.max_seq_len)
                 questions.append(sent1)
                 sent2_prefix = ex["sent2"]
                 choices = []
                 for i in range(4):
                     choice = sent2_prefix + " " + ex["ending%d" % i]
-                    choice = process_sentence(self._tokenizer_name, choice, self.max_seq_len)
+                    choice = truncate_and_tokenize(self._tokenizer_name, choice, self.max_seq_len)
                     choices.append(choice)
                 choicess.append(choices)
                 targ = ex["label"] if "label" in ex else 0
@@ -2792,8 +2806,12 @@ class BooleanQuestionTask(PairClassificationTask):
             raw_data = [json.loads(d) for d in open(data_file, encoding="utf-8")]
             data = []
             for d in raw_data:
-                question = process_sentence(self._tokenizer_name, d["question"], self.max_seq_len)
-                passage = process_sentence(self._tokenizer_name, d["passage"], self.max_seq_len)
+                question = truncate_and_tokenize(
+                    self._tokenizer_name, d["question"], self.max_seq_len
+                )
+                passage = truncate_and_tokenize(
+                    self._tokenizer_name, d["passage"], self.max_seq_len
+                )
                 new_datum = {"question": question, "passage": passage}
                 answer = d["label"] if "label" in d else False
                 new_datum["label"] = answer

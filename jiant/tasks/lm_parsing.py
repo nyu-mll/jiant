@@ -32,7 +32,7 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             example_counts[split] = int(math.ceil(allf / self.max_seq_len))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences
@@ -44,6 +44,7 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
+            sent = boundary_token_fn(sent)  # Add <s> and </s>
             d = {}
             d["input"] = sentence_to_text_field(sent[:-1], indexers)
             d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)

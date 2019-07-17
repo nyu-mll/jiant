@@ -33,6 +33,14 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
+def apply_standard_boundary_tokens(s1, s2=None):
+    """Apply <SOS> and <EOS> to sequences of string-valued tokens.
+    Corresponds to more complex functions used with models like XLNet and BERT.
+    """
+    assert not s2, "apply_standard_boundary_tokens only supports single sequences"
+    return [SOS_TOK] + s1 + [EOS_TOK]
+
+
 def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     """
     Check if there are previous checkpoints.

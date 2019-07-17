@@ -106,9 +106,17 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir
         )
         self._sep_id = tokenizer.vocab["[SEP]"]
+        self._cls_id = tokenizer.vocab["[CLS]"]
         self._pad_id = tokenizer.vocab["[PAD]"]
 
         self.parameter_setup(args)
+
+    def apply_boundary_tokens(s1, s2=None):
+        # BERT-style padding on string sequences
+        if s2:
+            return ["[CLS]"] + s1 + ["[SEP]"] + s2 + ["[SEP]"]
+        else:
+            return ["[CLS]"] + s1 + ["[SEP]"]
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
@@ -183,9 +191,17 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir
         )
         self._sep_id = pytorch_transformers.tokenization_xlnet.SEG_ID_SEP
+        self._cls_id = pytorch_transformers.tokenization_xlnet.SEG_ID_CLS
         self._pad_id = pytorch_transformers.tokenization_xlnet.SEG_ID_PAD
 
         self.parameter_setup(args)
+
+    def apply_boundary_tokens(s1, s2=None):
+        # XLNet-style padding on string sequences
+        if s2:
+            s1 + ["[SEP]"] + s2 + ["[SEP]", "[CLS]"]
+        else:
+            return s1 + ["[SEP]", "[CLS]"]
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
