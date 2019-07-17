@@ -267,24 +267,24 @@ class EdgeProbingTask(Task):
 # Part-of-Speech tagging on OntoNotes.
 register_task(
     "edges-pos-ontonotes",
-    rel_path="edges/ontonotes-constituents",
-    label_file="labels.pos.txt",
+    rel_path="edges/ontonotes/const/pos",
+    label_file="labels.txt",
     files_by_split={
-        "train": "consts_ontonotes_en_train.pos.json",
-        "val": "consts_ontonotes_en_dev.pos.json",
-        "test": "consts_ontonotes_en_test.pos.json",
+        "train": "train.json",
+        "val": "development.json",
+        "test": "test.json",
     },
     single_sided=True,
 )(EdgeProbingTask)
 # Constituency labeling (nonterminals) on OntoNotes.
 register_task(
     "edges-nonterminal-ontonotes",
-    rel_path="edges/ontonotes-constituents",
-    label_file="labels.nonterminal.txt",
+    rel_path="edges/ontonotes/const/nonterminal",
+    label_file="labels.txt",
     files_by_split={
-        "train": "consts_ontonotes_en_train.nonterminal.json",
-        "val": "consts_ontonotes_en_dev.nonterminal.json",
-        "test": "consts_ontonotes_en_test.nonterminal.json",
+        "train": "train.json",
+        "val": "development.json",
+        "test": "test.json",
     },
     single_sided=True,
 )(EdgeProbingTask)
@@ -294,45 +294,45 @@ register_task(
     rel_path="edges/dep_ewt",
     label_file="labels.txt",
     files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.edges.json",
+        "train": "en_ewt-ud-train.json",
+        "val": "en_ewt-ud-dev.json",
+        "test": "en_ewt-ud-test.json",
     },
     is_symmetric=False,
 )(EdgeProbingTask)
 # Entity type labeling on OntoNotes.
 register_task(
     "edges-ner-ontonotes",
-    rel_path="edges/ontonotes-ner",
+    rel_path="edges/ontonotes/ner",
     label_file="labels.txt",
     files_by_split={
-        "train": "ner_ontonotes_en_train.json",
-        "val": "ner_ontonotes_en_dev.json",
-        "test": "ner_ontonotes_en_test.json",
+        "train": "train.json",
+        "val": "development.json",
+        "test": "test.json",
     },
     single_sided=True,
 )(EdgeProbingTask)
 # SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
 register_task(
     "edges-srl-conll2012",
-    rel_path="edges/srl_conll2012",
+    rel_path="edges/ontonotes/srl",
     label_file="labels.txt",
     files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.edges.json",
+        "train": "train.json",
+        "val": "development.json",
+        "test": "test.json",
     },
     is_symmetric=False,
 )(EdgeProbingTask)
 # Re-processed version of edges-coref-ontonotes, via AllenNLP data loaders.
 register_task(
     "edges-coref-ontonotes-conll",
-    rel_path="edges/ontonotes-coref-conll",
+    rel_path="edges/ontonotes/coref",
     label_file="labels.txt",
     files_by_split={
-        "train": "coref_conll_ontonotes_en_train.json",
-        "val": "coref_conll_ontonotes_en_dev.json",
-        "test": "coref_conll_ontonotes_en_test.json",
+        "train": "train.json",
+        "val": "development.json",
+        "test": "test.json",
     },
     is_symmetric=False,
 )(EdgeProbingTask)
@@ -373,7 +373,11 @@ register_task(
     "edges-rel-semeval",
     rel_path="edges/semeval",
     label_file="labels.txt",
-    files_by_split={"train": "train.0.85.json", "val": "dev.json", "test": "test.json"},
+    files_by_split={
+        "train": "train.0.85.json",
+        "val": "dev.json",
+        "test": "test.json"
+    },
     is_symmetric=False,
 )(EdgeProbingTask)
 
@@ -385,7 +389,11 @@ register_task(
     "edges-rel-tacred",
     rel_path="edges/tacred/rel",
     label_file="labels.txt",
-    files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
+    files_by_split={
+        "train": "train.json",
+        "val": "dev.json",
+        "test": "test.json"
+    },
     is_symmetric=False,
 )(EdgeProbingTask)
 
