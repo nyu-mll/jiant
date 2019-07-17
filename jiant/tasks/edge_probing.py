@@ -91,8 +91,7 @@ class EdgeProbingTask(Task):
         self.single_sided = single_sided
 
         self._iters_by_split = None  # see self.load_data()
-        self.all_labels = list(utils.load_lines(
-            os.path.join(self.path, label_file)))
+        self.all_labels = list(utils.load_lines(os.path.join(self.path, label_file)))
         self.n_classes = len(self.all_labels)
 
         # see add_task_label_namespace in preprocess.py
@@ -264,11 +263,7 @@ register_task(
     "edges-pos-ontonotes",
     rel_path="edges/ontonotes/const/pos",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "development.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     single_sided=True,
 )(EdgeProbingTask)
 # Constituency labeling (nonterminals) on OntoNotes.
@@ -276,11 +271,7 @@ register_task(
     "edges-nonterminal-ontonotes",
     rel_path="edges/ontonotes/const/nonterminal",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "development.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     single_sided=True,
 )(EdgeProbingTask)
 # Dependency edge labeling on English Web Treebank (UD).
@@ -300,11 +291,7 @@ register_task(
     "edges-ner-ontonotes",
     rel_path="edges/ontonotes/ner",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "development.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     single_sided=True,
 )(EdgeProbingTask)
 # SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
@@ -312,11 +299,7 @@ register_task(
     "edges-srl-conll2012",
     rel_path="edges/ontonotes/srl",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "development.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 # Re-processed version of edges-coref-ontonotes, via AllenNLP data loaders.
@@ -324,11 +307,7 @@ register_task(
     "edges-coref-ontonotes-conll",
     rel_path="edges/ontonotes/coref",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "development.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 # SPR1, as an edge-labeling task (multilabel).
@@ -336,11 +315,7 @@ register_task(
     "edges-spr1",
     rel_path="edges/spr1",
     label_file="labels.txt",
-    files_by_split={
-        "train": "spr1.train.json",
-        "val": "spr1.dev.json",
-        "test": "spr1.test.json"
-    },
+    files_by_split={"train": "spr1.train.json", "val": "spr1.dev.json", "test": "spr1.test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 # SPR2, as an edge-labeling task (multilabel).
@@ -360,11 +335,7 @@ register_task(
     "edges-dpr",
     rel_path="edges/dpr",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "dev.json",
-        "test": "test.json",
-    },
+    files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 # Relation classification on SemEval 2010 Task8. 19 labels.
@@ -372,11 +343,7 @@ register_task(
     "edges-rel-semeval",
     rel_path="edges/semeval",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.0.85.json",
-        "val": "dev.json",
-        "test": "test.json"
-    },
+    files_by_split={"train": "train.0.85.json", "val": "dev.json", "test": "test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 
@@ -388,11 +355,7 @@ register_task(
     "edges-rel-tacred",
     rel_path="edges/tacred/rel",
     label_file="labels.txt",
-    files_by_split={
-        "train": "train.json",
-        "val": "dev.json",
-        "test": "test.json"
-    },
+    files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
     is_symmetric=False,
 )(EdgeProbingTask)
 
