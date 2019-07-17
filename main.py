@@ -20,7 +20,6 @@ import sys
 import time
 import copy
 import torch
-import jsondiff
 
 from jiant import evaluate
 from jiant.models import build_model
