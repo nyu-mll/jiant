@@ -348,4 +348,3 @@ register_task(
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
 )(EdgeProbingTask)
-
