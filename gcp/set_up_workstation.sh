@@ -7,10 +7,12 @@
 set -e
 set -x
 
+pushd $(dirname $0)
+
 # Set up NFS automount
 sudo apt-get -y install nfs-common autofs
-sudo cp -f $(dirname $0)/config/auto.master /etc
-sudo cp -f $(dirname $0)/config/auto.nfs /etc
+sudo cp -f config/auto.master /etc
+sudo cp -f config/auto.nfs /etc
 
 # Reload autofs daemon and check mount
 sudo /etc/init.d/autofs restart
@@ -19,7 +21,7 @@ ls -l /nfs/jiant
 echo ""
 
 # Copy environment variables and set up paths
-sudo cp -f $(dirname $0)/config/jiant_paths.sh /etc/profile.d/jiant_paths.sh
+sudo cp -f config/jiant_paths.sh /etc/profile.d/jiant_paths.sh
 source /etc/profile.d/jiant_paths.sh
 if [ ! -d "${JIANT_PROJECT_PREFIX}" ]; then
   sudo mkdir "${JIANT_PROJECT_PREFIX}"
@@ -28,9 +30,8 @@ if [ ! -d "${PYTORCH_PRETRAINED_BERT_CACHE}" ]; then
   sudo mkdir "${PYTORCH_PRETRAINED_BERT_CACHE}"
 fi
 
-# Install packages
-sudo $(which pip) install --upgrade google-cloud-logging
-sudo $(which pip) install sendgrid
-sudo $(which pip) install python-Levenshtein
-
+# Build the conda environment, and activate
+pushd ..
+conda env create -f environment.yml
+conda activate jiant
 
