@@ -179,7 +179,6 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         self._sep_id = tokenizer.convert_tokens_to_ids("<sep>")
         self._cls_id = tokenizer.convert_tokens_to_ids("<cls>")
         self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
-        print(self._sep_id, self._cls_id, self._pad_id)
 
         self.parameter_setup(args)
 
@@ -209,7 +208,6 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         assert "pytorch_transformers_wpm_pretokenized" in sent
         # <int32> [batch_size, var_seq_len]
         ids = sent["pytorch_transformers_wpm_pretokenized"]
-        print(ids)
         mask = ids != 0
         # "Correct" ids to account for different indexing between BERT and
         # AllenNLP.
@@ -221,7 +219,6 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
         ids -= 2  # shift indices to match XLNet wordpiece embeddings
-        print(ids)
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside XLNetModel,
