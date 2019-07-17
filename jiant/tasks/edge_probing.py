@@ -86,13 +86,15 @@ class EdgeProbingTask(Task):
             for split, fname in files_by_split.items()
         }
         self.path = path
+        self.label_file = os.path.join(self.path, label_file)
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
-        self._iters_by_split = None  # see self.load_data()
-        self.all_labels = list(utils.load_lines(os.path.join(self.path, label_file)))
-        self.n_classes = len(self.all_labels)
+        # Placeholders; see self.load_data()
+        self._iters_by_split = None
+        self.all_labels = None
+        self.n_classes = None
 
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
@@ -151,6 +153,8 @@ class EdgeProbingTask(Task):
         return record
 
     def load_data(self):
+        self.all_labels = list(utils.load_lines(self.label_file))
+        self.n_classes = len(self.all_labels)
         iters_by_split = collections.OrderedDict()
         for split, filename in self._files_by_split.items():
             #  # Lazy-load using RepeatableIterator.
