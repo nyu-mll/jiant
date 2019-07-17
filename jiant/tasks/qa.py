@@ -324,7 +324,7 @@ class ReCoRDTask(Task):
                 yield example["passage"]
                 yield example["query"]
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
@@ -349,11 +349,11 @@ class ReCoRDTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_pytorch_transformers:
-                inp = psg + qst[1:]
+                inp = boundary_token_fn(psg, qst)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(psg, indexers)
-                d["qst"] = sentence_to_text_field(qst, indexers)
+                d["psg"] = sentence_to_text_field(boundary_token_fn(psg), indexers)
+                d["qst"] = sentence_to_text_field(boundary_token_fn(qst), indexers)
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)
