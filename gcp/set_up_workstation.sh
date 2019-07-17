@@ -24,14 +24,20 @@ echo ""
 sudo cp -f config/jiant_paths.sh /etc/profile.d/jiant_paths.sh
 source /etc/profile.d/jiant_paths.sh
 if [ ! -d "${JIANT_PROJECT_PREFIX}" ]; then
-  sudo mkdir "${JIANT_PROJECT_PREFIX}"
+  mkdir "${JIANT_PROJECT_PREFIX}"
 fi
 if [ ! -d "${PYTORCH_PRETRAINED_BERT_CACHE}" ]; then
-  sudo mkdir "${PYTORCH_PRETRAINED_BERT_CACHE}"
+  sudo mkdir -m 0777 "${PYTORCH_PRETRAINED_BERT_CACHE}"
 fi
 
 # Build the conda environment, and activate
 pushd ..
 conda env create -f environment.yml
 conda activate jiant
+
+# Download NLTK packages
+python -c "import nltk; nltk.download('perluniprops')"
+python -c "import nltk; nltk.download('nonbreaking_prefixes')"
+
+echo "Set-up complete! You may need to run 'source /etc/profile.d/jiant_paths.sh', or log out and log back in for things to work."
 
