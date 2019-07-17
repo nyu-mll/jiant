@@ -207,6 +207,9 @@ class Task(object):
         self.example_counts = None
         self.contributes_to_aggregate_score = True
 
+        # For BERT-style models, will this task have [sep]-separated segments?
+        self.is_pair_task = False
+
     def load_data(self):
         """ Load data from path and create splits. """
         raise NotImplementedError
@@ -314,6 +317,7 @@ class PairClassificationTask(ClassificationTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
+        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
@@ -335,15 +339,18 @@ class PairRegressionTask(RegressionTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_mse" % self.name
         self.val_metric_decreases = True
+        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
         mse = self.scorer1.get_metric(reset)
         return {"mse": mse}
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
-        return process_single_pair_task_split(split, indexers, is_pair=True, classification=False)
+        return process_single_pair_task_split(
+            split, indexers, boundary_token_fn, is_pair=True, classification=False
+        )
 
 
 class PairOrdinalRegressionTask(RegressionTask):
@@ -359,6 +366,7 @@ class PairOrdinalRegressionTask(RegressionTask):
         self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
+        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         mse = self.scorer1.get_metric(reset)
@@ -721,12 +729,12 @@ class CoLAAnalysisTask(SingleClassificationTask):
         )
         log.info("\tFinished loading CoLA sperate domain.")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(input1, labels, tagids):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
@@ -1336,7 +1344,7 @@ class GLUEDiagnosticTask(PairClassificationTask):
         self._scorer_all_mcc(preds, labels)
         self._scorer_all_acc(logits, labels)
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
@@ -1362,15 +1370,15 @@ class GLUEDiagnosticTask(PairClassificationTask):
             """ from multiple types in one column create multiple fields """
             d = {}
             if is_using_pytorch_transformers:
-                inp = input1 + input2[1:]  # drop the leading [CLS] token
+                inp = boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+                d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
             d["labels"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idx_tags", skip_indexing=True)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["sent2_str"] = MetadataField(" ".join(input2))
 
             # adds keys to dict "d" for every possible type in the column
             create_labels_from_tags(d, self.ix_to_lex_sem_dic, lex_sem, "lex_sem")
@@ -1560,21 +1568,21 @@ class WinogenderTask(GLUEDiagnosticTask):
         )
         log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(input1, input2, labels, idx, pair_id):
             d = {}
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["sent1_str"] = MetadataField(" ".join(input1))
             if is_using_pytorch_transformers:
-                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+                inp = boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                d["sent2_str"] = MetadataField(" ".join(input2))
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
+                d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
                 if input2:
-                    d["input2"] = sentence_to_text_field(input2, indexers)
-                    d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+                    d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
+                    d["sent2_str"] = MetadataField(" ".join(input2))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             d["pair_id"] = LabelField(pair_id, label_namespace="pair_id_tags", skip_indexing=True)
@@ -1918,13 +1926,13 @@ class Wiki103Classification(PairClassificationTask):
             for sent in self.load_data_for_path(path):
                 yield sent
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process a language modeling split.  Split is a single list of sentences here.  """
 
         def _make_instance(input1, input2, labels):
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["input2"] = sentence_to_text_field(input2, indexers)
+            d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+            d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -2018,11 +2026,11 @@ class DisSentTask(PairClassificationTask):
         def _make_instance(input1, input2, labels):
             d = {}
             if is_using_pytorch_transformers:
-                inp = input1 + input2[1:]  # drop leading [CLS] token
+                inp = boundary_token_fn(input1, input2)  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+                d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -2135,7 +2143,7 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = None
         self.test_data_text = None
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
         inputs = [TextField(list(map(Token, sent)), token_indexers=indexers) for sent in split[0]]
         targs = [
@@ -2324,22 +2332,10 @@ class SpanClassificationTask(Task):
         # so minus 1 at the end index.
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
-    def _pad_tokens(self, tokens):
-        """Pad tokens according to the current tokenization style."""
-        if self.tokenizer_name.startswith("bert-"):
-            # standard padding for BERT; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85
-            return ["[CLS]"] + tokens + ["[SEP]"]
-        elif self.tokenizer_name.startswith("xlnet-"):
-            # standard padding for XLNet
-            return tokens + ["[SEP]", "[CLS]"]
-        else:
-            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
-
-    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers, boundary_token_fn) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()
-        tokens = self._pad_tokens(tokens)
+        tokens = boundary_token_fn(tokens)
         text_field = sentence_to_text_field(tokens, indexers)
 
         example = {}
@@ -2356,11 +2352,11 @@ class SpanClassificationTask(Task):
         )
         return Instance(example)
 
-    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, records, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):
-            return self.make_instance(r, idx, indexers)
+            return self.make_instance(r, idx, indexers, boundary_token_fn)
 
         return map(_map_fn, records, itertools.count())
 
@@ -2542,15 +2538,15 @@ class WiCTask(PairClassificationTask):
 
         def _make_instance(input1, input2, idxs1, idxs2, labels, idx):
             d = {}
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["sent2_str"] = MetadataField(" ".join(input2))
             if is_using_pytorch_transformers:
-                inp = input1 + input2[1:]  # throw away input2 leading [CLS]
+                inp = boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
+                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))  # TODO: Check
             else:
-                d["input1"] = sentence_to_text_field(input1, indexers)
-                d["input2"] = sentence_to_text_field(input2, indexers)
+                d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+                d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
             d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
             d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
@@ -2596,6 +2592,7 @@ class COPATask(MultipleChoiceTask):
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
         self.n_choices = 2
+        self.is_pair_task = True
 
     def load_data(self):
         """ Process the dataset located at path.  """
@@ -2639,21 +2636,23 @@ class COPATask(MultipleChoiceTask):
         )
         log.info("\tFinished loading COPA (as QA) data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(context, choices, question, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(context[1:-1]))
+            d["question_str"] = MetadataField(" ".join(context))
             if not is_using_pytorch_transformers:
-                d["question"] = sentence_to_text_field(context, indexers)
+                d["question"] = sentence_to_text_field(boundary_token_fn(context), indexers)
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    context + question[1:] + choice[1:] if is_using_pytorch_transformers else choice
+                    boundary_token_fn(context + question, choice)
+                    if is_using_pytorch_transformers
+                    else boundary_token_fn(choice)
                 )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
@@ -2688,6 +2687,7 @@ class SWAGTask(MultipleChoiceTask):
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
         self.n_choices = 4
+        self.is_pair_task = True
 
     def load_data(self):
         """ Process the dataset located at path.  """
@@ -2720,19 +2720,23 @@ class SWAGTask(MultipleChoiceTask):
         )
         log.info("\tFinished loading SWAG data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(question, choices, label, idx):
             d = {}
-            d["question_str"] = MetadataField(" ".join(question[1:-1]))
+            d["question_str"] = MetadataField(" ".join(question))
             if not is_using_pytorch_transformers:
-                d["question"] = sentence_to_text_field(question, indexers)
+                d["question"] = sentence_to_text_field(boundary_token_fn(question), indexers)
             for choice_idx, choice in enumerate(choices):
-                inp = question + choice[1:] if is_using_pytorch_transformers else choice
+                inp = (
+                    boundary_token_fn(question, choice)
+                    if is_using_pytorch_transformers
+                    else boundary_token_fn(choice)
+                )
                 d["choice%d" % choice_idx] = sentence_to_text_field(inp, indexers)
-                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice[1:-1]))
+                d["choice%d_str" % choice_idx] = MetadataField(" ".join(choice))
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
             return Instance(d)
@@ -2835,19 +2839,19 @@ class BooleanQuestionTask(PairClassificationTask):
         ]
         log.info("\tFinished loading BoolQ data.")
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AlleNNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
         def _make_instance(d, idx):
             new_d = {}
-            new_d["question_str"] = MetadataField(" ".join(d["question"][1:-1]))
-            new_d["passage_str"] = MetadataField(" ".join(d["passage"][1:-1]))
+            new_d["question_str"] = MetadataField(" ".join(d["question"]))
+            new_d["passage_str"] = MetadataField(" ".join(d["passage"]))
             if not is_using_pytorch_transformers:
-                new_d["input1"] = sentence_to_text_field(d["passage"], indexers)
-                new_d["input2"] = sentence_to_text_field(d["question"], indexers)
-            else:  # BERT
-                psg_qst = d["passage"] + d["question"][1:]
+                new_d["input1"] = sentence_to_text_field(boundary_token_fn(d["passage"]), indexers)
+                new_d["input2"] = sentence_to_text_field(boundary_token_fn(d["question"]), indexers)
+            else:  # BERT/XLNet
+                psg_qst = (d["passage"], d["question"])
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)

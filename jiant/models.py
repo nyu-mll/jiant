@@ -221,13 +221,13 @@ def build_model(args, vocab, pretrained_embs, tasks):
         embedder = OpenAIEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("bert"):
-        from jiant.pytorch_transformers_interface.utils import BertEmbedderModule
+        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")
         embedder = BertEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("xlnet"):
-        from jiant.pytorch_transformers_interface.utils import XLNetEmbedderModule
+        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
 
         log.info(f"Using XLNet model ({args.input_module}).")
         embedder = XLNetEmbedderModule(args)

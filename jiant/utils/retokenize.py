@@ -333,7 +333,7 @@ def get_aligner_fn(tokenizer_name: Text):
         return align_moses
     elif tokenizer_name == "OpenAI.BPE":
         return align_openai
-    elif tokenizer_name.startswith("bert-") or tokenizer_name.startswith("transfo-"):
+    elif tokenizer_name.startswith("bert-") or tokenizer_name.startswith("xlnet-"):
         return functools.partial(align_wpm, model_name=tokenizer_name)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")

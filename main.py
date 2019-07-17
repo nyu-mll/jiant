@@ -27,7 +27,7 @@ from jiant.models import build_model
 from jiant.preprocess import build_tasks
 from jiant import tasks as task_modules
 from jiant.trainer import build_trainer
-from jiant.utils import config
+from jiant.utils import config, tokenizers
 from jiant.utils.utils import (
     assert_for_log,
     load_model_state,
@@ -364,6 +364,9 @@ def initial_setup(args, cl_args):
                 "Falling back to CPU."
             )
             args.cuda = -1
+
+    if args.tokenizer == "auto":
+        args.tokenizer = tokenizers.select_tokenizer(args)
 
     return args, seed
 

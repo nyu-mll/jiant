@@ -11,7 +11,7 @@ from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator, util
 from allennlp.modules import Highway, TimeDistributed
 
-from jiant.pytorch_transformers_interface.utils import PytorchTransformersEmbedderModule
+from jiant.pytorch_transformers_interface.modules import PytorchTransformersEmbedderModule
 from jiant.tasks.tasks import PairClassificationTask, PairRegressionTask
 from jiant.utils import utils
 from jiant.modules.simple_modules import NullPhraseLayer
@@ -83,13 +83,13 @@ class SentenceEncoder(Model):
         if reset:
             self.reset_states()
 
-        is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask))
-
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
             if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                word_embs_in_context = self._text_field_embedder(sent, is_pair_task=is_pair_task)
+                word_embs_in_context = self._text_field_embedder(
+                    sent, is_pair_task=task.is_pair_task
+                )
             else:
                 word_embs_in_context = self._text_field_embedder(sent)
             word_embs_in_context = self._highway_layer(word_embs_in_context)
@@ -101,7 +101,7 @@ class SentenceEncoder(Model):
         if self.sep_embs_for_skip:
             if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
                 task_word_embs_in_context = self._text_field_embedder(
-                    sent, task._classifier_name, is_pair_task=is_pair_task
+                    sent, task._classifier_name, is_pair_task=task.is_pair_task
                 )
             else:
                 task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)

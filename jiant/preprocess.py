@@ -106,7 +106,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, indexers, vocab, record_file):
+def _index_split(task, split, indexers, vocab, record_file, boundary_token_fn):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -331,6 +331,19 @@ def build_tasks(args):
         'Flag reload_indexing was set, but no tasks are set to reindex (use -o "args.reindex_tasks'
         ' = "task1,task2,..."")',
     )
+
+    # Set up boundary_token_fn, which applies SOS/EOS/SEP/CLS delimiters appropriately for the given model
+    if args.input_module.startswith("bert"):
+        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+
+        boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("xlnet"):
+        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+
+        boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+    else:
+        boundary_token_fn = utils.apply_standard_boundary_tokens
+
     for task in tasks:
         force_reindex = args.reload_indexing and task.name in reindex_tasks
         for split in ALL_SPLITS:
@@ -345,7 +358,7 @@ def build_tasks(args):
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
-                _index_split(task, split, indexers, vocab, record_file)
+                _index_split(task, split, indexers, vocab, record_file, boundary_token_fn)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         # TODO: delete task.{split}_data_text as well?
@@ -576,7 +589,7 @@ def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
 
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
 
-    ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
+    ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
     log.info("WPM vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, tokenizer_name)
