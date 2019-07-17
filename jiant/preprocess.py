@@ -264,8 +264,8 @@ def build_indexers(args):
             not indexers
         ), "BERT/XLNet are not supported alongside other indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer must match the "
-            "specified model."
+            "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer "
+            "must match the specified model."
         )
         indexers["pytorch_transformers_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
     return indexers
@@ -332,7 +332,7 @@ def build_tasks(args):
         ' = "task1,task2,..."")',
     )
 
-    # Set up boundary_token_fn, which applies SOS/EOS/SEP/CLS delimiters appropriately for the given model
+    # Set up boundary_token_fn, which applies SOS/EOS/SEP/CLS delimiters
     if args.input_module.startswith("bert"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 

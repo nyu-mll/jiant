@@ -1421,7 +1421,8 @@ class GLUEDiagnosticTask(PairClassificationTask):
 # SuperGLUE diagnostic (2-class NLI), expects JSONL
 @register_task("broadcoverage-diagnostic", rel_path="RTE/diagnostics")
 class BroadCoverageDiagnosticTask(GLUEDiagnosticTask):
-    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge) diagnostic task """
+    """ Class for SuperGLUE broad coverage (linguistics, commonsense, world knowledge)
+        diagnostic task """
 
     def __init__(self, path, max_seq_len, name, **kw):
         super().__init__(path, max_seq_len, name, n_classes=2, **kw)
@@ -2513,7 +2514,9 @@ class WiCTask(PairClassificationTask):
                     idxs.append(row["idx"])
                     assert (
                         "version" in row and row["version"] == 1.1
-                    ), "WiC version is not v1.1; examples indices are likely incorrect and data is likely pre-tokenized. Please re-download the data from super.gluebenchmark for the correct data."
+                    ), "WiC version is not v1.1; examples indices are likely incorrect and data "
+                    "is likely pre-tokenized. Please re-download the data from "
+                    "super.gluebenchmark.com."
                 return [sents1, sents2, idxs1, idxs2, trgs, idxs]
 
         self.train_data_text = _load_split(os.path.join(self.path, "train.jsonl"))

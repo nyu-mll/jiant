@@ -162,10 +162,12 @@ def parse_json_diff(diff):
     actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to
     show deletions in our parameters.
     For example, for jsondiff.replace, the output of jsondiff may be the below:
-    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                                   ('max_vals', 8), ('val_interval', 1)])}}
     since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete
     the replace. The output of this function will be:
-    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                         ('max_vals', 8), ('val_interval', 1)])}
     See for more information on jsondiff.
     """
     new_diff = {}

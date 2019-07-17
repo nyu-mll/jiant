@@ -157,7 +157,8 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 or args.input_module.startswith("bert")
                 or args.input_module.startswith("xlnet")
             ),
-            f"input_module = {args.input_module} is not supported for lanugage modeling due to lookahead issues.",
+            f"input_module = {args.input_module} is not supported for lanugage modeling due to"
+            " lookahead issues.",
         )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(

@@ -16,12 +16,13 @@ from jiant.utils.retokenize import realign_spans
 
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
-    Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
+    Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes
+    the text.
     Re-alignment of spans involves transforming the spans so that it matches the text after
     tokenization.
-    For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased tokenization, we get
-    [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2], under the new tokenization,
-    it becomes [0, 3].
+    For example, given the original text: [Mr., Porter, is, nice] and bert-base-cased
+    tokenization, we get [Mr, ., Por, ter, is, nice ]. If the original span indices was [0,2],
+    under the new tokenization, it becomes [0, 3].
     The task file should of be of the following form:
         text: str,
         label: bool
@@ -29,7 +30,8 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     Args:
         tokenizer_name: str,
         file_name: str,
-        label_fn: function that expects a row and outputs a transformed row with labels tarnsformed.
+        label_fn: function that expects a row and outputs a transformed row with labels
+          tarnsformed.
     Returns:
         List of dictionaries of the aligned spans and tokenized text.
     """
@@ -286,7 +288,8 @@ def get_tag_list(tag_vocab):
 def truncate_and_tokenize(tokenizer_name, sent, max_seq_len):
     """Truncate and tokenize a sentence or paragraph."""
     max_seq_len -= 2
-    # TODO: This fn is called potentially millions of times per run -- can we move the assert elsewhere?
+    # TODO: This fn is called potentially millions of times per run.
+    # Can we move the assert elsewhere?
     assert max_seq_len > 0, "Max sequence length should be at least 2 to allow for boundary tokens!"
     tokenizer = get_tokenizer(tokenizer_name)
 

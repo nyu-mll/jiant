@@ -112,7 +112,8 @@ class MultiRCTask(Task):
 
                 assert (
                     "version" in ex and ex["version"] == 1.1
-                ), "MultiRC version is invalid! Example indices are likely incorrect. Please re-download the data from super.gluebenchmark.com ."
+                ), "MultiRC version is invalid! Example indices are likely incorrect. "
+                "Please re-download the data from super.gluebenchmark.com ."
 
                 # each example has a passage field -> (text, questions)
                 # text is the passage, which requires some preprocessing
