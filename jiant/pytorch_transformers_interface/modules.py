@@ -88,10 +88,10 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
 
         tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
-        )
-        self._sep_id = tokenizer.vocab["[SEP]"]
-        self._cls_id = tokenizer.vocab["[CLS]"]
-        self._pad_id = tokenizer.vocab["[PAD]"]
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self._sep_id = tokenizer.convert_tokens_to_ids("[SEP]")
+        self._cls_id = tokenizer.convert_tokens_to_ids("[CLS]")
+        self._pad_id = tokenizer.convert_tokens_to_ids("[PAD]")
 
         self.parameter_setup(args)
 
@@ -175,10 +175,11 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         tokenizer = pytorch_transformers.XLNetTokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
-        )
-        self._sep_id = pytorch_transformers.tokenization_xlnet.SEG_ID_SEP
-        self._cls_id = pytorch_transformers.tokenization_xlnet.SEG_ID_CLS
-        self._pad_id = pytorch_transformers.tokenization_xlnet.SEG_ID_PAD
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self._sep_id = tokenizer.convert_tokens_to_ids("<sep>")
+        self._cls_id = tokenizer.convert_tokens_to_ids("<cls>")
+        self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
+        print(self._sep_id, self._cls_id, self._pad_id)
 
         self.parameter_setup(args)
 
@@ -215,11 +216,11 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
         # reserved for padding).
-        ids[ids == 0] = self._pad_id + 4  # Shift the indices that were at 0 to become 2.
+        ids[ids == 0] = self._pad_id + 2  # Shift the indices that were at 0 to become 2.
         # Index 1 should never be used since the XLNet WPM uses its own
         # unk token, and handles this at the string level before indexing.
         assert (ids > 1).all()
-        ids -= 4  # shift indices to match XLNet wordpiece embeddings
+        ids -= 2  # shift indices to match XLNet wordpiece embeddings
         print(ids)
 
         if self.embeddings_mode not in ["none", "top"]:

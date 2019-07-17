@@ -21,6 +21,14 @@ dependencies:
         - pyhocon==0.3.35
         - nose2
         - python-Levenshtein
-        - pre-commit==1.15.2
-        - pytorch-transformers==1.0.0
 
+        # Used to automatically invoke formatting for code changes. If you don't plan to submit PRs
+        # to jiant, this is optional.
+        - pre-commit==1.15.2
+
+        # Warning: jiant currently depends on *both* pytorch_pretrained_bert > 0.6 _and_
+        # pytorch_transformers > 1.0. These are the same package, though the name changed between
+        # these two versions. AllenNLP requires 0.6 to support the BertAdam optimizer, and jiant
+        # directly requires 1.0 to support XLNet and WWM-BERT.
+        # This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
+        - pytorch-transformers==1.0.0

@@ -151,6 +151,14 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         log.info("Using PRPN sentence encoder!")
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
+        assert_for_log(
+            not (
+                args.input_module == "elmo"
+                or args.input_module.startswith("bert")
+                or args.input_module.startswith("xlnet")
+            ),
+            f"input_module = {args.input_module} is not supported for lanugage modeling due to lookahead issues.",
+        )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
             vocab,
