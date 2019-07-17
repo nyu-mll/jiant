@@ -317,7 +317,7 @@ def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
 
 def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
     # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = model_name.endswith("uncased")
+    do_lower_case = tokenizer_name.endswith("uncased")
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
     wpm_tokenizer = get_tokenizer(tokenizer_name)
     wpm_tokens = wpm_tokenizer.tokenize(text)
