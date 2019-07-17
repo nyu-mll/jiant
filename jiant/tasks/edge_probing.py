@@ -86,14 +86,14 @@ class EdgeProbingTask(Task):
             for split, fname in files_by_split.items()
         }
         self.path = path
-        self.label_file = label_file
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
-        self._iters_by_split = None
-        self.all_labels = None
-        self.n_classes = None
+        self._iters_by_split = None  # see self.load_data()
+        self.all_labels = list(utils.load_lines(
+            os.path.join(self.path, label_file)))
+        self.n_classes = len(self.all_labels)
 
         # see add_task_label_namespace in preprocess.py
         self._label_namespace = self.name + "_labels"
@@ -106,10 +106,8 @@ class EdgeProbingTask(Task):
         self.val_metric = "%s_f1" % self.name  # TODO: switch to MCC?
         self.val_metric_decreases = False
 
-    def load_data(self):
-        label_file = os.path.join(self.path, self.label_file)
-        self.all_labels = list(utils.load_lines(label_file))
-        self.n_classes = len(self.all_labels)
+    def get_all_labels(self) -> List[str]:
+        return self.all_labels
 
     @classmethod
     def _stream_records(cls, filename):
@@ -231,9 +229,6 @@ class EdgeProbingTask(Task):
 
         return map(_map_fn, records, itertools.count())
 
-    def get_all_labels(self) -> List[str]:
-        return self.all_labels
-
     def get_sentences(self) -> Iterable[Sequence[str]]:
         """ Yield sentences, used to compute vocabulary. """
         for split, iter in self._iters_by_split.items():
@@ -341,7 +336,11 @@ register_task(
     "edges-spr1",
     rel_path="edges/spr1",
     label_file="labels.txt",
-    files_by_split={"train": "spr1.train.json", "val": "spr1.dev.json", "test": "spr1.test.json"},
+    files_by_split={
+        "train": "spr1.train.json",
+        "val": "spr1.dev.json",
+        "test": "spr1.test.json"
+    },
     is_symmetric=False,
 )(EdgeProbingTask)
 # SPR2, as an edge-labeling task (multilabel).
@@ -350,9 +349,9 @@ register_task(
     rel_path="edges/spr2",
     label_file="labels.txt",
     files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.edges.json",
+        "train": "edges.train.json",
+        "val": "edges.dev.json",
+        "test": "edges.test.json",
     },
     is_symmetric=False,
 )(EdgeProbingTask)
@@ -362,9 +361,9 @@ register_task(
     rel_path="edges/dpr",
     label_file="labels.txt",
     files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.edges.json",
+        "train": "train.json",
+        "val": "dev.json",
+        "test": "test.json",
     },
     is_symmetric=False,
 )(EdgeProbingTask)
