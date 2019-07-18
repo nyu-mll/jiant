@@ -537,6 +537,9 @@ def get_task_specific_params(args, task_name):
     def _get_task_attr(attr_name, default=None):
         return config.get_task_attr(args, task_name, attr_name, default)
 
+    # This is confusing because a lot of parameters get renamed.
+    # TODO to replace with hierarchical configs and remove all the renaming and
+    # boilerplate.
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
@@ -556,6 +559,7 @@ def get_task_specific_params(args, task_name):
     params["cls_loss_fn"] = _get_task_attr("span_classifier_loss_fn")
     params["cls_span_pooling"] = _get_task_attr("classifier_span_pooling")
     params["edgeprobe_cnn_context"] = _get_task_attr("edgeprobe_cnn_context")
+    params["edgeprobe_symmetric"] = _get_task_attr("edgeprobe_symmetric")
 
     # For NLI probing tasks, might want to use a classifier trained on
     # something else (typically 'mnli').
