@@ -3,9 +3,9 @@
 # Run a job on the Kubernetes cluster.
 #
 # Before running, be sure that:
-#    - the image is built and available at $IMAGE, below.
 #    - you're authenticated to the cluster via
 #      gcloud container clusters get-credentials <cluster_name> --zone us-east1-c
+#    - the resources defined in templates/jiant_env.libsonnet are correct
 #
 # Example usage:
 # export JIANT_PATH="/nfs/jsalt/home/$USER/jiant"
@@ -27,22 +27,27 @@
 #
 set -e
 
-MODE="create"
+KUBECTL_MODE="create"
 GPU_TYPE="p100"
-PROJECT="$USER"
+PROJECT_NAME="$USER"
 NOTIFY_EMAIL=""
 
-BERT_CACHE="/nfs/jsalt/share/bert_cache"
+# Get the NFS path from the Kubernetes config, so that it doesn't need to be 
+# hardcoded here.
+pushd $(dirname $0)/templates
+NFS_PATH=$(jsonnet -S -e "local env = import 'jiant_env.libsonnet'; env.nfs_mount_path")
+echo "Assuming NFS volume at $NFS_PATH"
+popd
 
 # Handle flags.
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts ":m:g:p:n:" opt; do
     case "$opt" in
-    m)  MODE=$OPTARG
+    m)  KUBECTL_MODE=$OPTARG
         ;;
     g)  GPU_TYPE=$OPTARG
         ;;
-    p)  PROJECT=$OPTARG
+    p)  PROJECT_NAME=$OPTARG
         ;;
     n)  NOTIFY_EMAIL=$OPTARG
         ;;
@@ -58,58 +63,37 @@ shift $((OPTIND-1))
 NAME=$1
 COMMAND=$2
 
-JOB_NAME="${PROJECT}.${NAME}"
-PROJECT_DIR="/nfs/jsalt/exp/$PROJECT"
+JOB_NAME="${PROJECT_NAME}.${NAME}"
+
+##
+# Create project directory, if it doesn't exist yet.
+PROJECT_DIR="${NFS_PATH}/exp/${PROJECT_NAME}"
 if [ ! -d "${PROJECT_DIR}" ]; then
   echo "Creating project directory ${PROJECT_DIR}"
   mkdir ${PROJECT_DIR}
   chmod -R o+w ${PROJECT_DIR}
 fi
 
-GCP_PROJECT_ID="$(gcloud config get-value project -q)"
-IMAGE="gcr.io/${GCP_PROJECT_ID}/jiant-sandbox:v7"
+##
+# Create custom config and save to project_dir.
+YAML_DIR="${PROJECT_DIR}/yaml"
+if [ ! -d "${YAML_DIR}" ]; then
+  echo "Creating Kubernetes YAML ${YAML_DIR}"
+  mkdir "${YAML_DIR}"
+fi
+set -x
+YAML_FILE="${PROJECT_DIR}/yaml/${JOB_NAME}.yaml"
+jsonnet -S -o "${YAML_FILE}" \
+  --tla-str job_name="${JOB_NAME}" \
+  --tla-str command="${COMMAND}" \
+  --tla-str project_dir="${PROJECT_DIR}" \
+  --tla-str notify_email="${NOTIFY_EMAIL}" \
+  --tla-str uid="${UID}" \
+  --tla-str fsgroup="${GROUPS}" \
+  --tla-str gpu_type="${GPU_TYPE}" \
+  "$(dirname $0)/templates/run_batch.jsonnet"
 
 ##
-# Create custom config and create a Kubernetes pod.
-cat <<EOF | kubectl ${MODE} -f -
-apiVersion: v1
-kind: Pod
-metadata:
-  name: ${JOB_NAME}
-spec:
-  restartPolicy: Never
-  securityContext:
-    runAsUser: $UID
-    fsGroup: $GROUPS
-  containers:
-  - name: jiant-sandbox
-    image: ${IMAGE}
-    command: ["bash"]
-    args: ["-l", "-c", "$COMMAND"]
-    resources:
-      limits:
-       nvidia.com/gpu: 1
-    volumeMounts:
-    - mountPath: /nfs/jsalt
-      name: nfs-jsalt
-    env:
-    - name: JIANT_PROJECT_PREFIX
-      value: ${PROJECT_DIR}
-    - name: NOTIFY_EMAIL
-      value: ${NOTIFY_EMAIL}
-    - name: PYTORCH_PRETRAINED_BERT_CACHE
-      value: ${BERT_CACHE}
-  nodeSelector:
-    cloud.google.com/gke-accelerator: nvidia-tesla-${GPU_TYPE}
-  tolerations:
-  - key: "nvidia.com/gpu"
-    operator: "Equal"
-    value: "present"
-    effect: "NoSchedule"
-  volumes:
-  - name: nfs-jsalt
-    persistentVolumeClaim:
-      claimName: nfs-jsalt-claim
-      readOnly: false
-EOF
+# Create the Kubernetes pod; this will actually launch the job.
+kubectl ${KUBECTL_MODE} -f "${YAML_FILE}"
 
