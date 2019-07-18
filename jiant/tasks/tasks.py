@@ -2854,7 +2854,7 @@ class BooleanQuestionTask(PairClassificationTask):
                 new_d["input1"] = sentence_to_text_field(boundary_token_fn(d["passage"]), indexers)
                 new_d["input2"] = sentence_to_text_field(boundary_token_fn(d["question"]), indexers)
             else:  # BERT/XLNet
-                psg_qst = (d["passage"], d["question"])
+                psg_qst = boundary_token_fn(d["passage"], d["question"])
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)
             new_d["labels"] = LabelField(d["label"], label_namespace="labels", skip_indexing=True)
             new_d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
