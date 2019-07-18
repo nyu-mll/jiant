@@ -55,7 +55,6 @@ class EdgeProbingTask(Task):
         name: str,
         label_file: str = None,
         files_by_split: Dict[str, str] = None,
-        is_symmetric: bool = False,
         single_sided: bool = False,
         **kw,
     ):
@@ -72,9 +71,6 @@ class EdgeProbingTask(Task):
             label_file: relative path to labels file
             files_by_split: split name ('train', 'val', 'test') mapped to
                 relative filenames (e.g. 'train': 'train.json')
-            is_symmetric: if true, span1 and span2 are assumed to be the same
-                type and share parameters. Otherwise, we learn a separate
-                projection layer and attention weight for each.
             single_sided: if true, only use span1.
         """
         super().__init__(name, **kw)
@@ -88,7 +84,6 @@ class EdgeProbingTask(Task):
         self.path = path
         self.label_file = os.path.join(self.path, label_file)
         self.max_seq_len = max_seq_len
-        self.is_symmetric = is_symmetric
         self.single_sided = single_sided
 
         # Placeholders; see self.load_data()
@@ -100,7 +95,6 @@ class EdgeProbingTask(Task):
         self._label_namespace = self.name + "_labels"
 
         # Scorers
-        #  self.acc_scorer = CategoricalAccuracy()  # multiclass accuracy
         self.mcc_scorer = FastMatthews()
         self.acc_scorer = BooleanAccuracy()  # binary accuracy
         self.f1_scorer = F1Measure(positive_label=1)  # binary F1 overall
@@ -280,7 +274,7 @@ register_task(
 )(EdgeProbingTask)
 # Dependency edge labeling on English Web Treebank (UD).
 register_task(
-    "edges-dep-labeling-ewt",
+    "edges-dep-ud-ewt",
     rel_path="edges/dep_ewt",
     label_file="labels.txt",
     files_by_split={
@@ -288,7 +282,6 @@ register_task(
         "val": "en_ewt-ud-dev.json",
         "test": "en_ewt-ud-test.json",
     },
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Entity type labeling on OntoNotes.
 register_task(
@@ -298,21 +291,19 @@ register_task(
     files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
     single_sided=True,
 )(EdgeProbingTask)
-# SRL CoNLL 2012 (OntoNotes), formulated as an edge-labeling task.
+# Semantic role labeling on OntoNotes.
 register_task(
-    "edges-srl-conll2012",
+    "edges-srl-ontonotes",
     rel_path="edges/ontonotes/srl",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
-# Re-processed version of edges-coref-ontonotes, via AllenNLP data loaders.
+# Coreference on OntoNotes (single-sentence context).
 register_task(
-    "edges-coref-ontonotes-conll",
+    "edges-coref-ontonotes",
     rel_path="edges/ontonotes/coref",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "development.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # SPR1, as an edge-labeling task (multilabel).
 register_task(
@@ -320,7 +311,6 @@ register_task(
     rel_path="edges/spr1",
     label_file="labels.txt",
     files_by_split={"train": "spr1.train.json", "val": "spr1.dev.json", "test": "spr1.test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # SPR2, as an edge-labeling task (multilabel).
 register_task(
@@ -332,7 +322,6 @@ register_task(
         "val": "edges.dev.json",
         "test": "edges.test.json",
     },
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Definite pronoun resolution. Two labels.
 register_task(
@@ -340,7 +329,6 @@ register_task(
     rel_path="edges/dpr",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 # Relation classification on SemEval 2010 Task8. 19 labels.
 register_task(
@@ -348,7 +336,6 @@ register_task(
     rel_path="edges/semeval",
     label_file="labels.txt",
     files_by_split={"train": "train.0.85.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
 )(EdgeProbingTask)
 
 ##
@@ -360,107 +347,4 @@ register_task(
     rel_path="edges/tacred/rel",
     label_file="labels.txt",
     files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
-)(EdgeProbingTask)
-
-##
-# Older tasks or versions for backwards compatibility.
-##
-# Entity classification on TACRED. 17 labels.
-# NOTE: these are probably silver labels from CoreNLP,
-# so this is of limited use as a target.
-register_task(
-    "edges-ner-tacred",
-    rel_path="edges/tacred/entity",
-    label_file="labels.txt",
-    files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    single_sided=True,
-)(EdgeProbingTask)
-# SRL CoNLL 2005, formulated as an edge-labeling task.
-register_task(
-    "edges-srl-conll2005",
-    rel_path="edges/srl_conll2005",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.wsj.edges.json",
-    },
-    is_symmetric=False,
-)(EdgeProbingTask)
-# Coreference on OntoNotes corpus. Two labels.
-register_task(
-    "edges-coref-ontonotes",
-    rel_path="edges/ontonotes-coref",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "train.edges.json",
-        "val": "dev.edges.json",
-        "test": "test.edges.json",
-    },
-    is_symmetric=False,
-)(EdgeProbingTask)
-# Entity type labeling on CoNLL 2003.
-register_task(
-    "edges-ner-conll2003",
-    rel_path="edges/ner_conll2003",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "CoNLL-2003_train.json",
-        "val": "CoNLL-2003_dev.json",
-        "test": "CoNLL-2003_test.json",
-    },
-    single_sided=True,
-)(EdgeProbingTask)
-# Dependency edge labeling on UD treebank (GUM). Use 'ewt' version instead.
-register_task(
-    "edges-dep-labeling",
-    rel_path="edges/dep",
-    label_file="labels.txt",
-    files_by_split={"train": "train.json", "val": "dev.json", "test": "test.json"},
-    is_symmetric=False,
-)(EdgeProbingTask)
-# PTB constituency membership / labeling.
-register_task(
-    "edges-constituent-ptb",
-    rel_path="edges/ptb-membership",
-    label_file="labels.txt",
-    files_by_split={"train": "ptb_train.json", "val": "ptb_dev.json", "test": "ptb_test.json"},
-    single_sided=True,
-)(EdgeProbingTask)
-# Constituency membership / labeling on OntoNotes.
-register_task(
-    "edges-constituent-ontonotes",
-    rel_path="edges/ontonotes-constituents",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "consts_ontonotes_en_train.json",
-        "val": "consts_ontonotes_en_dev.json",
-        "test": "consts_ontonotes_en_test.json",
-    },
-    single_sided=True,
-)(EdgeProbingTask)
-# CCG tagging (tokens only).
-register_task(
-    "edges-ccg-tag",
-    rel_path="edges/ccg_tag",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "ccg.tag.train.json",
-        "val": "ccg.tag.dev.json",
-        "test": "ccg.tag.test.json",
-    },
-    single_sided=True,
-)(EdgeProbingTask)
-# CCG parsing (constituent labeling).
-register_task(
-    "edges-ccg-parse",
-    rel_path="edges/ccg_parse",
-    label_file="labels.txt",
-    files_by_split={
-        "train": "ccg.parse.train.json",
-        "val": "ccg.parse.dev.json",
-        "test": "ccg.parse.test.json",
-    },
-    single_sided=True,
 )(EdgeProbingTask)
