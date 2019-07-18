@@ -2020,7 +2020,7 @@ class DisSentTask(PairClassificationTask):
             example_counts[split] = sum(1 for line in open(split_path))
         self.example_counts = example_counts
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
         is_using_pytorch_transformers = "pytorch_transformers_wpm_pretokenized" in indexers
 
@@ -2530,7 +2530,7 @@ class WiCTask(PairClassificationTask):
         )
         log.info("\tFinished loading WiC data.")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         """
         Convert a dataset of sentences into padded sequences of indices. Shared
         across several classes.
