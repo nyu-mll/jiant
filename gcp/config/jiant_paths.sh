@@ -13,7 +13,7 @@ export JIANT_PROJECT_PREFIX="$HOME/exp"
 # pre-downloaded ELMo models
 export ELMO_SRC_DIR="/nfs/jiant/share/elmo"
 # cache for BERT models
-export PYTORCH_PRETRAINED_BERT_CACHE="/nfs/jiant/share/bert_cache"
+export PYTORCH_TRANSFORMERS_CACHE="/nfs/jsalt/share/pytorch_transformers_cache"
 # word embeddings
 export WORD_EMBS_FILE="/nfs/jiant/share/wiki-news-300d-1M.vec"
 
