@@ -2488,9 +2488,9 @@ class WiCTask(PairClassificationTask):
             sent_tok1 = truncate_and_tokenize(self._tokenizer_name, sent_parts[0], self.max_seq_len)
             sent_tok2 = truncate_and_tokenize(self._tokenizer_name, sent_parts[1], self.max_seq_len)
             sent_mid = truncate_and_tokenize(self._tokenizer_name, word, self.max_seq_len)
-            sent_tok = sent_tok1[:-1] + sent_mid[1:-1] + sent_tok2[1:]
-            start_idx = len(sent_tok1[:-1])
-            end_idx = start_idx + len(sent_mid[1:-1])
+            sent_tok = sent_tok1 + sent_mid + sent_tok2
+            start_idx = len(sent_tok1)
+            end_idx = start_idx + len(sent_mid)
             assert end_idx > start_idx, "Invalid marked word indices. Something is wrong."
             return sent_tok, start_idx, end_idx
 
