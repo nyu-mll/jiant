@@ -30,6 +30,15 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
         self.embeddings_mode = args.pytorch_transformers_embedding_mode
 
+        # Integer token indices for special symbols.
+        self._sep_id = None
+        self._cls_id = None
+        self._pad_id = None
+
+        # If set, treat these special tokens as part of input segments other than A/B.
+        self.SEG_ID_CLS = None
+        self.SEG_ID_SEP = None
+
     def parameter_setup(self, args):
         # Set trainability of this module.
         for param in self.model.parameters():
@@ -75,6 +84,37 @@ class PytorchTransformersEmbedderModule(nn.Module):
         else:
             return self.model.config.hidden_size
 
+    def get_seg_ids(self, token_ids):
+        """ Dynamically build the segment IDs for a concatenated pair of sentences
+        Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
+
+        args:
+            token_ids (torch.LongTensor): batch of token IDs
+            is_pair_task
+
+        returns:
+            seg_ids (torch.LongTensor): batch of segment IDs
+
+        example:
+        > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"]
+        > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
+        > seg_ids = _get_seg_ids(token_tensor)
+        > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+        """
+
+        sep_idxs = (token_ids == self._sep_id).nonzero()[:, 1]
+        seg_ids = torch.ones_like(taken_ids)
+        for row, idx in zip(seg_ids, sep_idxs[::2]):
+            row[: idx + 1].fill_(0)
+
+        if self._SEG_ID_CLS is not None:
+            seg_ids[token_ids == self._cls_id] = self._SEG_ID_CLS
+
+        if self._SEG_ID_SEP is not None:
+            seg_ids[token_ids == self._sep_id] = self._SEG_ID_SEP
+
+        return seg_ids
+
 
 class BertEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for BERT module to fit into jiant APIs. """
@@ -113,7 +153,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
 
         Args:
             sent: batch dictionary
-            is_pair_task (bool): true if input is a batch from a pair task
+            is_pair_task (bool): true if input is a batch from a pair task - not used
 
         Returns:
             h: [batch_size, seq_len, d_emb]
@@ -153,7 +193,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            token_types = get_seg_ids(ids, self._sep_id) if is_pair_task else torch.zeros_like(ids)
+            token_types = self.get_seg_ids(ids)
             output_seq, output_pooled_vec, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
@@ -182,6 +222,9 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
+        self.SEG_ID_CLS = 2
+        self.SEG_ID_SEP = 3
+
     def apply_boundary_tokens(s1, s2=None):
         # XLNet-style boundary token marking on string token sequences
         if s2:
@@ -200,7 +243,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         Args:
             sent: batch dictionary
-            is_pair_task (bool): true if input is a batch from a pair task
+            is_pair_task (bool): true if input is a batch from a pair task - not used
 
         Returns:
             h: [batch_size, seq_len, d_emb]
@@ -237,7 +280,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            token_types = get_seg_ids(ids, self._sep_id) if is_pair_task else torch.zeros_like(ids)
+            token_types = self.get_seg_ids(ids)
             output_seq, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
