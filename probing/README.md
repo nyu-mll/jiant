@@ -56,7 +56,7 @@ You can use the `run/*_val.json` and `run/*_test.json` files to run scoring and 
 - [analyze_runs.py](analyze_runs.py) is a helper script to process a set of
   predictions into a condensed `.tsv` format. It computes confusion matricies for each label and along various stratifiers (like span distance) so you can easily and quickly perform further aggregation and compute metrics like accuracy, precision, recall, and F1. In particular, the `run`, `task`, `label`, `stratifier` (optional), and `stratum_key` (optional) columns serve as identifiers, and the confusion matrix is stored in four columns: `tp_count`, `fp_count`, `tn_count`, and `tp_count`. If you want to aggregate over a group of labels (like SRL core roles), just sum the `*_count` columns for that group before computing metrics.
 - [edgeprobe_aggregate_analysis.ipynb](edgeprobe_aggregate_analysis.ipynb) is
-  the notebook we used to generate the tables and figures in the paper. It's kind of messy, but ultimately just does some shallow processing over the output of `analyze_runs.py`. If you're trying to do your own analysis, the main idiosyncracies to know about are: for `ontonotes-coref`, use the `1` label instead of `_micro_avg_`, and for `srl-conll2012` we report a `_clean_micro_` metric which aggregates all the labels that don't start with `R-` or `C-`.
+  the notebook we used to generate the tables and figures in the paper. It's kind of messy, but ultimately just does some shallow processing over the output of `analyze_runs.py`. If you're trying to do your own analysis, the main idiosyncracies to know about are: for `coref-ontonotes`, use the `1` label instead of `_micro_avg_`, and for `srl-ontonotes` we report a `_clean_micro_` metric which aggregates all the labels that don't start with `R-` or `C-`.
 
 ## Running the experiments from the paper
 
@@ -69,7 +69,7 @@ To run a standard experiment, you can do something like:
 pushd ${PWD%/jiant*}/jiant
 source scripts/edges/exp_fns.sh
 # Run a lexical baseline (ELMo char CNN)
-elmo_chars_exp edges-srl-conll2012
+elmo_chars_exp edges-srl-ontonotes
 ```
 
 The paper (Table 2 in particular) represents the output of a large number of experiments. Some of these are quite fast (lexical baselines and CoVe), and some are quite slow (GPT model, syntax tasks with lots of targets). We use a Kubernetes cluster running on Google Cloud Platform (GCP) to manage all of these. For more on Kubernetes, see [`jiant/gcp/kubernetes`](../gcp/kubernetes).

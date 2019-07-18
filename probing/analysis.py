@@ -24,10 +24,13 @@ TASK_TO_DISPLAY_NAME = collections.OrderedDict(
     [
         ("pos-ontonotes", "Part-of-Speech"),
         ("nonterminal-ontonotes", "Constituents"),
-        ("dep-labeling-ewt", "Dependencies"),
+        ("dep-labeling-ewt", "Dependencies"),  # old task name
+        ("dep-ud-ewt", "Dependencies"),
         ("ner-ontonotes", "Entities"),
-        ("srl-conll2012", "SRL"),
-        ("coref-ontonotes-conll", "OntoNotes Coref."),
+        ("srl-conll2012", "SRL"),  # old task name
+        ("srl-ontonotes", "SRL"),
+        ("coref-ontonotes-conll", "OntoNotes Coref."),  # old task name
+        ("coref-ontonotes", "OntoNotes Coref."),
         ("spr1", "SPR1"),
         ("spr2", "SPR2"),
         ("dpr", "Winograd Coref."),
