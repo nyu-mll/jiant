@@ -12,7 +12,7 @@
 
   # Name of pre-built Docker image, accessible from Kubernetes.
   gcr_image: "gcr.io/google.com/jiant-stilts/jiant:v2",
-  
-  # Path to BERT model cache; should be writable by Kubernetes workers.
-  bert_cache_path: "/nfs/jiant/share/bert_cache",
+
+  # Path to BERT etc. model cache; should be writable by Kubernetes workers.
+  pytorch_transformers_cache_path: "/nfs/jsalt/share/pytorch_transformers_cache",
 }
