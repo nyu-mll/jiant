@@ -89,7 +89,6 @@ class MultiRCTask(Task):
             "val": os.path.join(path, "val.jsonl"),
             "test": os.path.join(path, "test.jsonl"),
         }
-        self.is_pair_task = True
 
     def load_data(self):
         # Data is exposed as iterable: no preloading
@@ -248,7 +247,6 @@ class ReCoRDTask(Task):
             "val": os.path.join(path, "val.jsonl"),
             "test": os.path.join(path, "test.jsonl"),
         }
-        self.is_pair_task = True
 
     def load_data(self):
         # Data is exposed as iterable: no preloading

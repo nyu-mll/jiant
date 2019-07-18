@@ -9,7 +9,6 @@ from allennlp.modules import scalar_mix
 import pytorch_transformers
 
 from jiant.preprocess import parse_task_list_arg
-from jiant.pytorch_transformers_interface.utils import get_seg_ids
 from jiant.utils import utils
 
 
@@ -36,8 +35,8 @@ class PytorchTransformersEmbedderModule(nn.Module):
         self._pad_id = None
 
         # If set, treat these special tokens as part of input segments other than A/B.
-        self.SEG_ID_CLS = None
-        self.SEG_ID_SEP = None
+        self._SEG_ID_CLS = None
+        self._SEG_ID_SEP = None
 
     def parameter_setup(self, args):
         # Set trainability of this module.
@@ -90,7 +89,6 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
         args:
             token_ids (torch.LongTensor): batch of token IDs
-            is_pair_task
 
         returns:
             seg_ids (torch.LongTensor): batch of segment IDs
@@ -103,7 +101,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         """
 
         sep_idxs = (token_ids == self._sep_id).nonzero()[:, 1]
-        seg_ids = torch.ones_like(taken_ids)
+        seg_ids = torch.ones_like(token_ids)
         for row, idx in zip(seg_ids, sep_idxs[::2]):
             row[: idx + 1].fill_(0)
 
@@ -143,7 +141,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             return ["[CLS]"] + s1 + ["[SEP]"]
 
     def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
         """ Run BERT to get hidden states.
 
@@ -153,7 +151,6 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
 
         Args:
             sent: batch dictionary
-            is_pair_task (bool): true if input is a batch from a pair task - not used
 
         Returns:
             h: [batch_size, seq_len, d_emb]
@@ -222,8 +219,8 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
-        self.SEG_ID_CLS = 2
-        self.SEG_ID_SEP = 3
+        self._SEG_ID_CLS = 2
+        self._SEG_ID_SEP = 3
 
     def apply_boundary_tokens(s1, s2=None):
         # XLNet-style boundary token marking on string token sequences
@@ -233,7 +230,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             return s1 + ["<sep>", "<cls>"]
 
     def forward(
-        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
         """ Run XLNet to get hidden states.
 
@@ -243,7 +240,6 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         Args:
             sent: batch dictionary
-            is_pair_task (bool): true if input is a batch from a pair task - not used
 
         Returns:
             h: [batch_size, seq_len, d_emb]

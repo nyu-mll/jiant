@@ -207,9 +207,6 @@ class Task(object):
         self.example_counts = None
         self.contributes_to_aggregate_score = True
 
-        # For BERT-style models, will this task have [sep]-separated segments?
-        self.is_pair_task = False
-
     def load_data(self):
         """ Load data from path and create splits. """
         raise NotImplementedError
@@ -317,7 +314,6 @@ class PairClassificationTask(ClassificationTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
-        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
@@ -339,7 +335,6 @@ class PairRegressionTask(RegressionTask):
         self.scorers = [self.scorer1]
         self.val_metric = "%s_mse" % self.name
         self.val_metric_decreases = True
-        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         """Get metrics specific to the task"""
@@ -366,7 +361,6 @@ class PairOrdinalRegressionTask(RegressionTask):
         self.scorers = [self.scorer1, self.scorer2]
         self.val_metric = "%s_1-mse" % self.name
         self.val_metric_decreases = False
-        self.is_pair_task = True
 
     def get_metrics(self, reset=False):
         mse = self.scorer1.get_metric(reset)
@@ -2595,7 +2589,6 @@ class COPATask(MultipleChoiceTask):
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
         self.n_choices = 2
-        self.is_pair_task = True
 
     def load_data(self):
         """ Process the dataset located at path.  """
@@ -2690,7 +2683,6 @@ class SWAGTask(MultipleChoiceTask):
         self.val_metric = "%s_accuracy" % name
         self.val_metric_decreases = False
         self.n_choices = 4
-        self.is_pair_task = True
 
     def load_data(self):
         """ Process the dataset located at path.  """

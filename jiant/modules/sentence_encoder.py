@@ -87,9 +87,7 @@ class SentenceEncoder(Model):
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
             if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                word_embs_in_context = self._text_field_embedder(
-                    sent, is_pair_task=task.is_pair_task
-                )
+                word_embs_in_context = self._text_field_embedder(sent)
             else:
                 word_embs_in_context = self._text_field_embedder(sent)
             word_embs_in_context = self._highway_layer(word_embs_in_context)
@@ -100,9 +98,7 @@ class SentenceEncoder(Model):
         # Skip computing this if it won't be used.
         if self.sep_embs_for_skip:
             if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                task_word_embs_in_context = self._text_field_embedder(
-                    sent, task._classifier_name, is_pair_task=task.is_pair_task
-                )
+                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
             else:
                 task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
             task_word_embs_in_context = self._highway_layer(task_word_embs_in_context)

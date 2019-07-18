@@ -90,7 +90,6 @@ class EdgeProbingTask(Task):
         self.max_seq_len = max_seq_len
         self.is_symmetric = is_symmetric
         self.single_sided = single_sided
-        self.is_pair_task = not single_sided
 
         # Placeholders; see self.load_data()
         self._iters_by_split = None
