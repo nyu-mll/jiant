@@ -88,12 +88,12 @@ declare -a ALL_TASKS
 ALL_TASKS+=( "spr1" )
 ALL_TASKS+=( "spr2" )
 ALL_TASKS+=( "dpr" )
-ALL_TASKS+=( "dep-labeling-ewt" )
+ALL_TASKS+=( "dep-ud-ewt" )
 ALL_TASKS+=( "nonterminal-ontonotes" )
 ALL_TASKS+=( "pos-ontonotes" )
 ALL_TASKS+=( "ner-ontonotes" )
-ALL_TASKS+=( "srl-conll2012" )
-ALL_TASKS+=( "coref-ontonotes-conll" )
+ALL_TASKS+=( "srl-ontonotes" )
+ALL_TASKS+=( "coref-ontonotes" )
 ALL_TASKS+=( "rel-semeval" )
 echo "All tasks to run: ${ALL_TASKS[@]}"
 

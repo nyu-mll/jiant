@@ -8,6 +8,23 @@ All the instructions below assume Ubuntu Linux running on a Google Compute Engin
 
 # Set-Up Instructions
 
+## jsonnet
+Several of the Kubernetes scripts use [jsonnet](https://jsonnet.org/) for configuration. To install the jsonnet command-line utility, you need to build it from source and add it to your system path:
+```
+git clone https://github.com/google/jsonnet.git jsonnet
+cd jsonnet
+make
+sudo cp jsonnet /usr/bin
+```
+
+## Configuring Cluster Resources
+
+[`templates/jiant_env.libsonnet`](templates/jiant_env.jsonnet) contains several variables (such as the name of the jiant image and the location of the NFS server) that are specific to the cluster environment. Edit that file to reflect your environment before running jobs or further set-up.
+
+## On Your Workstation
+
+_If you're using the "Deep Learning Image: PyTorch 1.1.0" VM image on Google Cloud Platform, you should already have Docker, nvidia-docker, and kubectl installed, and you can skip the rest of this section._
+
 First, install Docker community edition:
 ```sh
 wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_18.06.1~ce~3-0~ubuntu_amd64.deb
@@ -45,7 +62,7 @@ Build the Docker image containing all the library dependencies and environment v
 ```sh
 cd /path/to/jiant
 # <project_id> is your Google Cloud project (e.g. jsalt-sentence-rep)
-sudo docker build -t gcr.io/<project_id>/jiant-sandbox:v1 .
+sudo docker build -t gcr.io/<project_id>/jiant:v1 .
 ```
 
 Authenticate to Google Cloud so we can push containers to Google Container Registry (GCR), where they are accessible to Kubernetes nodes:
@@ -55,9 +72,11 @@ gcloud auth configure-docker
 
 Now push the image that we built locally:
 ```sh
-sudo gcloud docker -- push gcr.io/<project_id>/jiant-sandbox:v1
+sudo gcloud docker -- push gcr.io/<project_id>/jiant:v1
 ```
 You can keep track of uploaded images by going to Cloud Console -> Container Engine.
+
+_**Note:** you should update [`templates/jiant_env.libsonnet`](templates/jiant_env.libsonnet) with the name of this container (`gcr.io/...`), so that the job templates will use it correctly._
 
 ## Kubernetes Cluster
 
@@ -76,27 +95,18 @@ kubectl run hello-world --image gcr.io/<project_id>/jiant-sandbox:v1 -- \
 
 You should see a workload named `hello-world` in the Kubernetes Engine -> Workloads page, and if you click through to container logs you should see the output of your command.
 
-### GPUs on Kubernetes
+### One-time cluster set-up
 
-To enable GPU support, you need to load a `DaemonSet` that installs GPU drivers on each node. Run:
-```sh
-kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/stable/nvidia-driver-installer/cos/daemonset-preloaded.yaml
+After you first create the Kubernetes cluster, run:
+```
+./init_cluster.sh
 ```
 
-This creates a persistent workload, which you can see as `nvidia-driver-installer` under Kubernetes Engine -> Workloads if you enable showing system objects. Wait a few minutes for it to finish before scheduling anything.
+This does two things:
 
-### NFS on Kubernetes
-
-To allow Kubernetes jobs to access our NFS server, we need to create two resources: a `PersistentVolume` that defines the storage volume, and a `PersistentVolumeClaim` that allows jobs to connect to it.
-
-Use the YAML files in this directory to configure these. You'll likely need to edit the files and change the server IP to match your NFS server.
-```sh
-kubectl create -f gcp/kubernetes/nfs_pv.yaml
-kubectl create -f gcp/kubernetes/nfs_pvc.yaml
-```
-
-If this is successful, you should see the volume claim in cloud console under Kubernetes Engine -> Storage.
-
+- It adds a DaemonSet that installs GPU drivers on each node.
+- It sets up a PersistentVolume that defines the NFS volume in a way Kubernetes
+  can understand, and sets up a PersistentVolumeClaim that allows jobs to access it.
 
 ## Running Jobs
 
