@@ -8,8 +8,8 @@ function(job_name, command, project_dir, uid, fsgroup,
   metadata: { name: job_name },
   spec: {
     restartPolicy: "Never",
-    securityContext: { 
-      runAsUser: std.parseInt(uid), 
+    securityContext: {
+      runAsUser: std.parseInt(uid),
       fsGroup: std.parseInt(fsgroup)
     },
     containers: [{
@@ -21,17 +21,30 @@ function(job_name, command, project_dir, uid, fsgroup,
       resources: { limits: { "nvidia.com/gpu": 1 } },
       # Mount the NFS volume inside the container.
       volumeMounts: [
-        { 
-          mountPath: jiant_env.nfs_mount_path, 
-          name: jiant_env.nfs_volume_name 
+        {
+          mountPath: jiant_env.nfs_mount_path,
+          name: jiant_env.nfs_volume_name,
         },
       ],
+      # Environment variables used by jiant
       env: [
         { name: "JIANT_PROJECT_PREFIX", value: project_dir },
         { name: "NOTIFY_EMAIL", value: notify_email },
-        { 
-          name: "PYTORCH_PRETRAINED_BERT_CACHE", 
-          value: jiant_env.bert_cache_path 
+        {
+          name: "JIANT_DATA_DIR",
+          value: jiant_env.jiant_data_dir,
+        },
+        {
+          name: "PYTORCH_PRETRAINED_BERT_CACHE",
+          value: jiant_env.bert_cache_path,
+        },
+        {
+          name: "ELMO_SRC_DIR",
+          value: jiant_env.elmo_src_dir,
+        },
+        {
+          name: "WORD_EMBS_FILE",
+          value: jiant_env.word_embs_file,
         },
       ]
     }],
@@ -40,7 +53,7 @@ function(job_name, command, project_dir, uid, fsgroup,
       "cloud.google.com/gke-accelerator": "nvidia-tesla-" + gpu_type,
     },
     # Make sure Kubernetes allows us to schedule on GPU nodes.
-    tolerations: [{ 
+    tolerations: [{
       key: "nvidia.com/gpu",
       operator: "Equal",
       value: "present",
