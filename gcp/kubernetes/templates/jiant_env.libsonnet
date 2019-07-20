@@ -11,8 +11,14 @@
   nfs_mount_path: "/nfs/jiant",
 
   # Name of pre-built Docker image, accessible from Kubernetes.
-  gcr_image: "gcr.io/google.com/jiant-stilts/jiant:v2",
+  gcr_image: "gcr.io/google.com/jiant-stilts/jiant-conda:v1",
 
-  # Path to BERT etc. model cache; should be writable by Kubernetes workers.
+  # Default location for glue_data
+  jiant_data_dir: "/nfs/jiant/share/glue_data",
+  # Path to ELMO cache.
+  elmo_src_dir: "/nfs/jiant/share/elmo",
+  # Path to BERT model cache; should be writable by Kubernetes workers.
   pytorch_transformers_cache_path: "/nfs/jsalt/share/pytorch_transformers_cache",
+  # Path to default word embeddings file
+  word_embs_file: "/nfs/jiant/share/wiki-news-300d-1M.vec",
 }
