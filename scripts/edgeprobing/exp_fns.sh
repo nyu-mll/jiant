@@ -14,6 +14,8 @@
 #
 # See individual functions below for usage.
 
+EP_RESOURCE_DIR="/nfs/jiant/share/edge-probing/resources"
+
 function run_exp() {
     # Helper function to invoke main.py.
     # Don't run this directly - use the experiment functions below,
@@ -49,7 +51,7 @@ function elmo_full_exp() {
 function elmo_ortho_exp() {
     # Full ELMo with random orthogonal weights for LSTM and projections.
     # Usage: elmo_ortho_exp <task_name> <random_seed>
-    ELMO_WEIGHTS_PATH="/nfs/jsalt/share/random_elmo/elmo_2x4096_512_2048cnn_2xhighway_weights_ortho_seed_$2.hdf5"
+    ELMO_WEIGHTS_PATH="${EP_RESOURCE_DIR}/random_elmo/elmo_2x4096_512_2048cnn_2xhighway_weights_ortho_seed_$2.hdf5"
     OVERRIDES="exp_name=elmo-ortho-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, elmo_chars_only=0"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
@@ -59,7 +61,7 @@ function elmo_ortho_exp() {
 function elmo_random_exp() {
     # Full ELMo with random normal weights for LSTM and projections.
     # Usage: elmo_random_exp <task_name> <random_seed>
-    ELMO_WEIGHTS_PATH="/nfs/jsalt/share/random_elmo/elmo_2x4096_512_2048cnn_2xhighway_weights_random_seed_$2.hdf5"
+    ELMO_WEIGHTS_PATH="${EP_RESOURCE_DIR}/random_elmo/elmo_2x4096_512_2048cnn_2xhighway_weights_random_seed_$2.hdf5"
     OVERRIDES="exp_name=elmo-random-$1, run_name=run_seed_$2"
     OVERRIDES+=", target_tasks=$1, elmo_chars_only=0"
     OVERRIDES+=", elmo_weight_file_path=${ELMO_WEIGHTS_PATH}"
@@ -140,7 +142,7 @@ function openai_mix_exp() {
 function openai_bwb_exp() {
     # Probe the OpenAI transformer model, as trained on BWB-shuffled.
     # Usage: openai_bwb_exp <task_name>
-    CKPT_PATH="/nfs/jsalt/home/iftenney/checkpoints/bwb_shuffled/model.ckpt-1000000"
+    CKPT_PATH="${EP_RESOURCE_DIR}/checkpoints/bwb_shuffled/model.ckpt-1000000"
     OVERRIDES="exp_name=openai-bwb-$1, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", openai_transformer_ckpt=${CKPT_PATH}"
