@@ -19,33 +19,29 @@ set -eux
 # Get the path to this repo; we'll mount it from the container later.
 JIANT_PATH=$(readlink -f .)
 
-TEMP_DIR=${1:-"/tmp/jiant-demo"}
-
-# Set up temp dir to mimic our configuration of /nfs/jsalt
-mkdir -p $TEMP_DIR
-mkdir -p $TEMP_DIR/exp
-mkdir -p $TEMP_DIR/share
-mkdir -p $TEMP_DIR/share/bert_cache
-python scripts/download_glue_data.py --data_dir $TEMP_DIR/share/glue_data \
-  --tasks all
+NFS_PATH="/nfs/jiant"  # absolute path to NFS volume
+mkdir -p $NFS_PATH/exp/$USER  # project directory
 
 # Build the docker image. This will be slow the first time you run it,
 # but will cache steps for subsequent runs.
 IMAGE_NAME="jiant-sandbox:demo"
-sudo docker build -t $IMAGE_NAME .
+sudo docker build --build-arg "NFS_MOUNT=$NFS_PATH" -t $IMAGE_NAME .
 
 # This is the python command we'll actually run, with paths relative to the
 # container root. See the -v "src:dst" flags below for the mapping.
 declare -a COMMAND
-COMMAND+=( python /share/jiant/main.py )
-COMMAND+=( --config_file /share/jiant/config/demo.conf )
+COMMAND+=( python $NFS_PATH/jiant/main.py )
+COMMAND+=( --config_file $NFS_PATH/jiant/config/demo.conf )
 COMMAND+=( -o "exp_name=jiant-demo" )
 
 # Run demo.conf in the docker container.
-sudo docker run --runtime=nvidia --rm -v "$TEMP_DIR:/nfs/jsalt" \
-  -v "$JIANT_PATH:/share/jiant" \
-  -e "JIANT_PROJECT_PREFIX=/nfs/jsalt/exp" \
-  -e "PYTORCH_PRETRAINED_BERT_CACHE=/nfs/jsalt/share/bert_cache" \
-  -e "ELMO_SRC_DIR=" \
+sudo docker run --runtime=nvidia --rm \
+  -v "$NFS_PATH:$NFS_PATH" \
+  -v "$JIANT_PATH:$NFS_PATH/jiant" \
+  -e "JIANT_DATA_DIR=$JIANT_DATA_DIR" \
+  -e "ELMO_SRC_DIR=$ELMO_SRC_DIR" \
+  -e "WORD_EMBS_FILE=$WORD_EMBS_FILE" \
+  -e "JIANT_PROJECT_PREFIX=$NFS_PATH/exp/$USER" \
+  -e "PYTORCH_PRETRAINED_BERT_CACHE=$PYTORCH_PRETRAINED_BERT_CACHE" \
   --user $(id -u):$(id -g) \
   -i ${IMAGE_NAME} "${COMMAND[@]}"

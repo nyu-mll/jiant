@@ -15,81 +15,50 @@
 # Use CUDA base image.
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
-# Add Tini to handle init.
-# TODO: see if we still need this? More recent docker might have this built-in.
-ENV TINI_VERSION v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
-
 # Fix unicode issues in Python3 by setting default text file encoding.
 ENV LANG C.UTF-8
 
-# Update Ubuntu packages
-RUN apt-get update && yes | apt-get upgrade
-
-# Add utils
+# Update Ubuntu packages and install basic utils
+RUN apt-get update
 RUN apt-get install -y wget git bzip2
 
 # Install Anaconda
-# TODO: replace with miniconda to reduce image size.
-RUN wget https://repo.anaconda.com/archive/Anaconda3-5.2.0-Linux-x86_64.sh \
-  && bash Anaconda3-5.2.0-Linux-x86_64.sh -b -p /usr/share/anaconda3 \
-  && rm Anaconda3-5.2.0-Linux-x86_64.sh
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+  && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/anaconda3 \
+  && rm Miniconda3-latest-Linux-x86_64.sh
 
 # Set path to conda
-ENV PATH /usr/share/anaconda3/bin:$PATH
+ENV PATH /opt/anaconda3/bin:$PATH
 
-# Fix some package issues
-RUN pip install --upgrade pip
-RUN pip install msgpack
-RUN pip install nose2
+# Set up conda environment (slow - installs many packages)
+COPY environment.yml .
+RUN conda env create -f environment.yml
 
-# Install latest TensorFlow
-# TODO: pin this to a specific version!
-RUN pip install --upgrade tensorflow-gpu tensorflow-hub
+# Workaround for 'conda activate' depending on shell features
+# that don't necessarily work in Docker.
+# This simulates the effect of 'conda activate'
+# See https://github.com/ContinuumIO/docker-images/issues/89
+# If this breaks in a future version of conda, add
+#   RUN conda shell.posix activate jiant
+# to see what conda activate jiant would do, and update the commands below
+# accordingly.
+ENV PATH /opt/anaconda3/envs/jiant/bin:$PATH
+ENV CONDA_PREFIX "/opt/anaconda3/envs/jiant"
+ENV CONDA_SHLVL "1"
+ENV CONDA_DEFAULT_ENV "jiant"
 
-# Install PyTorch
-RUN conda install pytorch=1.0.0 torchvision=0.2.1 cuda90 -c pytorch
-
-# Install other requirements
-RUN conda install numpy=1.14.5 nltk=3.2.5
-RUN pip install ipdb tensorboard tensorboardX==1.2
-
-# Install misc util packages.
-RUN pip install --upgrade google-cloud-logging sendgrid
-RUN pip install python-Levenshtein ftfy==5.4.1 spacy==2.0.11
+# Install SpaCy and NLTK models
 RUN python -m spacy download en
-
-# Install AllenNLP. Need to update some other deps first.
-RUN conda install greenlet=0.4.15
-RUN pip install allennlp==0.8.4
-RUN pip install --upgrade pytorch-pretrained-bert==0.5.1
-
-# Install local data files.
 RUN python -m nltk.downloader -d /usr/share/nltk_data \
-  perluniprops nonbreaking_prefixes punkt
+  perluniprops nonbreaking_prefixes
 
-RUN pip install pyhocon==0.3.35
-
-# AllenNLP cache, may be used for ELMo weights.
+# Local AllenNLP cache, may be used for ELMo weights.
 RUN mkdir -p /tmp/.allennlp && chmod a+w /tmp/.allennlp
 ENV ALLENNLP_CACHE_ROOT "/tmp/.allennlp"
 
 # Create local mount points.
-RUN mkdir -p /share/jiant
-RUN mkdir -p /nfs/jsalt
-# Set environment vars based on gcp/config/jsalt_paths.1.2.sh
-# TODO: make these a generic mount, instead of requiring that they look like our
-# NFS directory.
-ENV JSALT_SHARE_DIR "/nfs/jsalt/share"
-ENV JIANT_DATA_DIR "$JSALT_SHARE_DIR/glue_data"
-ENV GLOVE_EMBS_FILE "$JSALT_SHARE_DIR/glove/glove.840B.300d.txt"
-ENV FASTTEXT_EMBS_FILE "$JSALT_SHARE_DIR/fasttext/crawl-300d-2M.vec"
-ENV WORD_EMBS_FILE "$FASTTEXT_EMBS_FILE"
-ENV FASTTEXT_MODEL_FILE "."
-ENV PATH_TO_COVE "$JSALT_SHARE_DIR/cove"
-ENV ELMO_SRC_DIR "$JSALT_SHARE_DIR/elmo"
+# Can override with --build-arg NFS_MOUNT=/path/to/nfs/volume
+# when running 'docker build'
+ARG NFS_MOUNT="/nfs/jiant"
+RUN mkdir -p "$NFS_MOUNT"
 
-# Set these manually with -e or via Kuberentes config YAML.
-# ENV JIANT_PROJECT_PREFIX "$NFS_PROJECT_PREFIX"
