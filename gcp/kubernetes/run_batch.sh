@@ -8,7 +8,7 @@
 #    - the resources defined in templates/jiant_env.libsonnet are correct
 #
 # Example usage:
-# export JIANT_PATH="/nfs/jsalt/home/$USER/jiant"
+# export JIANT_PATH="/nfs/jiant/home/$USER/jiant"
 # ./run_batch.sh <job_name> "python $JIANT_PATH/main.py \
 #    --config_file $JIANT_PATH/config/demo.conf \
 #    --notify <your_email_address>"
@@ -35,8 +35,8 @@ NOTIFY_EMAIL=""
 # Get the NFS path from the Kubernetes config, so that it doesn't need to be 
 # hardcoded here.
 pushd $(dirname $0)/templates
-NFS_PATH=$(jsonnet -S -e "local env = import 'jiant_env.libsonnet'; env.nfs_mount_path")
-echo "Assuming NFS volume at $NFS_PATH"
+NFS_EXP_DIR=$(jsonnet -S -e "local env = import 'jiant_env.libsonnet'; env.nfs_exp_dir")
+echo "Assuming NFS experiment path at $NFS_EXP_DIR"
 popd
 
 # Handle flags.
@@ -63,11 +63,14 @@ shift $((OPTIND-1))
 NAME=$1
 COMMAND=$2
 
-JOB_NAME="${PROJECT_NAME}.${NAME}"
+JOB_NAME="${USER}.${PROJECT_NAME}.${NAME}"
 
 ##
 # Create project directory, if it doesn't exist yet.
-PROJECT_DIR="${NFS_PATH}/exp/${PROJECT_NAME}"
+PROJECT_DIR="${NFS_EXP_DIR}/${USER}/${PROJECT_NAME}"
+if [ ! -d "${NFS_EXP_DIR}/$USER" ]; then
+  mkdir "${NFS_EXP_DIR}/$USER"
+fi
 if [ ! -d "${PROJECT_DIR}" ]; then
   echo "Creating project directory ${PROJECT_DIR}"
   mkdir ${PROJECT_DIR}
@@ -81,7 +84,7 @@ if [ ! -d "${YAML_DIR}" ]; then
   echo "Creating Kubernetes YAML ${YAML_DIR}"
   mkdir "${YAML_DIR}"
 fi
-set -x
+# set -x  # uncomment for debugging
 YAML_FILE="${PROJECT_DIR}/yaml/${JOB_NAME}.yaml"
 jsonnet -S -o "${YAML_FILE}" \
   --tla-str job_name="${JOB_NAME}" \
