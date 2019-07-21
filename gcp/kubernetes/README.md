@@ -115,9 +115,9 @@ We can schedule basic jobs on the cluster using `kubectl run` as above, but in o
 The `run_batch.sh` script handles creating an appropriate config on the fly; see the documentation in that file for more details. Basic usage is:
 
 ```sh
-export JIANT_PATH="/nfs/jsalt/home/$USER/jiant"
+export JIANT_PATH="/nfs/jiant/home/$USER/jiant"
 ./run_batch.sh <job_name> \
-   "python $JIANT_PATH/main.py --config_file $JIANT_PATH/config/demo.conf"
+   "python $JIANT_PATH/main.py --config_file $JIANT_PATH/config/demo.conf --overrides 'run_name = kubernetes-demo, target_tasks = \"wnli,commitbank\"'"
 ```
 
 You should see your job as `<job_name>` in Kubernetes Engine -> Workloads, and can monitor status, resource usage, and logs from that page.
