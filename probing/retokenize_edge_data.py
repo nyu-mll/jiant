@@ -42,9 +42,7 @@ from jiant.utils import retokenize, tokenizers, utils
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 PARSER = argparse.ArgumentParser()
-PARSER.add_argument(
-    "-t", dest="tokenizer_name", type=str, required=True, help="Tokenizer name."
-)
+PARSER.add_argument("-t", dest="tokenizer_name", type=str, required=True, help="Tokenizer name.")
 PARSER.add_argument(
     "--num_parallel", type=int, default=4, help="Number of parallel processes to use."
 )
