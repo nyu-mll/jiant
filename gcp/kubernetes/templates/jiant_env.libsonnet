@@ -10,6 +10,9 @@
   # Mount point for the NFS volume, as the container will see it.
   nfs_mount_path: "/nfs/jiant",
 
+  # Default experiment directory; must be writable by Kubernetes workers.
+  nfs_exp_dir: "/nfs/jiant/exp",
+
   # Name of pre-built Docker image, accessible from Kubernetes.
   gcr_image: "gcr.io/google.com/jiant-stilts/jiant-conda:v0",
 
