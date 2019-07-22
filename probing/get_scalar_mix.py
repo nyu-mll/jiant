@@ -30,6 +30,7 @@ from typing import List, Tuple, Iterable, Dict
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
+
 def get_scalar(tensor):
     assert tensor.size() == torch.Size([1])
     return tensor.numpy()[0]
