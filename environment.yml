@@ -26,6 +26,8 @@ dependencies:
         # to jiant, this is optional.
         - pre-commit==1.15.2
         - google-cloud-logging==1.11.0
+        - ftfy==5.4.1
+        - spacy==2.0.11
 
         # Warning: jiant currently depends on *both* pytorch_pretrained_bert > 0.6 _and_
         # pytorch_transformers > 1.0. These are the same package, though the name changed between

@@ -23,15 +23,28 @@ function(job_name, command, project_dir, uid, fsgroup,
       volumeMounts: [
         {
           mountPath: jiant_env.nfs_mount_path,
-          name: jiant_env.nfs_volume_name
+          name: jiant_env.nfs_volume_name,
         },
       ],
+      # Environment variables used by jiant
       env: [
         { name: "JIANT_PROJECT_PREFIX", value: project_dir },
         { name: "NOTIFY_EMAIL", value: notify_email },
         {
-          name: "PYTORCH_TRANSFORMERS_CACHE",
+          name: "JIANT_DATA_DIR",
+          value: jiant_env.jiant_data_dir,
+        },
+        {
+          name: "PYTORCH_PRETRAINED_BERT_CACHE",
           value: jiant_env.pytorch_transformers_cache_path
+        },
+        {
+          name: "ELMO_SRC_DIR",
+          value: jiant_env.elmo_src_dir,
+        },
+        {
+          name: "WORD_EMBS_FILE",
+          value: jiant_env.word_embs_file,
         },
       ]
     }],
