@@ -330,7 +330,7 @@ class LinguisticPhenomenaPairTask(PairClassificationTask):
         return collected_metrics
 
 
-@register_task("lbp-oneprefix", rel_path="lpb")
+@register_task("lpb-oneprefix", rel_path="lpb")
 class OnePrefixLMTask(LinguisticPhenomenaPairTask):
     """ Task class for full sentence LM acceptability preference """
 
@@ -338,7 +338,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
         super(OnePrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
-        """ Load linguistic phenomena benchmark data for one prefix method, each one-prefix
+        """ Load linguistic phenomena benchmark data for one prefix method, each one prefix
         example includes one shared prefix and the following tokens from the good and bad
         sentences """
         data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
@@ -375,7 +375,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading CoLA cloze pairs.")
+        log.info("\tFinished loading lpb one prefix data.")
         return
 
     def process_split(self, split, indexers):
@@ -396,7 +396,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
             d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
             d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
             d["shared_prefix"] = sentence_to_text_field(shared_prefix, indexers)
-            d["sent0_str"] = MetadataField(" ".join(shared_prefix[1:-1]))
+            d["shared_str"] = MetadataField(" ".join(shared_prefix[1:-1]))
             d["good_token"] = TextField(Token(good_token), token_indexers=indexers)
             d["bad_token"] = TextField(Token(bad_token), token_indexers=indexers)
             d["tagmask"] = MultiLabelField(
@@ -408,7 +408,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
         return instances
 
 
-@register_task("lbp-twoprefix", rel_path="lpb")
+@register_task("lpb-twoprefix", rel_path="lpb")
 class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
     """ Task class for two prefix LM acceptability preference """
 
@@ -416,12 +416,79 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
         super(TwoPrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
-        raise NotImplementedError
+        """ Load linguistic phenomena benchmark data for two prefix method, each two prefix
+        example includes one shared token and the prefix tokens from the good and bad
+        sentences """
+        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        sent1s, sent2s, labels, tags = [], [], [], []
+        good_prefixes, bad_prefixes, shared_tokens = [], [], []
+        for example in data:
+            if not example['two_prefix_method']:
+                continue
+            sent1s.append(
+                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+            )
+            sent2s.append(
+                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+            )
+            labels.append(0)
+            tags.append([])
+            for tag_type in tag_types:
+                if data[tag_type]:
+                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                    tags[-1].append(self.tag_manager(tag_str))
+            good_prefixes.append(
+                process_sentence(self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len)
+            )
+            bad_prefixes.append(
+                process_sentence(self._tokenizer_name, example["two_prefix_prefix_bad"], self.max_seq_len)
+            )
+            shared_tokens.append(example["two_prefix_word"])
+        self.val_data_text = self.test_data_text = self.train_data_text = \
+            (sent1s, sent2s, labels, tags, good_prefixes, bad_prefixes, shared_tokens)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        
+        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy
+        )
+
+        log.info("\tFinished loading lpb two prefix data.")
+        return
 
     def process_split(self, split, indexers):
-        raise NotImplementedError
+        def _make_instance(sent1, sent2, label, tags, good_prefix, bad_prefix, shared_token):
+            """ from multiple types in one column create multiple fields
+            sent1: sentence1, the good one
+            sent2: sentence2, the bad one
+            label: always 0
+            good_prefix: prefix of the good sentence
+            bad_prefix: prefix of the bad sentence
+            shared_prefix: shared token following the prefixes
+            tagmask: which tags this sample has
+            """
+            d = {}
+            d["sent1"] = sentence_to_text_field(sent1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
+            d["input2"] = sentence_to_text_field(sent2, indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["good_prefix"] = sentence_to_text_field(good_prefix, indexers)
+            d["good_str"] = MetadataField(" ".join(good_prefix[1:-1]))
+            d["bad_prefix"] = sentence_to_text_field(bad_prefix, indexers)
+            d["bad_str"] = MetadataField(" ".join(bad_prefix[1:-1]))
+            d["shared_token"] = TextField(Token(shared_token), token_indexers=indexers)
+            d["tagmask"] = MultiLabelField(
+                tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
+            )
+            return Instance(d)
 
-@register_task("lbp-fullsent", rel_path="lpb")
+        instances = map(_make_instance, *split)
+        return instances
+
+@register_task("lpb-simpleLM", rel_path="lpb")
 class FullSentLMTask(LinguisticPhenomenaPairTask):
     """ Task class for full sentence LM acceptability preference """
 
@@ -429,10 +496,64 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
         super(FullSentLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
-        raise NotImplementedError
+        """ Load linguistic phenomena benchmark data for simple LM method, each one-prefix
+        example includes one shared prefix and the following tokens from the good and bad
+        sentences """
+        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        sent1s, sent2s, labels, tags = [], [], [], []
+        for example in data:
+            if not example['simple_LM_method']:
+                continue
+            sent1s.append(
+                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+            )
+            sent2s.append(
+                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+            )
+            labels.append(0)
+            tags.append([])
+            for tag_type in tag_types:
+                if data[tag_type]:
+                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                    tags[-1].append(self.tag_manager(tag_str))
+        self.val_data_text = self.test_data_text = self.train_data_text = \
+            (sent1s, sent2s, labels, tags)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        
+        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy
+        )
+
+        log.info("\tFinished loading lpb simple LM data.")
+        return
 
     def process_split(self, split, indexers):
-        raise NotImplementedError
+        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
+            """ from multiple types in one column create multiple fields
+            sent1: sentence1, the good one
+            sent2: sentence2, the bad one
+            label: always 0
+            shared_prefix: shared part of both sentence
+            good_token: following token in good sentence
+            bad_token: following token in bad sentence
+            tagmask: which tags this sample has
+            """
+            d = {}
+            d["sent1"] = sentence_to_text_field(sent1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
+            d["input2"] = sentence_to_text_field(sent2, indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["tagmask"] = MultiLabelField(
+                tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
+            )
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances
 
 
 @register_task("npi-cloze-pair", rel_path="NPI")
