@@ -9,14 +9,16 @@ import logging as log
 import os
 import re
 import sys
-from typing import Dict, Iterable, List, Tuple
 
+from allennlp.data import Vocabulary
+from bokeh import palettes
+from sklearn import metrics
 import numpy as np
 import pandas as pd
-from allennlp.data import Vocabulary
-from sklearn import metrics
 
 from jiant.utils import utils
+
+from typing import Dict, Iterable, List, Tuple
 
 ##
 # Task list for stable ordering, and human-friendly display names.
@@ -71,8 +73,6 @@ def make_display_name(task, label=None):
 
 
 # See https://bokeh.pydata.org/en/latest/docs/reference/palettes.html
-from bokeh import palettes
-
 _clist = palettes.Category20[20]
 # Experiment type list for stable ordering
 # These correspond to the convention in scripts/edges/exp_fns.sh
