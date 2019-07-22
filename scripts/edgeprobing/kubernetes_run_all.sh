@@ -114,6 +114,10 @@ if [[ $MODE == "delete" ]]; then
 fi
 
 ##
+# Experiments for the ICLR paper ("edge probing paper"), comparing different
+# encoders.
+
+##
 # Run these on p100s (default)
 export GPU_TYPE="p100"
 for task in "${ALL_TASKS[@]}"
@@ -147,3 +151,24 @@ do
     kuberun bert-large-uncased-mix-$task   "bert_mix_exp edges-$task large-uncased"
 done
 
+##
+# Experiments for the ACL paper ("BERT layer paper"), comparing the different
+# layers of BERT.
+export GPU_TYPE="p100"
+for task in "${ALL_TASKS[@]}"
+do
+    # Probe BERT-base
+    for k in $(seq -f "%02.f" 0 12); do
+        kuberun bert-base-uncased-at-${k}-$task   "bert_at_k_exp  edges-$task base-uncased ${k}"
+        kuberun bert-base-uncased-mix-${k}-$task  "bert_mix_k_exp edges-$task base-uncased ${k}"
+    done
+done
+export GPU_TYPE="v100"
+for task in "${ALL_TASKS[@]}"
+do
+    # Probe BERT-large
+    for k in $(seq-f "%02.f" 0 24); do
+        kuberun bert-large-uncased-at-${k}-$task   "bert_at_k_exp  edges-$task large-uncased ${k}"
+        kuberun bert-large-uncased-mix-${k}-$task  "bert_mix_k_exp edges-$task large-uncased ${k}"
+    done
+done
