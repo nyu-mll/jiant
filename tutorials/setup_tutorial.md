@@ -38,10 +38,21 @@ before running any `jiant` code. (To deactivate run: `source deactivate`)
 
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
-You will also need to install dependencies for `nltk` if you do not already have them:
+You will also need to install dependencies for `nltk` and `spacy' if you do not already have them:
 ```
+python -m spacy download en
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
+
+### Notebooks
+
+If you plan to use Jupyter Notebooks with jiant (you should!), make sure that you register a kernel that runs in your conda environment. Do:
+
+```
+ipython kernel install --user --name=jiant
+```
+
+And the next time you start a notebook server, you should see `jiant` as an option under "Kernel -> Change kernel".
 
 ### Optional
 
