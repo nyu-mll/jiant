@@ -9,14 +9,16 @@ import logging as log
 import os
 import re
 import sys
-from typing import Dict, Iterable, List, Tuple
 
+from allennlp.data import Vocabulary
+from bokeh import palettes
+from sklearn import metrics
 import numpy as np
 import pandas as pd
-from allennlp.data import Vocabulary
-from sklearn import metrics
 
 from jiant.utils import utils
+
+from typing import Dict, Iterable, List, Tuple
 
 ##
 # Task list for stable ordering, and human-friendly display names.
@@ -70,26 +72,39 @@ def make_display_name(task, label=None):
         return f"{display_task} ({clean_label})"
 
 
+# See https://bokeh.pydata.org/en/latest/docs/reference/palettes.html
+_clist = palettes.Category20[20]
 # Experiment type list for stable ordering
 # These correspond to the convention in scripts/edges/exp_fns.sh
 # and scripts/edges/kubernetes_run_all.sh for naming experiments.
-EXP_TYPES = [
-    "glove",
-    "cove",
-    "elmo-chars",
-    "elmo-ortho",
-    "elmo-full",
-    "openai-lex",
-    "openai-cat",
-    "openai-mix",
-    "openai-bwb",
-    "train-chars",
+exp_types_clist_idx = [
+    ("glove", 2),  # orange
+    ("cove", 6),  # deep red
+    ("elmo-chars", 18),  # aqua
+    ("elmo-ortho", 8),  # purple
+    ("elmo-full", 0),  # blue
+    ("openai-lex", 16),  # olive
+    ("openai-cat", 4),  # green
+    ("openai-mix", 12),  # pink
+    ("openai", 4),  # green
+    ("openai-bwb", 12),  # pink
+    ("train-chars", 10),  # brown
 ]
-# Add BERT experiments
+# Add BERT experiments; all the same colors.
 for bert_name in ["base-uncased", "base-cased", "large-uncased", "large-cased"]:
-    EXP_TYPES.append(f"bert-{bert_name}-lex")
-    EXP_TYPES.append(f"bert-{bert_name}-cat")
-    EXP_TYPES.append(f"bert-{bert_name}-mix")
+    exp_types_clist_idx.append((f"bert-{bert_name}-lex", 16))  # olive
+    exp_types_clist_idx.append((f"bert-{bert_name}-cat", 4))  # green
+    exp_types_clist_idx.append((f"bert-{bert_name}-mix", 12))  # pink
+    exp_types_clist_idx.append((f"bert-{bert_name}-at", 6))  # deep red
+
+exp_types_colored = collections.OrderedDict()
+# Use lighter versions for base model, darker for CNN
+for k, v in exp_types_clist_idx:
+    exp_types_colored[k] = _clist[v + 1]
+    exp_types_colored[k + "-cnn1"] = _clist[v]
+    exp_types_colored[k + "-cnn2"] = _clist[v]
+
+EXP_TYPES, EXP_PALETTE = zip(*exp_types_colored.items())
 
 
 def exp_type_sort_key(candidate):
@@ -110,6 +125,10 @@ def _parse_exp_name(exp_name):
 
 def get_exp_type(exp_name):
     return _parse_exp_name(exp_name)[0]
+
+
+def get_layer_num(exp_name):
+    return _parse_exp_name(exp_name)[1]
 
 
 ##
@@ -142,6 +161,14 @@ def is_relation_task(task):
 
 def is_positive_relation(label):
     return (not label.startswith("_")) and (label != "no_relation") and (label != "Other")
+
+
+def spans_intersect(a, b):
+    if a[0] <= b[0] and b[0] < a[1]:
+        return True
+    if b[0] <= a[0] and a[0] < b[1]:
+        return True
+    return False
 
 
 ##
@@ -225,8 +252,11 @@ class EdgeProbingExample(object):
         self._pred_thresh = pred_thresh
 
     @staticmethod
-    def _fmt_span(tokens, s, e):
-        return '[{:2d},{:2d})\t"{:s}"'.format(s, e, " ".join(tokens[s:e]))
+    def format_span(tokens, s, e, max_tok=None, render_fn=lambda tokens: " ".join(tokens)):
+        selected_tokens = tokens[s:e]
+        if max_tok is not None and len(selected_tokens) > max_tok:
+            selected_tokens = selected_tokens[:max_tok] + ["..."]
+        return '[{:2d},{:2d})\t"{:s}"'.format(s, e, render_fn(selected_tokens))
 
     def _fmt_preds(self, preds):
         buf = io.StringIO()
@@ -246,9 +276,9 @@ class EdgeProbingExample(object):
 
         for t in self._data["targets"]:
             buf.write("\n")
-            buf.write("  span1: {}\n".format(self._fmt_span(tokens, *t["span1"])))
+            buf.write("  span1: {}\n".format(self.format_span(tokens, *t["span1"])))
             if "span2" in t:
-                buf.write("  span2: {}\n".format(self._fmt_span(tokens, *t["span2"])))
+                buf.write("  span2: {}\n".format(self.format_span(tokens, *t["span2"])))
             labels = utils.wrap_singleton_string(t["label"])
             buf.write("  label: ({:d})\t\t {}\n".format(len(labels), ", ".join(labels)))
             # Show predictions, if present.
