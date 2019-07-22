@@ -3,6 +3,7 @@ Task definition for acceptability probing tasks
 """
 import collections
 import copy
+import json
 import logging as log
 import os
 
@@ -16,7 +17,8 @@ from allennlp.data.fields import (
     LabelField,
     MetadataField,
     MultiLabelField,
-    IndexField
+    IndexField,
+    TextField
 )
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average, CategoricalAccuracy
@@ -29,6 +31,7 @@ from jiant.utils.data_loaders import (
     load_span_data,
     load_tsv,
     process_sentence,
+    TagManager
 )
 from jiant.utils.tokenizers import get_tokenizer
 from jiant.tasks.registry import register_task  # global task registry
@@ -287,11 +290,157 @@ class CoLAAnalysisTask(SingleClassificationTask):
         return collected_metrics
 
 
-class PairPreferenceTask(PairClassificationTask):
-    """ General class for pair preference tasks """
+class LinguisticPhenomenaPairTask(PairClassificationTask):
+    """ Class for linguistic phenomena pair tasks """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(PairPreferenceTask, self).__init__(name, n_classes=2, **kw)        
+        super(LinguisticPhenomenaPairTask, self).__init__(name, n_classes=2, **kw)        
+        self.path = path
+        self.max_seq_len = max_seq_len
+
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.eval_only_task = True
+        
+        self.val_metric = "%s_mcc" % self.name
+        self.val_metric_decreases = False
+        self.scorer1 = CategoricalAccuracy()
+        self.scorers = [self.scorer1]
+        self.tag_manager = TagManager()
+        self.tag_scorers1 = None
+        self.tag_list = None
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        self.scorer1(logits, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, logits, labels, tagmask)
+        return
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+
+        collected_metrics = {
+            "accuracy": self.scorer1.get_metric(reset),
+        }
+        collected_metrics.update(
+            collect_subset_scores(self.tag_scorers1, "accuracy", self.tag_list, reset)
+        )
+        return collected_metrics
+
+
+@register_task("lbp-oneprefix", rel_path="lpb")
+class OnePrefixLMTask(LinguisticPhenomenaPairTask):
+    """ Task class for full sentence LM acceptability preference """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(OnePrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
+
+    def load_data(self):
+        """ Load linguistic phenomena benchmark data for one prefix method, each one-prefix
+        example includes one shared prefix and the following tokens from the good and bad
+        sentences """
+        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
+        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        sent1s, sent2s, labels, tags = [], [], [], []
+        shared_prefixes, good_tokens, bad_tokens = [], [], []
+        for example in data:
+            if not example['one_prefix_method']:
+                continue
+            sent1s.append(
+                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+            )
+            sent2s.append(
+                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+            )
+            labels.append(0)
+            tags.append([])
+            for tag_type in tag_types:
+                if data[tag_type]:
+                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                    tags[-1].append(self.tag_manager(tag_str))
+            shared_prefixes.append(
+                process_sentence(self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len)
+            )
+            good_tokens.append(example["one_prefix_word_good"])
+            bad_tokens.append(example["one_prefix_word_bad"])
+        self.val_data_text = self.test_data_text = self.train_data_text = \
+            (sent1s, sent2s, labels, tags, shared_prefixes, good_tokens, bad_tokens)
+        self.sentences = self.train_data_text[0] + self.train_data_text[1]
+        
+        self.tag_list = self.tag_manager.get_tag_list()
+        self.tag_scorers1 = create_subset_scorers(
+            count=len(self.tag_list), scorer_type=CategoricalAccuracy
+        )
+
+        log.info("\tFinished loading CoLA cloze pairs.")
+        return
+
+    def process_split(self, split, indexers):
+        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
+            """ from multiple types in one column create multiple fields
+            sent1: sentence1, the good one
+            sent2: sentence2, the bad one
+            label: always 0
+            shared_prefix: shared part of both sentence
+            good_token: following token in good sentence
+            bad_token: following token in bad sentence
+            tagmask: which tags this sample has
+            """
+            d = {}
+            d["sent1"] = sentence_to_text_field(sent1, indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
+            d["input2"] = sentence_to_text_field(sent2, indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["shared_prefix"] = sentence_to_text_field(shared_prefix, indexers)
+            d["sent0_str"] = MetadataField(" ".join(shared_prefix[1:-1]))
+            d["good_token"] = TextField(Token(good_token), token_indexers=indexers)
+            d["bad_token"] = TextField(Token(bad_token), token_indexers=indexers)
+            d["tagmask"] = MultiLabelField(
+                tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
+            )
+            return Instance(d)
+
+        instances = map(_make_instance, *split)
+        return instances
+
+
+@register_task("lbp-twoprefix", rel_path="lpb")
+class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
+    """ Task class for two prefix LM acceptability preference """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(TwoPrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
+
+    def load_data(self):
+        raise NotImplementedError
+
+    def process_split(self, split, indexers):
+        raise NotImplementedError
+
+@register_task("lbp-fullsent", rel_path="lpb")
+class FullSentLMTask(LinguisticPhenomenaPairTask):
+    """ Task class for full sentence LM acceptability preference """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(FullSentLMTask, self).__init__(path, max_seq_len, name, **kw)
+
+    def load_data(self):
+        raise NotImplementedError
+
+    def process_split(self, split, indexers):
+        raise NotImplementedError
+
+
+@register_task("npi-cloze-pair", rel_path="NPI")
+class NPIClozePairTask(PairClassificationTask):
+    """ Task class for cloze test acceptability judgement """
+
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(NPIClozePairTask, self).__init__(name, n_classes=2, **kw)        
         self.path = path
         self.max_seq_len = max_seq_len
 
@@ -306,40 +455,6 @@ class PairPreferenceTask(PairClassificationTask):
         self.tag_scorers1 = None
         self.tag_scorers2 = None
         self.scorers = [self.scorer1, self.scorer2]
-
-    def update_metrics(self, logits, labels, tagmask=None):
-        logits, labels = logits.detach(), labels.detach()
-        logits_relative = logits[:, : self.n_classes]
-        _, preds = logits_relative.max(dim=1)
-        self.scorer1(preds, labels)
-        self.scorer2(logits_relative, labels)
-        if tagmask is not None:
-            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
-            update_subset_scorers(self.tag_scorers2, logits_relative, labels, tagmask)
-        return
-
-    def get_metrics(self, reset=False):
-        """Get metrics specific to the task"""
-
-        collected_metrics = {
-            "mcc": self.scorer1.get_metric(reset),
-            "accuracy": self.scorer2.get_metric(reset),
-        }
-        collected_metrics.update(
-            collect_subset_scores(self.tag_scorers1, "mcc", self.tag_list, reset)
-        )
-        collected_metrics.update(
-            collect_subset_scores(self.tag_scorers2, "accuracy", self.tag_list, reset)
-        )
-        return collected_metrics
-
-
-@register_task("npi-cloze-pair", rel_path="NPI")
-class NPIClozePairTask(PairPreferenceTask):
-    """ Task class for cloze test acceptability judgement """
-
-    def __init__(self, path, max_seq_len, name, **kw):
-        super(NPIClozePairTask, self).__init__(path, max_seq_len, name, **kw)
         self.eval_only_task = True
         
     def load_data(self):
@@ -367,7 +482,7 @@ class NPIClozePairTask(PairPreferenceTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading CoLA cloze pairs.")
+        log.info("\tFinished loading NPI cloze pairs.")
         return
 
     def process_split(self, split, indexers):
@@ -399,6 +514,31 @@ class NPIClozePairTask(PairPreferenceTask):
 
         instances = map(_make_instance, *split)
         return instances
+
+    def update_metrics(self, logits, labels, tagmask=None):
+        logits, labels = logits.detach(), labels.detach()
+        _, preds = logits.max(dim=1)
+        self.scorer1(preds, labels)
+        self.scorer2(logits, labels)
+        if tagmask is not None:
+            update_subset_scorers(self.tag_scorers1, preds, labels, tagmask)
+            update_subset_scorers(self.tag_scorers2, logits, labels, tagmask)
+        return
+
+    def get_metrics(self, reset=False):
+        """Get metrics specific to the task"""
+
+        collected_metrics = {
+            "mcc": self.scorer1.get_metric(reset),
+            "accuracy": self.scorer2.get_metric(reset),
+        }
+        collected_metrics.update(
+            collect_subset_scores(self.tag_scorers1, "mcc", self.tag_list, reset)
+        )
+        collected_metrics.update(
+            collect_subset_scores(self.tag_scorers2, "accuracy", self.tag_list, reset)
+        )
+        return collected_metrics
 
 
 @register_task("npi-minimal-pair", rel_path="NPI")
@@ -450,7 +590,7 @@ class NPIMinimalPairTask(PairClassificationTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading CoLA minimal pairs.")
+        log.info("\tFinished loading NPI minimal pairs.")
         return
 
     def process_split(self, split, indexers):
