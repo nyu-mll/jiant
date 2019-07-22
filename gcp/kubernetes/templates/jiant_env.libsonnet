@@ -14,7 +14,7 @@
   nfs_exp_dir: "/nfs/jiant/exp",
 
   # Name of pre-built Docker image, accessible from Kubernetes.
-  gcr_image: "gcr.io/google.com/jiant-stilts/jiant:v2",
+  gcr_image: "gcr.io/google.com/jiant-stilts/jiant-conda:v2",
 
   # Default location for glue_data
   jiant_data_dir: "/nfs/jiant/share/glue_data",
