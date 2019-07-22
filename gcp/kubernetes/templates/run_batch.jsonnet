@@ -23,7 +23,7 @@ function(job_name, command, project_dir, uid, fsgroup,
       volumeMounts: [
         {
           mountPath: jiant_env.nfs_mount_path,
-          name: jiant_env.nfs_volume_name
+          name: jiant_env.nfs_volume_name,
         },
       ],
       # Environment variables used by jiant
@@ -35,7 +35,7 @@ function(job_name, command, project_dir, uid, fsgroup,
           value: jiant_env.jiant_data_dir,
         },
         {
-          name: "PYTORCH_TRANSFORMERS_CACHE",
+          name: "PYTORCH_PRETRAINED_BERT_CACHE",
           value: jiant_env.pytorch_transformers_cache_path
         },
         {
