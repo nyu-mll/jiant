@@ -22,26 +22,26 @@ import copy
 from tqdm import tqdm
 
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 import pandas as pd
 import torch
 
 from typing import List, Tuple, Iterable, Dict
 
+
 def get_scalar(tensor):
-   assert tensor.size() == torch.Size([1])
-   return tensor.numpy()[0]
+    assert tensor.size() == torch.Size([1])
+    return tensor.numpy()[0]
+
 
 def get_mix_scalars(checkpoint_path: str) -> Dict[str, Dict[str, float]]:
     # Load and keep on CPU
-    data = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+    data = torch.load(checkpoint_path, map_location=torch.device("cpu"))
     # Find prefixes by matching names.
-    gamma_regex = r'^(.+\.scalar_mix(_\d+)?\.)gamma$'
-    prefixes = [m.group(1)
-                for m in (re.match(gamma_regex, key) for key in data)
-                if m]
+    gamma_regex = r"^(.+\.scalar_mix(_\d+)?\.)gamma$"
+    prefixes = [m.group(1) for m in (re.match(gamma_regex, key) for key in data) if m]
     # Extract scalar set for each prefix
     ret = {}
     for prefix in prefixes:
@@ -49,12 +49,12 @@ def get_mix_scalars(checkpoint_path: str) -> Dict[str, Dict[str, float]]:
         for key in data:
             if not key.startswith(prefix):
                 continue
-            s[key[len(prefix):]] = get_scalar(data[key])
+            s[key[len(prefix) :]] = get_scalar(data[key])
         ret[prefix] = s
     return ret
 
 
-def get_run_info(run_path: str, checkpoint_glob: str="model_state_*.th") -> pd.DataFrame:
+def get_run_info(run_path: str, checkpoint_glob: str = "model_state_*.th") -> pd.DataFrame:
     """Extract some run information from the log text."""
     checkpoint_paths = glob.glob(os.path.join(run_path, checkpoint_glob))
     if not checkpoint_paths:
@@ -65,25 +65,22 @@ def get_run_info(run_path: str, checkpoint_glob: str="model_state_*.th") -> pd.D
         scalars = get_mix_scalars(checkpoint_path)
         for key in scalars:
             r = copy.copy(scalars[key])
-            r['run'] = run_path
-            r['checkpoint'] = checkpoint_path[len(run_path):]
-            r['scalar_set'] = key
-            r['label'] = "__scalar_mix__"
+            r["run"] = run_path
+            r["checkpoint"] = checkpoint_path[len(run_path) :]
+            r["scalar_set"] = key
+            r["label"] = "__scalar_mix__"
             stats.append(r)
     return pd.DataFrame.from_records(stats)
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', dest='output', type=str, default="",
-                        help="Output file (TSV).")
-    parser.add_argument('-i', dest='inputs', type=str, nargs="+",
-                        help="Input files.")
+    parser.add_argument("-o", dest="output", type=str, default="", help="Output file (TSV).")
+    parser.add_argument("-i", dest="inputs", type=str, nargs="+", help="Input files.")
     args = parser.parse_args(args)
 
     run_info = [get_run_info(path) for path in args.inputs]
-    run_info = pd.concat(run_info, axis=0,
-                         ignore_index=True, sort=False)
+    run_info = pd.concat(run_info, axis=0, ignore_index=True, sort=False)
 
     if args.output:
         log.info("Writing long-form stats table to %s", args.output)
@@ -92,7 +89,6 @@ def main(args):
         log.info("Stats:\n%s", str(run_info))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
-

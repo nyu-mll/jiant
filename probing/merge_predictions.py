@@ -21,38 +21,37 @@ import copy
 from tqdm import tqdm
 
 import logging as log
-log.basicConfig(format='%(asctime)s: %(message)s',
-                datefmt='%m/%d %I:%M:%S %p', level=log.INFO)
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 from data import utils
 import pandas as pd
 
 from typing import List, Tuple, Iterable, Dict
 
+
 def merge_records(records):
     ret = copy.deepcopy(records[0])
-    for target in ret['targets']:
+    for target in ret["targets"]:
         # Make a list we can extend
-        target['preds']['proba'] = []
+        target["preds"]["proba"] = []
 
     for r in records:
-        assert r['text'] == ret['text']
-        assert len(r['targets']) == len(ret['targets'])
-        for i, target in enumerate(ret['targets']):
-            assert r['targets'][i]['span1'] == target['span1']
-            assert r['targets'][i].get('span2', None) == target.get('span2', None)
-            assert r['targets'][i]['label'] == target['label']
-            target['preds']['proba'].append(r['targets'][i]['preds']['proba'])
+        assert r["text"] == ret["text"]
+        assert len(r["targets"]) == len(ret["targets"])
+        for i, target in enumerate(ret["targets"]):
+            assert r["targets"][i]["span1"] == target["span1"]
+            assert r["targets"][i].get("span2", None) == target.get("span2", None)
+            assert r["targets"][i]["label"] == target["label"]
+            target["preds"]["proba"].append(r["targets"][i]["preds"]["proba"])
 
     return ret
 
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', dest='inputs', type=str, nargs="+",
-                        help="Input files (json).")
-    parser.add_argument('-o', dest='output', type=str, required=True,
-                        help="Output file (json).")
+    parser.add_argument("-i", dest="inputs", type=str, nargs="+", help="Input files (json).")
+    parser.add_argument("-o", dest="output", type=str, required=True, help="Output file (json).")
     args = parser.parse_args(args)
 
     # Sort inputs for stability.
@@ -71,11 +70,10 @@ def main(args):
     # Merge records and write to file.
     merge_iter = map(merge_records, zip(*record_iters))
     merge_iter = tqdm(merge_iter, total=num_records)
-    pd.options.display.float_format = '{:.2f}'.format
+    pd.options.display.float_format = "{:.2f}".format
     utils.write_file_and_print_stats(merge_iter, args.output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
     sys.exit(0)
-
