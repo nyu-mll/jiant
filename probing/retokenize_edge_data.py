@@ -41,6 +41,12 @@ from jiant.utils import retokenize, tokenizers, utils
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument("-t", dest="tokenizer_name", type=str, required=True, help="Tokenizer name.")
+PARSER.add_argument(
+    "--num_parallel", type=int, default=4, help="Number of parallel processes to use."
+)
+PARSER.add_argument("inputs", type=str, nargs="+", help="Input JSON files.")
 
 # For now, this module expects MosesTokenizer as the default.
 # TODO: change this once we have better support in core utils.
@@ -81,15 +87,7 @@ def retokenize_file(fname, tokenizer_name, worker_pool):
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-t", dest="tokenizer_name", type=str, required=True, help="Tokenizer name."
-    )
-    parser.add_argument(
-        "--num_parallel", type=int, default=4, help="Number of parallel processes to use."
-    )
-    parser.add_argument("inputs", type=str, nargs="+", help="Input JSON files.")
-    args = parser.parse_args(args)
+    args = PARSER.parse_args(args)
 
     worker_pool = multiprocessing.Pool(args.num_parallel)
     for fname in args.inputs:
