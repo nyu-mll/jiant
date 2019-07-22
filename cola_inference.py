@@ -50,7 +50,7 @@ from jiant.preprocess import build_indexers, build_tasks
 from jiant.tasks.tasks import truncate_and_tokenize, sentence_to_text_field
 from jiant.utils import config
 from jiant.utils.data_loaders import load_tsv
-from jiant.utils.utils import check_arg_name, load_model_state
+from jiant.utils.utils import check_arg_name, load_model_state, select_pool_type
 
 log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
@@ -141,6 +141,8 @@ def main(cl_arguments):
 
     if args.tokenizer == "auto":
         args.tokenizer = tokenizers.select_tokenizer(args)
+    if args.pool_type == "auto":
+        args.pool_type = select_pool_type(args)
 
     # Prepare data #
     _, target_tasks, vocab, word_embs = build_tasks(args)

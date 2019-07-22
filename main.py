@@ -35,6 +35,7 @@ from jiant.utils.utils import (
     sort_param_recursive,
     select_relevant_print_args,
     check_for_previous_checkpoints,
+    select_pool_type,
 )
 
 
@@ -370,6 +371,8 @@ def initial_setup(args, cl_args):
 
     if args.tokenizer == "auto":
         args.tokenizer = tokenizers.select_tokenizer(args)
+    if args.pool_type == "auto":
+        args.pool_type = select_pool_type(args)
 
     return args, seed
 

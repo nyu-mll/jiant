@@ -33,6 +33,24 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
+def select_pool_type(args):
+    """
+        Select a sane default sequence pooling type.
+    """
+    if args.pool_type == "auto":
+        if args.sent_enc == "none" and args.input_module.startswith("bert-"):
+            pool_type = "first"
+        elif args.sent_enc == "none" and args.input_module.startswith("xlnet-"):
+            pool_type = "final"
+        elif args.sent_enc == "none" and args.input_module == "gpt":
+            pool_type = "final"
+        else:
+            pool_type = "max"
+    else:
+        pool_type = args.pool_type
+    return pool_type
+
+
 def apply_standard_boundary_tokens(s1, s2=None):
     """Apply <SOS> and <EOS> to sequences of string-valued tokens.
     Corresponds to more complex functions used with models like XLNet and BERT.
