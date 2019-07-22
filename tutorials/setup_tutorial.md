@@ -38,10 +38,15 @@ before running any `jiant` code. (To deactivate run: `source deactivate`)
 
 Some requirements may only be needed for specific configurations. If you have trouble installing a specific dependency and suspect that it isn't needed for your use case, create an issue or a pull request, and we'll help you get by without it.
 
-You will also need to install dependencies for `nltk` and `spacy' if you do not already have them:
+You will also need to install dependencies for `nltk` if you do not already have them:
+```
+python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
+```
+
+And if you want to use GPT, you should also download SpaCy packages:
+
 ```
 python -m spacy download en
-python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
 ### Notebooks
