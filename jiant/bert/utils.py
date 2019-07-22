@@ -78,8 +78,7 @@ class BertEmbedderModule(nn.Module):
                 "the code!)"
             )
             # Always have one more mixing weight, for lexical layer.
-            self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1,
-                                                   do_layer_norm=False)
+            self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
@@ -141,7 +140,7 @@ class BertEmbedderModule(nn.Module):
             encoded_layers = []  # 'only' mode is embeddings only
 
         all_layers = [h_lex] + encoded_layers
-        all_layers = all_layers[:self.max_layer+1]
+        all_layers = all_layers[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
             h = all_layers[-1]
@@ -152,8 +151,7 @@ class BertEmbedderModule(nn.Module):
         elif self.embeddings_mode == "mix":
             h = self.scalar_mix(all_layers, mask=mask)
         else:
-            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}"
-                                       " not supported.")
+            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
 
         # <float32> [batch_size, var_seq_len, output_dim]
         return h

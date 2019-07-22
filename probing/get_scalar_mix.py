@@ -23,13 +23,12 @@ from tqdm import tqdm
 
 import logging as log
 
-log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
-
 import pandas as pd
 import torch
 
 from typing import List, Tuple, Iterable, Dict
 
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 def get_scalar(tensor):
     assert tensor.size() == torch.Size([1])
