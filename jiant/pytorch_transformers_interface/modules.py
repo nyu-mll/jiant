@@ -125,7 +125,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         )
 
         tokenizer = pytorch_transformers.BertTokenizer.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir
+            args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = tokenizer.convert_tokens_to_ids("[SEP]")
         self._cls_id = tokenizer.convert_tokens_to_ids("[CLS]")
@@ -211,7 +211,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         )
 
         tokenizer = pytorch_transformers.XLNetTokenizer.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir
+            args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._sep_id = tokenizer.convert_tokens_to_ids("<sep>")
         self._cls_id = tokenizer.convert_tokens_to_ids("<cls>")
