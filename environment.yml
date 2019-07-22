@@ -10,7 +10,7 @@ dependencies:
     - scikit-learn=0.19.1
     - pandas=0.23.0
     - bokeh=1.2.0
-    - jupyter=1.0.0
+    - ipykernel=5.1.1
     - pytz=2017.3
     - jsondiff
     - pip
