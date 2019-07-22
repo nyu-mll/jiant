@@ -43,7 +43,7 @@ You will also need to install dependencies for `nltk` if you do not already have
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
-And if you want to use GPT, you should also download SpaCy packages:
+And if you want to use GPT, you should also download spaCy packages:
 
 ```
 python -m spacy download en
