@@ -23,12 +23,12 @@ from tqdm import tqdm
 
 import logging as log
 
-log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
-
 import pandas as pd
 import torch
 
 from typing import List, Tuple, Iterable, Dict
+
+log.basicConfig(format="%(asctime)s: %(message)s", datefmt="%m/%d %I:%M:%S %p", level=log.INFO)
 
 
 def get_scalar(tensor):
@@ -54,9 +54,10 @@ def get_mix_scalars(checkpoint_path: str) -> Dict[str, Dict[str, float]]:
     return ret
 
 
-def get_run_info(run_path: str, checkpoint_glob: str = "model_state_*.th") -> pd.DataFrame:
+def get_run_info(run_path: str, checkpoint_glob: str = "model_state_*.best.th") -> pd.DataFrame:
     """Extract some run information from the log text."""
     checkpoint_paths = glob.glob(os.path.join(run_path, checkpoint_glob))
+    checkpoint_paths += glob.glob(os.path.join(run_path, "*", checkpoint_glob))
     if not checkpoint_paths:
         log.warning(f"Warning: no checkpoints found for run {run_path}")
 

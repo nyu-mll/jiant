@@ -185,3 +185,27 @@ function bert_mix_exp() {
     OVERRIDES+=", bert_embeddings_mode=mix"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
+
+##
+# BERT layer experiments, for ACL paper
+function bert_mix_k_exp() {
+    # Run BERT with ELMo-style scalar mixing across the first K layers.
+    # Usage: bert_mix_k_exp <task_name> <bert_model_name> <k>
+    OVERRIDES="exp_name=bert-${2}-mix_${3}-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", input_module=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=mix"
+    OVERRIDES+=", bert_max_layer=${3}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+}
+
+function bert_at_k_exp() {
+    # Run BERT and probe layer K.
+    # Usage: bert_at_k_exp <task_name> <bert_model_name> <k>
+    OVERRIDES="exp_name=bert-${2}-at_${3}-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", input_module=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=top"
+    OVERRIDES+=", bert_max_layer=${3}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+}

@@ -117,7 +117,7 @@ def exp_type_sort_key(candidate):
 
 
 def _parse_exp_name(exp_name):
-    m = re.match(r"([a-z-]+)(-(\d+))?-edges-([a-z-]+)", exp_name)
+    m = re.match(r"([a-z-]+)([-_](\d+))?-edges-([a-z-]+)", exp_name)
     assert m is not None, f"Unable to parse run name: {exp_name}"
     prefix, _, num, task = m.groups()
     return prefix, num, task
