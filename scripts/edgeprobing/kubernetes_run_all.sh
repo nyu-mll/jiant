@@ -3,11 +3,21 @@
 # Master script to start a full suite of edge probing experiments on
 # on Kubernetes. Comment out lines below to run only a subset of experiments.
 #
-# See exp_fns.sh for the override params, and config/edgeprobe/edgeprobe_*.conf
-# for the base configs.
+# Usage:
+#  ./scripts/edgeprobing/kubernetes_run_all.sh -p <project_name>
 #
 # To run on a particular cluster, authenticate to that cluster with:
 #   gcloud container clusters get-credentials --zone <zone> <cluster_name>
+#
+# This is mostly a wrapper around gcp/kubernetes/run_batch.sh. It constructs
+# command lines that use the pre-set experiment functions defined in
+# exp_fns.sh, and calls run_batch.sh to start jobs. See exp_fns.sh for the
+# override params, and config/edgeprobe/edgeprobe_*.conf for the base configs.
+#
+# In addition to starting jobs, this script copies the current jiant/ repo to
+# the project folder. This serves as a record of the code used for a particular
+# set of experiments. The jobs will run jiant from this copy, so you can safely
+# continue to work in your local repo without affecting the experiments.
 
 set -e
 
@@ -114,6 +124,10 @@ if [[ $MODE == "delete" ]]; then
 fi
 
 ##
+# Experiments for the ICLR paper ("edge probing paper"), comparing different
+# encoders.
+
+##
 # Run these on p100s (default)
 export GPU_TYPE="p100"
 for task in "${ALL_TASKS[@]}"
@@ -147,3 +161,24 @@ do
     kuberun bert-large-uncased-mix-$task   "bert_mix_exp edges-$task large-uncased"
 done
 
+##
+# Experiments for the ACL paper ("BERT layer paper"), comparing the different
+# layers of BERT.
+export GPU_TYPE="p100"
+for task in "${ALL_TASKS[@]}"
+do
+    # Probe BERT-base
+    for k in $(seq -f "%02.f" 0 12); do
+        kuberun bert-base-uncased-at-${k}-$task   "bert_at_k_exp  edges-$task base-uncased ${k}"
+        kuberun bert-base-uncased-mix-${k}-$task  "bert_mix_k_exp edges-$task base-uncased ${k}"
+    done
+done
+export GPU_TYPE="v100"
+for task in "${ALL_TASKS[@]}"
+do
+    # Probe BERT-large
+    for k in $(seq-f "%02.f" 0 24); do
+        kuberun bert-large-uncased-at-${k}-$task   "bert_at_k_exp  edges-$task large-uncased ${k}"
+        kuberun bert-large-uncased-mix-${k}-$task  "bert_mix_k_exp edges-$task large-uncased ${k}"
+    done
+done
