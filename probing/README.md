@@ -5,7 +5,7 @@ This is the main page for the following papers:
 - [What do you learn from context? Probing for sentence structure in contextualized word representations](https://openreview.net/forum?id=SJzSgnRcKX), a.k.a. "Edge Probing"
 - [BERT Rediscovers the Classical NLP Pipeline](https://arxiv.org/abs/1905.05950) a.k.a. "BERT layer paper"
 
-Most of the code for these is integrated into `jiant`, but this directory contains data preparation and analysis code specific to the edge probing experiments. Additionally, the runner scripts live in [jiant/scripts/edgeprobing](../scripts/edgeprobing).
+Most of the code for these is integrated into `jiant` proper, but this directory contains data preparation and analysis code specific to the edge probing experiments. Additionally, the runner scripts live in [jiant/scripts/edgeprobing](../scripts/edgeprobing).
 
 ## Getting Started
 
@@ -54,8 +54,10 @@ You can use the `run/*_val.json` and `run/*_test.json` files to run scoring and 
   some of the features in `analysis.py`
 - [analyze_runs.py](analyze_runs.py) is a helper script to process a set of
   predictions into a condensed `.tsv` format. It computes confusion matricies for each label and along various stratifiers (like span distance) so you can easily and quickly perform further aggregation and compute metrics like accuracy, precision, recall, and F1. In particular, the `run`, `task`, `label`, `stratifier` (optional), and `stratum_key` (optional) columns serve as identifiers, and the confusion matrix is stored in four columns: `tp_count`, `fp_count`, `tn_count`, and `tp_count`. If you want to aggregate over a group of labels (like SRL core roles), just sum the `*_count` columns for that group before computing metrics.
-- [edgeprobe_aggregate_analysis.ipynb](edgeprobe_aggregate_analysis.ipynb) is
-  the notebook we used to generate the tables and figures in the paper. It's kind of messy, but ultimately just does some shallow processing over the output of `analyze_runs.py`. If you're trying to do your own analysis, the main idiosyncracies to know about are: for `coref-ontonotes`, use the `1` label instead of `_micro_avg_`, and for `srl-ontonotes` we report a `_clean_micro_` metric which aggregates all the labels that don't start with `R-` or `C-`.
+- [get_scalar_mix.py](get_scalar_mix.py) is a helper script to extract scalar 
+  mixing weights and export to `.tsv`.
+- [analysis_edgeprobe_standard.ipynb](analysis_edgeprobe_standard.ipynb) shows 
+  some example analysis on the output of `analyze_runs.py` and `get_scalar_mix.py`. This mostly does shallow processing over the output, but the main idiosyncracies to know are: for `coref-ontonotes`, use the `1` label instead of `_micro_avg_`, and for `srl-ontonotes` we report a `_clean_micro_` metric which aggregates all the labels that don't start with `R-` or `C-`.
 
 ## Running the experiments from the paper
 
@@ -75,7 +77,13 @@ elmo_chars_exp edges-srl-ontonotes
 
 The paper (Table 2 in particular) represents the output of a large number of experiments. Some of these are quite fast (lexical baselines and CoVe), and some are quite slow (GPT model, syntax tasks with lots of targets). We use a Kubernetes cluster running on Google Cloud Platform (GCP) to manage all of these. For more on Kubernetes, see [`jiant/gcp/kubernetes`](../gcp/kubernetes).
 
-The master script for the experiments is [`jiant/scripts/edges/kubernetes_run_all.sh`](../scripts/edges/kubernetes_run_all.sh). Mostly, all this does is set up some paths and submit pods to run on the cluster. If you want to run the same set of experiments in a different environment, you can copy that script and modify the `kuberun()` function to submit a job or to simply run locally.
+The master script for the experiments is [`jiant/scripts/edgeprobing/kubernetes_run_all.sh`](../scripts/edgeprobing/kubernetes_run_all.sh). Mostly, all this does is set up some paths and submit pods to run on the cluster. If you want to run the same set of experiments in a different environment, you can copy that script and modify the `kuberun()` function to submit a job or to simply run locally.
+
+There's also an analysis helper script, [jiant/scripts/edgeprobing/analyze_project.sh](../scripts/edgeprobing/analyze_project.sh), which runs `analyze_runs.py` and `get_scalar_mix.py` on the output of a set of Kubernetes runs. Note that scoring runs is CPU-intensive and might take a while for larger experiments.
+
+There are two analysis notebooks which produce the main tables and figures for each paper. These are frozen as-is for a reference, but probably won't be runnable directly as they reference a number of specific data paths:
+- [analysis_edgeprobe_ICLR_camera_ready.ipynb](analysis_edgeprobe_ICLR_camera_ready.ipynb)
+- [analysis_bertlayer_ACL_camera_ready.ipynb](analysis_bertlayer_ACL_camera_ready.ipynb)
 
 If you hit any snags (_Editor's note: it's research code, you probably will_), contact Ian (email address in the paper) for help.
 
