@@ -216,6 +216,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         self._sep_id = tokenizer.convert_tokens_to_ids("<sep>")
         self._cls_id = tokenizer.convert_tokens_to_ids("<cls>")
         self._pad_id = tokenizer.convert_tokens_to_ids("<pad>")
+        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
 
         self.parameter_setup(args)
 
@@ -248,15 +249,13 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         # <int32> [batch_size, var_seq_len]
         ids = sent["pytorch_transformers_wpm_pretokenized"]
         mask = ids != 0
-        # "Correct" ids to account for different indexing between BERT and
+        # "Correct" ids to account for different indexing between XLNet and
         # AllenNLP.
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
         # reserved for padding).
-        ids[ids == 0] = self._pad_id + 2  # Shift the indices that were at 0 to become 2.
-        # Index 1 should never be used since the XLNet WPM uses its own
-        # unk token, and handles this at the string level before indexing.
-        assert (ids > 1).all()
+        ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
+        ids[ids == 1] = self._unk_id + 2  # Rewrite UNK indices.
         ids -= 2  # shift indices to match XLNet wordpiece embeddings
 
         if self.embeddings_mode not in ["none", "top"]:
