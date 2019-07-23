@@ -1105,6 +1105,7 @@ class SNLITask(PairClassificationTask):
 @register_task("mnli", rel_path="MNLI/")
 # second copy for different params
 @register_task("mnli-alt", rel_path="MNLI/")
+@register_task("mnli-temp-eval", rel_path="MNLI-Temp-Eval/")
 class MultiNLITask(PairClassificationTask):
     """ Task class for Multi-Genre Natural Language Inference """
 
