@@ -23,11 +23,19 @@ class PytorchTransformersEmbedderModule(nn.Module):
         super(PytorchTransformersEmbedderModule, self).__init__()
 
         self.cache_dir = os.getenv(
-            "PYTORCH_TRANSFORMERS_CACHE", os.path.join(args.exp_dir, "pytorch_transformers_cache")
+            "PYTORCH_PRETRAINED_BERT_CACHE",
+            os.path.join(args.exp_dir, "pytorch_transformers_cache"),
         )
         utils.maybe_make_dir(self.cache_dir)
 
         self.embeddings_mode = args.pytorch_transformers_embedding_mode
+
+        self.num_layers = self.model.config.num_hidden_layers
+        if args.pytorch_transformers_max_layer >= 0:
+            self.max_layer = args.pytorch_transformers
+        else:
+            self.max_layer = self.num_layers
+        assert self.max_layer <= self.num_layers
 
         # Integer token indices for special symbols.
         self._sep_id = None
@@ -60,17 +68,21 @@ class PytorchTransformersEmbedderModule(nn.Module):
                 "the code!)"
             )
             num_layers = self.model.config.num_hidden_layers
-            self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1, do_layer_norm=False)
+            # Always have one more mixing weight, for lexical layer.
+            self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def prepare_output(self, output_seq, lex_seq, hidden_states):
+        all_layers = [lex_seq] + hidden_states
+        all_layers = all_layers[: self.max_layer + 1]
+
         if self.embeddings_mode in ["none", "top"]:
-            h = output_seq
+            h = all_layers[-1]
         elif self.embeddings_mode == "only":
-            h = lex_seq
+            h = all_layers[0]
         elif self.embeddings_mode == "cat":
-            h = torch.cat([output_seq, lex_seq], dim=2)
+            h = torch.cat([all_layers[-1], all_layers[0]], dim=2)
         elif self.embeddings_mode == "mix":
-            h = self.scalar_mix([lex_seq] + list(hidden_states[1:]), mask=mask)
+            h = self.scalar_mix(all_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
 
@@ -180,12 +192,14 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
+            output_seq = None  # dummy; should not be accessed.
+            hidden_states = None  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
             #  h_lex = self.model.embeddings.dropout(embeddings)
         else:
-            lex_seq = None
+            lex_seq = None  # dummy; should not be accessed.
 
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
@@ -265,12 +279,14 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
+            output_seq = None  # dummy; should not be accessed.
+            hidden_states = None  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
             #  h_lex = self.model.embeddings.dropout(embeddings)
         else:
-            lex_seq = None
+            lex_seq = None  # dummy; should not be accessed.
 
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is

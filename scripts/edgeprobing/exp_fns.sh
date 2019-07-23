@@ -195,7 +195,7 @@ function bert_mix_k_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=mix"
-    OVERRIDES+=", bert_max_layer=${3}"
+    OVERRIDES+=", pytorch_transformers_max_layer=${3}"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
 
@@ -206,6 +206,6 @@ function bert_at_k_exp() {
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=top"
-    OVERRIDES+=", bert_max_layer=${3}"
+    OVERRIDES+=", pytorch_transformers_max_layer=${3}"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }
