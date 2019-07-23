@@ -1,0 +1,56 @@
+import unittest
+from unittest import mock
+import torch
+from jiant.pytorch_transformers_interface.modules import BertEmbedderModule, XLNetEmbedderModule
+
+
+class TestPytorchTransformersInterface(unittest.TestCase):
+    def test_bert_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            BertEmbedderModule.apply_boundary_tokens(s1), ["[CLS]", "A", "B", "C", "[SEP]"]
+        )
+        self.assertListEqual(
+            BertEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["[CLS]", "A", "B", "C", "[SEP]", "D", "E", "[SEP]"],
+        )
+
+    def test_xlnet_apply_boundary_tokens(self):
+        s1 = ["A", "B", "C"]
+        s2 = ["D", "E"]
+        self.assertListEqual(
+            XLNetEmbedderModule.apply_boundary_tokens(s1), ["A", "B", "C", "<sep>", "<cls>"]
+        )
+        self.assertListEqual(
+            XLNetEmbedderModule.apply_boundary_tokens(s1, s2),
+            ["A", "B", "C", "<sep>", "D", "E", "<sep>", "<cls>"],
+        )
+
+    def test_bert_seg_ids(self):
+        bert_model = mock.Mock()
+        bert_model._sep_id = 3
+        bert_model._cls_id = 5
+        bert_model._pad_id = 7
+        bert_model._SEG_ID_CLS = None
+        bert_model._SEG_ID_SEP = None
+        bert_model.get_seg_ids = BertEmbedderModule.get_seg_ids
+
+        # [CLS] 2 [SEP] 4 1 6 [SEP]
+        input = torch.Tensor([[5, 2, 3, 4, 1, 6, 7]])
+        output = bert_model.get_seg_ids(bert_model, input)
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 1, 1, 1, 1]])))
+
+    def test_xlnet_seg_ids(self):
+        xlnet_model = mock.Mock()
+        xlnet_model._sep_id = 3
+        xlnet_model._cls_id = 5
+        xlnet_model._pad_id = 7
+        xlnet_model._SEG_ID_CLS = 2
+        xlnet_model._SEG_ID_SEP = 3
+        xlnet_model.get_seg_ids = XLNetEmbedderModule.get_seg_ids
+
+        # 2 [SEP] 4 1 6 [SEP] [CLS]
+        input = torch.Tensor([[1, 3, 4, 1, 6, 3, 5]])
+        output = xlnet_model.get_seg_ids(xlnet_model, input)
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 3, 1, 1, 1, 3, 2]])))
