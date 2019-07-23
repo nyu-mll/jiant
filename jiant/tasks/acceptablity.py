@@ -171,20 +171,20 @@ class CoLAAnalysisTask(SingleClassificationTask):
         self.val_data_text = None
         self.test_data_text = None
 
-        self.tag_list = None
-        self.tag_scorers1 = None
-        self.tag_scorers2 = None
-
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorers = [self.scorer1, self.scorer2]
 
+        self.tag_manager = TagManager()
+        self.tag_list = None
+        self.tag_scorers1 = None
+        self.tag_scorers2 = None
+
     def load_data(self):
         """Load the data"""
         # Load data from tsv
-        tag_vocab = vocabulary.Vocabulary(counter=None)
         tr_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
             data_file=os.path.join(self.path, "train_analysis.tsv"),
@@ -194,7 +194,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
             label_idx=2,
             skip_rows=1,
             tag2idx_dict={"Domain": 1},
-            tag_vocab=tag_vocab,
+            tag_manager=self.tag_manager,
         )
         val_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
@@ -222,7 +222,7 @@ class CoLAAnalysisTask(SingleClassificationTask):
                 "Determiner": 17,
                 "Violations": 18,
             },
-            tag_vocab=tag_vocab,
+            tag_manager=self.tag_manager,
         )
         te_data = load_tsv(
             tokenizer_name=self._tokenizer_name,
@@ -233,14 +233,14 @@ class CoLAAnalysisTask(SingleClassificationTask):
             label_idx=2,
             skip_rows=1,
             tag2idx_dict={"Domain": 1},
-            tag_vocab=tag_vocab,
+            tag_manager=self.tag_manager,
         )
         self.train_data_text = tr_data[:1] + tr_data[2:]
         self.val_data_text = val_data[:1] + val_data[2:]
         self.test_data_text = te_data[:1] + te_data[2:]
         self.sentences = self.train_data_text[0] + self.val_data_text[0]
         # Create score for each tag from tag-index dict
-        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_list = self.tag_managerget_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )
@@ -307,9 +307,10 @@ class LinguisticPhenomenaPairTask(PairClassificationTask):
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorers = [self.scorer1]
+        
         self.tag_manager = TagManager()
-        self.tag_scorers1 = None
         self.tag_list = None
+        self.tag_scorers1 = None
 
     def update_metrics(self, logits, labels, tagmask=None):
         logits, labels = logits.detach(), labels.detach()
@@ -568,19 +569,21 @@ class NPIClozePairTask(PairClassificationTask):
         self.train_data_text = None
         self.val_data_text = None
         self.test_data_text = None
+        self.eval_only_task = True
         
         self.val_metric = "%s_mcc" % self.name
         self.val_metric_decreases = False
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2]
+        
+        self.tag_manager = TagManager()
+        self.tag_list = None
         self.tag_scorers1 = None
         self.tag_scorers2 = None
-        self.scorers = [self.scorer1, self.scorer2]
-        self.eval_only_task = True
         
     def load_data(self):
         """Load the data"""
-        tag_vocab = vocabulary.Vocabulary(counter=None)
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "acceptability_cloze_pairs.tsv"),
@@ -589,13 +592,13 @@ class NPIClozePairTask(PairClassificationTask):
             s2_idx=2,
             label_idx=3,
             tag2idx_dict={"source": 0, "condition": 4},
-            tag_vocab=tag_vocab,
+            tag_manager=self.tag_manager,
         )
         self.val_data_text = self.test_data_text = self.train_data_text
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
 
         # Create score for each tag from tag-index dict
-        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_list = self.tag_manager.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )
@@ -680,14 +683,16 @@ class NPIMinimalPairTask(PairClassificationTask):
         self.scorer1 = Correlation("matthews")
         self.scorer2 = CategoricalAccuracy()
         self.scorer3 = CategoricalAccuracy()
+        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
+        
+        self.tag_manager = TagManager()
+        self.tag_list = None
         self.tag_scorers1 = None
         self.tag_scorers2 = None
         self.tag_scorers3 = None
-        self.scorers = [self.scorer1, self.scorer2, self.scorer3]
 
     def load_data(self):
         """Load the data"""
-        tag_vocab = vocabulary.Vocabulary(counter=None)
         self.train_data_text = load_tsv(
             self._tokenizer_name,
             os.path.join(self.path, "acceptability_minimal_pairs.tsv"),
@@ -696,11 +701,11 @@ class NPIMinimalPairTask(PairClassificationTask):
             s2_idx=2,
             label_idx=3,
             tag2idx_dict={"source": 0, "condition": 4},
-            tag_vocab=tag_vocab,
+            tag_manager=self.tag_manager,
         )
         self.val_data_text = self.test_data_text = self.train_data_text
         # Create score for each tag from tag-index dict
-        self.tag_list = get_tag_list(tag_vocab)
+        self.tag_list = self.tag_manager.get_tag_list()
         self.tag_scorers1 = create_subset_scorers(
             count=len(self.tag_list), scorer_type=Correlation, corr_type="matthews"
         )

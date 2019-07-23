@@ -17,6 +17,28 @@ BERT_CLS_TOK, BERT_SEP_TOK = "[CLS]", "[SEP]"
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 
+class TagManager(object):
+    """
+    A class for recording tags in the dataset, and convert them into ids
+    the -2 is because allennlp vocabulary has @@unknown@@ and @@padding@@ in default
+    """
+    def __init__(self):
+        self.tag_vocab = vocabulary.Vocabulary(counter=None)
+    
+    def __call__(self, tag_str):
+        tag_id = self.tag_vocab.add_token_to_namespace(tag_str) - 2
+        return tag_id
+    
+    def get_tag_list(self):
+        tag_id2str = self.tag_vocab.get_index_to_token_vocabulary()
+        tag_list = [
+            tag_id2str[tag_id].replace(":", "_").replace(",", "_")
+            .replace(" ", "_").replace("+", "_").replace("__", "_")
+            for tag_id in range(2, len(tag_id2str))
+        ]
+        return tag_list
+
+
 def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
     """
     Load a span-related task file in .jsonl format, does re-alignment of spans, and tokenizes the text.
@@ -93,7 +115,7 @@ def load_tsv(
     filter_idx=None,
     has_labels=True,
     filter_value=None,
-    tag_vocab=None,
+    tag_manager=None,
     tag2idx_dict=None,
 ):
     """
@@ -113,7 +135,7 @@ def load_tsv(
         return_indices: bool that describes if you need to return indices
             (for purposes of matching)
         label_fn is a function that expects a row and outputs the label
-        tag_vocab is a allenlp vocab object contains the tags
+        tag_manager is a object recording tags in the dataset, and convert them to ids
         tag2idx_dict is a <string, int> dictionary from coarse category name to column index
     Returns:
         List of first and second sentences, labels, and if applicable indices
@@ -157,19 +179,13 @@ def load_tsv(
         # labels
         labels = np.zeros(len(rows), dtype=int)
     if tag2idx_dict is not None:
-        # -2 offset to cancel @@unknown@@ and @@padding@@ in vocab
         def tags_to_tids(coarse_tag, fine_tags):
-            return (
-                []
-                if pd.isna(fine_tags)
-                else (
-                    [tag_vocab.add_token_to_namespace(coarse_tag) - 2]
-                    + [
-                        tag_vocab.add_token_to_namespace("%s__%s" % (coarse_tag, fine_tag)) - 2
-                        for fine_tag in fine_tags.split(";")
-                    ]
-                )
-            )
+            if pd.isna(fine_tags):
+                return []
+            else:
+                tag_strs = [coarse_tag] + \
+                           ["%s__%s" % (coarse_tag, fine_tag) for fine_tag in fine_tags.split(";")]
+                return list(map(tag_manager.__call__, tag_strs))
 
         tid_temp = [
             rows[idx].apply(lambda x: tags_to_tids(coarse_tag, x)).tolist()
@@ -262,28 +278,6 @@ def load_diagnostic_tsv(
         "ix_to_logic_dic": ix_to_logic_dic,
         "ix_to_knowledge_dic": ix_to_knowledge_dic,
     }
-
-
-def get_tag_list(tag_vocab):
-    """
-    retrieve tag strings from the tag vocab object
-    Args:
-        tag_vocab: the vocab that contains all tags
-    Returns:
-        tag_list: a list of "coarse__fine" tag strings
-    """
-    # get dictionary from allennlp vocab, neglecting @@unknown@@ and
-    # @@padding@@
-    tid2tag_dict = {
-        key - 2: tag
-        for key, tag in tag_vocab.get_index_to_token_vocabulary().items()
-        if key - 2 >= 0
-    }
-    tag_list = [
-        tid2tag_dict[tid].replace(":", "_").replace(", ", "_").replace(" ", "_").replace("+", "_")
-        for tid in range(len(tid2tag_dict))
-    ]
-    return tag_list
 
 
 def process_sentence(tokenizer_name, sent, max_seq_len):
