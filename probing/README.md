@@ -71,8 +71,7 @@ To run a standard experiment, you can do something like:
 ```sh
 pushd ${PWD%/jiant*}/jiant
 source scripts/edges/exp_fns.sh
-# Run a lexical baseline (ELMo char CNN)
-elmo_chars_exp edges-srl-ontonotes
+bert_mix_exp edges-srl-ontonotes bert-base-uncased
 ```
 
 The paper (Table 2 in particular) represents the output of a large number of experiments. Some of these are quite fast (lexical baselines and CoVe), and some are quite slow (GPT model, syntax tasks with lots of targets). We use a Kubernetes cluster running on Google Cloud Platform (GCP) to manage all of these. For more on Kubernetes, see [`jiant/gcp/kubernetes`](../gcp/kubernetes).
