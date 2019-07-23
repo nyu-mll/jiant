@@ -40,7 +40,7 @@ run/
   edges-spr2_test.json      # test set predictions, in edge probing JSON format
   log.log                   # training and eval log file (human-readable text)
   params.conf               # serialized parameter list
-  edges-spr2/model_state_eval_best.th  # PyTorch saved checkpoint
+  edges-spr2/model_state_eval_*.best.th  # PyTorch saved checkpoint
 ```
 `jiant` uses [tensorboardX](https://github.com/lanpa/tensorboardX) to record loss curves and a few other metrics during training. You can view with:
 ```
