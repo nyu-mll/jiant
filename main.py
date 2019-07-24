@@ -35,6 +35,7 @@ from jiant.utils.utils import (
     sort_param_recursive,
     select_relevant_print_args,
     check_for_previous_checkpoints,
+    delete_all_checkpoints,
 )
 
 
@@ -567,6 +568,10 @@ def main(cl_arguments):
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, args.cuda, skip_task_models=[], strict=strict)
             evaluate_and_write(args, model, [task], splits_to_write)
+
+    if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
+        log.info("Deleting all checkpoints.")
+        delete_all_checkpoints(args.run_dir)
 
     log.info("Done!")
 
