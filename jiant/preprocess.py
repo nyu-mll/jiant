@@ -46,13 +46,15 @@ UNK_TOK = "@@UNKNOWN@@"  # AllenNLP unk token
 ALL_SPLITS = ["train", "val", "test"]
 
 
-def _get_serialized_record_path(task_name, split, preproc_dir):
+def _get_serialized_record_path(task_name, tokenizer_name, split, preproc_dir):
     """Get the canonical path for a serialized task split."""
-    serialized_record_path = os.path.join(preproc_dir, "{:s}__{:s}_data".format(task_name, split))
+    serialized_record_path = os.path.join(
+        preproc_dir, "{:s}__{:s}_{:s}_data".format(task_name, tokenizer_name, split)
+    )
     return serialized_record_path
 
 
-def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
+def _get_instance_generator(task_name, tokenizer_name, split, preproc_dir, fraction=None):
     """Get a lazy generator for the given task and split.
 
     Args:
@@ -66,7 +68,7 @@ def _get_instance_generator(task_name, split, preproc_dir, fraction=None):
     Returns:
         serialize.RepeatableIterator yielding Instance objects
     """
-    filename = _get_serialized_record_path(task_name, split, preproc_dir)
+    filename = _get_serialized_record_path(task_name, tokenizer_name, split, preproc_dir)
     assert os.path.isfile(filename), "Record file '%s' not found!" % filename
     return serialize.read_records(filename, repeatable=True, fraction=fraction)
 
@@ -282,9 +284,9 @@ def build_tasks(args):
         setattr(task, "_classifier_name", task_classifier if task_classifier else task.name)
 
     tokenizer_names = {task.name: task.tokenizer_name for task in tasks}
-    assert len(set(tokenizer_names.values())) == 1, (
-        f"Error: mixing tasks with different tokenizers!" " Tokenizations: {tokenizer_names:s}"
-    )
+    assert (
+        len(set(tokenizer_names.values())) == 1
+    ), f"Error: mixing tasks with different tokenizers! Tokenizations: {tokenizer_names:s}"
 
     # 2) build / load vocab and indexers
     indexers = build_indexers(args)
@@ -328,13 +330,17 @@ def build_tasks(args):
         force_reindex = args.reload_indexing and task.name in reindex_tasks
         for split in ALL_SPLITS:
             log_prefix = "\tTask '%s', split '%s'" % (task.name, split)
-            relative_path = _get_serialized_record_path(task.name, split, "preproc")
+            relative_path = _get_serialized_record_path(
+                task.name, task.tokenizer_name, split, "preproc"
+            )
             cache_found = _find_cached_file(
                 args.exp_dir, args.global_ro_exp_dir, relative_path, log_prefix=log_prefix
             )
             if force_reindex or not cache_found:
                 # Re-index from scratch.
-                record_file = _get_serialized_record_path(task.name, split, preproc_dir)
+                record_file = _get_serialized_record_path(
+                    task.name, task.tokenizer_name, split, preproc_dir
+                )
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
@@ -353,14 +359,20 @@ def build_tasks(args):
     target_tasks = []
     for task in tasks:
         # Replace lists of instances with lazy generators from disk.
-        task.val_data = _get_instance_generator(task.name, "val", preproc_dir)
-        task.test_data = _get_instance_generator(task.name, "test", preproc_dir)
+        task.val_data = _get_instance_generator(task.name, task.tokenizer_name, "val", preproc_dir)
+        task.test_data = _get_instance_generator(
+            task.name, task.tokenizer_name, "test", preproc_dir
+        )
         # When using pretrain_data_fraction, we need modified iterators for use
         # only on training datasets at pretraining time.
         if task.name in pretrain_task_names:
             log.info("\tCreating trimmed pretraining-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.pretrain_data_fraction
+                task.name,
+                task.tokenizer_name,
+                "train",
+                preproc_dir,
+                fraction=args.pretrain_data_fraction,
             )
             pretrain_tasks.append(task)
         # When using target_train_data_fraction, we need modified iterators
@@ -368,7 +380,11 @@ def build_tasks(args):
         if task.name in target_task_names:
             log.info("\tCreating trimmed target-only version of " + task.name + " train.")
             task.train_data = _get_instance_generator(
-                task.name, "train", preproc_dir, fraction=args.target_train_data_fraction
+                task.name,
+                task.tokenizer_name,
+                "train",
+                preproc_dir,
+                fraction=args.target_train_data_fraction,
             )
             target_tasks.append(task)
 
