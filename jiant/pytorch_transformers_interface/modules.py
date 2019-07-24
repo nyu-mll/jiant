@@ -152,7 +152,9 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return ["[CLS]"] + s1 + ["[SEP]"]
 
-    def forward(self, sent: Dict[str, torch.LongTensor]) -> torch.FloatTensor:
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
         """ Run BERT to get hidden states.
 
         This forward method does preprocessing on the go,
@@ -242,7 +244,9 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         else:
             return s1 + ["<sep>", "<cls>"]
 
-    def forward(self, sent: Dict[str, torch.LongTensor]) -> torch.FloatTensor:
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
         """ Run XLNet to get hidden states.
 
         This forward method does preprocessing on the go,

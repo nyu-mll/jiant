@@ -223,7 +223,9 @@ class OpenAIEmbedderModule(nn.Module):
             for param in self.model.scalar_mix.parameters():
                 param.requires_grad = True
 
-    def forward(self, sent: Dict[str, torch.LongTensor]) -> torch.FloatTensor:
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
         """ Run transformer to get hidden states.
 
         Args:
