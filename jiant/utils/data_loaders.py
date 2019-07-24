@@ -287,10 +287,7 @@ def get_tag_list(tag_vocab):
 
 def truncate_and_tokenize(tokenizer_name, sent, max_seq_len):
     """Truncate and tokenize a sentence or paragraph."""
-    max_seq_len -= 2
-    # TODO: This fn is called potentially millions of times per run.
-    # Can we move the assert elsewhere?
-    assert max_seq_len > 0, "Max sequence length should be at least 2 to allow for boundary tokens!"
+    max_seq_len -= 2  # For boundary tokens.
     tokenizer = get_tokenizer(tokenizer_name)
 
     if isinstance(sent, str):

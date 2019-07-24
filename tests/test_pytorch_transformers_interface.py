@@ -36,10 +36,15 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         bert_model._SEG_ID_SEP = None
         bert_model.get_seg_ids = BertEmbedderModule.get_seg_ids
 
-        # [CLS] 2 [SEP] 4 1 6 [SEP]
-        input = torch.Tensor([[5, 2, 3, 4, 1, 6, 7]])
-        output = bert_model.get_seg_ids(bert_model, input)
+        # [CLS] 8 [SEP] 9 10 11 [SEP]
+        inp = torch.Tensor([[5, 8, 3, 9, 10, 11, 7]])
+        output = bert_model.get_seg_ids(bert_model, inp)
         assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 1, 1, 1, 1]])))
+
+        # [CLS] 8 9 [SEP]
+        inp = torch.Tensor([[5, 8, 9, 3]])
+        output = bert_model.get_seg_ids(bert_model, inp)
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 0]])))
 
     def test_xlnet_seg_ids(self):
         xlnet_model = mock.Mock()
@@ -50,7 +55,12 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         xlnet_model._SEG_ID_SEP = 3
         xlnet_model.get_seg_ids = XLNetEmbedderModule.get_seg_ids
 
-        # 2 [SEP] 4 1 6 [SEP] [CLS]
-        input = torch.Tensor([[1, 3, 4, 1, 6, 3, 5]])
-        output = xlnet_model.get_seg_ids(xlnet_model, input)
+        # 8 [SEP] 9 10 11 [SEP] [CLS]
+        inp = torch.Tensor([[8, 3, 9, 10, 11, 3, 5]])
+        output = xlnet_model.get_seg_ids(xlnet_model, inp)
         assert torch.all(torch.eq(output, torch.Tensor([[0, 3, 1, 1, 1, 3, 2]])))
+
+        # 8 9 10 [SEP] [CLS]
+        inp = torch.Tensor([[8, 9, 10, 3, 5]])
+        output = xlnet_model.get_seg_ids(xlnet_model, inp)
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 3, 2]])))

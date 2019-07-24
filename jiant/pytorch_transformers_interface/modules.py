@@ -108,7 +108,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         example:
         > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"]
         > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
-        > seg_ids = _get_seg_ids(token_tensor)
+        > seg_ids = get_seg_ids(token_tensor)
         > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
         """
 

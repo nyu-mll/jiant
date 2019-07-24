@@ -224,7 +224,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.input_module == "gpt":
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, "openai_bpe")
-    if args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+    elif args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
         # Add pre-computed BPE vocabulary for BERT/XLNet model.
         add_pytorch_transformers_wpm_vocab(vocab, args.tokenizer)
 
@@ -235,15 +235,12 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if (
-        not args.input_module.startswith("bert")
-        and not args.input_module.startswith("xlnet")
-        and args.input_module not in ["elmo", "gpt"]
-    ):
+    if args.input_module in ["scratch", "glove", "fastText"]:
         indexers["words"] = SingleIdTokenIndexer()
-    if args.input_module == "elmo":
+    elif args.input_module == "elmo":
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
+
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.cove:
@@ -251,6 +248,7 @@ def build_indexers(args):
             f"CoVe model expects Moses tokenization (MosesTokenizer);"
             " you are using args.tokenizer = {args.tokenizer}"
         )
+
     if args.input_module == "gpt":
         assert (
             not indexers
@@ -259,7 +257,7 @@ def build_indexers(args):
             args.tokenizer == "OpenAI.BPE"
         ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+    elif args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
         assert (
             not indexers
         ), "BERT/XLNet are not supported alongside other indexers due to tokenization."
@@ -310,11 +308,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if (
-        args.input_module not in ["elmo", "gpt", "scratch"]
-        and not args.input_module.startswith("bert")
-        and not args.input_module.startswith("xlnet")
-    ):
+    if args.input_module in ["glove", "fastText"]:
         emb_file = os.path.join(args.exp_dir, "embs.pkl")
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
