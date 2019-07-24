@@ -269,7 +269,7 @@ class ReCoRDTask(Task):
             sent_parts = [
                 truncate_and_tokenize(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
             ]
-            return sent_parts[0][:-1] + ["@placeholder"] + sent_parts[1][1:]
+            return sent_parts[0] + ["@placeholder"] + sent_parts[1]
 
         examples = []
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
@@ -301,7 +301,6 @@ class ReCoRDTask(Task):
         return examples
 
     def _load_answers(self) -> None:
-        """ """
         answers = {}
         for split, split_path in self.files_by_split.items():
             data = [json.loads(d) for d in open(split_path, encoding="utf-8")]
