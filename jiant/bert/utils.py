@@ -44,6 +44,12 @@ class BertEmbedderModule(nn.Module):
             args.input_module, cache_dir=cache_dir
         )
         self.embeddings_mode = args.bert_embeddings_mode
+        self.num_layers = self.model.config.num_hidden_layers
+        if args.bert_max_layer >= 0:
+            self.max_layer = args.bert_max_layer
+        else:
+            self.max_layer = self.num_layers
+        assert self.max_layer <= self.num_layers
 
         tokenizer = pytorch_pretrained_bert.BertTokenizer.from_pretrained(
             args.input_module, cache_dir=cache_dir
@@ -71,8 +77,8 @@ class BertEmbedderModule(nn.Module):
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
-            num_layers = self.model.config.num_hidden_layers
-            self.scalar_mix = scalar_mix.ScalarMix(num_layers + 1, do_layer_norm=False)
+            # Always have one more mixing weight, for lexical layer.
+            self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = "", is_pair_task=False
@@ -120,6 +126,8 @@ class BertEmbedderModule(nn.Module):
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
             #  h_lex = self.model.embeddings.dropout(embeddings)
+        else:
+            h_lex = None  # dummy; should not be accessed.
 
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
@@ -128,16 +136,20 @@ class BertEmbedderModule(nn.Module):
             encoded_layers, _ = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask, output_all_encoded_layers=True
             )
-            h_enc = encoded_layers[-1]
+        else:
+            encoded_layers = []  # 'only' mode is embeddings only
+
+        all_layers = [h_lex] + encoded_layers
+        all_layers = all_layers[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
-            h = h_enc
+            h = all_layers[-1]
         elif self.embeddings_mode == "only":
-            h = h_lex
+            h = all_layers[0]
         elif self.embeddings_mode == "cat":
-            h = torch.cat([h_enc, h_lex], dim=2)
+            h = torch.cat([all_layers[-1], all_layers[0]], dim=2)
         elif self.embeddings_mode == "mix":
-            h = self.scalar_mix([h_lex] + encoded_layers, mask=mask)
+            h = self.scalar_mix(all_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
 
