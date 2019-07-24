@@ -365,7 +365,7 @@ class ReCoRDTask(Task):
 
             ent_strs = example["ents"]
             ents = [
-                truncate_and_tokenize(self._tokenizer_name, ent, self.max_seq_len)[1:-1]
+                truncate_and_tokenize(self._tokenizer_name, ent, self.max_seq_len)
                 for ent in ent_strs
             ]
 
