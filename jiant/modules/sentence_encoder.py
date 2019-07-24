@@ -172,7 +172,7 @@ class SentenceEncoder(Model):
             skip_vec = task_word_embs_in_context if self.sep_embs_for_skip else word_embs_in_context
             utils.assert_for_log(
                 skip_vec is not None,
-                "skip_vec is none - perhaps embeddings are not configured " "properly?",
+                "skip_vec is none - perhaps embeddings are not configured properly?",
             )
             if isinstance(self._phrase_layer, NullPhraseLayer):
                 sent_enc = skip_vec
