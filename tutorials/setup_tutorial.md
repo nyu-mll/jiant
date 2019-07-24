@@ -43,6 +43,22 @@ You will also need to install dependencies for `nltk` if you do not already have
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
+And if you want to use GPT, you should also download spaCy packages:
+
+```
+python -m spacy download en
+```
+
+### Notebooks
+
+If you plan to use Jupyter Notebooks with jiant (you should!), make sure that you register a kernel that runs in your conda environment. Do:
+
+```
+ipython kernel install --user --name=jiant
+```
+
+And the next time you start a notebook server, you should see `jiant` as an option under "Kernel -> Change kernel".
+
 ### Optional
 
 If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 

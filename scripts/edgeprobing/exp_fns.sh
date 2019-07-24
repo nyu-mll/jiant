@@ -158,7 +158,7 @@ function openai_bwb_exp() {
 # (e.g. base-uncased)
 function bert_cat_exp() {
     # Run BERT, and concat embeddings to output.
-    # Usage: bert_cat_exp <task_name>
+    # Usage: bert_cat_exp <task_name> <bert_model_name>
     OVERRIDES="exp_name=bert-${2}-cat-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
@@ -168,7 +168,7 @@ function bert_cat_exp() {
 
 function bert_lex_exp() {
     # Probe the BERT token embeddings.
-    # Usage: bert_lex_exp <task_name>
+    # Usage: bert_lex_exp <task_name> <bert_model_name>
     OVERRIDES="exp_name=bert-${2}-lex-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
@@ -178,10 +178,34 @@ function bert_lex_exp() {
 
 function bert_mix_exp() {
     # Run BERT with ELMo-style scalar mixing across layers.
-    # Usage: bert_mix_exp <task_name>
+    # Usage: bert_mix_exp <task_name> <bert_model_name>
     OVERRIDES="exp_name=bert-${2}-mix-${1}, run_name=run"
     OVERRIDES+=", target_tasks=$1"
     OVERRIDES+=", input_module=bert-$2"
     OVERRIDES+=", bert_embeddings_mode=mix"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+}
+
+##
+# BERT layer experiments, for ACL paper
+function bert_mix_k_exp() {
+    # Run BERT with ELMo-style scalar mixing across the first K layers.
+    # Usage: bert_mix_k_exp <task_name> <bert_model_name> <k>
+    OVERRIDES="exp_name=bert-${2}-mix_${3}-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", input_module=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=mix"
+    OVERRIDES+=", bert_max_layer=${3}"
+    run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
+}
+
+function bert_at_k_exp() {
+    # Run BERT and probe layer K.
+    # Usage: bert_at_k_exp <task_name> <bert_model_name> <k>
+    OVERRIDES="exp_name=bert-${2}-at_${3}-${1}, run_name=run"
+    OVERRIDES+=", target_tasks=$1"
+    OVERRIDES+=", input_module=bert-$2"
+    OVERRIDES+=", bert_embeddings_mode=top"
+    OVERRIDES+=", bert_max_layer=${3}"
     run_exp "config/edgeprobe/edgeprobe_bert.conf" "${OVERRIDES}"
 }

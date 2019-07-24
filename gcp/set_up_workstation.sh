@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set up a new workstation to use jiant
-# Assumes that you've used the "Deep Learning Image: PyTorch 1.1.0" available on 
+# Assumes that you've used the "Deep Learning Image: PyTorch 1.1.0" available on
 # Google Cloud Platform, and that you have an NFS volume mounted at /nfs/jiant.
 
 set -e
@@ -34,10 +34,12 @@ fi
 pushd ..
 conda env create -f environment.yml
 conda activate jiant
+# Register a kernel for notebooks
+ipython kernel install --user --name=jiant
 
-# Download NLTK packages
-python -c "import nltk; nltk.download('perluniprops')"
-python -c "import nltk; nltk.download('nonbreaking_prefixes')"
+# Install SpaCy and NLTK models
+python -m spacy download en
+python -m nltk.downloader perluniprops nonbreaking_prefixes
 
 echo "Set-up complete! You may need to run 'source /etc/profile.d/jiant_paths.sh', or log out and log back in for things to work."
 

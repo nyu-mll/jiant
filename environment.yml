@@ -9,6 +9,9 @@ dependencies:
     - nltk=3.2.5
     - scikit-learn=0.19.1
     - pandas=0.23.0
+    # bokeh for plotting
+    - bokeh=1.2.0
+    - ipykernel=5.1.1
     - pytz=2017.3
     - jsondiff
     - pip
@@ -20,9 +23,12 @@ dependencies:
         - sendgrid==5.4.1
         - pyhocon==0.3.35
         - nose2
-        - python-Levenshtein==0.12.0
         - pre-commit==1.15.2
+        # for span alignment / retokenization
+        - python-Levenshtein==0.12.0
+        # for --remote_log functionality
         - google-cloud-logging==1.11.0
+        # ftfy and spacy are used for GPT
         - ftfy==5.4.1
         - spacy==2.0.11
 
