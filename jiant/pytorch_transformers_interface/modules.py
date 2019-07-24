@@ -30,13 +30,6 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
         self.embeddings_mode = args.pytorch_transformers_embedding_mode
 
-        self.num_layers = self.model.config.num_hidden_layers
-        if args.pytorch_transformers_max_layer >= 0:
-            self.max_layer = args.pytorch_transformers
-        else:
-            self.max_layer = self.num_layers
-        assert self.max_layer <= self.num_layers
-
         # Integer token indices for special symbols.
         self._sep_id = None
         self._cls_id = None
@@ -71,8 +64,15 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
+        self.num_layers = self.model.config.num_hidden_layers
+        if args.pytorch_transformers_max_layer >= 0:
+            self.max_layer = args.pytorch_transformers_max_layer
+            assert self.max_layer <= self.num_layers
+        else:
+            self.max_layer = self.num_layers
+
     def prepare_output(self, output_seq, lex_seq, hidden_states):
-        all_layers = [lex_seq] + hidden_states
+        all_layers = [lex_seq] + list(hidden_states)
         all_layers = all_layers[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
