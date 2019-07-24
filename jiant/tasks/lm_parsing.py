@@ -37,6 +37,9 @@ class LanguageModelingParsingTask(LanguageModelingTask):
         Args:
             split: (list) a single list of sentences
             indexers: (Indexer object) indexer to index input words
+            boundary_token_fn: Inserts start and end symbols for classification tasks.
+              Not used here. This may be a problem for GPT-2 or future LMs that use non-standard
+              boundary tokens.
         """
 
         def _make_instance(sent):
@@ -44,7 +47,6 @@ class LanguageModelingParsingTask(LanguageModelingTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
-            sent = boundary_token_fn(sent)  # Add <s> and </s>
             d = {}
             d["input"] = sentence_to_text_field(sent[:-1], indexers)
             d["targs"] = sentence_to_text_field(sent[1:], self.target_indexer)
@@ -157,7 +159,7 @@ class MNLILanguageModeling(LanguageModelingParsingTask):
             "test": os.path.join(path, "test_matched.tsv"),
         }
 
-    def get_data_iter(self, path):  # TODO: Check
+    def get_data_iter(self, path):
         """
         Load data file (combine the entailment and contradiction sentence), tokenize text
          and concat sentences to create long term dependencies.
