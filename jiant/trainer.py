@@ -345,10 +345,18 @@ class SamplingMultiTaskTrainer:
             # deepcopy b/c using Params pops values and we may want to reuse
             # the Params object later
             opt_params = copy.deepcopy(optimizer_params)
-            if self._max_epochs > 0 and "t_total" in optimizer_params:
-                # If we know in advance how many opt steps for the transformer
-                # there are, set it.
-                opt_params["t_total"] = task_info["n_tr_batches"] * self._max_epochs
+            if "t_total" in optimizer_params:
+                # If we know in advance how many opt steps there will be, set it so the LR scheduler
+                # can use that information. This should be the next validation after we hit the epoch
+                # limit.
+                if self._max_epochs > 0:
+                    max_epochs_in_vals = math.ceil(
+                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
+                    )
+                    val_limit = min(max_epochs_in_vals, self._max_vals)
+                else:
+                    val_limit = self._max_vals
+                opt_params["t_total"] = val_limit * self._val_interval
             task_info["optimizer"] = Optimizer.from_params(train_params, opt_params)
             task_info["scheduler"] = LearningRateScheduler.from_params(
                 task_info["optimizer"], copy.deepcopy(scheduler_params)
@@ -487,9 +495,20 @@ class SamplingMultiTaskTrainer:
         )
 
         optimizer_params = copy.deepcopy(optimizer_params)
-        if "t_total" in optimizer_params and self._max_epochs > 0:
-            n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-            optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
+        if "t_total" in optimizer_params:
+            # If we know in advance how many opt steps there will be, set it so the LR scheduler
+            # can use that information. This should be the next validation after we hit the epoch
+            # limit.
+            if self._max_epochs > 0:
+                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+                max_epochs_in_vals = math.ceil(
+                    (n_epoch_steps * self._max_epochs) / self._val_interval
+                )
+                val_limit = min(max_epochs_in_vals, self._max_vals)
+            else:
+                val_limit = self._max_vals
+            optimizer_params["t_total"] = val_limit * self._val_interval
+
         optimizer = Optimizer.from_params(train_params, optimizer_params)
         scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
         self._optimizer = optimizer
