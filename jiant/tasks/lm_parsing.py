@@ -41,6 +41,7 @@ class LanguageModelingParsingTask(LanguageModelingTask):
               Not used here. This may be a problem for GPT-2 or future LMs that use non-standard
               boundary tokens.
         """
+        del boundary_token_fn  # Enforcing that this won't be used.
 
         def _make_instance(sent):
             """ Forward targs adds <s> as a target for input </s>

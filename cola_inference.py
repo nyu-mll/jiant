@@ -47,7 +47,7 @@ from tqdm import tqdm
 
 from jiant.models import build_model
 from jiant.preprocess import build_indexers, build_tasks
-from jiant.tasks.tasks import truncate_and_tokenize, sentence_to_text_field
+from jiant.tasks.tasks import tokenize_and_truncate, sentence_to_text_field
 from jiant.utils import config
 from jiant.utils.data_loaders import load_tsv
 from jiant.utils.utils import check_arg_name, load_model_state, select_pool_type
@@ -191,7 +191,7 @@ def run_repl(model, vocab, indexers, task, args):
             if input_string == "QUIT":
                 break
 
-            tokens = truncate_and_tokenize(
+            tokens = tokenize_and_truncate(
                 tokenizer_name=task.tokenizer_name, sent=input_string, max_seq_len=args.max_seq_len
             )
             print("TOKENS:", " ".join("[{}]".format(tok) for tok in tokens))
@@ -288,7 +288,7 @@ def load_cola_data(input_path, task, input_format, max_seq_len):
         with open(input_path, "r") as f_in:
             sentences = f_in.readlines()
         tokens = [
-            truncate_and_tokenize(
+            tokenize_and_truncate(
                 tokenizer_name=task.tokenizer_name, sent=sentence, max_seq_len=max_seq_len
             )
             for sentence in sentences

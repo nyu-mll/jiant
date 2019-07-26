@@ -71,7 +71,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         else:
             self.max_layer = self.num_layers
 
-    def prepare_output(self, output_seq, lex_seq, hidden_states):
+    def prepare_output(self, lex_seq, hidden_states):
         all_layers = [lex_seq] + list(hidden_states)
         all_layers = all_layers[: self.max_layer + 1]
 
@@ -145,6 +145,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
+    @staticmethod
     def apply_boundary_tokens(s1, s2=None):
         # BERT-style boundary token padding on string token sequences
         if s2:
@@ -192,7 +193,6 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            output_seq = None  # dummy; should not be accessed.
             hidden_states = None  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
@@ -205,12 +205,12 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
             token_types = self.get_seg_ids(ids)
-            output_seq, output_pooled_vec, hidden_states = self.model(
+            _, output_pooled_vec, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(output_seq, lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states)
 
 
 class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
@@ -237,6 +237,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         self._SEG_ID_CLS = 2
         self._SEG_ID_SEP = 3
 
+    @staticmethod
     def apply_boundary_tokens(s1, s2=None):
         # XLNet-style boundary token marking on string token sequences
         if s2:
@@ -279,7 +280,6 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            output_seq = None  # dummy; should not be accessed.
             hidden_states = None  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
@@ -292,9 +292,9 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
             token_types = self.get_seg_ids(ids)
-            output_seq, output_mems, hidden_states = self.model(
+            _, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(output_seq, lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states)

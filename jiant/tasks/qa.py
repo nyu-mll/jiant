@@ -11,7 +11,7 @@ from allennlp.training.metrics import Average, F1Measure
 from allennlp.data.fields import LabelField, MetadataField
 from allennlp.data import Instance
 
-from jiant.utils.data_loaders import truncate_and_tokenize
+from jiant.utils.data_loaders import tokenize_and_truncate
 
 from jiant.tasks.tasks import Task
 from jiant.tasks.tasks import sentence_to_text_field
@@ -117,15 +117,15 @@ class MultiRCTask(Task):
                 # each example has a passage field -> (text, questions)
                 # text is the passage, which requires some preprocessing
                 # questions is a list of questions, has fields (question, sentences_used, answers)
-                ex["passage"]["text"] = truncate_and_tokenize(
+                ex["passage"]["text"] = tokenize_and_truncate(
                     self.tokenizer_name, ex["passage"]["text"], self.max_seq_len
                 )
                 for question in ex["passage"]["questions"]:
-                    question["question"] = truncate_and_tokenize(
+                    question["question"] = tokenize_and_truncate(
                         self.tokenizer_name, question["question"], self.max_seq_len
                     )
                     for answer in question["answers"]:
-                        answer["text"] = truncate_and_tokenize(
+                        answer["text"] = tokenize_and_truncate(
                             self.tokenizer_name, answer["text"], self.max_seq_len
                         )
                 examples.append(ex)
@@ -267,7 +267,7 @@ class ReCoRDTask(Task):
             sent_parts = sent.split("@placeholder")
             assert len(sent_parts) == 2
             sent_parts = [
-                truncate_and_tokenize(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
+                tokenize_and_truncate(self.tokenizer_name, s, self.max_seq_len) for s in sent_parts
             ]
             return sent_parts[0] + ["@placeholder"] + sent_parts[1]
 
@@ -275,7 +275,7 @@ class ReCoRDTask(Task):
         data = [json.loads(d) for d in open(path, encoding="utf-8")]
         for item in data:
             psg_id = item["idx"]
-            psg = truncate_and_tokenize(
+            psg = tokenize_and_truncate(
                 self.tokenizer_name, item["passage"]["text"], self.max_seq_len
             )
             ent_idxs = item["passage"]["entities"]
@@ -364,7 +364,7 @@ class ReCoRDTask(Task):
 
             ent_strs = example["ents"]
             ents = [
-                truncate_and_tokenize(self._tokenizer_name, ent, self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, ent, self.max_seq_len)
                 for ent in ent_strs
             ]
 

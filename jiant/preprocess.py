@@ -27,6 +27,7 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
@@ -224,7 +225,7 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.input_module == "gpt":
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, "openai_bpe")
-    elif args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+    elif input_module_uses_pytorch_transformers(args.input_module):
         # Add pre-computed BPE vocabulary for BERT/XLNet model.
         add_pytorch_transformers_wpm_vocab(vocab, args.tokenizer)
 
@@ -237,7 +238,7 @@ def build_indexers(args):
     indexers = {}
     if args.input_module in ["scratch", "glove", "fastText"]:
         indexers["words"] = SingleIdTokenIndexer()
-    elif args.input_module == "elmo":
+    elif args.input_module == "elmo" or args.input_module == "elmo-chars-only":
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
 
@@ -257,10 +258,11 @@ def build_indexers(args):
             args.tokenizer == "OpenAI.BPE"
         ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    elif args.input_module.startswith("bert") or args.input_module.startswith("xlnet"):
+    elif input_module_uses_pytorch_transformers(args.input_module):
         assert (
             not indexers
-        ), "BERT/XLNet are not supported alongside other indexers due to tokenization."
+        ), "pytorch_transformers moduls like BERT/XLNet are not supported alongside other "
+        "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
             "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer "
             "must match the specified model."

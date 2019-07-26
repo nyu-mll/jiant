@@ -41,6 +41,7 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -157,8 +158,9 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 or args.input_module.startswith("bert")
                 or args.input_module.startswith("xlnet")
             ),
-            f"input_module = {args.input_module} is not supported for lanugage modeling due to"
-            " lookahead issues.",
+            f"Using input_module = {args.input_module} for lanugage modeling is probably not a "
+            "good idea, since it allows the language model to use information from the right-hand "
+            "context.",
         )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
@@ -309,11 +311,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         d_word = args.d_word
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
-        assert (
-            args.input_module.startswith("bert")
-            or args.input_module.startswith("xlnet")
-            or args.input_module in ["gpt", "elmo", "elmo-chars-only"]
-        ), f"'{args.input_module}' is not a valid value for input_module."
+        assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
+            "gpt",
+            "elmo",
+            "elmo-chars-only",
+        ], f"'{args.input_module}' is not a valid value for input_module."
         embeddings = None
         word_embs = None
 

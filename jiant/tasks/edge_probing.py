@@ -181,7 +181,7 @@ class EdgeProbingTask(Task):
     def make_instance(self, record, idx, indexers, boundary_token_fn) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()  # already space-tokenized by Moses
-        tokens = boundary_token_fn(tokens)
+        tokens = boundary_token_fn(tokens)  # apply model-appropriate variants of [cls] and [sep].
         text_field = sentence_to_text_field(tokens, indexers)
 
         d = {}

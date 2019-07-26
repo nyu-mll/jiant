@@ -8,7 +8,7 @@ from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
 
-from jiant.utils.data_loaders import truncate_and_tokenize
+from jiant.utils.data_loaders import tokenize_and_truncate
 from jiant.tasks.registry import register_task
 from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
@@ -81,7 +81,7 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield truncate_and_tokenize(self._tokenizer_name, toks, self.max_seq_len)
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
     def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
