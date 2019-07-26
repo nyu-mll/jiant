@@ -2540,7 +2540,7 @@ class WiCTask(PairClassificationTask):
             if is_using_pytorch_transformers:
                 inp = boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
-                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))  # TODO: Check
+                idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
                 d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
                 d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
@@ -2643,7 +2643,7 @@ class COPATask(MultipleChoiceTask):
                 d["question"] = sentence_to_text_field(boundary_token_fn(context), indexers)
             for choice_idx, choice in enumerate(choices):
                 inp = (
-                    boundary_token_fn(context + question, choice)
+                    boundary_token_fn(context, question + choice)
                     if is_using_pytorch_transformers
                     else boundary_token_fn(choice)
                 )

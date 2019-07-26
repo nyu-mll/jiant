@@ -238,7 +238,7 @@ def build_indexers(args):
     indexers = {}
     if args.input_module in ["scratch", "glove", "fastText"]:
         indexers["words"] = SingleIdTokenIndexer()
-    elif args.input_module == "elmo" or args.input_module == "elmo-chars-only":
+    elif args.input_module in ["elmo", "elmo-chars-only"]:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
 

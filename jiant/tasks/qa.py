@@ -159,7 +159,7 @@ class MultiRCTask(Task):
             d["ans_idx"] = MetadataField(ans_idx)
             d["idx"] = MetadataField(ans_idx)  # required by evaluate()
             if is_using_pytorch_transformers:
-                inp = boundary_token_fn(para + question, answer)
+                inp = boundary_token_fn(para, question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
                 d["psg"] = sentence_to_text_field(boundary_token_fn(passage), indexers)

@@ -31,7 +31,7 @@ def load_span_data(tokenizer_name, file_name, label_fn=None, has_labels=True):
         tokenizer_name: str,
         file_name: str,
         label_fn: function that expects a row and outputs a transformed row with labels
-          tarnsformed.
+          transformed.
     Returns:
         List of dictionaries of the aligned spans and tokenized text.
     """

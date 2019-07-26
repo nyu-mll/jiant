@@ -756,9 +756,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_pytorch_transformers = args.input_module.startswith(
-            "bert"
-        ) or args.input_module.startswith("xlnet")
+        self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
