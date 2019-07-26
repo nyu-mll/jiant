@@ -98,6 +98,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
     def get_seg_ids(self, token_ids):
         """ Dynamically build the segment IDs for a concatenated pair of sentences
         Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
+        Sets padding tokens to segment zero.
 
         args:
             token_ids (torch.LongTensor): batch of token IDs
@@ -106,16 +107,22 @@ class PytorchTransformersEmbedderModule(nn.Module):
             seg_ids (torch.LongTensor): batch of segment IDs
 
         example:
-        > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]"]
+        > sents = ["[CLS]", "I", "am", "a", "cat", ".", "[SEP]", "You", "like", "cats", "?", "[SEP]", "[PAD]"]
         > token_tensor = torch.Tensor([[vocab[w] for w in sent]]) # a tensor of token indices
         > seg_ids = get_seg_ids(token_tensor)
-        > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+        > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0])
         """
 
         sep_idxs = (token_ids == self._sep_id).nonzero()[:, 1]
-        seg_ids = torch.ones_like(token_ids)
-        for row, idx in zip(seg_ids, sep_idxs[::2]):
-            row[: idx + 1].fill_(0)
+        seg_ids = torch.zeros_like(token_ids)
+        for row_idx, row in enumerate(token_ids):
+            sep_idxs = (row == self._sep_id).nonzero()
+            seg = 0
+            prev_sep_idx = -1
+            for sep_idx in sep_idxs:
+                seg_ids[row_idx, prev_sep_idx + 1 : sep_idx + 1].fill_(seg)
+                seg = 1 - seg  # Alternate.
+                prev_sep_idx = sep_idx
 
         if self._SEG_ID_CLS is not None:
             seg_ids[token_ids == self._cls_id] = self._SEG_ID_CLS

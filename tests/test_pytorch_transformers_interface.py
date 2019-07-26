@@ -37,14 +37,18 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         bert_model.get_seg_ids = BertEmbedderModule.get_seg_ids
 
         # [CLS] 8 [SEP] 9 10 11 [SEP]
-        inp = torch.Tensor([[5, 8, 3, 9, 10, 11, 7]])
+        # [CLS] 8 9 [SEP] 10 [SEP] [PAD]
+        inp = torch.Tensor([[5, 8, 3, 9, 10, 11, 3], [5, 8, 9, 3, 10, 3, 7]])
         output = bert_model.get_seg_ids(bert_model, inp)
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 1, 1, 1, 1]])))
+        assert torch.all(
+            torch.eq(output, torch.Tensor([[0, 0, 0, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1, 0]]))
+        )
 
         # [CLS] 8 9 [SEP]
-        inp = torch.Tensor([[5, 8, 9, 3]])
+        # [CLS] 8 [SEP] [PAD]
+        inp = torch.Tensor([[5, 8, 9, 3], [5, 9, 3, 7]])
         output = bert_model.get_seg_ids(bert_model, inp)
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 0]])))
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 0], [0, 0, 0, 0]])))
 
     def test_xlnet_seg_ids(self):
         xlnet_model = mock.Mock()
@@ -56,11 +60,15 @@ class TestPytorchTransformersInterface(unittest.TestCase):
         xlnet_model.get_seg_ids = XLNetEmbedderModule.get_seg_ids
 
         # 8 [SEP] 9 10 11 [SEP] [CLS]
-        inp = torch.Tensor([[8, 3, 9, 10, 11, 3, 5]])
+        # 8 [SEP] 9 10 [SEP] [CLS] [PAD]
+        inp = torch.Tensor([[8, 3, 9, 10, 11, 3, 5], [8, 3, 9, 10, 3, 5, 7]])
         output = xlnet_model.get_seg_ids(xlnet_model, inp)
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 3, 1, 1, 1, 3, 2]])))
+        assert torch.all(
+            torch.eq(output, torch.Tensor([[0, 3, 1, 1, 1, 3, 2], [0, 3, 1, 1, 3, 2, 0]]))
+        )
 
         # 8 9 10 [SEP] [CLS]
-        inp = torch.Tensor([[8, 9, 10, 3, 5]])
+        # 8 9 [SEP] [CLS] [PAD]
+        inp = torch.Tensor([[8, 9, 10, 3, 5], [8, 9, 3, 5, 7]])
         output = xlnet_model.get_seg_ids(xlnet_model, inp)
-        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 3, 2]])))
+        assert torch.all(torch.eq(output, torch.Tensor([[0, 0, 0, 3, 2], [0, 0, 3, 2, 0]])))
