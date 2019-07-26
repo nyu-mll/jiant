@@ -558,3 +558,10 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
+
+
+def delete_all_checkpoints(serialization_dir):
+    common_checkpoints = glob.glob(os.path.join(serialization_dir, "*.th"))
+    task_checkpoints = glob.glob(os.path.join(serialization_dir, "*", "*.th"))
+    for file in common_checkpoints + task_checkpoints:
+        os.remove(file)

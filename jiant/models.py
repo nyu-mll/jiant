@@ -188,7 +188,11 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = 2 * args.d_hid
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
+        assert_for_log(
+            args.skip_embs,
+            "skip_embs is false and sent_enc is none, "
+            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
+        )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
             vocab,
@@ -200,10 +204,11 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
-        d_sent = 0  # skip connection added below
-        log.info("No shared encoder (just using word embeddings)!")
+        d_sent = 0
     else:
-        assert_for_log(False, "No valid sentence encoder specified.")
+        assert_for_log(
+            False, f"Shared encoder layer specification `{args.sent_enc}` not recognized."
+        )
     return sent_encoder, d_sent
 
 
