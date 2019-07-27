@@ -158,7 +158,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
                 or args.input_module.startswith("bert")
                 or args.input_module.startswith("xlnet")
             ),
-            f"Using input_module = {args.input_module} for lanugage modeling is probably not a "
+            f"Using input_module = {args.input_module} for language modeling is probably not a "
             "good idea, since it allows the language model to use information from the right-hand "
             "context.",
         )

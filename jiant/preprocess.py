@@ -261,7 +261,7 @@ def build_indexers(args):
     elif input_module_uses_pytorch_transformers(args.input_module):
         assert (
             not indexers
-        ), "pytorch_transformers moduls like BERT/XLNet are not supported alongside other "
+        ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
             "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer "
