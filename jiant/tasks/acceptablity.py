@@ -30,7 +30,7 @@ from jiant.utils.data_loaders import (
     get_tag_list,
     load_span_data,
     load_tsv,
-    process_sentence,
+    tokenize_and_truncate,
     TagManager
 )
 from jiant.utils.tokenizers import get_tokenizer
@@ -351,10 +351,10 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
             if not example['one_prefix_method']:
                 continue
             sent1s.append(
-                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
             )
             sent2s.append(
-                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
             )
             labels.append(0)
             tags.append([])
@@ -363,7 +363,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
                     tag_str = "%s__%s" % (tag_type, data[tag_type])
                     tags[-1].append(self.tag_manager(tag_str))
             shared_prefixes.append(
-                process_sentence(self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len)
             )
             good_tokens.append(example["one_prefix_word_good"])
             bad_tokens.append(example["one_prefix_word_bad"])
@@ -429,10 +429,10 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
             if not example['two_prefix_method']:
                 continue
             sent1s.append(
-                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
             )
             sent2s.append(
-                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
             )
             labels.append(0)
             tags.append([])
@@ -441,10 +441,10 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
                     tag_str = "%s__%s" % (tag_type, data[tag_type])
                     tags[-1].append(self.tag_manager(tag_str))
             good_prefixes.append(
-                process_sentence(self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len)
             )
             bad_prefixes.append(
-                process_sentence(self._tokenizer_name, example["two_prefix_prefix_bad"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["two_prefix_prefix_bad"], self.max_seq_len)
             )
             shared_tokens.append(example["two_prefix_word"])
         self.val_data_text = self.test_data_text = self.train_data_text = \
@@ -508,10 +508,10 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
             if not example['simple_LM_method']:
                 continue
             sent1s.append(
-                process_sentence(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_good"], self.max_seq_len)
             )
             sent2s.append(
-                process_sentence(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
+                tokenize_and_truncate(self._tokenizer_name, example["sentence_bad"], self.max_seq_len)
             )
             labels.append(0)
             tags.append([])
