@@ -632,7 +632,7 @@ class NPIClozePairTask(PairClassificationTask):
             d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
-                tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
+                tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
             return Instance(d)
 

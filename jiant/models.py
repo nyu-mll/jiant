@@ -58,6 +58,12 @@ from jiant.tasks.tasks import (
     STSBTask,
     TaggingTask,
     WiCTask,
+    LinguisticPhenomenaPairTask,
+    NPIMinimalPairTask,
+    NPIClozePairTask,
+    OnePrefixLMTask,
+    TwoPrefixLMTask,
+    FullSentLMTask
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -488,6 +494,9 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
             task=task, d_inp=d_sent, use_bert=model.use_bert, params=task_params
         )
         setattr(model, "%s_mdl" % task.name, module)
+    elif isinstance(task, (NPIClozePairTask, LinguisticPhenomenaPairTask)):
+        module = model.get_pretrained_LM_mdl()
+        setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -751,6 +760,10 @@ class MultiTaskModel(nn.Module):
             out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, GLUEDiagnosticTask):
             out = self._nli_diagnostic_forward(batch, task, predict)
+        elif isinstance(task, (LinguisticPhenomenaPairTask, NPIClozePairTask)):
+            out = self._minimal_pair_preference_forward(batch, task, predict)
+        elif isinstance(task, (NPIMinimalPairTask)):
+            out = self._minimal_pair_classification_forward(batch, task, predict)
         elif isinstance(
             task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)
         ):
@@ -911,6 +924,103 @@ class MultiTaskModel(nn.Module):
                 out["preds"] = logits
             else:
                 _, out["preds"] = logits.max(dim=1)
+        return out
+
+    def _minimal_pair_preference_forward(self, batch, task, predict):
+        out = {}
+
+        # embed the sentence
+        classifier = self._get_classifier(task)
+        tokenizer_name = batch["sent1"].keys()[0]            
+        if tokenizer_name in ["bert_tokenizer", "gpt_tokenizer"]:
+            tokenizer_bias = -2
+        # calling self.sent_encoder reduce all token index in input0 by 2,
+        # this -2 to input1 and input2 looks strange, but it correctly negate that effect
+
+        if isinstance(task, OnePrefixLMTask):
+            sent_embs, sent_mask = self.sent_encoder(batch["shared_prefix"], task)
+            bs = get_batch_size(batch)
+            logits_full = classifier(sent_embs)[range(bs), sent_mask.sum(dim=1)-1]
+            token_key1 = batch["good_token"][tokenizer_name] + tokenizer_bias
+            token_key2 = batch["bad_token"][tokenizer_name] + tokenizer_bias
+            logits = torch.stack(
+                [-logits_full[range(bs), token_key1], -logits_full[range(bs), token_key2]], dim=1
+            )
+
+        elif isinstance(task, TwoPrefixLMTask):
+            sent_embs1, sent_mask1 = self.sent_encoder(batch["good_prefix"], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch["bad_prefix"], task)
+            bs = get_batch_size(batch)
+            logits_full1 = classifier(sent_embs1)[range(bs), sent_mask1.sum(dim=1)-1]
+            logits_full2 = classifier(sent_embs2)[range(bs), sent_mask2.sum(dim=1)-1]
+            token_key = batch["good_token"][tokenizer_name] + tokenizer_bias
+            logits = torch.stack(
+                [-logits_full1[range(bs), token_key], -logits_full2[range(bs), token_key]], dim=1
+            )
+            
+        elif isinstance(task, FullSentLMTask):
+            sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+            sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
+            raise NotImplementedError
+            
+        elif isinstance(task, NPIClozePairTask):
+            sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
+            bs = get_batch_size(batch)
+            index = batch["index"].squeeze(dim=1)
+            logits_full = classifier(sent_embs)[range(bs), index]
+            sent_key1 = batch["input1"]["bert_tokenizer"][range(bs), index] + tokenizer_bias
+            sent_key2 = batch["input2"]["bert_tokenizer"][range(bs), index] + tokenizer_bias
+            logits = torch.stack(
+                [logits_full[range(bs), sent_key1], logits_full[range(bs), sent_key2]], dim=1
+            )
+        
+        out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch)
+        tagmask = batch.get("tagmask", None)
+        if "labels" in batch:
+            labels = batch["labels"]
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
+            out["loss"] = F.cross_entropy(logits, labels)
+            task.update_metrics(logits, labels, tagmask=tagmask)
+
+        if predict:
+         _, out   ["preds"] = logits.max(dim=1)
+        return out
+
+    def _minimal_pair_classification_forward(self, batch, task, predict):
+        """
+        run acceptablity judgement task on minimal pairs
+        """
+        out = {}
+
+        # embed the sentence
+        sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+        sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
+        # pass to a task specific classifier
+        classifier = self._get_classifier(task)
+        logits1 = classifier(sent_embs1, sent_mask1)
+        logits2 = classifier(sent_embs2, sent_mask2)
+        logits = torch.stack(
+            (
+                logits1[:, 0] + logits2[:, 1],
+                logits1[:, 1] + logits2[:, 0],
+                logits1[:, 0] + logits2[:, 0],
+                logits1[:, 1] + logits2[:, 1],
+            ),
+            dim=1,
+        )
+        
+        out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch)
+        tagmask = batch.get("tagmask", None)
+        if "labels" in batch:
+            labels = batch["labels"]
+            labels = labels.squeeze(-1) if len(labels.size()) > 1 else labels
+            out["loss"] = F.cross_entropy(logits, labels)
+            task.update_metrics(logits, labels, tagmask=tagmask)
+
+        if predict:
+            _, out["preds"] = logits.max(dim=1)
         return out
 
     def _seq_gen_forward(self, batch, task, predict):
