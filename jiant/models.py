@@ -944,7 +944,7 @@ class MultiTaskModel(nn.Module):
             token_key1 = batch["good_token"][tokenizer_name] + tokenizer_bias
             token_key2 = batch["bad_token"][tokenizer_name] + tokenizer_bias
             logits = torch.stack(
-                [-logits_full[range(bs), token_key1], -logits_full[range(bs), token_key2]], dim=1
+                [logits_full[range(bs), token_key1], logits_full[range(bs), token_key2]], dim=1
             )
 
         elif isinstance(task, TwoPrefixLMTask):
@@ -953,16 +953,16 @@ class MultiTaskModel(nn.Module):
             bs = get_batch_size(batch)
             logits_full1 = classifier(sent_embs1)[range(bs), sent_mask1.sum(dim=1)-1]
             logits_full2 = classifier(sent_embs2)[range(bs), sent_mask2.sum(dim=1)-1]
-            token_key = batch["good_token"][tokenizer_name] + tokenizer_bias
+            token_key = batch["shared_token"][tokenizer_name] + tokenizer_bias
             logits = torch.stack(
-                [-logits_full1[range(bs), token_key], -logits_full2[range(bs), token_key]], dim=1
+                [logits_full1[range(bs), token_key], logits_full2[range(bs), token_key]], dim=1
             )
             
         elif isinstance(task, FullSentLMTask):
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
             raise NotImplementedError
-            
+
         elif isinstance(task, NPIClozePairTask):
             sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
             bs = get_batch_size(batch)
