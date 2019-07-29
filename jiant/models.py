@@ -41,6 +41,7 @@ from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
 from jiant.modules.prpn.PRPN import PRPN
 from jiant.modules.seq2seq_decoder import Seq2SeqDecoder
 from jiant.modules.span_modules import SpanClassifierModule
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks.edge_probing import EdgeProbingTask
 from jiant.tasks.lm import LanguageModelingTask
 from jiant.tasks.lm_parsing import LanguageModelingParsingTask
@@ -158,8 +159,14 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
     elif any(isinstance(task, LanguageModelingTask) for task in tasks) or args.sent_enc == "bilm":
         assert_for_log(args.sent_enc in ["rnn", "bilm"], "Only RNNLM supported!")
         assert_for_log(
-            args.input_module != "elmo" and not args.input_module.startswith("bert"),
-            "LM with full ELMo and BERT not supported",
+            not (
+                args.input_module == "elmo"
+                or args.input_module.startswith("bert")
+                or args.input_module.startswith("xlnet")
+            ),
+            f"Using input_module = {args.input_module} for language modeling is probably not a "
+            "good idea, since it allows the language model to use information from the right-hand "
+            "context.",
         )
         bilm = BiLMEncoder(d_emb, args.d_hid, args.d_hid, args.n_layers_enc)
         sent_encoder = SentenceEncoder(
@@ -194,7 +201,11 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = 2 * args.d_hid
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
+        assert_for_log(
+            args.skip_embs,
+            "skip_embs is false and sent_enc is none, "
+            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
+        )
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
             vocab,
@@ -206,10 +217,11 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
-        d_sent = 0  # skip connection added below
-        log.info("No shared encoder (just using word embeddings)!")
+        d_sent = 0
     else:
-        assert_for_log(False, "No valid sentence encoder specified.")
+        assert_for_log(
+            False, f"Shared encoder layer specification `{args.sent_enc}` not recognized."
+        )
     return sent_encoder, d_sent
 
 
@@ -220,31 +232,27 @@ def build_model(args, vocab, pretrained_embs, tasks):
     """
 
     # Build embeddings.
+    cove_layer = None
     if args.input_module == "gpt":
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .openai_transformer_lm.utils import OpenAIEmbedderModule
 
         log.info("Using OpenAI transformer model.")
-        cove_layer = None
         # Here, this uses openAIEmbedder.
         embedder = OpenAIEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     elif args.input_module.startswith("bert"):
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .bert.utils import BertEmbedderModule
+        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")
-        cove_layer = None
-        # Set PYTORCH_PRETRAINED_BERT_CACHE environment variable to an existing
-        # cache; see
-        # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/file_utils.py  # noqa
-        bert_cache_dir = os.getenv(
-            "PYTORCH_PRETRAINED_BERT_CACHE", os.path.join(args.exp_dir, "bert_cache")
-        )
-        maybe_make_dir(bert_cache_dir)
-        embedder = BertEmbedderModule(args, cache_dir=bert_cache_dir)
+        embedder = BertEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("xlnet"):
+        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+
+        log.info(f"Using XLNet model ({args.input_module}).")
+        embedder = XLNetEmbedderModule(args)
         d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
@@ -309,11 +317,11 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         d_word = args.d_word
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
-        assert args.input_module.startswith("bert") or args.input_module in [
+        assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
             "gpt",
             "elmo",
             "elmo-chars-only",
-        ], "You do not have a valid value for input_module."
+        ], f"'{args.input_module}' is not a valid value for input_module."
         embeddings = None
         word_embs = None
 
@@ -491,7 +499,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
     task_params = model._get_task_params(task.name)
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(
-            task=task, d_inp=d_sent, use_bert=model.use_bert, params=task_params
+            task=task,
+            d_inp=d_sent,
+            use_pytorch_transformers=model.use_pytorch_transformers,
+            params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (NPIClozePairTask, LinguisticPhenomenaPairTask)):
@@ -517,7 +528,10 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_mdl" % task.name, hid2tag)
     elif isinstance(task, MultipleChoiceTask):
         module = build_multiple_choice_module(
-            task, d_sent, use_bert=model.use_bert, params=task_params
+            task,
+            d_sent,
+            use_pytorch_transformers=model.use_pytorch_transformers,
+            params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, EdgeProbingTask):
@@ -528,7 +542,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (MultiRCTask, ReCoRDTask)):
-        module = build_qa_module(task, d_sent, model.use_bert, task_params)
+        module = build_qa_module(task, d_sent, model.use_pytorch_transformers, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
@@ -546,6 +560,9 @@ def get_task_specific_params(args, task_name):
     def _get_task_attr(attr_name, default=None):
         return config.get_task_attr(args, task_name, attr_name, default)
 
+    # This is confusing because a lot of parameters get renamed.
+    # TODO to replace with hierarchical configs and remove all the renaming and
+    # boilerplate.
     params = {}
     params["cls_type"] = _get_task_attr("classifier")
     params["d_hid"] = _get_task_attr("classifier_hid_dim")
@@ -565,6 +582,7 @@ def get_task_specific_params(args, task_name):
     params["cls_loss_fn"] = _get_task_attr("span_classifier_loss_fn")
     params["cls_span_pooling"] = _get_task_attr("classifier_span_pooling")
     params["edgeprobe_cnn_context"] = _get_task_attr("edgeprobe_cnn_context")
+    params["edgeprobe_symmetric"] = _get_task_attr("edgeprobe_symmetric")
 
     # For NLI probing tasks, might want to use a classifier trained on
     # something else (typically 'mnli').
@@ -580,13 +598,13 @@ def build_image_sent_module(task, d_inp, params):
     return pooler
 
 
-def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Params):
+def build_single_sentence_module(task, d_inp: int, use_pytorch_transformers: bool, params: Params):
     """ Build a single sentence classifier
 
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_bert (bool): if using BERT, skip projection before pooling.
+        - use_pytorch_transformers (bool): if using BERT/XLNet, skip projection before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:
@@ -594,9 +612,12 @@ def build_single_sentence_module(task, d_inp: int, use_bert: bool, params: Param
             (optional) a linear projection, pooling, and an MLP classifier
     """
     pooler = Pooler(
-        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+        project=not use_pytorch_transformers,
+        d_inp=d_inp,
+        d_proj=params["d_proj"],
+        pool_type=params["pool_type"],
     )
-    d_out = d_inp if use_bert else params["d_proj"]
+    d_out = d_inp if use_pytorch_transformers else params["d_proj"]
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
     return module
@@ -623,34 +644,36 @@ def build_pair_sentence_module(task, d_inp, model, params):
 
     # Build the "pooler", which does pools a variable length sequence
     #   possibly with a projection layer beforehand
-    if params["attn"] and not model.use_bert:
+    if params["attn"] and not model.use_pytorch_transformers:
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
         pooler = Pooler(
-            project=not model.use_bert,
+            project=not model.use_pytorch_transformers,
             d_inp=d_inp,
             d_proj=params["d_proj"],
             pool_type=params["pool_type"],
         )
-        d_out = d_inp if model.use_bert else params["d_proj"]
+        d_out = d_inp if model.use_pytorch_transformers else params["d_proj"]
 
     # Build an attention module if necessary
-    if params["shared_pair_attn"] and params["attn"] and not model.use_bert:  # shared attn
+    if (
+        params["shared_pair_attn"] and params["attn"] and not model.use_pytorch_transformers
+    ):  # shared attn
         if not hasattr(model, "pair_attn"):
             pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    elif params["attn"] and not model.use_bert:  # non-shared attn
+    elif params["attn"] and not model.use_pytorch_transformers:  # non-shared attn
         pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
     else:  # no attn
         pair_attn = None
 
     # Build the classifier
     n_classes = task.n_classes if hasattr(task, "n_classes") else 1
-    if model.use_bert:
-        # BERT handles pair tasks by concatenating the inputs and classifying the joined
+    if model.use_pytorch_transformers:
+        # BERT/XLNet handle pair tasks by concatenating the inputs and classifying the joined
         # sequence, so we use a single sentence classifier
         if isinstance(task, WiCTask):
             d_out *= 3  # also pass the two contextual word representations
@@ -680,12 +703,15 @@ def build_tagger(task, d_inp, out_dim):
     return hid2tag
 
 
-def build_multiple_choice_module(task, d_sent, use_bert, params):
+def build_multiple_choice_module(task, d_sent, use_pytorch_transformers, params):
     """ Basic parts for MC task: reduce a vector representation for each model into a scalar. """
     pooler = Pooler(
-        project=not use_bert, d_inp=d_sent, d_proj=params["d_proj"], pool_type=params["pool_type"]
+        project=not use_pytorch_transformers,
+        d_inp=d_sent,
+        d_proj=params["d_proj"],
+        pool_type=params["pool_type"],
     )
-    d_out = d_sent if use_bert else params["d_proj"]
+    d_out = d_sent if use_pytorch_transformers else params["d_proj"]
     choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
     return SingleClassifier(pooler, choice2scalar)
 
@@ -707,7 +733,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     return decoder, hid2voc
 
 
-def build_qa_module(task, d_inp, use_bert, params):
+def build_qa_module(task, d_inp, use_pytorch_transformers, params):
     """ Build a simple QA module that
     1) pools representations (either of the joint (context, question, answer) or individually
     2) projects down to two logits
@@ -715,9 +741,12 @@ def build_qa_module(task, d_inp, use_bert, params):
 
     This module models each question-answer pair _individually_ """
     pooler = Pooler(
-        project=not use_bert, d_inp=d_inp, d_proj=params["d_proj"], pool_type=params["pool_type"]
+        project=not use_pytorch_transformers,
+        d_inp=d_inp,
+        d_proj=params["d_proj"],
+        pool_type=params["pool_type"],
     )
-    d_out = d_inp if use_bert else params["d_proj"]
+    d_out = d_inp if use_pytorch_transformers else params["d_proj"]
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
 
@@ -736,7 +765,7 @@ class MultiTaskModel(nn.Module):
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
-        self.use_bert = bool(args.input_module.startswith("bert"))
+        self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
@@ -846,7 +875,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_bert:
+        if self.use_pytorch_transformers:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             logits = classifier(sent, mask)
         else:
@@ -884,7 +913,7 @@ class MultiTaskModel(nn.Module):
 
         # embed the sentence
         classifier = self._get_classifier(task)
-        if self.use_bert:
+        if self.use_pytorch_transformers:
             sent, mask = self.sent_encoder(batch["inputs"], task)
             # special case for WiC b/c we want to add representations of particular tokens
             if isinstance(task, WiCTask):
@@ -1140,12 +1169,12 @@ class MultiTaskModel(nn.Module):
 
         logits = []
         module = self._get_classifier(task)
-        if self.use_bert:
+        if self.use_pytorch_transformers:
             for choice_idx in range(task.n_choices):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["bert_wpm_pretokenized"].size(0)
+            out["n_exs"] = batch["choice0"]["pytorch_transformers_wpm_pretokenized"].size(0)
         else:
             ctx, ctx_mask = self.sent_encoder(batch["question"], task)
             for choice_idx in range(task.n_choices):
@@ -1211,12 +1240,12 @@ class MultiTaskModel(nn.Module):
         """
         out = {}
         classifier = self._get_classifier(task)
-        if self.use_bert:
-            # if using BERT, we concatenate the passage, question, and answer
+        if self.use_pytorch_transformers:
+            # if using BERT/XLNet, we concatenate the passage, question, and answer
             inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
-            out["n_exs"] = inp["bert_wpm_pretokenized"].size(0)
+            out["n_exs"] = inp["pytorch_transformers_wpm_pretokenized"].size(0)
         else:
             # else, we embed each independently and concat them
             psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)

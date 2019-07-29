@@ -2,11 +2,11 @@
 
 # Run this on a new Kubernetes cluster. See README.md for details.
 
-pushd "${PWD%jiant*}"/jiant
+pushd "$(dirname $0)"
 
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/stable/nvidia-driver-installer/cos/daemonset-preloaded.yaml
 
-kubectl create -f gcp/kubernetes/nfs_pv.yaml
-kubectl create -f gcp/kubernetes/nfs_pvc.yaml
-
+YAML_STREAM=$( jsonnet -S templates/nfs.jsonnet )
+echo "$YAML_STREAM"
+echo "$YAML_STREAM" | kubectl apply -f -
 

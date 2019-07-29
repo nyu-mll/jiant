@@ -43,23 +43,39 @@ You will also need to install dependencies for `nltk` if you do not already have
 python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 ```
 
+And if you want to use GPT, you should also download spaCy packages:
+
+```
+python -m spacy download en
+```
+
+### Notebooks
+
+If you plan to use Jupyter Notebooks with jiant (you should!), make sure that you register a kernel that runs in your conda environment. Do:
+
+```
+ipython kernel install --user --name=jiant
+```
+
+And the next time you start a notebook server, you should see `jiant` as an option under "Kernel -> Change kernel".
+
 ### Optional
 
-If you'll be using GPT, BERT, or other models supplied by `pytorch-pretrained-BERT`, then you may see speed gains from installing NVIDIA apex, following the instructions here: 
+If you'll be using GPT, BERT, or other models supplied by `pytorch-transformers`, then you may see speed gains from installing NVIDIA apex, following the instructions here:
 
 https://github.com/NVIDIA/apex#linux
 
 ## 2. Getting data and setting up our environment
 
  In this tutorial, we will be working with GLUE data.
-The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/tasks) data:
-
+The repo contains a convenience Python script for downloading all [GLUE](https://gluebenchmark.com/) and [SuperGLUE](https://super.gluebenchmark.com/) tasks:
 
 ```
 python scripts/download_glue_data.py --data_dir data --tasks all
+python scripts/download_superglue_data.py --data_dir data --tasks all
 ```
 
-We also support quite a few other data sources (check [here](https://jiant.info/documentation#/?id=data-sources)  for a list).
+We also support quite a few other data sources (check [here](https://jiant.info/documentation#/?id=data-sources) for a list).
 
 
 Finally, you'll need to set a few environment variables in [user_config_template.sh](https://github.com/nyu-mll/jiant/blob/master/user_config_template.sh), which include:
@@ -115,7 +131,7 @@ Some important options include:
 * `sent_enc`: If you want to train a new sentence encoder (rather than using a loaded one like BERT), specify it here. This is the only part of the `config/demo.conf` that we should change for our experiment since we want to train a biLSTM encoder. Thus, in your `config/tutorial.conf`, set  `sent_enc=rnn`.
 * `pretrain_tasks`: This is a comma-delimited string of tasks. In `config/demo.conf`, this is set to "sst,mrpc", which is what we want. Note that we have `pretrain_tasks` as a separate field from `target_tasks` because our training loop handles the two phases differently (for example, multitask training is only supported in pretraining stage). Note that there should not be a space in-between tasks.
 * `target_tasks`: This is a comma-delimited string of tasks you want to fine-tune and evaluate on (in this case "sts-b,wnli").
-* `input_module`: This is a string specifying the type of contextualized word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`. 
+* `input_module`: This is a string specifying the type of (contextualized) word embedding you want to use. In `config/demo.conf`, this is already set to `scratch`.
 * `val_interval`: This is the interval (in steps) at which you want to evaluate your model on the validation set during pretraining. A step is a batch update.
 * `exp_name`, which expects a string of your experiment name.
 * `run_name`, which expects a string of your run name.
@@ -152,11 +168,12 @@ reload_indexing = 0
 reload_vocab = 0
 
 pretrain_tasks = "sst,mrpc"
-target_tasks = "sts-b,wnli"
+target_tasks = "sts-b,commitbank"
 classifier = mlp
 classifier_hid_dim = 32
 max_seq_len = 10
 max_word_v_size = 1000
+pair_attn = 0
 
 input_module = scratch
 d_word = 50
@@ -178,7 +195,6 @@ sts-b += {
     max_vals = 16
     val_interval = 10
 }
-
 ```
 
 Now we get on to the actual experiment running!
