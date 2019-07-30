@@ -342,7 +342,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
         """ Load linguistic phenomena benchmark data for one prefix method, each one prefix
         example includes one shared prefix and the following tokens from the good and bad
         sentences """
-        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data_file = os.path.join(self.path, "lpb.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
@@ -420,7 +420,7 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
         """ Load linguistic phenomena benchmark data for two prefix method, each two prefix
         example includes one shared token and the prefix tokens from the good and bad
         sentences """
-        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data_file = os.path.join(self.path, "lpb.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
@@ -500,7 +500,7 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
         """ Load linguistic phenomena benchmark data for simple LM method, each one-prefix
         example includes one shared prefix and the following tokens from the good and bad
         sentences """
-        data_file = "simple_anaphor_number_agreement.jsonl"  # this is temporary
+        data_file = os.path.join(self.path, "lpb.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
