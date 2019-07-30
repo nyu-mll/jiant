@@ -505,8 +505,8 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (NPIClozePairTask, LinguisticPhenomenaPairTask)):
-        module = model.get_pretrained_LM_mdl()
-        setattr(model, "%s_mdl" % task.name, module)
+        hid2voc = model.get_pretrained_lm_head(args)
+        setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
         setattr(model, "%s_mdl" % task.name, module)
@@ -603,7 +603,7 @@ def build_single_sentence_module(task, d_inp: int, use_pytorch_transformers: boo
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_pytorch_transformers (bool): if using BERT/XLNet, skip projection before pooling.
+        - use_pytorch_transformers (bool): if using BERT/XLNet/GPT/GPT2, skip projection before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:

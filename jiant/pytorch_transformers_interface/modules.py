@@ -219,6 +219,17 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
         # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states)
 
+    def get_pretrained_lm_head(self, args):
+        # Download another BERT model with LM head, extract the LM head
+        # and tie its weight to the input token embedding
+        # In most cases, this module needs to work with embedding mode "top" or "none"
+        model_with_lm_head = pytorch_transformers.BertForMaskedLM.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.cls
+        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        return lm_head
+
 
 class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for XLNet module to fit into jiant APIs. """
@@ -306,6 +317,17 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
         # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states)
 
+    def get_pretrained_lm_head(self, args):
+        # Download another XLNet model with LM head, extract the LM head
+        # and tie its weight to the input token embedding
+        # In most cases, this module needs to work with embedding mode "top" or "none"
+        model_with_lm_head = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_loss
+        lm_head.weight = self.model.transformer.word_embeddings.weight
+        return lm_head
+
 
 class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for GPT2 module to fit into jiant APIs. """
@@ -319,7 +341,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         )
 
         tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
-            args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
+            args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
         self._pad_id = tokenizer.convert_tokens_to_ids("<endoftext>")
         # GPT2 does not have special padding token in its vocab, this is just dummy.
@@ -379,6 +401,17 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
         # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states)
+
+    def get_pretrained_lm_head(self, args):
+        # Download another GPT2 model with LM head, extract the LM head
+        # and tie its weight to the input token embedding
+        # In most cases, this module needs to work with embedding mode "top" or "none"
+        model_with_lm_head = pytorch_transformers.GPT2LMHeadModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_head
+        lm_head.weight = self.model.transformer.wte.weight
+        return lm_head
 
 
 class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
