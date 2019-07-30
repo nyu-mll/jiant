@@ -27,7 +27,10 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
-from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
+from jiant.pytorch_transformers_interface import (
+    input_module_uses_pytorch_transformers,
+    input_module_tokenized_name
+)
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
@@ -222,12 +225,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.force_include_wsj_vocabulary:
         # Add WSJ full vocabulary for PTB F1 parsing tasks.
         add_wsj_vocab(vocab, args.data_dir)
-    if args.input_module == "gpt":
-        # Add pre-computed BPE vocabulary for OpenAI transformer model.
-        add_openai_bpe_vocab(vocab, "openai_bpe")
-    elif input_module_uses_pytorch_transformers(args.input_module):
-        # Add pre-computed BPE vocabulary for BERT/XLNet model.
-        add_pytorch_transformers_wpm_vocab(vocab, args.tokenizer)
+    if input_module_uses_pytorch_transformers(args.input_module):
+        # Add pre-computed WPM/ByteBPE/BPE vocabulary for pytorch transformer models.
+        add_pytorch_transformers_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -264,10 +264,11 @@ def build_indexers(args):
         ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer "
+            "BERT/XLNet/GPT2 models use custom WPM tokenization for each model, so tokenizer "
             "must match the specified model."
         )
-        indexers["pytorch_transformers_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
+        tokenized_name = input_module_tokenized_name(args.input_module)
+        indexers[tokenized_name] = SingleIdTokenIndexer(args.input_module)
     return indexers
 
 
@@ -337,6 +338,14 @@ def build_tasks(args):
         from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
 
         boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+    elif args.input_module == "openai-gpt":
+        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+        boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("gpt2"):
+        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+        boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
 
@@ -568,8 +577,8 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
-    """Add BERT/XLNet WPM vocabulary for use with pre-tokenized data.
+def add_pytorch_transformers_vocab(vocab, tokenizer_name):
+    """Add BERT/XLNet WPM, GPT2 ByteBPE, or GPT BPE vocabulary for use with pre-tokenized data.
 
     These tokenizers have a convert_tokens_to_ids method, but this doesn't do
     anything special, so we can just use the standard indexers.
@@ -580,10 +589,19 @@ def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
         from pytorch_transformers import BertTokenizer
 
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
-    else:
+    elif tokenizer_name.startswith("xlnet"):
         from pytorch_transformers import XLNetTokenizer
 
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("gpt2"):
+        from pytorch_transformers import GPT2Tokenizer
+
+        tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("openai-gpt"):
+        from pytorch_transformers import OpenAIGPTTokenizer
+
+        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
     log.info("WPM vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))

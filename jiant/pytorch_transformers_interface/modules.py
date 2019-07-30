@@ -305,3 +305,82 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states)
+
+
+class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for GPT2 module to fit into jiant APIs. """
+
+    def __init__(self, args):
+
+        super(GPT2EmbedderModule, self).__init__(args)
+
+        self.model = pytorch_transformers.GPT2Model.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+
+        tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, do_lower_case="uncased" in args.tokenizer
+        )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
+        self._pad_id = tokenizer.convert_tokens_to_ids("<endoftext>")
+        # GPT2 does not have special padding token in its vocab, this is just dummy.
+
+        self.parameter_setup(args)
+
+
+    @staticmethod
+    def apply_boundary_tokens(s1):
+        return ["<endoftext>"] + s1 + ["<endoftext>"]
+
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        """ Run GPT2 to get hidden states.
+
+        This forward method does preprocessing on the go,
+        changing token IDs from preprocessed word pieces to
+        what AllenNLP indexes.
+
+        Args:
+            sent: batch dictionary
+
+        Returns:
+            h: [batch_size, seq_len, d_emb]
+        """
+        assert "pytorch_transformers_bytebpe_pretokenized" in sent
+        # <int32> [batch_size, var_seq_len]
+        ids = sent["pytorch_transformers_bytebpe_pretokenized"]
+        mask = ids != 0
+        # "Correct" ids to account for different indexing between XLNet and
+        # AllenNLP.
+        # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
+        # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
+        # reserved for padding).
+        ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
+        ids -= 2  # shift indices to match XLNet wordpiece embeddings
+
+
+        if self.embeddings_mode not in ["none", "top"]:
+            # Extract lexical embeddings
+            lex_seq = self.model.wte(ids)
+            hidden_states = None  # dummy; should not be accessed.
+            # following our use of the OpenAI model, don't use dropout for
+            # probing. If you would like to use dropout, consider applying
+            # later on in the SentenceEncoder (see models.py).
+            #  h_lex = self.model.drop(lex_seq)
+        else:
+            lex_seq = None  # dummy; should not be accessed.
+
+        if self.embeddings_mode != "only":
+            # encoded_layers is a list of layer activations, each of which is
+            # <float32> [batch_size, seq_len, output_dim]
+            _, _, hidden_states, _ = self.model(
+                ids, head_mask=mask
+            )
+
+        # <float32> [batch_size, var_seq_len, output_dim]
+        return self.prepare_output(lex_seq, hidden_states)
+
+
+class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
+    def __init__(self, args):
+        raise NotImplementedError

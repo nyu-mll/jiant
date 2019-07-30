@@ -318,7 +318,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
         assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
-            "gpt",
             "elmo",
             "elmo-chars-only",
         ], f"'{args.input_module}' is not a valid value for input_module."

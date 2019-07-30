@@ -11,4 +11,12 @@ This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
 
 
 def input_module_uses_pytorch_transformers(module_name):
-    return module_name.startswith("bert") or module_name.startswith("xlnet")
+    return module_name.startswith("bert") or module_name.startswith("xlnet") or module_name.startswith("gpt2") or module_name.startswith("openai-gpt")
+
+def input_module_tokenized_name(module_name):
+    if module_name.startswith("bert") or module_name.startswith("xlnet"):
+        return "pytorch_transformers_wpm_pretokenized"
+    elif module_name.startswith("gpt2"):
+        return "pytorch_transformers_bytebpe_pretokenized"
+    elif module_name.startswith("openai-gpt"):
+        return "pytorch_transformers_bpe_pretokenized"
