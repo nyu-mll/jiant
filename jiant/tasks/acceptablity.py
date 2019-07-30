@@ -249,12 +249,12 @@ class CoLAAnalysisTask(SingleClassificationTask):
         )
         log.info("\tFinished loading CoLA sperate domain.")
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(input1, labels, tagids):
             """ from multiple types in one column create multiple fields """
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
+            d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tagids, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
@@ -379,7 +379,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
         log.info("\tFinished loading lpb one prefix data.")
         return
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
@@ -391,13 +391,13 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(sent1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
-            d["input2"] = sentence_to_text_field(sent2, indexers)
-            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1))
+            d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2))
             d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
-            d["shared_prefix"] = sentence_to_text_field(shared_prefix, indexers)
-            d["shared_str"] = MetadataField(" ".join(shared_prefix[1:-1]))
+            d["shared_prefix"] = sentence_to_text_field(boundary_token_fn(shared_prefix), indexers)
+            d["shared_str"] = MetadataField(" ".join(shared_prefix))
             d["good_token"] = TextField(Token(good_token), token_indexers=indexers)
             d["bad_token"] = TextField(Token(bad_token), token_indexers=indexers)
             d["tagmask"] = MultiLabelField(
@@ -459,7 +459,7 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
         log.info("\tFinished loading lpb two prefix data.")
         return
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(sent1, sent2, label, tags, good_prefix, bad_prefix, shared_token):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
@@ -471,15 +471,15 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(sent1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
-            d["input2"] = sentence_to_text_field(sent2, indexers)
-            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1))
+            d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2))
             d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
-            d["good_prefix"] = sentence_to_text_field(good_prefix, indexers)
-            d["good_str"] = MetadataField(" ".join(good_prefix[1:-1]))
-            d["bad_prefix"] = sentence_to_text_field(bad_prefix, indexers)
-            d["bad_str"] = MetadataField(" ".join(bad_prefix[1:-1]))
+            d["good_prefix"] = sentence_to_text_field(boundary_token_fn(good_prefix), indexers)
+            d["good_str"] = MetadataField(" ".join(good_prefix))
+            d["bad_prefix"] = sentence_to_text_field(boundary_token_fn(bad_prefix), indexers)
+            d["bad_str"] = MetadataField(" ".join(bad_prefix))
             d["shared_token"] = TextField(Token(shared_token), token_indexers=indexers)
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
@@ -531,7 +531,7 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
         log.info("\tFinished loading lpb simple LM data.")
         return
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
@@ -543,10 +543,10 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(sent1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(sent1[1:-1]))
-            d["input2"] = sentence_to_text_field(sent2, indexers)
-            d["sent2_str"] = MetadataField(" ".join(sent2[1:-1]))
+            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(sent1))
+            d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
+            d["sent2_str"] = MetadataField(" ".join(sent2))
             d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
@@ -609,7 +609,7 @@ class NPIClozePairTask(PairClassificationTask):
         log.info("\tFinished loading NPI cloze pairs.")
         return
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(input1, input2, labels, tagids):
             """ from multiple types in one column create multiple fields
             input0: shared part (masked form) of both sentence (only used in BERT)
@@ -620,15 +620,15 @@ class NPIClozePairTask(PairClassificationTask):
             tagmask: which tags this sample has
             """
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
+            d["sent2_str"] = MetadataField(" ".join(input2))
             mask_index = [i for i in range(len(input1)) if input1[i] != input2[i]][0]
             input0 = [i for i in input1]
             input0[mask_index] = "[MASK]"
-            d["input0"] = sentence_to_text_field(input0, indexers)
-            d["sent0_str"] = MetadataField(" ".join(input0[1:-1]))
+            d["input0"] = sentence_to_text_field(boundary_token_fn(input0), indexers)
+            d["sent0_str"] = MetadataField(" ".join(input0))
             d["index"] = IndexField(mask_index, d["input1"])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
@@ -719,7 +719,7 @@ class NPIMinimalPairTask(PairClassificationTask):
         log.info("\tFinished loading NPI minimal pairs.")
         return
 
-    def process_split(self, split, indexers):
+    def process_split(self, split, indexers, boundary_token_fn):
         def _make_instance(input1, input2, labels, tagids):
             """ from multiple types in one column create multiple fields
             input1: sentence1
@@ -728,10 +728,10 @@ class NPIMinimalPairTask(PairClassificationTask):
             tagmask: which tags this sample has
             """
             d = {}
-            d["input1"] = sentence_to_text_field(input1, indexers)
-            d["sent1_str"] = MetadataField(" ".join(input1[1:-1]))
-            d["input2"] = sentence_to_text_field(input2, indexers)
-            d["sent2_str"] = MetadataField(" ".join(input2[1:-1]))
+            d["input1"] = sentence_to_text_field(boundary_token_fn(input1), indexers)
+            d["sent1_str"] = MetadataField(" ".join(input1))
+            d["input2"] = sentence_to_text_field(boundary_token_fn(input2), indexers)
+            d["sent2_str"] = MetadataField(" ".join(input2))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tagids, label_namespace="tagids", skip_indexing=True, num_labels=len(self.tag_list)
