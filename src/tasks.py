@@ -2667,11 +2667,11 @@ class AcceptabilityDefTask(SingleClassificationTask):
 
     def load_data(self, path, max_seq_len, fold_no):
         tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -2697,11 +2697,11 @@ class AcceptabilityConjTask(SingleClassificationTask):
 
     def load_data(self, path, max_seq_len, fold_no):
         tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=2, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -2727,11 +2727,11 @@ class AcceptabilityWHTask(SingleClassificationTask):
 
     def load_data(self, path, max_seq_len, fold_no):
         tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=5, s2_idx=None, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=None, targ_idx=2, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
@@ -2757,11 +2757,11 @@ class AcceptabilityEOSTask(PairClassificationTask):
 
     def load_data(self, path, max_seq_len, fold_no):
         tr_data = load_tsv(os.path.join(path, 'fold{}/train.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=0)
         val_data = load_tsv(os.path.join(path, 'fold{}/dev.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=0)
         te_data = load_tsv(os.path.join(path, 'fold{}/test.tsv'.format(fold_no)), max_seq_len,
-                        s1_idx=3, s2_idx=4, targ_idx=0, skip_rows=0)
+                        s1_idx=1, s2_idx=2, targ_idx=3, skip_rows=0)
 
         self.train_data_text = tr_data
         self.val_data_text = val_data
