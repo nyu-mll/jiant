@@ -59,12 +59,14 @@ from jiant.tasks.tasks import (
     STSBTask,
     TaggingTask,
     WiCTask,
-    LinguisticPhenomenaPairTask,
+)
+from jiant.tasks.acceptablity import (
     NPIMinimalPairTask,
     NPIClozePairTask,
-    OnePrefixLMTask,
-    TwoPrefixLMTask,
-    FullSentLMTask
+    BlimpTask,
+    BlimpOnePrefixLMTask,
+    BlimpTwoPrefixLMTask,
+    BlimpFullSentLMTask
 )
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -504,7 +506,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
             params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
-    elif isinstance(task, (NPIClozePairTask, LinguisticPhenomenaPairTask)):
+    elif isinstance(task, (NPIClozePairTask, BlimpTask)):
         hid2voc = model.get_pretrained_lm_head(args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
@@ -788,7 +790,7 @@ class MultiTaskModel(nn.Module):
             out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, GLUEDiagnosticTask):
             out = self._nli_diagnostic_forward(batch, task, predict)
-        elif isinstance(task, (LinguisticPhenomenaPairTask, NPIClozePairTask)):
+        elif isinstance(task, (BlimpTask, NPIClozePairTask)):
             out = self._minimal_pair_preference_forward(batch, task, predict)
         elif isinstance(task, (NPIMinimalPairTask)):
             out = self._minimal_pair_classification_forward(batch, task, predict)
@@ -965,7 +967,7 @@ class MultiTaskModel(nn.Module):
         # calling self.sent_encoder reduce all token index in input0 by 2,
         # this -2 to input1 and input2 looks strange, but it correctly negate that effect
 
-        if isinstance(task, OnePrefixLMTask):
+        if isinstance(task, BlimpOnePrefixLMTask):
             sent_embs, sent_mask = self.sent_encoder(batch["shared_prefix"], task)
             bs = get_batch_size(batch)
             logits_full = classifier(sent_embs)[range(bs), sent_mask.sum(dim=1)-1]
@@ -975,7 +977,7 @@ class MultiTaskModel(nn.Module):
                 [logits_full[range(bs), token_key1], logits_full[range(bs), token_key2]], dim=1
             )
 
-        elif isinstance(task, TwoPrefixLMTask):
+        elif isinstance(task, BlimpTwoPrefixLMTask):
             sent_embs1, sent_mask1 = self.sent_encoder(batch["good_prefix"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["bad_prefix"], task)
             bs = get_batch_size(batch)
@@ -986,7 +988,7 @@ class MultiTaskModel(nn.Module):
                 [logits_full1[range(bs), token_key], logits_full2[range(bs), token_key]], dim=1
             )
             
-        elif isinstance(task, FullSentLMTask):
+        elif isinstance(task, BlimpFullSentLMTask):
             sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
             sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
             raise NotImplementedError

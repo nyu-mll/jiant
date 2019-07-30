@@ -28,7 +28,6 @@ from jiant.allennlp_mods.correlation import Correlation
 from jiant.allennlp_mods.numeric_field import NumericField
 from jiant.utils import utils
 from jiant.utils.data_loaders import (
-    get_tag_list,
     load_diagnostic_tsv,
     load_span_data,
     load_tsv,

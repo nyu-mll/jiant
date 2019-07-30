@@ -27,7 +27,6 @@ from jiant.allennlp_mods.correlation import Correlation
 from jiant.allennlp_mods.numeric_field import NumericField
 from jiant.utils import utils
 from jiant.utils.data_loaders import (
-    get_tag_list,
     load_span_data,
     load_tsv,
     tokenize_and_truncate,
@@ -290,11 +289,11 @@ class CoLAAnalysisTask(SingleClassificationTask):
         return collected_metrics
 
 
-class LinguisticPhenomenaPairTask(PairClassificationTask):
+class BlimpTask(PairClassificationTask):
     """ Class for linguistic phenomena pair tasks """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(LinguisticPhenomenaPairTask, self).__init__(name, n_classes=2, **kw)        
+        super(BlimpTask, self).__init__(name, n_classes=2, **kw)        
         self.path = path
         self.max_seq_len = max_seq_len
 
@@ -331,18 +330,18 @@ class LinguisticPhenomenaPairTask(PairClassificationTask):
         return collected_metrics
 
 
-@register_task("lpb-oneprefix", rel_path="lpb")
-class OnePrefixLMTask(LinguisticPhenomenaPairTask):
+@register_task("blimp-oneprefix", rel_path="blimp")
+class BlimpOnePrefixLMTask(BlimpTask):
     """ Task class for full sentence LM acceptability preference """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(OnePrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
+        super(BlimpOnePrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
         """ Load linguistic phenomena benchmark data for one prefix method, each one prefix
         example includes one shared prefix and the following tokens from the good and bad
         sentences """
-        data_file = os.path.join(self.path, "lpb.jsonl")
+        data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
@@ -376,7 +375,7 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading lpb one prefix data.")
+        log.info("\tFinished loading blimp one prefix data.")
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
@@ -409,18 +408,18 @@ class OnePrefixLMTask(LinguisticPhenomenaPairTask):
         return instances
 
 
-@register_task("lpb-twoprefix", rel_path="lpb")
-class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
+@register_task("blimp-twoprefix", rel_path="blimp")
+class BlimpTwoPrefixLMTask(BlimpTask):
     """ Task class for two prefix LM acceptability preference """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(TwoPrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
+        super(BlimpTwoPrefixLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
         """ Load linguistic phenomena benchmark data for two prefix method, each two prefix
         example includes one shared token and the prefix tokens from the good and bad
         sentences """
-        data_file = os.path.join(self.path, "lpb.jsonl")
+        data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
@@ -456,7 +455,7 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading lpb two prefix data.")
+        log.info("\tFinished loading blimp two prefix data.")
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
@@ -489,18 +488,18 @@ class TwoPrefixLMTask(LinguisticPhenomenaPairTask):
         instances = map(_make_instance, *split)
         return instances
 
-@register_task("lpb-simpleLM", rel_path="lpb")
-class FullSentLMTask(LinguisticPhenomenaPairTask):
+@register_task("blimp-simpleLM", rel_path="blimp")
+class BlimpFullSentLMTask(BlimpTask):
     """ Task class for full sentence LM acceptability preference """
 
     def __init__(self, path, max_seq_len, name, **kw):
-        super(FullSentLMTask, self).__init__(path, max_seq_len, name, **kw)
+        super(BlimpFullSentLMTask, self).__init__(path, max_seq_len, name, **kw)
 
     def load_data(self):
         """ Load linguistic phenomena benchmark data for simple LM method, each one-prefix
         example includes one shared prefix and the following tokens from the good and bad
         sentences """
-        data_file = os.path.join(self.path, "lpb.jsonl")
+        data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
         tag_types = ['category', 'field', 'linguistic_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
@@ -528,7 +527,7 @@ class FullSentLMTask(LinguisticPhenomenaPairTask):
             count=len(self.tag_list), scorer_type=CategoricalAccuracy
         )
 
-        log.info("\tFinished loading lpb simple LM data.")
+        log.info("\tFinished loading blimp simple LM data.")
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
