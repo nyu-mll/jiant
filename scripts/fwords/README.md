@@ -1,16 +1,14 @@
-**\*\*\*\*\* Note: The authors are working on important revisions of the probing datasets and they are not publicly available yet. Please contact Najoung for a preliminary copy of the dataset if you would like to take a look, but please wait for the official release on decomp to conduct any experiments. Preprocessing script will be available with the official release of the datasets. \*\*\*\*\***
-
 # Instructions
 This branch contains a version of the `jiant` code used in [Probing What Different NLP Tasks Teach Machines about Function Word Comprehension](https://arxiv.org/abs/1904.11544). This directory contains scripts to run experiments described in the paper. Contact Najoung (see paper for email) if you run into any issues.
 
 ## Getting started
 First, set up `jiant` following the main instructions.
 
-Then download the function word probing datasets from [decomp.io](http://decomp.io). Place the dataset files in the data directory (as indicated by `${JIANT_DATA_DIR}`). 
+Then download the function word probing datasets from [the DNC repo](https://github.com/decompositional-semantics-initiative/DNC/tree/master/function_words). Place the dataset files in the data directory (as indicated by `${JIANT_DATA_DIR}`). 
 
-Since the acceptability datasets are evaluated using 10-fold cross-validation, we provide a corresponding `-folds.tsv` file for each acceptability dataset, indicating the examples used for train, dev, test in each fold. 
+Since the acceptability datasets are evaluated using 10-fold cross-validation, we provide a corresponding `-folds.tsv` file for each acceptability dataset, indicating the examples used for train, dev, test in each fold. You can use `preprocess_acceptability_folds.py` to automatically generate the folds using the downloaded `.json` files. 
 
-By default, the code looks for `foldn` directories (_n_=number of xval fold) under directories named `definiteness/`, `coords/`, `eos/`, and `whwords/`. You can change this in the `@register_task`decorators of each task in `src/tasks.py`.
+By default, the code looks for `foldn` directories (_n_=number of xval fold) under directories named `definiteness/`, `coordinating-conjunctions/`, `eos/`, and `whwords/`. You can change this in the `@register_task`decorators of each task in `src/tasks.py`.
 
 ## Running experiments from the paper
 

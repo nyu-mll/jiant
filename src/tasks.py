@@ -2683,7 +2683,7 @@ class AcceptabilityDefTask(SingleClassificationTask):
         pcs, rcl, f1 = self.scorer2.get_metric(reset)
         return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1}
 
-@register_task('acceptability-conj', 'coords/')
+@register_task('acceptability-conj', 'coordinating-conjunctions/')
 class AcceptabilityConjTask(SingleClassificationTask):
 
     def __init__(self, path, max_seq_len, name="acceptability-conj", fold_no=1):
