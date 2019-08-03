@@ -89,6 +89,14 @@ def get_tokenizer(tokenizer_name):
 
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("gpt2-"):
+        from pytorch_transformers import GPT2Tokenizer
+
+        tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
+    elif tokenizer_name.startswith("openai-gpt"):
+        from pytorch_transformers import OpenAIGPTTokenizer
+
+        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name == "OpenAI.BPE":
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":

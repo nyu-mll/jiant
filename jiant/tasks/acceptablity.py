@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import torch
+import IPython
 
 
 # Fields for instance processing
@@ -302,7 +303,7 @@ class BlimpTask(PairClassificationTask):
         self.test_data_text = None
         self.eval_only_task = True
         
-        self.val_metric = "%s_mcc" % self.name
+        self.val_metric = "%s_accuracy" % self.name
         self.val_metric_decreases = False
         self.scorer1 = CategoricalAccuracy()
         self.scorers = [self.scorer1]
@@ -343,9 +344,9 @@ class BlimpOnePrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        tag_types = ['field', 'linguistics_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
-        shared_prefixes, good_tokens, bad_tokens = [], [], []
+        shared_prefixes, good_words, bad_words = [], [], []
         for example in data:
             if not example['one_prefix_method']:
                 continue
@@ -358,16 +359,20 @@ class BlimpOnePrefixLMTask(BlimpTask):
             labels.append(0)
             tags.append([])
             for tag_type in tag_types:
-                if data[tag_type]:
-                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                if tag_type in example:
+                    tag_str = "%s__%s" % (tag_type, example[tag_type])
                     tags[-1].append(self.tag_manager(tag_str))
             shared_prefixes.append(
                 tokenize_and_truncate(self._tokenizer_name, example["one_prefix_prefix"], self.max_seq_len)
             )
-            good_tokens.append(example["one_prefix_word_good"])
-            bad_tokens.append(example["one_prefix_word_bad"])
+            good_words.append(
+                 tokenize_and_truncate(self._tokenizer_name, example["one_prefix_word_good"], self.max_seq_len)
+            )
+            bad_words.append(
+                 tokenize_and_truncate(self._tokenizer_name, example["one_prefix_word_bad"], self.max_seq_len)
+            )
         self.val_data_text = self.test_data_text = self.train_data_text = \
-            (sent1s, sent2s, labels, tags, shared_prefixes, good_tokens, bad_tokens)
+            (sent1s, sent2s, labels, tags, shared_prefixes, good_words, bad_words)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
         
         self.tag_list = self.tag_manager.get_tag_list()
@@ -379,26 +384,30 @@ class BlimpOnePrefixLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
-        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
+        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_word, bad_word):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
             label: always 0
             shared_prefix: shared part of both sentence
-            good_token: following token in good sentence
-            bad_token: following token in bad sentence
+            good_word: tokens of the following word in good sentence
+            bad_word: tokens of the following word in bad sentence
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            input1 = boundary_token_fn(sent1)
+            input2 = boundary_token_fn(sent2)
+            d["input1"] = sentence_to_text_field(input1, indexers)
             d["sent1_str"] = MetadataField(" ".join(sent1))
-            d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
+            d["input2"] = sentence_to_text_field(input2, indexers)
             d["sent2_str"] = MetadataField(" ".join(sent2))
-            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
-            d["shared_prefix"] = sentence_to_text_field(boundary_token_fn(shared_prefix), indexers)
+            d["labels"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["shared_prefix_length"] = IndexField(
+                common_prefix_length(boundary_token_fn(shared_prefix), input1), d["input1"]
+            )
             d["shared_str"] = MetadataField(" ".join(shared_prefix))
-            d["good_token"] = TextField(Token(good_token), token_indexers=indexers)
-            d["bad_token"] = TextField(Token(bad_token), token_indexers=indexers)
+            d["good_word_length"] = IndexField(len(good_word), d["input1"])
+            d["bad_word_length"] = IndexField(len(bad_word), d["input2"])
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
@@ -421,9 +430,9 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        tag_types = ['field', 'linguistics_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
-        good_prefixes, bad_prefixes, shared_tokens = [], [], []
+        good_prefixes, bad_prefixes, shared_words = [], [], []
         for example in data:
             if not example['two_prefix_method']:
                 continue
@@ -436,8 +445,8 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             labels.append(0)
             tags.append([])
             for tag_type in tag_types:
-                if data[tag_type]:
-                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                if tag_type in example:
+                    tag_str = "%s__%s" % (tag_type, example[tag_type])
                     tags[-1].append(self.tag_manager(tag_str))
             good_prefixes.append(
                 tokenize_and_truncate(self._tokenizer_name, example["two_prefix_prefix_good"], self.max_seq_len)
@@ -445,9 +454,11 @@ class BlimpTwoPrefixLMTask(BlimpTask):
             bad_prefixes.append(
                 tokenize_and_truncate(self._tokenizer_name, example["two_prefix_prefix_bad"], self.max_seq_len)
             )
-            shared_tokens.append(example["two_prefix_word"])
+            shared_words.append(
+                tokenize_and_truncate(self._tokenizer_name, example["two_prefix_word"], self.max_seq_len)
+            )
         self.val_data_text = self.test_data_text = self.train_data_text = \
-            (sent1s, sent2s, labels, tags, good_prefixes, bad_prefixes, shared_tokens)
+            (sent1s, sent2s, labels, tags, good_prefixes, bad_prefixes, shared_words)
         self.sentences = self.train_data_text[0] + self.train_data_text[1]
         
         self.tag_list = self.tag_manager.get_tag_list()
@@ -459,27 +470,34 @@ class BlimpTwoPrefixLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
-        def _make_instance(sent1, sent2, label, tags, good_prefix, bad_prefix, shared_token):
+        def _make_instance(sent1, sent2, label, tags, good_prefix, bad_prefix, shared_word):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
             label: always 0
-            good_prefix: prefix of the good sentence
-            bad_prefix: prefix of the bad sentence
-            shared_prefix: shared token following the prefixes
+            good_prefix_length: length of prefix of the good sentence
+            bad_prefix_length: length of prefix of the bad sentence
+            shared_word_length: number of tokens forming the shared word following the prefixes
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            input1 = boundary_token_fn(sent1)
+            input2 = boundary_token_fn(sent2)
+            d["input1"] = sentence_to_text_field(input1, indexers)
             d["sent1_str"] = MetadataField(" ".join(sent1))
-            d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
+            d["input2"] = sentence_to_text_field(input2, indexers)
             d["sent2_str"] = MetadataField(" ".join(sent2))
-            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
-            d["good_prefix"] = sentence_to_text_field(boundary_token_fn(good_prefix), indexers)
+            d["labels"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["good_prefix_length"] = IndexField(
+                common_prefix_length(boundary_token_fn(good_prefix), input1), d["input1"]
+            )
             d["good_str"] = MetadataField(" ".join(good_prefix))
-            d["bad_prefix"] = sentence_to_text_field(boundary_token_fn(bad_prefix), indexers)
+            d["bad_prefix_length"] = IndexField(
+                common_prefix_length(boundary_token_fn(bad_prefix), input2), d["input2"]
+            )
             d["bad_str"] = MetadataField(" ".join(bad_prefix))
-            d["shared_token"] = TextField(Token(shared_token), token_indexers=indexers)
+            d["shared_word_length"] = IndexField(len(shared_word), d["input1"]) 
+            d["shared_str"] = MetadataField(" ".join(shared_word))
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
@@ -487,6 +505,7 @@ class BlimpTwoPrefixLMTask(BlimpTask):
 
         instances = map(_make_instance, *split)
         return instances
+
 
 @register_task("blimp-simpleLM", rel_path="blimp")
 class BlimpFullSentLMTask(BlimpTask):
@@ -501,7 +520,7 @@ class BlimpFullSentLMTask(BlimpTask):
         sentences """
         data_file = os.path.join(self.path, "blimp.jsonl")
         data = [json.loads(l) for l in open(data_file, encoding="utf-8").readlines()]
-        tag_types = ['category', 'field', 'linguistic_term', 'UID']
+        tag_types = ['field', 'linguistics_term', 'UID']
         sent1s, sent2s, labels, tags = [], [], [], []
         for example in data:
             if not example['simple_LM_method']:
@@ -515,8 +534,8 @@ class BlimpFullSentLMTask(BlimpTask):
             labels.append(0)
             tags.append([])
             for tag_type in tag_types:
-                if data[tag_type]:
-                    tag_str = "%s__%s" % (tag_type, data[tag_type])
+                if tag_type in example:
+                    tag_str = "%s__%s" % (tag_type, example[tag_type])
                     tags[-1].append(self.tag_manager(tag_str))
         self.val_data_text = self.test_data_text = self.train_data_text = \
             (sent1s, sent2s, labels, tags)
@@ -531,22 +550,19 @@ class BlimpFullSentLMTask(BlimpTask):
         return
 
     def process_split(self, split, indexers, boundary_token_fn):
-        def _make_instance(sent1, sent2, label, tags, shared_prefix, good_token, bad_token):
+        def _make_instance(sent1, sent2, label, tags):
             """ from multiple types in one column create multiple fields
             sent1: sentence1, the good one
             sent2: sentence2, the bad one
             label: always 0
-            shared_prefix: shared part of both sentence
-            good_token: following token in good sentence
-            bad_token: following token in bad sentence
             tagmask: which tags this sample has
             """
             d = {}
-            d["sent1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
+            d["input1"] = sentence_to_text_field(boundary_token_fn(sent1), indexers)
             d["sent1_str"] = MetadataField(" ".join(sent1))
             d["input2"] = sentence_to_text_field(boundary_token_fn(sent2), indexers)
             d["sent2_str"] = MetadataField(" ".join(sent2))
-            d["label"] = LabelField(label, label_namespace="label", skip_indexing=True)
+            d["labels"] = LabelField(label, label_namespace="label", skip_indexing=True)
             d["tagmask"] = MultiLabelField(
                 tags, label_namespace="tags", skip_indexing=True, num_labels=len(self.tag_list)
             )
@@ -773,3 +789,10 @@ class NPIMinimalPairTask(PairClassificationTask):
         )
         return collected_metrics
 
+
+def common_prefix_length(sent1, sent2):
+    min_length = min(len(sent1), len(sent2))
+    for i, (x, y) in enumerate(zip(sent1[:min_length], sent2[:min_length])):
+        if x != y:
+            return i
+    return min_length

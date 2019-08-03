@@ -256,6 +256,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
         log.info(f"Using XLNet model ({args.input_module}).")
         embedder = XLNetEmbedderModule(args)
         d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("gpt2"):
+        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+        log.info(f"Using GPT2 model ({args.input_module}).")
+        embedder = GPT2EmbedderModule(args)
+        d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
@@ -507,7 +513,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (NPIClozePairTask, BlimpTask)):
-        hid2voc = model.get_pretrained_lm_head(args)
+        hid2voc = model.sent_encoder._text_field_embedder.get_pretrained_lm_head(args)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
@@ -957,53 +963,56 @@ class MultiTaskModel(nn.Module):
         return out
 
     def _minimal_pair_preference_forward(self, batch, task, predict):
+        # this only support GPT2 for now
         out = {}
 
         # embed the sentence
-        classifier = self._get_classifier(task)
-        tokenizer_name = batch["sent1"].keys()[0]            
-        if tokenizer_name in ["bert_tokenizer", "gpt_tokenizer"]:
-            tokenizer_bias = -2
-        # calling self.sent_encoder reduce all token index in input0 by 2,
-        # this -2 to input1 and input2 looks strange, but it correctly negate that effect
-
+        lm_head = getattr(self, "%s_hid2voc" % task.name)
+        tokenizer_name = list(batch["input1"].keys())[0]
+        input1 = batch["input1"][tokenizer_name]
+        input2 = batch["input2"][tokenizer_name]
+        scale1 = torch.arange(1, input1.size()[1], dtype=torch.long, device=input1.device).unsqueeze(0)
+        scale2 = torch.arange(1, input2.size()[1], dtype=torch.long, device=input2.device).unsqueeze(0)
+        sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
+        sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
+        # log.info("input tokens %s" % input1[:4].__str__())
+        # log.info("input mask %s" % sent_mask1[:4].__str__())
+        # exit()
+        lm_logits1 = torch.gather(lm_head(sent_embs1[:, :-1, :]), dim=2, index=input1[:, 1:].unsqueeze(2)).squeeze(2)
+        lm_logits2 = torch.gather(lm_head(sent_embs2[:, :-1, :]), dim=2, index=input2[:, 1:].unsqueeze(2)).squeeze(2)
+        logit_mask1 = sent_mask1[:, 1:].squeeze(2)
+        logit_mask2 = sent_mask2[:, 1:].squeeze(2)
         if isinstance(task, BlimpOnePrefixLMTask):
-            sent_embs, sent_mask = self.sent_encoder(batch["shared_prefix"], task)
-            bs = get_batch_size(batch)
-            logits_full = classifier(sent_embs)[range(bs), sent_mask.sum(dim=1)-1]
-            token_key1 = batch["good_token"][tokenizer_name] + tokenizer_bias
-            token_key2 = batch["bad_token"][tokenizer_name] + tokenizer_bias
-            logits = torch.stack(
-                [logits_full[range(bs), token_key1], logits_full[range(bs), token_key2]], dim=1
-            )
-
+            logit_mask1 = logit_mask1 * ((scale1 >= batch["shared_prefix_length"]) * \
+                 (scale1 < batch["shared_prefix_length"] + batch["good_word_length"])).to(torch.float)
+            logit_mask2 = logit_mask2 * ((scale2 >= batch["shared_prefix_length"]) * \
+                 (scale2 < batch["shared_prefix_length"] + batch["bad_word_length"])).to(torch.float)   
         elif isinstance(task, BlimpTwoPrefixLMTask):
-            sent_embs1, sent_mask1 = self.sent_encoder(batch["good_prefix"], task)
-            sent_embs2, sent_mask2 = self.sent_encoder(batch["bad_prefix"], task)
-            bs = get_batch_size(batch)
-            logits_full1 = classifier(sent_embs1)[range(bs), sent_mask1.sum(dim=1)-1]
-            logits_full2 = classifier(sent_embs2)[range(bs), sent_mask2.sum(dim=1)-1]
-            token_key = batch["shared_token"][tokenizer_name] + tokenizer_bias
-            logits = torch.stack(
-                [logits_full1[range(bs), token_key], logits_full2[range(bs), token_key]], dim=1
-            )
-            
+            logit_mask1 = logit_mask1 * ((scale1 >= batch["good_prefix_length"]) * \
+                 (scale1 < batch["good_prefix_length"] + batch["shared_word_length"])).to(torch.float)
+            logit_mask2 = logit_mask2 * ((scale2 >= batch["bad_prefix_length"]) * \
+                 (scale2 < batch["bad_prefix_length"] + batch["shared_word_length"])).to(torch.float)
         elif isinstance(task, BlimpFullSentLMTask):
-            sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
-            sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
-            raise NotImplementedError
-
+            pass
         elif isinstance(task, NPIClozePairTask):
-            sent_embs, sent_mask = self.sent_encoder(batch["inputs"], task)
-            bs = get_batch_size(batch)
-            index = batch["index"].squeeze(dim=1)
-            logits_full = classifier(sent_embs)[range(bs), index]
-            sent_key1 = batch["input1"]["bert_tokenizer"][range(bs), index] + tokenizer_bias
-            sent_key2 = batch["input2"]["bert_tokenizer"][range(bs), index] + tokenizer_bias
-            logits = torch.stack(
-                [logits_full[range(bs), sent_key1], logits_full[range(bs), sent_key2]], dim=1
-            )
-        
+            logit_mask1 *= (scale1 == batch["index"]).to(torch.float)
+            logit_mask2 *= (scale1 == batch["index"]).to(torch.float)
+        pref_logits1 = torch.sum(lm_logits1*logit_mask1, dim=1)
+        pref_logits2 = torch.sum(lm_logits2*logit_mask2, dim=1)
+        logits = torch.stack([pref_logits1, pref_logits2], dim=1)
+
+        import random
+        roll = random.randint(0, 50)
+        if (roll == 42):
+            log.info("Random check")
+            log.info("Sentence Good: %s" % batch["sent1_str"][0])
+            log.info("Logits:\n %s" % lm_logits1[0].__str__())
+            log.info("Mask:\n %s" % logit_mask1[0].__str__())
+            log.info("Sentence Bad: " + batch["sent2_str"][0])
+            log.info("Logits:\n %s" % lm_logits2[0].__str__())
+            log.info("Mask:\n %s" % logit_mask2[0].__str__())
+            log.info("Result: %s\n" % logits[0])
+
         out["logits"] = logits
         out["n_exs"] = get_batch_size(batch)
         tagmask = batch.get("tagmask", None)

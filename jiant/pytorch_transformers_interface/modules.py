@@ -72,7 +72,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             self.max_layer = self.num_layers
 
     def prepare_output(self, lex_seq, hidden_states):
-        all_layers = [lex_seq] + list(hidden_states)
+        all_layers = list(hidden_states)
         all_layers = all_layers[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
@@ -325,7 +325,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_loss
-        lm_head.weight = self.model.transformer.word_embeddings.weight
+        lm_head.weight = self.model.word_embedding.weight
         return lm_head
 
 
@@ -343,7 +343,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self._pad_id = tokenizer.convert_tokens_to_ids("<endoftext>")
+        self._pad_id = 0
         # GPT2 does not have special padding token in its vocab, this is just dummy.
 
         self.parameter_setup(args)
@@ -351,7 +351,8 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-        return ["<endoftext>"] + s1 + ["<endoftext>"]
+        return s1 + ["<|endoftext|>"]
+        # return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
@@ -395,8 +396,8 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         if self.embeddings_mode != "only":
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
-            _, _, hidden_states, _ = self.model(
-                ids, head_mask=mask
+            _, _, hidden_states = self.model(
+                ids
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
@@ -410,7 +411,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
             args.input_module, cache_dir=self.cache_dir
         )
         lm_head = model_with_lm_head.lm_head
-        lm_head.weight = self.model.transformer.wte.weight
+        lm_head.weight = self.model.wte.weight
         return lm_head
 
 
