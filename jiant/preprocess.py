@@ -406,8 +406,8 @@ def _get_task(name, args, data_path, scratch_path):
         not os.path.isdir(os.path.join(scratch_path, "tasks"))
         or len(task_pkls) == 0
         or args.tokenizer in task_pkls[0]
-    ), "This exp_dir has a different tokenization than what is in your configurations. \
-         Please make another exp_dir with another tokenizaiton"
+    ), "This exp_dir has a different tokenization than your current configuration settings. \
+         Please specify another exp_dir for your tokenization."
 
     # TODO: refactor to always read from disk, even if task is constructed
     # here. This should avoid subtle bugs from deserialization issues.
