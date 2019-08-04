@@ -35,7 +35,7 @@ from jiant.utils.utils import (
     sort_param_recursive,
     select_relevant_print_args,
     check_for_previous_checkpoints,
-    get_model_attribute
+    get_model_attribute,
 )
 
 
