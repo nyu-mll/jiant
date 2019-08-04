@@ -86,22 +86,16 @@ class SentenceEncoder(Model):
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
-            if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                word_embs_in_context = self._text_field_embedder(sent)
-            else:
-                word_embs_in_context = self._text_field_embedder(sent)
-            word_embs_in_context = self._highway_layer(word_embs_in_context)
+            word_embs_in_context = self._highway_layer(self._text_field_embedder(sent))
         else:
             word_embs_in_context = None
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
         if self.sep_embs_for_skip:
-            if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
-            else:
-                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
-            task_word_embs_in_context = self._highway_layer(task_word_embs_in_context)
+            task_word_embs_in_context = self._highway_layer(
+                self._text_field_embedder(sent, task._classifier_name)
+            )
         else:
             task_word_embs_in_context = None
 

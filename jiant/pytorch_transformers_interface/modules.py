@@ -1,3 +1,4 @@
+import copy
 import logging as log
 import os
 from typing import Dict
@@ -44,6 +45,13 @@ class PytorchTransformersEmbedderModule(nn.Module):
         for param in self.model.parameters():
             param.requires_grad = bool(args.transfer_paradigm == "finetune")
 
+        self.num_layers = self.model.config.num_hidden_layers
+        if args.pytorch_transformers_max_layer >= 0:
+            self.max_layer = args.pytorch_transformers_max_layer
+            assert self.max_layer <= self.num_layers
+        else:
+            self.max_layer = self.num_layers
+
         # Configure scalar mixing, ELMo-style.
         if self.embeddings_mode == "mix":
             if args.transfer_paradigm == "frozen":
@@ -64,25 +72,17 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
-        self.num_layers = self.model.config.num_hidden_layers
-        if args.pytorch_transformers_max_layer >= 0:
-            self.max_layer = args.pytorch_transformers_max_layer
-            assert self.max_layer <= self.num_layers
-        else:
-            self.max_layer = self.num_layers
-
-    def prepare_output(self, lex_seq, hidden_states):
-        all_layers = list(hidden_states)
-        all_layers = all_layers[: self.max_layer + 1]
+    def prepare_output(self, lex_seq, hidden_states, mask):
+        available_layers = hidden_states[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
-            h = all_layers[-1]
+            h = available_layers[-1]
         elif self.embeddings_mode == "only":
-            h = all_layers[0]
+            h = lex_seq
         elif self.embeddings_mode == "cat":
-            h = torch.cat([all_layers[-1], all_layers[0]], dim=2)
+            h = torch.cat([available_layers[-1], lex_seq], dim=2)
         elif self.embeddings_mode == "mix":
-            h = self.scalar_mix(all_layers, mask=mask)
+            h = self.scalar_mix(available_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
 
@@ -200,7 +200,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            hidden_states = None  # dummy; should not be accessed.
+            hidden_states = []  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
@@ -217,7 +217,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self, args):
         # Download another BERT model with LM head, extract the LM head
@@ -279,26 +279,28 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             h: [batch_size, seq_len, d_emb]
         """
         assert "pytorch_transformers_wpm_pretokenized" in sent
+
         # <int32> [batch_size, var_seq_len]
-        ids = sent["pytorch_transformers_wpm_pretokenized"]
+        # Make a copy so our padding modifications below don't impact masking decisions elsewhere.
+        ids = copy.deepcopy(sent["pytorch_transformers_wpm_pretokenized"])
+
         mask = ids != 0
+
         # "Correct" ids to account for different indexing between XLNet and
         # AllenNLP.
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
-        # reserved for padding).
+        # reserved for native padding).
         ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
         ids[ids == 1] = self._unk_id + 2  # Rewrite UNK indices.
         ids -= 2  # shift indices to match XLNet wordpiece embeddings
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside XLNetModel,
-            # but doing so this way avoids the need to modify the BertModel
+            # but doing so this way avoids the need to modify the XLNetModel
             # code.
-            # Extract lexical embeddings
-            lex_seq = self.model.embeddings.word_embeddings(ids)
-            lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            hidden_states = None  # dummy; should not be accessed.
+            lex_seq = self.model.word_embedding(ids)
+            hidden_states = []  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
@@ -315,7 +317,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self, args):
         # Download another XLNet model with LM head, extract the LM head
@@ -352,7 +354,6 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
     @staticmethod
     def apply_boundary_tokens(s1):
         return s1 + ["<|endoftext|>"]
-        # return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
@@ -401,7 +402,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self, args):
         # Download another GPT2 model with LM head, extract the LM head
