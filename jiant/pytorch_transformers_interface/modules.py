@@ -44,6 +44,13 @@ class PytorchTransformersEmbedderModule(nn.Module):
         for param in self.model.parameters():
             param.requires_grad = bool(args.transfer_paradigm == "finetune")
 
+        self.num_layers = self.model.config.num_hidden_layers
+        if args.pytorch_transformers_max_layer >= 0:
+            self.max_layer = args.pytorch_transformers_max_layer
+            assert self.max_layer <= self.num_layers
+        else:
+            self.max_layer = self.num_layers
+
         # Configure scalar mixing, ELMo-style.
         if self.embeddings_mode == "mix":
             if args.transfer_paradigm == "frozen":
@@ -64,16 +71,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
-        self.num_layers = self.model.config.num_hidden_layers
-        if args.pytorch_transformers_max_layer >= 0:
-            self.max_layer = args.pytorch_transformers_max_layer
-            assert self.max_layer <= self.num_layers
-        else:
-            self.max_layer = self.num_layers
-
-    def prepare_output(self, lex_seq, hidden_states):
+    def prepare_output(self, lex_seq, hidden_states, mask):
         all_layers = [lex_seq] + list(hidden_states)
-        all_layers = all_layers[: self.max_layer + 1]
+        all_layers = all_layers[: self.max_layer + 2]  # +1 for lex_seq, +1 for normal indexing
 
         if self.embeddings_mode in ["none", "top"]:
             h = all_layers[-1]
@@ -200,7 +200,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             # Extract lexical embeddings
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            hidden_states = None  # dummy; should not be accessed.
+            hidden_states = []  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
@@ -217,7 +217,7 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
 
 class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
@@ -282,12 +282,10 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         if self.embeddings_mode not in ["none", "top"]:
             # This is redundant with the lookup inside XLNetModel,
-            # but doing so this way avoids the need to modify the BertModel
+            # but doing so this way avoids the need to modify the XLNetModel
             # code.
-            # Extract lexical embeddings
-            lex_seq = self.model.embeddings.word_embeddings(ids)
-            lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            hidden_states = None  # dummy; should not be accessed.
+            lex_seq = self.model.word_embedding(ids)
+            hidden_states = []  # dummy; should not be accessed.
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
@@ -299,10 +297,9 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
             token_types = self.get_seg_ids(ids)
-            print(mask)
             _, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
 
         # <float32> [batch_size, var_seq_len, output_dim]
-        return self.prepare_output(lex_seq, hidden_states)
+        return self.prepare_output(lex_seq, hidden_states, mask)
