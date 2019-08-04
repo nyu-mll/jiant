@@ -72,17 +72,16 @@ class PytorchTransformersEmbedderModule(nn.Module):
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def prepare_output(self, lex_seq, hidden_states, mask):
-        all_layers = [lex_seq] + list(hidden_states)
-        all_layers = all_layers[: self.max_layer + 2]  # +1 for lex_seq, +1 for normal indexing
+        available_layers = hidden_states[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
-            h = all_layers[-1]
+            h = available_layers[-1]
         elif self.embeddings_mode == "only":
-            h = all_layers[0]
+            h = lex_seq
         elif self.embeddings_mode == "cat":
-            h = torch.cat([all_layers[-1], all_layers[0]], dim=2)
+            h = torch.cat([available_layers[-1], lex_seq], dim=2)
         elif self.embeddings_mode == "mix":
-            h = self.scalar_mix(all_layers, mask=mask)
+            h = self.scalar_mix(available_layers, mask=mask)
         else:
             raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
 
