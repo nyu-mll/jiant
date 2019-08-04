@@ -87,7 +87,7 @@ def evaluate(
                 batch = move_to_device(batch, cuda_device)
                 out = model.forward(task, batch, predict=True)
 
-            n_task_examples += out["n_exs"]
+            n_task_examples += out["n_exs"].sum()
             # get predictions
             if "preds" not in out:
                 continue

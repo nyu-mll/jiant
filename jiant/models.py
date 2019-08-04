@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from allennlp.common import Params
+from allennlp.nn.util import device_mapping, move_to_device
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
 from allennlp.modules.seq2seq_encoders import StackedSelfAttentionEncoder
 from allennlp.modules.seq2vec_encoders import CnnEncoder
@@ -188,11 +189,7 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
         d_sent = 2 * args.d_hid
     elif args.sent_enc == "none":
         # Expose word representation layer (GloVe, ELMo, etc.) directly.
-        assert_for_log(
-            args.skip_embs,
-            "skip_embs is false and sent_enc is none, "
-            "which means that your token representations are zero-dimensional. Consider setting skip_embs.",
-        )
+        assert_for_log(args.skip_embs, f"skip_embs must be set for " "'{args.sent_enc}' encoder")
         phrase_layer = NullPhraseLayer(rnn_params["input_size"])
         sent_encoder = SentenceEncoder(
             vocab,
@@ -204,11 +201,10 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             sep_embs_for_skip=args.sep_embs_for_skip,
             cove_layer=cove_layer,
         )
-        d_sent = 0
+        d_sent = 0  # skip connection added below
+        log.info("No shared encoder (just using word embeddings)!")
     else:
-        assert_for_log(
-            False, f"Shared encoder layer specification `{args.sent_enc}` not recognized."
-        )
+        assert_for_log(False, "No valid sentence encoder specified.")
     return sent_encoder, d_sent
 
 
@@ -262,6 +258,9 @@ def build_model(args, vocab, pretrained_embs, tasks):
     model = MultiTaskModel(args, sent_encoder, vocab)
     build_task_modules(args, tasks, model, d_task_input, d_emb, embedder, vocab)
     model = model.cuda() if args.cuda >= 0 else model
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model).cuda()
+
     log.info("Model specification:")
     log.info(model)
     param_count = 0
@@ -733,6 +732,7 @@ class MultiTaskModel(nn.Module):
         """ Args: sentence encoder """
         super(MultiTaskModel, self).__init__()
         self.sent_encoder = sent_encoder
+        self._cuda_device = args.cuda
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
@@ -812,7 +812,8 @@ class MultiTaskModel(nn.Module):
         classifier = self._get_classifier(task)
         logits = classifier(word_embs_in_context, sent_mask)
         out["logits"] = logits
-        out["n_exs"] = get_batch_size(batch)
+        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         if "labels" in batch:  # means we should compute loss
             if batch["labels"].dim() == 0:
@@ -850,7 +851,9 @@ class MultiTaskModel(nn.Module):
             sent2, mask2 = self.sent_encoder(batch["input2"], task)
             logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = get_batch_size(batch)
+        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
         if "labels" in batch:
             if batch["labels"].dim() == 0:
@@ -895,7 +898,8 @@ class MultiTaskModel(nn.Module):
             else:
                 logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = get_batch_size(batch)
+        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         tagmask = batch.get("tagmask", None)
         if "labels" in batch:
             labels = batch["labels"]
@@ -953,7 +957,8 @@ class MultiTaskModel(nn.Module):
         b_size, seq_len = list(batch["inputs"].values())[0].size()
         seq_len -= 2
         sent_encoder = self.sent_encoder
-        out["n_exs"] = get_batch_size(batch)
+        out["n_exs"] = torch.Tensor(get_batch_size(batch))
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         if not isinstance(sent_encoder, BiLMEncoder):
             sent, mask = sent_encoder(batch["inputs"], task)
             sent = sent.masked_fill(1 - mask.byte(), 0)  # avoid NaNs
@@ -1044,7 +1049,7 @@ class MultiTaskModel(nn.Module):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["bert_wpm_pretokenized"].size(0)
+            out["n_exs"] = torch.Tensor(batch["choice0"]["bert_wpm_pretokenized"].size(0))
         else:
             ctx, ctx_mask = self.sent_encoder(batch["question"], task)
             for choice_idx in range(task.n_choices):
@@ -1054,6 +1059,7 @@ class MultiTaskModel(nn.Module):
                 logit = module(inp, inp_mask)
                 logits.append(logit)
             out["n_exs"] = batch["choice0"]["words"].size(0)
+        out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
         logits = torch.cat(logits, dim=1)
         out["logits"] = logits
 

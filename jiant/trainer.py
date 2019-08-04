@@ -29,6 +29,7 @@ from jiant.utils.utils import (
     assert_for_log,
     find_last_checkpoint_epoch,
     check_for_previous_checkpoints,
+    get_model_attribute
 )  # pylint: disable=import-error
 
 
@@ -345,18 +346,10 @@ class SamplingMultiTaskTrainer:
             # deepcopy b/c using Params pops values and we may want to reuse
             # the Params object later
             opt_params = copy.deepcopy(optimizer_params)
-            if "t_total" in optimizer_params:
-                # If we know in advance how many opt steps there will be, set it so the LR scheduler
-                # can use that information. This should be the next validation after we hit the epoch
-                # limit.
-                if self._max_epochs > 0:
-                    max_epochs_in_vals = math.ceil(
-                        (task_info["n_tr_batches"] * self._max_epochs) / self._val_interval
-                    )
-                    val_limit = min(max_epochs_in_vals, self._max_vals)
-                else:
-                    val_limit = self._max_vals
-                opt_params["t_total"] = val_limit * self._val_interval
+            if self._max_epochs > 0 and "t_total" in optimizer_params:
+                # If we know in advance how many opt steps for the transformer
+                # there are, set it.
+                opt_params["t_total"] = task_info["n_tr_batches"] * self._max_epochs
             task_info["optimizer"] = Optimizer.from_params(train_params, opt_params)
             task_info["scheduler"] = LearningRateScheduler.from_params(
                 task_info["optimizer"], copy.deepcopy(scheduler_params)
@@ -495,20 +488,9 @@ class SamplingMultiTaskTrainer:
         )
 
         optimizer_params = copy.deepcopy(optimizer_params)
-        if "t_total" in optimizer_params:
-            # If we know in advance how many opt steps there will be, set it so the LR scheduler
-            # can use that information. This should be the next validation after we hit the epoch
-            # limit.
-            if self._max_epochs > 0:
-                n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
-                max_epochs_in_vals = math.ceil(
-                    (n_epoch_steps * self._max_epochs) / self._val_interval
-                )
-                val_limit = min(max_epochs_in_vals, self._max_vals)
-            else:
-                val_limit = self._max_vals
-            optimizer_params["t_total"] = val_limit * self._val_interval
-
+        if "t_total" in optimizer_params and self._max_epochs > 0:
+            n_epoch_steps = sum([info["n_tr_batches"] for info in task_infos.values()])
+            optimizer_params["t_total"] = n_epoch_steps * self._max_epochs
         optimizer = Optimizer.from_params(train_params, optimizer_params)
         scheduler = LearningRateScheduler.from_params(optimizer, copy.deepcopy(scheduler_params))
         self._optimizer = optimizer
@@ -597,7 +579,7 @@ class SamplingMultiTaskTrainer:
                 assert_for_log(
                     "loss" in output_dict, "Model must return a dict containing a 'loss' key"
                 )
-                loss = output_dict["loss"]  # optionally scale loss
+                loss = output_dict["loss"].sum()  # optionally scale loss
 
                 loss *= scaling_weights[task.name]
 
@@ -641,9 +623,13 @@ class SamplingMultiTaskTrainer:
                     description,
                 )
                 task_info["last_log"] = time.time()
-
-                if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric()
+<<<<<<< HEAD
+                if get_model_attribute("utilization") is not None:
+                    batch_util = get_model_attribute("utilization").get_metric()
+=======
+                if get_model_attribute(self._model, "utilization") is not None:
+                    batch_util = get_model_attribute(self._model, "utilization").get_metric()
+>>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
@@ -672,8 +658,15 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-                if self._model.utilization is not None:
-                    batch_util = self._model.utilization.get_metric(reset=True)
+<<<<<<< HEAD
+                if get_model_attribute("utilization") is not None:
+                    batch_util = get_model_attribute("utilization").get_metric(reset=True)
+=======
+                if get_model_attribute(self._model, "utilization") is not None:
+                    batch_util = get_model_attribute(self._model, "utilization").get_metric(
+                        reset=True
+                    )
+>>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
@@ -693,7 +686,11 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
-                elmo_params = self._model.get_elmo_mixing_weights(tasks)
+<<<<<<< HEAD
+                elmo_params = get_model_attribute("get_elmo_mixing_weights")(tasks)
+=======
+                elmo_params = get_model_attribute(self._model, "get_elmo_mixing_weights")(tasks)
+>>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))
@@ -841,9 +838,9 @@ class SamplingMultiTaskTrainer:
             batch_num += 1
             with torch.no_grad():
                 out = self._forward(batch, task=task)
-            loss = out["loss"]
+            loss = out["loss"].sum()
             all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
-            n_examples += out["n_exs"]
+            n_examples += out["n_exs"].sum()
 
             # log
             if time.time() - task_info["last_log"] > self._log_interval:
