@@ -86,11 +86,7 @@ class SentenceEncoder(Model):
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
-            if isinstance(self._text_field_embedder, PytorchTransformersEmbedderModule):
-                word_embs_in_context = self._text_field_embedder(sent)
-            else:
-                word_embs_in_context = self._text_field_embedder(sent)
-            word_embs_in_context = self._highway_layer(word_embs_in_context)
+            word_embs_in_context = self._highway_layer(self._text_field_embedder(sent))
         else:
             word_embs_in_context = None
 

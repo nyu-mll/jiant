@@ -1,3 +1,4 @@
+import copy
 import logging as log
 import os
 from typing import Dict
@@ -267,14 +268,18 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             h: [batch_size, seq_len, d_emb]
         """
         assert "pytorch_transformers_wpm_pretokenized" in sent
+
         # <int32> [batch_size, var_seq_len]
-        ids = sent["pytorch_transformers_wpm_pretokenized"]
+        # Make a copy so our padding modifications below don't impact masking decisions elsewhere.
+        ids = copy.deepcopy(sent["pytorch_transformers_wpm_pretokenized"])
+
         mask = ids != 0
+
         # "Correct" ids to account for different indexing between XLNet and
         # AllenNLP.
         # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
         # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
-        # reserved for padding).
+        # reserved for native padding).
         ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
         ids[ids == 1] = self._unk_id + 2  # Rewrite UNK indices.
         ids -= 2  # shift indices to match XLNet wordpiece embeddings
