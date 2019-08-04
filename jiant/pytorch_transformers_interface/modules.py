@@ -299,6 +299,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
             # encoded_layers is a list of layer activations, each of which is
             # <float32> [batch_size, seq_len, output_dim]
             token_types = self.get_seg_ids(ids)
+            print(mask)
             _, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
