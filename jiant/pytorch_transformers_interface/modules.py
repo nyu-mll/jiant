@@ -68,7 +68,6 @@ class PytorchTransformersEmbedderModule(nn.Module):
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
-            num_layers = self.model.config.num_hidden_layers
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
@@ -382,7 +381,6 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
         ids -= 2  # shift indices to match XLNet wordpiece embeddings
 
-
         if self.embeddings_mode not in ["none", "top"]:
             # Extract lexical embeddings
             lex_seq = self.model.wte(ids)
@@ -390,7 +388,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
             # following our use of the OpenAI model, don't use dropout for
             # probing. If you would like to use dropout, consider applying
             # later on in the SentenceEncoder (see models.py).
-            #  h_lex = self.model.drop(lex_seq)
+            # h_lex = self.model.drop(lex_seq)
         else:
             lex_seq = None  # dummy; should not be accessed.
 
