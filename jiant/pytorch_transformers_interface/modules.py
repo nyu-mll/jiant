@@ -112,16 +112,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
         > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0])
         """
 
-        sep_idxs = (token_ids == self._sep_id).nonzero()[:, 1]
-        seg_ids = torch.zeros_like(token_ids)
-        for row_idx, row in enumerate(token_ids):
-            sep_idxs = (row == self._sep_id).nonzero()
-            seg = 0
-            prev_sep_idx = -1
-            for sep_idx in sep_idxs:
-                seg_ids[row_idx, prev_sep_idx + 1 : sep_idx + 1].fill_(seg)
-                seg = 1 - seg  # Alternate.
-                prev_sep_idx = sep_idx
+        sep_idxs = (token_ids == self._sep_id).long()
+        sep_count = torch.cumsum(sep_idxs, dim=-1) - sep_idxs
+        seg_ids = (sep_count == 1).long()
 
         if self._SEG_ID_CLS is not None:
             seg_ids[token_ids == self._cls_id] = self._SEG_ID_CLS
@@ -344,7 +337,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
         tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
             args.input_module, cache_dir=self.cache_dir
         )  # TODO: Speed things up slightly by reusing the previously-loaded tokenizer.
-        self._pad_id = 0
+        self._pad_id = tokenizer.encode("<|endoftext|>")
         # GPT2 does not have special padding token in its vocab, this is just dummy.
 
         self.parameter_setup(args)
