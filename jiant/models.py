@@ -513,7 +513,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, (NPIClozePairTask, BlimpTask)):
-        hid2voc = model.sent_encoder._text_field_embedder.get_pretrained_lm_head(args)
+        hid2voc = model.sent_encoder._text_field_embedder.get_pretrained_lm_head()
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (PairClassificationTask, PairRegressionTask, PairOrdinalRegressionTask)):
         module = build_pair_sentence_module(task, d_sent, model=model, params=task_params)
@@ -975,11 +975,10 @@ class MultiTaskModel(nn.Module):
         scale2 = torch.arange(1, input2.size()[1], dtype=torch.long, device=input2.device).unsqueeze(0)
         sent_embs1, sent_mask1 = self.sent_encoder(batch["input1"], task)
         sent_embs2, sent_mask2 = self.sent_encoder(batch["input2"], task)
-        # log.info("input tokens %s" % input1[:4].__str__())
-        # log.info("input mask %s" % sent_mask1[:4].__str__())
-        # exit()
-        lm_logits1 = torch.gather(lm_head(sent_embs1[:, :-1, :]), dim=2, index=input1[:, 1:].unsqueeze(2)).squeeze(2)
-        lm_logits2 = torch.gather(lm_head(sent_embs2[:, :-1, :]), dim=2, index=input2[:, 1:].unsqueeze(2)).squeeze(2)
+        target1 = batch["input1"]["token_id"]
+        target2 = batch["input2"]["token_id"]
+        lm_logits1 = torch.gather(lm_head(sent_embs1[:, :-1, :]), dim=2, index=target1[:, 1:].unsqueeze(2)).squeeze(2)
+        lm_logits2 = torch.gather(lm_head(sent_embs2[:, :-1, :]), dim=2, index=target2[:, 1:].unsqueeze(2)).squeeze(2)
         logit_mask1 = sent_mask1[:, 1:].squeeze(2)
         logit_mask2 = sent_mask2[:, 1:].squeeze(2)
         if isinstance(task, BlimpOnePrefixLMTask):
@@ -1006,10 +1005,10 @@ class MultiTaskModel(nn.Module):
         if (roll == 42):
             log.info("Random check")
             log.info("Sentence Good: %s" % batch["sent1_str"][0])
-            log.info("Logits:\n %s" % lm_logits1[0].__str__())
+            log.info("Logits:\n %s" % (lm_logits1*sent_mask1[:, 1:].squeeze(2))[0].__str__())
             log.info("Mask:\n %s" % logit_mask1[0].__str__())
             log.info("Sentence Bad: " + batch["sent2_str"][0])
-            log.info("Logits:\n %s" % lm_logits2[0].__str__())
+            log.info("Logits:\n %s" % (lm_logits2*sent_mask2[:, 1:].squeeze(2))[0].__str__())
             log.info("Mask:\n %s" % logit_mask2[0].__str__())
             log.info("Result: %s\n" % logits[0])
 
@@ -1023,7 +1022,7 @@ class MultiTaskModel(nn.Module):
             task.update_metrics(logits, labels, tagmask=tagmask)
 
         if predict:
-         _, out   ["preds"] = logits.max(dim=1)
+            _, out["preds"] = logits.max(dim=1)
         return out
 
     def _minimal_pair_classification_forward(self, batch, task, predict):

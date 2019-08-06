@@ -250,21 +250,13 @@ def build_indexers(args):
             " you are using args.tokenizer = {args.tokenizer}"
         )
 
-    if args.input_module == "gpt":
-        assert (
-            not indexers
-        ), "OpenAI transformer is not supported alongside other indexers due to tokenization."
-        assert (
-            args.tokenizer == "OpenAI.BPE"
-        ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
-        indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    elif input_module_uses_pytorch_transformers(args.input_module):
+    if input_module_uses_pytorch_transformers(args.input_module):
         assert (
             not indexers
         ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
         "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "BERT/XLNet/GPT2 models use custom WPM tokenization for each model, so tokenizer "
+            "pytorch_transformer models use custom tokenization for each model, so tokenizer "
             "must match the specified model."
         )
         tokenized_name = input_module_tokenized_name(args.input_module)
@@ -338,14 +330,18 @@ def build_tasks(args):
         from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
 
         boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
-    elif args.input_module == "openai-gpt":
-        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
-
-        boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("gpt2"):
         from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
 
         boundary_token_fn = GPT2EmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("gpt"):
+        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+        boundary_token_fn = OpenAIGPTEmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("transfo-xl"):
+        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+
+        boundary_token_fn = TransfoXLModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
 

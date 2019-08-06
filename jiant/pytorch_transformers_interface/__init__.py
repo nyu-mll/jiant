@@ -9,6 +9,8 @@ WWM-BERT.
 This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
 """
 
+def input_module_support_bi_sentence(module_name):
+    return module_name.startswith("bert") or module_name.startswith("xlnet")
 
 def input_module_uses_pytorch_transformers(module_name):
     return module_name.startswith("bert") or module_name.startswith("xlnet") or module_name.startswith("gpt2") or module_name.startswith("openai-gpt")

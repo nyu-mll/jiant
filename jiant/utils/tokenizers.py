@@ -22,7 +22,7 @@ def select_tokenizer(args):
         Select a sane default tokenizer.
     """
     if args.tokenizer == "auto":
-        if args.input_module.startswith("bert-") or args.input_module.startswith("xlnet-"):
+        if args.input_module.startswith("bert-") or args.input_module.startswith("xlnet-") or args.input_module.startswith("gpt2"):
             tokenizer_name = args.input_module
         elif args.input_module == "gpt":
             tokenizer_name = "OpenAI.BPE"
@@ -93,10 +93,10 @@ def get_tokenizer(tokenizer_name):
         from pytorch_transformers import GPT2Tokenizer
 
         tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
-    elif tokenizer_name.startswith("openai-gpt"):
+    elif tokenizer_name.startswith("gpt"):
         from pytorch_transformers import OpenAIGPTTokenizer
 
-        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+        tokenizer = OpenAIGPTTokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name == "OpenAI.BPE":
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":
