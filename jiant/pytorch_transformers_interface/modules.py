@@ -68,11 +68,20 @@ class PytorchTransformersEmbedderModule(nn.Module):
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
-            num_layers = self.model.config.num_hidden_layers
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
     def prepare_output(self, lex_seq, hidden_states, mask):
+        """
+        Convert the output of the pytorch_transformers module to a vector sequence as expected by jiant.
+
+        args:
+            lex_seq: The sequence of input word embeddings as a tensor (batch_size, sequence_length, hidden_size).
+                     Used only if embeddings_mode = "only".
+            hidden_states: A list of sequences of model hidden states as tensors (batch_size, sequence_length, hidden_size).
+            mask: A tensor with 1s in positions corresponding to non-padding tokens (batch_size, sequence_length).
+
+        """
         available_layers = hidden_states[: self.max_layer + 1]
 
         if self.embeddings_mode in ["none", "top"]:
@@ -241,6 +250,8 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
+        # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1 input segments.
+        # Standard constants reused from pytorch_transformers. They aren't actually used within the pytorch_transformers code, so we're reproducing them here in case they're removed in a later cleanup.
         self._SEG_ID_CLS = 2
         self._SEG_ID_SEP = 3
 

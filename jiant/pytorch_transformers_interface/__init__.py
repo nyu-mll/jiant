@@ -11,4 +11,4 @@ This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
 
 
 def input_module_uses_pytorch_transformers(module_name):
-    return module_name.startswith("bert") or module_name.startswith("xlnet")
+    return module_name.startswith("bert-") or module_name.startswith("xlnet-")

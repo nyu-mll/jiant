@@ -495,7 +495,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         module = build_single_sentence_module(
             task=task,
             d_inp=d_sent,
-            use_pytorch_transformers=model.use_pytorch_transformers,
+            project_before_pooling=model.project_before_pooling,
             params=task_params,
         )
         setattr(model, "%s_mdl" % task.name, module)
@@ -519,10 +519,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_mdl" % task.name, hid2tag)
     elif isinstance(task, MultipleChoiceTask):
         module = build_multiple_choice_module(
-            task,
-            d_sent,
-            use_pytorch_transformers=model.use_pytorch_transformers,
-            params=task_params,
+            task, d_sent, project_before_pooling=model.project_before_pooling, params=task_params
         )
         setattr(model, "%s_mdl" % task.name, module)
     elif isinstance(task, EdgeProbingTask):
@@ -533,7 +530,7 @@ def build_task_specific_modules(task, model, d_sent, d_emb, vocab, embedder, arg
         setattr(model, "%s_decoder" % task.name, decoder)
         setattr(model, "%s_hid2voc" % task.name, hid2voc)
     elif isinstance(task, (MultiRCTask, ReCoRDTask)):
-        module = build_qa_module(task, d_sent, model.use_pytorch_transformers, task_params)
+        module = build_qa_module(task, d_sent, model.project_before_pooling, task_params)
         setattr(model, "%s_mdl" % task.name, module)
     else:
         raise ValueError("Module not found for %s" % task.name)
@@ -589,13 +586,13 @@ def build_image_sent_module(task, d_inp, params):
     return pooler
 
 
-def build_single_sentence_module(task, d_inp: int, use_pytorch_transformers: bool, params: Params):
+def build_single_sentence_module(task, d_inp: int, project_before_pooling: bool, params: Params):
     """ Build a single sentence classifier
 
     args:
         - task (Task): task object, used to get the number of output classes
         - d_inp (int): input dimension to the module, needed for optional linear projection
-        - use_pytorch_transformers (bool): if using BERT/XLNet, skip projection before pooling.
+        - project_before_pooling (bool): apply a projection layer before pooling.
         - params (Params): Params object with task-specific parameters
 
     returns:
@@ -603,12 +600,12 @@ def build_single_sentence_module(task, d_inp: int, use_pytorch_transformers: boo
             (optional) a linear projection, pooling, and an MLP classifier
     """
     pooler = Pooler(
-        project=not use_pytorch_transformers,
+        project=project_before_pooling,
         d_inp=d_inp,
         d_proj=params["d_proj"],
         pool_type=params["pool_type"],
     )
-    d_out = d_inp if use_pytorch_transformers else params["d_proj"]
+    d_out = params["d_proj"] if project_before_pooling else d_inp
     classifier = Classifier.from_params(d_out, task.n_classes, params)
     module = SingleClassifier(pooler, classifier)
     return module
@@ -635,28 +632,26 @@ def build_pair_sentence_module(task, d_inp, model, params):
 
     # Build the "pooler", which does pools a variable length sequence
     #   possibly with a projection layer beforehand
-    if params["attn"] and not model.use_pytorch_transformers:
+    if params["attn"] and model.project_before_pooling:
         pooler = Pooler(project=False, d_inp=params["d_hid_attn"], d_proj=params["d_hid_attn"])
         d_out = params["d_hid_attn"] * 2
     else:
         pooler = Pooler(
-            project=not model.use_pytorch_transformers,
+            project=model.project_before_pooling,
             d_inp=d_inp,
             d_proj=params["d_proj"],
             pool_type=params["pool_type"],
         )
-        d_out = d_inp if model.use_pytorch_transformers else params["d_proj"]
+        d_out = params["d_proj"] if model.project_before_pooling else d_inp
 
     # Build an attention module if necessary
-    if (
-        params["shared_pair_attn"] and params["attn"] and not model.use_pytorch_transformers
-    ):  # shared attn
+    if params["shared_pair_attn"] and params["attn"]:  # shared attn
         if not hasattr(model, "pair_attn"):
             pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
             model.pair_attn = pair_attn
         else:
             pair_attn = model.pair_attn
-    elif params["attn"] and not model.use_pytorch_transformers:  # non-shared attn
+    elif params["attn"]:  # non-shared attn
         pair_attn = build_pair_attn(d_inp, params["d_hid_attn"])
     else:  # no attn
         pair_attn = None
@@ -694,15 +689,15 @@ def build_tagger(task, d_inp, out_dim):
     return hid2tag
 
 
-def build_multiple_choice_module(task, d_sent, use_pytorch_transformers, params):
+def build_multiple_choice_module(task, d_sent, project_before_pooling, params):
     """ Basic parts for MC task: reduce a vector representation for each model into a scalar. """
     pooler = Pooler(
-        project=not use_pytorch_transformers,
+        project=project_before_pooling,
         d_inp=d_sent,
         d_proj=params["d_proj"],
         pool_type=params["pool_type"],
     )
-    d_out = d_sent if use_pytorch_transformers else params["d_proj"]
+    d_out = params["d_proj"] if project_before_pooling else d_sent
     choice2scalar = Classifier(d_out, n_classes=1, cls_type=params["cls_type"])
     return SingleClassifier(pooler, choice2scalar)
 
@@ -724,7 +719,7 @@ def build_decoder(task, d_inp, vocab, embedder, args):
     return decoder, hid2voc
 
 
-def build_qa_module(task, d_inp, use_pytorch_transformers, params):
+def build_qa_module(task, d_inp, project_before_pooling, params):
     """ Build a simple QA module that
     1) pools representations (either of the joint (context, question, answer) or individually
     2) projects down to two logits
@@ -732,12 +727,12 @@ def build_qa_module(task, d_inp, use_pytorch_transformers, params):
 
     This module models each question-answer pair _individually_ """
     pooler = Pooler(
-        project=not use_pytorch_transformers,
+        project=project_before_pooling,
         d_inp=d_inp,
         d_proj=params["d_proj"],
         pool_type=params["pool_type"],
     )
-    d_out = d_inp if use_pytorch_transformers else params["d_proj"]
+    d_out = params["d_proj"] if project_before_pooling else d_inp
     classifier = Classifier.from_params(d_out, 2, params)
     return SingleClassifier(pooler, classifier)
 
@@ -757,6 +752,9 @@ class MultiTaskModel(nn.Module):
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.input_module == "elmo"
         self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
+        self.project_before_pooling = not (
+            self.use_pytorch_transformers and args.transfer_paradigm == "finetune"
+        )  # Rough heuristic.
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
