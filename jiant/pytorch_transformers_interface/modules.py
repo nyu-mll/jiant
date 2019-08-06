@@ -29,7 +29,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         )
         utils.maybe_make_dir(self.cache_dir)
 
-        self.embeddings_mode = args.pytorch_transformers_embedding_mode
+        self.embeddings_mode = args.pytorch_transformers_output_mode
 
         # Integer token indices for special symbols.
         self._sep_id = None
@@ -56,7 +56,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         if self.embeddings_mode == "mix":
             if args.transfer_paradigm == "frozen":
                 log.warning(
-                    "NOTE: pytorch_transformers_embedding_mode='mix', so scalar "
+                    "NOTE: pytorch_transformers_output_mode='mix', so scalar "
                     "mixing weights will be fine-tuned even if BERT "
                     "model is frozen."
                 )
@@ -64,7 +64,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # scalars. See the ELMo implementation here:
             # https://github.com/allenai/allennlp/blob/master/allennlp/modules/elmo.py#L115
             assert len(parse_task_list_arg(args.target_tasks)) <= 1, (
-                "pytorch_transformers_embedding_mode='mix' only supports a single set of "
+                "pytorch_transformers_output_mode='mix' only supports a single set of "
                 "scalars (but if you need this feature, see the TODO in "
                 "the code!)"
             )
