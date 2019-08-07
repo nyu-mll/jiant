@@ -209,7 +209,6 @@ def build_sent_encoder(args, vocab, d_emb, tasks, embedder, cove_layer):
             cove_layer=cove_layer,
         )
         d_sent = 0  # skip connection added below
-        log.info("No shared encoder (just using word embeddings)!")
     else:
         assert_for_log(False, "No valid sentence encoder specified.")
     return sent_encoder, d_sent
@@ -869,7 +868,6 @@ class MultiTaskModel(nn.Module):
             sent2, mask2 = self.sent_encoder(batch["input2"], task)
             logits = classifier(sent1, sent2, mask1, mask2)
         out["logits"] = logits
-        out["n_exs"] = torch.Tensor(get_batch_size(batch))
         out["n_exs"] = torch.Tensor(get_batch_size(batch))
         out["n_exs"] = move_to_device(out["n_exs"], self._cuda_device)
 
