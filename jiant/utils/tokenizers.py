@@ -17,6 +17,22 @@ class Tokenizer(object):
         raise NotImplementedError
 
 
+def select_tokenizer(args):
+    """
+        Select a sane default tokenizer.
+    """
+    if args.tokenizer == "auto":
+        if args.input_module.startswith("bert-") or args.input_module.startswith("xlnet-"):
+            tokenizer_name = args.input_module
+        elif args.input_module == "gpt":
+            tokenizer_name = "OpenAI.BPE"
+        else:
+            tokenizer_name = "MosesTokenizer"
+    else:
+        tokenizer_name = args.tokenizer
+    return tokenizer_name
+
+
 class OpenAIBPETokenizer(Tokenizer):
     # TODO: Add detokenize method to OpenAIBPE class
     def __init__(self):
@@ -64,10 +80,15 @@ class MosesTokenizer(Tokenizer):
 def get_tokenizer(tokenizer_name):
     log.info(f"\tLoading Tokenizer {tokenizer_name}")
     if tokenizer_name.startswith("bert-"):
-        from pytorch_pretrained_bert import BertTokenizer
+        from pytorch_transformers import BertTokenizer
 
         do_lower_case = tokenizer_name.endswith("uncased")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    elif tokenizer_name.startswith("xlnet-"):
+        from pytorch_transformers import XLNetTokenizer
+
+        do_lower_case = tokenizer_name.endswith("uncased")
+        tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
     elif tokenizer_name == "OpenAI.BPE":
         tokenizer = OpenAIBPETokenizer()
     elif tokenizer_name == "MosesTokenizer":

@@ -36,7 +36,7 @@ function(job_name, command, project_dir, uid, fsgroup,
         },
         {
           name: "PYTORCH_PRETRAINED_BERT_CACHE",
-          value: jiant_env.bert_cache_path,
+          value: jiant_env.pytorch_transformers_cache_path
         },
         {
           name: "ELMO_SRC_DIR",

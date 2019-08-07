@@ -246,9 +246,15 @@ SUPERGLUE_NAME_MAP = {
 
 def _get_pred_filename(task_name, pred_dir, split_name, strict_glue_format):
     if strict_glue_format and task_name in GLUE_NAME_MAP:
-        file = GLUE_NAME_MAP[task_name] + ".tsv"
+        if split_name == "test":
+            file = "%s.tsv" % (GLUE_NAME_MAP[task_name])
+        else:
+            file = "%s_%s.tsv" % (GLUE_NAME_MAP[task_name], split_name)
     elif strict_glue_format and task_name in SUPERGLUE_NAME_MAP:
-        file = SUPERGLUE_NAME_MAP[task_name] + ".jsonl"
+        if split_name == "test":
+            file = "%s.jsonl" % (SUPERGLUE_NAME_MAP[task_name])
+        else:
+            file = "%s_%s.jsonl" % (SUPERGLUE_NAME_MAP[task_name], split_name)
     else:
         file = "%s_%s.tsv" % (task_name, split_name)
     return os.path.join(pred_dir, file)
