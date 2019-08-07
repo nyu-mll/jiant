@@ -29,7 +29,6 @@ from jiant.utils.utils import (
     assert_for_log,
     find_last_checkpoint_epoch,
     check_for_previous_checkpoints,
-    get_model_attribute
 )  # pylint: disable=import-error
 
 
@@ -623,13 +622,9 @@ class SamplingMultiTaskTrainer:
                     description,
                 )
                 task_info["last_log"] = time.time()
-<<<<<<< HEAD
-                if get_model_attribute("utilization") is not None:
-                    batch_util = get_model_attribute("utilization").get_metric()
-=======
-                if get_model_attribute(self._model, "utilization") is not None:
-                    batch_util = get_model_attribute(self._model, "utilization").get_metric()
->>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
+
+                if self._model.utilization is not None:
+                    batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
             # Validation
@@ -658,15 +653,8 @@ class SamplingMultiTaskTrainer:
                         n_batches_since_val,
                         n_batches_since_val / task_info["n_tr_batches"],
                     )
-<<<<<<< HEAD
-                if get_model_attribute("utilization") is not None:
-                    batch_util = get_model_attribute("utilization").get_metric(reset=True)
-=======
-                if get_model_attribute(self._model, "utilization") is not None:
-                    batch_util = get_model_attribute(self._model, "utilization").get_metric(
-                        reset=True
-                    )
->>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
+                if self._model.utilization is not None:
+                    batch_util = self._model.utilization.get_metric()
                     log.info("TRAINING BATCH UTILIZATION: %.3f", batch_util)
 
                 # Validate
@@ -686,11 +674,7 @@ class SamplingMultiTaskTrainer:
                 if self._TB_dir is not None:
                     self._metrics_to_tensorboard_val(n_step, all_val_metrics)
                 log.info(f"Global learning rate: {self._optimizer.param_groups[0]['lr']}")
-<<<<<<< HEAD
-                elmo_params = get_model_attribute("get_elmo_mixing_weights")(tasks)
-=======
-                elmo_params = get_model_attribute(self._model, "get_elmo_mixing_weights")(tasks)
->>>>>>> 51701999fe9b1f4a6688f2babb900021c093b3eb
+                elmo_params = self._model.get_elmo_mixing_weights(tasks)
                 if elmo_params:  # log ELMo mixing weights
                     for task_name, task_params in elmo_params.items():
                         log.info("ELMo mixing weights for {}:".format(task_name))

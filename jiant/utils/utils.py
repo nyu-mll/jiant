@@ -33,11 +33,6 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_model_attribute(model, attr_name):
-    if torch.cuda.device_count() > 1:
-        return getattr(model.module, attr_name)
-    return getattr(model, attr_name)
-
 def select_pool_type(args):
     """
         Select a sane default sequence pooling type.
@@ -591,3 +586,10 @@ class MaskedMultiHeadSelfAttention(Seq2SeqEncoder):
 
 def assert_for_log(condition, error_message):
     assert condition, error_message
+
+
+def delete_all_checkpoints(serialization_dir):
+    common_checkpoints = glob.glob(os.path.join(serialization_dir, "*.th"))
+    task_checkpoints = glob.glob(os.path.join(serialization_dir, "*", "*.th"))
+    for file in common_checkpoints + task_checkpoints:
+        os.remove(file)
