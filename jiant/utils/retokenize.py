@@ -98,7 +98,7 @@ def realign_spans(record, tokenizer_name):
     """
     Builds the indices alignment while also tokenizing the input
     piece by piece.
-    Only BERT and Moses tokenization is supported currently. 
+    Only BERT/XLNet and Moses tokenization is supported currently.
 
     Parameters
     -----------------------
@@ -286,7 +286,7 @@ def space_tokenize_with_eow(sentence):
     return [t + "</w>" for t in sentence.split()]
 
 
-def process_bert_wordpiece_for_alignment(t):
+def process_wordpiece_for_alignment(t):
     """Add <w> markers to ensure word-boundary alignment."""
     if t.startswith("##"):
         return re.sub(r"^##", "", t)
@@ -315,15 +315,15 @@ def align_openai(text: Text) -> Tuple[TokenAligner, List[Text]]:
     return ta, bpe_tokens
 
 
-def align_bert(text: Text, model_name: str) -> Tuple[TokenAligner, List[Text]]:
+def align_wpm(text: Text, tokenizer_name: str) -> Tuple[TokenAligner, List[Text]]:
     # If using lowercase, do this for the source tokens for better matching.
-    do_lower_case = model_name.endswith("uncased")
+    do_lower_case = tokenizer_name.endswith("uncased")
     bow_tokens = space_tokenize_with_bow(text.lower() if do_lower_case else text)
-    bert_tokenizer = get_tokenizer(model_name)
-    wpm_tokens = bert_tokenizer.tokenize(text)
+    wpm_tokenizer = get_tokenizer(tokenizer_name)
+    wpm_tokens = wpm_tokenizer.tokenize(text)
 
     # Align using <w> markers for stability w.r.t. word boundaries.
-    modified_wpm_tokens = list(map(process_bert_wordpiece_for_alignment, wpm_tokens))
+    modified_wpm_tokens = list(map(process_wordpiece_for_alignment, wpm_tokens))
     ta = TokenAligner(bow_tokens, modified_wpm_tokens)
     return ta, wpm_tokens
 
@@ -333,7 +333,7 @@ def get_aligner_fn(tokenizer_name: Text):
         return align_moses
     elif tokenizer_name == "OpenAI.BPE":
         return align_openai
-    elif tokenizer_name.startswith("bert-"):
-        return functools.partial(align_bert, model_name=tokenizer_name)
+    elif tokenizer_name.startswith("bert-") or tokenizer_name.startswith("xlnet-"):
+        return functools.partial(align_wpm, tokenizer_name=tokenizer_name)
     else:
         raise ValueError(f"Unsupported tokenizer '{tokenizer_name}'")

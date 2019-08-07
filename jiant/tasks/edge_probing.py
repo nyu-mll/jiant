@@ -178,19 +178,10 @@ class EdgeProbingTask(Task):
     def _make_span_field(cls, s, text_field, offset=1):
         return SpanField(s[0] + offset, s[1] - 1 + offset, text_field)
 
-    def _pad_tokens(self, tokens):
-        """Pad tokens according to the current tokenization style."""
-        if self.tokenizer_name.startswith("bert-"):
-            # standard padding for BERT; see
-            # https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/extract_features.py#L85  # noqa
-            return ["[CLS]"] + tokens + ["[SEP]"]
-        else:
-            return [utils.SOS_TOK] + tokens + [utils.EOS_TOK]
-
-    def make_instance(self, record, idx, indexers) -> Type[Instance]:
+    def make_instance(self, record, idx, indexers, boundary_token_fn) -> Type[Instance]:
         """Convert a single record to an AllenNLP Instance."""
         tokens = record["text"].split()  # already space-tokenized by Moses
-        tokens = self._pad_tokens(tokens)
+        tokens = boundary_token_fn(tokens)  # apply model-appropriate variants of [cls] and [sep].
         text_field = sentence_to_text_field(tokens, indexers)
 
         d = {}
@@ -218,11 +209,11 @@ class EdgeProbingTask(Task):
         )
         return Instance(d)
 
-    def process_split(self, records, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, records, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """ Process split text into a list of AllenNLP Instances. """
 
         def _map_fn(r, idx):
-            return self.make_instance(r, idx, indexers)
+            return self.make_instance(r, idx, indexers, boundary_token_fn)
 
         return map(_map_fn, records, itertools.count())
 

@@ -99,4 +99,3 @@ jsonnet -S -o "${YAML_FILE}" \
 ##
 # Create the Kubernetes pod; this will actually launch the job.
 kubectl ${KUBECTL_MODE} -f "${YAML_FILE}"
-

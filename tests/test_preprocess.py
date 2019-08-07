@@ -50,7 +50,7 @@ class TestProprocess(unittest.TestCase):
         self.params3 = params_from_file(self.DEFAULTS_PATH, self.HOCON3)
         self.params4 = params_from_file(self.DEFAULTS_PATH, self.HOCON4)
         indexer = build_indexers(self.params1)
-        len(indexer) == 1 and list(indexer.keys())[0] == "bert_wpm_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[0] == "pytorch_transformers_wpm_pretokenized"
         indexer = build_indexers(self.params2)
         len(indexer) == 1 and list(indexer.keys())[0] == "words"
         indexer = build_indexers(self.params3)
