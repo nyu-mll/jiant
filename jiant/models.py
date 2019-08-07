@@ -754,7 +754,7 @@ class MultiTaskModel(nn.Module):
         self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
         self.project_before_pooling = not (
             self.use_pytorch_transformers and args.transfer_paradigm == "finetune"
-        )  # Rough heuristic.
+        )  # Rough heuristic. TODO: Make this directly user-controllable.
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):
