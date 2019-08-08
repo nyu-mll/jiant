@@ -27,6 +27,7 @@ from allennlp.data.token_indexers import (
     TokenCharactersIndexer,
 )
 
+from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
     ALL_COLA_NPI_TASKS,
@@ -106,7 +107,7 @@ def del_field_tokens(instance):
         del field.tokens
 
 
-def _index_split(task, split, indexers, vocab, record_file):
+def _index_split(task, split, indexers, vocab, record_file, boundary_token_fn):
     """Index instances and stream to disk.
     Args:
         task: Task instance
@@ -118,7 +119,7 @@ def _index_split(task, split, indexers, vocab, record_file):
     log_prefix = "\tTask %s (%s)" % (task.name, split)
     log.info("%s: Indexing from scratch.", log_prefix)
     split_text = task.get_split_text(split)
-    instance_iter = task.process_split(split_text, indexers)
+    instance_iter = task.process_split(split_text, indexers, boundary_token_fn)
     if hasattr(instance_iter, "__len__"):  # if non-lazy
         log.warn(
             "%s: non-lazy Instance generation. You'll want to refactor "
@@ -224,9 +225,9 @@ def _build_vocab(args, tasks, vocab_path: str):
     if args.input_module == "gpt":
         # Add pre-computed BPE vocabulary for OpenAI transformer model.
         add_openai_bpe_vocab(vocab, "openai_bpe")
-    if args.input_module.startswith("bert"):
-        # Add pre-computed BPE vocabulary for BERT model.
-        add_bert_wpm_vocab(vocab, args.input_module)
+    elif input_module_uses_pytorch_transformers(args.input_module):
+        # Add pre-computed BPE vocabulary for BERT/XLNet model.
+        add_pytorch_transformers_wpm_vocab(vocab, args.tokenizer)
 
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
@@ -235,11 +236,12 @@ def _build_vocab(args, tasks, vocab_path: str):
 
 def build_indexers(args):
     indexers = {}
-    if not args.input_module.startswith("bert") and args.input_module not in ["elmo", "gpt"]:
+    if args.input_module in ["scratch", "glove", "fastText"]:
         indexers["words"] = SingleIdTokenIndexer()
-    if args.input_module == "elmo":
+    elif args.input_module in ["elmo", "elmo-chars-only"]:
         indexers["elmo"] = ELMoTokenCharactersIndexer("elmo")
         assert args.tokenizer in {"", "MosesTokenizer"}
+
     if args.char_embs:
         indexers["chars"] = TokenCharactersIndexer("chars")
     if args.cove:
@@ -247,6 +249,7 @@ def build_indexers(args):
             f"CoVe model expects Moses tokenization (MosesTokenizer);"
             " you are using args.tokenizer = {args.tokenizer}"
         )
+
     if args.input_module == "gpt":
         assert (
             not indexers
@@ -255,14 +258,16 @@ def build_indexers(args):
             args.tokenizer == "OpenAI.BPE"
         ), "OpenAI transformer uses custom BPE tokenization. Set tokenizer=OpenAI.BPE."
         indexers["openai_bpe_pretokenized"] = SingleIdTokenIndexer("openai_bpe")
-    if args.input_module.startswith("bert"):
-        assert not indexers, "BERT is not supported alongside other indexers due to tokenization."
+    elif input_module_uses_pytorch_transformers(args.input_module):
+        assert (
+            not indexers
+        ), "pytorch_transformers modules like BERT/XLNet are not supported alongside other "
+        "indexers due to tokenization."
         assert args.tokenizer == args.input_module, (
-            "BERT models use custom WPM tokenization for "
-            "each model, so tokenizer must match the "
-            "specified BERT model."
+            "BERT/XLNet models use custom WPM tokenization for each model, so tokenizer "
+            "must match the specified model."
         )
-        indexers["bert_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
+        indexers["pytorch_transformers_wpm_pretokenized"] = SingleIdTokenIndexer(args.input_module)
     return indexers
 
 
@@ -305,9 +310,7 @@ def build_tasks(args):
 
     # 3) build / load word vectors
     word_embs = None
-    if args.input_module not in ["elmo", "gpt", "scratch"] and not args.input_module.startswith(
-        "bert"
-    ):
+    if args.input_module in ["glove", "fastText"]:
         emb_file = os.path.join(args.exp_dir, "embs.pkl")
         if args.reload_vocab or not os.path.exists(emb_file):
             word_embs = _build_embeddings(args, vocab, emb_file)
@@ -324,6 +327,19 @@ def build_tasks(args):
         'Flag reload_indexing was set, but no tasks are set to reindex (use -o "args.reindex_tasks'
         ' = "task1,task2,..."")',
     )
+
+    # Set up boundary_token_fn, which applies SOS/EOS/SEP/CLS delimiters
+    if args.input_module.startswith("bert"):
+        from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
+
+        boundary_token_fn = BertEmbedderModule.apply_boundary_tokens
+    elif args.input_module.startswith("xlnet"):
+        from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
+
+        boundary_token_fn = XLNetEmbedderModule.apply_boundary_tokens
+    else:
+        boundary_token_fn = utils.apply_standard_boundary_tokens
+
     for task in tasks:
         force_reindex = args.reload_indexing and task.name in reindex_tasks
         for split in ALL_SPLITS:
@@ -338,7 +354,7 @@ def build_tasks(args):
                 if os.path.exists(record_file) and os.path.islink(record_file):
                     os.remove(record_file)
 
-                _index_split(task, split, indexers, vocab, record_file)
+                _index_split(task, split, indexers, vocab, record_file, boundary_token_fn)
 
         # Delete in-memory data - we'll lazy-load from disk later.
         # TODO: delete task.{split}_data_text as well?
@@ -552,20 +568,27 @@ def add_task_label_vocab(vocab, task):
         vocab.add_token_to_namespace(label, namespace)
 
 
-def add_bert_wpm_vocab(vocab, bert_model_name):
-    """Add BERT WPM vocabulary for use with pre-tokenized data.
+def add_pytorch_transformers_wpm_vocab(vocab, tokenizer_name):
+    """Add BERT/XLNet WPM vocabulary for use with pre-tokenized data.
 
-    BertTokenizer has a convert_tokens_to_ids method, but this doesn't do
-    anything special so we can just use the standard indexers.
+    These tokenizers have a convert_tokens_to_ids method, but this doesn't do
+    anything special, so we can just use the standard indexers.
     """
-    from pytorch_pretrained_bert import BertTokenizer
+    do_lower_case = "uncased" in tokenizer_name
 
-    do_lower_case = "uncased" in bert_model_name
-    tokenizer = BertTokenizer.from_pretrained(bert_model_name, do_lower_case=do_lower_case)
-    ordered_vocab = tokenizer.convert_ids_to_tokens(range(len(tokenizer.vocab)))
-    log.info("BERT WPM vocab (model=%s): %d tokens", bert_model_name, len(ordered_vocab))
+    if tokenizer_name.startswith("bert"):
+        from pytorch_transformers import BertTokenizer
+
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+    else:
+        from pytorch_transformers import XLNetTokenizer
+
+        tokenizer = XLNetTokenizer.from_pretrained(tokenizer_name, do_lower_case=do_lower_case)
+
+    ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
+    log.info("WPM vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
-        vocab.add_token_to_namespace(word, bert_model_name)
+        vocab.add_token_to_namespace(word, tokenizer_name)
 
 
 def add_openai_bpe_vocab(vocab, namespace="openai_bpe"):

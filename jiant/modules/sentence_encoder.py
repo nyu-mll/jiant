@@ -11,13 +11,13 @@ from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator, util
 from allennlp.modules import Highway, TimeDistributed
 
-from ..bert.utils import BertEmbedderModule
-from ..tasks.tasks import PairClassificationTask, PairRegressionTask
-from ..utils import utils
-from .simple_modules import NullPhraseLayer
-from .bilm_encoder import BiLMEncoder
-from .onlstm.ON_LSTM import ONLSTMStack
-from .prpn.PRPN import PRPN
+from jiant.pytorch_transformers_interface.modules import PytorchTransformersEmbedderModule
+from jiant.tasks.tasks import PairClassificationTask, PairRegressionTask
+from jiant.utils import utils
+from jiant.modules.simple_modules import NullPhraseLayer
+from jiant.modules.bilm_encoder import BiLMEncoder
+from jiant.modules.onlstm.ON_LSTM import ONLSTMStack
+from jiant.modules.prpn.PRPN import PRPN
 
 
 class SentenceEncoder(Model):
@@ -83,34 +83,19 @@ class SentenceEncoder(Model):
         if reset:
             self.reset_states()
 
-        # Embeddings
-        # Note: These highway modules are actually identity functions by
-        # default.
-        is_pair_task = isinstance(task, (PairClassificationTask, PairRegressionTask))
-
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
-            if isinstance(self._text_field_embedder, BertEmbedderModule):
-                word_embs_in_context = self._text_field_embedder(sent, is_pair_task=is_pair_task)
-
-            else:
-                word_embs_in_context = self._text_field_embedder(sent)
-            word_embs_in_context = self._highway_layer(word_embs_in_context)
+            word_embs_in_context = self._highway_layer(self._text_field_embedder(sent))
         else:
             word_embs_in_context = None
 
         # Task-specific sentence embeddings (e.g. custom ELMo weights).
         # Skip computing this if it won't be used.
         if self.sep_embs_for_skip:
-            if isinstance(self._text_field_embedder, BertEmbedderModule):
-                task_word_embs_in_context = self._text_field_embedder(
-                    sent, task._classifier_name, is_pair_task=is_pair_task
-                )
-
-            else:
-                task_word_embs_in_context = self._text_field_embedder(sent, task._classifier_name)
-            task_word_embs_in_context = self._highway_layer(task_word_embs_in_context)
+            task_word_embs_in_context = self._highway_layer(
+                self._text_field_embedder(sent, task._classifier_name)
+            )
         else:
             task_word_embs_in_context = None
 

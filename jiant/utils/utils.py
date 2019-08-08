@@ -33,6 +33,32 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
+def select_pool_type(args):
+    """
+        Select a sane default sequence pooling type.
+    """
+    if args.pool_type == "auto":
+        if args.sent_enc == "none" and args.input_module.startswith("bert-"):
+            pool_type = "first"
+        elif args.sent_enc == "none" and args.input_module.startswith("xlnet-"):
+            pool_type = "final"
+        elif args.sent_enc == "none" and args.input_module == "gpt":
+            pool_type = "final"
+        else:
+            pool_type = "max"
+    else:
+        pool_type = args.pool_type
+    return pool_type
+
+
+def apply_standard_boundary_tokens(s1, s2=None):
+    """Apply <SOS> and <EOS> to sequences of string-valued tokens.
+    Corresponds to more complex functions used with models like XLNet and BERT.
+    """
+    assert not s2, "apply_standard_boundary_tokens only supports single sequences"
+    return [SOS_TOK] + s1 + [EOS_TOK]
+
+
 def check_for_previous_checkpoints(serialization_dir, tasks, phase, load_model):
     """
     Check if there are previous checkpoints.
@@ -154,10 +180,12 @@ def parse_json_diff(diff):
     actual value of the replaced or inserted item, whereas for jsondiff.delete, we do not want to
     show deletions in our parameters.
     For example, for jsondiff.replace, the output of jsondiff may be the below:
-    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}}
+    {'mrpc': {replace: ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                                   ('max_vals', 8), ('val_interval', 1)])}}
     since 'mrpc' was overriden in demo.conf. Thus, we only want to show the update and delete
     the replace. The output of this function will be:
-    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256), ('max_vals', 8), ('val_interval', 1)])}
+    {'mrpc': ConfigTree([('classifier_dropout', 0.1), ('classifier_hid_dim', 256),
+                         ('max_vals', 8), ('val_interval', 1)])}
     See for more information on jsondiff.
     """
     new_diff = {}

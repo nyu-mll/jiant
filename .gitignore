@@ -7,3 +7,4 @@ user_config.sh
 .idea
 .ipynb_checkpoints/
 perluniprops/
+.DS_Store
