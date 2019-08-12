@@ -161,9 +161,15 @@ class MultiRCTask(Task):
                 inp = task_modulator.boundary_token_fn(para, question + answer)
                 d["psg_qst_ans"] = sentence_to_text_field(inp, indexers)
             else:
-                d["psg"] = sentence_to_text_field(task_modulator.boundary_token_fn(passage), indexers)
-                d["qst"] = sentence_to_text_field(task_modulator.boundary_token_fn(question), indexers)
-                d["ans"] = sentence_to_text_field(task_modulator.boundary_token_fn(answer), indexers)
+                d["psg"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(passage), indexers
+                )
+                d["qst"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(question), indexers
+                )
+                d["ans"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(answer), indexers
+                )
             d["label"] = LabelField(label, label_namespace="labels", skip_indexing=True)
 
             return Instance(d)

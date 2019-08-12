@@ -102,7 +102,9 @@ def process_single_pair_task_split(
         else:
             d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
             if input2:
-                d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(input2), indexers)
+                d["input2"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input2), indexers
+                )
                 d["sent2_str"] = MetadataField(" ".join(input2))
         if classification:
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
@@ -1364,8 +1366,12 @@ class GLUEDiagnosticTask(PairClassificationTask):
                 inp = task_modulator.boundary_token_fn(input1, input2)
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
-                d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(input2), indexers)
+                d["input1"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input2), indexers
+                )
             d["labels"] = LabelField(label, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idx_tags", skip_indexing=True)
             d["sent1_str"] = MetadataField(" ".join(input1))
@@ -1561,7 +1567,6 @@ class WinogenderTask(GLUEDiagnosticTask):
         log.info("\tFinished loading winogender (from SuperGLUE formatted data).")
 
     def process_split(self, split, indexers, task_modulator):
-
         def _make_instance(input1, input2, labels, idx, pair_id):
             d = {}
             d["sent1_str"] = MetadataField(" ".join(input1))
@@ -1570,9 +1575,13 @@ class WinogenderTask(GLUEDiagnosticTask):
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 d["sent2_str"] = MetadataField(" ".join(input2))
             else:
-                d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
+                d["input1"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input1), indexers
+                )
                 if input2:
-                    d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(input2), indexers)
+                    d["input2"] = sentence_to_text_field(
+                        task_modulator.boundary_token_fn(input2), indexers
+                    )
                     d["sent2_str"] = MetadataField(" ".join(input2))
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             d["idx"] = LabelField(idx, label_namespace="idxs_tags", skip_indexing=True)
@@ -2019,8 +2028,12 @@ class DisSentTask(PairClassificationTask):
                 inp = task_modulator.boundary_token_fn(input1, input2)  # drop leading [CLS] token
                 d["inputs"] = sentence_to_text_field(inp, indexers)
             else:
-                d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
-                d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(input2), indexers)
+                d["input1"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input2), indexers
+                )
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
             return Instance(d)
 
@@ -2536,8 +2549,12 @@ class WiCTask(PairClassificationTask):
                 d["inputs"] = sentence_to_text_field(inp, indexers)
                 idxs2 = (idxs2[0] + len(input1), idxs2[1] + len(input1))
             else:
-                d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(input1), indexers)
-                d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(input2), indexers)
+                d["input1"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input1), indexers
+                )
+                d["input2"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(input2), indexers
+                )
             d["idx1"] = ListField([NumericField(i) for i in range(idxs1[0], idxs1[1])])
             d["idx2"] = ListField([NumericField(i) for i in range(idxs2[0], idxs2[1])])
             d["labels"] = LabelField(labels, label_namespace="labels", skip_indexing=True)
@@ -2633,7 +2650,9 @@ class COPATask(MultipleChoiceTask):
             d = {}
             d["question_str"] = MetadataField(" ".join(context))
             if not task_modulator.model_flags["support_pair_embedding"]:
-                d["question"] = sentence_to_text_field(task_modulator.boundary_token_fn(context), indexers)
+                d["question"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(context), indexers
+                )
             for choice_idx, choice in enumerate(choices):
                 inp = (
                     task_modulator.boundary_token_fn(context, question + choice)
@@ -2715,7 +2734,9 @@ class SWAGTask(MultipleChoiceTask):
             d = {}
             d["question_str"] = MetadataField(" ".join(question))
             if not task_modulator.model_flags["support_pair_embedding"]:
-                d["question"] = sentence_to_text_field(task_modulator.boundary_token_fn(question), indexers)
+                d["question"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(question), indexers
+                )
             for choice_idx, choice in enumerate(choices):
                 inp = (
                     task_modulator.boundary_token_fn(question, choice)
@@ -2834,8 +2855,12 @@ class BooleanQuestionTask(PairClassificationTask):
             new_d["question_str"] = MetadataField(" ".join(d["question"]))
             new_d["passage_str"] = MetadataField(" ".join(d["passage"]))
             if not task_modulator.model_flags["support_pair_embedding"]:
-                new_d["input1"] = sentence_to_text_field(task_modulator.boundary_token_fn(d["passage"]), indexers)
-                new_d["input2"] = sentence_to_text_field(task_modulator.boundary_token_fn(d["question"]), indexers)
+                new_d["input1"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(d["passage"]), indexers
+                )
+                new_d["input2"] = sentence_to_text_field(
+                    task_modulator.boundary_token_fn(d["question"]), indexers
+                )
             else:  # BERT/XLNet
                 psg_qst = task_modulator.boundary_token_fn(d["passage"], d["question"])
                 new_d["inputs"] = sentence_to_text_field(psg_qst, indexers)

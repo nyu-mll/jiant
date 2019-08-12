@@ -29,7 +29,7 @@ from allennlp.data.token_indexers import (
 
 from jiant.pytorch_transformers_interface import (
     input_module_uses_pytorch_transformers,
-    input_module_tokenized_name
+    input_module_tokenized_name,
 )
 from jiant.tasks import (
     ALL_DIAGNOSTICS,
@@ -311,8 +311,8 @@ def build_tasks(args):
         else:  # load from file
             word_embs = pkl.load(open(emb_file, "rb"))
         log.info("Trimmed word embeddings: %s", str(word_embs.size()))
-    
-    # 4) Set up task modulator, this includes 
+
+    # 4) Set up task modulator, this includes
     if args.input_module.startswith("bert-"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
@@ -339,16 +339,14 @@ def build_tasks(args):
         boundary_token_fn = XLMModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
-    
+
     model_flags = {}
     from jiant.pytorch_transformers_interface import input_module_support_pair_embedding
-    
-    model_flags["support_pair_embedding"] = input_module_support_pair_embedding(
-        args.input_module
-    )
-    
+
+    model_flags["support_pair_embedding"] = input_module_support_pair_embedding(args.input_module)
+
     task_modulator = TaskModulator(boundary_token_fn, model_flags)
-    
+
     # 5) Index tasks using vocab (if preprocessed copy not available).
     preproc_dir = os.path.join(args.exp_dir, "preproc")
     utils.maybe_make_dir(preproc_dir)
@@ -625,6 +623,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, tokenizer_name)
 
+
 def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
     """Add WSJ vocabulary for PTB parsing models."""
     wsj_vocab_path = os.path.join(data_dir, "WSJ/tokens.txt")
@@ -640,6 +639,7 @@ def add_wsj_vocab(vocab, data_dir, namespace="tokens"):
 class TaskModulator(object):
     """ A task modulator describes everything the task process needs to know about the model
     """
+
     def __init__(self, boundary_token_fn, model_flags):
         """
         boundary_token_fn: (list[str], list[str] (optional) -> list[str]):

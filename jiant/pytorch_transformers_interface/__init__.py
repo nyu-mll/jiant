@@ -10,13 +10,21 @@ This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
 """
 from jiant.pytorch_transformers_interface import modules
 
+
 def input_module_support_pair_embedding(module_name):
     return module_name.startswith("bert-") or module_name.startswith("xlnet-")
 
+
 def input_module_uses_pytorch_transformers(module_name):
-    return module_name.startswith("bert-") or module_name.startswith("xlnet-") or \
-           module_name.startswith("gpt2") or module_name.startswith("openai-gpt") or \
-           module_name.startswith("transfo-xl-") or module_name.startswith("xlm-")
+    return (
+        module_name.startswith("bert-")
+        or module_name.startswith("xlnet-")
+        or module_name.startswith("gpt2")
+        or module_name.startswith("openai-gpt")
+        or module_name.startswith("transfo-xl-")
+        or module_name.startswith("xlm-")
+    )
+
 
 def input_module_tokenized_name(module_name):
     return "pytorch_transformers_%s_pretokenized" % module_name

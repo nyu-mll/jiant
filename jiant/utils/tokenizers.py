@@ -12,6 +12,7 @@ from nltk.tokenize.moses import MosesTokenizer as NLTKMosesTokenizer
 from nltk.tokenize.simple import SpaceTokenizer
 from jiant.pytorch_transformers_interface import input_module_uses_pytorch_transformers
 
+
 class Tokenizer(object):
     def tokenize(self, sentence):
         raise NotImplementedError

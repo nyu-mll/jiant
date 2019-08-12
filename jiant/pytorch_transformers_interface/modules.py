@@ -13,6 +13,7 @@ from jiant.preprocess import parse_task_list_arg
 from jiant.utils import utils
 from jiant.pytorch_transformers_interface import input_module_tokenized_name
 
+
 class PytorchTransformersEmbedderModule(nn.Module):
     """ Shared code for pytorch_transformers wrappers.
 
@@ -96,9 +97,8 @@ class PytorchTransformersEmbedderModule(nn.Module):
             ids[ids == 1] = self._unk_id + 2
             # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
         ids -= 2  # shift indexes to match pretrained token embedding indexes
-        
-        return ids, mask
 
+        return ids, mask
 
     def prepare_output(self, lex_seq, hidden_states, mask):
         """
@@ -277,7 +277,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
-        # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1 
+        # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1
         # input segments. Standard constants reused from pytorch_transformers. They aren't actually
         # used within the pytorch_transformers code, so we're reproducing them here in case they're
         # removed in a later cleanup.
@@ -318,6 +318,7 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for OpenAIGPT module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
+
     def __init__(self, args):
         super(OpenAIGPTEmbedderModule).__init__(args)
 
@@ -335,9 +336,9 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-    # OpenAI-GPT-style boundary token marking on string token sequences
+        # OpenAI-GPT-style boundary token marking on string token sequences
         return ["\n</w>"] + s1 + ["\n</w>"]
-        
+
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
@@ -361,6 +362,7 @@ class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
 class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for GPT2 module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
+
     def __init__(self, args):
         super(GPT2EmbedderModule, self).__init__(args)
 
@@ -377,7 +379,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-    # GPT2-style boundary token marking on string token sequences
+        # GPT2-style boundary token marking on string token sequences
         return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
 
     def forward(
@@ -403,6 +405,7 @@ class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
 class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
     """ Wrapper for Transformer-XL module to fit into jiant APIs.
     Check PytorchTransformersEmbedderModule for function definitions """
+
     def __init__(self, args):
         super(TransfoXLEmbedderModule, self).__init__(args)
 
@@ -420,9 +423,9 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-    # TransformerXL-style boundary token marking on string token sequences
+        # TransformerXL-style boundary token marking on string token sequences
         return ["<\n>"] + s1 + ["<\n>"]
-    
+
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
@@ -432,7 +435,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
             lex_seq = self.model.word_emb(ids)
         if self.output_mode != "only":
             _, _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)        
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self):
         model_with_lm_head = pytorch_transformers.TransfoXLLMHeadModel.from_pretrained(
@@ -468,9 +471,9 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
 
     @staticmethod
     def apply_boundary_tokens(s1):
-    # XLM-style boundary token marking on string token sequences
+        # XLM-style boundary token marking on string token sequences
         return ["</s>"] + s1 + ["</s>"]
-    
+
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
@@ -480,7 +483,7 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
             lex_seq = self.model.embeddings(ids)
         if self.output_mode != "only":
             _, _, hidden_states = self.model(ids)
-        return self.prepare_output(lex_seq, hidden_states, mask)        
+        return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self):
         model_with_lm_head = pytorch_transformers.XLMWithLMHeadModel.from_pretrained(
