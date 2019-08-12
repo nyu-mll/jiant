@@ -648,4 +648,3 @@ class TaskModulator(object):
         """
         self.boundary_token_fn = boundary_token_fn
         self.model_flags = model_flags
-

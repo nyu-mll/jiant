@@ -492,4 +492,3 @@ class XLMEmbedderModule(PytorchTransformersEmbedderModule):
         lm_head = model_with_lm_head.pred_layer
         lm_head.proj.weight = self.model.embeddings.weight
         return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
-
