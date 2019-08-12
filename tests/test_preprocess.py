@@ -50,11 +50,15 @@ class TestProprocess(unittest.TestCase):
         self.params3 = params_from_file(self.DEFAULTS_PATH, self.HOCON3)
         self.params4 = params_from_file(self.DEFAULTS_PATH, self.HOCON4)
         indexer = build_indexers(self.params1)
-        len(indexer) == 1 and list(indexer.keys())[0] == "pytorch_transformers_bert-large-cased_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[
+            0
+        ] == "pytorch_transformers_bert-large-cased_pretokenized"
         indexer = build_indexers(self.params2)
         len(indexer) == 1 and list(indexer.keys())[0] == "words"
         indexer = build_indexers(self.params3)
-        len(indexer) == 1 and list(indexer.keys())[0] == "pytorch_transformers_openai-gpt_pretokenized"
+        len(indexer) == 1 and list(indexer.keys())[
+            0
+        ] == "pytorch_transformers_openai-gpt_pretokenized"
         with self.assertRaises(AssertionError) as error:
             # BERT model and tokenizer must be equal, so this should throw an error.
             indexer = build_indexers(self.params4)
