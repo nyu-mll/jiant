@@ -86,7 +86,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
         
         returns:
             ids: <long> [bath_size, var_seq_len] corrected token IDs
-            mask: <uint8> [bath_size, var_seq_len] sentence mask 
+            mask: <long> [bath_size, var_seq_len] sentence mask 
         """
         ids = sent[self.tokenizer_required]
 
@@ -98,7 +98,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
         ids -= 2  # shift indexes to match pretrained token embedding indexes
 
-        return ids, mask
+        return ids, mask.long()
 
     def prepare_output(self, lex_seq, hidden_states, mask):
         """
