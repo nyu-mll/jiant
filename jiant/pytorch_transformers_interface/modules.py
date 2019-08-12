@@ -447,7 +447,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         for i, tie_proj in enumerate(model_with_lm_head.config.tie_projs):
             if tie_proj:
                 lm_head.out_projs[i] = self.model.word_emb.emb_projs[i]
-        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+        return lm_head
 
 
 class XLMEmbedderModule(PytorchTransformersEmbedderModule):

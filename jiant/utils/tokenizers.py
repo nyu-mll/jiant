@@ -72,9 +72,8 @@ def get_tokenizer(tokenizer_name):
 
         tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
     elif tokenizer_name.startswith("transfo-xl-"):
-        from pytorch_transformers import TransfoXLTokenizer
-
-        tokenizer = TransfoXLTokenizer.from_pretrained(tokenizer_name)
+        # TransformerXL is trained on data pretokenized with MosesTokenizer  
+        tokenizer = MosesTokenizer()
     elif tokenizer_name.startswith("xlm-"):
         from pytorch_transformers import XLMTokenizer
 

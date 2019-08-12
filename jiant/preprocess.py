@@ -332,11 +332,11 @@ def build_tasks(args):
     elif args.input_module.startswith("transfo-xl-"):
         from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
 
-        boundary_token_fn = TransfoXLModule.apply_boundary_tokens
+        boundary_token_fn = TransfoXLEmbedderModule.apply_boundary_tokens
     elif args.input_module.startswith("xlm-"):
         from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
 
-        boundary_token_fn = XLMModule.apply_boundary_tokens
+        boundary_token_fn = XLMEmbedderModule.apply_boundary_tokens
     else:
         boundary_token_fn = utils.apply_standard_boundary_tokens
 
@@ -619,7 +619,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
         tokenizer = XLMTokenizer.from_pretrained(tokenizer_name)
 
     ordered_vocab = tokenizer.convert_ids_to_tokens(range(tokenizer.vocab_size))
-    log.info("WPM vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
+    log.info("Pytorch transformer vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, tokenizer_name)
 
