@@ -438,6 +438,7 @@ class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
         return self.prepare_output(lex_seq, hidden_states, mask)
 
     def get_pretrained_lm_head(self):
+        # Note: pytorch_transformers didn't implement TransfoXLLMHeadModel, use this in eval only
         model_with_lm_head = pytorch_transformers.TransfoXLLMHeadModel.from_pretrained(
             self.input_module, cache_dir=self.cache_dir
         )
