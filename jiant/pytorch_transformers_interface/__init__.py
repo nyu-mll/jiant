@@ -8,7 +8,6 @@ WWM-BERT.
 
 This AllenNLP issue is relevant: https://github.com/allenai/allennlp/issues/3067
 """
-from jiant.pytorch_transformers_interface import modules
 
 
 def input_module_support_pair_embedding(module_name):
