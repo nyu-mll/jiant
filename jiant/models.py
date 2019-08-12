@@ -227,31 +227,45 @@ def build_model(args, vocab, pretrained_embs, tasks):
 
     # Build embeddings.
     cove_layer = None
-    if args.input_module == "gpt":
-        # Note: incompatible with other embedders, but logic in preprocess.py
-        # should prevent these from being enabled anyway.
-        from .openai_transformer_lm.utils import OpenAIEmbedderModule
-
-        log.info("Using OpenAI transformer model.")
-        # Here, this uses openAIEmbedder.
-        embedder = OpenAIEmbedderModule(args)
-        d_emb = embedder.get_output_dim()
-    elif args.input_module.startswith("bert"):
+    if args.input_module.startswith("bert-"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
 
         log.info(f"Using BERT model ({args.input_module}).")
         embedder = BertEmbedderModule(args)
         d_emb = embedder.get_output_dim()
-    elif args.input_module.startswith("xlnet"):
+    elif args.input_module.startswith("xlnet-"):
         from jiant.pytorch_transformers_interface.modules import XLNetEmbedderModule
 
         log.info(f"Using XLNet model ({args.input_module}).")
         embedder = XLNetEmbedderModule(args)
         d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("openai-gpt"):
+        from jiant.pytorch_transformers_interface.modules import OpenAIGPTEmbedderModule
+
+        log.info(f"Using OpenAIGPT model ({args.input_module}).")
+        embedder = OpenAIGPTEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("gpt2"):
+        from jiant.pytorch_transformers_interface.modules import GPT2EmbedderModule
+
+        log.info(f"Using GPT2 model ({args.input_module}).")
+        embedder = GPT2EmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("transfo-xl-"):
+        from jiant.pytorch_transformers_interface.modules import TransfoXLEmbedderModule
+
+        log.info(f"Using Transformer-XL model ({args.input_module}).")
+        embedder = TransfoXLEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
+    elif args.input_module.startswith("xlm-"):
+        from jiant.pytorch_transformers_interface.modules import XLMEmbedderModule
+
+        log.info(f"Using XLM model ({args.input_module}).")
+        embedder = XLMEmbedderModule(args)
+        d_emb = embedder.get_output_dim()
     else:
         # Default case, used for ELMo, CoVe, word embeddings, etc.
         d_emb, embedder, cove_layer = build_embeddings(args, vocab, tasks, pretrained_embs)
-    d_sent_input = args.d_hid
 
     sent_encoder, d_sent_output = build_sent_encoder(
         args, vocab, d_emb, tasks, embedder, cove_layer
@@ -312,7 +326,6 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
         word_embs = nn.Embedding(n_token_vocab, d_word).weight
     else:
         assert input_module_uses_pytorch_transformers(args.input_module) or args.input_module in [
-            "gpt",
             "elmo",
             "elmo-chars-only",
         ], f"'{args.input_module}' is not a valid value for input_module."
@@ -1062,7 +1075,6 @@ class MultiTaskModel(nn.Module):
                 sent, mask = self.sent_encoder(batch["choice%d" % choice_idx], task)
                 logit = module(sent, mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["pytorch_transformers_wpm_pretokenized"].size(0)
         else:
             ctx, ctx_mask = self.sent_encoder(batch["question"], task)
             for choice_idx in range(task.n_choices):
@@ -1071,9 +1083,9 @@ class MultiTaskModel(nn.Module):
                 inp_mask = torch.cat([ctx_mask, mask], dim=1)
                 logit = module(inp, inp_mask)
                 logits.append(logit)
-            out["n_exs"] = batch["choice0"]["words"].size(0)
         logits = torch.cat(logits, dim=1)
         out["logits"] = logits
+        out["n_exs"] = get_batch_size(batch, keyword="choice0")
 
         if "label" in batch:
             labels = batch["label"]
@@ -1133,7 +1145,7 @@ class MultiTaskModel(nn.Module):
             inp = batch["psg_qst_ans"]
             ex_embs, ex_mask = self.sent_encoder(inp, task)
             logits = classifier(ex_embs, ex_mask)
-            out["n_exs"] = inp["pytorch_transformers_wpm_pretokenized"].size(0)
+            out["n_exs"] = get_batch_size(batch, keyword="psg_qst_ans")
         else:
             # else, we embed each independently and concat them
             psg_emb, psg_mask = self.sent_encoder(batch["psg"], task)
@@ -1143,11 +1155,11 @@ class MultiTaskModel(nn.Module):
                 ans_emb, ans_mask = self.sent_encoder(batch["ans"], task)
                 inp = torch.cat([psg_emb, qst_emb, ans_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask, ans_mask], dim=1)
-                out["n_exs"] = batch["ans"]["words"].size(0)
+                out["n_exs"] = get_batch_size(batch, keyword="ans")
             else:  # ReCoRD inserts answer into the query
                 inp = torch.cat([psg_emb, qst_emb], dim=1)
                 inp_mask = torch.cat([psg_mask, qst_mask], dim=1)
-                out["n_exs"] = batch["qst"]["words"].size(0)
+                out["n_exs"] = get_batch_size(batch, keyword="qst")
 
             logits = classifier(inp, inp_mask)
         out["logits"] = logits
