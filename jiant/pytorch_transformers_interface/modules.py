@@ -11,7 +11,7 @@ import pytorch_transformers
 
 from jiant.preprocess import parse_task_list_arg
 from jiant.utils import utils
-
+from jiant.pytorch_transformers_interface import input_module_tokenized_name
 
 class PytorchTransformersEmbedderModule(nn.Module):
     """ Shared code for pytorch_transformers wrappers.
@@ -29,16 +29,20 @@ class PytorchTransformersEmbedderModule(nn.Module):
         )
         utils.maybe_make_dir(self.cache_dir)
 
-        self.embeddings_mode = args.pytorch_transformers_output_mode
+        self.output_mode = args.pytorch_transformers_output_mode
+        self.input_module = args.input_module
+        self.max_seq_len = args.max_seq_len
+        self.tokenizer_required = input_module_tokenized_name(args.input_module)
 
         # Integer token indices for special symbols.
         self._sep_id = None
         self._cls_id = None
         self._pad_id = None
+        self._unk_id = None
 
         # If set, treat these special tokens as part of input segments other than A/B.
-        self._SEG_ID_CLS = None
         self._SEG_ID_SEP = None
+        self._SEG_ID_CLS = None
 
     def parameter_setup(self, args):
         # Set trainability of this module.
@@ -53,7 +57,7 @@ class PytorchTransformersEmbedderModule(nn.Module):
             self.max_layer = self.num_layers
 
         # Configure scalar mixing, ELMo-style.
-        if self.embeddings_mode == "mix":
+        if self.output_mode == "mix":
             if args.transfer_paradigm == "frozen":
                 log.warning(
                     "NOTE: pytorch_transformers_output_mode='mix', so scalar "
@@ -71,46 +75,73 @@ class PytorchTransformersEmbedderModule(nn.Module):
             # Always have one more mixing weight, for lexical layer.
             self.scalar_mix = scalar_mix.ScalarMix(self.max_layer + 1, do_layer_norm=False)
 
+    def correct_sent_indexing(self, sent):
+        """ Correct id difference between pytorch_transformers and AllenNLP.
+        The AllenNLP indexer adds'@@UNKNOWN@@' token as index 1, and '@@PADDING@@' as index 0
+        
+        args:
+            sent: batch dictionary, in which 
+                sent[self.tokenizer_required]: <long> [batch_size, var_seq_len] input token IDs
+        
+        returns:
+            ids: <long> [bath_size, var_seq_len] corrected token IDs
+            mask: <uint8> [bath_size, var_seq_len] sentence mask 
+        """
+        ids = sent[self.tokenizer_required]
+
+        mask = ids != 0
+        ids[ids == 0] = self._pad_id + 2
+        # map AllenNLP @@PADDING@@ to _pad_id in specific pytorch_transformer
+        if self._unk_id is not None:
+            ids[ids == 1] = self._unk_id + 2
+            # map AllenNLP @@UNKNOWN@@ to _unk_id in specific pytorch_transformer
+        ids -= 2  # shift indexes to match pretrained token embedding indexes
+        
+        return ids, mask
+
+
     def prepare_output(self, lex_seq, hidden_states, mask):
         """
         Convert the output of the pytorch_transformers module to a vector sequence as expected by jiant.
 
         args:
             lex_seq: The sequence of input word embeddings as a tensor (batch_size, sequence_length, hidden_size).
-                     Used only if embeddings_mode = "only".
+                     Used only if output_mode = "only".
             hidden_states: A list of sequences of model hidden states as tensors (batch_size, sequence_length, hidden_size).
             mask: A tensor with 1s in positions corresponding to non-padding tokens (batch_size, sequence_length).
 
+        returns:
+            h: Output embedding as a tensor (batch_size, sequence_length, output_dim)
         """
         available_layers = hidden_states[: self.max_layer + 1]
 
-        if self.embeddings_mode in ["none", "top"]:
+        if self.output_mode in ["none", "top"]:
             h = available_layers[-1]
-        elif self.embeddings_mode == "only":
+        elif self.output_mode == "only":
             h = lex_seq
-        elif self.embeddings_mode == "cat":
+        elif self.output_mode == "cat":
             h = torch.cat([available_layers[-1], lex_seq], dim=2)
-        elif self.embeddings_mode == "mix":
+        elif self.output_mode == "mix":
             h = self.scalar_mix(available_layers, mask=mask)
         else:
-            raise NotImplementedError(f"embeddings_mode={self.embeddings_mode}" " not supported.")
+            raise NotImplementedError(f"output_mode={self.output_mode}" " not supported.")
 
-        # <float32> [batch_size, var_seq_len, output_dim]
         return h
 
     def get_output_dim(self):
-        if self.embeddings_mode == "cat":
+        if self.output_mode == "cat":
             return 2 * self.model.config.hidden_size
         else:
             return self.model.config.hidden_size
 
-    def get_seg_ids(self, token_ids):
+    def get_seg_ids(self, token_ids, mask):
         """ Dynamically build the segment IDs for a concatenated pair of sentences
         Searches for index _sep_id in the tensor. Supports BERT or XLNet-style padding.
         Sets padding tokens to segment zero.
 
         args:
             token_ids (torch.LongTensor): batch of token IDs
+            mask (torch.LongTensor): batch of sentence mask
 
         returns:
             seg_ids (torch.LongTensor): batch of segment IDs
@@ -122,16 +153,9 @@ class PytorchTransformersEmbedderModule(nn.Module):
         > assert seg_ids == torch.LongTensor([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0])
         """
 
-        sep_idxs = (token_ids == self._sep_id).nonzero()[:, 1]
-        seg_ids = torch.zeros_like(token_ids)
-        for row_idx, row in enumerate(token_ids):
-            sep_idxs = (row == self._sep_id).nonzero()
-            seg = 0
-            prev_sep_idx = -1
-            for sep_idx in sep_idxs:
-                seg_ids[row_idx, prev_sep_idx + 1 : sep_idx + 1].fill_(seg)
-                seg = 1 - seg  # Alternate.
-                prev_sep_idx = sep_idx
+        sep_idxs = (token_ids == self._sep_id).long()
+        sep_count = torch.cumsum(sep_idxs, dim=-1) - sep_idxs
+        seg_ids = sep_count * mask
 
         if self._SEG_ID_CLS is not None:
             seg_ids[token_ids == self._cls_id] = self._SEG_ID_CLS
@@ -141,9 +165,48 @@ class PytorchTransformersEmbedderModule(nn.Module):
 
         return seg_ids
 
+    @staticmethod
+    def apply_boundary_tokens(s1, s2=None):
+        """
+        A function that appliese the appropriate EOS/SOS/SEP/CLS tokens to a token sequence.
+        
+        args:
+            s1: list[str], tokens from sentence 1
+            s2: list[str] (optional), tokens from sentence 2, used for pair embedding
+        
+        returns
+            s: list[str], token sequence with boundry tokens
+        """
+        pass
+
+    def forward(self, sent, unused_task_name):
+        """ Run transformer model and return output representation 
+        
+        args:
+            sent: batch dictionary, in which 
+                sent[self.tokenizer_required]: <long> [batch_size, var_seq_len] input token IDs
+            unused_task_name: makeshift input slot, due to an outdated logic in sentence_encoder,
+                TODO: deprecate this when sentence_encoder get fixed
+
+        returns:
+            transformer_emb: <float32> [batch_size, var_seq_len, output_dim] output embedding
+        """
+        pass
+
+    def get_pretrained_lm_head(self):
+        """ Download another transformer model with LM head, extract the LM head and tie its
+        weight to the input token embedding. In most cases, this module needs to work with
+        output_mode as "top" or "none"
+        
+        returns:
+            lm_head: module [*, hidden_size] -> [*, vocab_size]
+        """
+        pass
+
 
 class BertEmbedderModule(PytorchTransformersEmbedderModule):
-    """ Wrapper for BERT module to fit into jiant APIs. """
+    """ Wrapper for BERT module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
         super(BertEmbedderModule, self).__init__(args)
@@ -172,68 +235,32 @@ class BertEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        """ Run BERT to get hidden states.
-
-        This forward method does preprocessing on the go,
-        changing token IDs from preprocessed bert to
-        what AllenNLP indexes.
-
-        Args:
-            sent: batch dictionary
-
-        Returns:
-            h: [batch_size, seq_len, d_emb]
-        """
-        assert "pytorch_transformers_wpm_pretokenized" in sent
-        # <int32> [batch_size, var_seq_len]
-        ids = sent["pytorch_transformers_wpm_pretokenized"]
-        # BERT supports up to 512 tokens; see section 3.2 of https://arxiv.org/pdf/1810.04805.pdf
-        assert ids.size()[1] <= 512
-
-        mask = ids != 0
-        # "Correct" ids to account for different indexing between BERT and
-        # AllenNLP.
-        # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
-        # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
-        # reserved for padding).
-        ids[ids == 0] = self._pad_id + 2  # Shift the indices that were at 0 to become 2.
-        # Index 1 should never be used since the BERT WPM uses its own
-        # unk token, and handles this at the string level before indexing.
-        assert (ids > 1).all()
-        ids -= 2  # shift indices to match BERT wordpiece embeddings
-
-        if self.embeddings_mode not in ["none", "top"]:
-            # This is redundant with the lookup inside BertModel,
-            # but doing so this way avoids the need to modify the BertModel
-            # code.
-            # Extract lexical embeddings
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.embeddings.word_embeddings(ids)
             lex_seq = self.model.embeddings.LayerNorm(lex_seq)
-            hidden_states = []  # dummy; should not be accessed.
-            # following our use of the OpenAI model, don't use dropout for
-            # probing. If you would like to use dropout, consider applying
-            # later on in the SentenceEncoder (see models.py).
-            #  h_lex = self.model.embeddings.dropout(embeddings)
-        else:
-            lex_seq = None  # dummy; should not be accessed.
-
-        if self.embeddings_mode != "only":
-            # encoded_layers is a list of layer activations, each of which is
-            # <float32> [batch_size, seq_len, output_dim]
-            token_types = self.get_seg_ids(ids)
+        if self.output_mode != "only":
+            token_types = self.get_seg_ids(ids, mask)
             _, output_pooled_vec, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
-
-        # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states, mask)
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = pytorch_transformers.BertForMaskedLM.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.cls
+        lm_head.predictions.decoder.weight = self.model.embeddings.word_embeddings.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
 
 
 class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
-    """ Wrapper for XLNet module to fit into jiant APIs. """
+    """ Wrapper for XLNet module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
 
     def __init__(self, args):
-
         super(XLNetEmbedderModule, self).__init__(args)
 
         self.model = pytorch_transformers.XLNetModel.from_pretrained(
@@ -250,8 +277,10 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
 
         self.parameter_setup(args)
 
-        # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1 input segments.
-        # Standard constants reused from pytorch_transformers. They aren't actually used within the pytorch_transformers code, so we're reproducing them here in case they're removed in a later cleanup.
+        # Segment IDs for CLS and SEP tokens. Unlike in BERT, these aren't part of the usual 0/1 
+        # input segments. Standard constants reused from pytorch_transformers. They aren't actually
+        # used within the pytorch_transformers code, so we're reproducing them here in case they're
+        # removed in a later cleanup.
         self._SEG_ID_CLS = 2
         self._SEG_ID_SEP = 3
 
@@ -266,55 +295,198 @@ class XLNetEmbedderModule(PytorchTransformersEmbedderModule):
     def forward(
         self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
     ) -> torch.FloatTensor:
-        """ Run XLNet to get hidden states.
-
-        This forward method does preprocessing on the go,
-        changing token IDs from preprocessed word pieces to
-        what AllenNLP indexes.
-
-        Args:
-            sent: batch dictionary
-
-        Returns:
-            h: [batch_size, seq_len, d_emb]
-        """
-        assert "pytorch_transformers_wpm_pretokenized" in sent
-
-        # <int32> [batch_size, var_seq_len]
-        # Make a copy so our padding modifications below don't impact masking decisions elsewhere.
-        ids = copy.deepcopy(sent["pytorch_transformers_wpm_pretokenized"])
-
-        mask = ids != 0
-
-        # "Correct" ids to account for different indexing between XLNet and
-        # AllenNLP.
-        # The AllenNLP indexer adds a '@@UNKNOWN@@' token to the
-        # beginning of the vocabulary, *and* treats that as index 1 (index 0 is
-        # reserved for native padding).
-        ids[ids == 0] = self._pad_id + 2  # Rewrite padding indices.
-        ids[ids == 1] = self._unk_id + 2  # Rewrite UNK indices.
-        ids -= 2  # shift indices to match XLNet wordpiece embeddings
-
-        if self.embeddings_mode not in ["none", "top"]:
-            # This is redundant with the lookup inside XLNetModel,
-            # but doing so this way avoids the need to modify the XLNetModel
-            # code.
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
             lex_seq = self.model.word_embedding(ids)
-            hidden_states = []  # dummy; should not be accessed.
-            # following our use of the OpenAI model, don't use dropout for
-            # probing. If you would like to use dropout, consider applying
-            # later on in the SentenceEncoder (see models.py).
-            #  h_lex = self.model.embeddings.dropout(embeddings)
-        else:
-            lex_seq = None  # dummy; should not be accessed.
-
-        if self.embeddings_mode != "only":
-            # encoded_layers is a list of layer activations, each of which is
-            # <float32> [batch_size, seq_len, output_dim]
-            token_types = self.get_seg_ids(ids)
+        if self.output_mode != "only":
+            token_types = self.get_seg_ids(ids, mask)
             _, output_mems, hidden_states = self.model(
                 ids, token_type_ids=token_types, attention_mask=mask
             )
-
-        # <float32> [batch_size, var_seq_len, output_dim]
         return self.prepare_output(lex_seq, hidden_states, mask)
+
+    def get_pretrained_lm_head(self, args):
+        model_with_lm_head = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_loss
+        lm_head.weight = self.model.word_embedding.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class OpenAIGPTEmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for OpenAIGPT module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
+    def __init__(self, args):
+        super(OpenAIGPTEmbedderModule).__init__(args)
+
+        self.model = pytorch_transformers.OpenAIGPTModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+
+        tokenizer = pytorch_transformers.OpenAIGPTTokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        self._pad_id = tokenizer.convert_tokens_to_ids("\n</w>")
+        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1):
+    # OpenAI-GPT-style boundary token marking on string token sequences
+        return ["\n</w>"] + s1 + ["\n</w>"]
+        
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.tokens_embed(ids)
+        if self.output_mode != "only":
+            _, hidden_states = self.model(ids)
+        return self.prepare_output(lex_seq, hidden_states, mask)
+
+    def get_pretrained_lm_head(self, args):
+        model_with_lm_head = pytorch_transformers.OpenAIGPTLMHeadModel.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_head
+        lm_head.weight = self.model.tokens_embed.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class GPT2EmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for GPT2 module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
+    def __init__(self, args):
+        super(GPT2EmbedderModule, self).__init__(args)
+
+        self.model = pytorch_transformers.GPT2Model.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+
+        tokenizer = pytorch_transformers.GPT2Tokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        self._pad_id = tokenizer.convert_tokens_to_ids("<|endoftext|>")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1):
+    # GPT2-style boundary token marking on string token sequences
+        return ["<|endoftext|>"] + s1 + ["<|endoftext|>"]
+
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.wte(ids)
+        if self.output_mode != "only":
+            _, _, hidden_states = self.model(ids)
+        return self.prepare_output(lex_seq, hidden_states, mask)
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = pytorch_transformers.GPT2LMHeadModel.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.lm_head
+        lm_head.weight = self.model.wte.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class TransfoXLEmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for Transformer-XL module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
+    def __init__(self, args):
+        super(TransfoXLEmbedderModule, self).__init__(args)
+
+        self.model = pytorch_transformers.TransfoXLModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+
+        tokenizer = pytorch_transformers.TransfoXLTokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        self._pad_id = tokenizer.convert_tokens_to_ids("<eos>")
+        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1):
+    # TransformerXL-style boundary token marking on string token sequences
+        return ["<\n>"] + s1 + ["<\n>"]
+    
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.word_emb(ids)
+        if self.output_mode != "only":
+            _, _, hidden_states = self.model(ids)
+        return self.prepare_output(lex_seq, hidden_states, mask)        
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = pytorch_transformers.TransfoXLLMHeadModel.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.crit
+        for i in range(len(model_with_lm_head.crit.out_layers)):
+            lm_head.out_layers[i].weight = self.model.word_emb.emb_layers[i].weight
+        for i, tie_proj in enumerate(model_with_lm_head.config.tie_projs):
+            if tie_proj:
+                lm_head.out_projs[i] = self.model.word_emb.emb_projs[i]
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
+
+class XLMEmbedderModule(PytorchTransformersEmbedderModule):
+    """ Wrapper for XLM module to fit into jiant APIs.
+    Check PytorchTransformersEmbedderModule for function definitions """
+
+    def __init__(self, args):
+        super(XLMEmbedderModule, self).__init__(args)
+
+        self.model = pytorch_transformers.XLMModel.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir, output_hidden_states=True
+        )
+
+        tokenizer = pytorch_transformers.XLMTokenizer.from_pretrained(
+            args.input_module, cache_dir=self.cache_dir
+        )
+        self._unk_id = tokenizer.convert_tokens_to_ids("<unk>")
+        self._pad_id = tokenizer.convert_tokens_to_ids("<eos>")
+
+        self.parameter_setup(args)
+
+    @staticmethod
+    def apply_boundary_tokens(s1):
+    # XLM-style boundary token marking on string token sequences
+        return ["</s>"] + s1 + ["</s>"]
+    
+    def forward(
+        self, sent: Dict[str, torch.LongTensor], unused_task_name: str = ""
+    ) -> torch.FloatTensor:
+        ids, mask = self.correct_sent_indexing(sent)
+        hidden_states, lex_seq = [], None
+        if self.output_mode not in ["none", "top"]:
+            lex_seq = self.model.embeddings(ids)
+        if self.output_mode != "only":
+            _, _, hidden_states = self.model(ids)
+        return self.prepare_output(lex_seq, hidden_states, mask)        
+
+    def get_pretrained_lm_head(self):
+        model_with_lm_head = pytorch_transformers.XLMWithLMHeadModel.from_pretrained(
+            self.input_module, cache_dir=self.cache_dir
+        )
+        lm_head = model_with_lm_head.pred_layer
+        lm_head.proj.weight = self.model.embeddings.weight
+        return nn.Sequential(lm_head, nn.LogSoftmax(dim=-1))
+
